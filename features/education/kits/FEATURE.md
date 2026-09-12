@@ -141,6 +141,12 @@ same anchor and whatever is made lands in THIS kit.
 
 ## Change log
 
+- **2026-09-11** — **Kit counts now fail closed.** `listKits` scans the complete
+  canonical library without a 25k ceiling and throws if any artifact-family
+  origin lookup fails. The education home and kit index keep their count or
+  empty state unavailable until that authoritative scan succeeds; the index
+  gives the learner a retry action instead of claiming that no kits exist.
+
 - **2026-09-10** — **Kit lineage failures stay failures.** `readKit` now selects the strict mode
   of the shared best-effort lineage helper, so an expired session or association read failure
   renders the retryable error state instead of “Nothing has been made.”

@@ -58,24 +58,36 @@ function KitRow({ kit }: { kit: StudyKit }) {
 export function KitsHome() {
   const [kits, setKits] = useState<StudyKit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let active = true;
-    void listKits()
-      .then((rows) => {
+    void (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      setLoading(true);
+      try {
+        const rows = await listKits();
         if (!active) return;
         setKits(rows);
-      })
-      .catch((err: unknown) => {
+        setError(null);
+      } catch (err) {
         console.error("[kits] list failed:", err);
-      })
-      .finally(() => {
+        if (!active) return;
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Could not load your study kits.",
+        );
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    })();
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadTick]);
 
   return (
     <>
@@ -97,6 +109,18 @@ export function KitsHome() {
           <div className="space-y-2">
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-10 text-center">
+            <Package className="h-8 w-8 text-amber-600 dark:text-amber-500" />
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setReloadTick((tick) => tick + 1)}
+            >
+              Try again
+            </Button>
           </div>
         ) : kits.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">

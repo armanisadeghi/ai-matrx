@@ -46,9 +46,6 @@ const KIT_ARTIFACT_TYPES = [
  *  this stays well under it and the read PAGES to exhaustion instead. */
 const KIT_SCAN_PAGE = 500;
 
-/** Hard stop so a pathological library cannot spin forever (25k artifacts). */
-const KIT_SCAN_MAX_PAGES = 50;
-
 export interface StudyKit {
   /** The anchor's entity token — `file` for every ingested kit. */
   sourceType: string;
@@ -285,7 +282,7 @@ export async function listKits(): Promise<StudyKit[]> {
   // through with `as` would silently change meaning the day the RPC starts
   // honouring them.
   const byType = new Map<string, string[]>();
-  for (let pageNo = 1; pageNo <= KIT_SCAN_MAX_PAGES; pageNo++) {
+  for (let pageNo = 1; ; pageNo++) {
     const page = await fetchEducationLibraryPage(
       {
         ...DEFAULT_ENTITY_LIST_QUERY,
@@ -306,15 +303,14 @@ export async function listKits(): Promise<StudyKit[]> {
       list.push(row.id);
       byType.set(token, list);
     }
-    // A short page is the last page. Without this loop a learner past the first
-    // page lost their OLDER kits from this index while their direct links kept
-    // working — an index that quietly lies about being "every kit".
-    if (page.rows.length < KIT_SCAN_PAGE) break;
-    if (pageNo === KIT_SCAN_MAX_PAGES) {
-      console.warn(
-        `[kits] artifact scan hit ${KIT_SCAN_MAX_PAGES} pages; older kits may be missing from the index.`,
-      );
-    }
+    // A short page or reaching the canonical total is the last page. The total
+    // guard also prevents a malformed full final page from causing an endless
+    // scan, without imposing an arbitrary library-size ceiling.
+    if (
+      page.rows.length < KIT_SCAN_PAGE ||
+      pageNo * KIT_SCAN_PAGE >= page.total
+    )
+      break;
   }
 
   const kits = new Map<string, StudyKit>();
@@ -322,11 +318,10 @@ export async function listKits(): Promise<StudyKit[]> {
     [...byType.entries()].map(async ([token, ids]) => {
       const res = await associationsService.listForSources(token, ids);
       if (!res.ok) {
-        // Per-type best-effort, matching the codebase convention — but say what
-        // it costs: one failed type drops THAT artifact kind from every kit in
-        // this list, and the page still renders as though it were complete.
-        console.error(`[kits] origin read failed for ${token}:`, res.error);
-        return;
+        throw new Error(
+          `Could not read ${token} origins while building your study kits. Try again.`,
+          { cause: res.error },
+        );
       }
       for (const edge of res.data.edges) {
         if (edge.role !== "source") continue;

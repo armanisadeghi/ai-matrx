@@ -401,38 +401,84 @@ export function ProjectsHub({
         : null;
 
   // ?scope=id → project ids assigned to that scope
-  const [resolvedScopeProjects, setResolvedScopeProjects] = React.useState<{
-    scopeId: string;
-    projectIds: Set<string>;
-  } | null>(null);
+  const [resolvedScopeProjects, setResolvedScopeProjects] = React.useState<
+    | {
+        scopeId: string;
+        state: "loading";
+      }
+    | {
+        scopeId: string;
+        state: "ready";
+        projectIds: Set<string>;
+      }
+    | {
+        scopeId: string;
+        state: "unavailable";
+        error: string;
+      }
+    | null
+  >(null);
+  const [scopeReloadTick, setScopeReloadTick] = React.useState(0);
+  const retryScopeProjects = () => setScopeReloadTick((tick) => tick + 1);
   React.useEffect(() => {
     let cancelled = false;
-    if (!scopeParam) return undefined;
+    if (!scopeParam) {
+      return undefined;
+    }
     (async () => {
-      const res = await scopesService.listEntitiesByScopes({
-        scope_ids: [scopeParam],
-        entity_type: "project",
-      });
-      if (!cancelled) {
+      await Promise.resolve();
+      if (cancelled) return;
+      setResolvedScopeProjects({ scopeId: scopeParam, state: "loading" });
+      try {
+        const res = await scopesService.listEntitiesByScopes({
+          scope_ids: [scopeParam],
+          entity_type: "project",
+        });
+        if (isScopesRpcErr(res)) {
+          throw new Error(res.error.message);
+        }
+        if (!cancelled) {
+          setResolvedScopeProjects({
+            scopeId: scopeParam,
+            state: "ready",
+            projectIds: new Set(res.data.entities.map((e) => e.entity_id)),
+          });
+        }
+      } catch (error) {
+        if (cancelled) return;
         setResolvedScopeProjects({
           scopeId: scopeParam,
-          projectIds: new Set(
-            isScopesRpcErr(res)
-              ? []
-              : res.data.entities.map((e) => e.entity_id),
-          ),
+          state: "unavailable",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Could not load projects for this scope.",
         });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [scopeParam]);
+  }, [scopeParam, scopeReloadTick]);
   const scopeProjectIds = !scopeParam
     ? null
-    : resolvedScopeProjects?.scopeId === scopeParam
+    : resolvedScopeProjects?.scopeId === scopeParam &&
+        resolvedScopeProjects.state === "ready"
       ? resolvedScopeProjects.projectIds
-      : new Set<string>();
+      : null;
+  const scopeReadState =
+    scopeParam && resolvedScopeProjects?.scopeId === scopeParam
+      ? resolvedScopeProjects.state
+      : null;
+  const scopeLoading =
+    Boolean(scopeParam) &&
+    (scopeReadState === "loading" || scopeReadState === null);
+  const scopeReadFailed = scopeReadState === "unavailable";
+  const scopeReadError =
+    resolvedScopeProjects?.scopeId === scopeParam &&
+    resolvedScopeProjects.state === "unavailable"
+      ? resolvedScopeProjects.error
+      : null;
 
   let filtered = projects;
   if (orgFilterId) {
@@ -476,33 +522,18 @@ export function ProjectsHub({
       b === "unassigned" ? "Other projects" : (orgMap.get(b)?.name ?? b);
     return aName.localeCompare(bName);
   });
-  const topLevelTaskCount = filtered.reduce((total, project) => {
-    const stat = stats.get(project.id);
-    return total + (stat?.open ?? 0) + (stat?.done ?? 0);
-  }, 0);
   const workspaceNavigationItems = WORKSPACE_DESTINATIONS.map((item) => {
     if (item.href === "/projects") {
       return {
         ...item,
         value: filtered.length,
-        state: projectsReadFailed
-          ? "unavailable"
-          : loading
-            ? "loading"
-            : "ready",
+        state:
+          projectsReadFailed || scopeReadFailed
+            ? "unavailable"
+            : loading || scopeLoading
+              ? "loading"
+              : "ready",
         description: "Projects in this view",
-      } satisfies MetricNavigationItem;
-    }
-    if (item.href === "/tasks") {
-      return {
-        ...item,
-        value: topLevelTaskCount,
-        state: statsReadFailed
-          ? "unavailable"
-          : statsLoading
-            ? "loading"
-            : "ready",
-        description: "Top-level tasks in these projects",
       } satisfies MetricNavigationItem;
     }
     return item;
@@ -655,11 +686,13 @@ export function ProjectsHub({
                     projectsReadFailed ? undefined : "project_count"
                   }
                 >
-                  {projectsReadFailed
+                  {projectsReadFailed || scopeReadFailed
                     ? projects.length > 0
                       ? `${filtered.length} shown`
                       : "Projects unavailable"
-                    : `${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`}
+                    : loading || scopeLoading
+                      ? "Loading projects…"
+                      : `${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`}
                 </span>
                 <div
                   className="relative min-w-0 flex-1 sm:flex-none"
@@ -780,13 +813,23 @@ export function ProjectsHub({
               />
             )}
 
-            {loading ? (
+            {scopeReadFailed && (
+              <StaleDataNotice
+                hasData={false}
+                what="projects for this scope"
+                detail={scopeReadError}
+                onRetry={retryScopeProjects}
+              />
+            )}
+
+            {loading || scopeLoading ? (
               <ProjectsHubSkeleton
                 view={view}
                 useThreeColumns={isFiltered || query.trim().length > 0}
               />
-            ) : projectsReadFailed &&
-              projects.length === 0 ? null : filtered.length === 0 ? (
+            ) : projectsReadFailed ||
+              scopeReadFailed ? null : projects.length ===
+              0 ? null : filtered.length === 0 ? (
               <Card className="p-6 text-center sm:p-12">
                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                   <FolderKanban className="h-7 w-7 text-muted-foreground" />
