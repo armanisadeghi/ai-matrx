@@ -152,6 +152,15 @@ jobs:
         run: pnpm check:parse:self-test
       - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
         run: pnpm check:kind-marker-law
+      - name: NO THINKING AT EYE LEVEL — live streams render only through the canonical pipeline
+        # Every provider fences chain-of-thought as <reasoning> INSIDE the
+        # chunk channel; only MarkdownStream → EnhancedChatMarkdown splits it
+        # into a collapsed thinking block. A plain markdown component fed a
+        # live stream prints it as prose (Vision Interview + CollabCallCard,
+        # 2026-09-11). Static scan, ~1s.
+        run: pnpm check:thinking-leak
+      - name: the thinking-leak guard can still fail (self-test)
+        run: pnpm check:thinking-leak:self-test
       - name: THERE IS ONE AGENT PICKER — no re-grown agent/model selector
         # `@ai-matrx/agents/catalog/react` owns agent choice in every Matrx
         # client (ruling D1, 2026-09-08); ModelListDropdown owns model choice.

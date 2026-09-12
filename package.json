@@ -66,6 +66,8 @@
     "check:context-menu": "tsx scripts/check-context-menu.ts",
     "check:menu-naming": "tsx scripts/check-context-menu.ts --strict --population=naming",
     "check:picker-add": "tsx scripts/check-picker-custom-entry.ts",
+    "check:thinking-leak": "tsx scripts/check-thinking-leak.ts",
+    "check:thinking-leak:self-test": "tsx scripts/check-thinking-leak.ts --self-test",
     "check:picker-add:strict": "tsx scripts/check-picker-custom-entry.ts --strict",
     "check:surface-routes": "tsx scripts/check-surface-routes.ts",
     "check:surface-overlays": "tsx scripts/check-surface-overlays.ts",
