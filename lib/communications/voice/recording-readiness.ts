@@ -11,7 +11,7 @@ const GATE_DEFINITIONS = [
     key: "disclosure_and_consent_verified",
     label: "Disclosure and consent",
     blockedReason:
-      "The exact recording disclosure and affirmative continuation behavior have not been verified.",
+      "Each call requires its own recorded disclosure and affirmative consent before capture can begin.",
   },
   {
     key: "provider_account_verified",
@@ -73,6 +73,10 @@ export interface VoiceRecordingReadinessGate {
 }
 
 export interface VoiceRecordingReadiness {
+  /** True when every standing launch prerequisite has passed for a future consented call. */
+  readyForConsentedCall: boolean;
+  /** True until the current call has completed its own durable consent flow. */
+  requiresPerCallConsent: boolean;
   ready: boolean;
   passedGateCount: number;
   totalGateCount: number;
@@ -97,7 +101,14 @@ export function evaluateVoiceRecordingReadiness(
     gate.blockedReason === null ? [] : [gate.blockedReason],
   );
   const passedGateCount = gates.length - blockedReasons.length;
+  const consentGate = gates.find(
+    (gate) => gate.key === "disclosure_and_consent_verified",
+  );
   return {
+    readyForConsentedCall: gates.every(
+      (gate) => gate.key === "disclosure_and_consent_verified" || gate.passed,
+    ),
+    requiresPerCallConsent: !consentGate?.passed,
     ready: blockedReasons.length === 0,
     passedGateCount,
     totalGateCount: gates.length,

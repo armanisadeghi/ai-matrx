@@ -717,6 +717,8 @@ describe("POST /api/webhooks/twilio/voice", () => {
       mode: "blocked_until_all_gates_pass",
       readiness: {
         ready: false,
+        readyForConsentedCall: false,
+        requiresPerCallConsent: true,
         passedGateCount: 2,
         totalGateCount: 9,
       },
@@ -858,6 +860,47 @@ describe("POST /api/webhooks/twilio/voice", () => {
         expect.objectContaining({
           key: "disclosure_and_consent_verified",
           passed: false,
+        }),
+      ]),
+    );
+  });
+
+  test("reports readiness for a future consented call without enabling recording", async () => {
+    jest.mocked(getVoiceStorageCanaryReadiness).mockResolvedValueOnce({
+      ready: true,
+      status: "ready",
+      evidenceId: 1234,
+      completedAt: "2026-09-08T20:00:00.000Z",
+    });
+    jest.mocked(getVoiceProviderConfigurationReadiness).mockResolvedValueOnce({
+      ready: true,
+      status: "ready",
+      evidenceId: 5678,
+      verifiedAt: "2026-09-08T20:00:00.000Z",
+      providerAccountVerified: true,
+      externalStorageConfigured: true,
+    });
+
+    const body = await (await GET()).json();
+
+    expect(body.recording).toMatchObject({
+      enabled: false,
+      mode: "awaiting_call_consent",
+      readiness: {
+        ready: false,
+        readyForConsentedCall: true,
+        requiresPerCallConsent: true,
+        passedGateCount: 8,
+        totalGateCount: 9,
+      },
+    });
+    expect(body.recording.readiness.gates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "disclosure_and_consent_verified",
+          passed: false,
+          blockedReason:
+            "Each call requires its own recorded disclosure and affirmative consent before capture can begin.",
         }),
       ]),
     );

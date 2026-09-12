@@ -85,8 +85,9 @@ long-lived media and agent execution stay in aidream.
   recording gate; only an explicit invalidation or mismatched receipt closes the gate. The Voice
   response exposes only readiness and receipt id—never provider, credential, account, or storage
   identifiers. This evidence
-  supplies only the provider-email and external-configuration gates; recording disclosure and
-  affirmative consent remain a separate false gate until the recording flow itself is exercised.
+  supplies only the provider-account and external-configuration gates. The consent gate is always
+  per-call: readiness may report that the standing prerequisites are ready for a consented call,
+  but it never represents a prior call's consent as consent for the current one.
 
 ## Visibility
 
@@ -100,9 +101,11 @@ gates.
 
 The main Voice GET also derives provider-account-verification and external-storage readiness from an
 exact durable operator receipt instead of hard-coded booleans. Missing, invalidated, malformed, or
-future-dated evidence fails closed. It keeps the disclosure-proof gate false until an
-actual v2 consented recording proves the complete live path; the POST route independently requires
-that exact disclosure and durable consent before it can emit capture TwiML.
+future-dated evidence fails closed. Because GET has no call to consent, it reports
+`readyForConsentedCall` and `requiresPerCallConsent` separately: when all standing prerequisites
+pass, its mode is `awaiting_call_consent`, but recording remains disabled. The POST route still
+requires the exact current-call disclosure and durable affirmative consent before it can emit
+capture TwiML.
 
 The main Voice GET reads the secret-free ConversationRelay runtime facts from aidream rather than
 inventing switch values. Owner-beta readiness requires the public route and its live code/provider/
@@ -124,6 +127,10 @@ credential is returned.
 
 - **2026-09-11** — Replaced hard-coded ConversationRelay launch status with aidream's secret-free
   runtime response and separated basic owner-beta admission from optional playback evidence.
+
+- **2026-09-11** — Made Voice GET distinguish standing readiness for a future consented call from
+  the current call's required affirmative consent. It remains non-recording and never reports a
+  historic consent as current consent.
 
 - **2026-09-11** — Separated the live AI welcome greeting from the honest recorded-but-unconnected
   terminal response; neither caller-facing path claims the recording test succeeded.

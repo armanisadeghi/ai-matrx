@@ -506,7 +506,9 @@ export async function GET(): Promise<NextResponse> {
     statusCallback: "https://www.aimatrx.com/api/webhooks/twilio/voice/status",
     recording: {
       enabled: false,
-      mode: "blocked_until_all_gates_pass",
+      mode: recordingReadiness.readyForConsentedCall
+        ? "awaiting_call_consent"
+        : "blocked_until_all_gates_pass",
       durableSystemOfRecord: "AI Matrx canonical file storage",
       plannedStatusCallback: RECORDING_STATUS_CALLBACK_URL,
       providerConfiguration,
