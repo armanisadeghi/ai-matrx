@@ -76,6 +76,8 @@ export interface CopyButtonsProps {
   size?: CopyActionSize;
   /** Visual chrome. `bare` removes borders and persistent/interactive fills. */
   appearance?: CopyActionAppearance;
+  /** Render one borderless dropdown trigger for copy, AI variants, JSON, and exports. */
+  unified?: boolean;
   /**
    * Stop click events from bubbling (rows/cards with their own onClick).
    * Default true — copying should never also select/navigate.
@@ -135,6 +137,7 @@ export function CopyButtons({
   label,
   size = "icon",
   appearance = "segmented",
+  unified = false,
   disabled = false,
   stopPropagation = true,
   className,
@@ -210,6 +213,42 @@ export function CopyButtons({
     ...(visible.ai && jsonVariant ? [jsonVariant] : []),
     ...(visible.ai ? agentVariants : []),
   ];
+
+  if (unified) {
+    if (visible.count === 0) return null;
+    const unifiedVariants = [
+      ...(visible.copy && human !== undefined
+        ? [
+            {
+              id: "copy-human",
+              label: "Copy",
+              hint: "Human-readable text",
+              icon: Copy,
+              section: "copy" as const,
+              ariaLabel: `Copy ${label}`,
+              successMessage: `${label} copied to clipboard`,
+              build: () => resolve(human),
+            },
+          ]
+        : []),
+      ...menuVariants,
+    ];
+    return (
+      <AiCopyMenu
+        size={size}
+        appearance="bare"
+        label={label}
+        disabled={disabled}
+        stopPropagation={stopPropagation}
+        className={className}
+        variants={unifiedVariants}
+        custom={visible.ai ? aiCustom : undefined}
+        groomer={visible.ai ? groomer : undefined}
+        exportConfig={visible.export ? exportConfig : undefined}
+        triggerIcon={Copy}
+      />
+    );
+  }
 
   if (visible.count === 0) return null;
 

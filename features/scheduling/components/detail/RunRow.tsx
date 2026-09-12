@@ -74,6 +74,7 @@ export function RunRow({ run, task = null }: Props) {
         </div>
         <CopyButtons
           size="xs"
+          unified
           label={`Run ${run.status}`}
           className="shrink-0 self-center pr-1 sm:pr-2 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
           human={() => runSummary(run)}

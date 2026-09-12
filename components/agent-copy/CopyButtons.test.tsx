@@ -142,6 +142,44 @@ describe("CopyButtons AI variants", () => {
     ).toBe('{\n  "node": "pillar",\n  "depth": 1\n}');
   });
 
+  it("can put human copy, AI variants, and exports behind one trigger", () => {
+    act(() => {
+      root.render(
+        <CopyButtons
+          unified
+          size="icon"
+          label="Tasks"
+          human="readable tasks"
+          agent="agent tasks"
+          json={{ count: 2 }}
+          export={{
+            items: [
+              {
+                id: "csv",
+                label: "CSV",
+                build: () => ({
+                  content: "title\nOne",
+                  extension: "csv",
+                  mime: "text/csv",
+                }),
+              },
+            ],
+          }}
+        />,
+      );
+    });
+
+    expect(container.querySelectorAll("button")).toHaveLength(1);
+    expect(
+      [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
+        (item) => item.textContent,
+      ),
+    ).toEqual(["Copy", "Copy JSON", "Copy for AI"]);
+    expect(
+      container.querySelector("[data-testid='ai-menu']")?.getAttribute("data-export-count"),
+    ).toBe("1");
+  });
+
   it("folds Copy-for-AI variants and Export into the second menu", () => {
     act(() => {
       root.render(
