@@ -27,7 +27,11 @@ import {
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 import { fetchProvision } from "@/features/mandates/provisions";
-import { parseMandateInputSurface } from "@/features/mandates/input-surface";
+import {
+  describeInputSurfaceFailure,
+  INPUT_SURFACE_REFUSAL_FALLBACK,
+  parseMandateInputSurface,
+} from "@/features/mandates/input-surface";
 import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import type { MandateRowDb } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { describedOfferFrom } from "../described-offer";
@@ -105,9 +109,11 @@ export function usePlaceOffers(
               ...prev,
               [key]: {
                 status: "error",
-                message:
-                  result.error?.message ||
-                  "This job's inputs could not be read from the server.",
+                // 🚨 FIX-Q8 — the SECOND reader of this endpoint, with the same
+                // defect the one-binding lane shipped: `result.error.message`
+                // raw is how "HTTP 400" reached a person. One reader writes the
+                // sentence for both lanes.
+                message: describeInputSurfaceFailure(result.error),
               },
             }));
             return;
@@ -128,10 +134,10 @@ export function usePlaceOffers(
             ...prev,
             [key]: {
               status: "error",
-              message:
-                err instanceof Error
-                  ? err.message
-                  : "This job's inputs could not be read.",
+              // A thrown Error's `.message` is a developer's string, not a
+              // sentence for a person — the same class as the raw transport
+              // code above. The one fallback carries the remedy (FIX-Q8).
+              message: INPUT_SURFACE_REFUSAL_FALLBACK,
             },
           }));
         }
