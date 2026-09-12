@@ -24,13 +24,24 @@
  * import. Copy it plus its JSON register into matrx-extend / matrx-local /
  * matrx-games unchanged.
  *
+ * THE SHAPE LANE (added 2026-09-11). The name register has a hole its own
+ * census named: a twin under an UNREGISTERED name is invisible. Byte-size
+ * formatting proved it — `formatFileSize` was registered and clean, while 134
+ * live byte-size bodies sat in 67 files under `formatBytes`, `fmtBytes`,
+ * `humanSize`, `bytesHuman`, `formatSize`, and as bare inline JSX that is not a
+ * definition at all. So a second lane matches the SHAPE of the capability
+ * rather than its spelling: see `scripts/byte-size-shape.mjs` for the pattern
+ * and why a capacity constant (`80 * 1024 * 1024`) can never match it.
+ * Shape-lane exemptions live in `shapeAllow` on the row, same rules as `allow`.
+ *
  * Modes:
  *   default     — advisory: loud report, exit 0
  *   --strict    — exit 1 on any re-grown twin (the release-gate mode)
  *   --self-test — plant a twin in memory and prove this guard reports it
- *                 (a guard that cannot fail is not a guard)
+ *                 (a guard that cannot fail is not a guard) — both lanes
  */
 
+import { byteShapeIn, selfTestByteShape } from "./byte-size-shape.mjs";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -112,9 +123,16 @@ if (SELF_TEST) {
     console.error("SELF-TEST FAILED: an inner helper was reported as a twin.");
     process.exit(1);
   }
+  // ── the SHAPE lane must also be able to fail ──
+  const shape = selfTestByteShape();
+  if (!shape.ok) {
+    console.error(`SELF-TEST FAILED (shape lane): ${shape.why}.`);
+    process.exit(1);
+  }
   console.log(
-    `check:package-twins self-test PASSED (it can fail) — ${TWINS.length} ` +
-      `collapsed export(s) registered.`,
+    `check:package-twins self-test PASSED (both lanes can fail) — ` +
+      `${TWINS.length} collapsed export(s) registered, plus the byte-size ` +
+      `SHAPE rule.`,
   );
   process.exit(0);
 }
@@ -128,10 +146,24 @@ function trackedFiles() {
   return out.split("\n").filter(Boolean);
 }
 
+/**
+ * The byte-size SHAPE row: which package owns it, and the files whose byte
+ * arithmetic is provably NOT a display formatter (a numeric converter feeding a
+ * form field, say). `scripts/byte-size-shape.mjs` itself carries the pattern in
+ * its own source and must never be scanned.
+ */
+const BYTE_ROW = BY_NAME.get("formatFileSize");
+const BYTE_SHAPE_ALLOW = new Map(
+  (BYTE_ROW?.shapeAllow ?? []).map((a) => [a.file, a.reason]),
+);
+
 const findings = [];
+const shapeFindings = [];
 let scanned = 0;
 for (const file of trackedFiles()) {
   if (file.startsWith("scripts/package-twins.json")) continue;
+  if (file === "scripts/byte-size-shape.mjs") continue;
+  if (file === "scripts/check-package-twins.mjs") continue;
   let source;
   try {
     source = readFileSync(resolve(ROOT, file), "utf8");
@@ -140,15 +172,41 @@ for (const file of trackedFiles()) {
   }
   scanned++;
   for (const f of twinsIn(file, source)) findings.push({ file, ...f });
+  if (BYTE_ROW && !BYTE_SHAPE_ALLOW.has(file)) {
+    for (const h of byteShapeIn(source)) shapeFindings.push({ file, ...h });
+  }
 }
 
-if (findings.length === 0) {
+if (shapeFindings.length > 0) {
+  console.error(
+    `check:package-twins [SHAPE]: ${shapeFindings.length} byte-size ` +
+      `formatter(s) outside the package — a byte count becoming a unit ` +
+      `string is ${BYTE_ROW.package}'s \`formatFileSize\`, whatever the local ` +
+      `name is (or even with no name at all, inlined into JSX):\n`,
+  );
+  for (const f of shapeFindings) {
+    console.error(`  ${f.file}:${f.line}  ${f.text}`);
+  }
+  console.error(
+    `\n  fix: import { formatFileSize } from "${BYTE_ROW.package}" and delete ` +
+      `the arithmetic — including the " KB"/" MB" literal beside it, because ` +
+      `formatFileSize returns the unit. A capacity CONSTANT never matches this ` +
+      `rule (it multiplies); if you have a byte division that is genuinely NOT ` +
+      `a display formatter, add the file to the row's \`shapeAllow\` list in ` +
+      `scripts/package-twins.json WITH a reason.\n`,
+  );
+}
+
+if (findings.length === 0 && shapeFindings.length === 0) {
   console.log(
     `check:package-twins OK — ${scanned} file(s) scanned, zero local ` +
-      `definitions of the ${TWINS.length} collapsed @ai-matrx export(s).`,
+      `definitions of the ${TWINS.length} collapsed @ai-matrx export(s), and ` +
+      `zero byte-size formatter bodies outside the package.`,
   );
   process.exit(0);
 }
+
+if (findings.length === 0) process.exit(STRICT ? 1 : 0);
 
 console.error(
   `check:package-twins: ${findings.length} re-grown twin(s) of logic that ` +

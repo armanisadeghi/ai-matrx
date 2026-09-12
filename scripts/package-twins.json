@@ -203,7 +203,21 @@
     {
       "name": "formatFileSize",
       "package": "@ai-matrx/kit/format",
-      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative — NEVER a confident '0 B').",
+      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative — NEVER a confident '0 B'). 2026-09-11: the name lane read GREEN while 134 byte-size bodies lived in 67 files under OTHER names — this row now also carries the SHAPE rule below, which is what actually closed the class.",
+      "shapeRule": "byte-size",
+      "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant (80 * 1024 * 1024) can never match — the rule requires a DIVISION or THRESHOLD COMPARISON against 1024, and this repo has ~60 legitimate byte ceilings that must stay untouched.",
+      "shapeAllow": [
+        {
+          "file": "features/organizations/admin/utils.ts",
+          "reason": "NOT a display formatter: gbToBytes/bytesToGb convert between a storage-quota NUMBER and the bare number an admin types into a GB form field. There is no unit label and no rounding decision — the string is parsed back into a number on submit, so kit's '1.5 GB' would break the field. The same file's display door on line 27 IS the package (export const formatBytes = formatFileSize)."
+        }
+      ],
+      "allow": []
+    },
+    {
+      "name": "extractErrorMessage",
+      "package": "@ai-matrx/data/net",
+      "why": "THE caught-value-to-string extractor (PostgrestError, axios, and a FastAPI `detail` body — a string, or an object carrying `message`). Two host bodies were deleted 2026-09-11. utils/errors.ts held a near-byte copy of the package's, which meant the 2026-08-31 FastAPI `detail` fix had to be written TWICE, and it had already fallen behind on the package's nested-error lookup and its `fallback` parameter; it is now a one-line re-export door so this repo's ~100 `@/utils/errors` importers keep their path. features/agent-shortcuts/components/ShortcutForm.tsx held a STALE copy with no `detail` branch at all, so a server refusal that said exactly why was flattened into the caller's generic fallback on that form.",
       "allow": []
     },
     {

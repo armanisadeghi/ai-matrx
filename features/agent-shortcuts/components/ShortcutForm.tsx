@@ -94,21 +94,7 @@ import type {
   ShortcutFormData,
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
-
-function extractErrorMessage(err: unknown, fallback: string): string {
-  if (err instanceof Error) return err.message;
-  if (err && typeof err === "object") {
-    const e = err as Record<string, unknown>;
-    const parts: string[] = [];
-    if (typeof e.message === "string" && e.message) parts.push(e.message);
-    if (typeof e.details === "string" && e.details)
-      parts.push(`Details: ${e.details}`);
-    if (typeof e.hint === "string" && e.hint) parts.push(`Hint: ${e.hint}`);
-    if (typeof e.code === "string" && e.code) parts.push(`(code: ${e.code})`);
-    if (parts.length > 0) return parts.join(" — ");
-  }
-  return fallback;
-}
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 export interface ShortcutFormProps extends ScopeProps {
   /**
