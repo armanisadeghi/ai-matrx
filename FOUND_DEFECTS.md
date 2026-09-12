@@ -3637,3 +3637,14 @@ failed; 220.6s**. Before: 32 suites / 56 tests red. `pnpm type-check` clean.
 
 ### D310 — Four fixed-interval aidream pollers have no jitter, backoff, or Retry-After handling (2026-09-12)
 Same alignment class as the 2026-09-12 change-feed pool storms (43 sandbox pollers in one second exhausted aidream's 10-slot pool; server now sheds with 503 + Retry-After, sandbox SDK honours it). These client pollers still poll in lockstep: `features/cloud-browser/hooks/useScreenshotSession.ts:117` (2s/15s), `features/workflow-runtime/redux/adopt-workflow-run.thunk.ts:578` (3s, SSE-fallback only), `features/cms/hooks/useCmsAdminActivity.ts:41` (8s), `features/research/components/agents/GoogleBackgroundAgentCard.tsx:89` (5s). Fix: one shared poll helper (jitter ±20%, exponential backoff on 5xx, honour `Retry-After`) and adopt it in all four; per-tab fleets are small today, so this is preventive. Decides: nobody — do it.
+
+## D-2026-09-11-A — the schedule alarm banner covers the top of the page it links to
+
+`SystemScheduleAlarmBanner` is `fixed` just under the shell header (deliberately,
+so it does not grow the shell's scroll container). On `/schedules/<id>` for a
+suspended schedule that lands exactly on top of the suspension card — the reason
+and the Re-enable control the banner sent the reader to are behind the banner
+until it is collapsed to its pill. Seen live 2026-09-11 at 1400x900 on
+`/schedules/a7c1e2d3-0000-4e5f-9a00-000000000545`; every `(core)` page whose
+first element matters has the same collision. Fix belongs to the banner/shell
+offset (e.g. the banner contributing to `--shell-header-h`), not to any one page.
