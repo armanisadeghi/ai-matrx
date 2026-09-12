@@ -1060,6 +1060,23 @@ button.shell-nav-flyout-item {
   padding: 0.25rem;
 }
 
+.settings-route-menu .shell-active-pill {
+  border-color: transparent;
+  background: hsl(var(--muted));
+  box-shadow: none;
+  view-transition-name: none;
+}
+
+.settings-route-menu .shell-active-pill .shell-nav-icon,
+.settings-route-menu .shell-active-pill .shell-nav-icon svg {
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-route-menu .shell-active-pill .settings-route-menu-label {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
 .settings-route-menu-label {
   min-width: 0;
   overflow: hidden;
