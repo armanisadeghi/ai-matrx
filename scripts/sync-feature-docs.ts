@@ -2,10 +2,15 @@
 /**
  * sync-feature-docs.ts — repo ↔ admin.feature_docs two-way sync.
  *
- *   pnpm sync:feature-docs              # bidirectional (conflicts reported)
- *   pnpm sync:feature-docs -- --push    # repo → DB
- *   pnpm sync:feature-docs -- --pull    # DB → repo
- *   pnpm sync:feature-docs -- --push --confirm-delete  # soft-delete DB rows with no file
+ *   pnpm sync:feature-docs -- --organization-id <UUID>              # bidirectional (conflicts reported)
+ *   pnpm sync:feature-docs -- --organization-id <UUID> --push       # repo → DB
+ *   pnpm sync:feature-docs -- --organization-id <UUID> --pull       # DB → repo
+ *   pnpm sync:feature-docs -- --organization-id <UUID> --push --confirm-delete
+ *     # soft-delete DB rows with no file
+ *
+ * The documented catalog is currently initiated against the Matrx System
+ * organization (39c38960-d30c-4840-b0c1-c9960de95582). That is an explicit
+ * initiating value, never a fallback: callers must always supply it themselves.
  *
  * Env (.env.local): NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY (sb_secret_*).
  */
@@ -23,10 +28,9 @@ import {
   parseFeatureDocFile,
 } from "@/features/feature-docs/sync-utils";
 
-loadEnv({ path: ".env.local" });
-loadEnv({ path: ".env" });
-
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type FeatureDocRow = Database["admin"]["Tables"]["feature_docs"]["Row"];
 type SyncMode = "bidirectional" | "push" | "pull";
@@ -34,6 +38,7 @@ type SyncMode = "bidirectional" | "push" | "pull";
 interface CliOptions {
   mode: SyncMode;
   confirmDelete: boolean;
+  organizationId: string;
 }
 
 interface SyncStats {
@@ -46,17 +51,34 @@ interface SyncStats {
   skipped: number;
 }
 
-function parseArgs(): CliOptions {
-  const args = process.argv.slice(2);
+export function parseArgs(args: readonly string[]): CliOptions {
   const push = args.includes("--push");
   const pull = args.includes("--pull");
   if (push && pull) {
-    console.error("[FAIL] Use only one of --push or --pull.");
-    process.exit(2);
+    throw new Error("Use only one of --push or --pull.");
   }
+  const organizationIdIndexes = args.reduce<number[]>((indexes, arg, index) => {
+    if (arg === "--organization-id") indexes.push(index);
+    return indexes;
+  }, []);
+  if (organizationIdIndexes.length !== 1) {
+    throw new Error(
+      "Supply exactly one --organization-id <UUID> before the sync can read or write admin.feature_docs.",
+    );
+  }
+  const organizationIdIndex = organizationIdIndexes[0];
+  const organizationId =
+    organizationIdIndex === -1 ? undefined : args[organizationIdIndex + 1];
+  if (!organizationId || !UUID_PATTERN.test(organizationId)) {
+    throw new Error(
+      "--organization-id <UUID> is required before the sync can read or write admin.feature_docs.",
+    );
+  }
+
   return {
     mode: push ? "push" : pull ? "pull" : "bidirectional",
     confirmDelete: args.includes("--confirm-delete"),
+    organizationId,
   };
 }
 
@@ -72,6 +94,8 @@ function getGitHead(): string {
 }
 
 function createAdminClient(): SupabaseClient<Database> {
+  loadEnv({ path: ".env.local" });
+  loadEnv({ path: ".env" });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) {
@@ -104,6 +128,7 @@ function collectRepoDocs(): Map<string, string> {
 
 async function fetchDbRows(
   supabase: SupabaseClient<Database>,
+  organizationId: string,
 ): Promise<Map<string, FeatureDocRow>> {
   const map = new Map<string, FeatureDocRow>();
   const PAGE = 1000;
@@ -117,6 +142,7 @@ async function fetchDbRows(
       // (the map stores whole rows). An explicit subset drops columns the
       // Row type requires and fails assignment under strict checking.
       .select("*")
+      .eq("organization_id", organizationId)
       .range(from, from + PAGE - 1);
     if (error) {
       console.error("[FAIL] Failed to load admin.feature_docs:", error.message);
@@ -141,6 +167,7 @@ function writeRepoFile(path: string, content: string): void {
 
 async function batchUpsertDocs(
   supabase: SupabaseClient<Database>,
+  organizationId: string,
   items: Array<{ path: string; content: string }>,
   dbRows: Map<string, FeatureDocRow>,
   gitHead: string,
@@ -151,6 +178,7 @@ async function batchUpsertDocs(
     const parsed = parseFeatureDocFile(path, content);
     const fileHash = md5(content);
     return {
+      organization_id: organizationId,
       path,
       slug: parsed.slug,
       title: parsed.title,
@@ -192,7 +220,8 @@ async function batchUpsertDocs(
           .schema("admin")
           .from("feature_docs")
           .update(buildRow(path, content))
-          .eq("id", existing.id);
+          .eq("id", existing.id)
+          .eq("organization_id", organizationId);
       }),
     );
     const failed = results.find((r) => r.error);
@@ -207,6 +236,7 @@ async function batchUpsertDocs(
 
 async function batchRefreshSyncMeta(
   supabase: SupabaseClient<Database>,
+  organizationId: string,
   rows: FeatureDocRow[],
   gitHead: string,
 ): Promise<void> {
@@ -225,7 +255,8 @@ async function batchRefreshSyncMeta(
             sync_base_commit: gitHead,
             synced_at: now,
           })
-          .eq("id", row.id);
+          .eq("id", row.id)
+          .eq("organization_id", organizationId);
       }),
     );
   }
@@ -233,6 +264,7 @@ async function batchRefreshSyncMeta(
 
 async function batchSoftDelete(
   supabase: SupabaseClient<Database>,
+  organizationId: string,
   rows: FeatureDocRow[],
 ): Promise<void> {
   const ids = rows.map((r) => r.id);
@@ -244,19 +276,24 @@ async function batchSoftDelete(
       .schema("admin")
       .from("feature_docs")
       .update({ deleted_at: now })
-      .in("id", chunk);
+      .in("id", chunk)
+      .eq("organization_id", organizationId);
     if (error) throw new Error(`batch soft-delete: ${error.message}`);
   }
 }
 
 async function runSync(options: CliOptions): Promise<SyncStats> {
+  // Capture the validated boundary value once. Every read and mutation below
+  // receives this value; a later environment or selection change cannot retarget
+  // an admitted sync operation.
+  const organizationId = options.organizationId;
   const supabase = createAdminClient();
   const gitHead = getGitHead();
   console.log("[INFO] Collecting repo markdown…");
   const repoDocs = collectRepoDocs();
   console.log(`[INFO] Found ${repoDocs.size} repo .md files`);
   console.log("[INFO] Loading DB rows…");
-  const dbRows = await fetchDbRows(supabase);
+  const dbRows = await fetchDbRows(supabase, organizationId);
   console.log(`[INFO] Found ${dbRows.size} DB rows`);
   const allPaths = new Set([...repoDocs.keys(), ...dbRows.keys()]);
 
@@ -370,7 +407,13 @@ async function runSync(options: CliOptions): Promise<SyncStats> {
   }
 
   if (toPush.length > 0) {
-    stats.pushed = await batchUpsertDocs(supabase, toPush, dbRows, gitHead);
+    stats.pushed = await batchUpsertDocs(
+      supabase,
+      organizationId,
+      toPush,
+      dbRows,
+      gitHead,
+    );
   }
 
   for (const { path, row } of toPull) {
@@ -380,18 +423,24 @@ async function runSync(options: CliOptions): Promise<SyncStats> {
   if (toPull.length > 0) {
     await batchRefreshSyncMeta(
       supabase,
+      organizationId,
       toPull.map((p) => p.row),
       gitHead,
     );
   }
 
   if (toRefreshMeta.length > 0) {
-    await batchRefreshSyncMeta(supabase, toRefreshMeta, gitHead);
+    await batchRefreshSyncMeta(
+      supabase,
+      organizationId,
+      toRefreshMeta,
+      gitHead,
+    );
     stats.inSync = toRefreshMeta.length;
   }
 
   if (toSoftDelete.length > 0) {
-    await batchSoftDelete(supabase, toSoftDelete);
+    await batchSoftDelete(supabase, organizationId, toSoftDelete);
     stats.softDeleted = toSoftDelete.length;
   }
 
@@ -415,7 +464,7 @@ function printSummary(stats: SyncStats, mode: SyncMode): void {
 }
 
 async function main(): Promise<void> {
-  const options = parseArgs();
+  const options = parseArgs(process.argv.slice(2));
   console.log(`[INFO] Scanning repo (${FEATURE_DOC_GLOBS.length} glob roots)…`);
   const stats = await runSync(options);
   printSummary(stats, options.mode);
@@ -424,7 +473,12 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error("[FAIL]", err instanceof Error ? err.message : err);
-  process.exit(2);
-});
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  main().catch((err) => {
+    console.error("[FAIL]", err instanceof Error ? err.message : err);
+    process.exit(2);
+  });
+}
