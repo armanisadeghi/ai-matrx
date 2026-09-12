@@ -22,14 +22,23 @@
  * It never invents a reason. When the server explains itself, the server's
  * words win; when it does not, the missing explanation is named AS the defect
  * rather than papered over.
+ *
+ * 🚨 THE RULE ITSELF NOW LIVES ONE LAYER DOWN (FIX-Q8, 2026-09-11). The same
+ * defect reappeared on the mandate input surface as *"The job's inputs could
+ * not be read: HTTP 400"* — a second door, the same class. So "the server's
+ * words win, a transport default is not an explanation" is
+ * `lib/api/door-refusal.ts`, and this module is the RUN FORM's reading of it:
+ * its fallback sentence and its `definition_does_not_compile` discriminator.
  */
 
+import {
+  describeDoorRefusal,
+  doorBody,
+  type DoorApiError,
+} from "@/lib/api/door-refusal";
+
 /** The error shape `callApi` hands back on a failed request. */
-export interface RunFormApiError {
-  status?: number | undefined;
-  message?: string | undefined;
-  serverDetail?: unknown;
-}
+export type RunFormApiError = DoorApiError;
 
 export interface RunFormFailure {
   /** The sentence to print. Never a sentence that blames the reader. */
@@ -55,74 +64,21 @@ export const GENERIC_REFUSAL_FALLBACK =
 /** The `error` discriminator the run-form endpoint uses for a compile refusal. */
 const DOES_NOT_COMPILE = "definition_does_not_compile";
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function str(v: unknown): string {
-  return typeof v === "string" ? v.trim() : "";
-}
-
-/**
- * Sentences that blame the reader for the server's own refusal. A transport
- * default that says "check your input" is worse than silence when the reader
- * has typed nothing, so it is never printed — the server's real words, or the
- * honest fallback above, take its place.
- */
-const BLAMES_THE_READER = /check your input/i;
-
-/** Unwrap FastAPI's `{detail: …}` and aidream's own envelope alike. */
-function body(serverDetail: unknown): Record<string, unknown> | null {
-  if (!isRecord(serverDetail)) return null;
-  return isRecord(serverDetail.detail) ? serverDetail.detail : serverDetail;
-}
-
-/**
- * One readable line per issue: the node it is about, then what is wrong.
- *
- * `field` is the compile gate's own path (`nodes[manip_open].type`). It is
- * kept verbatim — it is how the reader finds the step in Studio — and only
- * joined to the message.
- */
-function readIssues(detail: Record<string, unknown> | null): string[] {
-  if (!detail || !Array.isArray(detail.details)) return [];
-  return detail.details
-    .filter(isRecord)
-    .map((raw) => {
-      const message = str(raw.message);
-      if (!message) return "";
-      const where = str(raw.field) || str(raw.node_id);
-      return where ? `${where} — ${message}` : message;
-    })
-    .filter((line) => line.length > 0);
-}
-
 export function describeRunFormFailure(
   error: RunFormApiError | null | undefined,
 ): RunFormFailure {
-  const detail = body(error?.serverDetail);
-  const issues = readIssues(detail);
-  const doesNotCompile = str(detail?.error) === DOES_NOT_COMPILE;
-
-  // Preference order, same as `callApi`'s own reader: the server's
-  // purpose-written sentence, then a plain `message`, then a FastAPI string
-  // `detail`, then whatever `callApi` already resolved.
-  const served =
-    str(detail?.user_message) ||
-    str(detail?.message) ||
-    (typeof (error?.serverDetail as { detail?: unknown } | undefined)
-      ?.detail === "string"
-      ? str((error?.serverDetail as { detail?: unknown }).detail)
-      : "") ||
-    str(error?.message);
-
-  // A transport default that blames the reader is not an explanation.
-  const explained = served.length > 0 && !BLAMES_THE_READER.test(served);
+  const refusal = describeDoorRefusal(error, {
+    fallback: GENERIC_REFUSAL_FALLBACK,
+  });
+  const detail = doorBody(error?.serverDetail);
+  const doesNotCompile =
+    typeof detail?.error === "string" &&
+    detail.error.trim() === DOES_NOT_COMPILE;
 
   return {
-    message: explained ? served : GENERIC_REFUSAL_FALLBACK,
-    issues,
-    serverExplained: explained,
+    message: refusal.message,
+    issues: refusal.issues,
+    serverExplained: refusal.serverExplained,
     doesNotCompile,
   };
 }

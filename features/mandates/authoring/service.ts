@@ -91,6 +91,10 @@ export async function createMandate(
   );
   if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
   const data = result.data as { mandate_key: string; mandate_id: string };
+  // A brand-new Mandate is missing from every cache a page already loaded —
+  // including the page-lifetime declaration catalogue, which would otherwise
+  // answer "no such declaration" about the Mandate just created (FIX-Q9).
+  invalidateMandateCache(data.mandate_key);
   return { mandateKey: data.mandate_key, mandateId: data.mandate_id };
 }
 

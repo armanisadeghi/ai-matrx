@@ -89,6 +89,7 @@ import {
   fetchMandateCatalogue,
   type MandateCatalogue,
 } from "@/features/mandates/catalogue";
+import { resolveMandateGoal } from "@/features/mandates/goal";
 import { MandateCoverageBoard } from "./MandateCoverageBoard";
 import {
   COVERAGE_META,
@@ -478,10 +479,14 @@ export function MandatesConsole() {
         const entry = coverageIndex[base.mandateKey];
         return {
           ...base,
-          // The stored goal is the truth post-1W (goal NOT NULL on every
-          // definition, 'H' edits permanent); the code catalogue is the
-          // fallback for rows the DB read missed, not the source.
-          goal: mandate.goal ?? catalogue?.[base.mandateKey]?.goal ?? null,
+          // THE ONE READER (`features/mandates/goal`): stored goal first, the
+          // code catalogue as the fallback for rows the DB read missed. This
+          // console already had the right precedence and the goal pane did
+          // not — which is the whole of FIX-Q9.
+          goal: resolveMandateGoal({
+            stored: mandate.goal,
+            catalogue: catalogue?.[base.mandateKey]?.goal,
+          }).goal,
           coverage: coverageBucketOf(coverageIndex, base.mandateKey),
           coverageDetail: entry
             ? entry.bucket === "orange"

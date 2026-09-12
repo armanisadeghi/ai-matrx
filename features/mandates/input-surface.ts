@@ -29,6 +29,10 @@
 import { useEffect, useState } from "react";
 
 import { callApi } from "@/lib/api/call-api";
+import {
+  describeDoorRefusal,
+  type DoorApiError,
+} from "@/lib/api/door-refusal";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
@@ -142,6 +146,41 @@ export function userTextSentence(surface: MandateInputSurface): string {
     : "Free text from the caller is not accepted — this job runs on its declared inputs only.";
 }
 
+/**
+ * 🚨 THE ONE SENTENCE FOR AN INPUT SURFACE THAT WOULD NOT READ (FIX-Q8,
+ * 2026-09-11).
+ *
+ * WHAT SHIPPED BEFORE THIS: the hook set `message` to `result.error.message`
+ * RAW, and its consumers each glued that into a prefix of their own. On
+ * `/administration/mandates/{key}` a reader got, verbatim:
+ *
+ *     "The job's inputs could not be read: HTTP 400"
+ *
+ * A transport code at a person names no cause and offers no remedy — the
+ * fourth law's exact prohibition — and it was the SAME class F4 had already
+ * closed one surface over, on the served run form.
+ *
+ * So the sentence is built HERE, once, complete, with its remedy. Every
+ * consumer PRINTS `state.message`; none of them interpolates it, and none of
+ * them writes a second opinion about the same failure. The server's own words
+ * still win whenever the server sent any (`describeDoorRefusal`) — this is only
+ * what to say when it did not.
+ */
+export const INPUT_SURFACE_REFUSAL_FALLBACK =
+  "This job's inputs could not be read from the server, and the server sent " +
+  "no reason with it — the missing reason is itself a defect worth " +
+  "reporting. Reload the page and try once more; if it repeats, report it " +
+  "with this job's name.";
+
+/** The complete, printable sentence for a failed input-surface read. */
+export function describeInputSurfaceFailure(
+  error: DoorApiError | null | undefined,
+): string {
+  return describeDoorRefusal(error, {
+    fallback: INPUT_SURFACE_REFUSAL_FALLBACK,
+  }).message;
+}
+
 /** `GET /mandates/{mandate_key}/input-surface`, resolved for the caller (their
  * own override's Holder is the one that informs the form). */
 export function useMandateInputSurface(
@@ -192,11 +231,13 @@ export function useMandateInputSurface(
       );
       if (!live) return;
       if (result.error) {
+        // 🚨 NEVER `result.error.message` RAW. That is how "HTTP 400" reached a
+        // person's screen (FIX-Q8) — the reader above turns a door's refusal
+        // into one complete sentence with a remedy, and it is the ONLY thing
+        // any consumer of this hook prints.
         setState({
           status: "error",
-          message:
-            result.error.message ||
-            "This job's inputs could not be read from the server.",
+          message: describeInputSurfaceFailure(result.error),
         });
         return;
       }

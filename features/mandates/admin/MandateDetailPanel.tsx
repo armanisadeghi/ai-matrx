@@ -44,7 +44,8 @@ import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeC
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
-import { useMandateGoal } from "@/features/mandates/useMandateGoal";
+import { MandateGoalBlock } from "@/features/mandates/MandateGoalBlock";
+import { goalOfMandate } from "@/lib/supabase/mandateStorage";
 import {
   fetchProvision,
   type ProvisionOffer,
@@ -1508,51 +1509,11 @@ function FactsPanel({
 }
 
 // ── The goal + the provision — what the mandate IS ───────────────────────────
-
-/**
- * THE GOAL. Read-only by construction: `agent.mandate` has no `goal` column and
- * aidream exposes no write path for it, so this block shows the declared goal
- * and names where it is changed. It never renders an editor it cannot save.
- */
-function MandateGoalBlock({
-  mandateKey,
-  description,
-}: {
-  mandateKey: string;
-  description: string | null;
-}) {
-  const { goal, loading, error, loaded } = useMandateGoal(mandateKey);
-  return (
-    <div className="space-y-1 rounded-md border border-border bg-card px-3 py-2.5">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-        Goal
-      </div>
-      {goal ? (
-        <>
-          <p className="text-[13.5px] font-medium leading-snug text-foreground">
-            {goal}
-          </p>
-          <p className="text-[11px] text-muted-foreground/70">
-            Declared in code — edited where the Mandate is declared, not here.
-          </p>
-        </>
-      ) : loading ? (
-        <p className="text-xs text-muted-foreground">Reading the goal…</p>
-      ) : error ? (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          The goal could not be read: <TextWithDoors text={error} />
-        </p>
-      ) : loaded ? (
-        <p className="text-xs italic text-muted-foreground">
-          No goal declared for {mandateKey}.
-        </p>
-      ) : null}
-      {description && description !== goal ? (
-        <p className="pt-1 text-xs text-muted-foreground">{description}</p>
-      ) : null}
-    </div>
-  );
-}
+//
+// THE GOAL BLOCK LIVES IN `@/features/mandates/MandateGoalBlock` (FIX-Q9,
+// 2026-09-11). It used to live here and read the code catalogue alone, which
+// is how this pane came to print "No goal declared" about Mandates whose goal
+// was sitting in the row the very same drawer was rendering.
 
 /**
  * THE PROVISION, in full — every offered value with its kind, whether it is
@@ -1849,12 +1810,13 @@ export function MandateDetailView({
     // The table's detail container owns the scroll (MatrxDataTable wraps every
     // custom `detail.render` in `h-full min-h-0 overflow-y-auto`).
     <div className="space-y-3 p-3">
-      {/* THE GOAL first — what this Mandate is FOR. It is a code declaration
-          read through the catalogue, not a column on this row, so it is shown
-          read-only and says so. `description` is a different, lesser field. */}
+      {/* THE GOAL first — what this Mandate is FOR. The stored column is the
+          truth and the code declaration is its fallback; the block resolves
+          both. `description` is a different, lesser field. */}
       {showGoal ? (
         <MandateGoalBlock
           mandateKey={row.mandateKey}
+          storedGoal={goalOfMandate(row.mandate)}
           description={row.mandate.description}
         />
       ) : null}

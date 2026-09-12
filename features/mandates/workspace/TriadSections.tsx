@@ -39,6 +39,7 @@ import { ServerNotes } from "@/components/official/ServerNotes";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { goalOfMandate } from "@/lib/supabase/mandateStorage";
+import { resolveMandateGoal } from "@/features/mandates/goal";
 import { ProvisionOfferList } from "../components/ProvisionOfferList";
 import { AutomationButton } from "../authoring/AutomationButton";
 import {
@@ -413,7 +414,11 @@ export function TriadGoalSection({
   authoring?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  const goal = goalOfMandate(data.mandate);
+  // THE ONE READER (`features/mandates/goal`). This surface holds the row and
+  // no catalogue, so it passes the stored goal alone — but it goes through the
+  // same resolver as every other surface, so a whitespace-only goal is absence
+  // here exactly as it is everywhere else (FIX-Q9, 2026-09-11).
+  const goal = resolveMandateGoal({ stored: goalOfMandate(data.mandate) }).goal;
   const grounding =
     typeof data.mandate.goal_grounding === "string"
       ? data.mandate.goal_grounding

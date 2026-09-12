@@ -65,6 +65,7 @@ import {
 } from "@/lib/api/organization-admission";
 import type { components } from "@/types/python-generated/api-types";
 import { toLlmParams } from "./llm-params";
+import { invalidateMandateCatalogueCache } from "./catalogue";
 import {
   missingRequiredVariables,
   missingVariablesMessage,
@@ -281,7 +282,23 @@ export function onMandateCacheInvalidated(
   return () => invalidationListeners.delete(listener);
 }
 
+/**
+ * ONE INVALIDATION FOR EVERY CACHE A MANDATE WRITE CAN STALE.
+ *
+ * Census of the module-level caches under `features/mandates` (FIX-Q9,
+ * 2026-09-11) and what a GOAL write does to each:
+ *   · `cache` (this file) — resolutions; cleared here, always.
+ *   · `pinCache` (this file) — system default pins; cleared on a WRITE only
+ *     (never on an org switch — see `dropMandateCacheForOrgSwitch`).
+ *   · `cached`/`inflight` (`./catalogue`) — HOLDS THE GOAL, page-lifetime, and
+ *     was never cleared by anything: the FIX-Q9 defect. Cleared here now.
+ *   · `provisionCache` (`./provisions`) — provision OFFERS; carries no goal, so
+ *     a goal write leaves it alone. A provision write clears it itself.
+ */
 export function invalidateMandateCache(mandateKey?: string): void {
+  // The goal and the rest of the declaration live in the catalogue, which is
+  // cached for the page's life. Any mandate write can make it a lie.
+  invalidateMandateCatalogueCache();
   if (mandateKey) {
     for (const key of cache.keys()) {
       if (key.endsWith(`:${mandateKey}`)) cache.delete(key);

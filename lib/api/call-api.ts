@@ -82,6 +82,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 // BACKEND_URLS no longer needed here — URL resolution is owned by apiConfigSlice
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { BackendApiError } from "@/lib/api/errors";
+import { isBareTransportCode } from "@/lib/api/door-refusal";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import { resilientFetch } from "@ai-matrx/data/net";
 import { isNetError } from "@ai-matrx/data/net";
@@ -945,6 +946,26 @@ function extractServerErrorMessage(serverDetail: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * 🚨 THE OTHER HALF OF `bareStatusSentence` (FIX-Q8, 2026-09-11).
+ *
+ * F4 fixed the FALLBACK — the case where the server sent no readable body. It
+ * did not fix the case where something upstream had already MANUFACTURED a
+ * sentence out of the status: `lib/api/errors.ts` builds `detail: "HTTP 400"`
+ * on an unreadable body, `normalizeError` prints `err.detail`, and the reader
+ * gets the status code after all. That is how the one-binding workspace was
+ * still showing "HTTP 400" a surface later, after F4 closed.
+ *
+ * So every branch of `normalizeError` launders its message through here: a
+ * message that is really just the status line wearing words is replaced by the
+ * sentence for that status. The status itself is never lost — it rides
+ * `error.status`, which is what code branches on.
+ */
+function honestTransportMessage(raw: string, status: number | undefined): string {
+  if (raw && !isBareTransportCode(raw)) return raw;
+  return bareStatusSentence(status ?? 0);
+}
+
 export function normalizeError(err: unknown): ApiCallError {
   if (err instanceof OrganizationContextError) {
     return {
@@ -966,7 +987,10 @@ export function normalizeError(err: unknown): ApiCallError {
   if (err instanceof BackendApiError) {
     return {
       type: "network_error",
-      message: err.detail || err.userMessage,
+      message: honestTransportMessage(
+        err.detail || err.userMessage,
+        err.status ?? undefined,
+      ),
       code: err.code,
       name: err.name,
       ...(err.status !== null ? { status: err.status } : {}),
@@ -988,7 +1012,7 @@ export function normalizeError(err: unknown): ApiCallError {
       const status = err.status ?? 0;
       return {
         type: status >= 400 && status < 500 ? "validation_error" : "http_error",
-        message: err.message,
+        message: honestTransportMessage(err.message, status),
         status,
       };
     }
@@ -1002,7 +1026,18 @@ export function normalizeError(err: unknown): ApiCallError {
       const status = parseInt(httpMatch[1], 10);
       return {
         type: status >= 400 && status < 500 ? "validation_error" : "http_error",
-        message: httpMatch[2] ?? err.message,
+        message: honestTransportMessage(httpMatch[2] ?? err.message, status),
+        status,
+      };
+    }
+
+    // `"HTTP 400"` with no colon never matched above and fell through here
+    // verbatim — the literal string a walker read off the deployed panel.
+    if (isBareTransportCode(err.message)) {
+      const status = Number.parseInt(err.message.replace(/\D+/g, ""), 10);
+      return {
+        type: status >= 400 && status < 500 ? "validation_error" : "http_error",
+        message: bareStatusSentence(status),
         status,
       };
     }
