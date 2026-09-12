@@ -62442,7 +62442,12 @@ export type Database = {
         Returns: Json
       }
       protect_from_client_hard_delete: {
-        Args: { p_schema: string; p_table: string }
+        Args: {
+          p_noun: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
         Returns: undefined
       }
       purpose_for_unit: {
