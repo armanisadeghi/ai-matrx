@@ -15,7 +15,16 @@
  * on their findings."* A fleet cannot look for what nothing enumerates. This
  * script is the enumerator: it produces the denominator, the shardable work
  * list (`--json`), and the acceptance grade that separates "wrapped in a menu"
- * (cheap, gameable) from "wired" (the menu actually does something).
+ * (cheap, gameable) from "plumbed" (the wrapper is passing the props that let
+ * the built-in verbs resolve a record).
+ *
+ * 🚨 WHAT THE GRADE IS NOT. `wired`/`shell` grades the WRAPPER's props —
+ * surfaceName, contentSource, entity. It says nothing about whether the items
+ * a surface contributes do anything. That gap was itself the defect (found
+ * 2026-09-11): an item declared with `onSelect: () => {}`, or with no handler
+ * at all, scored exactly the same as one that acts, so "no dead controls" read
+ * as certified when it had only ever been walked by hand. The `dead-item` law
+ * below closes it — see `deadItemFindings`.
  *
  * WHAT IT REPORTS — five populations, counted separately so a wave can target
  * one without drowning in another:
@@ -45,7 +54,17 @@
  *   // context-menu: covered-by <path>
  *       The menu is real but more than one hop away (the net walks one hop).
  *
- * AND three law checks that make the 2026-08-25 rulings enforceable:
+ * AND the law checks that make the 2026-08-25 rulings enforceable:
+ *   dead-item — THE LIVE-ITEM LAW (2026-09-11): a menu item that LOOKS
+ *               clickable and cannot act. Parsed from the TS AST, not grepped:
+ *               an item is conformant only when it carries an action that can
+ *               act (a handler whose function body is non-empty, or that
+ *               resolves to one; a real `href`; a non-empty submenu), or when
+ *               it is honestly `disabled: true`. `onSelect: () => {}`,
+ *               `onSelect: () => undefined`, `onSelect: noop`, `href: ""`,
+ *               `children: []`, and a missing handler are all violations.
+ *               Waivable ONLY with `// context-menu: inert-ok — <reason>` on
+ *               or just above the item.
  *   density   — THE DENSITY LAW: a menu item carrying `description` that is
  *               not a disabled-reason. Labels only, macOS-terse.
  *   registry  — features/context-menu-v3/SECTIONS.md drift: a registered
@@ -87,6 +106,7 @@
 
 import { readFileSync, globSync } from "node:fs";
 import { basename, join } from "node:path";
+import ts from "typescript";
 
 const ROOT = process.cwd();
 const ARGV = process.argv.slice(2);
@@ -105,6 +125,7 @@ type Population =
   | "overlays"
   | "bespoke"
   | "density"
+  | "dead-item"
   | "attribution"
   | "registry"
   | "naming";
@@ -604,6 +625,354 @@ function stripNoise(src: string): string {
     .replace(/'(?:\\.|[^'\\])*'/g, '""');
 }
 
+// ---------------------------------------------------------------------------
+// THE LIVE-ITEM LAW — a menu item that looks clickable must be able to act
+// ---------------------------------------------------------------------------
+
+/**
+ * 🚨 THE DEFECT THIS EXISTS FOR (2026-09-11).
+ *
+ * Everything above this line grades PLUMBING: does the wrapper receive
+ * `surfaceName`, `contentSource`, `entity`. None of it ever opened an item and
+ * asked the only question a user asks — *does clicking this do anything?* So a
+ * surface could contribute
+ *
+ *     { kind: "item", id: "export", label: "Export as PDF", onSelect: () => {} }
+ *
+ * and the census would call the file `wired`. "No dead controls" then read as
+ * CERTIFIED when the only thing that had ever checked it was a human walking
+ * the UI once. A guard you cannot demonstrate failing is not a guard; this one
+ * fails on a planted dead item (`--self-test`, and the RED proof recorded in
+ * the resolution register).
+ *
+ * WHAT CONFORMANT MEANS, per item kind:
+ *   item      — `onSelect` that resolves to a function with a non-empty body
+ *   checkbox  — `onCheckedChange`, same test
+ *   link      — an `href` that is not `""` or `"#"`
+ *   submenu   — `children` that is not an empty array
+ *   separator — nothing (it is not a control)
+ *
+ * THE HONEST EXIT. `disabled: true` (the literal) is always conformant: the row
+ * renders greyed and unclickable, so the screen is not lying — that is the
+ * "absent or honest" half of law 4, and the codebase already uses it for
+ * informational rows (`FileTreeNode`'s fixed-height summary) and for real
+ * refusals (`crm-member-no-party`, which pairs it with a `description` reason).
+ * A CONDITIONAL `disabled` (`disabled: !target?.href`) is NOT an exit: the item
+ * is live in the other branch and must be able to act there.
+ *
+ * THE ALLOW-LIST. One marker, reason mandatory, written next to the code:
+ *
+ *   // context-menu: inert-ok — the row is a heading; the parent handles selection
+ *
+ * on the item's own lines or the three above it. The regex requires text after
+ * the dash, for the reason this file already gives about its SKIP list: an
+ * allowlist without a reason is how a law rots into a formality.
+ *
+ * Spread-built items (`{ ...base, kind: "item" }`) are SKIPPED, not flagged —
+ * the handler may come from `base`, and a false alarm in a LAW section is how a
+ * guard trains people to ignore it.
+ */
+
+const ITEM_KINDS = new Set(["item", "checkbox", "link", "submenu"]);
+/** Identifiers whose NAME is a promise of doing nothing. */
+const NOOP_NAME = /^(noop|noOp|NOOP|no_op|noopFn|doNothing)$/;
+const INERT_OK_RE = /context-menu:\s*inert-ok\s*[—-]\s*(\S.*)/;
+
+interface DeadItem {
+  line: number;
+  label: string;
+  reason: string;
+}
+
+/** `{ ... }` property lookup that ignores computed/spread noise. */
+function prop(
+  obj: ts.ObjectLiteralExpression,
+  name: string,
+): ts.Expression | undefined {
+  for (const p of obj.properties) {
+    if (ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name)) {
+      if (p.name.getText(p.getSourceFile()).replace(/["']/g, "") === name)
+        return p.initializer;
+    } else if (ts.isShorthandPropertyAssignment(p) && p.name.text === name) {
+      return p.name;
+    }
+  }
+  return undefined;
+}
+
+function hasSpread(obj: ts.ObjectLiteralExpression): boolean {
+  return obj.properties.some((p) => ts.isSpreadAssignment(p));
+}
+
+function stringOf(node: ts.Expression | undefined): string | null {
+  if (!node) return null;
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+    return node.text;
+  return null;
+}
+
+/**
+ * Is this expression a function that actually runs something? Returns the
+ * reason it is dead, or null when it is live.
+ */
+function deadHandlerReason(
+  expr: ts.Expression,
+  locals: Map<string, ts.Expression>,
+  seen = new Set<string>(),
+): string | null {
+  // `onSelect: () => {}` / `function () {}` — an empty body is the whole defect.
+  if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
+    const body = expr.body;
+    if (ts.isBlock(body)) {
+      if (body.statements.length === 0) return "its handler body is empty";
+      return null;
+    }
+    // Concise body: `() => undefined`, `() => void 0`, `() => null`.
+    if (ts.isIdentifier(body) && body.text === "undefined")
+      return "its handler returns `undefined` and does nothing else";
+    if (ts.isVoidExpression(body) || body.kind === ts.SyntaxKind.NullKeyword)
+      return "its handler evaluates to nothing";
+    return null;
+  }
+  // `onSelect: noop`
+  if (ts.isIdentifier(expr)) {
+    if (NOOP_NAME.test(expr.text)) return `its handler is \`${expr.text}\``;
+    // A local `const handleX = () => {}` referenced by name is the same defect
+    // wearing an indirection — follow it once.
+    const local = locals.get(expr.text);
+    if (local && !seen.has(expr.text)) {
+      seen.add(expr.text);
+      const why = deadHandlerReason(local, locals, seen);
+      if (why) return `\`${expr.text}\` is dead — ${why}`;
+    }
+    return null;
+  }
+  // Anything else (a call, a conditional, a member access) can act.
+  return null;
+}
+
+/** Top-level-ish `const x = <fn>` bindings, for one hop of handler resolution. */
+function localFunctions(sf: ts.SourceFile): Map<string, ts.Expression> {
+  const out = new Map<string, ts.Expression>();
+  const walk = (node: ts.Node): void => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      (ts.isArrowFunction(node.initializer) ||
+        ts.isFunctionExpression(node.initializer))
+    ) {
+      // Shadowing would make this wrong, so only the FIRST binding of a name
+      // counts and a second one removes the entry entirely.
+      if (out.has(node.name.text)) out.delete(node.name.text);
+      else out.set(node.name.text, node.initializer);
+    }
+    ts.forEachChild(node, walk);
+  };
+  walk(sf);
+  return out;
+}
+
+/**
+ * Object literals that ARE menu items. Two independent nets, unioned:
+ *   1. an explicit `kind: "item" | "checkbox" | "link" | "submenu"`;
+ *   2. an element of an array that is unmistakably an item list — `items:`,
+ *      `children:`, a declaration typed `…Item[]`/`…MenuEntry[]`, a function
+ *      returning one, or a `push()` onto a `…Items` variable. This second net
+ *      is what catches the registries whose row type carries no `kind` at all
+ *      (`PageContentHeader`'s `ItemMenuEntry`).
+ */
+function collectItemLiterals(sf: ts.SourceFile): ts.ObjectLiteralExpression[] {
+  const found = new Map<number, ts.ObjectLiteralExpression>();
+  const ITEM_ARRAY_TYPE = /(?:ContextMenuExtraItem|MenuItem|MenuEntry|ItemMenuEntry)$/;
+
+  const takeArray = (expr: ts.Expression | undefined): void => {
+    if (!expr || !ts.isArrayLiteralExpression(expr)) return;
+    for (const el of expr.elements)
+      if (ts.isObjectLiteralExpression(el)) found.set(el.pos, el);
+  };
+  const isItemArrayType = (t: ts.TypeNode | undefined): boolean => {
+    if (!t || !ts.isArrayTypeNode(t)) return false;
+    const name = t.elementType.getText(sf).replace(/<.*/, "").trim();
+    return ITEM_ARRAY_TYPE.test(name);
+  };
+
+  const walk = (node: ts.Node): void => {
+    if (ts.isObjectLiteralExpression(node)) {
+      const kind = stringOf(prop(node, "kind"));
+      if (kind && ITEM_KINDS.has(kind)) found.set(node.pos, node);
+    }
+    if (
+      ts.isPropertyAssignment(node) &&
+      !ts.isComputedPropertyName(node.name) &&
+      /^(items|children)$/.test(node.name.getText(sf).replace(/["']/g, ""))
+    )
+      takeArray(node.initializer);
+
+    if (ts.isVariableDeclaration(node) && isItemArrayType(node.type))
+      takeArray(node.initializer);
+
+    if (
+      (ts.isFunctionDeclaration(node) ||
+        ts.isArrowFunction(node) ||
+        ts.isFunctionExpression(node) ||
+        ts.isMethodDeclaration(node)) &&
+      isItemArrayType(node.type)
+    ) {
+      const inner = (n: ts.Node): void => {
+        if (ts.isReturnStatement(n)) takeArray(n.expression);
+        // Do not descend into a nested function — its returns are not ours.
+        if (
+          ts.isFunctionDeclaration(n) ||
+          ts.isFunctionExpression(n) ||
+          ts.isArrowFunction(n)
+        )
+          return;
+        ts.forEachChild(n, inner);
+      };
+      if (node.body) {
+        if (ts.isBlock(node.body)) ts.forEachChild(node.body, inner);
+        else takeArray(node.body);
+      }
+    }
+
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === "push" &&
+      ts.isIdentifier(node.expression.expression) &&
+      /items$/i.test(node.expression.expression.text)
+    ) {
+      for (const arg of node.arguments)
+        if (ts.isObjectLiteralExpression(arg)) found.set(arg.pos, arg);
+    }
+
+    ts.forEachChild(node, walk);
+  };
+  walk(sf);
+  return [...found.values()];
+}
+
+/** Grade one item literal. Returns the reason it is dead, or null. */
+function gradeItem(
+  obj: ts.ObjectLiteralExpression,
+  locals: Map<string, ts.Expression>,
+): string | null {
+  // `{ ...base, kind: "item" }` — the action may come from `base`.
+  if (hasSpread(obj)) return null;
+
+  const declared = stringOf(prop(obj, "kind"));
+  if (declared === "separator") return null;
+
+  const onSelect = prop(obj, "onSelect");
+  const onCheckedChange = prop(obj, "onCheckedChange");
+  const href = prop(obj, "href");
+  const children = prop(obj, "children");
+  const label = prop(obj, "label");
+  const id = prop(obj, "id");
+
+  // The second net can hand us any object in an `items:` array. Require it to
+  // look like a control before judging it.
+  if (!declared && !label) return null;
+  if (!declared && !id && !onSelect && !onCheckedChange && !href) return null;
+
+  // THE HONEST EXIT — `disabled: true` renders greyed; the screen is not lying.
+  const disabled = prop(obj, "disabled");
+  if (disabled && disabled.kind === ts.SyntaxKind.TrueKeyword) return null;
+
+  const kind =
+    declared ??
+    (children ? "submenu" : href ? "link" : onCheckedChange ? "checkbox" : "item");
+
+  if (kind === "submenu") {
+    if (!children) return "a submenu with no `children`";
+    if (ts.isArrayLiteralExpression(children) && children.elements.length === 0)
+      return "a submenu whose `children` array is empty — it opens onto nothing";
+    return null;
+  }
+  if (kind === "link") {
+    if (!href) return "a link with no `href`";
+    const value = stringOf(href);
+    if (value !== null && (value.trim() === "" || value.trim() === "#"))
+      return `its \`href\` is \`"${value}"\` — it navigates nowhere`;
+    return null;
+  }
+  const handlerName = kind === "checkbox" ? "onCheckedChange" : "onSelect";
+  const handler = kind === "checkbox" ? onCheckedChange : onSelect;
+  if (!handler)
+    return `it has no \`${handlerName}\`, no \`href\` and is not \`disabled\` — clicking it does nothing`;
+  return deadHandlerReason(handler, locals);
+}
+
+function deadItemFindings(): Finding[] {
+  const out: Finding[] = [];
+  const SCAN_ITEMS = [
+    "features/**/*.ts",
+    "features/**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+  ];
+  const seen = new Set<string>();
+  for (const pattern of SCAN_ITEMS) {
+    for (const rel of globSync(pattern, { cwd: ROOT })) {
+      const path = rel.replace(/\\/g, "/");
+      if (seen.has(path)) continue;
+      seen.add(path);
+      if (/\.(test|spec)\.tsx?$|__tests__|\.stories\.tsx?$/.test(path)) continue;
+      let src: string;
+      try {
+        src = readFileSync(join(ROOT, path), "utf8");
+      } catch {
+        continue;
+      }
+      // Cheap prefilter — parsing every file to find the ~150 that declare menu
+      // items is wasted work.
+      if (!/kind:\s*["'](item|checkbox|link|submenu)["']/.test(src)) continue;
+      for (const d of deadItemsInSource(path, src))
+        out.push({
+          population: "dead-item",
+          file: `${path}:${d.line}`,
+          detail: `“${d.label}” — ${d.reason} (THE LIVE-ITEM LAW). Give it a handler that acts, an honest \`disabled: true\`, or delete it; waive with \`// context-menu: inert-ok — <reason>\`.`,
+        });
+    }
+  }
+  return out;
+}
+
+/** Exported shape of the law, so `--self-test` can drive it on planted text. */
+function deadItemsInSource(path: string, src: string): DeadItem[] {
+  const sf = ts.createSourceFile(
+    path,
+    src,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const locals = localFunctions(sf);
+  const lines = src.split("\n");
+  const out: DeadItem[] = [];
+  for (const obj of collectItemLiterals(sf)) {
+    const reason = gradeItem(obj, locals);
+    if (!reason) continue;
+    const start = sf.getLineAndCharacterOfPosition(obj.getStart(sf)).line;
+    const end = sf.getLineAndCharacterOfPosition(obj.getEnd()).line;
+    // The waiver may sit on the item or on the three lines above it.
+    const scope = lines.slice(Math.max(0, start - 3), end + 1).join("\n");
+    if (INERT_OK_RE.test(scope)) continue;
+    const label =
+      stringOf(prop(obj, "label")) ??
+      prop(obj, "label")?.getText(sf).slice(0, 48) ??
+      stringOf(prop(obj, "id")) ??
+      "?";
+    out.push({ line: start + 1, label, reason });
+  }
+  return out;
+}
+
 function registryFindings(files: Map<string, string>): Finding[] {
   const out: Finding[] = [];
   const REGISTRY = "features/context-menu-v3/SECTIONS.md";
@@ -794,6 +1163,7 @@ function main() {
   findings.push(...attributionFindings(files));
   findings.push(...registryFindings(files));
   findings.push(...namingFindings());
+  findings.push(...deadItemFindings());
 
   const selected = findings.filter(
     (f) => ONLY.length === 0 || ONLY.includes(f.population),
@@ -839,6 +1209,7 @@ function report(findings: Finding[], covered: Finding[]) {
     "form-fields",
     "overlays",
     "bespoke",
+    "dead-item",
     "density",
     "attribution",
     "registry",
@@ -852,6 +1223,7 @@ function report(findings: Finding[], covered: Finding[]) {
       : p === "overlays" || p === "form-fields"
         ? "tracked — not wave one"
         : p === "density" ||
+            p === "dead-item" ||
             p === "registry" ||
             p === "attribution" ||
             p === "naming"
