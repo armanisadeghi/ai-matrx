@@ -592,6 +592,22 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
         "workbench",
       ),
   },
+  conversation: {
+    type: "conversation",
+    label: "Chat",
+    icon: MessagesSquare,
+    accent: {
+      text: "text-sky-600 dark:text-sky-400",
+      bg: "bg-sky-500/10",
+      ring: "ring-sky-500/20",
+    },
+    entityToken: "conversation",
+    // Opens the floating Chat window on this conversation (agentRunWindow's
+    // initialSelectedConversationId) — the reference chip's "Open conversation"
+    // silently no-oped before this entry existed.
+    open: { kind: "conversation" },
+    detailSource: { table: "conversation", schemaName: "chat", titleField: "title" },
+  },
   message: {
     type: "message",
     label: "Message",

@@ -350,7 +350,11 @@ export function NodeRealityCard({
                     ActionIcon &&
                     (!publishHalf ||
                         verdict.action === "publish" ||
-                        verdict.action === "edit-in-cms") ? (
+                        verdict.action === "edit-in-cms" ||
+                        // `stale` is a LIVE-page state, so its rewrite belongs
+                        // to the publish half too — without this the Publish
+                        // tab said "the live page is behind" with no next step.
+                        verdict.action === "rewrite") ? (
                         <Button
                             size="sm"
                             className="h-7 gap-1 text-xs"

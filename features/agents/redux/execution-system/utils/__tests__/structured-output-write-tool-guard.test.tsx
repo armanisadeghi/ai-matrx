@@ -58,6 +58,7 @@ jest.mock("@/utils/supabase/client", () => ({
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { buildToolInjection } from "../build-tool-injection";
+import type { ToolInjectionResult } from "@/features/agents/types/tool-injection.types";
 import {
   registerSurfaceRuntime,
   useSurfaceClientTools,
@@ -169,7 +170,9 @@ function mountSurface(): () => void {
       surfaceName: SURFACE,
       getScope: () => ({}),
       getWriteHandlers: () => ({
-        [WRITE_TARGET.name]: () => ({ ok: true }),
+        // A write handler applies the value into the page and returns nothing;
+        // the writeback runtime wraps it in the result envelope.
+        [WRITE_TARGET.name]: () => {},
       }),
     },
     1,
@@ -198,8 +201,16 @@ function mountSurface(): () => void {
   };
 }
 
-function toolNames(result: { tools?: Array<{ name?: string }> }): string[] {
-  return (result.tools ?? []).map((spec) => spec.name ?? "");
+/**
+ * The names the model would see. `ToolSpec` is a union and the `agent` member
+ * carries `agent_id` instead of `name`; an agent-as-tool entry can never be a
+ * page write tool, so it maps to "" rather than being dropped (the array
+ * length stays honest).
+ */
+function toolNames(result: ToolInjectionResult): string[] {
+  return (result.tools ?? []).map((spec) =>
+    spec.kind === "agent" ? "" : spec.name,
+  );
 }
 
 describe("structured-output agents never receive the page's write tools", () => {

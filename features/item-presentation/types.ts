@@ -38,6 +38,7 @@ export type KnownItemType =
   | "picklist"
   | "workbook"
   | "document"
+  | "conversation"
   | "message"
   | "email";
 

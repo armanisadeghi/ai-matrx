@@ -42,9 +42,11 @@ import { OrganizationAbbreviation } from "@/features/organizations/components/Or
 import { OrgScopeTree } from "@/features/organizations/components/OrgScopeTree";
 import type {
   OrganizationWithRole,
+  OrgRole,
+} from "@/features/organizations/types";
+import {
   isOwnPersonalOrg,
   displayOrganizationAbbreviation,
-  OrgRole,
 } from "@/features/organizations/types";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";

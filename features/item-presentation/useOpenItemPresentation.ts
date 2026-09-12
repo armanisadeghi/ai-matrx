@@ -15,6 +15,8 @@
  */
 
 import { useCallback } from "react";
+import { supabase } from "@/utils/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
@@ -67,6 +69,35 @@ export function useOpenItemPresentation() {
           return true;
         case "note":
           openNote({ noteId: id, title: seed?.name ?? null });
+          return true;
+        case "conversation":
+          // The floating Chat window, opened ON this conversation. The window
+          // needs the conversation's owning agent to render it, so resolve
+          // `initial_agent_id` first; failure is loud, never a dead click.
+          void (async () => {
+            const { data, error } = await supabase
+              .schema("chat")
+              .from("conversation")
+              .select("initial_agent_id")
+              .eq("id", id)
+              .maybeSingle();
+            if (error || !data) {
+              console.error(
+                "[useOpenItemPresentation] conversation lookup failed",
+                { id, error },
+              );
+              toast({
+                title: "Couldn't open the chat",
+                description: error?.message ?? "This chat was not found.",
+                variant: "destructive",
+              });
+              return;
+            }
+            openAgent({
+              initialAgentId: data.initial_agent_id,
+              initialSelectedConversationId: id,
+            });
+          })();
           return true;
         case "file":
           openFile({ fileId: id });

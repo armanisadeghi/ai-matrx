@@ -406,6 +406,13 @@ export function useUpdatePageDesiredValues() {
         queryKey: marketingKeys.site(page.site_id),
         predicate: (query) => query.queryKey.includes("links-out"),
       });
+      // The content plan's site-wide SEO index (`planKeys.seoPlans`) is a
+      // projection of these same rows. Without this, picking a keyword on the
+      // node panel's SEO tab left the reality card, the Write button and the
+      // tab's own status line saying "No keyword targeted" until a refocus.
+      void queryClient.invalidateQueries({
+        queryKey: ["content-plan", "seo-plans", page.site_id],
+      });
     },
   });
 }
