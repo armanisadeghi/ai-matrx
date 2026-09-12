@@ -47,6 +47,21 @@ async function fetchNames(ids: string[]): Promise<void> {
 }
 
 /**
+ * Non-hook counterpart to `useAgentNames`, for callers outside React render
+ * (thunks, sagas, plain async code) that still want the module-scoped cache
+ * and in-flight dedup instead of opening a second fetch path. Returns
+ * `undefined` for an unresolvable id (RLS-hidden, deleted).
+ */
+export async function resolveAgentName(
+  agentId: string,
+): Promise<string | undefined> {
+  const cached = nameCache.get(agentId);
+  if (cached) return cached;
+  await fetchNames([agentId]);
+  return nameCache.get(agentId);
+}
+
+/**
  * Returns a map of `agentId → name` for every id resolvable by the caller.
  * Unresolvable ids (RLS-hidden, deleted) are absent from the map.
  */

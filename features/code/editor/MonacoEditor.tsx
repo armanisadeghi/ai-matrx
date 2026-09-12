@@ -98,7 +98,8 @@ type MonacoNamespace = {
   KeyCode: { KeyS: number; KeyL: number };
 };
 
-export interface MonacoEditorProps {
+export interface MonacoEditorProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
   /** Current buffer content. */
   value: string;
   /** Monaco language id, e.g. "typescript". */
@@ -117,11 +118,13 @@ export interface MonacoEditorProps {
    *  reads the current selection from the editor instance (via
    *  `onEditorMount`) and ships it to the agent as a one-off context entry. */
   onSendSelection?: () => void;
-  /** Tailwind class to size/position the editor. */
-  className?: string;
 }
 
-export const MonacoEditor: React.FC<MonacoEditorProps> = ({
+// This is deliberately a ref-forwarding DOM boundary. `ContextMenuTrigger`
+// uses Radix Slot, which supplies its event handlers and positioning ref to
+// this component. Dropping those props makes Monaco's disabled native menu
+// leave a right-click with no menu at all.
+export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(function MonacoEditor({
   value,
   language,
   path,
@@ -131,7 +134,8 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   onSave,
   onSendSelection,
   className,
-}) => {
+  ...containerProps
+}, forwardedRef) {
   const [isConfigured, setIsConfigured] = useState(false);
   const isDark = useMonacoTheme();
   const isMobile = useIsMobile();
@@ -198,6 +202,8 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   if (!isConfigured) {
     return (
       <div
+        ref={forwardedRef}
+        {...containerProps}
         className={
           "flex h-full w-full items-center justify-center text-xs text-neutral-500 " +
           (className ?? "")
@@ -209,7 +215,11 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   }
 
   return (
-    <div className={"h-full w-full " + (className ?? "")}>
+    <div
+      ref={forwardedRef}
+      {...containerProps}
+      className={"h-full w-full " + (className ?? "")}
+    >
       <Editor
         value={value}
         language={language}
@@ -254,6 +264,6 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
       />
     </div>
   );
-};
+});
 
 export default MonacoEditor;

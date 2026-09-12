@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { Copy, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,10 @@ export function AuthenticatorCode({
   const [code, setCode] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // "No organization is selected" is not a code-fetch error: retrying it can
+  // never succeed, so it must not be shown behind a Retry button. It gets the
+  // shared notice, which carries the one control that CAN resolve it.
+  const [orgRequired, setOrgRequired] = useState(false);
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
@@ -35,6 +41,12 @@ export function AuthenticatorCode({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
+        if (isOrganizationRequiredError(err)) {
+          setOrgRequired(true);
+          setError(null);
+          return;
+        }
+        setOrgRequired(false);
         setError(err instanceof Error ? err.message : "Code unavailable");
       });
     return () => {
@@ -62,6 +74,20 @@ export function AuthenticatorCode({
       <p className="flex h-11 items-center text-sm font-medium text-muted-foreground">
         Authenticator off
       </p>
+    );
+  }
+
+  if (orgRequired) {
+    return (
+      <OrganizationRequiredNotice
+        compact
+        title="Choose an organization to read this code"
+        description="Authenticator codes are read in one organization's context, and none is selected for this session."
+        onRetry={() => {
+          setOrgRequired(false);
+          setReload((value) => value + 1);
+        }}
+      />
     );
   }
 

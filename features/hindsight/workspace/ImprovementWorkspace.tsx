@@ -35,8 +35,8 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 import { getEnrollment, listEnrollments } from "../api";
 import type { Finding } from "../types";

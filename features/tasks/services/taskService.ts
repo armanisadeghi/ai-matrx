@@ -619,14 +619,27 @@ async function sendTaskAssignmentNotification(
 }
 
 /**
- * Delete a task
+ * Move a task to the trash — the canonical soft-delete door (db-rules §8).
+ *
+ * 🚨 This was a hard `DELETE` until 2026-09-12 (DD-119). Deleting a task through
+ * /tasks destroyed the row AND its subtasks, while deleting a chat on the same
+ * afternoon was a soft delete whose dialog promised recovery. `workspace.tasks`
+ * is a registered entity with `deleted_at`; the platform rule is soft delete on
+ * every registered entity, and the database now REFUSES a client hard delete
+ * (`platform._refuse_client_hard_delete`, migrations/task_hard_delete_door_closed.sql).
+ *
+ * Subtasks follow automatically: `platform.soft_delete_edge` declares
+ * `workspace.tasks.parent_task_id` a `cascade` edge, so the trigger stamps every
+ * subtask with this exact timestamp and `public.entity_undelete('task', id)`
+ * brings back exactly the ones this removal took (db-rules §8a).
  */
 export async function deleteTask(taskId: string): Promise<boolean> {
   try {
     const { error } = await workspaceDb(supabase)
       .from("tasks")
-      .delete()
-      .eq("id", taskId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", taskId)
+      .is("deleted_at", null);
 
     if (error) {
       console.error("Error deleting task:", error.message);

@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectFlatTemplateScopeTypes,
@@ -221,7 +221,10 @@ export function TemplateGalleryDrawer({
         applyTemplate({ template_id: template.id, org_id: orgId }),
       );
       if (isScopesRpcErr(res)) throw new Error(res.error.message);
-      toast.success(`Applied "${template.name}"`);
+      recordToast.success(
+        { type: "scope_template", id: template.id, title: template.name },
+        `Applied "${template.name}"`,
+      );
       setSelectedId(null);
       onOpenChange(false);
       onApplied?.();
@@ -266,7 +269,14 @@ export function TemplateGalleryDrawer({
         );
         if (isScopesRpcErr(itemRes)) throw new Error(itemRes.error.message);
       }
-      toast.success(`Added "${item.label_plural}" from ${item.template_name}`);
+      recordToast.success(
+        {
+          type: "scope_type",
+          id: typeRes.data.id,
+          title: item.label_plural,
+        },
+        `Added "${item.label_plural}" from ${item.template_name}`,
+      );
       onApplied?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to add");

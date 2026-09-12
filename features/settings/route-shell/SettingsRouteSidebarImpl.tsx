@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { getTabTreeNodes } from "@/features/settings/registry";
+import { useSettingsTree } from "@/features/settings/universal/useSettingsTree";
 import {
   searchTree,
   withAncestors,
@@ -33,7 +33,10 @@ interface Props {
  */
 export function SettingsRouteSidebarImpl({ basePath }: Props) {
   const isAdmin = useAppSelector(selectIsAdmin);
-  const nodes: SettingsTreeNode[] = getTabTreeNodes(isAdmin);
+  // The static tab registry PLUS the taxonomy-driven configuration sections,
+  // joined once in `useSettingsTree` so this rail, the breadcrumb and the tab
+  // host always resolve the same ids.
+  const { nodes }: { nodes: SettingsTreeNode[] } = useSettingsTree(isAdmin);
 
   const pathname = usePathname();
   let activeTabId: string | null = null;

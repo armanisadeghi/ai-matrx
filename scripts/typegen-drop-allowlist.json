@@ -1,0 +1,4 @@
+{
+  "_why": "A property the generated API types DELIBERATELY lose. The guard (scripts/typegen-drop-guard.mjs) refuses any other drop that this repo's sources still read. Each key is a wire property name; each value is the reason it is gone, in a sentence a reader can act on. Empty is the correct state.",
+  "allowed_drops": {}
+}

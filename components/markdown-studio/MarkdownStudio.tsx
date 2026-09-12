@@ -17,10 +17,11 @@ import React, {
 } from "react";
 import { Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkdownAutosave";
+import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { EditorPanel } from "./EditorPanel";
 import { PreviewPanel } from "./PreviewPanel";
 import { AnalysisView } from "./AnalysisView";
@@ -128,7 +129,10 @@ export function MarkdownStudio() {
       });
       setLoadedSampleId(created.id);
       setLoadedSampleName(created.name);
-      toast.success(`Saved "${created.name}" to your library`);
+      recordToast.success(
+        { type: "markdown_sample", id: created.id, title: created.name },
+        `Saved "${created.name}" to your library`,
+      );
       setSaveDialog({ open: false, intent: "save" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Save failed");
@@ -146,7 +150,14 @@ export function MarkdownStudio() {
         detected_blocks: detectRenderBlocks(content),
       });
       setLoadedSampleName(updated.name);
-      toast.success(`Updated "${updated.name}"`);
+      recordToast.success(
+        {
+          type: "markdown_sample",
+          id: loadedSample.id,
+          title: updated.name,
+        },
+        `Updated "${updated.name}"`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Update failed");
     } finally {
@@ -220,8 +231,24 @@ export function MarkdownStudio() {
     openSaveDialog("fork");
   }, [loadedSample, saving, content]);
 
+  // Print / Save PDF — the SAME canonical path every markdown surface uses
+  // (`printMarkdownContent` -> `@ai-matrx/print/markdown`). Never a second
+  // converter or stylesheet. More printables: the hub at /print.
+  const handlePrint = useCallback(() => {
+    if (!content.trim()) {
+      toast.info("Nothing to print yet");
+      return;
+    }
+    printMarkdownContent(content, loadedSample?.name ?? "Markdown");
+  }, [content, loadedSample]);
+
   const headerActions: HeaderAction[] = useMemo(() => {
     const actions: HeaderAction[] = [
+      {
+        icon: "Printer",
+        label: "Print / Save PDF",
+        onPress: handlePrint,
+      },
       {
         icon: "BookOpen",
         label:
@@ -253,6 +280,7 @@ export function MarkdownStudio() {
     isDirty,
     handlePrimaryAction,
     handleForkAction,
+    handlePrint,
   ]);
 
   // Surface scope — built at trigger time (▶ Run), never on mount, so the

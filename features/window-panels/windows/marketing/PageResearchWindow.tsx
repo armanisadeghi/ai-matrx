@@ -67,7 +67,7 @@ import {
   surfaceValueLabels,
 } from "@/features/surfaces/utils/surface-display";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -119,7 +119,10 @@ function PageResearchWindowInner({
   primaryKeyword,
   orgId,
 }: PageResearchWindowProps) {
-  const activeOrgId = useAppSelector(selectEffectiveOrganizationId);
+  // Both DISPLAYED (the header tooltip) and WRITTEN (createTopic). A surface
+  // must never show an org the transport would refuse, so this reads the same
+  // explicit selection the transport sends (2026-09-12 class fix).
+  const activeOrgId = useAppSelector(selectOrganizationId);
   // The PAGE's org owns this research, not whatever org the viewer happens to
   // have active — a page and its research must land in the same tenancy.
   const organizationId = orgId ?? activeOrgId ?? null;

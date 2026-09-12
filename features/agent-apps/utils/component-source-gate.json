@@ -1,0 +1,100 @@
+{
+  "_comment": [
+    "CANONICAL, MACHINE-READABLE source-gate lists for DB-authored components compiled",
+    "in the page by features/agent-apps/utils/compile-slot.ts. ONE list per rule, sorted,",
+    "byte-comparable across runtimes. Two guards keep the copies honest:",
+    "  - features/agent-apps/utils/component-source-gate.test.ts asserts allowedImports is",
+    "    exactly getAllowedImportsList() sorted (the in-page compilers own truth), so a",
+    "    module added to ALLOWED_IMPORTS_CONFIG without this file fails the FE test;",
+    "  - aidream packages/matrx-ai/tests/test_component_source_gate_parity.py asserts the",
+    "    Python twins (COMPONENT_ALLOWED_IMPORTS, COMPONENT_BANNED_GLOBALS,",
+    "    COMPONENT_BANNED_CALLABLES, COMPONENT_BANNED_MEMBER_ACCESS,",
+    "    COMPONENT_BANNED_MEMBER_CALLS, COMPONENT_BANNED_COMPUTED_ACCESS,",
+    "    COMPONENT_BANNED_SYNTAX) equal these arrays;",
+    "  - component-source-gate-trigger-parity.test.ts asserts the database trigger",
+    "    (migrations/content_ir_kind_component_source_gate.sql) names every entry of",
+    "    every security list below. The trigger cannot read this file at runtime, so",
+    "    that test IS the third leg of the parity: add a name here without adding it",
+    "    to the trigger's regex and the test goes red."
+  ],
+  "allowedImports": [
+    "@/components/Markdown",
+    "@/components/MarkdownStream",
+    "@/components/agent-copy/CopyButtons",
+    "@/components/agent-copy/CopyForAiButton",
+    "@/components/kind-kit/KindHeaderBar",
+    "@/components/kind-kit/KindPanel",
+    "@/components/kind-kit/KindPanelGrid",
+    "@/components/kind-kit/SortableList",
+    "@/components/kind-kit/StreamingSkeleton",
+    "@/components/kind-kit/TagList",
+    "@/components/mardown",
+    "@/components/markdown",
+    "@/components/official/icons/IconResolver",
+    "@/components/ui/accordion",
+    "@/components/ui/alert",
+    "@/components/ui/avatar",
+    "@/components/ui/badge",
+    "@/components/ui/button",
+    "@/components/ui/card",
+    "@/components/ui/checkbox",
+    "@/components/ui/collapsible",
+    "@/components/ui/dialog",
+    "@/components/ui/dropdown-menu",
+    "@/components/ui/input",
+    "@/components/ui/label",
+    "@/components/ui/popover",
+    "@/components/ui/progress",
+    "@/components/ui/radio-group",
+    "@/components/ui/scroll-area",
+    "@/components/ui/select",
+    "@/components/ui/separator",
+    "@/components/ui/sheet",
+    "@/components/ui/skeleton",
+    "@/components/ui/slider",
+    "@/components/ui/switch",
+    "@/components/ui/table",
+    "@/components/ui/tabs",
+    "@/components/ui/textarea",
+    "@/components/ui/tooltip",
+    "@/lib/utils",
+    "lucide-react",
+    "react",
+    "recharts"
+  ],
+  "bannedGlobals": [
+    "EventSource",
+    "WebSocket",
+    "XMLHttpRequest",
+    "fetch",
+    "importScripts",
+    "localStorage",
+    "sessionStorage"
+  ],
+  "bannedCallables": [
+    "Function",
+    "eval"
+  ],
+  "bannedMemberAccess": [
+    "EventSource",
+    "Function",
+    "WebSocket",
+    "XMLHttpRequest",
+    "cookie",
+    "eval",
+    "fetch",
+    "importScripts",
+    "sendBeacon"
+  ],
+  "bannedMemberCalls": [
+    "constructor"
+  ],
+  "bannedComputedAccess": [
+    "globalThis",
+    "self",
+    "window"
+  ],
+  "bannedSyntax": [
+    "dynamicImport"
+  ]
+}

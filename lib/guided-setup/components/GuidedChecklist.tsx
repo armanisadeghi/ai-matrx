@@ -44,17 +44,7 @@ import type {
   CopyValue,
   ResolvedStep,
 } from "../types";
-
-function relativeTime(iso: string): string {
-  const seconds = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
-  if (seconds < 90) return "just now";
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} hr ago`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? "yesterday" : `${days} days ago`;
-}
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 function StepIcon({ step }: { step: ResolvedStep }) {
   const base = "h-4 w-4 shrink-0";
@@ -170,7 +160,7 @@ function StepRow<Ctx>({
             ) : null}
             {resolved.stale && resolved.lastCheckedAt ? (
               <span className="text-[11px] text-muted-foreground">
-                last checked {relativeTime(resolved.lastCheckedAt)}
+                last checked {formatRelativeTime(resolved.lastCheckedAt, { style: "intl" })}
               </span>
             ) : null}
           </div>

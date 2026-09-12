@@ -596,6 +596,10 @@ export function EntityListPage<TRow>({
   if (!surface) return pageWithContextMenu;
   return (
     <SurfaceRuntimeProvider
+      // This shell owns no surface of its own: `config.surface` is the caller's
+      // `{ surfaceName, getScope, getWriteHandlers }` descriptor, and THAT
+      // object is the site `pnpm check:surface-write-handlers` reads.
+      // surface-write-handlers: pass-through
       surfaceName={surface.surfaceName}
       getScope={() => surface.getScope(surfaceList)}
       getWriteHandlers={

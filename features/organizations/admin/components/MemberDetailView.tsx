@@ -4,14 +4,13 @@
  * Per-member admin surface at /organizations/[orgId]/admin/users/[userId].
  * Profile + status actions + usage metrics + controls + resource summary.
  */
-import React, { useMemo, useState, useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Ban,
   CircleCheck,
-  FolderInput,
   Loader2,
   ShieldCheck,
   Trash2,
@@ -24,11 +23,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Organization } from "../../types";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
-import { useOrgMemberDetail, useOrgRoster } from "../hooks";
+import { useOrgMemberDetail } from "../hooks";
 import { setMemberStatus } from "../service";
 import { formatBytes, formatMcents, formatRelativeTime } from "../utils";
 import { MemberControlsForm } from "./MemberControlsForm";
-import { ReassignResourcesDialog, type ReassignCandidate } from "./ReassignResourcesDialog";
+import { RemoveMemberDialog } from "./RemoveMemberDialog";
 
 function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -50,18 +49,8 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const { member, loading, error, refresh } = useOrgMemberDetail(orgId, userId);
-  const { members } = useOrgRoster(orgId);
-  const [reassignOpen, setReassignOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
-
-  const candidates: ReassignCandidate[] = useMemo(
-    () =>
-      members
-        .filter((m) => m.userId !== userId)
-        .map((m) => ({ userId: m.userId, label: m.displayName || m.email || m.userId })),
-    [members, userId],
-  );
 
   if (loading && !member) {
     return (
@@ -159,10 +148,6 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
               {member.status === "suspended" ? "Reactivate" : "Suspend"}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => setReassignOpen(true)}>
-            <FolderInput className="mr-2 h-4 w-4" />
-            Reassign resources
-          </Button>
           {!isOwner && (
             <Button variant="destructive" size="sm" onClick={() => setRemoveOpen(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
@@ -229,28 +214,14 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
         )}
       </Card>
 
-      <ReassignResourcesDialog
-        open={reassignOpen}
-        onOpenChange={setReassignOpen}
-        orgId={orgId}
-        orgSlug={organization.slug}
-        mode="reassign"
-        sourceUserId={userId}
-        sourceLabel={label}
-        resources={member.resources}
-        candidates={candidates}
-        onDone={refresh}
-      />
-      <ReassignResourcesDialog
+      <RemoveMemberDialog
         open={removeOpen}
         onOpenChange={setRemoveOpen}
         orgId={orgId}
         orgSlug={organization.slug}
-        mode="remove"
         sourceUserId={userId}
         sourceLabel={label}
         resources={member.resources}
-        candidates={candidates}
         onDone={() => startTransition(() => router.push(`/organizations/${organization.slug}/admin`))}
       />
     </div>

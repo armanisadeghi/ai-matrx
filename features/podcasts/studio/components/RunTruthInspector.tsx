@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface RunTruthInspectorProps {
   /** The durable agent_run id (source of truth). */
@@ -77,8 +78,7 @@ function durationLabel(start: unknown, end: unknown): string | null {
   const s = new Date(start).getTime();
   const e = typeof end === "string" ? new Date(end).getTime() : Date.now();
   if (!Number.isFinite(s) || !Number.isFinite(e) || e < s) return null;
-  const sec = (e - s) / 1000;
-  return sec < 60 ? `${sec.toFixed(1)}s` : `${Math.floor(sec / 60)}m ${Math.round(sec % 60)}s`;
+  return formatDurationMs(e - s, { style: "compact" });
 }
 
 function CopyButton({ text, label }: { text: string; label: string }) {

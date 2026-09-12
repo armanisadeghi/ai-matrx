@@ -5108,6 +5108,74 @@ export type Database = {
         }
         Relationships: []
       }
+      spend_guardrail: {
+        Row: {
+          capability: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          limit_value: number
+          metadata: Json
+          note: string | null
+          organization_id: string
+          period: Database["billing"]["Enums"]["meter_period"] | null
+          scope: string
+          scope_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          capability: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          limit_value: number
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          scope?: string
+          scope_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          capability?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          limit_value?: number
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          scope?: string
+          scope_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spend_guardrail_capability_fkey"
+            columns: ["capability"]
+            isOneToOne: false
+            referencedRelation: "capability"
+            referencedColumns: ["capability"]
+          },
+        ]
+      }
       stripe_event: {
         Row: {
           id: string
@@ -5382,9 +5450,22 @@ export type Database = {
             Args: { p_capability: string; p_org: string; p_user: string }
             Returns: Json
           }
+      resolve_capability_effective: {
+        Args: { p_capability: string; p_org: string; p_user: string }
+        Returns: Json
+      }
       resolve_effective_tier: {
         Args: { p_org: string; p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
+      }
+      resolve_guardrail: {
+        Args: { p_capability: string; p_org: string; p_user: string }
+        Returns: {
+          org_id: string
+          org_limit: number
+          user_guardrail_id: string
+          user_limit: number
+        }[]
       }
       resolve_limit: {
         Args: {
@@ -51890,6 +51971,14 @@ export type Database = {
         Args: { p_uid: string }
         Returns: string[]
       }
+      table_has_visibility: {
+        Args: { p_schema: string; p_table: string }
+        Returns: boolean
+      }
+      token_is_parented_component: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       unnest_uuids: { Args: { p_ids: string[] }; Returns: string[] }
       verify_canonical: {
         Args: {
@@ -53999,6 +54088,62 @@ export type Database = {
           mandate_key?: string | null
         }
         Relationships: []
+      }
+      v_reference_latest: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string | null
+          file_path: string | null
+          flag: string | null
+          id: string | null
+          identity_hash: string | null
+          language: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string | null
+          occurrence_n: number | null
+          organization_id: string | null
+          package_name: string | null
+          package_path: string | null
+          presence: string | null
+          reference_type_id: string | null
+          repo_slug: string | null
+          revision: string | null
+          revision_kind: string | null
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vw_shortcut: {
         Row: {
@@ -57265,6 +57410,30 @@ export type Database = {
         }
         Relationships: []
       }
+      client_excluded_column_unregistered: {
+        Row: {
+          column_name: string
+          declared_at: string
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          declared_at?: string
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          declared_at?: string
+          reason?: string
+          schema_name?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           body: string
@@ -59496,31 +59665,37 @@ export type Database = {
       }
       matrx_action_ledger: {
         Row: {
+          applied_at: string | null
           conversation_id: string | null
           created_at: string
           item_index: number | null
           key: string
           kind: string
+          message: string | null
           receipt: Json
           type: string
           user_id: string
         }
         Insert: {
+          applied_at?: string | null
           conversation_id?: string | null
           created_at?: string
           item_index?: number | null
           key: string
           kind?: string
+          message?: string | null
           receipt?: Json
           type: string
           user_id: string
         }
         Update: {
+          applied_at?: string | null
           conversation_id?: string | null
           created_at?: string
           item_index?: number | null
           key?: string
           kind?: string
+          message?: string | null
           receipt?: Json
           type?: string
           user_id?: string
@@ -61804,6 +61979,16 @@ export type Database = {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
       }
+      client_excluded_column_report: {
+        Args: never
+        Returns: {
+          column_name: string
+          schema_name: string
+          source: string
+          still_readable: boolean
+          table_name: string
+        }[]
+      }
       continued_access_allows: {
         Args: { p_feature_key: string; p_org: string; p_user: string }
         Returns: boolean
@@ -62054,9 +62239,11 @@ export type Database = {
       heal_reachability_drift: { Args: never; Returns: Json }
       knob_index: {
         Args: {
+          p_device_id?: string
           p_feature_prefix?: string
           p_organization_id: string
           p_overridden_only?: boolean
+          p_scopes?: Json
           p_user_id?: string
         }
         Returns: Json
@@ -62095,6 +62282,10 @@ export type Database = {
           p_note?: string
           p_organization_id: string
         }
+        Returns: Json
+      }
+      knob_scope_rows: {
+        Args: { p_kind: string; p_organization_id: string }
         Returns: Json
       }
       lifecycle_archive_candidates: {
@@ -62301,6 +62492,15 @@ export type Database = {
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
         Returns: Json
+      }
+      protect_from_client_hard_delete: {
+        Args: {
+          p_noun: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: undefined
       }
       purpose_for_unit: {
         Args: { p_position?: number; p_unit_id: string; p_unit_type: string }
@@ -64032,6 +64232,15 @@ export type Database = {
       }
     }
     Functions: {
+      __client_hard_delete_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       __ddl_guard_unacked: {
         Args: never
         Returns: {
@@ -64311,6 +64520,19 @@ export type Database = {
         Args: { p_kind: string; p_op: Json; p_org_id: string }
         Returns: string
       }
+      _spend_ledger_registry: {
+        Args: never
+        Returns: {
+          cost_column: string
+          label: string
+          ledger_key: string
+          note: string
+          role: string
+          schema_name: string
+          table_name: string
+          ts_column: string
+        }[]
+      }
       _version_diff_json: { Args: { a: Json; b: Json }; Returns: Json }
       accept_context_item_suggestion: {
         Args: { p_suggestion_id: string }
@@ -64450,6 +64672,18 @@ export type Database = {
       admin_delete_schema_template: {
         Args: { p_id: string }
         Returns: undefined
+      }
+      admin_door_probe: {
+        Args: { p_limit?: number; p_user: string }
+        Returns: {
+          by_role: number
+          considered: number
+          conveyable: boolean
+          no_ticket: number
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
       }
       admin_entity_types_list: {
         Args: never
@@ -64901,6 +65135,18 @@ export type Database = {
           url_path_template: string
         }[]
       }
+      admin_spend_breakdown: {
+        Args: {
+          p_filters?: Json
+          p_from: string
+          p_thresholds?: Json
+          p_to: string
+          p_tz?: string
+        }
+        Returns: Json
+      }
+      admin_spend_headline: { Args: { p_tz?: string }; Returns: Json }
+      admin_spend_overview: { Args: { p_tz?: string }; Returns: Json }
       admin_taxonomy_delete: { Args: { p_id: string }; Returns: undefined }
       admin_taxonomy_list: {
         Args: never
@@ -65137,6 +65383,30 @@ export type Database = {
           p_url_path_template: string
         }
         Returns: undefined
+      }
+      agent_mandate_rungs: {
+        Args: {
+          p_agent_ids: string[]
+          p_as_user?: string
+          p_include_descendants?: boolean
+          p_max_depth?: number
+        }
+        Returns: {
+          holder_agent_id: string
+          holder_agent_name: string
+          holder_kind: string
+          holder_type: string
+          lineage_depth: number
+          lineage_path: Json
+          mandate_id: string
+          mandate_key: string
+          organization_id: string
+          pinned_version_id: string
+          principal_kind: string
+          root_agent_id: string
+          row_id: string
+          subject_user_id: string
+        }[]
       }
       agent_resource_add: {
         Args: {
@@ -70253,6 +70523,7 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: never; Returns: boolean }
+      is_platform_admin_for: { Args: { p_user: string }; Returns: boolean }
       is_resource_owner: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: boolean
@@ -71957,6 +72228,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      std_select_count_as: {
+        Args: { p_schema: string; p_table: string; p_user: string }
+        Returns: number
       }
       studio_session_metrics: {
         Args: { p_session_ids: string[] }
@@ -81185,6 +81460,7 @@ export type Database = {
           claimed_at: string | null
           completed_at: string | null
           demand_as_of: string
+          demand_tier: number
           demand_window_days: number
           enqueued_at: string
           keyword_id: string
@@ -81204,6 +81480,7 @@ export type Database = {
           claimed_at?: string | null
           completed_at?: string | null
           demand_as_of: string
+          demand_tier?: number
           demand_window_days: number
           enqueued_at?: string
           keyword_id: string
@@ -81223,6 +81500,7 @@ export type Database = {
           claimed_at?: string | null
           completed_at?: string | null
           demand_as_of?: string
+          demand_tier?: number
           demand_window_days?: number
           enqueued_at?: string
           keyword_id?: string
@@ -85295,6 +85573,15 @@ export type Database = {
           value_id: string
           value_key: string
           value_label: string
+        }[]
+      }
+      fn_enqueue_keyword_click_tail: {
+        Args: { p_max: number; p_target_version: string }
+        Returns: {
+          candidates: number
+          enqueued: number
+          revived: number
+          tail_window_days: number
         }[]
       }
       fn_evaluate_condition_matchers: {
@@ -90013,6 +90300,8 @@ export type Database = {
           name: string
           sort_order: number
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           updated_at: string
         }
         Insert: {
@@ -90028,6 +90317,8 @@ export type Database = {
           name: string
           sort_order?: number
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Update: {
@@ -90043,6 +90334,8 @@ export type Database = {
           name?: string
           sort_order?: number
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -90064,6 +90357,8 @@ export type Database = {
           mode: string
           name: string
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           updated_at: string
         }
         Insert: {
@@ -90074,6 +90369,8 @@ export type Database = {
           mode?: string
           name: string
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Update: {
@@ -90084,6 +90381,8 @@ export type Database = {
           mode?: string
           name?: string
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -90169,6 +90468,8 @@ export type Database = {
           name: string
           sort_order: number
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           typical_char_count: number
           updated_at: string
           value_type: string
@@ -90183,6 +90484,8 @@ export type Database = {
           name: string
           sort_order?: number
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           typical_char_count?: number
           updated_at?: string
           value_type?: string
@@ -90197,6 +90500,8 @@ export type Database = {
           name?: string
           sort_order?: number
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           typical_char_count?: number
           updated_at?: string
           value_type?: string
@@ -90217,11 +90522,14 @@ export type Database = {
           created_at: string
           description: string
           group_key: string
+          kind_key: string | null
           label: string
           mode: string
           name: string
           sort_order: number
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           updated_at: string
           updates_value: string | null
           value_type: string
@@ -90231,11 +90539,14 @@ export type Database = {
           created_at?: string
           description?: string
           group_key?: string
+          kind_key?: string | null
           label?: string
           mode?: string
           name: string
           sort_order?: number
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
           updates_value?: string | null
           value_type?: string
@@ -90245,11 +90556,14 @@ export type Database = {
           created_at?: string
           description?: string
           group_key?: string
+          kind_key?: string | null
           label?: string
           mode?: string
           name?: string
           sort_order?: number
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
           updates_value?: string | null
           value_type?: string
@@ -90719,6 +91033,8 @@ export type Database = {
           account_name: string | null
           created_at: string
           credential_item_id: string | null
+          credential_present: boolean | null
+          credential_stable: boolean | null
           deleted_at: string | null
           id: string
           last_error: string | null
@@ -90739,6 +91055,8 @@ export type Database = {
           account_name?: string | null
           created_at?: string
           credential_item_id?: string | null
+          credential_present?: boolean | null
+          credential_stable?: boolean | null
           deleted_at?: string | null
           id?: string
           last_error?: string | null
@@ -90759,6 +91077,8 @@ export type Database = {
           account_name?: string | null
           created_at?: string
           credential_item_id?: string | null
+          credential_present?: boolean | null
+          credential_stable?: boolean | null
           deleted_at?: string | null
           id?: string
           last_error?: string | null

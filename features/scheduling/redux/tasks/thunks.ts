@@ -206,6 +206,36 @@ export const toggleTaskEnabled =
     }
   };
 
+/**
+ * Enable/disable a platform SYSTEM job (kind='tool') from its record page.
+ *
+ * The user PATCH (`toggleTaskEnabled` → /scheduler/tasks/{id}) refuses
+ * non-agent kinds and non-owners by design, so a system schedule goes through
+ * the admin seam the System jobs console already uses: task AND trigger flip
+ * together, enabling is refused when no handler is registered for the job's
+ * tool_name (the refusal is thrown verbatim), and re-enabling a
+ * guard-suspended task RESTORES its recorded approval — the server moves
+ * `metadata.auto_suspended` to history stamped with who restored it. The row
+ * is re-read afterwards because that bookkeeping lives in metadata, which the
+ * HTTP response does not carry.
+ */
+export const setSystemTaskEnabled =
+  (id: string, enabled: boolean): AppThunk =>
+  async (dispatch) => {
+    dispatch(setMutationStatus({ id, status: "saving" }));
+    try {
+      await scheduler.patchSystemTask(id, { enabled });
+      const task = await getAgentTask(id);
+      if (task) dispatch(upsertTask(task));
+      dispatch(clearMutationStatus(id));
+    } catch (err) {
+      dispatch(
+        setMutationStatus({ id, status: "error", error: errMessage(err) }),
+      );
+      throw err;
+    }
+  };
+
 export const runTaskNowThunk =
   (id: string): AppThunk<string> =>
   async () => {

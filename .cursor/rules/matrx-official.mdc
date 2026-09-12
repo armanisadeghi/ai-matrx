@@ -19,16 +19,29 @@ alwaysApply: true
 
 ## Dev Auto-Login (localhost only)
 
-Skip the login flow — hit this URL and you'll land on the target route already signed in:
+Skip the login flow with the single-use NONCE HANDSHAKE — two steps, and no
+credential ever enters a URL. In a shell in this checkout:
 
 ```
-http://localhost:3000/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/tasks
+openssl rand -hex 16 > .dev-login-nonce
 ```
 
-- `token` — value of `DEV_LOGIN_TOKEN` in `.env.local`
+then open:
+
+```
+http://localhost:3000/api/dev-login?nonce=<that value>&next=/tasks
+```
+
+- `nonce` — must match the `.dev-login-nonce` file (gitignored). The route CONSUMES
+  the file on any presentation, match or mismatch, so the nonce visible in that URL
+  is already worthless by the time anything logs it. Mint a new one per login.
 - `next` — any relative path (e.g. `/tasks`, `/tasks/abc-123`, `/admin/official-components`). Defaults to `/dashboard`.
 - If a session already exists, it just redirects (no re-login).
 - Hard-disabled outside `NODE_ENV !== 'production'` and non-localhost hosts.
+- 🚨 `?token=$DEV_LOGIN_TOKEN` was REMOVED and now returns 401. It authenticated from
+  a durable env-var credential presented in a URL, which writes that credential into
+  browser history, dev-server logs and agent transcripts — it leaked exactly that way
+  on 2026-08-31 and again on 2026-09-11. Do not re-add it.
 
 <file_organization>
 **General directories** (small, reusable code):

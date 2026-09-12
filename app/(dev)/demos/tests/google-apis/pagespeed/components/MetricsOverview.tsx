@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { LighthouseAuditResultV5 } from "../types";
@@ -29,9 +31,10 @@ export function MetricsOverview({ audits }: MetricsOverviewProps) {
     const formatValue = (value: number | undefined, unit: string) => {
         if (value === undefined) return "N/A";
         
-        // Convert milliseconds to seconds for display if unit is 's'
+        // A millisecond count becoming a unit string is @ai-matrx/kit/format's
+        // `formatDurationMs`; "compact" is the elapsed-work voice.
         if (unit === "s" && value > 100) {
-            return (value / 1000).toFixed(2) + " s";
+            return formatDurationMs(value, { style: "compact" });
         }
         
         if (unit === "ms") {

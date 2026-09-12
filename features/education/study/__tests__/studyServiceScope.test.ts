@@ -18,7 +18,6 @@ describe("studyService declares the product-view user scope", () => {
   const createdByScopedMethods = [
     "listSessions",
     "getAttemptSummariesForSessions",
-    "getSession",
     "deleteSession",
     "updateSession",
     "appendSessionArtifact",
@@ -48,10 +47,16 @@ describe("studyService declares the product-view user scope", () => {
     },
   );
 
+  it("lets RLS authorize a shared session detail and its attempt ledger", () => {
+    const body = methodSource("getSession");
+    const executable = body.replace(/\/\/.*$/gm, "");
+    expect(executable).toContain('.eq("id", sessionId)');
+    expect(executable).toContain('.eq("session_id", sessionId)');
+    expect(executable).not.toContain('const userId = requireUserId()');
+    expect(executable).not.toContain('.eq("created_by", userId)');
+  });
+
   it("scopes every read and compare-and-swap in multi-query methods", () => {
-    expect(
-      methodSource("getSession").match(/\.eq\("created_by", userId\)/g),
-    ).toHaveLength(2);
     expect(
       methodSource("appendSessionArtifact").match(
         /\.eq\("created_by", userId\)/g,

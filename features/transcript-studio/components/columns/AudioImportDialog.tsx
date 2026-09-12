@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   CloudUpload,
   FileAudio,
@@ -321,7 +322,7 @@ export function AudioImportDialog({
                   <FileAudio className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="truncate font-medium">{file.name}</span>
                   <span className="shrink-0 text-muted-foreground">
-                    {formatBytes(file.size)}
+                    {formatFileSize(file.size)}
                   </span>
                 </div>
                 <button
@@ -453,7 +454,3 @@ function SubmitButton({
   );
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}

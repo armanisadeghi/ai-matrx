@@ -42,6 +42,10 @@ import {
   Mic,
   Download,
   Search,
+  AtSign,
+  Volume2,
+  Headphones,
+  AudioLines,
   Share2,
   Link2,
   Bug,
@@ -372,6 +376,48 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     disabled: actionText.source === "none",
     onSelect: close(() => void m.handleCopy()),
   });
+  push({
+    kind: "action",
+    id: "speak",
+    label: "Speak",
+    icon: Volume2,
+    iconClass: "text-sky-500",
+    disabled: actionText.source === "none",
+    onSelect: close(m.handleSpeak),
+  });
+  {
+    // Same one-slot Listen pair as the model — disabled, never hidden.
+    const listenDisabled =
+      actionText.source === "none" || !m.spokenSummaryAvailable;
+    push({
+      kind: "submenu",
+      id: "listen",
+      label: "Listen",
+      icon: Headphones,
+      iconClass: "text-violet-500",
+      disabled: listenDisabled,
+      children: [
+        {
+          kind: "action",
+          id: "spoken-summary",
+          label: "Summarize for listening",
+          icon: Headphones,
+          iconClass: "text-violet-500",
+          disabled: listenDisabled,
+          onSelect: close(m.handleSpokenSummary),
+        },
+        {
+          kind: "action",
+          id: "spoken-summary-live",
+          label: "Summarize & listen",
+          icon: AudioLines,
+          iconClass: "text-violet-500",
+          disabled: listenDisabled,
+          onSelect: close(m.handleSpokenSummaryLive),
+        },
+      ],
+    });
+  }
   if (copyVariantActions.length > 0)
     push({
       kind: "submenu",
@@ -435,13 +481,21 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     iconClass: "text-muted-foreground",
     onSelect: close(m.handleFind),
   });
+  push({
+    kind: "action",
+    id: "insert-reference",
+    label: isEditable ? "Insert reference…" : "Copy reference…",
+    icon: AtSign,
+    iconClass: "text-primary",
+    onSelect: close(m.handleInsertReference),
+  });
   for (const n of extraNodes("after-clipboard")) push(n);
   push({ kind: "separator", id: "sep-1" });
 
   // Core platform panels
   push({
     kind: "action",
-    id: "chat-window",
+    id: "chat",
     label: "Chat",
     icon: MessageSquare,
     iconClass: "text-primary",

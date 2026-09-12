@@ -88,6 +88,20 @@ describe("segmentSentenceIds — the server's words, plus doors", () => {
     ]);
   });
 
+  it("reads 'scheduled task <id>' as a schedule, never as a /tasks record", () => {
+    // The repeat guard's suspension reason, verbatim shape. `task` alone has a
+    // door (/tasks/<id>); the compound it closes is the one the sentence meant.
+    const text = `scheduled task ${AGENT_ID} has failed 3 times in a row`;
+    const refs = segmentSentenceIds(text).filter((s) => s.kind === "ref");
+    expect(refs).toEqual([{ kind: "ref", id: AGENT_ID, token: "sch_task" }]);
+  });
+
+  it("still prefers the nearest noun when no compound opens", () => {
+    const text = `resolved system agent ${AGENT_ID} refused`;
+    const refs = segmentSentenceIds(text).filter((s) => s.kind === "ref");
+    expect(refs).toEqual([{ kind: "ref", id: AGENT_ID, token: "agent" }]);
+  });
+
   it("does not invent a door for a token the platform cannot open", () => {
     const text = `sprocket ${AGENT_ID} exploded`;
     expect(segmentSentenceIds(text)).toEqual([{ kind: "text", text }]);

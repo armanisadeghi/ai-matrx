@@ -7,6 +7,7 @@ import type { HtmlPageSummary } from "@/features/html-pages/types";
 import { ExternalLink, FileCode, Loader2 } from "lucide-react";
 import { HTML_PAGES_GRID_ROW_BATCH } from "@/features/html-pages/utils/list-url-state";
 import { HtmlPagesContextMenu } from "@/features/html-pages/components/HtmlPagesContextMenu";
+import { formatRelativeTime } from "@/utils/datetime";
 
 interface HtmlPageGridViewProps {
   pages: HtmlPageSummary[];
@@ -219,25 +220,26 @@ export default function HtmlPageGridView({
   );
 }
 
+/** Display thresholds for the grid's "when" column. */
+const MILLISECONDS_PER_HOUR = 3_600_000;
+const TWO_DAYS_MS = 48 * MILLISECONDS_PER_HOUR;
+const SEVEN_DAYS_MS = 7 * 24 * MILLISECONDS_PER_HOUR;
+
 export function formatRelativeDate(iso: string): string {
   try {
     const d = new Date(iso);
     const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return "Just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
+    const elapsedMs = now.getTime() - d.getTime();
+    if (elapsedMs < MILLISECONDS_PER_HOUR) return formatRelativeTime(d, { style: "short" });
     const sameDay = d.toDateString() === now.toDateString();
-    const diffHr = Math.floor(diffMin / 60);
     if (sameDay) {
       return d.toLocaleTimeString(undefined, {
         hour: "numeric",
         minute: "2-digit",
       });
     }
-    if (diffHr < 48) return "Yesterday";
-    const diffDay = Math.floor(diffHr / 24);
-    if (diffDay < 7) return `${diffDay}d ago`;
+    if (elapsedMs < TWO_DAYS_MS) return "Yesterday";
+    if (elapsedMs < SEVEN_DAYS_MS) return formatRelativeTime(d, { style: "short" });
     return d.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",

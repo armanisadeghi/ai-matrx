@@ -4,13 +4,11 @@ import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
 
 /**
- * THE NONCE HANDSHAKE — dev login with no credential in any URL.
+ * THE NONCE HANDSHAKE — the ONLY way into this route.
  *
- * `?token=` puts DEV_LOGIN_TOKEN — a durable credential — into browser
- * history, dev-server logs, and (when an agent drives the browser) the
- * agent's own transcript, which is how it leaked on 2026-08-31 and had to be
- * rotated. Agents with shell access have a cleaner proof of identity
- * available: the ability to WRITE A FILE into this checkout.
+ * There is no durable credential in this file and no `?token=` path. A dev
+ * login proves identity by WRITING A FILE into this checkout, which anything
+ * with shell access can do and no hostile web page can:
  *
  *   1. shell:   openssl rand -hex 16 > .dev-login-nonce   (gitignored)
  *   2. browser: GET /api/dev-login?nonce=<that value>&next=/wherever
@@ -18,10 +16,23 @@ import { createClient } from "@/utils/supabase/server";
  *
  * Single-use by construction — the file is consumed on first presentation
  * (match or mismatch), so the nonce that unavoidably appears in the
- * navigation URL is already worthless by the time anything logs it. All the
- * existing guards (NODE_ENV !== production, localhost-only host) sit in
- * front of this; the drive-by CSRF protection the token provides is
- * preserved because a hostile page cannot write files into the repo.
+ * navigation URL is already worthless by the time anything logs it. The
+ * dev-only and localhost-only guards sit in front of it, and the drive-by
+ * CSRF protection the old token provided is preserved because a hostile page
+ * cannot write files into the repo.
+ *
+ * WHY THE TOKEN PATH IS GONE. `?token=<DEV_LOGIN_TOKEN>` authenticated from a
+ * durable env-var credential presented in a URL, so every single use wrote
+ * that credential into browser history, dev-server logs and — once agents
+ * started driving the browser — the agent's own transcript. It leaked exactly
+ * that way on 2026-08-31 and was rotated; the nonce handshake was built in
+ * response but the token door was left standing beside it, and on 2026-09-11
+ * a second agent leaked the rotated value the same way. Removing the path
+ * rather than disabling it is deliberate: the route no longer reads
+ * DEV_LOGIN_TOKEN at all, so any exposed value is inert and there is nothing
+ * left to rotate. A request still presenting `?token=` gets a 401 that says
+ * why and hands over the two-step replacement — see below. The guard for all
+ * of this is `route.test.ts`.
  */
 // Runtime-only, single-file root. Excluding this dynamic cwd segment prevents
 // Turbopack from conservatively tracing the whole checkout into the route.
@@ -51,11 +62,13 @@ function consumeNonce(presented: string): boolean {
  * Dev-only magic login for local AI agents.
  *
  * Usage:
- *   GET /api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/tasks
+ *   shell:   openssl rand -hex 16 > .dev-login-nonce
+ *   browser: GET /api/dev-login?nonce=<that value>&next=/tasks
  *
  * Behavior:
  *   - Hard-refuses unless NODE_ENV !== 'production' AND host is localhost/127.0.0.1.
- *   - Requires ?token= to match process.env.DEV_LOGIN_TOKEN.
+ *   - Requires ?nonce= to match the single-use .dev-login-nonce file, which is
+ *     consumed on any presentation. `?token=` is refused — see the header.
  *   - If the AI_ADMIN_USERNAME session already exists, just 302s to `next` (no re-login).
  *   - If SOMEBODY ELSE is signed in, signs them out and signs the admin in — see below.
  *   - Otherwise signs in with AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD and 302s to `next`.
@@ -93,21 +106,36 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Localhost only" }, { status: 403 });
   }
 
-  const expectedToken = process.env.DEV_LOGIN_TOKEN;
-  if (!expectedToken) {
+  // The removed token path must not fail as a mystery: anyone (or any agent
+  // following a stale instruction) arriving at the old door is told why it is
+  // gone and handed the new one, in full.
+  if (url.searchParams.has("token")) {
     return NextResponse.json(
-      { error: "DEV_LOGIN_TOKEN is not set in .env.local" },
-      { status: 500 },
+      {
+        error:
+          "The ?token= path was REMOVED. Authenticating from DEV_LOGIN_TOKEN meant " +
+          "putting a durable credential in a URL, which leaks it into browser history, " +
+          "dev-server logs and agent transcripts — it leaked that way twice. This route " +
+          "no longer reads DEV_LOGIN_TOKEN at all. Use the single-use nonce handshake " +
+          "instead, in two steps: (1) in a shell in this checkout, run " +
+          "`openssl rand -hex 16 > .dev-login-nonce`; (2) open " +
+          "`/api/dev-login?nonce=<that value>&next=/wherever`. The file is consumed on " +
+          "first use, so the nonce in that URL is already worthless once it is logged.",
+      },
+      { status: 401 },
     );
   }
 
-  const token = url.searchParams.get("token");
   const nonce = url.searchParams.get("nonce");
-  const tokenOk = !!token && token === expectedToken;
-  const nonceOk = !tokenOk && !!nonce && consumeNonce(nonce);
-  if (!tokenOk && !nonceOk) {
+  if (!nonce || !consumeNonce(nonce)) {
     return NextResponse.json(
-      { error: "Invalid token (or expired/missing nonce)" },
+      {
+        error:
+          "Expired, missing, or mismatched nonce. Run " +
+          "`openssl rand -hex 16 > .dev-login-nonce` in this checkout, then open " +
+          "`/api/dev-login?nonce=<that value>&next=/wherever`. Each nonce is good for " +
+          "exactly one request — a wrong guess burns the file too.",
+      },
       { status: 401 },
     );
   }
@@ -155,11 +183,12 @@ export async function GET(request: NextRequest) {
   // drift the moment the account's password is changed anywhere else — and on
   // 2026-08-30 they had, which returned a bare {"error":"Invalid login
   // credentials"} here and blocked EVERY agent from opening any authenticated
-  // surface. The route's contract is "this token makes you the admin", and the
+  // surface. The route's contract is "this handshake makes you the admin", and the
   // service role can satisfy that contract without the password: mint a
   // single-use OTP for the same account and redeem it. Same account, same
   // session cookie, same eviction rules — only the proof-of-identity differs,
-  // and it is still gated by DEV_LOGIN_TOKEN plus the dev-only guard above.
+  // and it is still gated by the single-use nonce handshake plus the dev-only
+  // guard above.
   const serviceKey = process.env.SUPABASE_SECRET_KEY;
   if (!serviceKey) {
     return NextResponse.json(

@@ -21,7 +21,7 @@
 // the routing. See features/agents/components/chat/FEATURE.md for the model and
 // the gotchas each guard exists to kill.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
@@ -65,6 +65,12 @@ export function useConversationRoutePromotion({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const router = useRouter();
+  // The Code workspace's builder retains its current query parameters. Read
+  // the latest builder when a route is actually promoted without restarting a
+  // persistence wait merely because that builder was re-created on render.
+  const buildCurrentHref = useEffectEvent((conversationId: string) =>
+    buildHref(conversationId),
+  );
 
   // 1. Register this client as a `page` surface.
   useEffect(() => {
@@ -79,9 +85,9 @@ export function useConversationRoutePromotion({
   const pendingNavigation = useAppSelector(selectPendingNavigation(surfaceKey));
   useEffect(() => {
     if (!enabled || !pendingNavigation) return;
-    router.replace(buildHref(pendingNavigation.conversationId));
+    router.replace(buildCurrentHref(pendingNavigation.conversationId));
     dispatch(clearPendingNavigation({ surfaceKey }));
-  }, [enabled, pendingNavigation, router, dispatch, surfaceKey, buildHref]);
+  }, [enabled, pendingNavigation, router, dispatch, surfaceKey]);
 
   // 3. Post-submit URL promotion (fresh route only).
   const messageCount = useAppSelector((state) =>
@@ -119,7 +125,7 @@ export function useConversationRoutePromotion({
         null;
       if (focusNow !== target) return;
       promotedRef.current = target;
-      router.replace(buildHref(target));
+      router.replace(buildCurrentHref(target));
     })();
 
     return () => {
@@ -133,6 +139,5 @@ export function useConversationRoutePromotion({
     router,
     store,
     surfaceKey,
-    buildHref,
   ]);
 }

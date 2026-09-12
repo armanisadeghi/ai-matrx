@@ -398,6 +398,7 @@ export function isBlockLoading(block: {
  *    "string") and a SILENT truncation.
  */
 export type FeSynthesizedBlockType =
+  | "directive_receipt"
   | "media_block"
   | "video_prompt_options"
   | "keyword_research"
@@ -509,6 +510,7 @@ export type DetectorProtocolBlockType =
 /** Crosswalk classification: protocol — control plumbing, never Shapes. */
 export type ProtocolBlockType =
   | ServerProtocolRenderBlock["type"]
+  | "directive_receipt"
   | "thinking"
   | "reasoning"
   | "consolidated_reasoning"
@@ -1266,6 +1268,28 @@ const PROTOCOL_BLOCK_DISPATCH = {
             typeof BlockComponents.ValueStoreStoredBlock
           >["descriptor"]) ?? {}
         }
+      />
+    );
+  },
+
+  directive_receipt: ({ block, index }) => {
+    // THE RECEIPT (DD-118). `message` is the SERVER's sentence and is rendered
+    // verbatim — an applied write, a deduped re-send and an unconfirmed
+    // proposal are three different sentences because the server wrote three
+    // different sentences, never because this file decided so.
+    const sd = block.serverData ?? {};
+    return (
+      <BlockComponents.DirectiveReceiptBlock
+        key={index}
+        directive={(sd.directive as string) ?? ""}
+        outcome={
+          (sd.outcome as React.ComponentProps<
+            typeof BlockComponents.DirectiveReceiptBlock
+          >["outcome"]) ?? "applied"
+        }
+        message={(sd.message as string) ?? ""}
+        resourceKind={sd.resource_kind as string | undefined}
+        resourceIds={sd.resource_ids as string[] | undefined}
       />
     );
   },

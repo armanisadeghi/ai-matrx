@@ -51,8 +51,15 @@ A literal, a worked example, the spec, or a payload captured from the live syste
 
 ## 3. Gut check, then mutation pass
 
-**Gut check (non-negotiable, every test):** replace the SUT with `return expected`. Still green →
-rewrite the test.
+**Gut check — RUN it, every test, before you call the test written.** Replace the SUT with
+`return expected` and execute the suite. Still green → rewrite the test. Reasoning that it would fail
+is not the gut check, and a mutation pass does not stand in for it: the two are both required, and the
+pass most tests survive is this one. **One forcing input never survives it** — a constant returns that
+input's expected value. So when every case shares one expected value, a second input with a DIFFERENT
+expected value belongs in the SAME change (`it.each` / `parametrize`, a second captured page), never as
+a "before done" follow-up. (Observed 2026-09-10: 5 of 6 skill-guided reps shipped a single forcing input
+under "keep it small"; the two that named the second input deferred it, and the runner's executed
+`return expected` mutant passed their merged tests.)
 **Mutation pass:** for each realistic mutation, at least one test must go red — wrong constant or
 argument · wrong branch · missing side effect or state change · empty/default return · missing
 refusal for empty, zero, null, unauthorized, malformed · stages swapped or data between them
@@ -101,6 +108,15 @@ from reality:
 - Fix, watch green. For guards, commit the sabotage as `--self-test`: plant the violation → exit
   non-zero with file:line and the fix → restore → clean ([strictness-law](/policies/strictness-law.md) §7–8).
 - A test green on its first-ever run has proven nothing yet — sabotage it once.
+- **A multi-rule guard must prove each rule SEPARATELY, and the sabotage is per-rule.** Break one
+  rule at a time and watch the self-test go red *for that rule*. Whole-suite red proves nothing
+  about which rule earned it.
+- **A fixture caught by a rule OTHER than the one it names is a fake proof.** Observed 2026-09-11:
+  a byte-size guard grew four rules; the fixture for the fourth put the unit label three lines from
+  the arithmetic, inside an older rule's six-line window, so the older rule matched it and the new
+  rule was never exercised. Deleting the new rule entirely left the self-test PASSING. The rule was
+  real; only its proof was fake. Write each fixture so it can be caught by nothing but its own rule
+  — then delete that rule and confirm the self-test goes red.
 - New features: test-first order is not mandated; the §3 mutation pass is the proof. Never delete
   working code to replay a red-green ceremony.
 
@@ -141,19 +157,36 @@ behavior or delete it. Census tests carry a self-test.
 - `skip`, `xfail`, `.only`, `it.todo` left on a behavior-critical test — an escape hatch
 - "Tests are green" offered as done
 
+## Rationalizations
+
+| Excuse (verbatim, observed 2026-09-10) | Reality |
+|---|---|
+| "A second saved page, via `parametrize`, would stop a hard-coded answer from passing" — listed as a follow-up | A known hole deferred is a shipped hole; a constant passes the merged test today. |
+| "The test still checks two things in one, because the brief said not to restructure it" | "Keep it small" never waives §3 or one behavior per test. A split is one more `it`. |
+| "…which works because the node imports `scrape` at call time" | That is the SUT's own pipeline. Stub the fetch beneath it (§4). |
+| "My lines add nothing — the existing test already catches this bug" | Run `return expected` against it first: that test used the SUT's own helper as its oracle and passed a hard-coded mutant. |
+
+## Red flags — in the brief or in your own reasoning
+
+- "Keep it small — just add an assertion to the existing test."
+- "A second input can come later."
+- "The existing test already guards this" — said before a `return expected` run.
+- "The stub works because it is looked up at call time."
+- CI is red on something else / the release train leaves in 20 minutes.
+
 ## Done criteria — every one true, or the test is rewritten, not patched
 
 1. It fails when the execution path is wrong.
 2. It fails when a piece of work is silently skipped or dropped.
 3. It fails when data between stages is swapped or corrupted.
-4. It fails against a `return expected` replacement of the SUT.
+4. It fails against a `return expected` replacement of the SUT — executed, not reasoned.
 5. Its expected output is a forcing function on everything the SUT owns, from a source independent of the SUT.
 6. It sits at a seam that reproduces the real bug pattern.
 
 ## Review sequence (anyone's test, including yours)
 
 1. What exactly is the SUT? 2. What does it own — is any of it stubbed? 3. Name the one-line bug this
-catches. 4. Does `return expected` pass it? 5. Is the expected output forced by correct execution
+catches. 4. Does `return expected` pass it — run, not reasoned? 5. Is the expected output forced by correct execution
 and independent of the SUT, or arranged by the fixture? 6. Are fixtures captured, complete, and typed?
 Any unanswerable → not mergeable.
 

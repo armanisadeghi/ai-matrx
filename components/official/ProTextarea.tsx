@@ -1070,7 +1070,7 @@ export const ProTextarea = React.forwardRef<
                       "p-0",
                       menuMode === "menu"
                         ? showBoundAgentsMenu
-                          ? "w-56 max-h-[70dvh] overflow-y-auto"
+                          ? "w-56 max-h-[var(--radix-popover-content-available-height)] overflow-y-auto"
                           : "w-48"
                         : menuMode === "stats"
                           ? "w-56"

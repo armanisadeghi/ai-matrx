@@ -26,7 +26,7 @@ import React, {
   useState,
 } from "react";
 import { ExternalLink, Plus } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {
@@ -573,7 +573,10 @@ export default function ModelControlsEditor({
                 rules:
                   asEnvelope(data) as unknown as Database["ai"]["Tables"]["api"]["Update"]["rules"],
               });
-              toast.success(`Family rules saved on ai.api "${api.name}"`);
+              recordToast.success(
+                { type: "ai.api", id: api.id, title: api.name },
+                `Family rules saved on ai.api "${api.name}"`,
+              );
               await dispatch(reloadAiCatalog());
               await refresh();
             }}

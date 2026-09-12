@@ -23,7 +23,7 @@
 
 import type { Rulebook, Masterwork, RulebookRule } from "./types";
 import { ruleState } from "./types";
-import { allTensions, SETTLED_STATES } from "./coherence/types";
+import { openTensionCount, settledTensions } from "./coherence/types";
 import { readCheckupMemory } from "./checkup/service";
 
 /** Every move the journey can name, in precedence order. */
@@ -389,16 +389,19 @@ export function journeyFactsFromRulebook(
    */
   archivedMasterworks: readonly Masterwork[] = [],
 ): JourneyFacts {
-  const tensions = allTensions(rulebook);
   const checkup = readCheckupMemory(rulebook as Rulebook);
   return {
     rulebookId: rulebook.id,
     rulebookName: rulebook.name,
     ...ruleFacts(rulebook.rules),
-    openTensions: tensions.filter((t) => t.state === "open").length,
-    settledTensions: tensions.filter((t) =>
-      (SETTLED_STATES as readonly string[]).includes(t.state),
-    ).length,
+    // 🚨 ONE PREDICATE — the same function the panel below the headline lists
+    // from (`coherence/types.ts::openTensions`). Counting `state === "open"`
+    // here instead is what printed "4 questions only you can settle are still
+    // open." over an empty panel on 2026-09-12: a repair had removed the rules
+    // those four questions were about, and the panel dropped them while this
+    // count did not. A count and a list that disagree is the screen lying.
+    openTensions: openTensionCount(rulebook),
+    settledTensions: settledTensions(rulebook).length,
     latestCheckupAt: null,
     completedCheckups: 0,
     checkupSettledAt: checkup.last_run_at ?? null,

@@ -33,6 +33,7 @@ import { ScrapeStageView } from "./stages/ScrapeStageView";
 import { AnalyzeStageView } from "./stages/AnalyzeStageView";
 import { SynthesizeStageView } from "./stages/SynthesizeStageView";
 import { ReportStageView } from "./stages/ReportStageView";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface Props {
   pipeline: UsePipelineProgressResult;
@@ -283,11 +284,10 @@ export function LivePipelineActivity({
           </span>
           {state.startedAt && state.completedAt && (
             <span className="text-[10px] text-muted-foreground tabular-nums">
-              {Math.max(
-                1,
-                Math.round((state.completedAt - state.startedAt) / 1000),
-              )}
-              s total
+              {formatDurationMs(state.completedAt - state.startedAt, {
+                style: "compact",
+              })}{" "}
+              total
             </span>
           )}
           {isPipelineDone && !panelExpanded && completedStages.length > 0 && (

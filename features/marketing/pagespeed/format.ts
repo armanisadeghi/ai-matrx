@@ -2,6 +2,7 @@ import type {
   PagePerformanceRegression,
   PagePerformanceSample,
 } from "@/features/marketing/pagespeed/data";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export type PerformanceTone = "good" | "warning" | "bad" | "default";
 
@@ -28,10 +29,8 @@ export function metric(
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-export function milliseconds(value: number | null, digits = 2): string {
-  if (value === null) return "—";
-  if (value >= 1000) return `${(value / 1000).toFixed(digits)}s`;
-  return `${Math.round(value)}ms`;
+export function milliseconds(value: number | null): string {
+  return formatDurationMs(value, { style: "compact" });
 }
 
 export function metricTone(

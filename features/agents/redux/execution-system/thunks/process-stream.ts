@@ -1049,18 +1049,90 @@ export async function processStream({
           // The ordinary data payload and timeline entry are still retained
           // for the feature's typed state and diagnostics.
         } else if (isDirectiveApplyEvent(d)) {
+          // THE RECEIPT (DD-118). An outcome-bearing receipt becomes a card on
+          // the timeline, carrying the SERVER's own sentence verbatim — so an
+          // applied write, a deduped re-send, a refusal and an unconfirmed
+          // proposal read as four different things. Before this, all of them
+          // left the same `Ready`-badged request card and nothing else, and a
+          // user who sent one request twice saw two identical cards for one
+          // project (walk K-1, 2026-09-12).
+          // Narrowed per event kind — `.started` and `.completed` carry no
+          // per-item outcome, so they mint no card (the batch's closing line is
+          // the toast).
+          const receipt: {
+            directive: string;
+            outcome: string;
+            message: string;
+            resource_kind: string;
+            resource_ids: string[];
+          } | null =
+            d.kind === "directive_apply.item"
+              ? {
+                  directive: d.directive,
+                  outcome: d.status,
+                  message: d.message,
+                  resource_kind: d.resource_kind,
+                  resource_ids: d.resource_ids,
+                }
+              : d.kind === "directive_apply.failed"
+                ? {
+                    directive: d.directive,
+                    outcome: "failed",
+                    message: d.message,
+                    resource_kind: "",
+                    resource_ids: [],
+                  }
+                : d.kind === "directive_apply.blocked"
+                  ? {
+                      directive: d.directive,
+                      outcome: "blocked",
+                      message: d.message,
+                      resource_kind: "",
+                      resource_ids: [],
+                    }
+                  : d.kind === "directive_apply.proposed"
+                    ? {
+                        directive: d.directive,
+                        outcome: "proposed",
+                        message: d.message,
+                        resource_kind: "",
+                        resource_ids: [],
+                      }
+                    : null;
+          if (receipt) {
+            const blockId = `directive_receipt_${totalEvents}`;
+            dataRenderBlockId = blockId;
+            blockAccumulator.breakTextBlock(dispatch);
+            dispatch(
+              upsertRenderBlock({
+                requestId,
+                block: {
+                  blockId,
+                  blockIndex: renderBlockEvents,
+                  type: "directive_receipt",
+                  status: "complete",
+                  // null for the same Pass-2 leak reason as value_store_stored.
+                  content: null,
+                  // `data` is the wire field; BlockRenderer surfaces it to the
+                  // component as `serverData`. `message` is the SERVER's
+                  // sentence, copied through VERBATIM — the client does not know
+                  // what the ledger or the handler decided.
+                  data: receipt,
+                },
+              }),
+            );
+          }
+
           if (d.kind === "directive_apply.completed") {
-            const failedSuffix = d.failed > 0 ? `, ${d.failed} failed` : "";
-            const message = `Applied ${d.directive}: ${d.applied} created${failedSuffix}`;
             // A partial failure is still a delivered directive (warn-not-fatal
-            // per the envelope contract) — success toast with the failed count.
+            // per the envelope contract) — the server's line carries the count.
             if (d.failed > 0) {
-              toast.error(message);
+              toast.error(d.message);
             } else {
-              toast.success(message);
+              toast.success(d.message);
             }
           } else if (d.kind === "directive_apply.failed") {
-            toast.error(`Failed to apply ${d.directive}: ${d.error}`);
+            toast.error(d.message);
           } else if (d.kind === "directive_apply.proposed") {
             // `ask` policy: the agent proposed an action — surface an approve/
             // decline card (proposedDirectives inbox). It applies only on accept
@@ -1073,6 +1145,7 @@ export async function processStream({
                 directiveClass: d.directive_class,
                 noun: d.noun,
                 summary: d.summary,
+                message: d.message,
                 itemCount: d.item_count,
                 shell: d.shell,
               }),

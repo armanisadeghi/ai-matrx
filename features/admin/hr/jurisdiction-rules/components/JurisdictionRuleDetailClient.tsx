@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { toast } from "@/lib/toast";
+import { recordToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { setJurisdictionRuleStatus } from "../service";
@@ -219,7 +219,12 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
     );
     setBusy(false);
     if (result.state === "ok") {
-      toast.success(
+      recordToast.success(
+        {
+          type: "jurisdiction_rule",
+          id: rule.id,
+          title: `${rule.rule_class_label} · ${rule.jurisdiction_key}`,
+        },
         `${rule.rule_class_label} · ${rule.jurisdiction_key} is now ${result.status}.`,
       );
       setPendingStatus(null);

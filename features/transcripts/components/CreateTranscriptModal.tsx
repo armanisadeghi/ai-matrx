@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   Dialog,
   DialogContent,
@@ -571,9 +572,7 @@ export function CreateTranscriptModal({
                 <AlertTitle>File Uploaded</AlertTitle>
                 <AlertDescription className="text-blue-800 dark:text-blue-300 text-xs">
                   {uploadedFile?.details?.filename} (
-                  {(uploadedFile?.details?.size || 0) / 1024 < 1024
-                    ? `${Math.round((uploadedFile?.details?.size || 0) / 1024)} KB`
-                    : `${((uploadedFile?.details?.size || 0) / 1024 / 1024).toFixed(1)} MB`}
+                  {formatFileSize(uploadedFile?.details?.size)}
                   )
                 </AlertDescription>
               </Alert>

@@ -143,6 +143,22 @@ lines by relocating trial-specific detail into the trial's register.
   to examine") — give it the book's rule, not the fix; it finds the dependency (source waits on
   provenance) on its own.
 - 2026-09-12 — Cost of one desk run on a real case: about $1.50 (15 model calls). Quote it.
+- 2026-09-12 (night 2) — When a Conductor goes silent mid-build, read the ledger before pressing
+  anything: `chat.request` (last finish_reason), `chat.tool_trace` (the failing tool and its
+  `err_msg`), `ops.app_log` around the timestamp. Then reopen the conduct page, press Continue, and
+  tell the Conductor in plain words what the server did; it resumes exactly where it died.
+- 2026-09-12 — The Conductor writes rules back to the Rulebook through a tool the BROWSER applies.
+  Keep the conduct page open in the tab you are driving; the `/chat/<id>` view cannot apply it and
+  the turn dies silently (W49). Its "Apply" opens the Add Rule dialog; you still press Add rule.
+- 2026-09-12 — "Every joint checked — no breaks" from the Conductor is a claim, not a proof: run
+  the built thing once on the real case before believing it (W48, W51 both passed the check).
+- 2026-09-12 — If the browser pane is hidden, clicks and typing fail; the form tool and a scripted
+  button press still work. Sharing the checkout with other agents breaks the dev build several
+  times an hour; when a page goes blank, check the file they are editing, wait a minute, reload.
+- 2026-09-12 — Two conductors given the same brief chose different architectures: Watson baked the
+  rules into three minted agents; Montessori loaded the 115 rules BY ID into the run and added a
+  real pause for the parent's answers. Record the architecture each one chooses; it is evidence
+  about the platform, not only about the book.
 - 2026-09-12 — (trial 3) A cloud container has no product checkout: drive the LIVE build headless (Chromium
   needs `--ssl-version-max=tls1.2` through the agent proxy; the proxy also refuses websockets, so live
   streams and run boxes go quiet — read `workflow.run` / `chat.request` for truth, and never charge a

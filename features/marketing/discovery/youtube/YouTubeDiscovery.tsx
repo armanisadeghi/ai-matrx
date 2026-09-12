@@ -42,8 +42,8 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { youTubeWatchUrl } from "@/lib/media/youtube";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { YouTubeVideoPreviewDialog } from "./YouTubeVideoPreview";
 import {
   formatYouTubeCount,

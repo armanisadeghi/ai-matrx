@@ -24,13 +24,10 @@ import {
   FAMILY_STYLE,
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 function fmtDuration(ms: number): string {
-  const total = Math.max(1, Math.round(ms / 1000));
-  if (total < 60) return `${total}s`;
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 interface RowFacts {

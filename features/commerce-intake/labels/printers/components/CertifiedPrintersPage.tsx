@@ -57,6 +57,13 @@ export function CertifiedPrintersPage() {
           <span className="hidden truncate text-xs text-muted-foreground sm:inline">
             Which printers are proven to print your label stock correctly
           </span>
+          {/* Certification is one step in printing — the hub indexes the rest. */}
+          <Link
+            href="/print"
+            className="shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Print hub
+          </Link>
         </div>
       </PageHeader>
       {config && (

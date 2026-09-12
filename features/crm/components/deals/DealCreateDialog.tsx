@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Building2, Loader2, Search, User, X } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -178,7 +178,10 @@ export function DealCreateDialog({
         primaryPartyId: party?.id ?? null,
         assignedTo: userId,
       });
-      toast.success(`"${deal.name}" created`);
+      recordToast.success(
+        { type: "deal", id: deal.id, title: deal.name },
+        `"${deal.name}" created`,
+      );
       onOpenChange(false);
       onCreated(deal);
     } catch (e) {

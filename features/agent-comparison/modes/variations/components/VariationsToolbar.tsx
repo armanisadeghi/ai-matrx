@@ -22,7 +22,7 @@ import {
   Save,
   SlidersHorizontal,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -127,7 +127,10 @@ export function VariationsToolbar({
     }
     try {
       await dispatch(saveVariationsBattle()).unwrap();
-      toast.success(`Saved "${activeSetName}"`);
+      recordToast.success(
+        { type: "agent_comparison_battle", id: activeSetId, title: activeSetName },
+        `Saved "${activeSetName}"`,
+      );
     } catch (err) {
       toast.error(`Couldn't save: ${err instanceof Error ? err.message : err}`);
     }

@@ -27,6 +27,7 @@ import {
   studioLocation,
 } from "@/features/transcript-studio/format";
 import type { StudioSession } from "@/features/transcript-studio/types";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 interface CleanupSessionsToolbarProps {
   scope: "cleanup" | "all";
@@ -88,20 +89,6 @@ interface CleanupSessionListProps {
   onDelete: (id: string) => void;
   /** When false, render list only (header lives in the column top band). */
   showToolbar?: boolean;
-}
-
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms)) return "";
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return "just now";
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d ago`;
-  return new Date(iso).toLocaleDateString();
 }
 
 export function CleanupSessionList({
@@ -206,7 +193,7 @@ export function CleanupSessionList({
                     {s.title}
                   </span>
                   <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    {timeAgo(s.updatedAt)}
+                    {formatRelativeTime(s.updatedAt, { fallback: "" })}
                     {s.source !== "cleanup" && (
                       <span className="rounded bg-muted px-1 py-px font-medium text-muted-foreground">
                         {s.source}

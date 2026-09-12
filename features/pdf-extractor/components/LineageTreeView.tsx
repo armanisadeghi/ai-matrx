@@ -28,6 +28,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
@@ -301,7 +302,7 @@ function BinaryRow({
         <p className="text-[9px] text-muted-foreground truncate">
           <code className="font-mono">{node.id.slice(0, 8)}…</code>
           {node.derivationKind && <> · {node.derivationKind}</>}
-          {node.fileSize != null && <> · {(node.fileSize / 1024).toFixed(0)} KB</>}
+          {node.fileSize != null && <> · {formatFileSize(node.fileSize)}</>}
         </p>
       </div>
     </div>

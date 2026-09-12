@@ -269,11 +269,15 @@ export const updateTaskThunk = createAsyncThunk(
 
 export const deleteTaskThunk = createAsyncThunk(
   "tasks/delete",
+  // Soft delete, never a hard one: a task is a registered soft-deletable entity
+  // and the database refuses a client DELETE (DD-119, db-rules §8). Its subtasks
+  // follow through the declared cascade edge.
   async (taskId: string) => {
     const { error } = await workspaceDb(supabase)
       .from("tasks")
-      .delete()
-      .eq("id", taskId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", taskId)
+      .is("deleted_at", null);
     if (error) throw error;
     return taskId;
   },

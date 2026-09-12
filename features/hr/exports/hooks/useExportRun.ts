@@ -26,7 +26,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
-import { HR_MOCK_ENABLED } from "@/features/hr/mock/transport";
+import { hrMockEnabled } from "@/features/hr/mock/transport";
 import { toExportFailure, type ExportFailure } from "../errors";
 import type { AsyncAccepted } from "../types";
 
@@ -69,7 +69,7 @@ export function useExportRun(options?: {
   const [failure, setFailure] = useState<ExportFailure | null>(null);
 
   useEffect(() => {
-    if (!accepted || HR_MOCK_ENABLED) return;
+    if (!accepted || hrMockEnabled()) return;
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -136,8 +136,8 @@ export function useExportRun(options?: {
     status,
     failure,
     follow: (next: AsyncAccepted) => {
-      setPhase(HR_MOCK_ENABLED ? "not_observable" : "running");
-      setStatus(HR_MOCK_ENABLED ? next.status : null);
+      setPhase(hrMockEnabled() ? "not_observable" : "running");
+      setStatus(hrMockEnabled() ? next.status : null);
       setFailure(null);
       setAccepted(next);
     },

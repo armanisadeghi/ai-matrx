@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
@@ -82,6 +82,9 @@ export function SampleLibrarySheet({
     if (!ok) return;
     try {
       await remove(sample.id);
+      // The row is gone: withdraw any toast still naming it. "Deleted X" has
+      // no route left to follow, so it stays a plain toast.
+      dismissRecordToasts({ type: "markdown_sample", id: sample.id });
       toast.success(`Deleted "${sample.name}"`);
     } catch (err) {
       toast.error(
@@ -94,8 +97,14 @@ export function SampleLibrarySheet({
     if (!renaming) return;
     setBusy(true);
     try {
-      await update(renaming.id, { name: newName });
-      toast.success(`Renamed to "${newName}"`);
+      const renamedId = renaming.id;
+      await update(renamedId, { name: newName });
+      // The old name is now false: withdraw toasts naming this row first.
+      dismissRecordToasts({ type: "markdown_sample", id: renamedId });
+      recordToast.success(
+        { type: "markdown_sample", id: renamedId, title: newName },
+        `Renamed to "${newName}"`,
+      );
       setRenaming(null);
     } catch (err) {
       toast.error(

@@ -869,10 +869,14 @@ regression-tested — read them before touching the verdict:
   grace window.** Publishing writes the page and THEN advances the plan node's
   status, so a naive `node.updated_at > page.updated_at` marks every page you
   just published as "behind plan".
-- **`stale` offers the CMS door, not a rewrite.** aidream's `_fillable` excludes
-  published pages, so "Rewrite from the brief" on a live page could only ever
-  fail. When the server can re-author a published page into its draft, flip that
-  action back.
+- **`stale` offers a real rewrite — into the DRAFT.** A live page is re-authored
+  with `include_published` (aidream `87732cff0`, 2026-09-11): the server writes
+  the new version into the page's draft columns and the public keeps seeing the
+  current one until it is published. The bridge sends that key ONLY when the
+  page is published — the server body is `extra="forbid"`, so an always-sent
+  key 422s every ordinary write on a server that predates it. Before that commit
+  the pipeline refused published pages outright and `stale` could only offer
+  the CMS door.
 
 **A live page is never published by accident.** `publish_page` refuses `empty`
 and `retired` — without that guard an agent chaining `build_page` →

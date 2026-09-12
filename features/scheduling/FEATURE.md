@@ -217,6 +217,24 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-12** — System Jobs now waits for explicit organization admission
+  before calling either admin registry and reloads both registries when the
+  selected organization arrives or changes. This closes the cold-boot race
+  that left both tables permanently showing the transport's pre-wire refusal
+  after the header had finished selecting an organization; a two-phase React
+  guard pins both "never fire during boot" and "do fire after admission."
+- **2026-09-12** — The record read now admits every RLS-visible schedule kind.
+  `getAgentTask` selects by id plus the soft-delete boundary only and uses a
+  nullable agent extension, so `kind='ping'` rows no longer become false access
+  failures when no `sch_agent_task` row exists.
+- **2026-09-11** — **The door the alarm points at now opens, and acts.**
+  `/schedules/<id>` refused every `kind='tool'` system schedule with the
+  AccessGate ("You don't have access to this scheduled task"), so the banner and
+  scanner-health rows led nowhere and raw SQL was the only way to re-enable a
+  wrongly-suspended schedule. See *A system schedule's record page* below.
+- **2026-09-11** — `SystemScheduleAlarmBanner`: critical schedule alarms reach
+  every super-admin page (global singleton, fixed under the header, one door per
+  schedule). Six suspended system schedules had been unread for 17 days.
 - **2026-08-31** — Independent rule `.2` verification repaired the canonical
   schedule roster read: `listAgentTasks` now pages to the exact count with
   `readAllRows` and a stable `updated_at, id` order, while the S15 source-census
@@ -280,6 +298,14 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   that delegate to the same enable/disable/edit/run-now handlers as the
   existing row-button column. `scanner-health/page.tsx` names `sch_task` too
   and should adopt `useScheduledTaskMenuSection` on its next touch.
+
+- **2026-09-12** — Restored the System Jobs Feature Registry contract after
+  the primary-checkout integration wave dropped it: both shared-table sections
+  again render linked Domain / Feature / Sub-feature paths, search/copy/context
+  include those paths, and both edit dialogs carry the canonical registry
+  picker. The organization-admission regression suite now also asserts both
+  tables' classification column, exact registry deep link, search text, copy
+  text, and taxonomy row attribute.
 
 - **2026-08-30** — codex: Surface certification closed two honesty gaps on `/schedules`. The duplicate guard's advisory read still cannot replace a working roster with a fatal page, but failure is no longer silent: both user and admin lists show an explicit Retry warning and capture the backend failure in Error Inspector. The create/edit form's Description and Prompt `ProTextarea` menus now receive the same live `matrx-user/schedules` scope as the page surface, and list/detail/form each mount one canonical v3 context menu over that same trigger-time scope; the list delegates row content by schedule id instead of mounting one menu per row. Compact mobile-only controls meet the 44px interaction floor, and Locate anchors cover the roster/load state, editor draft fields, open record, target configuration, trigger, timing, and run history. Status pills, duplicate warnings, failure detail, and trigger callouts now use the shared semantic intent tokens instead of owning raw light/dark palette pairs. Prompt keeps its existing dedicated 10,000-character counter rather than stacking a second text-stats footer; Description deliberately has no metric footer because it is a short metadata field.
 
@@ -504,6 +530,66 @@ each row a door to `/schedules/<id>`. The scanner status and these alarms settle
 independently — a green scanner says nothing about whether a schedule ran — and
 if the alarm read itself fails the page says so ("treat this as unknown, not
 healthy") rather than implying all-clear.
+
+**The alarm nobody heard (2026-09-11).** Six critical `suspended` rows sat on
+that page for seventeen days — one of them an approved schedule whose
+suspension froze a 76,129-row classification queue — because a page you open
+only when you already suspect the problem is a report, not an alarm. The same
+rows now reach a super-admin on EVERY page through
+`components/alarm/SystemScheduleAlarmBanner.tsx`, mounted with the other
+admin-gated global singletons in `app/DeferredSingletonCore.tsx`: super-admin
+gated BEFORE the read (the RPC's 42501 would otherwise be captured as a red
+error for every other user), read directly from Supabase on boot / route
+change / focus, rendered as a `CalloutBanner` fixed under the header with an
+`EntityRef` door per schedule and "Review all" → scanner health. It is ABSENT
+at zero alarms (`lib/system-schedule-alarm-notice.ts` returns `null`,
+unit-tested — never an all-clear strip), a failed read is said with Retry, and
+it collapses to a pill per tab session but is never dismissable: only fixing
+the schedules removes it. Inventoried and rejected first: Assists (Chip Rescue
+ruling — a notification is never a chip; `scheduler_` is dispositioned
+`notification` and ambient presentation is off), the Notification System (the
+right destination once it has an in-app channel — today email/SMS only, server
+producers only), and the Error Inspector (client errors, no record door).
+
+## A system schedule's record page (2026-09-11)
+
+**The refusal was the CLIENT's, not the database's.** `scheduler.sch_task`
+carries a `platform_admin_all` policy (`FOR ALL USING is_platform_admin()`), so
+RLS had already admitted the super-admin to every system schedule — verified
+live: as a non-admin `authenticated` JWT the same two rows return 0. What
+refused was `getAgentTask`, which filtered `.eq("kind", "agent")` and threw the
+row away, leaving the detail page's zero-row branch to render `<AccessGate>`.
+The read now accepts `agent` + `tool` (both kinds carry a `sch_agent_task`
+row). **No migration, no new RLS, no new SECURITY DEFINER door** — nothing was
+widened; a non-super-admin still sees nothing and still meets the AccessGate.
+
+On the page, for a task the guard switched off (`components/detail/SuspensionCard.tsx`):
+
+- the suspension record from `sch_task.metadata.auto_suspended` — when, how many
+  consecutive failures, the reason verbatim through `TextWithDoors` (its own ids
+  become doors), the override notice when the guard overrode a human approval,
+  and an anchor to the run that tipped it (`#run-<id>` in the history below);
+- the recorded approval (`metadata.approval` / `approved_by` / `approved_at`),
+  stating that re-enabling RESTORES it — not a new schedule, no new sign-off
+  (`common-docs/policies/no-unapproved-schedules.md`);
+- the prior suspensions in `auto_suspended_history`, each saying whether a
+  restore was recorded and by whom;
+- the page's ONE enable control (the header's Enable/Pause handler, rendered a
+  second time beside the complaint — never a second write path). For a `tool`
+  task it dispatches `setSystemTaskEnabled` → the admin PATCH
+  `/scheduling/admin/system-tasks/{id}` the System jobs console already uses:
+  task and trigger flip together, enabling is refused verbatim when no handler
+  is registered for the `tool_name`, and aidream stamps the restore into
+  `auto_suspended_history` (`restored = {at, by, restored_approval}`) leaving
+  the approval fields untouched. The user PATCH is unchanged and still refuses
+  non-agent kinds and non-owners.
+
+Before flipping a suspended task on, the confirm states the consequence: that
+the trigger comes with it, that an overdue schedule fires on the scanner's next
+pass rather than at the next scheduled time (read from the trigger, since
+`sch_task.next_due_at` is null while the trigger is disabled), how many more
+matching failures re-suspend it, and which approval is being restored. A
+system job shows no Delete and its Edit mode opens the System jobs console.
 
 ## Realtime
 

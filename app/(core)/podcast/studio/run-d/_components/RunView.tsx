@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 // app/(core)/podcast/studio/run-d/_components/RunView.tsx
 //
 // STUDIO D — Generation progress surface.
@@ -51,7 +53,7 @@ export function RunView() {
         .filter((s) => def.match(s.stage))
         .every((s) => s.status !== "running");
       const end = allDone && ends.length ? Math.max(...ends) : now;
-      out[def.id] = `${((end - start) / 1000).toFixed(1)}s`;
+      out[def.id] = formatDurationMs(end - start, { style: "compact" });
     }
     return out;
   }, [state.stages, stageStartedAt, stageDoneAt, now]);
@@ -165,9 +167,7 @@ export function RunView() {
   );
 }
 
+/** THE clock duration voice (@ai-matrx/kit/format): 0:00, 9:04, 1:02:33. */
 function fmtClock(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return formatDurationMs(ms, { style: "clock" });
 }

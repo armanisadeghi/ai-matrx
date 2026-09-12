@@ -40,6 +40,7 @@ import {
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 import {
   DEFAULT_NODE_SHAPE,
@@ -57,9 +58,7 @@ import {
 const BLOCK_MAX_HEIGHT = "max-h-[52dvh]";
 
 function bytes(text: string): string {
-  const n = new TextEncoder().encode(text).length;
-  if (n < 1024) return `${n} B`;
-  return `${(n / 1024).toFixed(1)} KB`;
+  return formatFileSize(new TextEncoder().encode(text).length);
 }
 
 /** Rough, honestly-labelled: ~4 chars per token. Never presented as exact. */

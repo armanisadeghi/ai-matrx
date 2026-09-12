@@ -83,6 +83,7 @@ import {
   BottomSheetBody,
   BottomSheetHeader,
 } from "@ai-matrx/design-system";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface ImageStudioShellProps {
   /** Optional default folder for Save-to-library. */
@@ -316,8 +317,10 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
     if (studio.files.length === 0) return;
     const startedAt = Date.now();
     await studio.describeAll();
-    const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
-    toast.success(`Described ${studio.files.length} file(s) in ${elapsed}s`);
+    const elapsed = formatDurationMs(Date.now() - startedAt, {
+      style: "compact",
+    });
+    toast.success(`Described ${studio.files.length} file(s) in ${elapsed}`);
   }, [studio]);
 
   // ── Agent write targets (matrx-user/image-studio) ─────────────────────

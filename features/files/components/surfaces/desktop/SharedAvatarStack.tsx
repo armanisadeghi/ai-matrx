@@ -9,6 +9,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+// THE package avatar-color hash (`@ai-matrx/kit/format`, census H1
+// 2026-09-07) — `avatarPaletteIndex` reproduces this file's own
+// hash*31+charCode/abs%buckets exactly, so the 8-color PALETTE below still
+// assigns identical colors to identical ids. `initialsFor` here is NOT
+// swapped: it derives initials from an opaque grantee id, not a person's
+// name, which `getInitials` isn't built for.
+import { avatarPaletteIndex } from "@ai-matrx/kit/format";
 
 export interface SharedAvatarStackProps {
   granteeIds: string[];
@@ -70,16 +77,8 @@ export function SharedAvatarStack({
   );
 }
 
-function hashString(input: string): number {
-  let h = 0;
-  for (let i = 0; i < input.length; i++) {
-    h = (h * 31 + input.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
 function colorFor(id: string): string {
-  return PALETTE[hashString(id) % PALETTE.length];
+  return PALETTE[avatarPaletteIndex(id, PALETTE.length)];
 }
 
 function initialsFor(id: string): string {

@@ -28,7 +28,7 @@ import {
 } from "@/lib/api/hr-contract-client";
 import { supabase } from "@/utils/supabase/client";
 import {
-  HR_MOCK_ENABLED,
+  hrMockEnabled,
   type HrFixtureCase,
 } from "@/features/hr/mock/transport";
 import { HR_EXPORT_HISTORY_FIXTURES } from "./mock/history";
@@ -262,7 +262,7 @@ export async function listPayrollExports(args: {
   limit?: number;
   mockCase?: HrFixtureCase;
 }): Promise<PayrollExportListResult> {
-  if (HR_MOCK_ENABLED) {
+  if (hrMockEnabled()) {
     return HR_EXPORT_HISTORY_FIXTURES[args.mockCase ?? "happy"];
   }
 

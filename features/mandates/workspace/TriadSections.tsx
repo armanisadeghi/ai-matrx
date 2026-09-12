@@ -553,7 +553,12 @@ export function TriadGoalSection({
       targetSurface.status === "loading"
         ? "(this job's inputs are still being read)"
         : targetSurface.status === "error"
-          ? `(this job's inputs could not be read: ${targetSurface.message})`
+          ? // FIX-Q8 — the hook's message is already a complete sentence with
+            // its own reason and remedy. A prefix of our own turned it into
+            // "…could not be read: HTTP 400" on the screen one surface over;
+            // it is carried whole here too, so the goal writer is told the
+            // same thing a person would be.
+            `(${targetSurface.message})`
           : servedInputs.length > 0
             ? servedInputs
                 .map((i) =>

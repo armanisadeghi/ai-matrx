@@ -111,7 +111,7 @@ export default function RouteHeader({
         <div
           ref={rightRef}
           data-route-header-right
-          className="relative z-10 flex min-w-0 items-center justify-end"
+          className="relative z-10 flex min-w-0 items-center justify-end gap-1"
         >
           {right}
         </div>

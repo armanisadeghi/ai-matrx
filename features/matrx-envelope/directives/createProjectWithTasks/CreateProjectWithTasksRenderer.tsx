@@ -299,9 +299,17 @@ function ProjectDirectiveCard({
           {isExhausted && (
             <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
               <RefreshCw className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              {/* 🚨 A SCREEN NEVER LIES (V-24, live 2026-09-12). This used to
+                  read "The project is still being created. Please refresh the
+                  browser…" — under the `ask` apply policy NOTHING is being
+                  created: the write is gated on a click the user has not made,
+                  and `workspace.projects` was empty at that instant. All this
+                  state actually knows is that no project by this name was found
+                  after the poll schedule ran out, so that is what it says. */}
               <span>
-                The project is still being created. Please refresh the browser
-                to see the live project and tasks.
+                Nothing has been created yet — no project by this name exists.
+                A project is written only once this action is approved; if you
+                already approved it, refresh to see it.
               </span>
             </div>
           )}

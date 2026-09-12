@@ -11,31 +11,43 @@
  *    identical: `error` and `warning` additionally feed `captureError` (source
  *    "user-toast"); everything else passes straight through.
  *
- * 2. THE RECORD-AWARE TOAST (`recordToast`) — see the law below.
+ * 2. THE WALL CLOCK, and 3. THE RECORD-AWARE TOAST (`recordToast`) — the
+ *    two halves of one law, below.
  *
- * 🚨 A TOAST THAT NAMES A RECORD MUST NOT OUTLIVE THAT RECORD ON SCREEN
- * (FIX-R17 / FIX-Q12). Sonner PAUSES a toast's dismiss timer while the
- * document is hidden — and an agent browser pane, a background tab, or a
- * second window all count as hidden. So a toast reading «Saved "Acme intake"»
- * can still be on screen minutes later, after the SPA has navigated to a
- * different record, after that record was renamed, or after it was deleted.
- * The sentence is then simply false, and a screen that lies is forbidden
- * outright. `components/ui/sonner.tsx` sweeps the whole backlog when a hidden
- * tab returns, but that sweep is record-BLIND: it cannot dismiss A's toast
- * when the user client-side-navigates from A to B in a tab that never went
- * hidden.
+ * 🚨 A TOAST MUST NOT OUTLIVE ITS MOMENT ON SCREEN (FIX-11b / FIX-R17 /
+ * FIX-Q12, ruled at the shared layer 2026-09-11). Sonner (2.0.8, no opt-out)
+ * PAUSES every toast's dismiss timer while the document is hidden — and an
+ * agent browser pane, a background tab, or a second window all count as
+ * hidden. So a toast reading «Saved "Acme intake"» can still be on screen
+ * minutes later, after the SPA has navigated to a different record, after
+ * that record was renamed, or after it was deleted. The sentence is then
+ * simply false, and a screen that lies is forbidden outright. Verifiers walk
+ * this app in a pane that is hidden the whole time, so on sonner's clock NO
+ * toast they see would ever expire.
  *
- * THE RULE: any toast whose text names a record is raised through
- * `recordToast.*` with that record's identity (the `CONTEXT_MENU_ENTITY_KEY`
- * shape — `{ type, id, title }` — is the platform's record reference, and it
- * is the shape used here). Such a toast:
- *   - runs its dismiss timer on the WALL CLOCK, so a hidden document cannot
- *     freeze it (hovering the toaster still defers, because a person reading
- *     a toast is not a stale toast);
- *   - is dismissed when the record is deleted or renamed — call
- *     `dismissRecordToasts(ref)` from the mutation that does it;
- *   - is dismissed when the record leaves the screen — the app-wide Toaster
- *     calls `dismissRecordToastsOffRoute(pathname)` on every route change.
+ * THE RULE, in two tiers:
+ *
+ *   (b) EVERY toast raised through this module runs its dismiss timer on the
+ *       WALL CLOCK. Sonner is handed `duration: Infinity` so its
+ *       visibility-paused timer is out of the loop; ours fires at the
+ *       requested duration (sonner's own 4 s default otherwise) whether the
+ *       document is hidden or not. Hovering the toaster still defers, because
+ *       a person reading a toast is not a stale toast. `toast.loading`,
+ *       `toast.promise`, `toast.custom` and any caller passing
+ *       `duration: Infinity` are untouched: they end when their caller says.
+ *       This is what closes the class for the hundreds of existing call
+ *       sites that name a record without an identity in scope.
+ *
+ *   (a) A toast whose text names a record is raised through `recordToast.*`
+ *       with that record's identity (the `CONTEXT_MENU_ENTITY_KEY` shape —
+ *       `{ type, id, title }` — is the platform's record reference, and it is
+ *       the shape used here). On top of (b) such a toast:
+ *       - is dismissed when the record is deleted or renamed — call
+ *         `dismissRecordToasts(ref)` from the mutation that does it;
+ *       - is dismissed the instant the record leaves the screen — the
+ *         app-wide Toaster calls `dismissRecordToastsOffRoute(pathname)` on
+ *         every route change, so «Created "A"» never sits on B's page even
+ *         for the seconds its clock has left.
  *
  * Law 4 still holds (FIX-R16/R17): a failure with NO inline home keeps its
  * toast; a sentence that already has an inline home is never also toasted.
@@ -53,13 +65,13 @@ import { toast as sonnerToast } from "sonner";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { createMatrxToast } from "@ai-matrx/kit/toast";
 
-export const { toast, toastErrorAlreadyCaptured } = createMatrxToast({
+const captured = createMatrxToast({
   toast: sonnerToast,
   capture: captureError,
 });
 
 // ---------------------------------------------------------------------------
-// Record-aware toasts
+// The wall clock — shared by every toast this module raises
 // ---------------------------------------------------------------------------
 
 /**
@@ -87,31 +99,33 @@ export type RecordToastOptions = Record<string, unknown> & {
 };
 
 /**
- * Sonner's own default. A record toast uses the same visible lifetime — the
- * only difference is WHOSE clock runs it.
+ * Sonner's own default. A toast keeps the same visible lifetime it always
+ * had — the only difference is WHOSE clock runs it.
  */
-const DEFAULT_RECORD_TOAST_MS = 4000;
+const DEFAULT_TOAST_MS = 4000;
 
 /** A person reading a toast is not a stale toast: re-check this often. */
 const HOVER_DEFER_MS = 800;
 
-interface LiveRecordToast {
+interface LiveToast {
   toastId: ToastId;
-  record: ToastRecordRef;
+  /** The record this toast names, or null for a toast that names none. */
+  record: ToastRecordRef | null;
   /** Wall-clock instant the toast is due to go. */
   expiresAt: number;
   timer: ReturnType<typeof setTimeout> | null;
 }
 
-const liveRecordToasts = new Map<ToastId, LiveRecordToast>();
+/** Every toast this module raised that is (or may still be) on screen. */
+const liveToasts = new Map<ToastId, LiveToast>();
 
 const recordKey = (record: Pick<ToastRecordRef, "type" | "id">) =>
   `${record.type}::${record.id}`;
 
 function forget(toastId: ToastId) {
-  const entry = liveRecordToasts.get(toastId);
+  const entry = liveToasts.get(toastId);
   if (entry?.timer) clearTimeout(entry.timer);
-  liveRecordToasts.delete(toastId);
+  liveToasts.delete(toastId);
 }
 
 /** True while the pointer is over the toaster, so dismissal would be rude. */
@@ -124,7 +138,7 @@ function toasterIsHovered(): boolean {
   }
 }
 
-function arm(entry: LiveRecordToast) {
+function arm(entry: LiveToast) {
   const remaining = Math.max(0, entry.expiresAt - Date.now());
   entry.timer = setTimeout(() => {
     entry.timer = null;
@@ -137,18 +151,18 @@ function arm(entry: LiveRecordToast) {
     sonnerToast.dismiss(entry.toastId);
   }, remaining);
   // A background tab throttles timers to ~1/minute but never stops them, and
-  // `sweepExpiredRecordToasts()` (called by the Toaster on visibilitychange)
+  // `sweepExpiredToasts()` (called by the Toaster on visibilitychange)
   // closes that gap the instant anyone looks.
 }
 
 /**
- * Dismiss every record toast whose wall-clock lifetime has already run out.
- * Called by the app-wide Toaster when the document becomes visible, because a
- * throttled background timer may be up to a minute late.
+ * Dismiss every toast whose wall-clock lifetime has already run out. Called by
+ * the app-wide Toaster when the document becomes visible, because a throttled
+ * background timer may be up to a minute late.
  */
-export function sweepExpiredRecordToasts(now: number = Date.now()): number {
+export function sweepExpiredToasts(now: number = Date.now()): number {
   let dismissed = 0;
-  for (const entry of [...liveRecordToasts.values()]) {
+  for (const entry of [...liveToasts.values()]) {
     if (entry.expiresAt > now) continue;
     forget(entry.toastId);
     sonnerToast.dismiss(entry.toastId);
@@ -169,8 +183,8 @@ export function dismissRecordToasts(
 ): number {
   const key = recordKey(record);
   let dismissed = 0;
-  for (const entry of [...liveRecordToasts.values()]) {
-    if (recordKey(entry.record) !== key) continue;
+  for (const entry of [...liveToasts.values()]) {
+    if (!entry.record || recordKey(entry.record) !== key) continue;
     forget(entry.toastId);
     sonnerToast.dismiss(entry.toastId);
     dismissed += 1;
@@ -179,17 +193,53 @@ export function dismissRecordToasts(
 }
 
 /**
+ * Is this record what the new route is showing?
+ *
+ * A record's route names it in a path SEGMENT — by id on most surfaces, by a
+ * human key on the ones that route by key (`/administration/mandates/
+ * matrx.demo.intake`). So both are accepted, and only as a whole decoded
+ * segment: a substring test would keep a toast alive on any URL that merely
+ * contained the word, which is the false sentence this whole mechanism exists
+ * to prevent.
+ */
+function routeStillShows(record: ToastRecordRef, pathname: string): boolean {
+  const segments = pathname.split("/").filter(Boolean).map((s) => {
+    try {
+      return decodeURIComponent(s);
+    } catch {
+      return s;
+    }
+  });
+  if (record.id && segments.includes(record.id)) return true;
+  return !!record.title && segments.includes(record.title);
+}
+
+/**
  * Dismiss every record toast whose record is not on the route we just landed
- * on. A record's id appears in its own URL, so "still here" is decidable
- * without any per-feature wiring: navigating deeper into A keeps A's toast,
- * navigating to B (or back to a list) drops it.
+ * on. Navigating deeper into A keeps A's toast; navigating to B (or back to a
+ * list) drops it. No per-feature wiring: the URL already names the record.
  *
  * Called by the app-wide Toaster on every pathname change.
  */
 export function dismissRecordToastsOffRoute(pathname: string): number {
   let dismissed = 0;
-  for (const entry of [...liveRecordToasts.values()]) {
-    if (entry.record.id && pathname.includes(entry.record.id)) continue;
+  for (const entry of [...liveToasts.values()]) {
+    if (!entry.record || routeStillShows(entry.record, pathname)) continue;
+    forget(entry.toastId);
+    sonnerToast.dismiss(entry.toastId);
+    dismissed += 1;
+  }
+  return dismissed;
+}
+
+/**
+ * Drop every tracked toast at once. The Toaster's hidden-tab backlog sweep
+ * calls this: it clears sonner AND this registry in the same breath, so no
+ * entry outlives a toast that is already off screen.
+ */
+export function dismissAllTrackedToasts(): number {
+  let dismissed = 0;
+  for (const entry of [...liveToasts.values()]) {
     forget(entry.toastId);
     sonnerToast.dismiss(entry.toastId);
     dismissed += 1;
@@ -199,26 +249,39 @@ export function dismissRecordToastsOffRoute(pathname: string): number {
 
 /** Test/debug seam: the records that currently have a live toast. */
 export function liveRecordToastRefs(): ToastRecordRef[] {
-  return [...liveRecordToasts.values()].map((e) => e.record);
+  return [...liveToasts.values()].flatMap((e) => (e.record ? [e.record] : []));
 }
 
-type RecordToastKind = "success" | "error" | "info" | "warning" | "message";
+/** Test/debug seam: how many toasts of any kind this module is timing. */
+export function liveTrackedToastCount(): number {
+  return liveToasts.size;
+}
 
-function raise(
-  kind: RecordToastKind,
-  record: ToastRecordRef,
-  message: string,
-  options?: RecordToastOptions,
+/** Sonner's emitting signature — what every wrapped method looks like. */
+type Emit = (message: unknown, options?: RecordToastOptions) => ToastId;
+
+/**
+ * Raise a toast through `emit` on OUR clock. Sonner is told `Infinity` so its
+ * visibility-paused timer never runs; ours fires at the requested lifetime
+ * (or sonner's 4 s default). `duration: Infinity` from the caller means "this
+ * one stays until something withdraws it" — then no timer is armed and the
+ * instant it is due is Infinity too, so no sweep ever takes it.
+ */
+function track(
+  emit: Emit,
+  message: unknown,
+  options: RecordToastOptions | undefined,
+  record: ToastRecordRef | null,
 ): ToastId {
   const requested = options?.duration;
   const lifetimeMs =
-    typeof requested === "number" && Number.isFinite(requested)
-      ? requested
-      : DEFAULT_RECORD_TOAST_MS;
+    requested === Infinity
+      ? Infinity
+      : typeof requested === "number" && Number.isFinite(requested)
+        ? requested
+        : DEFAULT_TOAST_MS;
 
-  // Sonner's own timer is the thing that freezes while the document is
-  // hidden, so it is taken out of the loop entirely and replaced by ours.
-  // `Infinity` here means "sonner, don't you time this" — not "forever".
+  // "Sonner, don't you time this" — not "forever".
   const passthrough: RecordToastOptions = { ...options, duration: Infinity };
 
   const previousDismiss = options?.onDismiss as ((t: unknown) => void) | undefined;
@@ -236,27 +299,81 @@ function raise(
     previousAutoClose?.(t);
   };
 
-  const emit =
-    kind === "success"
-      ? toast.success
-      : kind === "error"
-        ? toast.error
-        : kind === "info"
-          ? toast.info
-          : kind === "warning"
-            ? toast.warning
-            : toast.message;
   toastId = emit(message, passthrough);
 
-  const entry: LiveRecordToast = {
+  const entry: LiveToast = {
     toastId,
     record,
     expiresAt: Date.now() + lifetimeMs,
     timer: null,
   };
-  liveRecordToasts.set(toastId, entry);
+  liveToasts.set(toastId, entry);
   if (requested !== Infinity) arm(entry);
   return toastId;
+}
+
+/** Wrap one sonner method onto the wall clock; leave a missing one missing. */
+function onWallClock(emit: Emit | undefined) {
+  if (typeof emit !== "function") return undefined;
+  return (message: unknown, options?: RecordToastOptions) =>
+    track(emit, message, options, null);
+}
+
+type MatrxToast = typeof captured.toast;
+
+/**
+ * THE `toast` everyone imports. Identical API to sonner's, with three changes
+ * that are the whole point of this module: error/warning reach the Error
+ * Inspector (the kit wrapper), every timed toast runs on the wall clock (tier
+ * (b) above), and `dismiss()` keeps this registry honest.
+ */
+export const toast: MatrxToast = Object.assign(
+  ((message: unknown, options?: RecordToastOptions) =>
+    track(captured.toast as unknown as Emit, message, options, null)) as unknown as MatrxToast,
+  captured.toast,
+  {
+    success: onWallClock(captured.toast.success as unknown as Emit),
+    error: onWallClock(captured.toast.error as unknown as Emit),
+    info: onWallClock(captured.toast.info as unknown as Emit),
+    warning: onWallClock(captured.toast.warning as unknown as Emit),
+    message: onWallClock(captured.toast.message as unknown as Emit),
+    dismiss: (id?: ToastId) => {
+      if (id === undefined) {
+        for (const entry of [...liveToasts.values()]) forget(entry.toastId);
+      } else {
+        forget(id);
+      }
+      return captured.toast.dismiss(id);
+    },
+  },
+);
+
+/** An error toast whose error was already captured upstream — same clock. */
+export const toastErrorAlreadyCaptured: typeof captured.toastErrorAlreadyCaptured = (
+  message,
+  options,
+) =>
+  track(
+    captured.toastErrorAlreadyCaptured as unknown as Emit,
+    message,
+    options as RecordToastOptions | undefined,
+    null,
+  );
+
+// ---------------------------------------------------------------------------
+// Record-aware toasts — tier (a)
+// ---------------------------------------------------------------------------
+
+type RecordToastKind = "success" | "error" | "info" | "warning" | "message";
+
+function raise(
+  kind: RecordToastKind,
+  record: ToastRecordRef,
+  message: string,
+  options?: RecordToastOptions,
+): ToastId {
+  const emit = (captured.toast as unknown as Record<RecordToastKind, Emit>)[kind];
+  return track(emit, message, options, record);
 }
 
 /**

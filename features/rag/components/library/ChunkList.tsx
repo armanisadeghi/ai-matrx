@@ -26,8 +26,8 @@ import { cn } from "@/lib/utils";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import {
   fetchDerivativeChunks,

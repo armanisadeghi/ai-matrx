@@ -21,24 +21,13 @@ import { peekHref } from "../peekHref";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface FileRow {
   file_name: string | null;
   mime_type: string | null;
   size_bytes: number | null;
   created_at: string | null;
-}
-
-function humanSize(bytes: number | null): string {
-  if (!bytes && bytes !== 0) return "—";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let n = bytes;
-  let i = 0;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i++;
-  }
-  return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
 export default function FilePeek({ id, open, onClose }: PeekProps) {
@@ -81,7 +70,7 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
               {row.mime_type ?? "unknown"}
             </Badge>
           </PeekField>
-          <PeekField label="Size">{humanSize(row.size_bytes)}</PeekField>
+          <PeekField label="Size">{formatFileSize(row.size_bytes)}</PeekField>
           <PeekField label="Added">
             {row.created_at ? new Date(row.created_at).toLocaleString() : "—"}
           </PeekField>

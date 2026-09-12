@@ -42,7 +42,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { hrMockEnabled, type HrFixtureCase } from "@/features/hr/mock/transport";
 import type { HrRpcOptions } from "@/features/hr/time/api/rpc";
 import type { HrDenied, HrFailed, HrResult } from "@/features/hr/types";
 import type { Database } from "@/types/database.types";
@@ -187,7 +187,7 @@ export async function callHrLeaveRpc<Rpc extends HrLeaveRpcName>(
   args: HrLeaveRpcArgs<Rpc>,
   opts?: HrRpcOptions,
 ): Promise<HrResult<Record<string, unknown>>> {
-  if (HR_MOCK_ENABLED) refuseMock(rpc, opts?.mockCase);
+  if (hrMockEnabled()) refuseMock(rpc, opts?.mockCase);
 
   const query = supabase.rpc(rpc, args);
   let data: unknown;

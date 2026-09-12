@@ -4,6 +4,11 @@
 // platform.knob_override + the scfg_03 doors). One row of `knob_index` carries
 // BOTH resolution state and presentation metadata, so no consumer ever needs a
 // second read of platform.feature_knob.
+//
+// The shape below IS the live read contract — aidream migration
+// 0630_knob_index_v2_scope_chain_ui_taxonomy.sql (applied 2026-09-11), the
+// Unified Settings Platform's LANE A. Every field is returned on every call;
+// nothing here is optional "until the contract lands".
 
 export type KnobScopeKindName =
   | "organization"
@@ -12,7 +17,9 @@ export type KnobScopeKindName =
   | "pay_group"
   | "site"
   | "location"
-  | "user";
+  | "user"
+  /** USD-9: precedence 110, below `user`; keyed by a device / instance id. */
+  | "device";
 
 export type KnobValueType =
   | "number"
@@ -20,13 +27,107 @@ export type KnobValueType =
   | "boolean"
   | "string"
   | "enum"
-  | "json";
+  | "json"
+  /** The value NEVER leaves the vault — `secret` carries set/not-set only. */
+  | "secret";
 
+/**
+ * Where the effective value came from, BY RUNG NAME: "organization", "user",
+ * "brand", "device", … — plus the two non-rung answers.
+ */
 export type KnobOrigin =
-  | "user_override"
-  | "org_override"
+  | KnobScopeKindName
   | "platform_default"
   | "missing";
+
+/**
+ * Render hints carried on `platform.feature_knob.ui`. Every field is optional:
+ * a key with no hints renders from `value_type` alone (enum → choice control
+ * with `allowed_values`, bounded number → slider with its min/max, boolean →
+ * switch). Hints steer presentation; they never change what may be written.
+ */
+export type KnobUiHints = {
+  /** Section heading the key is grouped under in the centre pane. */
+  group?: string;
+  /** Sort position inside its group. Unset sorts last, then alphabetically. */
+  order?: number;
+  /** Explicit control choice. Omitted → derived from `value_type`. */
+  control?:
+    | "switch"
+    /** Live registry spelling of `switch` (agent_directives.auto_apply_allowed). */
+    | "toggle"
+    | "select"
+    | "segmented"
+    | "radio"
+    | "slider"
+    | "number"
+    | "text"
+    | "textarea"
+    | "secret"
+    /** A model id from the AI catalog, shown as "<maker> <model>". */
+    | "model"
+    /** A voice id from the speech catalog, with pick-and-hear preview. */
+    | "voice";
+  /** One sentence under the control, in the person's language. */
+  help?: string;
+  placeholder?: string;
+  /** Display format for numbers, e.g. "percent", "bytes", "duration". */
+  format?: string;
+  /** Opaque preview token — e.g. which engine plays a voice sample. */
+  preview?: string;
+};
+
+/** The registry node a key is filed under — the product's own vocabulary. */
+export type KnobTaxonomy = {
+  node_id: string;
+  node_level: "domain" | "feature" | "sub_feature" | string;
+  node_slug: string;
+  node_name: string;
+  domain_slug: string;
+  domain_name: string;
+  feature_slug: string | null;
+  feature_name: string | null;
+};
+
+/**
+ * One rung that MAY hold this key, in precedence order (nearest LAST). A rung
+ * this call did not address has `scope_id: null` and `is_set: false` — it is
+ * still listed, because the UI shows the whole ladder, never only the rungs
+ * in play.
+ */
+export type KnobScopeRung = {
+  kind: KnobScopeKindName;
+  precedence: number;
+  scope_id: string | null;
+  value: unknown;
+  is_set: boolean;
+  /** This organization has locked the rung (knob_rung_lock); its value is inert. */
+  locked: boolean;
+  /** This rung is the one the effective value came from. */
+  is_effective: boolean;
+};
+
+/** Why writing is forbidden at the rung this caller would edit. */
+export type KnobLocked = {
+  by_kind: KnobScopeKindName | "platform";
+  locked_by: "platform" | "organization";
+  reason: "platform_locked" | "org_locked";
+  /** The sentence to show. */
+  detail: string;
+};
+
+export type KnobCanWriteReason =
+  | "platform_locked"
+  | "org_locked"
+  | "no_addressable_scope"
+  | "not_self"
+  | "not_org_admin";
+
+/** A secret key's state. The value itself is never returned. */
+export type KnobSecretState = {
+  state: "set" | "not_set";
+  vault_key: string | null;
+};
 
 /** One key as platform.knob_index projects it. */
 export type ScopedKnob = {
@@ -57,8 +158,29 @@ export type ScopedKnob = {
   user_override: unknown;
   effective_value: unknown;
   origin: KnobOrigin;
+  origin_scope_id: string | null;
+  origin_precedence: number | null;
   is_overridden: boolean;
   out_of_range: boolean;
+
+  /** Render hints. `{}` means "derive from value_type". */
+  ui: KnobUiHints;
+  /** Registry node. `null` → the key is not filed under a domain yet. */
+  taxonomy: KnobTaxonomy | null;
+  /** Whether a change applies on next load or immediately (USD-7). */
+  propagation: "next_load" | "instant";
+  /** Every rung named in `overridable_by`, precedence ascending. */
+  scope_chain: KnobScopeRung[];
+  /** Set when an empty `overridable_by` or a rung lock forbids writing. */
+  locked: KnobLocked | null;
+  /** The rung an edit would land on for THIS call; null when none is addressable. */
+  write_rung: { kind: KnobScopeKindName | "platform"; scope_id: string | null } | null;
+  /** Whether THIS caller may write at `write_rung`. */
+  can_write: boolean;
+  /** Why not, when `can_write` is false. */
+  can_write_reason: KnobCanWriteReason | null;
+  /** Only for `value_type: "secret"`; null otherwise. */
+  secret: KnobSecretState | null;
 };
 
 /** platform.knob_override_set result: either granted or a structured refusal. */

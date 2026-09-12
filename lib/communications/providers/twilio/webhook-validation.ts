@@ -39,19 +39,21 @@ export function buildTwilioWebhookUrl(request: Request, pathname: string): strin
   return `${proto}://${host}${pathname}${requestUrl.search}`;
 }
 
+/**
+ * The signature check is UNCONDITIONAL. `TWILIO_SKIP_VALIDATION` used to turn it
+ * off whenever `NODE_ENV === "development"`; it was deleted 2026-09-11 under
+ * USD-5 ("Never an env var. Env values are only for secrets, not for controlling
+ * behavior"). A security check a machine can switch off from its own environment
+ * is the exact class that law exists to kill — and unlike a feature toggle there
+ * is no honest setting to move it to: an organization may not choose to accept
+ * unsigned webhooks. Local development signs with the same `TWILIO_AUTH_TOKEN`
+ * the Twilio console shows, so the real check passes there too.
+ */
 export function validateTwilioSignature(
   signature: string,
   url: string,
   params: Record<string, string>,
 ): boolean {
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.TWILIO_SKIP_VALIDATION === "true"
-  ) {
-    console.warn("Twilio signature validation skipped in explicit development mode");
-    return true;
-  }
-
   return twilio.validateRequest(getTwilioAuthToken(), signature, url, params);
 }
 

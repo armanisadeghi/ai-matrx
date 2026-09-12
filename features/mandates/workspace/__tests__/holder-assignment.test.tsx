@@ -430,7 +430,7 @@ describe("an org-homed job's scope sentence names its organization", () => {
       home: { systemHomed: true, organizationName: null },
     });
     expect(health.sentence).toBe(
-      "Nothing is assigned, so nothing runs this job for every user on the platform.",
+      "Nothing is assigned for every user on the platform, so the Mandate resolver refuses this job.",
     );
     expect(health.remedy).toBe("Choose an agent or a workflow above.");
     expect(health.broken).toBe(true);

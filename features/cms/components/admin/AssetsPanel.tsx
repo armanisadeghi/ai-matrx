@@ -16,8 +16,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { fileHandler } from "@/features/files/handler/handler";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
 import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSiteSummary } from '../../types';
 import { Button } from '@/components/ui/button';
@@ -60,13 +61,6 @@ const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
     document: FileText,
     file: FileIcon,
 };
-
-function formatBytes(n: number | null): string {
-    if (n == null) return '—';
-    if (n < 1024) return `${n} B`;
-    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function fileTypeForMime(mime: string): string {
     const top = mime.split('/')[0];
@@ -147,7 +141,10 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                 height: primary?.height ?? null,
             });
             toast.dismiss(tid);
-            toast.success(`Asset '${asset.file_name}' added to ${site?.name ?? 'site'}`);
+            recordToast.success(
+                { type: 'cms_asset', id: asset.id, title: asset.file_name },
+                `Asset '${asset.file_name}' added to ${site?.name ?? 'site'}`,
+            );
             refresh();
         } catch (err) {
             toast.dismiss(tid);
@@ -187,6 +184,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
             await CmsAssetService.deleteAsset(asset.id, force);
             setDeleteState(null);
             setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+            dismissRecordToasts({ type: 'cms_asset', id: asset.id });
             toast.success(`Deleted '${asset.file_name}'${force ? ' (forced)' : ''}`);
         } catch (err) {
             if (err instanceof AssetInUseError) {
@@ -282,7 +280,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                             {asset.file_name}
                                         </div>
                                         <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                                            <span>{formatBytes(asset.file_size)}</span>
+                                            <span>{formatFileSize(asset.file_size)}</span>
                                             {asset.width && asset.height ? (
                                                 <span>
                                                     {asset.width}×{asset.height}

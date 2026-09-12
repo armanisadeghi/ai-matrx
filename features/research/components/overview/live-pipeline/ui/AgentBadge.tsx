@@ -1,6 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+// THE package avatar-color hash (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `(h<<5)-h` is `h*31`, so this file's hash was already
+// mathematically identical to `avatarPaletteIndex`'s; the 8-color PALETTE
+// below still assigns identical colors to identical agent types.
+import { avatarPaletteIndex } from "@ai-matrx/kit/format";
 
 interface Props {
   agentType: string;
@@ -22,17 +27,8 @@ const PALETTE = [
   "bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-800/40",
 ];
 
-function hash(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (h << 5) - h + str.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h);
-}
-
 export function AgentBadge({ agentType, className }: Props) {
-  const color = PALETTE[hash(agentType) % PALETTE.length];
+  const color = PALETTE[avatarPaletteIndex(agentType, PALETTE.length)];
   return (
     <span
       className={cn(

@@ -17,7 +17,7 @@ import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap"
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useDefaultOrganization } from "./useDefaultOrganization";
-import { useDefaultOrganizationAutoSelect } from "./useDefaultOrganizationAutoSelect";
+import { useActiveOrganizationAutoSelect } from "./useActiveOrganizationAutoSelect";
 
 export function useActiveOrganizationPicker() {
   const dispatch = useAppDispatch();
@@ -38,9 +38,10 @@ export function useActiveOrganizationPicker() {
     void dispatch(ensureScopeTree({}));
   }, [dispatch, isAuthenticated]);
 
-  // Belt to the resolver's braces: a stated default is never left unapplied,
-  // even if the sync fetch that normally applies it never ran.
-  useDefaultOrganizationAutoSelect(organizations);
+  // Belt to the resolver's braces: a boot that could name an organization
+  // never ends without one, even if the sync fetch that normally names it
+  // never ran.
+  useActiveOrganizationAutoSelect(organizations);
 
   const selectOrganization = (id: string, name: string) => {
     dispatch(chooseActiveOrganization({ id, name }));

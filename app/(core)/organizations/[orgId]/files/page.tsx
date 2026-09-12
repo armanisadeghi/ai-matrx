@@ -9,6 +9,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 const SELECT_COLS = "id, file_name, mime_type, size_bytes, updated_at";
 
@@ -32,12 +33,7 @@ const makeFetchOwned =
 
 const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => {
   const size = row.size_bytes as number | null | undefined;
-  const sizeStr =
-    size && size > 0
-      ? size > 1024 * 1024
-        ? `${(size / (1024 * 1024)).toFixed(1)} MB`
-        : `${Math.max(1, Math.round(size / 1024))} KB`
-      : null;
+  const sizeStr = size && size > 0 ? formatFileSize(size) : null;
   return {
     id: String(row.id),
     title: (row.file_name as string | null) ?? "Untitled",

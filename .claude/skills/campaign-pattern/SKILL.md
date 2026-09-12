@@ -84,10 +84,21 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    worker, Sonnet/Luna when obviously easy, Fable/Astra only where the chair itself would struggle;
    effort medium unless the task needs sustained reasoning — `policies/subagent-model-ladder.md`).
    Freeze contracts before fan-out so lanes can't collide; after the freeze a change is an
-   amendment (changelog + register note + type regeneration), never a silent edit. **The ratchet:**
+   amendment (changelog + register note + type regeneration), never a silent edit. **STEP ZERO
+   before any lane scouts for unclaimed work: query `agent.review_queue` for the reviewable
+   thing by name — never trust a fresh checkout's git state alone.** Confirmed 2026-09-12: a
+   freshly cloned repo can come down materially behind `origin/main` through the session's git
+   proxy, and a same-session `git fetch origin main` can silently re-serve that same stale ref —
+   so "clone, fetch, then scout" still missed already-shipped work (surface write-targets for
+   `quick-tasks` and others were rebuilt from scratch this way, twice). `git ls-remote --heads`
+   under-reports too, because merged campaign branches are deleted. A direct row lookup in the
+   queue by the target's name is the reliable dedup; treat a fresh git checkout as corroboration
+   only, never as proof of non-adoption. **The ratchet:**
    a lane that discovers its task is bigger than briefed escalates the SHAPE (a ruling, a split,
    a lane up) — it never quietly shrinks the scope. Briefs, report statuses, the two-verdict
-   review, and the bounded fix loop: `subagent-dispatch`.
+   review, the bounded fix loop, and the two rules that lose work outright — never end a turn while a
+   background subagent is still running, and commit each unit as it lands rather than at the end:
+   `subagent-dispatch` §1.
 3. **Nothing flips on the builder's word.** A builder owes fresh evidence for every claim before
    handoff — that is the FLOOR. The BAR is independent, zero-authorship verification against the
    SPEC, on the deployed surface, with real identities driving real doors: verifiers try to BREAK

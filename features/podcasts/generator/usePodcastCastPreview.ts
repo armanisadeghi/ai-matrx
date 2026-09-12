@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api/typed-client";
-import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import type { components } from "@/types/python-generated/api-types";
 import type { PodcastSpeaker } from "./types";
 import type { VoiceProvider } from "./voiceCatalog";

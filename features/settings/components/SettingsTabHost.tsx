@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, Component, type ReactNode } from "react";
+import { Suspense, Component, createContext, useContext, type ReactNode } from "react";
 import { AlertTriangle, Settings as SettingsIcon } from "lucide-react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -19,6 +19,13 @@ type SettingsTabHostProps = {
   /** True while a breadcrumb navigation is changing the active route. */
   navigationPending?: boolean;
 };
+
+const ActiveSettingsTabIdContext = createContext<string | null>(null);
+
+/** The active registry id for tabs whose component is shared by many nodes. */
+export function useActiveSettingsTabId(): string | null {
+  return useContext(ActiveSettingsTabIdContext);
+}
 
 /**
  * Renders the active settings tab with Suspense for lazy loading
@@ -51,9 +58,11 @@ export function SettingsTabHost({
       )}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <TabErrorBoundary tabLabel={activeTab.label}>
-          <Suspense fallback={<TabLoading tabLabel={activeTab.label} />}>
-            <TabComponent />
-          </Suspense>
+          <ActiveSettingsTabIdContext.Provider value={activeTab.id}>
+            <Suspense fallback={<TabLoading tabLabel={activeTab.label} />}>
+              <TabComponent />
+            </Suspense>
+          </ActiveSettingsTabIdContext.Provider>
         </TabErrorBoundary>
       </div>
     </div>

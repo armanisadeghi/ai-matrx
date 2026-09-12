@@ -101,7 +101,9 @@
  *
  * ADVISORY BY DESIGN (memory: "scream, never block"). Prints and exits 0
  * unless --strict. Flags: --json (machine-readable rows, for sharding a fleet)
- * · --population=tables,editables,… · --strict.
+ * · --population=tables,editables,… · --strict · --self-test (plant a dead
+ * item and a live one, and fail if the LIVE-ITEM LAW cannot tell them apart —
+ * a guard you cannot demonstrate failing is not a guard).
  */
 
 import { readFileSync, globSync } from "node:fs";
@@ -730,7 +732,13 @@ function deadHandlerReason(
     // Concise body: `() => undefined`, `() => void 0`, `() => null`.
     if (ts.isIdentifier(body) && body.text === "undefined")
       return "its handler returns `undefined` and does nothing else";
-    if (ts.isVoidExpression(body) || body.kind === ts.SyntaxKind.NullKeyword)
+    // `() => void m.handleCopy()` is the codebase's idiom for "fire and drop
+    // the promise" and is VERY much alive. Only `void 0` / `void "x"` is dead.
+    if (ts.isVoidExpression(body))
+      return ts.isLiteralExpression(body.expression)
+        ? "its handler evaluates to nothing"
+        : null;
+    if (body.kind === ts.SyntaxKind.NullKeyword)
       return "its handler evaluates to nothing";
     return null;
   }
@@ -798,10 +806,6 @@ function collectItemLiterals(sf: ts.SourceFile): ts.ObjectLiteralExpression[] {
   };
 
   const walk = (node: ts.Node): void => {
-    if (ts.isObjectLiteralExpression(node)) {
-      const kind = stringOf(prop(node, "kind"));
-      if (kind && ITEM_KINDS.has(kind)) found.set(node.pos, node);
-    }
     if (
       ts.isPropertyAssignment(node) &&
       !ts.isComputedPropertyName(node.name) &&
@@ -846,6 +850,21 @@ function collectItemLiterals(sf: ts.SourceFile): ts.ObjectLiteralExpression[] {
       for (const arg of node.arguments)
         if (ts.isObjectLiteralExpression(arg)) found.set(arg.pos, arg);
     }
+    if (ts.isCallExpression(node)) {
+      // `[...list].map((x) => ({ kind: "item", … }))` in an item position — the
+      // arrow's object body is an item too, and `items:` only saw the `.map(…)`
+      // call. Only counted when the literal declares an item `kind`, so this
+      // net cannot drag in arbitrary mapped objects.
+      for (const arg of node.arguments) {
+        if (!ts.isArrowFunction(arg) || ts.isBlock(arg.body)) continue;
+        const body = ts.isParenthesizedExpression(arg.body)
+          ? arg.body.expression
+          : arg.body;
+        if (!ts.isObjectLiteralExpression(body)) continue;
+        const kind = stringOf(prop(body, "kind"));
+        if (kind && ITEM_KINDS.has(kind)) found.set(body.pos, body);
+      }
+    }
 
     ts.forEachChild(node, walk);
   };
@@ -861,13 +880,21 @@ function gradeItem(
   // `{ ...base, kind: "item" }` — the action may come from `base`.
   if (hasSpread(obj)) return null;
 
+  // An `items:` array is not always a MENU's items — a clipboard payload is
+  // `{ op: "cut", items: [{ id, kind: "file" }] }`. A literal that declares a
+  // `kind` this menu does not have is somebody else's object.
   const declared = stringOf(prop(obj, "kind"));
-  if (declared === "separator") return null;
+  if (declared !== null && !ITEM_KINDS.has(declared)) return null;
 
   const onSelect = prop(obj, "onSelect");
   const onCheckedChange = prop(obj, "onCheckedChange");
   const href = prop(obj, "href");
-  const children = prop(obj, "children");
+  // TWO item models live here: v3's `ContextMenuExtraItem` nests a submenu
+  // under `children`, the official `ItemMenu` nests it under `sections`.
+  // Knowing only `children` graded every `ItemMenu` submenu as opening onto
+  // nothing — 3 false alarms in a LAW section, which is how a guard gets
+  // ignored.
+  const children = prop(obj, "children") ?? prop(obj, "sections");
   const label = prop(obj, "label");
   const id = prop(obj, "id");
 
@@ -1040,7 +1067,113 @@ function registryFindings(files: Map<string, string>): Finding[] {
 // Main
 // ---------------------------------------------------------------------------
 
+/**
+ * PROVE THE LAW CAN STILL FAIL.
+ *
+ * The real RED proof is planting a dead item in a real surface and watching
+ * the guard report it (done 2026-09-11 in a detached worktree; recorded in the
+ * resolution register). This is the cheap regression version of that proof, so
+ * a later refactor of the AST walk cannot quietly turn the law into a
+ * formality: it feeds the detector items whose verdicts are not in doubt and
+ * fails loudly if any verdict flips.
+ */
+function selfTest(): never {
+  const cases: Array<{ name: string; src: string; dead: boolean }> = [
+    {
+      name: "empty arrow handler",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Export", onSelect: () => {} }] };`,
+      dead: true,
+    },
+    {
+      name: "no action at all",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Export" }] };`,
+      dead: true,
+    },
+    {
+      name: "handler returning undefined",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Export", onSelect: () => undefined }] };`,
+      dead: true,
+    },
+    {
+      name: "handler is noop",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Export", onSelect: noop }] };`,
+      dead: true,
+    },
+    {
+      name: "handler resolves to a local no-op",
+      src: `const handleExport = () => {};\nconst s = { id: "x", items: [{ kind: "item", id: "a", label: "Export", onSelect: handleExport }] };`,
+      dead: true,
+    },
+    {
+      name: "link with an empty href",
+      src: `const s = { id: "x", items: [{ kind: "link", id: "a", label: "Docs", href: "" }] };`,
+      dead: true,
+    },
+    {
+      name: "submenu opening onto nothing",
+      src: `const s = { id: "x", items: [{ kind: "submenu", id: "a", label: "More", children: [] }] };`,
+      dead: true,
+    },
+    {
+      name: "real handler",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Export", onSelect: () => exportIt() }] };`,
+      dead: false,
+    },
+    {
+      name: "fire-and-drop `void call()`",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Copy", onSelect: () => void m.handleCopy() }] };`,
+      dead: false,
+    },
+    {
+      name: "honest `disabled: true`",
+      src: `const s = { id: "x", items: [{ kind: "item", id: "a", label: "Export", disabled: true, onSelect: () => {} }] };`,
+      dead: false,
+    },
+    {
+      name: "waived with a written reason",
+      src: `const s = { id: "x", items: [\n// context-menu: inert-ok — the parent row handles this\n{ kind: "item", id: "a", label: "Export", onSelect: () => {} }] };`,
+      dead: false,
+    },
+    {
+      name: "spread-built item (provenance unknown)",
+      src: `const s = { id: "x", items: [{ ...base, kind: "item", id: "a", label: "Export" }] };`,
+      dead: false,
+    },
+    {
+      name: "someone else's `items:` array",
+      src: `const s = { op: "cut", items: [{ id: "f1", kind: "file", source: "real" }] };`,
+      dead: false,
+    },
+    {
+      name: "ItemMenu submenu nests under `sections`",
+      src: `const s = { id: "x", items: [{ kind: "submenu", id: "a", label: "Export as", sections: [{ items: [] }] }] };`,
+      dead: false,
+    },
+  ];
+
+  let failed = 0;
+  for (const c of cases) {
+    const hits = deadItemsInSource("self-test.ts", c.src);
+    const got = hits.length > 0;
+    if (got !== c.dead) {
+      failed++;
+      console.log(
+        `  FAIL  ${c.name} — expected ${c.dead ? "DEAD" : "live"}, got ${got ? "DEAD" : "live"}`,
+      );
+    } else {
+      console.log(`  ok    ${c.name} — ${c.dead ? "DEAD" : "live"}`);
+    }
+  }
+  console.log(
+    failed === 0
+      ? `\nLIVE-ITEM LAW self-test: ${cases.length}/${cases.length} — the guard can still fail.\n`
+      : `\nLIVE-ITEM LAW self-test: ${failed} of ${cases.length} verdicts flipped. The law is broken.\n`,
+  );
+  process.exit(failed === 0 ? 0 : 1);
+}
+
 function main() {
+  if (ARGV.includes("--self-test")) selfTest();
   const files = readAll();
 
   // Every JSX tag rendered inside a file that mounts a menu — the ancestor net.

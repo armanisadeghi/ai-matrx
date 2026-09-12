@@ -799,6 +799,15 @@ export function ContextMenuV3({
         <ContextMenuContent
           className={`z-[9999] w-64 max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto ${className ?? ""}`}
           onCloseAutoFocus={onCloseAutoFocus}
+          // A context menu can appear before the originating secondary-button
+          // release. Radix treats an item pointer-up without an item
+          // pointer-down as a click for assistive input, so that release could
+          // select whichever command rendered beneath it. Consume only the
+          // secondary release; primary clicks and keyboard selection still
+          // follow Radix's normal item path.
+          onPointerUpCapture={(event) => {
+            if (event.button === 2) event.preventDefault();
+          }}
         >
           <MenuContent variant="context" {...menuContentProps} />
         </ContextMenuContent>

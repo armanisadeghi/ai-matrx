@@ -6,6 +6,7 @@
  */
 
 import type { JsonObject } from "@/types/json";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ============================================================================
 // Core Types
@@ -298,8 +299,51 @@ export function validateOrgSlug(slug: string): {
   return { valid: true };
 }
 
-/** The fixed compact label for a user's personal organization. */
-export const PERSONAL_ORG_ABBREVIATION = "ME";
+/**
+ * Is this organization the VIEWER'S OWN personal organization?
+ *
+ * 🚨 FOR DATA ROUTING ONLY — NEVER FOR DISPLAY. An organization is shown
+ * under its real name, its real abbreviation and the viewer's real role in it,
+ * always; nothing on screen is relabelled because a row carries `is_personal`
+ * (Arman, 2026-09-11: *"annihilate the feature that renames an org and gives it
+ * some override name by calling it my personal"*). Use this only where the
+ * answer decides WHERE A ROW IS WRITTEN.
+ *
+ * 🚨 `isPersonal` ALONE IS NOT THE ANSWER — it says "this is somebody's private
+ * workspace", never "it is yours". A user can hold a membership in another
+ * person's personal org, and every surface that derived "Personal" / "ME" from
+ * `isPersonal` alone was labelling someone else's private workspace as the
+ * viewer's own.
+ *
+ * Live defect, 2026-09-11: an account holding an `admin` membership in another
+ * account's personal org had `resolveActiveOrgContext` seed
+ * `personal_organization_id` — the never-null org for WRITES — from
+ * `find(o => o.isPersonal)`, which could match the workspace it did NOT own.
+ * That is the class this predicate exists to close.
+ *
+ * Ownership is `created_by`. That is the same column the database keys on in
+ * `iam.personal_org_id()` and in the partial unique index
+ * `organizations_one_personal_per_creator`, so this predicate and the server
+ * agree by construction rather than by coincidence.
+ *
+ * Accepts either wire spelling: the camelCase `Organization` shape and the
+ * snake_case row/RPC shape are the same fact, so they share one predicate
+ * instead of growing a second implementation.
+ */
+export function isOwnPersonalOrg(
+  org: {
+    isPersonal?: boolean | null;
+    is_personal?: boolean | null;
+    createdBy?: string | null;
+    created_by?: string | null;
+  },
+  viewerUserId: string | null | undefined,
+): boolean {
+  const personal = org.isPersonal ?? org.is_personal ?? false;
+  if (personal !== true) return false;
+  const owner = org.createdBy ?? org.created_by ?? null;
+  return !!viewerUserId && !!owner && owner === viewerUserId;
+}
 
 const ABBREVIATION_IGNORED_WORDS = new Set([
   "A",
@@ -325,16 +369,18 @@ const ABBREVIATION_IGNORED_WORDS = new Set([
 ]);
 
 /**
- * Generate the canonical 2-3 letter starting value for an organization.
- * Personal organizations are always ME. Shared organizations use meaningful
- * word initials, preserving a short leading initialism (AI Matrx -> AIM).
+ * Generate the canonical 2-3 letter starting value for an organization, from
+ * its NAME — meaningful word initials, preserving a short leading initialism
+ * (AI Matrx -> AIM).
+ *
+ * There is no personal-organization special case. It used to return the
+ * constant "ME" for any `is_personal` row, which is a viewer-relative word
+ * applied as an absolute label: a user who belonged to two personal
+ * organizations saw the same "ME" chip on both and could not tell them apart
+ * (Arman, 2026-09-11). Every organization now abbreviates from its own name,
+ * the same way every other name in the product is its own.
  */
-export function generateOrganizationAbbreviation(
-  name: string,
-  isPersonal = false,
-): string {
-  if (isPersonal) return PERSONAL_ORG_ABBREVIATION;
-
+export function generateOrganizationAbbreviation(name: string): string {
   const words = (name.toUpperCase().match(/[A-Z]+/g) ?? []).filter(
     (word) => !ABBREVIATION_IGNORED_WORDS.has(word),
   );
@@ -426,23 +472,14 @@ export function getRoleBadgeColor(role: OrgRole): string {
 /**
  * Format time remaining until expiration
  */
+/**
+ * THE prose voice: @ai-matrx/kit/format's `long` ("3 days", "5 hours",
+ * "20 minutes"), which floors so a countdown never over-promises, and
+ * pluralises correctly at every unit.
+ */
 export function getExpiryDisplay(expiresAt: string): string {
-  const now = new Date();
-  const expiry = new Date(expiresAt);
-  const diff = expiry.getTime() - now.getTime();
-
-  if (diff < 0) {
-    return "Expired";
-  }
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-  if (days > 0) {
-    return `Expires in ${days} day${days > 1 ? "s" : ""}`;
-  } else if (hours > 0) {
-    return `Expires in ${hours} hour${hours > 1 ? "s" : ""}`;
-  } else {
-    return "Expires soon";
-  }
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (Number.isNaN(diff)) return "Expired";
+  if (diff < 0) return "Expired";
+  return `Expires in ${formatDurationMs(diff, { style: "long" })}`;
 }

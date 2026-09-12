@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -371,7 +373,7 @@ export function ResultsPanel({
           {duration !== undefined && (
             <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
               <Timer className="h-2.5 w-2.5" />
-              {(duration / 1000).toFixed(2)}s
+              {formatDurationMs(duration, { style: "compact" })}
             </span>
           )}
           {finalPayload?.metadata?.call_id && (

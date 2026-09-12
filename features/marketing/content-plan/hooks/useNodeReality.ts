@@ -208,6 +208,15 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                         cmsSite: args.cmsSiteId,
                         nodeId: args.nodeId,
                         write: true,
+                        // A live page is re-authored into its DRAFT; the public
+                        // keeps seeing the current version until it is published.
+                        // Read published-ness from the SAME row the verdict used
+                        // (the full page, 30s fresh) before the plan-wide summary
+                        // (60s): a page published in the CMS a moment ago would
+                        // otherwise be sent without the flag and refused.
+                        includePublished:
+                            (detail.data?.is_published ?? args.cmsPage?.isPublished) ===
+                            true,
                     });
                     toast.success(
                         preview.wrote
@@ -258,6 +267,8 @@ export function useNodeReality(args: UseNodeRealityArgs) {
             args.siteId,
             args.nodeId,
             args.cmsPagesByNodeId,
+            args.cmsPage,
+            detail.data,
             nodesById,
             pageId,
             invalidate,

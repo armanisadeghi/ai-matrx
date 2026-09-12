@@ -11,6 +11,15 @@
  *
  * Undeclared is the alarming state: it means the database allows something
  * nobody wrote a reason for. That is exactly how the 2026-08-25 leak survived.
+ *
+ * SCOPE, STATED HONESTLY (2026-09-12). This board shows the POLICY arm only —
+ * unconditional `anon`/PUBLIC policies. It does NOT yet show the second arm the
+ * release gate gained the same day: relations with row-level security switched
+ * OFF, which have no policy rows to find and so cannot appear in this query at
+ * all. Run `pnpm check:db-guards` for that arm until the board is wired to
+ * `admin_unprotected_relation_report()` (written in aidream migration 0646,
+ * unapplied as of 2026-09-12 — the board cannot call an RPC that does not exist
+ * yet). The header copy says so rather than implying coverage it does not have.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -95,8 +104,10 @@ export function PublicExposureConsole() {
               Public exposure
             </h1>
             <p className="text-xs text-muted-foreground">
-              Everything a signed-out visitor can reach. Each one must be
-              declared with a reason, or the release gate fails.
+              Every unconditional anon policy a signed-out visitor can reach.
+              Each must be declared with a reason, or the release gate fails.
+              Tables with row-level security switched off have no policy to
+              show here — the release gate checks those separately.
             </p>
           </div>
         </div>

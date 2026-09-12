@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
   PLANS,
   formatPrice,
@@ -33,17 +34,14 @@ interface UsageLimitDialogProps {
   onSelect?: (plan: Plan) => void;
 }
 
+/**
+ * THE prose voice: @ai-matrx/kit/format's `long` ("2 days", "5 hours",
+ * "20 minutes"), which lands inside the reset sentence this dialog shows.
+ * It floors, so the reset never reads sooner than it is.
+ */
 function formatCountdown(diffMs: number) {
   if (diffMs <= 0) return "Now";
-  const totalSec = Math.floor(diffMs / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const mins = Math.floor((totalSec % 3600) / 60);
-  if (days >= 2) return `${days} days`;
-  if (days === 1) return `1 day, ${hours}h`;
-  if (hours >= 1) return `${hours}h ${mins}m`;
-  if (mins >= 1) return `${mins}m`;
-  return "<1m";
+  return formatDurationMs(diffMs, { style: "long" });
 }
 
 function formatResetDate(date: Date) {

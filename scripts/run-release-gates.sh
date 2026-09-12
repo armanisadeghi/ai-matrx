@@ -88,6 +88,14 @@ if $STRICT; then
         # feedback 11b0a90c reported live on the provider-sync policy dialog.
         # `pnpm check:browser-dialogs:self-test` proves the guard can still fail.
         "Browser dialogs (window.confirm/alert/prompt)|pnpm check:browser-dialogs:strict"
+        # A toast that NAMES a record must carry that record's identity
+        # (`recordToast`, lib/toast.ts). Sonner pauses every dismiss timer while
+        # document.hidden is true, so a bare record-naming toast can sit on
+        # screen after the SPA navigated to a different record, or after that
+        # record was renamed or deleted — a screen stating a false sentence.
+        # Baselined at the existing population, so this only refuses NEW ones.
+        # `pnpm check:record-toasts:self-test` proves the guard can still fail.
+        "Record-naming toasts carry their record|pnpm check:record-toasts:strict"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
@@ -187,6 +195,15 @@ if $STRICT; then
         # it reads the LIVE DB and must never block a release when creds or the
         # network are missing (it exits 3 and says so).
         "Surface value blast radius|pnpm exec tsx scripts/check-surface-impact.ts"
+        # Every `writeTargets` entry a manifest DECLARES must have a handler
+        # some mount REGISTERS. The two halves live in different files and
+        # nothing links them at build time, so a gap is invisible until APPLY
+        # time — after the agent planned a turn around the target and the user
+        # approved the write. Static (AST over the three registration seams),
+        # no credentials, ~10s. ADVISORY in both lanes: a finding is a page to
+        # wire, never a stopped release. `pnpm check:surface-write-handlers:self-test`
+        # proves the guard can still fail.
+        "Surface write targets without a handler|pnpm check:surface-write-handlers"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
         "Entity registry generation drift|pnpm check:entity-types"
         # --live pulls the deployed agx_sync_linked_agents() and diffs the TS
@@ -272,6 +289,13 @@ if $STRICT; then
         # position; a `build*MenuSection` that calls one escapes it. Zero
         # violations at introduction (9 builders renamed), so a finding is new.
         "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)|pnpm check:menu-naming"
+        # THE LIVE-ITEM LAW (2026-09-11): a menu item that looks clickable and
+        # cannot act — no handler, an empty handler, `href: ""`, an empty
+        # submenu. The wrapper grade above it only ever checked plumbing props,
+        # so "no dead controls" read as certified when it had only been walked
+        # by hand. Two real violations found and fixed at introduction, so the
+        # tree is at zero and a finding is new.
+        "Menu items that cannot act (THE LIVE-ITEM LAW)|pnpm check:menu-live-items"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one
@@ -388,6 +412,31 @@ if $STRICT; then
         # shadows are baselined by declaration; any NEW shadow hard-fails the
         # strict lane, while direct generated aliases remain legal.
         "Generated API type shadow ratchet|pnpm check:generated-contracts"
+        # THE GENERATED FILES THEMSELVES ARE FRESH — the only guard that sees a
+        # HAND EDIT. `sync-types` and its drop guard watch a REGENERATION; commit
+        # 4c827d5530 (2026-09-12) never ran one — it deleted
+        # DirectiveConfirmRequest.conversation_id straight out of api-types.ts
+        # along with the client code that read it, and every gate here stayed
+        # green while a second Approve wrote a second project (DD-128). This
+        # re-emits the contract from ../aidream and compares (~30 s idle, minutes under load), so it is
+        # ADVISORY in both lanes: it also goes red, correctly, whenever that
+        # checkout has simply moved ahead of the committed files, and the remedy
+        # is the same either way — `pnpm sync-types`.
+        # `pnpm check:api-types-fresh:self-test` proves it can still fail.
+        "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
+        # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
+        # settings screen that accepts a value the system does not honour
+        # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
+        # and ladder-ui carry a real tracked backlog (registry rows seeded ahead
+        # of their consumers; sub-org rungs the universal UI does not address
+        # yet), so they are advisory in both lanes; unregistered + env-toggles
+        # also run in CI. Every one exits 2 UNMEASURED when it cannot read the
+        # live registry — never a warn that reads as a pass.
+        "Settings: registry rows no code reads|pnpm check:settings-orphans"
+        "Settings: knob reads with no registry row|pnpm check:settings-unregistered"
+        "Settings: NEW knob-shaped constants (ratchet)|pnpm check:settings-hardcoded"
+        "Settings: behavioural env toggles (ratchet)|pnpm check:settings-env-toggles"
+        "Settings: every rung reachable in the universal UI|pnpm check:settings-ladder-ui"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -426,6 +475,9 @@ else
         # a dead control, not a style nit. Zero backlog, so the report is
         # the whole finding.
         "Browser dialogs (window.confirm/alert/prompt)|pnpm check:browser-dialogs"
+        # Record-naming toasts — see the strict lane above. Baselined, so the
+        # report names the whole remaining population every run.
+        "Record-naming toasts carry their record|pnpm check:record-toasts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
@@ -479,6 +531,15 @@ else
         # it reads the LIVE DB and must never block a release when creds or the
         # network are missing (it exits 3 and says so).
         "Surface value blast radius|pnpm exec tsx scripts/check-surface-impact.ts"
+        # Every `writeTargets` entry a manifest DECLARES must have a handler
+        # some mount REGISTERS. The two halves live in different files and
+        # nothing links them at build time, so a gap is invisible until APPLY
+        # time — after the agent planned a turn around the target and the user
+        # approved the write. Static (AST over the three registration seams),
+        # no credentials, ~10s. ADVISORY in both lanes: a finding is a page to
+        # wire, never a stopped release. `pnpm check:surface-write-handlers:self-test`
+        # proves the guard can still fail.
+        "Surface write targets without a handler|pnpm check:surface-write-handlers"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
         "Entity registry generation drift|pnpm check:entity-types"
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
@@ -559,6 +620,13 @@ else
         # position; a `build*MenuSection` that calls one escapes it. Zero
         # violations at introduction (9 builders renamed), so a finding is new.
         "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)|pnpm check:menu-naming"
+        # THE LIVE-ITEM LAW (2026-09-11): a menu item that looks clickable and
+        # cannot act — no handler, an empty handler, `href: ""`, an empty
+        # submenu. The wrapper grade above it only ever checked plumbing props,
+        # so "no dead controls" read as certified when it had only been walked
+        # by hand. Two real violations found and fixed at introduction, so the
+        # tree is at zero and a finding is new.
+        "Menu items that cannot act (THE LIVE-ITEM LAW)|pnpm check:menu-live-items"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one
@@ -649,6 +717,23 @@ else
         # Loud here and blocking in --strict: a new handwritten API mirror
         # suppresses the generated-contract drift errors we need to see.
         "Generated API type shadow ratchet|pnpm check:generated-contracts"
+        # A generated file EDITED BY HAND — the hole 4c827d5530 walked through on
+        # 2026-09-12 (DD-128). Full story in the strict list above; advisory in
+        # both lanes, remedy `pnpm sync-types`.
+        "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
+        # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
+        # settings screen that accepts a value the system does not honour
+        # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
+        # and ladder-ui carry a real tracked backlog (registry rows seeded ahead
+        # of their consumers; sub-org rungs the universal UI does not address
+        # yet), so they are advisory in both lanes; unregistered + env-toggles
+        # also run in CI. Every one exits 2 UNMEASURED when it cannot read the
+        # live registry — never a warn that reads as a pass.
+        "Settings: registry rows no code reads|pnpm check:settings-orphans"
+        "Settings: knob reads with no registry row|pnpm check:settings-unregistered"
+        "Settings: NEW knob-shaped constants (ratchet)|pnpm check:settings-hardcoded"
+        "Settings: behavioural env toggles (ratchet)|pnpm check:settings-env-toggles"
+        "Settings: every rung reachable in the universal UI|pnpm check:settings-ladder-ui"
     )
 fi
 

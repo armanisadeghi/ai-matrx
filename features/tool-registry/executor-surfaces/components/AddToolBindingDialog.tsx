@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { toast } from "@/lib/toast";
+import { recordToast } from "@/lib/toast";
 import {
   ToolSearchDialog,
   type ToolSearchOption,
@@ -34,7 +34,10 @@ export function AddToolBindingDialog({
   const handleAdd = async (tool: ToolSearchOption) => {
     if (!tool.id) throw new Error(`Tool ${tool.name} has no id`);
     await addBinding({ executorName, toolId: tool.id, isActive: true });
-    toast.success(`${tool.name} bound to ${executorName}`);
+    recordToast.success(
+      { type: "tool", id: tool.id, title: tool.name },
+      `${tool.name} bound to ${executorName}`,
+    );
     anyAddedRef.current = true;
   };
 

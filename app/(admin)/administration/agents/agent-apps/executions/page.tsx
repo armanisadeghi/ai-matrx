@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -102,7 +103,7 @@ function humanExecution(r: AgentAppExecutionRow): string {
     `${r.app_name ?? r.app_id} — ${r.success ? "OK" : "Failed"}`,
     `Task: ${r.task_id}`,
     r.error_message ? `Error: ${r.error_message}` : null,
-    `Tokens: ${r.tokens_used ?? 0} · Cost: $${r.cost?.toFixed(4) ?? "0.0000"}`,
+    `Tokens: ${formatCount(r.tokens_used)} · Cost: ${formatUsd(r.cost, { digits: 4 })}`,
     r.execution_time_ms ? `Time: ${r.execution_time_ms}ms` : null,
     `When: ${new Date(r.created_at).toLocaleString()}`,
   ]
@@ -440,10 +441,10 @@ function ExecutionsTable({ active }: { active: boolean }) {
                   {r.ip_address ?? ""}
                 </TableCell>
                 <TableCell className="text-right">
-                  {r.tokens_used?.toLocaleString() ?? 0}
+                  {formatCount(r.tokens_used)}
                 </TableCell>
                 <TableCell className="text-right">
-                  ${r.cost?.toFixed(4) ?? "0.0000"}
+                  {formatUsd(r.cost, { digits: 4 })}
                 </TableCell>
                 <TableCell className="text-right">
                   {r.execution_time_ms

@@ -204,12 +204,7 @@ export default function AiModelsContainer() {
   // endpoint base URLs, `auth_ref`, `byok_secret_key` and real-dollar pricing
   // are admin-secret and are deliberately NOT read or emitted here.
   const getSurfaceScope = () => {
-    const capabilities =
-      selectedModel?.capabilities &&
-      typeof selectedModel.capabilities === "object" &&
-      !Array.isArray(selectedModel.capabilities)
-        ? (selectedModel.capabilities as Record<string, unknown>)
-        : null;
+    const capabilities = selectedModel?.capabilities ?? null;
     return createAdminAiModelsScope({
       model_ids: models.map((m) => m.id),
       model_count: models.length,

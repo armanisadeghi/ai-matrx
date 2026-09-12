@@ -22,7 +22,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -279,7 +279,8 @@ export function CandidatePairCard({
         reason:
           signals.length > 0 ? signals.map(signalLabel).join("; ") : undefined,
       });
-      toast.success(
+      recordToast.success(
+        { type: "party", id: winner.id, title: winner.display_name },
         `Merged ${loser.display_name} into ${winner.display_name} — undo any time from Recent merges`,
       );
       onResolved();

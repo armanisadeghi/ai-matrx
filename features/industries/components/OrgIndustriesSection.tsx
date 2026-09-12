@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useUserRole } from "@/features/organizations/hooks";
@@ -246,7 +246,11 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                       className="h-6 px-2 text-[11px] text-muted-foreground hover:text-destructive"
                       onClick={async () => {
                         const ok = await catalog.unsubscribe(it.id);
-                        if (ok) toast.success(`Left ${it.name}`);
+                        if (ok)
+                          recordToast.success(
+                            { type: "data_store", id: it.id, title: it.name },
+                            `Left ${it.name}`,
+                          );
                         else
                           toast.error(
                             catalog.error ?? "Could not unsubscribe",
@@ -262,7 +266,11 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                       className="h-6 px-2 text-[11px]"
                       onClick={async () => {
                         const ok = await catalog.subscribe(it.id);
-                        if (ok) toast.success(`Subscribed to ${it.name}`);
+                        if (ok)
+                          recordToast.success(
+                            { type: "data_store", id: it.id, title: it.name },
+                            `Subscribed to ${it.name}`,
+                          );
                         else
                           toast.error(catalog.error ?? "Could not subscribe");
                       }}

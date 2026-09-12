@@ -94,6 +94,7 @@ import {
 } from "@/features/media-capture/components/CaptureControls";
 import { CaptureReview } from "@/features/media-capture/components/CaptureReview";
 import { RecordingHud } from "@/features/media-capture/components/RecordingHud";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   DeviceFallbackInput,
   type DeviceFallbackInputHandle,
@@ -945,7 +946,7 @@ export function CaptureStudio({
                 recording from{" "}
                 {new Date(entry.manifest.created_at).toLocaleString()} —{" "}
                 {entry.manifest.last_sequence + 1} saved segment(s),{" "}
-                {Math.round(entry.manifest.emitted_bytes / 1024)} KB.
+                {formatFileSize(entry.manifest.emitted_bytes)}.
                 {entry.interrupted &&
                   " Only media captured before the interruption can be recovered."}
               </span>

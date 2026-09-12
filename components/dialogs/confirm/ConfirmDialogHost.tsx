@@ -28,6 +28,7 @@
 import dynamic from "next/dynamic";
 import {
   confirm as openConfirm,
+  confirmOpener,
   type ConfirmOptions,
 } from "@ai-matrx/kit/confirm-opener";
 
@@ -37,15 +38,6 @@ import { useBodyPointerEventsGuard } from "./body-pointer-events-guard";
 export type { ConfirmOptions } from "@ai-matrx/kit/confirm-opener";
 
 /**
- * The kit parks its opener state on a `Symbol.for` slot on `globalThis` so the
- * ESM and CJS copies of the package share one host registration. We read the
- * same slot for ONE question: is a host actually alive to show this dialog?
- */
-const CONFIRM_OPENER_STATE_SLOT = Symbol.for(
-  "ai-matrx.kit.confirm-opener-state",
-);
-
-/**
  * The host arrives via `next/dynamic({ ssr: false })`, so an early call can
  * legitimately precede it. This is generous enough to cover hydration plus the
  * chunk fetch, and short enough that a page with NO host mounted reports the
@@ -53,11 +45,14 @@ const CONFIRM_OPENER_STATE_SLOT = Symbol.for(
  */
 export const CONFIRM_HOST_WAIT_MS = 5000;
 
+/**
+ * ONE question: is a host actually alive to show this dialog? The package
+ * answers it (kit 0.10.0). This used to reach into the opener's `Symbol.for`
+ * globalThis slot and read its private `{ host }` shape — host code guessing
+ * at package internals, which breaks silently the day the shape changes.
+ */
 function confirmHostIsRegistered(): boolean {
-  const state = (globalThis as Record<symbol, unknown>)[
-    CONFIRM_OPENER_STATE_SLOT
-  ] as { host?: unknown } | undefined;
-  return Boolean(state?.host);
+  return confirmOpener._hasHost();
 }
 
 async function waitForConfirmHost(timeoutMs: number): Promise<boolean> {

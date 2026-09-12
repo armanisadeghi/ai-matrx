@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download, MoreVertical, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,12 +22,6 @@ import { StageHeader } from "../ui/StageHeader";
 import { WorkItemCard } from "../ui/WorkItemCard";
 import { CaptureLevelChip } from "../ui/CaptureLevelChip";
 import { FoldableSection } from "../ui/FoldableSection";
-
-function formatBytes(chars: number): string {
-  if (chars < 1024) return `${chars} B`;
-  if (chars < 1024 * 1024) return `${(chars / 1024).toFixed(1)} KB`;
-  return `${(chars / (1024 * 1024)).toFixed(2)} MB`;
-}
 
 interface Props {
   state: PipelineState;
@@ -139,7 +134,7 @@ function ScrapeCard({
   onUpdated?: () => void;
 }) {
   const meta: React.ReactNode = item.metadata.char_count
-    ? formatBytes(item.metadata.char_count)
+    ? formatFileSize(item.metadata.char_count)
     : null;
 
   const badges: React.ReactNode[] = [];
@@ -244,7 +239,7 @@ export function ScrapeStageView({
           <span className="tabular-nums">
             {counts.success} good • {counts.partial} thin •{" "}
             {counts.failed + counts.dead_link + counts.gated} can&apos;t fetch •{" "}
-            {formatBytes(totalChars)} captured
+            {formatFileSize(totalChars)} captured
           </span>
         }
         ratePerSec={ratePerSec}

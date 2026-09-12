@@ -87,10 +87,16 @@ Mock nothing. On the one machine-wide dev server (`pnpm preview:start`, port
 1. Open the page; open the header **Agents** popover ("Agents for this
    page") and Run a bound agent (Badass Agent is globally bound).
 2. Ask it in plain language to change several targets in one message.
-3. Confirm: the ask dialog appears **per target** with your description
-   text; Apply lands the value through your handler (draft → editor shows
-   staged value + Save bar; entity → persisted + toast); Keep as is
-   declines without an error and the agent acknowledges gracefully.
+3. Confirm: an inline **approval card** (`ApprovalCard`, `kind: "approval"`)
+   renders per target, in the chat stream — not a blocking dialog; the user
+   can keep reading/typing around it. Its header names the change, its body
+   shows your target's description plus the proposed value as a
+   before→after diff, and its footer offers three actions: **Apply** lands
+   the value through your handler (draft → editor shows staged value + Save
+   bar; entity → persisted + toast); **Keep as is** declines without an
+   error and the agent acknowledges gracefully; **Respond** lets the user
+   type free-text instructions back to the agent instead of a flat decline
+   (the agent receives that text and can retry with a different value).
 4. Ask for something you did NOT declare — expect a loud refusal.
 5. Send one deliberately INVALID value and confirm your handler's throw
    reaches the agent verbatim. A good model often refuses to send a value it
@@ -132,8 +138,11 @@ server-side; the client tool works either way.
 
 ## Traps
 
-- The confirm dialog says "An agent wants…" when the agent-definition slice
-  isn't hydrated — known nit, not yours to fix per-surface.
+- The approval card can still read "The agent proposed this change…" instead
+  of the agent's real name when neither the shared agent-name cache
+  (`useAgentNames`/`resolveAgentName`) nor the agent-definition slice has
+  resolved a name yet — known nit, not yours to fix per-surface (see
+  `dispatch-surface-write.thunk.ts`).
 - `content-plan-node` and its siblings are now `applyPolicy: "ask"`/`"auto"`
   (2026-08-09); only `node_primary_keyword_id` stays `manual` (no keyword
   options exposed). Never leave a new target `manual` by omission.

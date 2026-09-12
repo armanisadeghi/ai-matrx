@@ -21,7 +21,7 @@ import { useState } from "react";
 import { UserRoundX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { hrMockEnabled, type HrFixtureCase } from "@/features/hr/mock/transport";
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { hrHref } from "@/features/hr/routes";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
@@ -113,8 +113,8 @@ export function DeskClockSurface({
                 */
                 allowBackdating
                 deviceOrSession={webPunchSessionSegment()}
-                mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
-                punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}
+                mockCase={hrMockEnabled() ? mockCase : undefined}
+                punchMockCase={hrMockEnabled() ? punchMockCase : undefined}
               />
             </>
           )}

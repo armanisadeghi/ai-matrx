@@ -75,9 +75,12 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
   step, regardless of the workflow step being browsed, and says so in a visible
   line: how many matched and how many of those sit outside that step, with a
   **Narrow to \<step\>** control to go back. Search covers title, instructions,
-  target page, repository, domain and feature names, lane, thread/branch, and
-  notes (`row-text.ts` is the one definition of a row's searchable text) — not
-  just the rendered columns. Archived rows stay out, and the empty state says so.
+  target page, repository, domain and feature names, lane, feedback, and
+  EVERY string anywhere in `metadata` (`row-text.ts` is the one definition of a
+  row's searchable text) — not just the rendered columns. The metadata bag is
+  free-form (200+ distinct keys live on 2026-09-11), so search walks its string
+  leaves instead of naming keys: a curated list missed a row whose only "print"
+  sat in `metadata.verification_notes`. Guard: `row-text.test.ts`. Archived rows stay out, and the empty state says so.
 - **Filed by / lane** (`metadata.origin.agent_label`) and **Filed**
   (`created_at`) are columns, sortable and filterable like every other; an
   unlabelled row reads **Not labeled** rather than blank.
@@ -137,6 +140,12 @@ A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
 no-unapproved-schedules law.
 
 ## Change log
+
+- 2026-09-11 — Search now covers every string leaf of `metadata`, not a curated
+  key list: SQL found 31 "print" rows, the list showed 30 (the miss lived only
+  in `metadata.verification_notes`). Verified live: 31/31 after the change;
+  Domain/Feature/Repository sort + select-filter re-verified in the browser.
+  Guard `row-text.test.ts` proven failing-then-passing.
 
 - 2026-09-09 — Replaced authoritative-looking visual and accessible zero queue
   counts with the official loading treatment until the authenticated

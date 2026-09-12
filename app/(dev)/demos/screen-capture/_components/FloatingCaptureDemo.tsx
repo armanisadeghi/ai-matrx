@@ -21,6 +21,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   useScreenCapture,
@@ -140,7 +141,7 @@ function PanelBody() {
                   </button>
                 </div>
                 <p className="px-2 py-1 text-[10px] text-muted-foreground font-mono">
-                  via {method} · {(result.file.size / 1024).toFixed(0)} KB
+                  via {method} · {formatFileSize(result.file.size)}
                 </p>
               </div>
             ))}

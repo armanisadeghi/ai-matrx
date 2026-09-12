@@ -224,7 +224,12 @@ export default function MenuContent(props: MenuContentProps) {
             </SubTrigger>
             <SubContent
               className={cn(
-                "z-[9999] max-h-[70dvh] overflow-y-auto",
+                // NOT a viewport fraction. A submenu is anchored to its parent
+                // ROW, so `70dvh` is measured against the whole viewport while
+                // the panel starts partway down it — the overhang is exactly
+                // the defect FIX-Q13 found on the agents menu. Radix's own
+                // measured available height is the only cap that fits.
+                "z-[9999] max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto",
                 node.width ?? d.subWidth,
               )}
             >

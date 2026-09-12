@@ -129,10 +129,14 @@ describe("foldAgentWork", () => {
 });
 
 describe("formatWorkDuration", () => {
+  // The collapse onto `@ai-matrx/kit/format`'s `compact` voice changed three
+  // of these on purpose: a sub-second fold is now honest about being
+  // sub-second ("400ms", not a clamped "1s"), and a whole minute keeps its
+  // zero-padded seconds ("1m 00s") so the column does not jump width.
   test.each([
-    [400, "1s"],
+    [400, "400ms"],
     [26_000, "26s"],
-    [60_000, "1m"],
+    [60_000, "1m 00s"],
     [72_000, "1m 12s"],
   ])("%dms -> %s", (ms, expected) => {
     expect(formatWorkDuration(ms)).toBe(expected);

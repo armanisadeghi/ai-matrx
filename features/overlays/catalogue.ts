@@ -304,6 +304,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  dailySpendWindow: {
+    label: "Spend so far today",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   convertToShapeWindow: {
     label: "Convert JSON to Shape",
     instanceMode: "singleton",
@@ -481,6 +486,11 @@ export const OVERLAY_CATALOGUE = {
   },
   findReplace: {
     label: "Find & Replace",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
+  referencePicker: {
+    label: "Add a Reference",
     instanceMode: "singleton",
     isWindow: false,
   },

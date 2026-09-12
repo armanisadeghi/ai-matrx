@@ -33,14 +33,15 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
 import { mediaFilesClient } from "@/features/files/media-client/client";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07) — this file already computed first+last, identical to the
+// package's recorded decision, so this is a byte-for-byte behavior match
+// (the "—" fallback is passed through the package's own `fallback` option).
+import { getInitials } from "@ai-matrx/kit/format";
 
 /** First letters of the first and last word — the existing placeholder rule. */
 export function hrInitials(name: string | null | undefined): string {
-  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "—";
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-  return (first + last).toUpperCase();
+  return getInitials(name, { fallback: "—" });
 }
 
 export function HrEmployeePhoto({

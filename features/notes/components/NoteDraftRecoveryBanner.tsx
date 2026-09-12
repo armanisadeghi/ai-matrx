@@ -31,15 +31,10 @@ import {
   subscribeDrafts,
   type LocalDraft,
 } from "@ai-matrx/kit/drafts";
+import { formatRelativeTime } from "@/utils/datetime";
 
 function whenLabel(at: number): string {
-  const minutes = Math.floor((Date.now() - at) / 60_000);
-  if (minutes < 1) return "moments ago";
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
+  return formatRelativeTime(at, { style: "long", fallback: "moments ago" });
 }
 
 const REASON_LABELS: Record<string, string> = {

@@ -25,7 +25,11 @@
  *      unique per surface.
  *  10. writeTargets: name regex + uniqueness, label/description present,
  *      valueType/mode enums, updatesValue references a declared value,
- *      group references a declared group.
+ *      group references a declared group, and `valueKind` (THE VALUE
+ *      CONTRACT) names a kind the generated registry actually carries —
+ *      an unknown slug is an ERROR. Structured (object|array) targets with
+ *      NO valueKind are counted and printed loudly as an advisory ratchet
+ *      (`--list-uncontracted` for the per-surface list); never fatal.
  *  11. clientTools: name regex, unique per surface AND globally across every
  *      manifest (the tool namespace is per CONVERSATION, so a cross-surface
  *      collision is a real defect), label/description present, optional mode
@@ -43,6 +47,8 @@
  */
 import { resolve } from "node:path";
 
+import { isGeneratedKindSlug } from "../features/content-ir/kinds/generated/kinds.generated";
+
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
 const SURFACE_NAME_RE = /^[a-z][a-z0-9-]*\/[a-z0-9-/]+$/;
 const UUID_RE =
@@ -55,8 +61,65 @@ const ALLOWED_TYPES = new Set([
   "array",
   "document",
 ]);
+/** The value types whose contract prose alone cannot describe — the ratchet's
+ * scope. See `SurfaceWriteTarget.valueKind`. */
+const STRUCTURED_VALUE_TYPES = new Set(["object", "array"]);
 const ALLOWED_ROLE_KINDS = new Set(["single", "multi"]);
 const ALLOWED_AUTO_RUN = new Set(["always", "never", "user-choice"]);
+
+/**
+ * The VALUE-CONTRACT RATCHET (WP1, 2026-09-11).
+ *
+ * Every `object`/`array` write target should name a registered Kind
+ * (`SurfaceWriteTarget.valueKind`) — that kind's schema is what the wire
+ * advertises, what `applySurfaceWrite` validates against, and what the DB
+ * mirror prints to server-side agents. The structured targets that predate
+ * the contract can't all be converted at once (most need a kind registered
+ * first), so this is an ADVISORY count, printed loudly on every run and never
+ * fatal — repo doctrine is scream, never block. The number only goes down.
+ */
+function reportUncontractedStructuredTargets(
+  entries: readonly string[],
+  listAll: boolean,
+): void {
+  if (entries.length === 0) return;
+  const bySurface = new Map<string, string[]>();
+  for (const entry of entries) {
+    const idx = entry.lastIndexOf(":");
+    const surface = entry.slice(0, idx);
+    const target = entry.slice(idx + 1);
+    bySurface.set(surface, [...(bySurface.get(surface) ?? []), target]);
+  }
+  console.warn("");
+  console.warn(
+    `⚠️  VALUE CONTRACT: ${entries.length} structured write target${entries.length === 1 ? "" : "s"} (valueType object|array) across ${bySurface.size} surface${bySurface.size === 1 ? "" : "s"} declare NO valueKind.`,
+  );
+  console.warn(
+    "   An agent writing one of these is guessing at the shape, and the only",
+  );
+  console.warn(
+    "   validator is the page handler's own throw. Fix: name a registered kind",
+  );
+  console.warn(
+    "   slug on the target (`valueKind: \"<slug>\"`), or register the kind first",
+  );
+  console.warn(
+    "   (shape-system skill) — never inline a JSON schema. Census + recommended",
+  );
+  console.warn(
+    "   kinds: docs/handoffs/canonical-stream-and-surface-writeback.md",
+  );
+  if (listAll) {
+    for (const [surface, targets] of [...bySurface].sort()) {
+      console.warn(`   - ${surface}: ${targets.sort().join(", ")}`);
+    }
+  } else {
+    console.warn(
+      "   Run with --list-uncontracted for the per-surface list.",
+    );
+  }
+  console.warn("");
+}
 
 async function main() {
   // Lazy import so this script also works as a build artifact; tsx handles
@@ -115,6 +178,7 @@ async function main() {
       label: string;
       description: string;
       valueType: string;
+      valueKind?: string;
       updatesValue?: string;
       mode: string;
       group?: string;
@@ -141,6 +205,12 @@ async function main() {
   );
 
   const errors: string[] = [];
+  /** `surface:target` for every object/array write target with no `valueKind`
+   * — the advisory ratchet, reported loudly at the end, never fatal. */
+  const structuredWithoutKind: string[] = [];
+  const listUncontracted =
+    process.argv.includes("--list-uncontracted") ||
+    process.argv.includes("--uncontracted");
   const seenSurfaces = new Set<string>();
   // THE NAMING LAW — one canonical label per surface, unique within a client.
   const labelsByClient = new Map<string, Map<string, string>>();
@@ -383,6 +453,26 @@ async function main() {
           `Surface "${m.surfaceName}" write target "${w.name}" references undeclared group "${w.group}".`,
         );
       }
+
+      // THE VALUE CONTRACT (WP1). A `valueKind` names a REGISTERED kind — an
+      // unknown slug is an error with the fix in it, because the seam
+      // validates against it at apply time and a slug nothing carries means
+      // every agent write to this target fails loudly at runtime instead of
+      // here. Structured targets without one are counted, not failed (the
+      // ratchet: scream, never block).
+      if (w.valueKind !== undefined) {
+        if (typeof w.valueKind !== "string" || !w.valueKind.trim()) {
+          errors.push(
+            `Surface "${m.surfaceName}" write target "${w.name}" has an empty valueKind — name a registered kind slug or omit the field.`,
+          );
+        } else if (!isGeneratedKindSlug(w.valueKind)) {
+          errors.push(
+            `Surface "${m.surfaceName}" write target "${w.name}" declares valueKind "${w.valueKind}", which is not a registered active kind. Fix: name a slug from features/content-ir/kinds/generated/kinds.generated.ts (GENERATED_KIND_SLUGS), or register the kind first (see the shape-system skill) and run \`pnpm shape:types\`. Never inline a JSON schema on the target — the kind IS the contract.`,
+          );
+        }
+      } else if (STRUCTURED_VALUE_TYPES.has(w.valueType)) {
+        structuredWithoutKind.push(`${m.surfaceName}:${w.name}`);
+      }
     }
 
     // 12. Client tools (the ACTION tier) — a declared tool goes on the wire as
@@ -532,6 +622,8 @@ async function main() {
       }
     }
   }
+
+  reportUncontractedStructuredTargets(structuredWithoutKind, listUncontracted);
 
   if (errors.length === 0) {
     const totalValues = ALL_MANIFESTS.reduce(

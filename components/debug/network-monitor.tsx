@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   LineChart,
   Line,
@@ -91,7 +92,7 @@ export function NetworkMonitor() {
           <div>
             <p className="text-sm font-medium">Total Bandwidth</p>
             <p className="text-2xl font-bold">
-              {Math.round(stats.totalBandwidth / 1024)}KB
+              {formatFileSize(stats.totalBandwidth)}
             </p>
           </div>
         </div>
@@ -144,7 +145,7 @@ export function NetworkMonitor() {
                   {new URL(metric.url).pathname}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {Math.round(metric.size / 1024)}KB
+                  {formatFileSize(metric.size)}
                 </span>
               </div>
             ))}

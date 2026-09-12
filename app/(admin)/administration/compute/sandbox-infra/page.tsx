@@ -20,7 +20,9 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { formatDurationSeconds, formatRelativeTime } from "@ai-matrx/kit/format";
 import { extractErrorMessage } from "@/utils/errors";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
     Activity,
     AlertCircle,
@@ -97,30 +99,18 @@ interface DeployRun {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function bytesHuman(bytes: number): string {
-    const units = ["B", "KB", "MB", "GB", "TB"];
-    let n = bytes;
-    let i = 0;
-    while (n >= 1024 && i < units.length - 1) {
-        n /= 1024;
-        i++;
-    }
-    return `${n.toFixed(n < 10 ? 1 : 0)} ${units[i]}`;
-}
-
+/**
+ * THE duration voice for a dense stat row: @ai-matrx/kit/format's `coarse`
+ * ("45 min", "1h 30m", "3d 4h"). It grew a day tier in kit 0.11.0, which is
+ * what this function was hand-rolling for.
+ */
 function uptimeHuman(seconds: number): string {
-    if (seconds < 60) return `${seconds.toFixed(0)}s`;
-    if (seconds < 3600) return `${(seconds / 60).toFixed(0)}m`;
-    if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}h`;
-    return `${(seconds / 86400).toFixed(1)}d`;
+    return formatDurationSeconds(seconds, { style: "coarse" });
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function relativeTime(iso: string): string {
-    const ms = Date.now() - new Date(iso).getTime();
-    if (ms < 60_000) return `${Math.round(ms / 1000)}s ago`;
-    if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m ago`;
-    if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h ago`;
-    return `${Math.round(ms / 86_400_000)}d ago`;
+    return formatRelativeTime(iso, { style: "short" });
 }
 
 function pctClass(pct: number): string {
@@ -220,12 +210,12 @@ function TierCard({ tier }: { tier: TierStatus }) {
                         <PressureBar
                             label="Disk"
                             pct={sys.disk_used_pct}
-                            hint={`${bytesHuman(sys.disk_used_bytes)} / ${bytesHuman(sys.disk_total_bytes)}  ·  ${bytesHuman(sys.disk_free_bytes)} free`}
+                            hint={`${formatFileSize(sys.disk_used_bytes)} / ${formatFileSize(sys.disk_total_bytes)}  ·  ${formatFileSize(sys.disk_free_bytes)} free`}
                         />
                         <PressureBar
                             label="Memory"
                             pct={sys.memory_used_pct}
-                            hint={`${bytesHuman(sys.memory_used_kb * 1024)} / ${bytesHuman(sys.memory_total_kb * 1024)}`}
+                            hint={`${formatFileSize(sys.memory_used_kb * 1024)} / ${formatFileSize(sys.memory_total_kb * 1024)}`}
                         />
                     </div>
 

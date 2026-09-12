@@ -1,0 +1,140 @@
+/**
+ * The frame markdown renderer's two refusals, proven — not asserted in a
+ * comment.
+ *
+ * WHY THESE TWO. Both are the exfiltration class the DD-123 plan exists for,
+ * and NEITHER can be seen by any rule over `component_source`:
+ *
+ *  1. A `javascript:` URL arrives inside the kind INSTANCE's data
+ *     (`[link](${data.url})`, `href={data.url}`), not in the component's
+ *     source. V-23 read all thirteen live non-platform bodies in full: five of
+ *     them put unvalidated instance data straight into an anchor. The
+ *     authoring gate is blind to it by construction.
+ *  2. Raw HTML inside markdown is an `<img onerror>` / `<script>` door. The
+ *     app's own MarkdownStream deliberately renders raw HTML (it is a rich
+ *     document engine); the frame's renderer deliberately does not.
+ *
+ * PROVEN RED BEFORE GREEN (2026-09-12; recorded so the next agent need not
+ * take it on faith). With `urlTransform` and the `a`/`img` overrides removed
+ * from FrameMarkdown and `rehype-raw` added — the naive renderer someone would
+ * otherwise have written — this suite fails; restoring the file turns it
+ * green. The exact command and both outputs are in the B-24 report.
+ *
+ * No @testing-library in this repo: these render through `renderToStaticMarkup`
+ * and assert on the real parsed DOM, which is the stronger check anyway (it is
+ * the markup a browser would receive).
+ */
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { FrameMarkdown } from "../runtime/FrameMarkdown";
+import { safeUrl } from "../runtime/safe-url";
+
+function renderMarkdown(content: string): Document {
+    const html = renderToStaticMarkup(<FrameMarkdown content={content} />);
+    return new DOMParser().parseFromString(html, "text/html");
+}
+
+describe("FrameMarkdown — render-time URL allowlist", () => {
+    it("refuses a javascript: href and leaves nothing clickable", () => {
+        const doc = renderMarkdown("[Click me](javascript:alert(1))");
+
+        for (const a of Array.from(doc.querySelectorAll("a"))) {
+            expect(a.getAttribute("href") ?? "").not.toMatch(/^javascript:/i);
+        }
+        // The text survives — a refusal is visible, never a silent deletion.
+        expect(doc.body.textContent).toContain("Click me");
+        expect(
+            doc.querySelectorAll(".matrx-sandbox-refused-url").length,
+        ).toBeGreaterThan(0);
+    });
+
+    it("keeps https, mailto and tel links working", () => {
+        const doc = renderMarkdown(
+            "[site](https://example.com) [mail](mailto:a@b.com) [call](tel:+15551234567)",
+        );
+        const hrefs = Array.from(doc.querySelectorAll("a")).map((a) =>
+            a.getAttribute("href"),
+        );
+        expect(hrefs).toEqual([
+            "https://example.com",
+            "mailto:a@b.com",
+            "tel:+15551234567",
+        ]);
+    });
+
+    it("refuses a data:text/html image src but allows a data: image", () => {
+        const doc = renderMarkdown(
+            "![bad](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)\n\n" +
+                "![ok](data:image/png;base64,iVBORw0KGgo=)",
+        );
+        const srcs = Array.from(doc.querySelectorAll("img")).map((i) =>
+            i.getAttribute("src"),
+        );
+        expect(srcs).not.toContain(
+            "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+        );
+        expect(srcs).toContain("data:image/png;base64,iVBORw0KGgo=");
+    });
+});
+
+describe("FrameMarkdown — raw HTML is text, never DOM", () => {
+    it("does not render raw HTML embedded in the markdown", () => {
+        const doc = renderMarkdown(
+            "Hello\n\n<script>window.__pwned = 1</script>\n\n" +
+                '<img src="x" onerror="window.__pwned = 2">\n',
+        );
+
+        expect(doc.querySelectorAll("script").length).toBe(0);
+        expect(doc.querySelectorAll("img").length).toBe(0);
+        expect(doc.querySelectorAll("[onerror]").length).toBe(0);
+        // It is still SHOWN, as text — the reader sees what the author wrote.
+        expect(doc.body.textContent).toContain("<script>");
+    });
+});
+
+describe("safeUrl — the shared primitive", () => {
+    const REFUSED: ReadonlyArray<readonly [string, "href" | "src"]> = [
+        ["javascript:alert(1)", "href"],
+        ["JavaScript:alert(1)", "href"],
+        ["  javascript:alert(1)  ", "href"],
+        ["java\0script:alert(1)", "href"],
+        ["java\tscript:alert(1)", "href"],
+        ["java\nscript:alert(1)", "href"],
+        ["vbscript:msgbox(1)", "href"],
+        ["data:text/html,<script>x</script>", "href"],
+        ["file:///etc/passwd", "href"],
+    ];
+
+    it.each(REFUSED)("refuses %j in an %s", (value, slot) => {
+        expect(safeUrl(value, slot)).toBeNull();
+    });
+
+    const ALLOWED: ReadonlyArray<readonly [string, "href" | "src"]> = [
+        ["https://example.com/a?b=c", "href"],
+        ["http://example.com", "href"],
+        ["mailto:someone@example.com", "href"],
+        ["tel:+15551234567", "href"],
+        ["/relative/path", "href"],
+        ["#anchor", "href"],
+        ["https://cdn.example.com/a.png", "src"],
+        ["blob:abc", "src"],
+        ["data:image/png;base64,AAAA", "src"],
+    ];
+
+    it.each(ALLOWED)("allows %j in an %s", (value, slot) => {
+        expect(safeUrl(value, slot)).toBe(value);
+    });
+
+    it("refuses a data: src that is not an image", () => {
+        expect(safeUrl("data:text/html,<b>x</b>", "src")).toBeNull();
+        expect(
+            safeUrl("data:application/javascript,alert(1)", "src"),
+        ).toBeNull();
+    });
+
+    it("keeps hyphens in a URL (the control-character strip must not eat them)", () => {
+        expect(safeUrl("https://my-site.example.com/a-b", "href")).toBe(
+            "https://my-site.example.com/a-b",
+        );
+    });
+});

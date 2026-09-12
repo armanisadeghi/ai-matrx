@@ -39,11 +39,12 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuEntityRef,
   type ContextMenuExtraSection,
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
@@ -194,6 +195,19 @@ export interface ConsoleRow extends MandateRow {
   /** Coverage tooltip: the leader carrying it, or why nothing does. */
   coverageDetail: string | null;
 }
+
+/**
+ * THE ONE record reference for a console row. The context menu's per-row entity
+ * (`CONTEXT_MENU_ENTITY_KEY`) and a record-naming toast's identity
+ * (`recordToast`, `lib/toast.ts`) are the same fact about the same row, so they
+ * are built in one place — two shapes would drift, and a toast carrying the
+ * wrong id cannot be withdrawn when the record goes.
+ */
+const mandateRecordRef = (row: ConsoleRow): ContextMenuEntityRef => ({
+  type: "mandate",
+  id: row.id,
+  title: row.mandateKey,
+});
 
 /** The table id — also the prefix of the URL key that holds the open row. */
 export const MANDATES_TABLE_ID = "mandates";
@@ -451,7 +465,10 @@ export function MandatesConsole() {
     async (row: ConsoleRow, enabled: boolean) => {
       try {
         await updateMandateDefinition(row.id, { is_enabled: enabled });
-        toast.success(`${row.mandateKey} ${enabled ? "enabled" : "disabled"}.`);
+        recordToast.success(
+          mandateRecordRef(row),
+          `${row.mandateKey} ${enabled ? "enabled" : "disabled"}.`,
+        );
         reload();
       } catch (error: unknown) {
         toast.error(
@@ -602,11 +619,7 @@ export function MandatesConsole() {
     if (!row) return null;
     return {
       content: humanRow(row),
-      [CONTEXT_MENU_ENTITY_KEY]: {
-        type: "mandate",
-        id: row.id,
-        title: row.mandateKey,
-      },
+      [CONTEXT_MENU_ENTITY_KEY]: mandateRecordRef(row),
     };
   };
 
@@ -632,7 +645,13 @@ export function MandatesConsole() {
     if (!ok) return;
     try {
       await softDeleteMandate(row.id);
-      toast.success(`Removed "${row.mandateKey}" — nothing runs it now.`);
+      // The record is gone, so every sentence still on screen that NAMES it
+      // has stopped being true — withdraw them before saying anything new.
+      dismissRecordToasts(mandateRecordRef(row));
+      recordToast.success(
+        mandateRecordRef(row),
+        `Removed "${row.mandateKey}" — resolving it now refuses.`,
+      );
       reload();
     } catch (error: unknown) {
       // The service's own sentence (RLS refusal, already-removed) reaches the

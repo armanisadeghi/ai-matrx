@@ -8,7 +8,7 @@
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
 // ~35 twins variously took ms, seconds and minutes behind one signature.
-import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
 
 import type {
   FieldChoice,
@@ -116,20 +116,6 @@ function findChoice(
   if (exact) return exact;
   const lowered = value.toLowerCase();
   return choices.find((c) => c.value.toLowerCase() === lowered);
-}
-
-const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"] as const;
-
-function formatBytes(bytes: number): string {
-  const negative = bytes < 0;
-  let n = Math.abs(bytes);
-  let unit = 0;
-  while (n >= 1024 && unit < BYTE_UNITS.length - 1) {
-    n /= 1024;
-    unit += 1;
-  }
-  const text = `${unit === 0 ? n : n.toFixed(n < 10 ? 1 : 0)} ${BYTE_UNITS[unit]}`;
-  return negative ? `-${text}` : text;
 }
 
 const RELATIVE_STEPS: [number, Intl.RelativeTimeFormatUnit][] = [
@@ -439,7 +425,7 @@ const DEFS: FieldFormatDef[] = [
     numericAlign: true,
     format: (v) => {
       const n = toNumber(v);
-      return n === null ? null : formatBytes(n);
+      return n === null ? null : formatFileSize(n);
     },
     parse: (raw) => {
       const n = toNumber(raw);

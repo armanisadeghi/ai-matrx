@@ -94,10 +94,17 @@ Tag temporary instrumentation uniquely (`[DBG-a4f2]`) so cleanup is one grep. Ne
 ## 4. Hypothesize: several, falsifiable, one variable at a time
 
 Write 3–5 ranked hypotheses before testing any — a single hypothesis locks onto the first plausible
-story. Each states a prediction: *"if X is the cause, changing Y turns the loop green."* No
-prediction → sharpen it or drop it. Test one variable per run (debugger/REPL or targeted boundary
-logs), never "log everything and grep". A result that contradicts every hypothesis sends you back to
-§3, not to a guess.
+story. **A hypothesis without a prediction that can FAIL is a suspect, not a hypothesis, and does not
+count.** Write them as this table; a row with an empty middle column is sharpened or dropped, never
+tested:
+
+| # | If the cause is … | … then this one change turns the loop green | One-variable test |
+|---|---|---|---|
+
+Test one variable per run (debugger/REPL or targeted boundary logs), never "log everything and grep".
+A result that contradicts every hypothesis sends you back to §3, not to a guess. (Observed 2026-09-10:
+six of six reps — with the skill and without — ranked four or five plausible causes and predicted
+nothing; one quoted this rule back and then listed five bare suspects.)
 
 Performance: logs mislead. Baseline measurement (same machine, known noise), then bisect; show the
 regression reproduces before hunting it in the tree.
@@ -126,6 +133,7 @@ consequential design choice, packaged with evidence and a recommendation — nev
 ## Red flags — stop, go back to §1
 
 - "Let me just try…" or "it's probably X" before a red loop exists
+- A list of suspects, guesses, or "theories to test" with no prediction — ranking is not falsifying
 - Reading code to build a story before the loop exists
 - More than one change per run
 - A sleep, retry, or wider timeout as the fix

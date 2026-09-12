@@ -35,7 +35,7 @@ jest.mock("@/lib/diagnostics/capturePythonClientError", () => ({
 // The fixture registry pulls 243 JSON files in; this suite is about the LIVE transport, so the
 // mock lane is stubbed off rather than loaded.
 jest.mock("@/features/hr/mock/transport", () => ({
-  HR_MOCK_ENABLED: false,
+  hrMockEnabled: () => false,
   serveFromFixtures: () => null,
 }));
 jest.mock("@/lib/organizations/activeOrg", () => ({

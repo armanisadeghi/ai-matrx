@@ -25,6 +25,7 @@
  */
 import { readFileSync, existsSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const NEXT_DIR = join(REPO_ROOT, ".next");
@@ -123,16 +124,9 @@ function measure(manifest: Manifest): RouteReport[] {
   return reports;
 }
 
-function fmtBytes(n: number): string {
-  if (n === 0) return "0 B";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
-}
-
 function fmtDelta(delta: number): string {
   const sign = delta > 0 ? "+" : delta < 0 ? "−" : " ";
-  return `${sign}${fmtBytes(Math.abs(delta))}`;
+  return `${sign}${formatFileSize(Math.abs(delta))}`;
 }
 
 function writeBaseline(reports: RouteReport[]): void {
@@ -149,7 +143,7 @@ function writeBaseline(reports: RouteReport[]): void {
   );
   for (const r of reports) {
     process.stdout.write(
-      `  ${r.route.padEnd(20)} ${String(r.chunks).padStart(4)} chunks   ${fmtBytes(r.bytes)}\n`,
+      `  ${r.route.padEnd(20)} ${String(r.chunks).padStart(4)} chunks   ${formatFileSize(r.bytes)}\n`,
     );
   }
 }
@@ -174,7 +168,7 @@ function compare(reports: RouteReport[], verbose: boolean): number {
     const base = baseline.routes[r.route];
     if (!base) {
       rows.push(
-        `${r.route.padEnd(20)} —             ${fmtBytes(r.bytes).padEnd(12)}  (new)          NEW`,
+        `${r.route.padEnd(20)} —             ${formatFileSize(r.bytes).padEnd(12)}  (new)          NEW`,
       );
       continue;
     }
@@ -183,19 +177,19 @@ function compare(reports: RouteReport[], verbose: boolean): number {
     if (over) failed++;
     const status = over ? "FAIL" : delta > 0 ? "warn" : "ok";
     rows.push(
-      `${r.route.padEnd(20)} ${fmtBytes(base.bytes).padEnd(12)}  ${fmtBytes(r.bytes).padEnd(12)}  ${fmtDelta(delta).padEnd(12)}   ${status}`,
+      `${r.route.padEnd(20)} ${formatFileSize(base.bytes).padEnd(12)}  ${formatFileSize(r.bytes).padEnd(12)}  ${fmtDelta(delta).padEnd(12)}   ${status}`,
     );
   }
   process.stdout.write(rows.join("\n") + "\n");
   if (verbose) {
     process.stdout.write(
-      `\nThreshold: +${fmtBytes(DEFAULT_THRESHOLD_BYTES)} per route.\n`,
+      `\nThreshold: +${formatFileSize(DEFAULT_THRESHOLD_BYTES)} per route.\n`,
     );
     process.stdout.write(`Baseline captured: ${baseline.capturedAt}\n`);
   }
   if (failed > 0) {
     process.stderr.write(
-      `\n${failed} route(s) exceeded the ${fmtBytes(DEFAULT_THRESHOLD_BYTES)} threshold.\n`,
+      `\n${failed} route(s) exceeded the ${formatFileSize(DEFAULT_THRESHOLD_BYTES)} threshold.\n`,
     );
     process.stderr.write(
       `If the growth is intentional, rerun with --update-baseline and document the reason in the PR.\n`,

@@ -42,10 +42,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  formatPersistenceSize,
-  useUserPersistence,
-} from "@/hooks/sandbox/use-user-persistence";
+import { formatFileSize } from "@ai-matrx/kit/format";
+import { useUserPersistence } from "@/hooks/sandbox/use-user-persistence";
 import type { SandboxTier, UserPersistenceInfo } from "@/types/sandbox";
 
 const TIER_DESCRIPTIONS: Record<SandboxTier, string> = {
@@ -154,7 +152,7 @@ export default function SandboxStoragePage() {
                 message="Loading sandbox storage totals…"
               />
             ) : (
-              `${formatPersistenceSize(persistence.info?.total_size_bytes ?? 0)} stored across ${tierEntries.length} tier${tierEntries.length === 1 ? "" : "s"}.`
+              `${formatFileSize(persistence.info?.total_size_bytes ?? 0)} stored across ${tierEntries.length} tier${tierEntries.length === 1 ? "" : "s"}.`
             )}
           </CardDescription>
         </CardHeader>
@@ -216,7 +214,7 @@ export default function SandboxStoragePage() {
                   <div>
                     <dt className="text-xs text-muted-foreground">Size</dt>
                     <dd className="font-medium">
-                      {formatPersistenceSize(tier.current_size_bytes)}
+                      {formatFileSize(tier.current_size_bytes)}
                     </dd>
                   </div>
                   <div>

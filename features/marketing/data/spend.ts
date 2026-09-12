@@ -9,7 +9,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useQuery } from "@tanstack/react-query";
 import type { components } from "@/types/python-generated/api-types";
 import { isJsonObject } from "@/types/json";
@@ -185,7 +185,9 @@ export function readSeoSpendSummary(value: unknown): SeoSpendSummary {
 
 export function useSeoSpendSummary() {
   const dispatch = useAppDispatch();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // Goes on the wire as `organization_id` to the aidream SEO route — the
+  // explicit selection, never the personal-org fallback (2026-09-12 class fix).
+  const organizationId = useAppSelector(selectOrganizationId);
   return useQuery({
     queryKey: ["marketing", "seo-spend-summary", organizationId],
     enabled: Boolean(organizationId),

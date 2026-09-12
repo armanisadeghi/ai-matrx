@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { TagInput } from "@/features/notes/components/TagInput";
@@ -204,7 +204,10 @@ export function ManualCompetitorAdd({
       await onAdded();
       setResults([]);
       setName("");
-      toast.success(`${result.title} added for your review`);
+      recordToast.success(
+        { type: "competitor", id: row.id, title: result.title },
+        `${result.title} added for your review`,
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Could not add competitor",

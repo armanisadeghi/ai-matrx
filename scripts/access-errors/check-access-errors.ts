@@ -352,6 +352,237 @@ function scanSwallowed(): SwallowFinding[] {
   return findings;
 }
 
+
+/**
+ * PASS 3 — A GATE ON A NARROWED RECORD READ.
+ *
+ * The class: a zero-row result rendered as a permission refusal. A single-record
+ * read that comes back empty means one of three different things — the row does
+ * not exist, the READER'S OWN QUERY excluded it, or the viewer genuinely lacks
+ * access — and only the third is an access story. `<AccessGate>` handles the
+ * first and third honestly because it ASKS the platform (`access_denied_context`);
+ * what it can never know is the second, because the platform has no idea the
+ * client added `.eq("kind", "agent")` to the query.
+ *
+ * The worked example (2026-09-11): `/schedules/<id>` refused a platform admin
+ * with "You don't have access to this scheduled task". `scheduler.sch_task`
+ * carries a `platform_admin_all` RLS clause and had handed the row over; the
+ * client's `getAgentTask` filtered `kind = 'agent'` and joined
+ * `sch_agent_task!inner`, so every system job came back empty and the page
+ * reported a filter miss as an authorization denial.
+ *
+ * THE SIGNATURE, and why it is honest: a read that backs a RECORD surface is a
+ * read BY ID. So in a SELECT chain that ends `.single()`/`.maybeSingle()` and
+ * carries `.eq("id", …)`, every OTHER predicate is by definition a narrowing the
+ * record page did not have to apply — and `!inner` on an embed is the same thing
+ * spelt as a join. Three deliberate exclusions keep it truthful:
+ *
+ *   1. WRITES ARE NOT READS. A chain carrying `.update(`/`.insert(`/`.upsert(`/
+ *      `.delete(` is excluded. `guardedUpdate`'s `.eq("id").eq("updated_at")`
+ *      is optimistic concurrency doing its job, not a lie about access — and
+ *      before this exclusion it was the single biggest source of noise here.
+ *   2. THE SOFT-DELETE BOUNDARY IS NOT A LIE. `deriveStatus` resolves a deleted
+ *      row to its own `deleted` screen, so `deleted_at` is excluded.
+ *   3. REACHABILITY IS THE IMPORT GRAPH, not name matching. A read is reported
+ *      only when some file rendering `<AccessGate>` reaches its module through
+ *      at most three import hops (component → hook → service → queries). Name
+ *      matching was tried first and was worthless: generic identifiers linked
+ *      every service in the repo to every gate.
+ *
+ * A narrowed read behind a LIST is fine and is never reported — a list may
+ * scope itself and says so; a record page may not, because whatever it excludes
+ * it reports to a person as a refusal.
+ *
+ * Escape hatch, the same one as every other rule here:
+ * `// access-errors: ok — <reason>` on the chain.
+ */
+interface NarrowedRead {
+  file: string;
+  line: number;
+  fn: string;
+  /** The predicates beyond the id and the soft-delete boundary. */
+  extras: string[];
+  /** A gate render site whose imports reach this module. */
+  reachedBy: string;
+}
+
+const GATE_JSX = /<\s*(?:AccessGate|OrganizationAccessGate)\b/;
+const SINGLE_ROW = /\.(maybeSingle|single)\s*\(/;
+const EQ_ID = /\.eq\(\s*["'`]id["'`]/;
+const IS_WRITE = /\.(update|insert|upsert|delete)\s*\(/;
+/** Every narrowing operator PostgREST exposes on a chain. */
+const PREDICATE =
+  /\.(eq|neq|in|is|not|gt|gte|lt|lte|like|ilike|match|filter|contains|overlaps|textSearch)\(\s*["'`]?([A-Za-z_][\w.>-]*)?/g;
+
+/** The one predicate that is NOT a lie: the soft-delete boundary. */
+function isSoftDelete(op: string, column: string | undefined): boolean {
+  return (op === "is" || op === "not") && column === "deleted_at";
+}
+
+/** `.select(SELECT_FOO)` → the template literal `SELECT_FOO` holds in this file. */
+function resolveSelectConstants(chain: string, src: string): string {
+  let text = chain;
+  for (const m of chain.matchAll(/\.select\(\s*([A-Z][A-Z0-9_]*)\b/g)) {
+    const decl = new RegExp(
+      "const\\s+" + m[1] + "\\s*(?::[^=]+)?=\\s*`([\\s\\S]*?)`",
+    ).exec(src);
+    if (decl) text += "\n" + decl[1];
+  }
+  return text;
+}
+
+/**
+ * The nearest FUNCTION above `line` — a declaration or an arrow const, never the
+ * local `const row = await supabase…` the chain is being assigned to (which is
+ * what an earlier version reported, naming every finding `result()`).
+ */
+const FN_DECL = /(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/;
+const FN_ARROW =
+  /(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*(?::[^=]*)?=\s*(?:async\s*)?\(/;
+function enclosingFn(lines: string[], line: number): string | null {
+  for (let i = line; i >= 0; i--) {
+    const m = FN_DECL.exec(lines[i]) ?? FN_ARROW.exec(lines[i]);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/**
+ * Exported for the self-test, which runs this on the REAL bytes of the commit
+ * that shipped the defect. A detector proven only against a fixture written to
+ * satisfy it has proven nothing.
+ */
+export function findNarrowedRecordReads(
+  file: string,
+  src: string,
+): Array<Omit<NarrowedRead, "reachedBy">> {
+  const lines = src.split("\n");
+  const out: Array<Omit<NarrowedRead, "reachedBy">> = [];
+
+  lines.forEach((text, i) => {
+    if (!SINGLE_ROW.test(text)) return;
+
+    // Walk back to the head of the chain — the `.from(`/`.rpc(` that opened it.
+    let start = -1;
+    for (let j = i; j >= 0 && i - j < 30; j--) {
+      if (/\.(from|rpc)\s*\(/.test(lines[j])) {
+        start = j;
+        break;
+      }
+    }
+    if (start < 0) return;
+
+    const chainLines = lines.slice(start, i + 1);
+    if (chainLines.some((l) => PRAGMA.test(l))) return;
+    if (PRAGMA.test(lines[start - 1] ?? "")) return;
+    const chain = chainLines.join("\n");
+
+    if (!EQ_ID.test(chain)) return;
+    // A guarded write is not a read. (Exclusion 1.)
+    if (IS_WRITE.test(chain)) return;
+    if (!/\.select\s*\(/.test(chain)) return;
+
+    const withSelect = resolveSelectConstants(chain, src);
+    const extras: string[] = [];
+    for (const m of chain.matchAll(PREDICATE)) {
+      const [, op, column] = m;
+      if (op === "eq" && column === "id") continue;
+      if (isSoftDelete(op, column)) continue;
+      extras.push(`.${op}("${column ?? "?"}")`);
+    }
+    // An `!inner` embed is a narrowing spelt as a join: it DROPS the parent row
+    // when the child is absent. That is what survived the first repair of the
+    // worked example and kept `kind = 'ping'` unopenable.
+    if (/!inner/.test(withSelect)) extras.push("!inner embed");
+
+    if (extras.length === 0) return;
+    const fn = enclosingFn(lines, start);
+    if (!fn) return;
+    out.push({ file, line: i + 1, fn, extras: [...new Set(extras)] });
+  });
+
+  return out;
+}
+
+/** `@/x/y` and `./z` → a file in the repo, or null for a package import. */
+function resolveImport(spec: string, fromFile: string): string | null {
+  let base: string;
+  if (spec.startsWith("@/")) base = spec.slice(2);
+  else if (spec.startsWith(".")) {
+    const dir = fromFile.split("/").slice(0, -1);
+    const parts = spec.split("/");
+    for (const part of parts) {
+      if (part === ".") continue;
+      else if (part === "..") dir.pop();
+      else dir.push(part);
+    }
+    base = dir.join("/");
+  } else return null;
+  return base;
+}
+
+const IMPORT_SPEC = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+
+function scanNarrowedReads(): NarrowedRead[] {
+  const sources = new Map<string, string>();
+  for (const file of listFiles()) {
+    const abs = join(ROOT, file);
+    if (existsSync(abs)) sources.set(file, readFileSync(abs, "utf8"));
+  }
+
+  /** Every spelling a bare module path can have on disk. */
+  const exists = (base: string): string | null => {
+    for (const suffix of [".ts", ".tsx", "/index.ts", "/index.tsx", ""]) {
+      if (sources.has(base + suffix)) return base + suffix;
+    }
+    return null;
+  };
+
+  const importsOf = new Map<string, string[]>();
+  for (const [file, src] of sources) {
+    const out: string[] = [];
+    for (const m of src.matchAll(IMPORT_SPEC)) {
+      const base = resolveImport(m[1], file);
+      if (!base) continue;
+      const hit = exists(base);
+      if (hit && hit !== file) out.push(hit);
+    }
+    importsOf.set(file, [...new Set(out)]);
+  }
+
+  // Reachability: module → the nearest gate render site that imports it, within
+  // three hops (component → hook → service → queries). BFS from every gate at
+  // once, so each module keeps the SHORTEST path's gate.
+  const reachedBy = new Map<string, string>();
+  let frontier: Array<[string, string]> = [];
+  for (const [file, src] of sources) {
+    if (GATE_JSX.test(src)) {
+      reachedBy.set(file, file);
+      frontier.push([file, file]);
+    }
+  }
+  for (let depth = 0; depth < 3 && frontier.length > 0; depth++) {
+    const next: Array<[string, string]> = [];
+    for (const [file, gate] of frontier) {
+      for (const dep of importsOf.get(file) ?? []) {
+        if (reachedBy.has(dep)) continue;
+        reachedBy.set(dep, gate);
+        next.push([dep, gate]);
+      }
+    }
+    frontier = next;
+  }
+
+  const findings: NarrowedRead[] = [];
+  for (const [file, src] of sources) {
+    const gate = reachedBy.get(file);
+    if (!gate) continue;
+    for (const c of findNarrowedRecordReads(file, src))
+      findings.push({ ...c, reachedBy: gate });
+  }
+  return findings.sort((a, b) => a.file.localeCompare(b.file));
+}
+
 /** Group by the feature that owns the file, so the sweep can go out in waves. */
 function featureOf(file: string): string {
   const parts = file.split("/");
@@ -365,6 +596,7 @@ function main() {
   const strict = process.argv.includes("--strict");
   const findings = scan();
   const swallowed = scanSwallowed();
+  const narrowed = scanNarrowedReads();
 
   const byFeature = new Map<string, Finding[]>();
   for (const f of findings) {
@@ -425,6 +657,31 @@ function main() {
     console.log("");
   }
 
+  if (narrowed.length > 0) {
+    console.log(
+      `\x1b[33m[LOUD]\x1b[0m Gates on narrowed record reads: ${narrowed.length} ` +
+        "single-row reads carry a predicate beyond the id, and a gate can reach them. (non-blocking)",
+    );
+    console.log(
+      "       A zero row there can mean the FILTER excluded it, not that the viewer was refused.",
+    );
+    for (const n of narrowed.slice(0, 25)) {
+      console.log(
+        `    ${n.file}:${n.line}  ${n.fn}()  ${n.extras.join(" ")}\n` +
+          `        reached from  ${n.reachedBy}`,
+      );
+    }
+    if (narrowed.length > 25)
+      console.log(`    … and ${narrowed.length - 25} more`);
+    console.log(
+      "  Fix: a read behind a RECORD page narrows by the id and the soft-delete boundary, nothing else",
+    );
+    console.log(
+      "       — or defend the predicate with `// access-errors: ok — <reason>` on the chain.",
+    );
+    console.log("");
+  }
+
   if (write) {
     writeFileSync(
       REPORT,
@@ -442,6 +699,7 @@ function main() {
           byFeature: Object.fromEntries(ranked.map(([k, v]) => [k, v.length])),
           findings,
           swallowed,
+          narrowed,
         },
         null,
         2,

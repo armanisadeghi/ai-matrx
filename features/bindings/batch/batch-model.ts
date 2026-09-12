@@ -282,7 +282,7 @@ export function applyRefusal(
   const unfed = healths.reduce((acc, h) => acc + h.unfedRequired.length, 0);
   if (unfed > 0) {
     const places = healths.filter((h) => h.unfedRequired.length > 0).length;
-    return `${unfed} required ${unfed === 1 ? "input" : "inputs"} across ${places} ${places === 1 ? "place" : "places"} ${unfed === 1 ? "has" : "have"} nothing feeding ${unfed === 1 ? "it" : "them"} and the holder has no default of its own — written like that, the job cannot run. Feed ${unfed === 1 ? "it" : "them"}, or remove ${places === 1 ? "that place" : "those places"} from the batch.`;
+    return `${unfed} required ${unfed === 1 ? "input" : "inputs"} across ${places} ${places === 1 ? "place" : "places"} ${unfed === 1 ? "has" : "have"} nothing feeding ${unfed === 1 ? "it" : "them"} and the holder has no default of its own — this batch cannot run in that state. Feed ${unfed === 1 ? "it" : "them"}, or remove ${places === 1 ? "that place" : "those places"} from the batch.`;
   }
   return null;
 }

@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
 import {
@@ -96,13 +97,6 @@ const COUNTERS: ReadonlyArray<{ key: string; label: string; tone: "neutral" | "g
   { key: "bytes_read", label: "bytes read", tone: "neutral" },
   { key: "old_str_count", label: "occurrences", tone: "neutral" },
 ];
-
-/** 1_234_567 → "1.2 MB". Bytes are unreadable; sizes are the point. */
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 /**
  * Middle-truncate so BOTH ends survive: a reader needs the filename AND enough
@@ -233,7 +227,7 @@ const FileOperationResultBlock: React.FC<ResultKindBlockProps> = ({
             key={counter.key}
             value={
               counter.key.startsWith("bytes")
-                ? formatBytes(counter.count as number)
+                ? formatFileSize(counter.count as number)
                 : (counter.count as number)
             }
             label={counter.key.startsWith("bytes") ? counter.label.replace("bytes ", "") : counter.label}
@@ -242,11 +236,11 @@ const FileOperationResultBlock: React.FC<ResultKindBlockProps> = ({
         ))}
         {sizeBefore !== null && sizeAfter !== null ? (
           <StateChip
-            label={`${formatBytes(sizeBefore)} → ${formatBytes(sizeAfter)}`}
+            label={`${formatFileSize(sizeBefore)} → ${formatFileSize(sizeAfter)}`}
             tone={sizeAfter < sizeBefore ? "warn" : "neutral"}
           />
         ) : size !== null ? (
-          <StateChip label={formatBytes(size)} />
+          <StateChip label={formatFileSize(size)} />
         ) : null}
         {mimeType ? <StateChip label={mimeType} /> : null}
         {mode ? <StateChip label={mode} /> : null}

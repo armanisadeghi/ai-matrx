@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -54,8 +56,9 @@ const STATUS_LABEL: Record<QueryBlockState["status"], string> = {
   error: "Error",
 };
 
+/** THE compact duration voice (@ai-matrx/kit/format): 250ms, 5.2s, 5m 30s. */
 function formatMs(ms: number): string {
-  return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`;
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 function IconButton({

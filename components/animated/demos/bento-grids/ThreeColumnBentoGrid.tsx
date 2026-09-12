@@ -5,6 +5,7 @@ import React, { useEffect, useState, useRef, useId } from "react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import { IconUpload } from "@tabler/icons-react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export function ThreeColumnBentoGrid() {
     return (
@@ -501,7 +502,7 @@ export const SkeletonFour = ({}: {}) => {
                                             layout
                                             className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-md"
                                         >
-                                            {(file.size / (1024 * 1024)).toFixed(2)} MB
+                                            {formatFileSize(file.size)}
                                         </motion.p>
                                     </div>
 

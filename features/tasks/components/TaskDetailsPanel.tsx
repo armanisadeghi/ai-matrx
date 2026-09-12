@@ -337,6 +337,10 @@ export default function TaskDetailsPanel({
   // panel's draft is local React state, so a save handler would run against
   // whatever the closure captured, which can pre-date a stage applied earlier
   // in the same agent turn.
+  // The surface arrives as a prop; the only mount that passes one is
+  // `QuickTasksWorkspace` (QUICK_TASKS_SURFACE_NAME). `TaskContentNew` and
+  // `QuickTasksSheet` mount this panel without it and register nothing.
+  // surface-write-handlers-surface: matrx-user/quick-tasks
   useSurfaceWriteHandlers(writeSurfaceName ?? null, {
     panel_task_title: (value: unknown) => {
       if (typeof value !== "string" || !value.trim())

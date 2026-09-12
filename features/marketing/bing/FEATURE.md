@@ -94,6 +94,10 @@ disconnect before the UI can recover.
   registration, exact callback, state, code exchange, token refresh, and vault.
 - **Never display or persist the API key after submission.** aidream vaults it;
   frontend tables contain only a vault reference and safe metadata.
+- **Connection inventory is auth-gated twice.** `useBingConnectionInventory()`
+  waits for Redux authentication and `listBingConnectionInventory()` verifies a
+  live Supabase access token immediately before PostgREST. The table grants no
+  access to `anon`; either gate may be the last one before a sign-out race.
 - **Scope managed sites to the active organization.** An organization-owned
   connection cannot bind a site owned by another organization.
 - **Do not show raw connection UUIDs as names.** Present ownership and status.
@@ -136,6 +140,9 @@ credential vault, token-refresh, and streamed performance-sync lifecycle.
 ---
 
 ## Change log
+
+- 2026-09-12 — Prevented anonymous `integration_connections` reads during
+  authentication hydration and sign-out races.
 
 - 2026-08-15 — Codex: Replaced the developer-facing form with a two-step guided
   flow, hid impossible binding controls, added the direct Bing handoff, focused

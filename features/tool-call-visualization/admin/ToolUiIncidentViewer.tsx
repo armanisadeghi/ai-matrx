@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import type { ToolUiIncidentRow } from "@/features/tool-call-visualization/admin/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,21 +53,6 @@ const componentTypeIcons: Record<string, React.ReactNode> = {
   utility: <Code className="w-3.5 h-3.5" />,
   fetch: <Globe className="w-3.5 h-3.5" />,
 };
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -294,7 +280,7 @@ function IncidentCard({
             <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {formatDate(incident.created_at)}
+                {formatRelativeTime(incident.created_at)}
               </span>
               {incident.browser_info && <span>{incident.browser_info}</span>}
               {incident.component_version && (

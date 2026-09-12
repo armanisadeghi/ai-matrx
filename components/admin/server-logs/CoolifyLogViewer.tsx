@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import React, {
   useState,
   useEffect,
@@ -1409,7 +1411,8 @@ export default function CoolifyLogViewer({
             {isLivePolling && (
               <span className="text-muted-foreground">
                 {" "}
-                · polling every {pollInterval / 1000}s
+                · polling every{" "}
+                {formatDurationMs(pollInterval, { style: "compact" })}
               </span>
             )}
           </span>

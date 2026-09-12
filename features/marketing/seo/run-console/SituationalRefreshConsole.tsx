@@ -52,15 +52,12 @@ import type {
   SituationalRefreshStatus,
   SituationalRunOutcome,
 } from "./types";
+import { formatRelativeTime } from "@/utils/datetime";
 
 /** "3 hours ago" / "never" — an as-of only means something as an age. */
 function age(iso: string | null): string {
   if (!iso) return "never";
-  const ms = Date.now() - new Date(iso).getTime();
-  const hours = ms / 3_600_000;
-  if (hours < 1) return `${Math.max(1, Math.round(ms / 60_000))} min ago`;
-  if (hours < 48) return `${Math.round(hours)} h ago`;
-  return `${Math.round(hours / 24)} d ago`;
+  return formatRelativeTime(iso, { style: "short", fallback: "never" });
 }
 
 interface SituationalRow {

@@ -12,6 +12,8 @@ overrides:
 
 packageExtensionsChecksum: sha256-T3SlODvR2l3ZQB9X/2sfjh7P7FBgK5QAoPJv/yjPEU4=
 
+pnpmfileChecksum: sha256-ItfXkCmquUAsIQv6qbxZ7P/5YYPYMkXnHWkE5XCMGsE=
+
 importers:
 
   .:
@@ -21,7 +23,7 @@ importers:
         version: 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/associations':
         specifier: latest
-        version: 0.8.5(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/browser-audio':
         specifier: latest
         version: 0.3.3(react@19.3.0)
@@ -36,10 +38,10 @@ importers:
         version: 0.11.2(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
-        version: 0.12.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
+        version: 0.12.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system':
         specifier: latest
-        version: 0.15.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.17.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/diff':
         specifier: latest
         version: 0.3.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -48,13 +50,13 @@ importers:
         version: 0.1.4(react@19.3.0)
       '@ai-matrx/kit':
         specifier: latest
-        version: 0.9.2(react@19.3.0)
+        version: 0.12.1(react@19.3.0)
       '@ai-matrx/media':
         specifier: latest
-        version: 0.5.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.5.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(next@16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/meet':
         specifier: latest
-        version: 0.4.15(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.5.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/messaging':
         specifier: latest
         version: 0.11.2(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -69,7 +71,7 @@ importers:
         version: 0.2.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-sdk/google':
         specifier: ^4.0.68
-        version: 4.0.68(zod@4.6.2)
+        version: 4.0.69(zod@4.6.2)
       '@anthropic-ai/sdk':
         specifier: latest
         version: 0.125.0(zod@4.6.2)
@@ -339,7 +341,7 @@ importers:
         version: 12.11.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.18)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       ai:
         specifier: ^7.0.98
-        version: 7.0.98(zod@4.6.2)
+        version: 7.0.99(zod@4.6.2)
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -393,7 +395,7 @@ importers:
         version: 8.6.0(react@19.3.0)
       emoji-picker-react:
         specifier: ^4.20.9
-        version: 4.20.9(react@19.3.0)
+        version: 4.22.0(react@19.3.0)
       format-duration:
         specifier: ^4.0.0
         version: 4.0.0
@@ -450,7 +452,7 @@ importers:
         version: 2.32.7
       mcp-handler:
         specifier: ^1.1.0
-        version: 1.1.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.2))(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
+        version: 1.1.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.2))(next@16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       mermaid:
         specifier: ^11.17.2
         version: 11.17.2
@@ -459,7 +461,7 @@ importers:
         version: 13.2.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       next:
         specifier: latest
-        version: 16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       node-fetch:
         specifier: ^3.3.2
         version: 3.3.2
@@ -513,7 +515,7 @@ importers:
         version: 7.88.0(react@19.3.0)
       react-icons:
         specifier: ^5.6.0
-        version: 5.6.0(react@19.3.0)
+        version: 5.7.0(react@19.3.0)
       react-katex:
         specifier: latest
         version: 3.1.0(prop-types@15.8.1)(react@19.3.0)
@@ -799,7 +801,7 @@ importers:
         version: 1.1.0(tailwindcss@4.3.3)
       ts-jest:
         specifier: latest
-        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@30.5.1)(@jest/types@30.5.1)(@typescript/typescript6@6.0.2)(babel-jest@30.5.1(@babel/core@7.29.7))(esbuild@0.28.2)(jest-util@30.5.1)(jest@30.5.1(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@22.20.2)(@typescript/typescript6@6.0.2)))
+        version: 29.4.12(@babel/core@8.0.5)(@jest/transform@30.5.1)(@jest/types@30.5.1)(@typescript/typescript6@6.0.2)(babel-jest@30.5.1(@babel/core@8.0.5))(esbuild@0.28.2)(jest-util@30.5.1)(jest@30.5.1(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@22.20.2)(@typescript/typescript6@6.0.2)))
       tsconfig-paths:
         specifier: latest
         version: 4.2.0
@@ -842,8 +844,8 @@ packages:
       react-native-svg:
         optional: true
 
-  '@ai-matrx/associations@0.8.5':
-    resolution: {integrity: sha512-GhfMvSoi8OGVaSnr7T/eTDC3Zthy8LR9eWi1guN5B3c6JJjPRmP8n1yRsoPLYvhFiBDvlssfIGaHiTeUHHRLMw==}
+  '@ai-matrx/associations@0.8.7':
+    resolution: {integrity: sha512-gOGQusdSNqM139n1Ko/uBeN0P26fJ3TVwDIdHg15g8lds2WSU10fYzeHzA697ZD0diIRLhMTi/SEMJJ2hdg5Lw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -883,8 +885,8 @@ packages:
     resolution: {integrity: sha512-tiU7Xybk/B3nsC/DePNednYo26fvX9tf1aO92WmS7qFewTb4CsiZVvnF5R9YAo+Ngm3bbetICMp30q+3T6pogA==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/data@0.12.0':
-    resolution: {integrity: sha512-xyOXBC4INuEaMFsN0FoNrgKaYG2vntaNMbYEKxpXZkQK+WF9WTnx9ubK0X2FCQNlyu07vqF4dRTOnlXg4Q8JgQ==}
+  '@ai-matrx/data@0.12.1':
+    resolution: {integrity: sha512-Q2XhRlfsD5oa8kLC2ALV4d5nsL49z/2tHyT6IIlyuCOvgVvJJnWskGTgUtMfYkjdctjiFh7zcOB1j3FCNEItyg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -892,8 +894,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/design-system@0.15.2':
-    resolution: {integrity: sha512-XNwvX/ozGfecHRYBzqaXMnHTfIlReocH7LUvlNcjX+jk2mf+IF+DsfBq3SSt2QMFZooMv7YyEUwUzcww0kl4Jw==}
+  '@ai-matrx/design-system@0.17.0':
+    resolution: {integrity: sha512-iHxGMXGOJrpea4h/LGQ4BD4VR4pXlKamOMYwS2mLeF7R3tpB2TUmlb02DMCUF/CcW1K9YeoJAr22CTixSTJ2CA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -917,14 +919,14 @@ packages:
     peerDependencies:
       react: '>=18.0.0'
 
-  '@ai-matrx/kit@0.9.2':
-    resolution: {integrity: sha512-S3OEpi/N5WJ1RhE3fc8hBmLcwjn8/I+5mvZ750UoZFpjeZSQr0frv08JPVAlJ3Ay+ThehWMkqqwQBII0Lokf7g==}
+  '@ai-matrx/kit@0.12.1':
+    resolution: {integrity: sha512-ddPdEajijmZ/9UefQjw1dRORaoW0/PShw7OJbA1ZAVZOuEsyfvAzkmy/Os/fntLiBhm3FNY/hq/BUy6YqlVskg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
 
-  '@ai-matrx/media@0.5.4':
-    resolution: {integrity: sha512-Mix9GcFea2f7tfOw6C6YjNjzdH/aT1qmdDsh0pdLdu3/IVi9tw0MF0rMvaa+naXfaOQBO+7XeZ905snKGqUGVg==}
+  '@ai-matrx/media@0.5.6':
+    resolution: {integrity: sha512-r+9or/+tTPDH3y/Vxq5UiZEEpRyDimkCSaWl34K5Xn0rdLgzcPtPoRE39tIjkorqoD6/RWUWCFs91II7MZUkGg==}
     engines: {node: '>=20'}
     peerDependencies:
       next: '>=14.0.0'
@@ -936,8 +938,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/meet@0.4.15':
-    resolution: {integrity: sha512-7iy0kkhnBvoqAEXDKr86dn266cxWxGbEUHSgWQsdkgVVobE2YSdzb/tyTAIpWhvTJIbsVZZQZ6npDflyLqcPBA==}
+  '@ai-matrx/meet@0.5.1':
+    resolution: {integrity: sha512-kL+YyLdlneKxb/6aKQFj1rVFvf12qbqfP9bb5QCki7E2J0eW695wdtFBXN+Hy3rVoAyCWMVpqqnerphPckjgsA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -984,14 +986,14 @@ packages:
     peerDependencies:
       react: '>=18.0.0'
 
-  '@ai-sdk/gateway@4.0.79':
-    resolution: {integrity: sha512-OJ+vdhqeDXoWGZWHF5mtnvE4gjk3/qfDV1+4dLCplERLNhY3w6KJcIoF5Q6sSKcm+74sruOWxl6CeREAaPDuEQ==}
+  '@ai-sdk/gateway@4.0.80':
+    resolution: {integrity: sha512-6t+07o8lSthpKf64Xb1qHWR2bWvJ3Fd2oFvS9fQc45p31bi2OUqan246e/ojAmZpWCiMPjKyQ4TBr4MYytnTiQ==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google@4.0.68':
-    resolution: {integrity: sha512-q1JawqjgBVgDsI0R1RIksrPeS5wiZCb6oTtzZpy40OrE/8zhBkYf349PXeMh2vG4WTleysMZbgBiRM3A6oldxg==}
+  '@ai-sdk/google@4.0.69':
+    resolution: {integrity: sha512-clIivD3RQwutykzKQ8CV+BXIA6EX3xcrfJyXXvAni2SlR9JVATSRbu+JFK/j25a330aZ6WiDwbGyD/u951qXOg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6168,8 +6170,8 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
-  ai@7.0.98:
-    resolution: {integrity: sha512-ewAwn7VNGHOVLlRWeAK2jdfycJiP/eRNZMd9QWRmG08vc3o5wm7YyXTtjdwDriUGSkZogFpAOBGh/m5UwYOJSw==}
+  ai@7.0.99:
+    resolution: {integrity: sha512-Ov+3j/nSajaVH5hO8C94wN9wisG5tAJ8HWsLV9d/+nlzrRGUh3oYO3Kp1fRyUNWjAWLSpGLHLPaHCdfxb307Vg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -7542,8 +7544,8 @@ packages:
     resolution: {integrity: sha512-DeWwawk6r5yR9jFgnDKYt4sLS0LmHJJi3ZOnb5/JdbYwj3nW+FxQnHIjhBKz8YLC7oRNPVM9NQ47I3CVx34eqQ==}
     engines: {node: '>=12'}
 
-  emoji-picker-react@4.20.9:
-    resolution: {integrity: sha512-e+2WfQgi8Yx6Q3NTQij2GSMxg1BEYwT6m1DFy7AfXZvOT1YVga9wtWrcXh5KcuD06UOxBJarlFy6UJ99MnK8Lw==}
+  emoji-picker-react@4.22.0:
+    resolution: {integrity: sha512-Cs3MPpfbdLsfxSDITfSjJ2X3+Z/Y0TMSnmEIZ3f0v14NrJxjFmiT/uj/aQHwwgIqhP9xuREkPFZajM1YlsOQyA==}
     engines: {node: '>=10'}
     peerDependencies:
       react: '>=16.8'
@@ -10760,11 +10762,6 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
 
-  react-icons@5.6.0:
-    resolution: {integrity: sha512-RH93p5ki6LfOiIt0UtDyNg/cee+HLVR6cHHtW3wALfo+eOHTp8RnU2kRkI6E+H19zMIs03DyxUG/GfZMOGvmiA==}
-    peerDependencies:
-      react: '*'
-
   react-icons@5.7.0:
     resolution: {integrity: sha512-LBLy340Rzqy6+/yVhZKT3B/QpP1BZaesGqasf09HPOBzRarcDIFH0WwXlXQfE7q7ipxK4MSiC5DIBWURCny6fw==}
     peerDependencies:
@@ -12693,8 +12690,8 @@ snapshots:
 
   '@ai-matrx/agents@0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/data': 0.12.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
-      '@ai-matrx/design-system': 0.15.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/data': 0.12.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
+      '@ai-matrx/design-system': 0.17.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
     transitivePeerDependencies:
@@ -12703,10 +12700,10 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@ai-matrx/associations@0.8.5(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/associations@0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/design-system': 0.15.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/kit': 0.9.2(react@19.3.0)
+      '@ai-matrx/design-system': 0.17.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/kit': 0.12.1(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
@@ -12734,7 +12731,7 @@ snapshots:
     dependencies:
       ajv: 8.20.0
 
-  '@ai-matrx/data@0.12.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)':
+  '@ai-matrx/data@0.12.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/realtime': 0.7.9(react@19.3.0)
       '@supabase/ssr': 0.12.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))
@@ -12744,9 +12741,9 @@ snapshots:
       - '@supabase/supabase-js'
       - react-native
 
-  '@ai-matrx/design-system@0.15.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/design-system@0.17.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/kit': 0.9.2(react@19.3.0)
+      '@ai-matrx/kit': 0.12.1(react@19.3.0)
       '@dnd-kit/core': 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-accordion': 1.2.20(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-alert-dialog': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -12788,7 +12785,7 @@ snapshots:
 
   '@ai-matrx/diff@0.3.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/kit': 0.9.2(react@19.3.0)
+      '@ai-matrx/kit': 0.12.1(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
@@ -12800,30 +12797,30 @@ snapshots:
     optionalDependencies:
       react-icons: 5.7.0(react@19.3.0)
 
-  '@ai-matrx/kit@0.9.2(react@19.3.0)':
+  '@ai-matrx/kit@0.12.1(react@19.3.0)':
     dependencies:
       idb: 8.0.3
       json5: 2.2.3
       jsqr: 1.4.0
       react: 19.3.0
 
-  '@ai-matrx/media@0.5.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/media@0.5.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(next@16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/associations': 0.8.5(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/kit': 0.9.2(react@19.3.0)
+      '@ai-matrx/associations': 0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/kit': 0.12.1(react@19.3.0)
       react: 19.3.0
       tailwind-merge: 3.6.0
     optionalDependencies:
-      next: 16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-dom: 19.3.0(react@19.3.0)
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/meet@0.4.15(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/meet@0.5.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/agents': 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/kit': 0.9.2(react@19.3.0)
+      '@ai-matrx/kit': 0.12.1(react@19.3.0)
       '@ai-matrx/messaging': 0.11.2(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/realtime': 0.7.9(react@19.3.0)
       livekit-client: 2.22.3(@types/dom-mediacapture-record@1.0.22)
@@ -12841,7 +12838,7 @@ snapshots:
   '@ai-matrx/messaging@0.11.2(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/agents': 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/kit': 0.9.2(react@19.3.0)
+      '@ai-matrx/kit': 0.12.1(react@19.3.0)
       '@ai-matrx/realtime': 0.7.9(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
@@ -12855,7 +12852,7 @@ snapshots:
 
   '@ai-matrx/print@0.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/kit': 0.9.2(react@19.3.0)
+      '@ai-matrx/kit': 0.12.1(react@19.3.0)
       '@radix-ui/react-dialog': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       bwip-js: 4.11.4
       html2canvas: 1.4.1
@@ -12877,7 +12874,7 @@ snapshots:
 
   '@ai-matrx/tap-target@0.2.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/design-system': 0.15.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/design-system': 0.17.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-tooltip': 1.2.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react: 19.3.0
     transitivePeerDependencies:
@@ -12885,14 +12882,14 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@ai-sdk/gateway@4.0.79(zod@4.6.2)':
+  '@ai-sdk/gateway@4.0.80(zod@4.6.2)':
     dependencies:
       '@ai-sdk/provider': 4.0.14
       '@ai-sdk/provider-utils': 5.0.40(zod@4.6.2)
       '@vercel/oidc': 3.2.0
       zod: 4.6.2
 
-  '@ai-sdk/google@4.0.68(zod@4.6.2)':
+  '@ai-sdk/google@4.0.69(zod@4.6.2)':
     dependencies:
       '@ai-sdk/provider': 4.0.14
       '@ai-sdk/provider-utils': 5.0.40(zod@4.6.2)
@@ -13102,20 +13099,44 @@ snapshots:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-async-generators@7.8.4(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-bigint@7.8.3(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-syntax-bigint@7.8.3(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
 
   '@babel/plugin-syntax-class-properties@7.12.13(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-class-properties@7.12.13(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-class-static-block@7.14.5(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-syntax-class-static-block@7.14.5(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
 
   '@babel/plugin-syntax-dynamic-import@7.8.3(@babel/core@7.29.7)':
     dependencies:
@@ -13132,15 +13153,33 @@ snapshots:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-import-attributes@7.29.7(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-import-meta@7.10.4(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-import-meta@7.10.4(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-json-strings@7.8.3(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-syntax-json-strings@7.8.3(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
 
   '@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7)':
     dependencies:
@@ -13152,40 +13191,88 @@ snapshots:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-logical-assignment-operators@7.10.4(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-nullish-coalescing-operator@7.8.3(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-syntax-nullish-coalescing-operator@7.8.3(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
 
   '@babel/plugin-syntax-numeric-separator@7.10.4(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-numeric-separator@7.10.4(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-object-rest-spread@7.8.3(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-syntax-object-rest-spread@7.8.3(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
 
   '@babel/plugin-syntax-optional-catch-binding@7.8.3(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-optional-catch-binding@7.8.3(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-optional-chaining@7.8.3(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-syntax-optional-chaining@7.8.3(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
 
   '@babel/plugin-syntax-private-property-in-object@7.14.5(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
 
+  '@babel/plugin-syntax-private-property-in-object@7.14.5(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
+
   '@babel/plugin-syntax-top-level-await@7.14.5(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-syntax-top-level-await@7.14.5(@babel/core@8.0.5)':
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/helper-plugin-utils': 7.29.7
+    optional: true
 
   '@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7)':
     dependencies:
@@ -19953,9 +20040,9 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@7.0.98(zod@4.6.2):
+  ai@7.0.99(zod@4.6.2):
     dependencies:
-      '@ai-sdk/gateway': 4.0.79(zod@4.6.2)
+      '@ai-sdk/gateway': 4.0.80(zod@4.6.2)
       '@ai-sdk/provider': 4.0.14
       '@ai-sdk/provider-utils': 5.0.40(zod@4.6.2)
       zod: 4.6.2
@@ -20199,6 +20286,20 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  babel-jest@30.5.1(@babel/core@8.0.5):
+    dependencies:
+      '@babel/core': 8.0.5
+      '@jest/transform': 30.5.1
+      '@types/babel__core': 7.20.5
+      babel-plugin-istanbul: 8.0.0
+      babel-preset-jest: 30.5.0(@babel/core@8.0.5)
+      chalk: 4.1.2
+      graceful-fs: 4.2.11
+      slash: 3.0.0
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
   babel-merge@3.0.0(@babel/core@7.29.7):
     dependencies:
       '@babel/core': 7.29.7
@@ -20249,11 +20350,38 @@ snapshots:
       '@babel/plugin-syntax-private-property-in-object': 7.14.5(@babel/core@7.29.7)
       '@babel/plugin-syntax-top-level-await': 7.14.5(@babel/core@7.29.7)
 
+  babel-preset-current-node-syntax@1.2.0(@babel/core@8.0.5):
+    dependencies:
+      '@babel/core': 8.0.5
+      '@babel/plugin-syntax-async-generators': 7.8.4(@babel/core@8.0.5)
+      '@babel/plugin-syntax-bigint': 7.8.3(@babel/core@8.0.5)
+      '@babel/plugin-syntax-class-properties': 7.12.13(@babel/core@8.0.5)
+      '@babel/plugin-syntax-class-static-block': 7.14.5(@babel/core@8.0.5)
+      '@babel/plugin-syntax-import-attributes': 7.29.7(@babel/core@8.0.5)
+      '@babel/plugin-syntax-import-meta': 7.10.4(@babel/core@8.0.5)
+      '@babel/plugin-syntax-json-strings': 7.8.3(@babel/core@8.0.5)
+      '@babel/plugin-syntax-logical-assignment-operators': 7.10.4(@babel/core@8.0.5)
+      '@babel/plugin-syntax-nullish-coalescing-operator': 7.8.3(@babel/core@8.0.5)
+      '@babel/plugin-syntax-numeric-separator': 7.10.4(@babel/core@8.0.5)
+      '@babel/plugin-syntax-object-rest-spread': 7.8.3(@babel/core@8.0.5)
+      '@babel/plugin-syntax-optional-catch-binding': 7.8.3(@babel/core@8.0.5)
+      '@babel/plugin-syntax-optional-chaining': 7.8.3(@babel/core@8.0.5)
+      '@babel/plugin-syntax-private-property-in-object': 7.14.5(@babel/core@8.0.5)
+      '@babel/plugin-syntax-top-level-await': 7.14.5(@babel/core@8.0.5)
+    optional: true
+
   babel-preset-jest@30.5.0(@babel/core@7.29.7):
     dependencies:
       '@babel/core': 7.29.7
       babel-plugin-jest-hoist: 30.5.0
       babel-preset-current-node-syntax: 1.2.0(@babel/core@7.29.7)
+
+  babel-preset-jest@30.5.0(@babel/core@8.0.5):
+    dependencies:
+      '@babel/core': 8.0.5
+      babel-plugin-jest-hoist: 30.5.0
+      babel-preset-current-node-syntax: 1.2.0(@babel/core@8.0.5)
+    optional: true
 
   bail@2.0.2: {}
 
@@ -21516,7 +21644,7 @@ snapshots:
 
   emittery@0.13.1: {}
 
-  emoji-picker-react@4.20.9(react@19.3.0):
+  emoji-picker-react@4.22.0(react@19.3.0):
     dependencies:
       react: 19.3.0
       shipstyles: 1.0.0
@@ -24009,14 +24137,14 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcp-handler@1.1.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.2))(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
+  mcp-handler@1.1.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.2))(next@16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.2)
       chalk: 5.6.2
       commander: 11.1.0
       redis: 4.7.1
     optionalDependencies:
-      next: 16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
 
   md5.js@1.3.5:
     dependencies:
@@ -24653,7 +24781,7 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.3.5(@babel/core@8.0.5)(@opentelemetry/api@1.9.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.3.5
       '@swc/helpers': 0.5.23
@@ -24662,7 +24790,7 @@ snapshots:
       postcss: 8.5.23
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(babel-plugin-macros@3.1.0)(react@19.3.0)
+      styled-jsx: 5.1.6(@babel/core@8.0.5)(babel-plugin-macros@3.1.0)(react@19.3.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.3.5
       '@next/swc-darwin-x64': 16.3.5
@@ -25629,14 +25757,9 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  react-icons@5.6.0(react@19.3.0):
-    dependencies:
-      react: 19.3.0
-
   react-icons@5.7.0(react@19.3.0):
     dependencies:
       react: 19.3.0
-    optional: true
 
   react-is@16.13.1: {}
 
@@ -26820,12 +26943,12 @@ snapshots:
     optionalDependencies:
       react-dom: 19.3.0(react@19.3.0)
 
-  styled-jsx@5.1.6(@babel/core@7.29.7)(babel-plugin-macros@3.1.0)(react@19.3.0):
+  styled-jsx@5.1.6(@babel/core@8.0.5)(babel-plugin-macros@3.1.0)(react@19.3.0):
     dependencies:
       client-only: 0.0.1
       react: 19.3.0
     optionalDependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 8.0.5
       babel-plugin-macros: 3.1.0
 
   stylis@4.3.6: {}
@@ -27114,7 +27237,7 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  ts-jest@29.4.12(@babel/core@7.29.7)(@jest/transform@30.5.1)(@jest/types@30.5.1)(@typescript/typescript6@6.0.2)(babel-jest@30.5.1(@babel/core@7.29.7))(esbuild@0.28.2)(jest-util@30.5.1)(jest@30.5.1(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@22.20.2)(@typescript/typescript6@6.0.2))):
+  ts-jest@29.4.12(@babel/core@8.0.5)(@jest/transform@30.5.1)(@jest/types@30.5.1)(@typescript/typescript6@6.0.2)(babel-jest@30.5.1(@babel/core@8.0.5))(esbuild@0.28.2)(jest-util@30.5.1)(jest@30.5.1(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@22.20.2)(@typescript/typescript6@6.0.2))):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
@@ -27128,10 +27251,10 @@ snapshots:
       typescript: '@typescript/typescript6@6.0.2'
       yargs-parser: 21.1.1
     optionalDependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 8.0.5
       '@jest/transform': 30.5.1
       '@jest/types': 30.5.1
-      babel-jest: 30.5.1(@babel/core@7.29.7)
+      babel-jest: 30.5.1(@babel/core@8.0.5)
       esbuild: 0.28.2
       jest-util: 30.5.1
 

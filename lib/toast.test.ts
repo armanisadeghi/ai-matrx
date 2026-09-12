@@ -30,7 +30,12 @@ describe("captured toast boundary", () => {
         message: "Save failed",
       }),
     );
-    expect(mockToastError).toHaveBeenCalledWith("Save failed", undefined);
+    // Sonner is handed `duration: Infinity`: its visibility-paused timer is out
+    // of the loop and lib/toast's wall clock dismisses the toast instead.
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Save failed",
+      expect.objectContaining({ duration: Infinity }),
+    );
   });
 
   it("renders an already-captured aggregate without duplicating the error", () => {
@@ -38,7 +43,7 @@ describe("captured toast boundary", () => {
 
     expect(mockToastError).toHaveBeenCalledWith(
       "Bulk operation finished with 3 failures.",
-      undefined,
+      expect.objectContaining({ duration: Infinity }),
     );
     expect(mockCaptureError).not.toHaveBeenCalled();
   });

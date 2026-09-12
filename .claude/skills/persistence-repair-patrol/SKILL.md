@@ -211,7 +211,8 @@ finding; do not hide the import or narrow the contract just to clear the scan.
   tab (for example, for an account signed in only there). This fallback is
   pre-authorized. Never navigate, control, or close a tab Arman is using.
   Sign in to Matrx as `admin@admin.com` using `AI_ADMIN_PASSWORD` from the aidream
-  or frontend `.env`, or the local `DEV_LOGIN_TOKEN` flow where available.
+  or frontend `.env`, or the local dev-login nonce handshake where available
+  (`openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>`).
   Routine login is preauthorized; credentials never enter output.
   Close every owned tab/group before the run ends; leave pre-existing ones untouched.
   Explicit browser restrictions in the current user's instructions override this

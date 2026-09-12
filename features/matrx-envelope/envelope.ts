@@ -31,6 +31,16 @@ export interface DirectiveApplyStarted {
   directive: string;
   item_count: number;
 }
+/**
+ * 🚨 THE RECEIPT SENTENCE (DD-118). Every outcome-bearing receipt carries
+ * `message`: ONE sentence, in ordinary words, authored by the SERVER
+ * (`aidream/services/output_directives/receipt_words.py`) from the apply's own
+ * result. A client may never compose it — only the server knows whether the
+ * ledger replayed, what the write-tree touched, or what the handler called it.
+ * Before this field an applied write, a deduped re-send and an unconfirmed
+ * proposal all rendered identically, which is how a user came to see two
+ * identical cards for one project (walk K-1, 2026-09-12).
+ */
 export interface DirectiveItemApplied {
   kind: "directive_apply.item";
   directive: string;
@@ -39,6 +49,8 @@ export interface DirectiveItemApplied {
   resource_kind: string;
   resource_ids: string[];
   summary: string;
+  /** The server's own sentence for THIS outcome. Render verbatim. */
+  message: string;
 }
 export interface DirectiveItemFailed {
   kind: "directive_apply.failed";
@@ -46,12 +58,16 @@ export interface DirectiveItemFailed {
   index: number;
   error: string;
   fault: DirectiveFault;
+  /** The server's own sentence: what did not happen, and why. */
+  message: string;
 }
 export interface DirectiveApplyCompleted {
   kind: "directive_apply.completed";
   directive: string;
   applied: number;
   failed: number;
+  /** The server's own closing line for the batch. */
+  message: string;
 }
 /**
  * A model-emitted directive whose resolved apply policy is `ask` — NOT applied.
@@ -68,6 +84,8 @@ export interface DirectiveProposed {
   directive_class: string;
   noun: string;
   summary: string | null;
+  /** The server's own sentence: what confirming WILL make. Render verbatim. */
+  message: string;
   /** The two-key shell, POSTed back to /directives/confirm verbatim. */
   shell: Record<string, unknown>;
 }
@@ -76,6 +94,8 @@ export interface DirectiveApplyBlocked {
   kind: "directive_apply.blocked";
   directive: string;
   reason: string;
+  /** The server's own sentence: nothing was written, and why. */
+  message: string;
 }
 export type DirectiveApplyEvent =
   | DirectiveApplyStarted

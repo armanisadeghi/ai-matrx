@@ -19,7 +19,6 @@ import type {
   OrgMemberControlsInput,
   OrgMemberResource,
   OrgMemberStatus,
-  ReassignResult,
 } from "./types";
 
 function asRecord(data: unknown): Record<string, unknown> {
@@ -162,46 +161,27 @@ export async function setMemberStatus(
   if (error) throw pgErrorToError(error);
 }
 
-/** Reassign a member's org-scoped resources to another member. */
-export async function reassignMemberResources(
-  orgId: string,
-  fromUserId: string,
-  toUserId: string,
-  resourceTypes?: string[],
-): Promise<ReassignResult[]> {
-  const { data, error } = await supabase.rpc("org_admin_reassign_member_resources", {
-    p_org_id: orgId,
-    p_from_user: fromUserId,
-    p_to_user: toUserId,
-    p_resource_types: resourceTypes ?? undefined,
-  });
-  if (error) throw pgErrorToError(error);
-  return (data ?? []).map((r) => {
-    const row = r as Record<string, unknown>;
-    return { resourceType: row.resource_type as string, reassigned: num(row.reassigned) };
-  });
-}
-
-/** Remove a member, optionally reassigning their org-scoped resources first. */
+/**
+ * Remove a member from the organization.
+ *
+ * 🚨 DD-140 (2026-09-12): this used to take a `reassignTo` argument that made the server rewrite
+ * the owner column of every shareable registered table — private conversations, DMs, HR records —
+ * with no check that the recipient was not the caller. Both that argument and the standalone
+ * `org_admin_reassign_member_resources` RPC are closed; the server refuses a non-null
+ * `p_reassign_to` with a sentence naming the audited door that replaces it. A departing member's
+ * resources keep their owner.
+ */
 export async function removeMember(
   orgId: string,
   userId: string,
-  reassignTo?: string,
-): Promise<{ removed: boolean; reassigned: ReassignResult[] }> {
+): Promise<{ removed: boolean }> {
   const { data, error } = await supabase.rpc("org_admin_remove_member", {
     p_org_id: orgId,
     p_user_id: userId,
-    p_reassign_to: reassignTo ?? undefined,
   });
   if (error) throw pgErrorToError(error);
   const out = asRecord(data);
-  const reassigned = Array.isArray(out.reassigned)
-    ? (out.reassigned as Record<string, unknown>[]).map((row) => ({
-        resourceType: row.resource_type as string,
-        reassigned: num(row.reassigned),
-      }))
-    : [];
-  return { removed: Boolean(out.removed), reassigned };
+  return { removed: Boolean(out.removed) };
 }
 
 /** Governance audit log for the org. */

@@ -71,6 +71,7 @@ const ACTION_ICON = {
     "write-content": BrainCircuit,
     publish: Rocket,
     "edit-in-cms": PenLine,
+    rewrite: RefreshCw,
 } as const;
 
 export function NodeRealityCard({
@@ -80,6 +81,7 @@ export function NodeRealityCard({
     reality,
     variant = "build",
     onGoToBuild,
+    keywordGap,
 }: {
     node: PlanNodeRow;
     /** Owned by NodePanel so the same run also backs the agent write targets. */
@@ -98,6 +100,13 @@ export function NodeRealityCard({
     variant?: "build" | "publish";
     /** Publish variant only: door back to the tab that owns the missing step. */
     onGoToBuild?: () => void;
+    /**
+     * Does this page still lack a keyword assignment? Computed by the panel
+     * from THE one SEO-plan store (`web.page.desired_values.keyword_plan`,
+     * Arman's ruling 2026-08-16) — never from `plan.node.primary_keyword_id`,
+     * which is no longer written and would make this warning fire forever.
+     */
+    keywordGap: boolean;
 }) {
     const { setView } = usePlanWorkspaceParams();
     const { verdict, busy } = reality;
@@ -114,17 +123,14 @@ export function NodeRealityCard({
     // against a guess. Surfaced ONLY when the next action spends money, so the
     // caution lands where it costs something rather than nagging on every node.
     const missingKeyword =
-        !publishHalf &&
-        !node.primary_keyword_id &&
-        verdict.action === "write-content";
+        !publishHalf && keywordGap && verdict.action === "write-content";
 
     /**
      * Rewriting overwrites the CMS draft — human work included — so it is
      * confirmed wherever it is offered (the confirmation itself lives in
      * `../lib/reality-actions`, shared with the pipeline rail). It is only
-     * reachable on a page that is NOT yet published: the server's authoring
-     * pipeline refuses published pages outright, so offering it there would be
-     * a button that cannot work.
+     * offered on a draft here and, for a LIVE page, as the `stale` verdict's
+     * own action (the server writes the rewrite into a new draft).
      */
     async function rewrite() {
         await confirmRewritePage(reality);
@@ -154,6 +160,10 @@ export function NodeRealityCard({
                 await confirmPublishPage(reality, node.route ?? node.label);
                 return;
             }
+            case "rewrite": {
+                await confirmRewritePage(reality);
+                return;
+            }
             default:
                 return;
         }
@@ -164,7 +174,7 @@ export function NodeRealityCard({
     const retryAction =
         verdict.action === "create-page"
             ? ("create" as const)
-            : verdict.action === "write-content"
+            : verdict.action === "write-content" || verdict.action === "rewrite"
               ? ("write" as const)
               : verdict.action === "publish"
                 ? ("publish" as const)
@@ -340,7 +350,11 @@ export function NodeRealityCard({
                     ActionIcon &&
                     (!publishHalf ||
                         verdict.action === "publish" ||
-                        verdict.action === "edit-in-cms") ? (
+                        verdict.action === "edit-in-cms" ||
+                        // `stale` is a LIVE-page state, so its rewrite belongs
+                        // to the publish half too — without this the Publish
+                        // tab said "the live page is behind" with no next step.
+                        verdict.action === "rewrite") ? (
                         <Button
                             size="sm"
                             className="h-7 gap-1 text-xs"

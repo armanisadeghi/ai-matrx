@@ -40,7 +40,7 @@ import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { whenNoLayerIsOpen } from "@/components/dialogs/confirm/deferred-intent";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -154,6 +154,10 @@ import {
   sourcesFor,
 } from "./consumption-writer";
 import { describedOfferFrom } from "./described-offer";
+import {
+  offerColumnState,
+  type OfferColumnStatus,
+} from "./offer-column-state";
 import { coverageLine, isFed, JOB_OVERRIDE_WORDS } from "./words";
 import { writeReportStillDescribesDraft } from "./write-report-life";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
@@ -638,21 +642,22 @@ function BindingDraft({
     });
   }, [data.provisionKey, data.mandate, surfaceState]);
   const offer = data.offer ?? describedOffer;
-  const offerPending =
-    !data.provisionKey && !data.offer && surfaceState.status === "loading";
   const offeredValues = offer?.values ?? [];
 
-  const offerSourceLine = offerPending
-    ? "Reading what this job offers…"
-    : data.provisionKey
-      ? // W10-2 — the provision's key is a SLUG; it rides the mono chip beside
-        // this sentence, never inside it.
-        `The call site supplies these every launch — declared by the provision`
-      : offer
-        ? "This job's own described inputs. They ARE its provision."
-        : surfaceState.status === "error"
-          ? `The job's inputs could not be read: ${surfaceState.message}`
-          : "Nothing described yet.";
+  // 🚨 ONE DERIVATION, NOT TWO (FIX-Q8). The sentence and the column's status
+  // used to be computed separately — the sentence knew about `error`, the
+  // status did not — so a failed read arrived at the column labelled "ready"
+  // with zero values and it printed "This job offers nothing yet" under a
+  // header saying the inputs could not be read. Both now come from one place
+  // and cannot disagree again. See `offer-column-state.ts`.
+  const offerColumn = offerColumnState({
+    provisionKey: data.provisionKey ?? null,
+    hasResolvedOffer: Boolean(data.offer),
+    hasOffer: Boolean(offer),
+    surface: surfaceState,
+  });
+  const offerPending = offerColumn.status === "loading";
+  const offerSourceLine = offerColumn.sourceLine;
 
   // ── The holder's inputs (the consuming side) ──────────────────────────────
   const holderInputs = useHolderInputs(
@@ -1685,14 +1690,17 @@ function BindingDraft({
       fedInputs,
       askingInputs,
       unfedRequired: unfedRequired.length,
-      offeredCount: offerPending ? null : offeredValues.length,
+      // A COUNT IS A SETTLED FACT (FIX-Q8). `offerPending` is false in the
+      // error state too, so this claimed "0 offered" for a read that never
+      // happened. Only `ready` has a number.
+      offeredCount: offerColumn.status === "ready" ? offeredValues.length : null,
     });
   }, [
     fedBy,
     holderChosen,
     holderInputs.status,
     holderInputs.targets,
-    offerPending,
+    offerColumn.status,
     offeredValues.length,
     unfedRequired.length,
   ]);
@@ -1777,7 +1785,11 @@ function BindingDraft({
             mandateKey: data.mandate.mandate_key,
             label: data.mandate.label ?? data.mandate.mandate_key,
             outputKind: data.mandate.output_kind,
-            offeredCount: offerPending ? null : offeredValues.length,
+            offeredCount:
+              // A COUNT IS A SETTLED FACT (FIX-Q8). `offerPending` is false in the
+              // error state too, so this claimed "0 offered" for a read that
+              // never happened. Only `ready` has a number.
+              offerColumn.status === "ready" ? offeredValues.length : null,
             offerSourceLine,
             coverageLine: jobCoverage,
           }}
@@ -1908,11 +1920,9 @@ function BindingDraft({
                       values={offeredValues}
                       consumedBy={consumedBy}
                       pinnedContext={data.pinnedContext}
-                      sourceLine={offerSourceLine}
-                      sourceSlug={
-                        offerPending ? null : (data.provisionKey ?? null)
-                      }
-                      status={offerPending ? "loading" : "ready"}
+                      sourceLine={offerColumn.sourceLine}
+                      sourceSlug={offerColumn.sourceSlug}
+                      status={offerColumn.status}
                     />
                   </div>
                 ) : null}
@@ -1964,7 +1974,8 @@ function BindingDraft({
                       holderStatus={holderInputs.status}
                       holderMessage={holderInputs.message}
                       holderKind={holder.kind}
-                      offerPending={offerPending}
+                      offerStatus={offerColumn.status}
+                      offerMessage={offerColumn.sourceLine}
                       hasOffer={offeredValues.length > 0}
                       targetCount={holderInputs.targets.length}
                     >
@@ -2439,7 +2450,10 @@ function BindingDraft({
               useLatest: true,
               workflowId: null,
             });
-            toast.info(`Setting the system answer to "${twin.name}" instead.`);
+            recordToast.info(
+              { type: "agent", id: twin.id, title: twin.name },
+              `Setting the system answer to "${twin.name}" instead.`,
+            );
             void doSave(twin.id);
           }}
           onCancel={() => setGlobalGuardOpen(false)}
@@ -2460,7 +2474,8 @@ function MiddleBody({
   holderStatus,
   holderMessage,
   holderKind,
-  offerPending,
+  offerStatus,
+  offerMessage,
   hasOffer,
   targetCount,
   children,
@@ -2468,7 +2483,13 @@ function MiddleBody({
   holderStatus: "none" | "loading" | "ready" | "error";
   holderMessage: string | null;
   holderKind: "agent" | "workflow";
-  offerPending: boolean;
+  /** 🚨 THREE states, not two (FIX-Q8). This took `offerPending: boolean`, so a
+   * failed read fell through to the `!hasOffer` branch below and printed "This
+   * job offers nothing to map yet" — the middle column's copy of the exact
+   * contradiction the offered rail was showing three inches away. */
+  offerStatus: OfferColumnStatus;
+  /** The door's own sentence, when the offer could not be read. */
+  offerMessage: string;
   hasOffer: boolean;
   targetCount: number;
   children: React.ReactNode;
@@ -2505,10 +2526,20 @@ function MiddleBody({
       </p>
     );
   }
-  if (offerPending) {
+  if (offerStatus === "loading") {
     return (
       <p className="py-8 text-center text-[12px] text-muted-foreground">
         Reading what this job offers…
+      </p>
+    );
+  }
+  if (offerStatus === "error") {
+    // Nothing was read, so "offers nothing to map" is not a fact anyone holds.
+    // The door's sentence, whole, and no remedy invented on top of it.
+    return (
+      <p className="flex items-start justify-center gap-1.5 py-8 text-[12px] leading-relaxed text-amber-700 dark:text-amber-400">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        {offerMessage}
       </p>
     );
   }

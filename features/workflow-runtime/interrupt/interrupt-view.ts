@@ -36,6 +36,7 @@
 
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
 import { valueTypeFromJsonSchema } from "../served-form/kind-source";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 /** The presets a decision point may be authored as (`HumanInputPreset`). */
 export type InterruptPreset = "free_text" | "form" | "approval";
@@ -380,13 +381,18 @@ export function escalationLine(
   return `Auto-continues in ${humanRemaining(remaining)} — ${who} decides`;
 }
 
-/** Tight duration copy: "45 sec", "12 min", "3 hr", "2 days". */
+/**
+ * Duration copy for the auto-continue sentence: "45 seconds", "12 minutes",
+ * "3 hours", "2 days".
+ *
+ * THE ABBREVIATIONS WENT (2026-09-11). This lands inside a sentence — "Auto-
+ * continues in 3 hours — the agent decides" — and "3 hr" is jargon in exactly
+ * the place that wanted prose. @ai-matrx/kit/format's `long` voice is that
+ * prose, and it FLOORS where this rounded: a countdown that rounds up
+ * promises the user time they do not have.
+ */
 export function humanRemaining(ms: number): string {
-  if (ms < MINUTE_MS) return `${Math.max(1, Math.round(ms / 1000))} sec`;
-  if (ms < HOUR_MS) return `${Math.round(ms / MINUTE_MS)} min`;
-  if (ms < DAY_MS) return `${Math.round(ms / HOUR_MS)} hr`;
-  const days = Math.round(ms / DAY_MS);
-  return `${days} ${days === 1 ? "day" : "days"}`;
+  return formatDurationMs(ms, { style: "long" });
 }
 
 // ---------------------------------------------------------------------------

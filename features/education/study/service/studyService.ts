@@ -304,13 +304,29 @@ export const studyService = {
   async getSession(
     sessionId: string,
   ): Promise<StudyResult<SessionWithAttempts | null>> {
+    // THE RECORD READ CARRIES NO OWNER FILTER.
+    //
+    // `SessionDetailView` renders `<AccessGate token="study_session">` when
+    // this returns nothing, so every predicate here is reported to a person as
+    // "we couldn't open this". `.eq("created_by", userId)` was such a
+    // predicate, and it is far narrower than the row's own authorization:
+    // `education.study_session`'s RLS also admits platform admins, the owning
+    // organization's owners/admins, `visibility = 'public'` rows, `iam`
+    // permissions and memberships, `platform.reachability` and
+    // `platform.entity_grants`. A coach granted view on a learner's session —
+    // or an admin opening it from a report — read the row fine and was told
+    // they could not, with a Retry the filter guaranteed would fail forever.
+    //
+    // RLS is the ceiling and it is unchanged: nobody sees a session here they
+    // could not already SELECT. The attempts read drops the same filter for
+    // the same reason — attempts are written by the LEARNER, so scoping them
+    // to the viewer returned an empty list to every legitimate non-owner and
+    // rendered the session as though it had never been studied.
     try {
-      const userId = requireUserId();
       const { data: session, error: sErr } = await EDU()
         .from("study_session")
         .select("*")
         .eq("id", sessionId)
-        .eq("created_by", userId)
         .is("deleted_at", null)
         .maybeSingle();
       if (sErr) return fail("getSession", sErr);
@@ -319,7 +335,6 @@ export const studyService = {
         .from("study_attempt")
         .select("*")
         .eq("session_id", sessionId)
-        .eq("created_by", userId)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
       if (aErr) return fail("getSession", aErr);

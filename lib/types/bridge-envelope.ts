@@ -323,6 +323,14 @@ export type AppendMessageResponse = z.infer<typeof AppendMessageResponseSchema>;
 // `kind:"task"` is intentionally absent. Cross-component tasks live in the
 // `sch_task` table (matrx-scheduler), not in bus envelopes. Wake envelopes
 // carry `payload: {taskId: string}` pointing at the durable row.
+//
+// `kind:"directive"` is THE platform client-directive channel — the one way
+// anything on the platform tells a RUNNING client "this changed, react".
+// Its actions, payload shapes and handler contract live in
+// `lib/client-directives/directiveEnvelope.ts`; the topic is the reserved
+// `matrx-server-bus:<userId>` bus. Kept here (rather than there) only as the
+// `kind` discriminator, because the discriminator is wire format and this
+// file is the wire-format source of truth per CHANNELS.md §4.
 
 /**
  * v2 direction string — free-form because cross-component traffic flows
@@ -347,7 +355,8 @@ export type InstanceRef = z.infer<typeof InstanceRefSchema>;
 /**
  * The v2 cross-component envelope. Carried over Supabase Broadcast on
  * the per-user buses (`matrx-extension-bridge:<userId>`,
- * `matrx-local-bridge:<userId>`, `matrx-server-bus:<userId>`).
+ * `matrx-local-bridge:<userId>`, `matrx-server-bus:<userId>` — the last of
+ * which is ACTIVE since 2026-09-11 as the platform directive channel).
  *
  * Defaults applied when v1 publishers send minimal payloads:
  *  - `kind` → `"rpc"`
@@ -356,7 +365,7 @@ export type InstanceRef = z.infer<typeof InstanceRefSchema>;
  *  - `toInstance` → undefined (treated as broadcast to any instance)
  */
 export const CrossComponentEnvelopeSchema = z.object({
-  kind: z.enum(["rpc", "wake", "presence"]).default("rpc"),
+  kind: z.enum(["rpc", "wake", "presence", "directive"]).default("rpc"),
   direction: CrossComponentDirectionSchema,
   action: z.string(),
   requestId: z.string(),

@@ -130,4 +130,34 @@ describe("the delete is DISCOVERABLE, not only in a right-click menu", () => {
   it("shows the service's own refusal rather than inventing one", () => {
     expect(page).toContain("error instanceof Error ? error.message");
   });
+
+  /**
+   * FIX-Q9's walk, 2026-09-12: "Remove mandate" on an ORG-homed mandate looked
+   * like it did nothing — three presses, no dialog, no toast, no change. Two
+   * explanations were possible, and they call for opposite responses: the
+   * harness's known trusted-click trap, or a real home-dependent gate making
+   * the control DEAD on org-homed rows (law 4). The code says it is the
+   * former — there is no home, scope or organization predicate anywhere on the
+   * path, `onClick` is unconditional, `disabled` is only `busy`, and a write
+   * that matched nothing THROWS a sentence that gets toasted. Silence with no
+   * dialog therefore means the handler never ran at all.
+   *
+   * This guard keeps that true: the day someone adds a home/org condition to
+   * the control or its enablement, the silent-Remove reading stops being a
+   * harness artifact and becomes a real dead control — and this fails first.
+   */
+  it("gates Remove on nothing but in-flight state — no home, scope or org predicate", () => {
+    expect(page).toContain("onClick={() => void remove()}");
+    expect(page).toContain("disabled={busy}");
+    const control = page.slice(
+      page.indexOf("function RemoveMandate("),
+      page.indexOf("function RemoveMandate(") + 2000,
+    );
+    expect(control).not.toMatch(/disabled=\{[^}]*(home|scope|organization|isSystem)/i);
+    expect(control).not.toMatch(/(home|scope|organization|isSystem)[^\n]*\?\s*null/i);
+    // And the refusal path exists, so a blocked write can never be silent.
+    expect(service).toContain(
+      "This job was not removed — either it is already removed",
+    );
+  });
 });

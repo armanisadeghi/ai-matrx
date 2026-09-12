@@ -65,6 +65,7 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { formatRelativeTime } from "@/utils/datetime";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -171,13 +172,6 @@ function hoursSince(iso: string | null | undefined): number | null {
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return null;
   return Math.max(0, (Date.now() - t) / 3_600_000);
-}
-
-function formatAge(hours: number): string {
-  if (hours < 1) return "just now";
-  if (hours < 24) return `${Math.floor(hours)}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 function defaultSortDirForColumn(key: ComparisonSortKey): ComparisonSortDir {
@@ -1294,7 +1288,8 @@ function ProviderSection({
                   title={`This provider snapshot was taken ${summary.fetched_at ? new Date(summary.fetched_at).toLocaleString() : "—"}. Everything below compares against it, not against the provider's API right now.`}
                 >
                   <AlertTriangle className="h-3 w-3" />
-                  Snapshot {formatAge(snapshotAgeHours ?? 0)}
+                  Snapshot{" "}
+                  {formatRelativeTime(summary.fetched_at, { style: "short" })}
                 </Badge>
               ) : (
                 <span
@@ -1306,9 +1301,7 @@ function ProviderSection({
                   }
                 >
                   Synced{" "}
-                  {snapshotAgeHours == null
-                    ? "—"
-                    : formatAge(snapshotAgeHours)}
+                  {formatRelativeTime(summary.fetched_at, { style: "short" })}
                 </span>
               )}
               <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-green-700 dark:text-green-400 whitespace-nowrap">

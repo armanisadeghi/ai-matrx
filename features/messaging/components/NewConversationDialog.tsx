@@ -34,6 +34,11 @@ import type { UserBasicInfo } from "../types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
 import type { UserSearchCandidate } from "@/features/user-search/types";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM".
+import { getInitials as formatInitials } from "@ai-matrx/kit/format";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -254,14 +259,7 @@ export function NewConversationDialog({
 
   // Get initials from name
   const getInitials = (user: UserBasicInfo | ConnectionUser): string => {
-    const name = user.display_name || user.email;
-    if (!name) return "?";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+    return formatInitials(user.display_name || user.email);
   };
 
   // Get source icon for connection

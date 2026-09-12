@@ -78,14 +78,10 @@ import { HowItsImprovingPanel } from "./HowItsImprovingPanel";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { MASTERWORK_RULEBOOK_SURFACE } from "../assists";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { formatRelativeTime } from "@/utils/datetime";
 
 function when(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(ms / 60000);
-  if (minutes < 60) return `${Math.max(minutes, 1)}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 /** What the system was doing, in the Expert's words. */

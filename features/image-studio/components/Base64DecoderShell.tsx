@@ -39,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useBase64Decoder } from "../hooks/useBase64Decoder";
 import { mimeTypeLabel } from "../utils/decode-base64";
-import { formatBytes } from "../utils/format-bytes";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface Base64DecoderShellProps {
   defaultFolder?: string;
@@ -380,7 +380,7 @@ function MetadataRow({
   return (
     <div className="grid grid-cols-3 gap-2 text-center">
       <Stat label="Format" value={mimeTypeLabel(decoded.mimeType)} />
-      <Stat label="Size" value={formatBytes(decoded.byteLength)} />
+      <Stat label="Size" value={formatFileSize(decoded.byteLength)} />
       <Stat
         label="Dimensions"
         value={

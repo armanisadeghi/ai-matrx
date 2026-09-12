@@ -60,6 +60,7 @@ import {
   createEducationFlashcardsScope,
   type FlashcardSetSummary,
 } from "@/features/surfaces/manifests/education-flashcards.manifest";
+import { formatRelativeTime } from "@/utils/datetime";
 
 const EDU_BASE = "/education/flashcards";
 const FAST_FIRE_BASE = "/education/fastfire";
@@ -96,19 +97,17 @@ function matchesVisibility(
   }
 }
 
-/** "3 days ago"-style relative time, falling back to a date. */
+/** Past this age the list shows a calendar date instead of an age. */
+const RELATIVE_CUTOFF_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** "3d ago"-style relative time, falling back to a date. */
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "";
-  const diff = Date.now() - then;
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
+  if (Date.now() - then >= RELATIVE_CUTOFF_MS) {
+    return new Date(iso).toLocaleDateString();
+  }
+  return formatRelativeTime(iso, { style: "short", fallback: "" });
 }
 
 /** Case-insensitive match across name / topic / lesson / description. */

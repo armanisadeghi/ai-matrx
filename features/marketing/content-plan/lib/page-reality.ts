@@ -42,6 +42,8 @@ export type RealityAction =
     | "write-content"
     | "publish"
     | "edit-in-cms"
+    /** Re-author a LIVE page from its brief into a new draft (never touches live content). */
+    | "rewrite"
     | null;
 
 export interface RealityPageFacts {
@@ -206,12 +208,11 @@ export function judgePageReality(input: RealityInput): RealityVerdict {
         return {
             state: "stale",
             headline: "The plan changed after this page was written — the live page is behind.",
-            // NOT "rewrite": the authoring pipeline refuses published pages
-            // outright (`_fillable` excludes them), so offering to rewrite one
-            // was a button that could only ever fail. Editing a LIVE page is a
-            // CMS job until the server can re-author into a draft.
-            action: "edit-in-cms",
-            actionLabel: "Open it in the CMS",
+            // The authoring pipeline re-authors a published page into its DRAFT
+            // (`include_published`, aidream 87732cff0) — the live page keeps
+            // serving until someone publishes the new version.
+            action: "rewrite",
+            actionLabel: "Rewrite from the brief",
             settled: false,
         };
     }

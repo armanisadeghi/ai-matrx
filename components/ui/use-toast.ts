@@ -1,5 +1,31 @@
 "use client"
 
+/**
+ * components/ui/use-toast.ts — 🚨 LEGACY. THE CANONICAL TOAST MODULE IS
+ * `@/lib/toast`.
+ *
+ * This is the Radix toast stack (rendered by `components/ui/toaster.tsx`), a
+ * second toaster that runs alongside sonner in `app/layout.tsx`. Census taken
+ * 2026-09-11 (FIX-Q12), by importing file: `@/lib/toast` 1281 ·
+ * `@/components/ui/use-toast` 97 (this) · `@/lib/toast-service` 38 ·
+ * `@/hooks/use-toast` 1 — that last one was a BYTE-IDENTICAL copy of this file
+ * and has been deleted, its importer re-pointed here.
+ *
+ * NO NEW CALL SITE MAY IMPORT THIS. Nothing here is record-aware, so a toast it
+ * raises that NAMES a record cannot be withdrawn when that record is renamed,
+ * deleted, or navigated away from — the FIX-R17/FIX-Q12 defect, which
+ * `recordToast` in `@/lib/toast` fixes and this stack structurally cannot. It
+ * also holds TOAST_LIMIT = 1, so a second notice silently replaces the first.
+ *
+ * WHY IT IS STILL HERE, HONESTLY: 97 call sites use its object API
+ * (`toast({ title, description, variant, action })`) against a different
+ * renderer. Collapsing them onto sonner is its own migration, not a re-export,
+ * and it was out of scope for the lane that wrote this banner — a silent third
+ * copy would have been worse than saying so. When you touch one of the 97, move
+ * it to `@/lib/toast` (boy-scout rule); delete this file and its `<Toaster />`
+ * in `app/layout.tsx` when the count hits zero.
+ */
+
 // Inspired by react-hot-toast library
 import * as React from "react"
 

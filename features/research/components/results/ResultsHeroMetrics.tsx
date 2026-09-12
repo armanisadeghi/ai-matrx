@@ -24,11 +24,11 @@ import {
   researchLocation,
   type ResearchKpis,
 } from "@/features/research/copy";
+import { formatUsd } from "@ai-matrx/kit/format";
 import {
   useCountUp,
   formatInt,
   formatCompact,
-  formatUsd,
 } from "./resultsShared";
 
 export interface HeroMetric {
@@ -134,7 +134,7 @@ function MetricValue({
   const animated = useCountUp(value, { decimals, delay });
   const text =
     format === "usd"
-      ? formatUsd(animated)
+      ? formatUsd(animated, { digits: "adaptive" })
       : format === "compact"
         ? formatCompact(animated)
         : formatInt(animated);
@@ -156,7 +156,7 @@ export interface HeroMetricsCopyContext {
 /** Readable value for a tile, in the same format the tile renders. */
 function metricText(metric: HeroMetric): string {
   return metric.format === "usd"
-    ? formatUsd(metric.value)
+    ? formatUsd(metric.value, { digits: "adaptive" })
     : metric.format === "compact"
       ? formatCompact(metric.value)
       : formatInt(metric.value);

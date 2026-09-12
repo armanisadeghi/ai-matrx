@@ -11,15 +11,9 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import {
-  registerSurface,
-  unregisterSurface,
-  selectPendingNavigation,
-  clearPendingNavigation,
-} from "@/features/agents/redux/surfaces/surfaces.slice";
 import {
   selectAgentExecutionPayload,
   selectAgentName,
@@ -27,6 +21,7 @@ import {
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
+import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
@@ -116,7 +111,6 @@ export function AgentRunnerPage({
 }: AgentRunnerPageProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   useCreatorOwnershipSync(agentId);
@@ -167,46 +161,6 @@ export function AgentRunnerPage({
     };
   }, [agentId, initAttempt]);
 
-  // Register this page as a `page` surface so action bars and shared
-  // components can route fork/retry navigation outcomes correctly. The
-  // basePath is what the routing thunk references when a navigation
-  // intent fires; the effect below resolves it against the live agentId.
-  useEffect(() => {
-    dispatch(
-      registerSurface({
-        surfaceKey,
-        kind: "page",
-        basePath: `${basePath}/[agentId]/run`,
-      }),
-    );
-    return () => {
-      dispatch(unregisterSurface(surfaceKey));
-    };
-  }, [dispatch, surfaceKey, basePath]);
-
-  // Pending navigation handler — when a shared action (fork, retry) wants
-  // to jump us to a different conversationId, it writes here. We turn it
-  // into a router.replace and clear the slot so consumers stay idempotent.
-  const pendingNavigation = useAppSelector(selectPendingNavigation(surfaceKey));
-  useEffect(() => {
-    if (!pendingNavigation) return;
-    const target = buildConversationUrl
-      ? buildConversationUrl(pendingNavigation.conversationId)
-      : `${basePath}/${agentId}/run?conversationId=${pendingNavigation.conversationId}`;
-    // Programmatic: promoting a just-created conversation id onto the current
-    // entry. Back must leave the runner, not un-name the run.
-    router.replace(target);
-    dispatch(clearPendingNavigation({ surfaceKey }));
-  }, [
-    pendingNavigation,
-    router,
-    dispatch,
-    surfaceKey,
-    basePath,
-    agentId,
-    buildConversationUrl,
-  ]);
-
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature,
@@ -219,6 +173,22 @@ export function AgentRunnerPage({
     freshSessionKey: isFreshRoute ? freshSessionKey : 0,
     config: preferFresh ? { responseDensity: "compact" } : undefined,
     retainOnUnmount,
+  });
+
+  // One route primitive owns fork/retry navigation and the first-turn
+  // promotion. Its persistence barrier keeps cache-only draft ids out of the
+  // URL; Code's builder preserves workspace query state such as view/chat.
+  useConversationRoutePromotion({
+    surfaceKey,
+    agentId,
+    conversationIdProp: conversationIdFromUrl,
+    liveConversationId: conversationId,
+    freshSessionKey,
+    basePath: `${basePath}/[agentId]/run`,
+    buildHref: (targetConversationId) =>
+      buildConversationUrl
+        ? buildConversationUrl(targetConversationId)
+        : `${basePath}/${agentId}/run?conversationId=${targetConversationId}`,
   });
 
   // Completely unrelated to the normal run.

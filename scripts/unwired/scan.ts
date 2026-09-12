@@ -725,14 +725,25 @@ function aidreamFindings(aidreamRoot: string): {
   }
 }
 
-export function scanUnwired(root: string): ScanResult {
-  if (process.env.UNWIRED_DEBUG === "1") console.error("[unwired/debug] frontend scan starting");
+/**
+ * Progress tracing is a CALLER ARGUMENT, never the environment. It was
+ * `UNWIRED_DEBUG=1` until 2026-09-11; USD-5 ("Never an env var. Env values are
+ * only for secrets, not for controlling behavior") retired it. A developer
+ * switch on a CLI belongs on that CLI's own command line — `pnpm check:unwired
+ * --debug` — where it is discoverable from --help and cannot follow a shell
+ * around into an unrelated run.
+ */
+export function scanUnwired(root: string, options: { debug?: boolean } = {}): ScanResult {
+  const trace = options.debug
+    ? (message: string) => console.error(`[unwired/debug] ${message}`)
+    : () => {};
+  trace("frontend scan starting");
   const frontend = scanFrontendUnwired(root);
-  if (process.env.UNWIRED_DEBUG === "1") console.error(`[unwired/debug] frontend scan complete: ${frontend.filesScanned}`);
+  trace(`frontend scan complete: ${frontend.filesScanned}`);
   const aidreamRoot = resolve(root, "..", "aidream");
-  if (process.env.UNWIRED_DEBUG === "1") console.error("[unwired/debug] aidream scan starting");
+  trace("aidream scan starting");
   const aidream = aidreamFindings(aidreamRoot);
-  if (process.env.UNWIRED_DEBUG === "1") console.error(`[unwired/debug] aidream scan complete: ${aidream.findings.length}`);
+  trace(`aidream scan complete: ${aidream.findings.length}`);
   return {
     findings: [...frontend.findings, ...aidream.findings].sort(
       (a, b) => b.lines - a.lines || a.repository.localeCompare(b.repository) || a.file.localeCompare(b.file) || a.line - b.line,

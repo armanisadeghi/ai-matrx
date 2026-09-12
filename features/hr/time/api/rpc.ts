@@ -35,7 +35,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { hrMockEnabled, type HrFixtureCase } from "@/features/hr/mock/transport";
 import { HR_TIME_RPC_FIXTURES } from "./mock/registry";
 
 /**
@@ -445,7 +445,7 @@ export async function callHrTimeRpc<T>(
   args: Record<string, unknown>,
   opts?: HrRpcOptions,
 ): Promise<T> {
-  if (HR_MOCK_ENABLED) return serveMock<T>(rpc, opts?.mockCase);
+  if (hrMockEnabled()) return serveMock<T>(rpc, opts?.mockCase);
 
   // `hr_*` wrappers live in `public`, which is exposed — see the header. Never point this client at `hr`.
   const query = rpcClient.rpc(rpc, args);

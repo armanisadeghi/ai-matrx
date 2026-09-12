@@ -191,6 +191,7 @@ import StructuredInputWarningBlock from "../../blocks/data-events/StructuredInpu
 import DisplayQuestionnaireBlock from "../../blocks/data-events/DisplayQuestionnaireBlock";
 import UnknownDataEventBlock from "../../blocks/data-events/UnknownDataEventBlock";
 import ValueStoreStoredBlock from "../../blocks/data-events/ValueStoreStoredBlock";
+import DirectiveReceiptBlock from "../../blocks/data-events/DirectiveReceiptBlock";
 import ContextGroomedBlock from "../../blocks/data-events/ContextGroomedBlock";
 import QuizLoadingVisualization from "../../blocks/quiz/QuizLoadingVisualization";
 import PresentationLoadingVisualization from "../../blocks/presentations/PresentationLoadingVisualization";
@@ -1265,6 +1266,13 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <ValueStoreStoredBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  DirectiveReceiptBlock: (
+    props: React.ComponentProps<typeof DirectiveReceiptBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <DirectiveReceiptBlock {...props} />
     </LazyBlockWrapper>
   ),
   ContextGroomedBlock: (

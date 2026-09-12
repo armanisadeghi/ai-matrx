@@ -12,6 +12,7 @@ import type { Database, Json } from "@/types/database.types";
 import { readAllRows } from "@ai-matrx/data/db";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
+import { componentSourceGate } from "@/features/agent-apps/utils/component-source-gate";
 
 export type KindComponentCodeClient = SupabaseClient<Database>;
 
@@ -95,12 +96,50 @@ export async function listKindComponentCode(
   }
 }
 
+/**
+ * The row's render flavor. `"html"` bodies never reach the in-page compiler —
+ * they render inside `KindHtmlFrame`'s origin-isolated iframe — so the TSX
+ * source gate does not apply to them.
+ */
+function readFlavor(config: Json): string | null {
+  if (!config || typeof config !== "object" || Array.isArray(config))
+    return null;
+  const flavor = (config as Record<string, Json>).flavor;
+  return typeof flavor === "string" ? flavor : null;
+}
+
 export interface SaveKindComponentCodeArgs {
   component: KindComponentCodeRecord;
   componentSource: string;
 }
 
 /** Replace one DB-authored component body without silently overwriting drift. */
+/**
+ * B-23 / DD-123 — the database refuses a component body written by anyone who
+ * is not AI Matrx platform staff (`zzz_component_author_gate`, aidream
+ * migration 0639), because the string gate above cannot close the
+ * exfiltration class and the iframe origin boundary has not shipped yet. That
+ * refusal is a SENTENCE written for the person, so it must reach them
+ * verbatim instead of being wrapped in "We couldn't save ...".
+ *
+ * The trigger raises it with a HINT that carries the remedy ("Ask AI Matrx to
+ * author or change this component for you..."). PostgREST returns that hint as
+ * its own field, and dropping it leaves the reader told they may not do this
+ * and not told what to do instead — a refusal without a remedy. Both halves
+ * travel (V-23 finding 2).
+ */
+const SHAPE_AUTHORING_REFUSAL_HEAD =
+  "Only AI Matrx staff can write shape component code right now";
+
+function shapeAuthoringRefusal(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) return null;
+  const fields = error as { message?: unknown; hint?: unknown };
+  const message = "message" in fields ? String(fields.message ?? "") : "";
+  if (!message.startsWith(SHAPE_AUTHORING_REFUSAL_HEAD)) return null;
+  const hint = "hint" in fields ? String(fields.hint ?? "").trim() : "";
+  return hint ? `${message} ${hint}` : message;
+}
+
 export async function saveKindComponentCode(
   client: KindComponentCodeClient,
   args: SaveKindComponentCodeArgs,
@@ -113,6 +152,18 @@ export async function saveKindComponentCode(
   if (!args.componentSource.trim()) {
     throw new Error("Component code cannot be empty.");
   }
+
+  // 🚨 THE SOURCE GATE (Q82 / B-17, 2026-09-11). Until this call the browser
+  // write path ran NO check at all while the aidream agent-tool path ran an
+  // import allowlist — so a component saved here could `fetch()` the reader's
+  // session data to any host. Both paths now run the SAME rule
+  // (features/agent-apps/utils/component-source-gate.ts and its Python twin in
+  // aidream kind_shared.py, held byte-identical by a parity test), and a
+  // database trigger on content_ir.kind_component backstops both.
+  const refusal = componentSourceGate(args.componentSource, {
+    flavor: readFlavor(args.component.config),
+  });
+  if (refusal) throw new Error(refusal);
 
   const { data: authData, error: authError } = await client.auth.getUser();
   if (authError) {
@@ -166,6 +217,8 @@ export async function saveKindComponentCode(
     if (error instanceof Error && error.message.startsWith("This component")) {
       throw error;
     }
+    const authoringRefusal = shapeAuthoringRefusal(error);
+    if (authoringRefusal) throw new Error(authoringRefusal);
     throw operationFailed("save this Shape's component code", error);
   }
 }

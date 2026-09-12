@@ -14,6 +14,7 @@ import {
   audioExtensionForType,
   toAudioFile,
 } from "@ai-matrx/browser-audio/core";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface UploadResult {
   /**
@@ -191,7 +192,7 @@ export async function saveAudioToStorage(
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 16000);
         onProgress?.(
           (attempt / maxRetries) * 50,
-          `Upload failed. Retrying in ${delay / 1000}s...`,
+          `Upload failed. Retrying in ${formatDurationMs(delay, { style: "compact" })}...`,
         );
         await sleep(delay);
       }

@@ -24,6 +24,7 @@
 
 import React from "react";
 import { ChevronRight, File, Folder, FolderOpen } from "lucide-react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 import { cn } from "@/lib/utils";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
@@ -59,14 +60,6 @@ function asFsEntry(raw: unknown): FsEntry | null {
     const isDir = o.is_dir === true || o.isDir === true || o.type === "directory";
     const size = typeof o.size === "number" ? o.size : null;
     return { name, isDir, size };
-}
-
-/** "12.4 KB" — human size; directories and unknowns render nothing. */
-function humanSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
 /** Basename of a path, or the path itself when it has no slash / is a root. */
@@ -120,7 +113,7 @@ const FsEntryRow: React.FC<{ entry: FsEntry; withTopBorder: boolean; indent?: bo
         <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">{e.name}</span>
         {!e.isDir && e.size !== null && (
             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                {humanSize(e.size)}
+                {formatFileSize(e.size)}
             </span>
         )}
     </div>
@@ -173,7 +166,7 @@ const FsReadCard: React.FC<
         icon={File}
         iconClassName={FS_ICON_TINT}
         title={basename(path)}
-        sub={[path, size !== null ? humanSize(size) : null, truncated ? "truncated" : null]
+        sub={[path, size !== null ? formatFileSize(size) : null, truncated ? "truncated" : null]
             .filter(Boolean)
             .join(" · ")}
         {...shell}

@@ -27,9 +27,26 @@ export interface ProposedDirective {
   directiveClass: string;
   noun: string;
   summary: string | null;
+  /**
+   * THE SERVER'S SENTENCE (DD-118) — what confirming WILL make, e.g. "Proposed —
+   * confirm to create 1 project." Rendered verbatim on the card: the
+   * destructive-click law says an expensive or creating click names its
+   * consequence, and the client is not the party that knows the consequence.
+   */
+  message: string;
   itemCount: number;
   /** The round-tripped two-key shell the client POSTs back verbatim. */
   shell: Record<string, unknown>;
+  /**
+   * THE OUTCOME, once the user has clicked (V-19, 2026-09-12). Absent while the
+   * proposal is still a question. Set from the confirm RESPONSE — never from a
+   * count the client added up — so the card that asked "shall I?" answers
+   * "here is what happened" in the same place, instead of vanishing behind a
+   * toast that is gone in four seconds.
+   */
+  outcome?: "applied" | "already_applied" | "failed";
+  /** The server's sentence for that outcome. Rendered verbatim. */
+  outcomeMessage?: string;
 }
 
 interface ProposedDirectivesState {
@@ -61,14 +78,39 @@ const proposedDirectivesSlice = createSlice({
       if (next.length) state.byConversation[conversationId] = next;
       else delete state.byConversation[conversationId];
     },
+    /**
+     * The user clicked, the server answered: keep the card and turn it into the
+     * receipt. NOT `removeProposal` — a card that disappears is how a person
+     * ends up unable to tell whether anything happened.
+     */
+    resolveProposal(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        proposalId: string;
+        outcome: NonNullable<ProposedDirective["outcome"]>;
+        outcomeMessage: string;
+      }>,
+    ) {
+      const { conversationId, proposalId, outcome, outcomeMessage } = action.payload;
+      const list = state.byConversation[conversationId];
+      if (!list) return;
+      state.byConversation[conversationId] = list.map((p) =>
+        p.proposalId === proposalId ? { ...p, outcome, outcomeMessage } : p,
+      );
+    },
     clearProposalsForConversation(state, action: PayloadAction<string>) {
       delete state.byConversation[action.payload];
     },
   },
 });
 
-export const { proposeDirective, removeProposal, clearProposalsForConversation } =
-  proposedDirectivesSlice.actions;
+export const {
+  proposeDirective,
+  removeProposal,
+  resolveProposal,
+  clearProposalsForConversation,
+} = proposedDirectivesSlice.actions;
 
 export default proposedDirectivesSlice.reducer;
 

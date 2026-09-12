@@ -254,6 +254,10 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-09-12 — Codex: keyword meaning now says when an Offering placement is
+  inherited from the brand, organization, or platform instead of presenting
+  every resolved placement as though the current site chose it.
+
 - 2026-09-11 — Codex: moved Keyword Intelligence's site-performance read from
   the generic security-invoker view to the site-and-keyword-scoped
   `seo.site_keyword_performance_for_keyword` RPC after a production dossier

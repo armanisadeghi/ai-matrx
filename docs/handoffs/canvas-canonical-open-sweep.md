@@ -32,7 +32,7 @@ its `canvas_items` row — instead of each one pushing its own private copy into
 
 - Feature docs: [features/canvas/FEATURE.md](../../features/canvas/FEATURE.md) ·
   [features/artifacts/FEATURE.md](../../features/artifacts/FEATURE.md)
-- Dev server: `pnpm preview:start` (port 3001, ONE machine-wide). Login: `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/artifacts`
+- Dev server: `pnpm preview:start` (port 3001, ONE machine-wide). Login: `openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/artifacts`
 - Review queue: `b8b0091f-0cbf-49f4-bc83-cefe28224ef4` (`submitted`).
 
 ## EXEMPT — do not touch, these are correct

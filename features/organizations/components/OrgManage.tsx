@@ -33,6 +33,7 @@ import {
   KeyRound,
   UserCog,
   Tags,
+  Gauge,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ import { DictionarySection } from "@/features/dictionary/components/DictionarySe
 import { VaultWorkspace } from "@/features/secrets/components/VaultWorkspace";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 import { OrgCompetitorLabelsSettings } from "@/features/marketing/competitors/OrgCompetitorLabelsSettings";
+import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 
 interface OrgManageProps {
   organization: Organization;
@@ -102,6 +104,9 @@ export function OrgManage({
 
   const sections: SectionDef[] = [
     { id: "general", label: "General", icon: Settings, show: true },
+    // Every member may SEE the organization's AI budget (it binds them);
+    // only an owner/admin may set it — the card itself hides the editor.
+    { id: "ai-budget", label: "AI budget", icon: Gauge, show: true },
     { id: "members", label: "Members", icon: Users, show: canManageMembers },
     {
       id: "invitations",
@@ -318,6 +323,22 @@ export function OrgManage({
               canEdit={canManageSettings}
               userRole={userRole}
               onOrganizationUpdated={setDisplayOrganization}
+            />
+          </SectionCard>
+
+          {/* AI budget — entitlement vs the organization's own ceiling.
+              The card is shared with the person's own settings so the two
+              surfaces can never disagree on what a limit means. */}
+          <SectionCard
+            id="ai-budget"
+            icon={Gauge}
+            title="AI budget"
+            description="What the plan includes, what this organization has spent, and the lower ceiling it chooses for itself."
+          >
+            <SpendBudgetCard
+              organizationId={displayOrganization.id}
+              mode="org"
+              canEdit={canManageSettings}
             />
           </SectionCard>
 

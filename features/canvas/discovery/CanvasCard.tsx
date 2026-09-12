@@ -16,6 +16,11 @@ import { formatDistanceToNow } from "date-fns";
 import type { SharedCanvasItem } from "@/types/canvas-social";
 import { getCanvasBlockMeta } from "@/features/canvas/canvas-block-meta";
 import { cn } from "@/lib/utils";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM".
+import { getInitials } from "@ai-matrx/kit/format";
 
 interface CanvasCardProps {
   canvas: SharedCanvasItem;
@@ -43,16 +48,6 @@ function CanvasTypeIcon({ type }: { type: string }) {
 }
 
 export function CanvasCard({ canvas }: CanvasCardProps) {
-  const getInitials = (name: string | null) => {
-    if (!name) return "?";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   const getTypeGradient = (type: string) => {
     const gradients: Record<string, string> = {
       quiz: "from-blue-500 to-cyan-500",

@@ -23,11 +23,15 @@ import {
   type HrFixture,
 } from "../../features/hr/__fixtures__/registry.generated";
 import {
-  HR_MOCK_ENABLED,
+  armHrMockLane,
+  hrMockEnabled,
   HR_OPERATION_IDS,
   resolveOperation,
   serveFromFixtures,
 } from "../../features/hr/mock/transport";
+
+// The mock lane is armed in code by the script that needs it (USD-5: never an env var).
+armHrMockLane();
 
 interface Row {
   group: string;
@@ -54,13 +58,13 @@ function main(): number {
   // ---- 0. the flag actually has to be on, or this proves nothing
   rec(
     "0 preconditions",
-    "NEXT_PUBLIC_HR_MOCK=1 is set",
-    HR_MOCK_ENABLED,
-    HR_MOCK_ENABLED
+    "the mock lane is armed (armHrMockLane)",
+    hrMockEnabled(),
+    hrMockEnabled()
       ? "mock transport active"
-      : "NOT SET — the walk would test nothing. Re-run with NEXT_PUBLIC_HR_MOCK=1.",
+      : "NOT ARMED — the walk would test nothing. armHrMockLane() must run before the first request.",
   );
-  if (!HR_MOCK_ENABLED) {
+  if (!hrMockEnabled()) {
     report();
     return 1;
   }

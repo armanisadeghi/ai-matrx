@@ -24,7 +24,7 @@ import type {
   OutputFormat,
   SaveStudioResult,
 } from "../types";
-import { formatBytes } from "../utils/format-bytes";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { CropControls } from "./CropControls";
 import {
   OUTPUT_FORMAT_OPTIONS,
@@ -296,7 +296,7 @@ export function ExportPanel({
             <span className="text-muted-foreground">Output size</span>
             <span className="font-mono tabular-nums flex items-center gap-1">
               {totalOutputBytes > 0 && <Zap className="h-3 w-3 text-success" />}
-              {formatBytes(totalOutputBytes)}
+              {formatFileSize(totalOutputBytes)}
             </span>
           </div>
         </div>

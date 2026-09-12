@@ -25,7 +25,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { hrMockEnabled, type HrFixtureCase } from "@/features/hr/mock/transport";
 import { hrMeHref } from "@/features/hr/routes";
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
@@ -91,8 +91,8 @@ export function MyClockSurface({
               /* Route 6 is the employee punching for themselves. */
               source="web"
               deviceOrSession={webPunchSessionSegment()}
-              mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
-              punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}
+              mockCase={hrMockEnabled() ? mockCase : undefined}
+              punchMockCase={hrMockEnabled() ? punchMockCase : undefined}
               /*
                 R3: `hr_set_employment_pin` had NO caller anywhere, so no employment could ever hold
                 a PIN and the whole kiosk chain was unusable however well a tablet was paired. The

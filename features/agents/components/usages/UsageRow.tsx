@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { updateUsageToActive } from "@/features/agents/redux/usages/usages.thunks";
 import { makeSelectRowMutation } from "@/features/agents/redux/usages/usages.selectors";
 import type { UsageScope } from "@/features/agents/redux/usages/usages.slice";
@@ -62,7 +62,10 @@ export function UsageRow({ row, scope, showOwner, onNotify }: UsageRowProps) {
         }),
       ).unwrap();
       if (result.success) {
-        toast.success(`Updated "${row.label}" to v${result.pinnedVersionNumber ?? row.currentVersion}`);
+        recordToast.success(
+          { type: row.usageType, id: row.usageId, title: row.label },
+          `Updated "${row.label}" to v${result.pinnedVersionNumber ?? row.currentVersion}`,
+        );
       } else {
         toast.error(result.message ?? result.error ?? "Could not update this usage");
       }

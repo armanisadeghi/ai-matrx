@@ -1,0 +1,147 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "aidream checkout (the contract this repo is written against) — real bytes, 2026-09-12",
+    "version": "fixture"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "DirectiveConfirmRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "directive": {
+            "type": "string",
+            "title": "Directive"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "proposal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposal Id"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "directive"
+        ],
+        "title": "DirectiveConfirmRequest",
+        "description": "The two-key shell the client received in the proposal, POSTed back verbatim.\n\n``directive`` is the SLUG — one field, one identity. The retired shell's\nthree-field control triple is gone, and so is the defaulted identity field\nthat came with it: a confirm request that does not say exactly what it is\nconfirming is rejected, not guessed at."
+      },
+      "DirectiveConfirmResult": {
+        "properties": {
+          "directive": {
+            "type": "string",
+            "title": "Directive"
+          },
+          "proposal_id": {
+            "type": "string",
+            "title": "Proposal Id"
+          },
+          "applied": {
+            "type": "integer",
+            "title": "Applied"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "receipts": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DirectiveItemApplied"
+                },
+                {
+                  "$ref": "#/components/schemas/DirectiveItemFailed"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Receipts"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "directive",
+          "proposal_id",
+          "applied",
+          "failed",
+          "receipts",
+          "message"
+        ],
+        "title": "DirectiveConfirmResult"
+      }
+    }
+  }
+}

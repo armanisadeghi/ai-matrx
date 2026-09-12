@@ -18,6 +18,8 @@
  * asks the platform which of the four things actually happened.
  */
 
+import { extractErrorMessage } from "@ai-matrx/data/net";
+
 /**
  * A user-facing Error for a failed action. `action` completes the sentence
  * "We couldn't …" in the user's words — "join this class", not "call
@@ -84,45 +86,22 @@ export function makeGovernedDataAsserter(
 }
 
 /**
- * Safe string extraction for caught values (Supabase PostgrestError, axios, etc.).
- * Avoids `String(err)` on plain objects, which yields "[object Object]".
+ * Safe string extraction for caught values (Supabase PostgrestError, axios,
+ * FastAPI `detail` bodies). Avoids `String(err)` on plain objects, which yields
+ * "[object Object]". For a Supabase PostgrestError the returned string carries
+ * message, details, hint and code, so logs are immediately actionable.
  *
- * For Supabase PostgrestError the returned string includes message, details,
- * hint, and error code so logs are immediately actionable.
+ * 🚨 THIS IS A DOOR, NOT A BODY. The logic lives in `@ai-matrx/data/net` and is
+ * re-exported here so this repo's ~100 `@/utils/errors` importers keep their
+ * import path. The host body was deleted 2026-09-11 in the byte-size/error
+ * twins collapse: it was a near-byte copy of the package's — including the
+ * 2026-08-31 FastAPI `detail` fix, which had to be written TWICE — and it had
+ * already fallen behind on the package's nested-error lookup (a `{ error: {
+ * message } }` envelope, which the host copy flattened to a JSON dump) and on
+ * its `fallback` parameter. Never re-grow a body here; a fix goes into the
+ * package and is adopted. Guard: `pnpm check:package-twins`.
  */
-export function extractErrorMessage(err: unknown): string {
-  if (!err) return "Unknown error";
-  if (typeof err === "string") return err;
-  if (err instanceof Error) return err.message;
-  if (typeof err === "object") {
-    const e = err as Record<string, unknown>;
-    const parts: string[] = [];
-    if (typeof e.message === "string" && e.message) parts.push(e.message);
-    // 🚨 FastAPI's own word for the reason (2026-08-31, V2 finding G5). Our
-    // server refuses in `detail` — a string, or an object carrying `message` —
-    // and every reader here checked `message`/`details` only, so a body that
-    // said exactly why was flattened into "An unexpected error occurred". The
-    // server's sentence is the whole point of catching this.
-    if (parts.length === 0) {
-      if (typeof e.detail === "string" && e.detail) parts.push(e.detail);
-      else if (e.detail && typeof e.detail === "object") {
-        const d = e.detail as Record<string, unknown>;
-        if (typeof d.message === "string" && d.message) parts.push(d.message);
-      }
-    }
-    if (typeof e.details === "string" && e.details) parts.push(e.details);
-    if (typeof e.hint === "string" && e.hint) parts.push(`Hint: ${e.hint}`);
-    if (typeof e.code === "string" && e.code) parts.push(`Code: ${e.code}`);
-    if (parts.length > 0) return parts.join(" · ");
-    try {
-      const s = JSON.stringify(err);
-      if (s && s !== "{}") return s;
-    } catch {
-      /* ignore */
-    }
-  }
-  return "An unexpected error occurred";
-}
+export { extractErrorMessage };
 
 
 // eslint-disable-next-line no-control-regex -- stripping the raw control char is the point

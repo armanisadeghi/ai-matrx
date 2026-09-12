@@ -45,7 +45,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { formatBytes } from "@/features/admin/shared/UrlProbeField";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { resolveCatalogLink } from "@/features/admin/applications/catalogs/resolver";
 import { CATALOG_KINDS, CATALOG_KEY_REGEX } from "@/features/admin/applications/catalogs/schemas";
 import type {
@@ -366,7 +366,7 @@ export function AddFromLinkDialog({
                           </Badge>
                         ) : null}
                         <span className="w-20 shrink-0 text-right text-xs text-muted-foreground">
-                          {formatBytes(file.size_bytes)}
+                          {formatFileSize(file.size_bytes)}
                         </span>
                         <span
                           className="w-24 shrink-0 truncate text-right font-mono text-[10px] text-muted-foreground"

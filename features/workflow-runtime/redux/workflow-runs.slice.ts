@@ -35,6 +35,7 @@ import {
   type NodeOutcomeWrapper,
   type RunResultWrapper,
 } from "@ai-matrx/content-ir";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export type NodeRunPhase =
   "running" | "settled" | "failed" | "skipped" | "retrying";
@@ -419,10 +420,7 @@ function pushActivity(
 /** Human duration for an activity detail — never a raw millisecond count. */
 function humanDuration(ms: number | null | undefined): string | null {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0) return null;
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  const seconds = ms / 1000;
-  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 1 : 0)}s`;
-  return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 /**

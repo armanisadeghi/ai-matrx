@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
 import { RECORDING_LIMITS } from "../constants/recording";
@@ -63,13 +64,6 @@ export function RecordingInterface({
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB`;
-    }
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const calculateEstimatedSize = (durationSeconds: number) => {
@@ -220,7 +214,7 @@ export function RecordingInterface({
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>Estimated Size</span>
                 <span>
-                  {formatSize(estimatedSize)} / {formatSize(maxSizeBytes)}
+                  {formatFileSize(estimatedSize)} / {formatFileSize(maxSizeBytes)}
                 </span>
               </div>
               <Progress

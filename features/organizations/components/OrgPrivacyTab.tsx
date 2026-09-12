@@ -36,17 +36,13 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
+import { formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
 
 interface OrgPrivacyTabProps {
   organizationId: string;
   /** When false, the controls render read-only so non-admins still see the
    * current state and limits without being able to flip them. */
   canEdit: boolean;
-}
-
-function formatUsd(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  return `$${value.toFixed(2)}`;
 }
 
 function formatPercent(value: number): string {
@@ -66,10 +62,7 @@ function formatResetIn(windowStart: string | null): string | null {
   const resetMs = startMs + 24 * 60 * 60 * 1000;
   const remainingMs = resetMs - Date.now();
   if (remainingMs <= 0) return null;
-  const hours = Math.floor(remainingMs / (60 * 60 * 1000));
-  const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
-  if (hours > 0) return `Resets in ${hours}h ${minutes}m`;
-  return `Resets in ${minutes}m`;
+  return `Resets in ${formatDurationMs(remainingMs, { style: "coarse" })}`;
 }
 
 function percentToneClass(percent: number): string {

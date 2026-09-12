@@ -27,7 +27,7 @@
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, Loader2, Ruler } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -214,9 +214,17 @@ function AssetEditorBody({
           notes: `Rendered to the "${slot.name}" media standard (${slot.width}×${slot.height}) from library asset ${asset.id}.`,
         });
         setRenderedSlotIds((prev) => new Set(prev).add(slot.id));
-        toast.success(`"${slot.name}" saved to the brand library`, {
-          description: `${slot.width}×${slot.height} ${slotOutputFormat(slot.format)}`,
-        });
+        recordToast.success(
+          {
+            type: "media_asset",
+            id: result.file_id,
+            title: `${baseTitle} — ${slot.name}`,
+          },
+          `"${slot.name}" saved to the brand library`,
+          {
+            description: `${slot.width}×${slot.height} ${slotOutputFormat(slot.format)}`,
+          },
+        );
       } catch (error) {
         toast.error(`Could not render "${slot.name}"`, {
           description: error instanceof Error ? error.message : undefined,

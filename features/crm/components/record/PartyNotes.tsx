@@ -134,6 +134,9 @@ export function PartyNotes({
     }
   };
 
+  // The surface arrives as a prop; the only mount that passes one is
+  // `PartyRecordPage` (CRM_RECORD_SURFACE_NAME).
+  // surface-write-handlers-surface: matrx-user/crm-record
   useSurfaceWriteHandlers(writeSurfaceName ?? null, {
     add_note: async (value: unknown) => {
       if (typeof value !== "string" || !value.trim()) {

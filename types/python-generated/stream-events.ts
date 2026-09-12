@@ -945,6 +945,19 @@ export interface MasterworkDumpResourceOutcome {
   rules_added?: number;
   duplicates?: number;
   error?: string | null;
+  already_distilled?: MasterworkSourceAlreadyDistilled | null;
+  replaced_rules?: number;
+}
+
+export interface MasterworkSourceAlreadyDistilled {
+  source: string;
+  label?: string | null;
+  rules?: number;
+  draft_rules?: number;
+  approved_rules?: number;
+  run_ids?: string[];
+  message: string;
+  can_replace?: boolean;
 }
 
 export interface MasterworkDumpCompleteData {
@@ -956,6 +969,8 @@ export interface MasterworkDumpCompleteData {
   quotes_verified?: number;
   quotes_unverified?: number;
   resources?: MasterworkDumpResourceOutcome[];
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  replaced_rules?: number;
 }
 
 export interface MasterworkDumpProgressData {
@@ -984,6 +999,8 @@ export interface MasterworkIngestCompleteData {
   failed_chunks?: number;
   skipped_words?: number;
   followup_seed?: string | null;
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  replaced_rules?: number;
 }
 
 export interface MasterworkIngestProgressData {
@@ -2498,7 +2515,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2508,7 +2525,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2560,7 +2577,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -2570,7 +2587,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -3407,6 +3424,14 @@ export interface SearchReplaceRenderData {
   language?: string | null;
 }
 
+export interface DirectiveReceiptRenderData {
+  directive: string;
+  outcome: "proposed" | "applied" | "already_applied" | "failed" | "blocked";
+  message: string;
+  resource_kind?: string;
+  resource_ids?: string[];
+}
+
 export interface UnknownDataEventData {
   [key: string]: unknown;
   _dataType: string;
@@ -3550,6 +3575,15 @@ export interface SearchReplaceRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/** Kind Directive apply receipt — FE-synthesized from the kind-discriminated directive_apply.* events. Carries the SERVER's own sentence for the outcome (created / already applied / proposed / failed / blocked); never composed client-side. Never persisted to cx_message.content. */
+export interface DirectiveReceiptRenderBlock {
+  type: "directive_receipt";
+  /** Always null — a non-null content would leak into committed message parts. The payload lives on `data`. */
+  content: null;
+  data: DirectiveReceiptRenderData;
+  metadata?: Record<string, unknown>;
+}
+
 /** Fallback for data events whose type is not recognized; _dataType preserves the original type string. */
 export interface UnknownDataEventRenderBlock {
   type: "unknown_data_event";
@@ -3569,10 +3603,11 @@ export type ServerProtocolRenderBlock =
   | ScrapeBatchCompleteRenderBlock
   | ValueStoreStoredRenderBlock
   | ContextGroomedRenderBlock
-  | SearchReplaceRenderBlock;
+  | SearchReplaceRenderBlock
+  | DirectiveReceiptRenderBlock;
 
 export const SERVER_PROTOCOL_RENDER_BLOCK_TYPES = new Set<string>([
-  "function_result", "workflow_step", "search_error", "structured_input_warning", "podcast_stage", "podcast_complete", "scrape_batch_complete", "value_store_stored", "context_groomed", "search_replace",
+  "function_result", "workflow_step", "search_error", "structured_input_warning", "podcast_stage", "podcast_complete", "scrape_batch_complete", "value_store_stored", "context_groomed", "search_replace", "directive_receipt",
 ]);
 
 /** Generated-media delivery blocks — generic media primitives. */

@@ -81,7 +81,10 @@ import type {
   RenderBlockEvent,
 } from "@/types/python-generated/stream-events";
 import { isJsonObject } from "@/types/json";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -464,7 +467,7 @@ export function MessageTemplateManager({
       }
 
       const input: CreateMessageTemplateInput = {
-        organization_id: requireSelectedOrgId(),
+        organization_id: await ensureOrganizationContext(),
         label: createFormData.label,
         content: createFormData.content,
         role: createFormData.role,
@@ -484,6 +487,9 @@ export function MessageTemplateManager({
         variant: "success",
       });
     } catch (error) {
+      // Declining the organization question is an answer, not a failure:
+      // nothing was written and nothing is said. Anything else is real.
+      if (isOrganizationSelectionCancelled(error)) return;
       console.error("Error creating template:", error);
       toast({
         title: "Error",

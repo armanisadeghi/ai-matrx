@@ -34,7 +34,10 @@ import {
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },
@@ -211,7 +214,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
       if (!subjectTemplate.trim()) delete metadata.subject_template;
       if (mode === "create") {
         const input: CreateMessageTemplateInput = {
-          organization_id: requireSelectedOrgId(),
+          organization_id: await ensureOrganizationContext(),
           label: label.trim(),
           content: content.trim(),
           role,
@@ -237,6 +240,9 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
       clearTemplateCache();
       router.push("/chat/message-templates");
     } catch (err) {
+      // Declining the organization question is an answer, not a failure:
+      // nothing was written and nothing is said.
+      if (isOrganizationSelectionCancelled(err)) return;
       console.error("Error saving template:", err);
       toast({
         title: "Error",

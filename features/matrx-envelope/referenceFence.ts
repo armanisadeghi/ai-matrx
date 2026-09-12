@@ -65,9 +65,24 @@ export function buildReferenceFence(args: {
   type: ReferenceType | string;
   items: ReferenceItem[];
 }): string {
+  return buildDirectiveFence("reference", args.type, args.items);
+}
+
+/**
+ * The class-generic form of `buildReferenceFence` — same fence, same minified
+ * shell, any grammar class (`reference`, `delete`, …). The slug is still built
+ * by the grammar, so an unroutable class/noun pair throws instead of shipping.
+ * Side-effect classes found in content render as a button and only run on a
+ * human click (KIND_DIRECTIVES.md §4, THE POSITION LAW).
+ */
+export function buildDirectiveFence(
+  directiveClass: Parameters<typeof buildDirectiveSlug>[0],
+  noun: string,
+  items: ReferenceItem[],
+): string {
   const shell = buildKindDirective(
-    buildDirectiveSlug("reference", args.type),
-    args.items,
+    buildDirectiveSlug(directiveClass, noun),
+    items,
   );
   return `${FENCE_OPEN}\n${JSON.stringify(shell)}\n${FENCE_CLOSE}`;
 }

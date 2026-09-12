@@ -70,8 +70,11 @@ import { createClient } from "@supabase/supabase-js";
 import { unwrapRows } from "../lib/integrity/unwrap";
 import {
   PUBLIC_EXPOSURE_QUERY,
+  UNPROTECTED_RELATION_QUERY,
   classifyExposures,
+  classifyUnprotected,
   type LiveExposure,
+  type UnprotectedRelation,
 } from "../lib/security/public-exposure";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -426,6 +429,62 @@ function reportPublicExposure(rows: LiveExposure[]): number {
   return undeclared.length;
 }
 
+/**
+ * FOURTH DETECTOR, SECOND ARM — RELATIONS WITH NO RLS AT ALL.
+ *
+ * The arm above reads `pg_policy`. A table with RLS switched off HAS no policy
+ * rows, so it can be wide open to `anon` and still produce nothing there. That
+ * is not hypothetical: `public._schema_migration_slot_grandfather` held
+ * SELECT/INSERT/UPDATE/DELETE for `anon` with RLS off, 41 rows, in the
+ * PostgREST-exposed `public` schema, and passed this gate clean every single
+ * run until 2026-09-12. Emptying it disarms `migration_slot_guard.sql`.
+ *
+ * The allowlist for this arm is `UNPROTECTED_ALLOWED` and it is EMPTY on
+ * purpose. Turning RLS off on a client-reachable table is not a thing we do.
+ */
+/** Returns the number of UNDECLARED unprotected relations (0 = none). */
+function reportUnprotected(rows: UnprotectedRelation[]): number {
+  const { undeclared, tracked, stale } = classifyUnprotected(rows);
+
+  console.log("");
+  console.log(
+    `${C.bold}Unprotected relations${C.reset} ${C.dim}(RLS switched OFF and a client role still holds a grant)${C.reset}`,
+  );
+
+  for (const r of undeclared) {
+    console.log(
+      `  ${TAG.fail}NO RLS     ${r.relation} ${C.dim}(${r.client_grants})${C.reset}` +
+        `${r.write_open ? ` ${C.red}— ANON CAN WRITE${C.reset}` : ""}`,
+    );
+  }
+  for (const r of tracked) {
+    console.log(
+      `  ${TAG.warn}tracked    ${r.relation} ${C.dim}(${r.client_grants})${C.reset} — ${r.defect}` +
+        `${r.write_open ? ` ${C.red}— ANON CAN WRITE${C.reset}` : ""}`,
+    );
+  }
+  for (const d of stale) {
+    console.log(
+      `  ${TAG.info}stale      ${d.relation} ${C.dim}— now protected; remove it from UNPROTECTED_ALLOWED in lib/security/public-exposure.ts${C.reset}`,
+    );
+  }
+
+  if (!undeclared.length) {
+    console.log(
+      `${TAG.ok}Every client-reachable relation has row-level security enabled.`,
+    );
+  } else {
+    console.log(
+      `${TAG.fail}${undeclared.length} relation(s) have NO row-level security and a client-role grant.`,
+    );
+    console.log(
+      `${C.dim}       The grant is the entire security model for these. ENABLE ROW LEVEL SECURITY, or REVOKE the` +
+        ` grant, or — only if a human decided it on purpose — declare it in UNPROTECTED_ALLOWED WITH a reason.${C.reset}`,
+    );
+  }
+  return undeclared.length;
+}
+
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
   const env = loadEnv();
@@ -513,12 +572,28 @@ async function main(): Promise<number> {
     return 2;
   }
 
+  let unprotected = 0;
+  try {
+    const { data, error } = await supabase.rpc("execute_admin_query", {
+      query: UNPROTECTED_RELATION_QUERY,
+    });
+    if (error) throw new Error(error.message);
+    unprotected = reportUnprotected(
+      unwrapRows(data) as unknown as UnprotectedRelation[],
+    );
+  } catch (err) {
+    console.error(`${TAG.fail}Unprotected-relation check: query failed — ${String(err)}`);
+    return 2;
+  }
+
   if (!missing.length && !disabled.length) {
     console.log("");
     console.log(
       `${TAG.ok}All ${EXPECTED.length} platform event triggers are bound and enabled.`,
     );
-    return (traps > 0 || undeclaredExposures > 0) && strict ? 1 : 0;
+    return (traps > 0 || undeclaredExposures > 0 || unprotected > 0) && strict
+      ? 1
+      : 0;
   }
 
   console.log("");

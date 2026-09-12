@@ -24,6 +24,7 @@ import {
   Workflow,
   Search,
   Shapes,
+  Printer,
 } from "lucide-react";
 
 /**
@@ -244,6 +245,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: Megaphone,
     teaser:
       "Brand-first marketing: your own crawler, canonical page registry, content planner, and search intelligence.",
+    group: "Build & Run",
+  },
+  {
+    label: "Print",
+    href: "/print",
+    icon: Printer,
+    teaser:
+      "Everything you can put on paper — flashcards, cheat sheets, practice tests, certificates, labels, QR codes, booklets — plus printed books ordered and shipped.",
     group: "Build & Run",
   },
 

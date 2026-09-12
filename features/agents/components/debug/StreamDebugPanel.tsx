@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { shallowEqual } from "react-redux";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -384,21 +386,19 @@ function MetricsBar({ metrics }: { metrics: ClientMetrics }) {
         <Clock className="h-3 w-3" /> TTFT:
       </span>
       <span className="font-mono text-foreground/80">
-        {metrics.ttftMs !== null ? `${metrics.ttftMs.toFixed(0)}ms` : "—"}
+        {formatDurationMs(metrics.ttftMs, { style: "compact" })}
       </span>
       <span className="text-muted-foreground/40">|</span>
       <span className="text-muted-foreground">Stream:</span>
       <span className="font-mono text-foreground/80">
-        {metrics.streamDurationMs !== null
-          ? `${(metrics.streamDurationMs / 1000).toFixed(2)}s`
-          : "—"}
+        {formatDurationMs(metrics.streamDurationMs, { style: "compact" })}
       </span>
       <span className="text-muted-foreground/40">|</span>
       <span className="text-muted-foreground">Total:</span>
       <span className="font-mono text-foreground/80">
-        {metrics.totalClientDurationMs !== null
-          ? `${(metrics.totalClientDurationMs / 1000).toFixed(2)}s`
-          : "—"}
+        {formatDurationMs(metrics.totalClientDurationMs, {
+          style: "compact",
+        })}
       </span>
       <span className="text-muted-foreground/40">|</span>
       <span className="text-muted-foreground">Events:</span>

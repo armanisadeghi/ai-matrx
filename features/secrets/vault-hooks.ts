@@ -12,6 +12,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import {
   addVaultAttachment,
   addVaultField,
@@ -252,6 +254,20 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
         await refresh();
         return result;
       } catch (e) {
+        // Every Vault mutation resolves the organization inside the transport
+        // and fails CLOSED before the wire when none is selected. Toasting that
+        // sentence tells the person nothing they can act on, so instead ask the
+        // one question that unblocks it and run the SAME operation again — the
+        // platform's "ask, then continue" gate, not a second treatment.
+        if (isOrganizationRequiredError(e)) {
+          // Declining rethrows OrganizationSelectionCancelled, which callers
+          // treat as "nothing happened" — no toast, no error banner.
+          await ensureOrganizationContext();
+          const retried = await op();
+          if (success) toast.success(success);
+          await refresh();
+          return retried;
+        }
         const msg = e instanceof Error ? e.message : String(e);
         toast.error(msg);
         throw e;

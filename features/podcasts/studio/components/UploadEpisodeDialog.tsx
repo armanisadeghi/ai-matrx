@@ -18,7 +18,7 @@
 //   video → "with_video", image (no video) → "with_metadata", else "audio_only".
 
 import { useEffect, useRef, useState } from "react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import {
   Loader2,
   AudioLines,
@@ -212,7 +212,10 @@ export function UploadEpisodeDialog({
 
       const show = shows.find((s) => s.id === created.show_id) ?? null;
       onCreated({ ...created, show });
-      toast.success(`Published "${created.title}"`);
+      recordToast.success(
+        { type: "pc_episode", id: created.id, title: created.slug },
+        `Published "${created.title}"`,
+      );
       reset();
       onOpenChange(false);
     } catch (e) {

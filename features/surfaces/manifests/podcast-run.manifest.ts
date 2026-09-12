@@ -569,8 +569,14 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "episode_chapters",
     label: "Chapter markers",
     description:
-      "Replaces the episode's FULL ordered chapter list (pc_episodes.metadata.chapters), through the same podcastService.saveEpisodeChapters call the Chapter markers panel's Generate uses. Value: { chapters: [{ start_hint, title, summary }] } — 1 to 24 entries, each title non-empty and 120 characters or fewer, each summary 300 characters or fewer (empty string allowed), start_hint a MM:SS or HH:MM:SS timestamp. This REPLACES the whole list, so include every chapter you want to keep: read the current set from the episode_chapters value first and REUSE its start_hint timestamps verbatim — they are aligned to the rendered audio and you cannot re-derive them. Use this to rewrite chapter titles and summaries; use the panel's Regenerate button to re-segment the episode from scratch. Refused while the run is still working and before the episode exists.",
+      "Replaces the episode's FULL ordered chapter list (pc_episodes.metadata.chapters), through the same podcastService.saveEpisodeChapters call the Chapter markers panel's Generate uses. Value: a `media_chapters` payload — { \"__kind\": \"media_chapters\", chapters: [{ \"__kind\": \"media_chapter\", start_hint, title, summary? }] }; the kind's schema is the contract and both `__kind` markers are REQUIRED by it. On top of that schema this surface accepts 1 to 24 entries, each title non-empty and 120 characters or fewer, each summary 300 characters or fewer (empty string allowed), start_hint a MM:SS or HH:MM:SS timestamp. This REPLACES the whole list, so include every chapter you want to keep: read the current set from the episode_chapters value first and REUSE its start_hint timestamps verbatim — they are aligned to the rendered audio and you cannot re-derive them. Use this to rewrite chapter titles and summaries; use the panel's Regenerate button to re-segment the episode from scratch. Refused while the run is still working and before the episode exists.",
     valueType: "object",
+    // THE VALUE CONTRACT. The saved chapter list IS a `media_chapters`
+    // payload — EpisodeChaptersPanel already renders it through that kind's
+    // registered component, and the podcast.chapter_marker mandate emits it.
+    // Naming the kind here makes the seam validate the same contract the
+    // renderer and the producer already speak.
+    valueKind: "media_chapters",
     updatesValue: "episode_chapters",
     mode: "entity",
     applyPolicy: "ask",

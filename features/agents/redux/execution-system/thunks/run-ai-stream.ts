@@ -85,6 +85,7 @@ import {
   failPendingToolLifecycle,
 } from "../active-requests/active-requests.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 /**
  * Thrown when the underlying fetch is aborted (user cancel, heartbeat-driven
@@ -371,7 +372,7 @@ export async function fetchThroughDeploymentDrain(
       ? Math.max(1_000, Math.min(retrySeconds * 1_000, 15_000))
       : 3_000;
     console.warn(
-      `[runAiStream] server deployment drain — request was not started; retrying in ${retryMs / 1_000}s`,
+      `[runAiStream] server deployment drain — request was not started; retrying in ${formatDurationMs(retryMs, { style: "compact" })}`,
       { url },
     );
     await response.body?.cancel();

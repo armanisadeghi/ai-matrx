@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -244,7 +244,10 @@ export function PartyProvenanceCard({
     setPromoting(true);
     try {
       await promoteRecord();
-      toast.success(`${party.display_name} is now one of your contacts.`);
+      recordToast.success(
+        { type: "party", id: party.id, title: party.display_name },
+        `${party.display_name} is now one of your contacts.`,
+      );
     } catch (e) {
       toast.error(
         e instanceof Error ? e.message : "Could not add this to your contacts",

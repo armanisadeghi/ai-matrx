@@ -6,10 +6,6 @@ import {
   Building2,
   Plus,
   Search,
-  Users,
-  Crown,
-  Shield,
-  User as UserIcon,
   Loader2,
 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
@@ -35,7 +31,7 @@ import {
  *
  * Features:
  * - Displays all organizations user belongs to
- * - Personal org shown first with special styling
+ * - Every organization under its own name, with the viewer's real role
  * - Role-based badges and actions
  * - Search/filter functionality
  * - Create new organization modal
@@ -62,9 +58,10 @@ export function OrganizationList() {
       ])
     : organizations;
 
-  // Separate personal and team organizations
-  const personalOrg = filteredOrgs.find((org) => org.isPersonal);
-  const teamOrgs = filteredOrgs.filter((org) => !org.isPersonal);
+  // ONE list, every organization under its own name and the viewer's real role.
+  // The Personal/Team split grouped on `is_personal`, so belonging to two
+  // personal organizations put both under "Personal Space" — or, worse, hid one
+  // entirely, since `find` returns a single match (Arman, 2026-09-11).
   const kpis = organizationKpis(organizations);
 
   // Loading state
@@ -169,30 +166,14 @@ export function OrganizationList() {
         </div>
       </div>
 
-      {/* Personal Organization */}
-      {personalOrg && (
-        <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-            <UserIcon className="h-4 w-4" />
-            Personal Space
-          </h2>
-          <OrganizationCard
-            organization={personalOrg}
-            onUpdate={refresh}
-            kpis={kpis}
-          />
-        </div>
-      )}
-
-      {/* Team Organizations */}
-      {teamOrgs.length > 0 && (
+      {filteredOrgs.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Team Organizations {searchTerm && `(${teamOrgs.length})`}
+            Organizations {searchTerm && `(${filteredOrgs.length})`}
           </h2>
           <div className="space-y-3">
-            {teamOrgs.map((org) => (
+            {filteredOrgs.map((org) => (
               <OrganizationCard
                 key={org.id}
                 organization={org}

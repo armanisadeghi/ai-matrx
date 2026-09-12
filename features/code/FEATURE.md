@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-09-11`
+**Last updated:** `2026-09-12`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(core)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -85,6 +85,10 @@ Everything below is enumerated in [`agent-context/editorContextEntries.ts`](./ag
 | `editor.tab.<tabId>`       | active tab                                        | Full tab state — content, dirty flag, pristine, language. |
 | `editor.selection.<tabId>` | user action ("Send selection to chat")            | Captured selection range + text + capturedAt.             |
 | `editor.diagnostics`       | [`diagnosticsSlice`](./redux/diagnosticsSlice.ts) | Formatted errors/warnings of active tab.                  |
+| `editor.pinnedTab.<tabId>` | explicit file attachment | Captured buffer and source identity; survives tab activation changes. |
+| `source_control.repository` | Source Control “Attach to chat” | Timestamped branch/status, separate staged/unstaged diffs, untracked text and explicit omissions. |
+
+Automatic tab context includes the canonical adapter/record identity so Library records are distinguishable from sandbox files. Excluding a tab removes its automatic metadata, recent-file entry, diagnostics, selections and explicit file attachment. The bridge reconciles its owned keys against the current conversation on remount; it preserves unrelated context. Repository attachments are snapshots, not a live Git subscription; attach again after changes. Attaching context never starts an agent or mutates Git. The actual editor context menu exposes file and selection attachment actions through the existing Monaco commands and opens the Code chat; the existing chat picker, context inspector, execution pipeline and patch-review controls remain the AI entry points.
 
 These keys map onto the cross-editor `vsc_*` Shortcut variables — when a Shortcut declares `scopeMappings: { vsc_active_file_content: "editor.tab.<tabId>" }`, the resolver pulls from this slot.
 
@@ -152,6 +156,8 @@ container.
 
 ## Change log
 
+- `2026-09-12` — Monaco now forwards the canonical context-menu trigger handlers and positioning ref to its editor shell, including while Monaco initializes. The disabled native Monaco menu therefore opens the existing `CodeWorkspaceContextMenu` rather than leaving right-click inert; a component regression test dispatches the slotted event and proves it reaches the shell.
+- `2026-09-12` — Added Source Control repository attachments through canonical conversation context. Editor context now carries Library/source identity and read-only state, honors exclusions across recent files and selections, removes stale automatic entries after remount, and keeps explicit file attachments separate from active-tab synchronization. Chat continuation links preserve sandbox, repository, file and panel URL state. Context controls show file locations and explain active-buffer versus metadata-only inclusion.
 - `2026-09-11` — Follow-up UI audit added a mobile Code-pane selector, removed the phone minimap, exposed Search/Run scope, corrected Run folder rescanning, and made Ports failures truthful and captured. Remaining findings: [`audits/2026-09-11-ui-audit.md`](./audits/2026-09-11-ui-audit.md).
 - `2026-09-11` — Explicit repository-to-Explorer navigation now keeps its chosen folder when an older file remains active, including reloads; later file activations still reveal normally. Read-only comparison tabs identify why Save is unavailable. Browser verification covered connected GitHub clone, stage/unstage, initial commit and push with tracking, pull, branch creation, stash save/apply-retain, and Library copies in both directions using the admin test sandbox.
 - `2026-09-11` — Source Control selects and deep-links a sandbox repository independently of Explorer (`repo=`), discovers nearby repositories, opens/initializes folders, and clones through the connected GitHub inventory. The Git adapter translates the daemon's porcelain status and mutation responses; unstaging handles unborn branches without deleting files. First push establishes upstream tracking; failed composite operations refresh actual Git state. Commit drafts survive view changes. Saved changes expose real Git stashes as well as Matrx recovery branches, and reopening a read-only diff refreshes its snapshot.
@@ -222,3 +228,7 @@ container.
 ---
 
 > **Keep-docs-live:** when the bridge context-key contract changes, **both** this doc and [`features/code-editor/FEATURE.md`](../code-editor/FEATURE.md) must update — the contract spans both editors. When the panel layout, sandbox tiers, or adapter interfaces change, [`SYSTEM_STATE.md`](./SYSTEM_STATE.md) is the source of truth and gets updated; this index only changes when the _index_ shape changes.
+
+### Repository attachment provenance (2026-09-12)
+
+Source Control snapshots carry the immutable sandbox ID as well as the repository root, branch, HEAD, status, capture time, and separate staged/unstaged diffs. A sandbox or repository change during capture refuses the attachment. Capture budgets come from live `code.source_control` feature knobs; untracked files are size-checked and read sequentially, with all omitted content named explicitly.

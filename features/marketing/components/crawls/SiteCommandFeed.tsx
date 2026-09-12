@@ -26,6 +26,10 @@ import {
   type PresentedCrawlEvent,
 } from "@/features/marketing/components/crawls/live-crawl-event-presenter";
 import { humanizeBackendError } from "@/utils/errors";
+import {
+  formatDurationMs,
+  formatDurationSeconds,
+} from "@ai-matrx/kit/format";
 
 /** A long run must not degrade the tab: render only the newest rows. */
 const MAX_RENDERED_ROWS = 150;
@@ -69,9 +73,7 @@ function counterEntries(
 }
 
 function formatSeconds(seconds: number): string {
-  if (seconds < 60) return `${seconds < 10 ? seconds.toFixed(1) : Math.round(seconds)}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${Math.round(seconds % 60)}s`;
+  return formatDurationSeconds(seconds, { style: "compact" });
 }
 
 /**
@@ -114,10 +116,9 @@ function timingEntries(
  */
 function elapsedLabel(run: SiteCommandRunState, now: number): string {
   const end = run.finishedAt ?? now;
-  const seconds = Math.max(0, Math.round((end - run.startedAt) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${seconds % 60}s`;
+  return formatDurationMs(Math.max(0, end - run.startedAt), {
+    style: "compact",
+  });
 }
 
 export function SiteCommandFeed({

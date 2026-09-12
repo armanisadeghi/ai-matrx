@@ -41,7 +41,7 @@ import {
   Timer,
   Users,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
@@ -149,6 +149,8 @@ function ValueRow({
         siteId,
       }),
     onSuccess: (result) => {
+      // The answer is gone: withdraw anything still naming it, then say so.
+      dismissRecordToasts({ type: "facet_value", id: value.value_id });
       toast.success(
         `“${value.label}” is gone`,
         {
@@ -205,7 +207,10 @@ function ValueRow({
       }),
     onSuccess: () => {
       setEditing(false);
-      toast.success(`Saved “${value.label}”`);
+      recordToast.success(
+        { type: "facet_value", id: value.value_id, title: value.label },
+        `Saved “${value.label}”`,
+      );
       onSaved();
     },
     onError: (error) => toast.error(extractErrorMessage(error)),
@@ -448,7 +453,14 @@ export function DimensionCard({
       }),
     onSuccess: () => {
       setEditingDimension(false);
-      toast.success(`Saved “${dimension.label}”`);
+      recordToast.success(
+        {
+          type: "facet_dimension",
+          id: dimension.slug,
+          title: dimension.label,
+        },
+        `Saved “${dimension.label}”`,
+      );
       onSaved();
     },
     onError: (error) => toast.error(extractErrorMessage(error)),
@@ -458,6 +470,11 @@ export function DimensionCard({
     mutationFn: () =>
       archiveFacetDimension({ dimensionSlug: dimension.slug, siteId }),
     onSuccess: (result) => {
+      // The question is retired: withdraw anything still naming it.
+      dismissRecordToasts({
+        type: "facet_dimension",
+        id: dimension.slug,
+      });
       toast.success(`“${dimension.label}” is retired`, {
         description: `Removed ${formatCount(result.valuesRetired)} answer${
           result.valuesRetired === 1 ? "" : "s"

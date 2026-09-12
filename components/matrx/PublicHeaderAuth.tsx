@@ -16,6 +16,11 @@ import { cn } from "@/lib/utils";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { PUBLIC_HEADER_ICON_BUTTON } from "./publicHeaderChrome";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM".
+import { getInitials } from "@ai-matrx/kit/format";
 
 // Lazy load AdminMenu - only loads when user is admin
 const AdminMenu = lazy(() => import("./AdminMenu"));
@@ -50,12 +55,7 @@ export function PublicHeaderAuth() {
   const isAuthenticated = mounted && !!user.id && !user.isAnonymous;
 
   // Calculate initials for avatar fallback
-  const initials = displayName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = getInitials(displayName);
 
   // If authenticated, show user info + dashboard button
   if (isAuthenticated) {

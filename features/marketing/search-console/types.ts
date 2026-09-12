@@ -630,10 +630,9 @@ export function formatPosition(value: number | null | undefined): string {
   return Number(value).toFixed(1);
 }
 
-export function formatCount(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "—";
-  return Number(value).toLocaleString();
-}
+// THE count voice: @ai-matrx/kit/format owns grouped integers with an
+// em-dash for unknown. Collapsed 2026-09-12 (kit 0.12.x).
+export { formatCount } from "@ai-matrx/kit/format";
 
 /** ISO-3166 alpha-3 (GSC's country coding, lowercase) → display name. */
 export function countryLabel(code: string): string {

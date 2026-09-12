@@ -15,6 +15,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system";
+import { formatFileSize } from "@ai-matrx/kit/format";
+import {
+  storageUsageBarWidth,
+  storageUsagePercentLabel,
+} from "@/features/administration/local-storage/storage-usage";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -323,8 +328,14 @@ function useLocalStorageManager(): UseLocalStorageManager {
     used: number;
     remaining: number;
   }> => {
+    // `used` is a real measurement. `remaining` is NOT: there is no API that
+    // reports a localStorage quota, so it is derived from an ASSUMED 5MB cap
+    // and every surface that prints it says so. An origin already over that
+    // assumed cap makes it negative, which `formatFileSize` renders as "—"
+    // and `storageUsageBarWidth` clamps to a full bar — neither pretends to
+    // a number it does not have.
     const used = JSON.stringify(localStorage).length;
-    const remaining = 5 * 1024 * 1024 - used; // Assume 5MB quota
+    const remaining = 5 * 1024 * 1024 - used;
     return { used, remaining };
   }, []);
 
@@ -981,8 +992,9 @@ const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
         </div>
         {storageSize && (
           <div className="text-sm text-muted-foreground">
-            Storage: {(storageSize.used / 1024).toFixed(2)}KB /
-            {(storageSize.remaining / 1024).toFixed(2)}KB remaining
+            Storage: {formatFileSize(storageSize.used)} used /{" "}
+            {formatFileSize(storageSize.remaining)} remaining (assumes a 5MB
+            quota — browsers vary)
           </div>
         )}
       </div>
@@ -1476,19 +1488,20 @@ export function LocalStorageAdmin() {
       {storageSize && (
         <div className="mb-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Storage Usage: {(storageSize.used / 1024).toFixed(2)}KB
+            Storage Usage: {formatFileSize(storageSize.used)}
           </div>
           <div className="text-sm text-muted-foreground">
-            Remaining: {(storageSize.remaining / 1024).toFixed(2)}KB
+            Remaining: {formatFileSize(storageSize.remaining)} (assumes a 5MB
+            quota — browsers vary)
           </div>
           <div
             className="w-32 h-2 bg-secondary rounded-full overflow-hidden"
-            title={`${((storageSize.used / (storageSize.used + storageSize.remaining)) * 100).toFixed(1)}% used`}
+            title={storageUsagePercentLabel(storageSize)}
           >
             <div
               className="h-full bg-primary"
               style={{
-                width: `${(storageSize.used / (storageSize.used + storageSize.remaining)) * 100}%`,
+                width: storageUsageBarWidth(storageSize),
               }}
             />
           </div>

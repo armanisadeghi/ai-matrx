@@ -30,6 +30,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   Cpu,
   CalendarDays,
@@ -1447,17 +1448,12 @@ function formatRelative(iso: string | undefined): string {
   if (!iso) return "";
   const t = +new Date(iso);
   if (Number.isNaN(t)) return "";
-  const now = Date.now();
-  const diffMs = now - t;
-  const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return "now";
-  if (diffMin < 60) return `${diffMin}m`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h`;
-  const diffDay = Math.floor(diffHr / 24);
-  if (diffDay < 7) return `${diffDay}d`;
-  const d = new Date(t);
-  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  // THE relative-time voice (@ai-matrx/kit/format) inside the week; a calendar
+  // date past it, which is how a conversation list is actually scanned.
+  if (Date.now() - t < 604_800_000) {
+    return formatRelativeTime(t, { style: "short", suffix: false });
+  }
+  return new Date(t).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
 export default ConversationHistorySidebar;

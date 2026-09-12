@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   listBindingsForExecutor,
@@ -79,7 +79,12 @@ export function ExecutorSurfaceDetailPanel({
         executorName: row.executor_name,
         isActive: next,
       });
-      toast.success(
+      recordToast.success(
+        {
+          type: "tool",
+          id: row.tool_id,
+          title: row.tool_name ?? `Unknown tool (${row.tool_id})`,
+        },
         `${row.tool_name ?? `Unknown tool (${row.tool_id})`} ${next ? "active on" : "deactivated on"} ${executor.name}`,
       );
       onMutated();
@@ -120,6 +125,7 @@ export function ExecutorSurfaceDetailPanel({
         executorName: row.executor_name,
       });
       setBindings((cur) => cur.filter((b) => b.tool_id !== row.tool_id));
+      dismissRecordToasts({ type: "tool", id: row.tool_id });
       toast.success(
         `Removed ${row.tool_name ?? `Unknown tool (${row.tool_id})`}`,
       );

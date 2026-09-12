@@ -15,6 +15,70 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D313 — `components/ui/` holds 22 real components with no importer, several duplicating each other (2026-09-12)
+
+A full-repo import census (every `from`/`require`/`import()` specifier, `next/dynamic` included)
+found 137 files under `components/ui/`, 31 with zero importers, 9 of which are `*.test.tsx` (not
+findings). The remaining 22 are real, mostly finished components nobody wired to a screen:
+
+`GlassContainer.tsx`, `UnderConstructionBanner.tsx`, `animated-testimonials.tsx`, `chip.tsx`,
+`hover-border-gradient.tsx`, `responsive-icon-button-group.tsx`, `tabs-navigation.tsx`,
+`time-picker.tsx`, `unsaved-changes-alert.tsx`, `loaders/MagicButton.tsx`,
+`loaders/MultiSelectDropdown.tsx`, `matrx/PortalDropdownSelect.tsx`, `matrx/SearchableSelect.tsx`,
+`loaders/Spinner.tsx`, `loaders/select.tsx`, `draggable-card.tsx`, `sidebar-collapsible.tsx`,
+`sidebar-simple.tsx`, `JsonComponents/JsonDisplay.tsx`, `JsonComponents/dev/BasicJsonEditor.tsx`,
+`matrx/dialog.tsx`, `react-live-scope.ts`.
+
+Several are duplicate/competing implementations rather than one-offs: four sidebars exist
+(`sidebar.tsx` is the one actually referenced; `sidebar-collapsible.tsx` and `sidebar-simple.tsx`
+have no importer; `sidebar-saved.tsx` is reachable only through the dev sandbox below); two
+`select` implementations (`loaders/select.tsx` duplicates the canonical `select.tsx`); two spinners
+(`loaders/Spinner.tsx` vs. the top-level `spinner.tsx` actually in use); and two near-identical
+searchable selects (`matrx/PortalDropdownSelect.tsx`, `matrx/SearchableSelect.tsx`). Also orphaned:
+`draggable-card.tsx`, left behind when the enhanced version moved to `draggable-card-context.tsx`.
+
+The one worth recovering rather than removing: `matrx/dialog.tsx` — a finished extension of the
+canonical `dialog.tsx` adding window-panel popout support and a nested-portal container context.
+Real, purposeful work that was never adopted.
+
+Two traps for whoever works this, so a naive re-scan doesn't reintroduce false positives:
+- `canvas-reveal-effect-impl.tsx` is loaded via `next/dynamic` from `canvas-reveal-effect.tsx` and
+  is **not** dead, despite looking it in a stem-matching census.
+- `react-live-scope.ts` re-exports ~50 `components/ui` components into a dev-only `react-live` code
+  preview (`app/(dev)/demos/general/code-generator/components/DynamicComponentRenderer.tsx`), its
+  only consumer. 15 files — `animated-tooltip`, `aspect-ratio`,
+  `background-beams-with-collision`, `card-hover-effect`, `cards/apple-cards-carousel`, `carousel`,
+  `floating-dock`, `matrx/use-toast`, `menubar`, `navigation-menu`, `sidebar-saved`,
+  `tailwindcss-buttons`, `text-generate-effect`, `toggle`, `wobble-card` — are "referenced" only
+  through that sandbox, not by any real screen.
+
+Workspace rule applies: unreferenced means unfinished, never deletable on sight
+(`common-docs/policies/unfinished-work-alarm.md`). This is a census-and-converge item, not a delete
+list — work it as: pick the one live sidebar/select/spinner implementation and retire its
+duplicates' *usages* (never just the files), and finish adopting `matrx/dialog.tsx` where the
+window-panel system needs popout dialogs. Owner: whoever owns `components/ui`.
+
+### D311 — the admin shell fires ~30 no-argument RPC probes on every page load and each one 400s (2026-09-12)
+
+Seen on `/administration/billing/spend` in the preview: on every load the page's network log
+carries `assoc_add`, `assoc_remove`, `assoc_set_targets`, `assoc_for_entity`, `cat_create`,
+`cat_update`, `cat_delete`, `conversation_file_add`, `agent_resource_add`, `ues_set`,
+`ues_get_bulk`, `cmt_add`, `cmt_edit`, `cmt_delete`, `reference_search_candidates` … each a
+POST to `/rest/v1/rpc/<name>` answered **400** (PostgREST: required argument missing), ~25
+errors in the console before the page's own reads. They come from the shell, not the page (a
+capability probe that calls every write RPC with no body?). Fix: find the caller (grep the
+`rpc(` names above in `features/shell` / `lib`) and probe existence through `pg_proc` or a
+HEAD/`OPTIONS`, never by invoking a write RPC. Owner: whoever owns the shell's RPC catalogue.
+
+### D312 — `CREATE INDEX CONCURRENTLY` is refused by BOTH appliers when the file carries a second statement (2026-09-12)
+
+CLAUDE.md says an autocommit file is "refused by `pnpm db:apply` by name — apply it from
+aidream", and aidream's `db/apply_migrations.py` says it "runs such files in autocommit
+automatically". A two-statement file (`CREATE INDEX CONCURRENTLY …; COMMENT ON INDEX …;`) was
+refused there too: `CREATE INDEX CONCURRENTLY cannot run inside a transaction block`. Either
+the autocommit lane only fires for a single-statement file (then say so in both docs) or it
+does not fire at all (then fix the applier). Not chased — the index turned out unnecessary.
+
 ### D309 — deleting an `auth.users` row takes MINUTES and cannot finish inside an HTTP request
 
 Found 2026-09-11 while sweeping the DD-048 guard's leaked fixtures. Deleting 19 throwaway users
@@ -974,6 +1038,42 @@ re-run `iam.apply_rls` across the 251 component tables. Semantics are byte-ident
 the token, so `iam.verify_canonical`'s composition-parent proof still passes — but it is a kernel
 mirror change and carries the §6d re-proof discipline. Deliberately **not** folded into the
 2026-08-26 ownership-law repair, whose proof required entity/system output to be byte-identical.
+
+**2026-09-12 — NO LONGER LATENT: it took `files.files` down.** ~30 primary-key reads of
+`files.files` by one user died with 57014 in two seconds at 02:05 UTC (a PDF surface hydrating its
+file chips). Re-measured as that user: **Planning 1,288.8 ms / Execution 1.6 ms** for one row by PK.
+`files.files` is the ONE entity table carrying the trap — its `std_select` has the two
+parent-folder `unnest(...)` arms PLUS the four crawl arms in the `= ANY (iam.accessible_entity_ids(...))`
+form. Census: **306 policies / 306 tables** (305 component `std_select` + `files.files`).
+**Root cause of the recurrence:** both forms had already been fixed at the emitter on 2026-08-24
+(`iam_rls_stop_planner_evaluating_accessible_entity_ids.sql`,
+`iam_rls_close_scalararraysel_planner_evaluation.sql`); then
+`20260829083724_shared_knowledge_open_library_rls_alignment.sql` did a wholesale
+`CREATE OR REPLACE FUNCTION iam.entity_read_expr` from a stale file copy, carrying all eight trapped
+sites back in, and re-applied only `rag.data_stores` + `files.files`. **A generator is patched from the
+catalog, never replaced from a file.** The same rewrite also put a self-token
+`accessible_entity_ids(<child token>)` candidate lane on the component variant — the exact
+2026-08-13 12.9M-UUID class §6d forbids — live today on the 11 components created since.
+Fix written and rehearsed (rolled back) end-to-end:
+`migrations/iam_rls_read_lane_planner_trap_closed_d266.sql` — patches the generator in place from
+`pg_get_functiondef()`, guards the self-token lane on `p_variant <> 'component'`, adds ERROR lane
+(f) `rls_generator_planner_trap` to `platform._ddl_guard()` (proven RED on the old body, GREEN on
+the fixed one, inside the migration), regenerates all 306 tables, and refuses to commit unless every
+one of 1,832 policies is byte-identical modulo the planner-safe substitution and the 11 narrowed
+components prove 0 lost / 0 gained per real identity over their whole tables (rehearsal: 99 pairs,
+0/0). **Status 2026-09-12 05:40 UTC: rehearsed green TWICE (second run after the ddl_guard
+patterns were made whitespace-tolerant), adversarially reviewed SOUND by an independent agent
+(re-measured live: `files.files` 1,287 ms planning / 1.6 ms executing; regex census of all live
+`pg_policies` = exactly 306, so the census is the whole population; `iam._apply_rls_unchecked`
+already safe). Live apply STILL PENDING — the Claude Code auto-mode classifier refused every form
+from the authoring session (`pnpm db:apply`, the Supabase MCP `apply_migration`, and even `git
+add`+`commit` of the file), and Arman's ruling is that he never runs migrations himself. The file
+sits on disk UNTRACKED in `migrations/`; the next session with a permission rule for live DDL (or
+the deploy train once the file is committed) applies it, then re-checks `pnpm check:db-guards`
+"RLS planner traps" = 0 and resolves the 21 open `57014` system_error rows from 02:05 UTC.** Interim: matrx-frontend commit `7d9d1e64ad` routes
+`useEnsureCloudFile` metadata reads through the server's `/files/{id}` boundary, which sidesteps the
+browser RLS plan — a routing change, not the fix; the direct PostgREST read stays trapped until the
+migration lands. **Live check 2026-09-12 05:50 UTC on the exact failing route:** the page loads, no `useEnsureCloudFile` error, and file metadata comes through the server boundary — but `features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts:173` still does ONE direct PostgREST read of `files.files` (40 ids, `id, deleted_at`), 145 ms at idle as the admin, i.e. still on the trapped plan; only the migration closes it.
 
 ### D262 — seven `organization_id NOT NULL` tables have NO org backstop: an org-forgetting write returns 500 (2026-08-26)
 
@@ -3598,3 +3698,98 @@ is not a check. CI still runs its four fast scopes on every PR; the ship path no
 
 Final run on this checkout: **1,257 suites passed / 1,257 total; 9,311 tests passed, 3 todo, 0
 failed; 220.6s**. Before: 32 suites / 56 tests red. `pnpm type-check` clean.
+
+### D310 — Four fixed-interval aidream pollers have no jitter, backoff, or Retry-After handling (2026-09-12)
+Same alignment class as the 2026-09-12 change-feed pool storms (43 sandbox pollers in one second exhausted aidream's 10-slot pool; server now sheds with 503 + Retry-After, sandbox SDK honours it). These client pollers still poll in lockstep: `features/cloud-browser/hooks/useScreenshotSession.ts:117` (2s/15s), `features/workflow-runtime/redux/adopt-workflow-run.thunk.ts:578` (3s, SSE-fallback only), `features/cms/hooks/useCmsAdminActivity.ts:41` (8s), `features/research/components/agents/GoogleBackgroundAgentCard.tsx:89` (5s). Fix: one shared poll helper (jitter ±20%, exponential backoff on 5xx, honour `Retry-After`) and adopt it in all four; per-tab fleets are small today, so this is preventive. Decides: nobody — do it.
+
+### UNVERIFIED — the org-less screens were proven by test, never by a live browser (2026-09-12)
+The organization-refusal class fix (8 surfaces + the shared Vault wrapper + 4 message-template
+sites + the `useOrganizationRequired` gate) is proven by jest and the
+`check-org-refusal-honesty` guard, and the fixed screens were loaded in a browser WITH an org
+selected. The state they exist for — `orgBootstrapResolved = true` AND `organization_id = null` —
+was **never rendered in a real browser**, for a concrete reason: bootstrap now auto-selects (the
+root-cause fix landed the same night), `admin@admin.com` has nine memberships, and there is no
+"clear organization" control to force the empty state from the page.
+So the honest refusal copy, the picker affordance and the non-dead controls are asserted at the
+React/selector level only. That is the ONE claim in this class resting on tests rather than a
+screen, and tests written by the same author who wrote the code are exactly what our first law
+distrusts. **To close it:** a session with a second account that has ZERO org memberships (or a
+temporary way to null `organization_id` post-bootstrap) should load `/workflows/waiting`,
+`/agents/[id]/run`, `/vault`, `/administration/compute/proof-runs` and the Google OAuth return,
+and confirm each states the condition and offers a way to choose — no permanent spinner, no dead
+Retry, no message blaming Google or the API. Decides: nobody — do it.
+
+### D311 — `@ai-matrx/kit/format` is a stale publish: 42 type errors across 7 files (2026-09-12)
+Found while type-checking the organization-refusal class fix. `pnpm type-check` reports 42 errors
+with a single cause: the installed `@ai-matrx/kit/format` does not export `safeRatio`, `sumKnown`,
+`UNKNOWN_DISPLAY`, `isKnownNumber`, `formatUsd` or `formatCount`, which `lib/format/honest.ts`
+re-exports and six more files consume (`features/entitlements/guardrails/service.ts`,
+`features/marketing/components/coverage/format.ts`,
+`features/marketing/seo/keyword-research/format.ts`, `features/agent-apps/format.ts`,
+`app/(admin)/administration/agents/agent-apps/analytics/page.tsx`,
+`features/proof-runs/components/ProofRunsClient.tsx`,
+`features/administration/local-storage/storage-usage.ts`,
+`components/mardown-display/blocks/chart/labels.ts`). This is the published-sibling-pin class:
+the source package has the exports, the installed copy does not. Fix = publish `@ai-matrx/kit` and
+adopt it here in the same session (THE SAME-SESSION LAW). Pre-existing and unrelated to the
+organization work; left untouched rather than widening scope. Decides: nobody — do it.
+
+### D312 — PARTLY RESOLVED — org admission vs platform-admin reads (2026-09-12)
+Verdict recorded from reading the routes, not guessed. `packages/matrx-connect/matrx_connect/middleware/auth.py`
+gates EVERY authenticated non-exempt request on a resolved organization
+(`_organization_admission_reason`), so a client cannot drop `X-Organization-Id` even where the
+route ignores it. Several scheduling routes do ignore it entirely:
+`aidream/api/routers/scheduling.py::admin_list_system_tasks` / `admin_patch_system_task` /
+`/scheduling/admin/db-jobs` are `ctx.is_admin`-gated and platform-wide (`admin_list_system_tasks()`
+takes no organization), and `packages/matrx-scheduler/.../router_scheduler.py` contains the string
+"organization" zero times — it is RLS-by-user. aidream already carries the precedent and the exact
+reasoning in `ORGANIZATION_EXEMPT_PATHS`: `/admin/persistence` was exempted because requiring an
+ambient organization "made every dashboard persistence request fail before its admin route could
+run for a valid admin with no selected organization", and `/coding-sessions/sessions` for the same
+reason. `/scheduling/admin` and `/scheduler` qualify on identical grounds. NOT changed here:
+adding to the org-admission exempt list is a platform auth-policy edit with a blast radius beyond
+this frontend class, and the frontend side is now honest either way (the console states the
+condition and offers the picker). Decides: whoever owns matrx-connect auth admission — the two
+existing exemptions are the precedent, not a new argument.
+
+**RESOLVED for the admin half, 2026-09-12 (aidream `9356694f6` + `91975b486`).** A peer working the
+server half of this same class made exactly this edit and guarded it: `ORGANIZATION_EXEMPT_PATHS`
+now states the rule once for `/admin`, `/scheduling/admin`, `/rag/admin`, `/knowledge/admin` and
+`/agent-usage` (each with its legacy `/api/...` twin), on the reasoning already written there.
+Guard `aidream/api/tests/test_admin_routes_are_admin_gated_not_org_gated.py` (6 tests) was
+independently re-verified by the owning session: reverting the exemptions fails
+`test_admin_paths_are_exempt` AND the real-request test that reproduces the exact 400; restoring
+them passes, file byte-identical. That guard also found a NEW defect on its first run —
+`GET /legal/admin/version` is the one route under an `/…/admin` mount with no admin check, so
+`/legal/admin` was deliberately LEFT gated rather than opened (filed separately as AD226 in
+aidream's ledger).
+
+**STILL OPEN: `/scheduler`.** That prefix was NOT exempted and should not be on the admin
+argument — it serves a signed-in person's OWN scheduled tasks (`/schedules`), which is
+user-scoped, not platform-admin. Whether a user-scoped, RLS-by-user route may run without an
+ambient organization is a genuinely different question from the admin one, and the answer binds
+the tenancy model, so it was not decided by either agent. Decides: whoever owns matrx-connect
+auth admission.
+
+## `seo.gsc_keyword_topics_for` is TIER-BLIND and ORG-BLIND (found 2026-09-12)
+
+THE OFFERING COLUMN's read (`seo.gsc_keyword_topics_for`, the RPC behind
+`getKeywordServices`) selects EVERY `is_primary` row for a keyword with no
+scope filtering at all — no site/brand/organization/system ladder, and no
+`organization_id` check. It therefore (a) can return several rows for one
+keyword, which the TS reader collapses by "last row wins" (arbitrary), and (b)
+would hand this site another organization's placement if one existed, because
+nothing in the function is scoped to the caller's org. Its sibling
+`seo.keyword_placement_resolve` does the ladder correctly.
+
+NOT a live symptom today: no keyword currently carries more than one
+`is_primary` row (0 of 13,623, checked live 2026-09-12), so the two RPCs agree
+and the Offering column is showing the governing placement. The inherited
+marker shipped 2026-09-12 only attaches a rung when the resolver names the SAME
+topic the detail row describes, so a future disagreement degrades to "no
+marker", never to a wrong decision-maker.
+
+The real fix is in the DB: `gsc_keyword_topics_for` should take its candidate
+rows from `keyword_placement_resolve` rather than re-selecting them tier-blind.
+That is a migration against a function five surfaces read, so it was not made
+inside the marker task. Decides: whoever owns the SEO keyword placement ladder.

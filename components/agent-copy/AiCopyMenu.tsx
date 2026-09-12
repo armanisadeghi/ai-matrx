@@ -39,9 +39,9 @@ import {
 } from "@/components/agent-copy/CopyActionGroup";
 import {
   approxTokens,
-  fmtBytes,
   writeClipboard,
 } from "@/components/agent-copy/clipboard";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type { ExportItem } from "@/components/agent-copy/export";
 import { useExportActions } from "@/components/agent-copy/useExportActions";
 
@@ -759,7 +759,7 @@ function AiCustomDialog({
                 </span>
               ))}
               <span>{result.text.length.toLocaleString()} chars</span>
-              <span>{fmtBytes(bytes)}</span>
+              <span>{formatFileSize(bytes)}</span>
               <span>~{approxTokens(result.text).toLocaleString()} tokens</span>
             </div>
             <pre

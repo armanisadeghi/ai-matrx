@@ -2,9 +2,9 @@
 name: grilling
 type: Skill
 title: "grilling — interview by design tree, defaults ship"
-description: "The interview primitive for putting open decisions to Arman or any owner. Use on 'grill me' or 'stress-test this', and whenever a plan, scope, spec, vision, or question ledger needs owner rulings. NOT for steps only a human can perform (use a guided session)."
+description: "The interview primitive for putting open decisions to an owner. Use on 'grill me', 'stress-test this', or 'what do you need from me before you build this', and whenever a plan, scope, spec, vision, or question ledger needs owner rulings. NOT for steps only a human can perform (use a guided session)."
 tags: [interview, decisions, doctrine]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-12T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -40,17 +40,10 @@ plan — then challenge his assumptions too, still never ask facts.
 
 - **Frontier** = surviving nodes whose prerequisites are settled. A question whose answer depends on
   another question open this round waits for a later round.
-- **One complex question per round** (Arman, 2026-09-10: five quick ones or three tough-but-direct ones may share a round; never several in-depth ones — "you're basically guaranteeing that I will give you bs answers"). The rest wait in a queue file the round names; order by how much of the tree each answer unblocks. Never use an older agent-recorded quote of his as evidence against a decision he made today without its source and circumstances.
+- **One complex question per round** (Arman, 2026-09-10: five quick ones or three tough-but-direct ones may share a round; never several in-depth ones — "you're basically guaranteeing that I will give you bs answers"). The rest wait in [the Question Ledger](/operations/questions.md) (the `ask-arman` row shape; the `question-desk` skill runs the rounds that clear it); order by how much of the tree each answer unblocks. Never use an older agent-recorded quote of his as evidence against a decision he made today without its source and circumstances.
 - **Never block on exploration.** Send the fact-independent frontier now; only questions downstream of
   a running subagent wait. If he can step away while you explore, say so.
 - **Number continuously across rounds** (round 2 starts at Q5), so "5 yes" is never ambiguous.
-
-> 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against this section until Arman rules.**
-> **This document says:** deliver questions as plain numbered chat text.
-> **[`doc-convergence`](/skills/doc-convergence/SKILL.md) and matrx-frontend's `vision-to-fleet` skill say:** the structured question picker (AskUserQuestion) is an acceptable way to ask closed questions. [`build-sub-feature`](/skills/build-sub-feature/SKILL.md), matrx-frontend's `ui-bakeoff`, and `aidream/CLAUDE.md` side with this document.
-> **Why it matters:** with a picker, Arman chooses from fixed options; in plain chat he can answer "3 yes, 4 no because…" and add context nobody asked for.
-> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
-> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-003`
 
 ## 3. Question shape — exactly this
 
@@ -63,11 +56,14 @@ emojis. Then the question, in one sentence.
   diagram of what actually happens, OR a throwaway prototype (Artifact or demo route) labeled
   PROTOTYPE. A question he cannot answer from what you gave him is a defect in the question — and often
   a sign the PATH is broken, which is the real finding.
-- **Delivery:** plain numbered chat text (conflicted: `CFL-003`, stamp above).
+- **Delivery:** plain numbered chat text — **never a structured question picker** (Arman ruled 2026-09-12).
 
 Every round ends with:
 `Decided (override by number): D1 … · D2 …` / `Anything you skip ships with my recommendation.` /
 `What else should I know that I didn't ask?`
+A question he skipped in an earlier round joins the Decided list as its own numbered item, carrying
+the recommendation that shipped and the words **"default, not ruled"** — never written as though he
+ruled it.
 
 ## 4. After every answer
 
@@ -91,4 +87,9 @@ the same message in which you start the work.
 
 One question per message · approval after each design section · "see the doc" · menus of numbers ·
 asking whether it should stream/persist/resume · asking a fact · a fork with no recommendation · making
-him wait for a full audit before round 1.
+him wait for a full audit before round 1 · inventing a question that was not on the pruned tree.
+
+**Never invent a question to have one to ask.** A candidate that was not on the tree goes through the
+§1 prune first, like every other node — a decidable best practice spends a slot that belongs to
+vision. If the frontier comes up empty, say so and ship (§5); an empty frontier is the success
+condition, not a gap to fill.

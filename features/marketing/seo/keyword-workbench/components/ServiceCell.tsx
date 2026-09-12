@@ -21,6 +21,8 @@ import { Filter } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import type { KeywordServicePlacement } from "../data";
 import type { SiteServices } from "../hooks/useSiteServices";
+import { SCOPE_TIER_SOURCE, isInheritedTier } from "../scope-tiers";
+import { InheritedPlacementMarker } from "./InheritedPlacementMarker";
 import { OfferingPicker, OFFERING_UNPLACED } from "./OfferingPicker";
 
 /** Whose ruling this is, in words a non-technical reader can act on. */
@@ -73,6 +75,12 @@ export function ServiceCell({
           : placement.worthFromName
             ? `Worth inherited from ${placement.worthFromName}.`
             : "No worth ruling on this branch yet — it uses the default.",
+        // WHO DECIDED IT. An inherited placement reads identically to one this
+        // site made until the sentence says otherwise — and the (i) beside the
+        // name is where the same fact becomes actionable.
+        isInheritedTier(placement.scopeTier)
+          ? `Placed by ${SCOPE_TIER_SOURCE[placement.scopeTier]} — this site has not ruled on it.`
+          : null,
         placement.notes ? `Why: ${placement.notes}` : null,
         hint ? "Placed by AI — change it and it becomes your ruling." : null,
       ]
@@ -127,6 +135,15 @@ export function ServiceCell({
           ) : undefined
         }
       />
+      {placement ? (
+        <InheritedPlacementMarker
+          placement={placement}
+          disabled={disabled}
+          // "Make it this site's own" is the SAME topic through the SAME write
+          // the cell already owns — never a second placement path.
+          onAdopt={() => onPlace(placement.topicId)}
+        />
+      ) : null}
       {onFilter && placement ? (
         <button
           type="button"

@@ -50,7 +50,13 @@ the database.
   instead of after 30 silent seconds), and `reply()` is a first-class door so a
   reply always echoes the inbound `requestId`. Dedup on this channel went from
   none to `direction:requestId`. Verified live on the real socket against a
-  stand-in extension built on raw supabase-js.
+  stand-in extension built on raw supabase-js. **`subscribeToBridge`,
+  `sendBridgeMessage`, `isBridgeSubscribed` and `resetBridgeChannels` were
+  DELETED with the hand-rolled channel and must never be re-added** — the
+  package's room registry does the subscribing, ref-counting and status, and
+  `useChannel`'s `status` is what "is it subscribed?" now means. A build error
+  naming one of them is a half-saved working tree mid-refactor, not a missing
+  export: check both files are at the same commit before "restoring" anything.
 
 - `2026-08-20` — Normal Chat delegates otherwise-unowned client tool calls to
   the installed Matrx Extend catalog, then resumes through the canonical

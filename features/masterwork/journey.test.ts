@@ -362,4 +362,56 @@ describe("the facts a page can build on its own", () => {
     expect(built.latestCheckupAt).toBeNull();
     expect(built.checkupSettledAt).not.toBeNull();
   });
+  // 🚨 THE LIVE DEFECT (2026-09-12, Rulebook "Montessori Parenting Adviser").
+  // Twin: `test_the_open_question_count_is_the_coherence_partners_own_predicate`
+  // in aidream `services/masterwork_assists/tests/test_journey.py`.
+  it("counts the open questions the panel can actually show, never the raw state", () => {
+    const tension = (id: string, ruleIds: string[], state = "open") => ({
+      id,
+      kind: "overlap",
+      rule_ids: ruleIds,
+      question: "Which one wins?",
+      confidence: 0.6,
+      state,
+    });
+    const built = journeyFactsFromRulebook(
+      {
+        id: "rb",
+        name: "Montessori Parenting Adviser",
+        rules: [
+          { id: "children-do-everything", name: "n", statement: "s" },
+          { id: "retired-one", name: "n", statement: "s", retired: true },
+        ],
+        metadata: {
+          coherence: {
+            tensions: [
+              // The four that shipped the lie: every one names a rule the
+              // de-duplication repair removed an hour earlier.
+              tension("t_c819e8e4587cdd9e", ["children-do-everything-2"]),
+              tension("t_15a49f2cb78d99e6", ["do-not-help-the-child-dress"]),
+              tension("t_a20fbd24966a747f", ["reality-instead-of-toys"]),
+              tension("t_c0f6aea90da680bc", [
+                "children-do-everything",
+                "teacher-guides-hand-for-first-touch",
+              ]),
+              tension("t_retired", ["retired-one"]),
+              tension("t_real", ["children-do-everything"]),
+              tension("t_done", ["children-do-everything"], "answered"),
+              tension("t_moot", ["children-do-everything"], "moot"),
+            ],
+          },
+        },
+      } as never,
+      [],
+    );
+    // What the panel lists, and so what the headline may say.
+    expect(built.openTensions).toBe(1);
+    // A machine's bookkeeping is never reported to her as something she settled.
+    expect(built.settledTensions).toBe(1);
+    const journey = computeJourney(built, NOW);
+    expect(journey.moves.map((m) => m.key)).toContain("tensions_open");
+    expect(
+      journey.moves.find((m) => m.key === "tensions_open")?.headline,
+    ).toBe("1 question only you can settle is still open.");
+  });
 });

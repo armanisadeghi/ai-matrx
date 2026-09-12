@@ -20,6 +20,7 @@
 import { mkdirSync, copyFileSync, statSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -43,7 +44,7 @@ if (existsSync(DEST)) {
   const destStat = statSync(DEST);
   if (destStat.size === srcStat.size && destStat.mtimeMs >= srcStat.mtimeMs) {
     console.log(
-      `[copy-pdfjs-worker] up-to-date (${(srcStat.size / 1024).toFixed(1)} KB)`,
+      `[copy-pdfjs-worker] up-to-date (${formatFileSize(srcStat.size)})`,
     );
     process.exit(0);
   }
@@ -52,5 +53,5 @@ if (existsSync(DEST)) {
 copyFileSync(SRC, DEST);
 console.log(
   `[copy-pdfjs-worker] wrote public/pdfjs/pdf.worker.min.mjs ` +
-    `(${(srcStat.size / 1024).toFixed(1)} KB)`,
+    `(${formatFileSize(srcStat.size)})`,
 );

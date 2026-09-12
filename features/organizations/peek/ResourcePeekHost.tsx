@@ -10,7 +10,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 
 const ResourcePeekHostImplLazy = dynamic(
-  () => import("./ResourcePeekHostImpl").then((m) => ({ default: m.ResourcePeekHostImpl })),
+  () => import("./ResourcePeekHostImpl").then((m) => m.ResourcePeekHostImpl),
   { ssr: false, loading: () => null },
 );
 

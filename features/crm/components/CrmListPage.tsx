@@ -15,7 +15,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
   MoreVertical,
@@ -708,9 +708,15 @@ export function CrmListPage({
                     list.refresh();
                     // The row is removed from THIS list on restore, so the
                     // record it just restored becomes unreachable from here.
-                    toast.success(`${row.display_name} restored`, {
-                      action: toastDoor("party", row.id),
-                    });
+                    recordToast.success(
+                      {
+                        type: "party",
+                        id: row.id,
+                        title: row.display_name,
+                      },
+                      `${row.display_name} restored`,
+                      { action: toastDoor("party", row.id) },
+                    );
                   } catch (e) {
                     toast.error(
                       e instanceof Error ? e.message : "Restore failed",
@@ -738,6 +744,7 @@ export function CrmListPage({
                   if (!ok) return;
                   try {
                     await purgeParty(row.id);
+                    dismissRecordToasts({ type: "party", id: row.id });
                     list.removeRow(row.id);
                     list.refresh();
                     toast.success(`${row.display_name} permanently deleted`);
@@ -797,6 +804,7 @@ export function CrmListPage({
                 if (!ok) return;
                 try {
                   await deleteParty(row.id);
+                  dismissRecordToasts({ type: "party", id: row.id });
                   list.removeRow(row.id);
                   toast.success(`${row.display_name} deleted`);
                 } catch (e) {
@@ -1030,6 +1038,10 @@ export function CrmListPage({
 
   return (
     <SurfaceRuntimeProvider
+      // The surface name is a prop, so the static handler guard cannot read it.
+      // Two mounts: the `/crm` route takes the CRM_SURFACE_NAME default, and
+      // `CrmManagerWindow` passes CRM_MANAGER_SURFACE_NAME.
+      // surface-write-handlers-surface: matrx-user/crm, matrx-user/crm-manager
       surfaceName={surfaceName}
       getScope={getScope}
       getWriteHandlers={buildCrmWriteHandlers}

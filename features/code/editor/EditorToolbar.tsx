@@ -17,6 +17,7 @@ import {
   setOpen as setTerminalOpen,
 } from "../redux/terminalSlice";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
+import { formatRelativeTime } from "@/utils/datetime";
 
 interface EditorToolbarProps {
   rightSlotAvailable: boolean;
@@ -187,7 +188,7 @@ function LastSavedIndicator({ iso, dirty }: { iso: string; dirty: boolean }) {
   }, []);
   const ts = new Date(iso);
   const fullLabel = ts.toLocaleString();
-  const relative = formatRelative(ts);
+  const relative = formatRelativeTime(ts, { style: "short" });
   return (
     <span
       className={cn(
@@ -211,18 +212,6 @@ function LastSavedIndicator({ iso, dirty }: { iso: string; dirty: boolean }) {
       {relative}
     </span>
   );
-}
-
-function formatRelative(when: Date): string {
-  const seconds = Math.max(0, Math.round((Date.now() - when.getTime()) / 1000));
-  if (seconds < 5) return "just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
 }
 
 function ToolbarButton({

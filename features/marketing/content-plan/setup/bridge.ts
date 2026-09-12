@@ -877,7 +877,19 @@ function parseFillStatus(data: Record<string, unknown>): FillStatus {
 export async function bridgeFillPreview(
   dispatch: AppDispatch,
   siteId: string,
-  options: { cmsSite?: string; nodeId?: string; write?: boolean },
+  options: {
+    cmsSite?: string;
+    nodeId?: string;
+    write?: boolean;
+    /**
+     * Re-author a page that is ALREADY PUBLISHED, into its draft (live content
+     * is never touched) — the same opt-in the batch start takes. The key is
+     * sent ONLY when true: the server body is extra="forbid", so an always-sent
+     * key would 422 every unpublished write until the server deploy that
+     * accepts it is live.
+     */
+    includePublished?: boolean;
+  },
 ): Promise<FillPreviewResult> {
   let preview: FillPreviewResult | null = null;
   let streamError: string | null = null;
@@ -890,6 +902,7 @@ export async function bridgeFillPreview(
         cms_site: options.cmsSite ?? null,
         node_id: options.nodeId ?? null,
         write: options.write === true,
+        ...(options.includePublished === true ? { include_published: true } : {}),
       },
       stream: true,
       onStreamEvent: (event) => {

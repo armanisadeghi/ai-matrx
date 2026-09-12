@@ -159,7 +159,9 @@ describe("captureGapVerdict", () => {
 
 describe("formatGap", () => {
   it("reads the way a person would say it", () => {
-    expect(formatGap(30_000)).toBe("1 minute");
+    // The `long` voice has a seconds tier, so a 30-second gap now reads as
+    // 30 seconds rather than being rounded up into "1 minute".
+    expect(formatGap(30_000)).toBe("30 seconds");
     expect(formatGap(45 * 60_000)).toBe("45 minutes");
     expect(formatGap(1 * HOUR)).toBe("1 hour");
     expect(formatGap(23.5 * HOUR)).toBe("23 hours");

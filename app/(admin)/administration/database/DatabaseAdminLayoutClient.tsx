@@ -44,7 +44,7 @@ export function DatabaseAdminLayoutClient({
           {/* Row 1 — Hub + cross-module tools */}
           <nav
             aria-label="Database tools"
-            className="flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar px-2 py-1 border-b border-border/60"
+            className="relative isolate flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar px-2 py-1 border-b border-border/60"
           >
             <AppLink
               href={DATABASE_MODULE_HOME}
@@ -101,13 +101,17 @@ export function DatabaseAdminLayoutClient({
                   </AppLink>
                 );
               })}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-card via-card/90 to-transparent"
+            />
           </nav>
 
           {/* Row 2 — SQL sub-routes (only when inside /administration/database/*) */}
           {!isHub && currentPath.startsWith(DATABASE_MODULE_HOME + "/") && (
             <nav
               aria-label="SQL and schema tools"
-              className="flex flex-nowrap overflow-x-auto no-scrollbar px-2"
+              className="relative isolate flex flex-nowrap overflow-x-auto no-scrollbar px-2"
             >
               {databaseSqlSubPages.map((page) => {
                 const active = isActiveDatabaseToolPath(
@@ -139,6 +143,10 @@ export function DatabaseAdminLayoutClient({
                   </AppLink>
                 );
               })}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-card via-card/90 to-transparent"
+              />
             </nav>
           )}
         </div>

@@ -23,13 +23,16 @@ LANE: [lane (model, effort)]. You are implementing [TASK ID]: [name]. Where it f
 ## Ownership
 Exclusive paths: [globs]. Touch nothing else. Shared checkout: `git add <explicit paths>` only (never
 `-a` / `-A`), confirm `git status --short` shows only your paths staged, commit, push `main`.
+**Commit and push each unit as you finish it, not all at the end** — an agent killed mid-run (spend
+limit, crash) loses everything it never pushed, and nobody ever learns it existed.
 
 ## Do
 1. Build exactly the brief — no extras, no parallel implementations (search for what exists first).
 2. Defect class found → root cause (`diagnose`), sibling census, guard shown RED then GREEN.
 3. Evidence per claim (verify-live-state §4) — fresh, run by you, this session.
 4. Self-review your diff against the brief (Missing / Extra) before reporting.
-5. Commit + push. Never run a release script. Never dispatch a reviewer of your own work.
+5. Commit + push as each unit lands. Never run a release script. Never dispatch a reviewer of your own work.
+6. Dispatching a subagent yourself → foreground, one at a time; never end your turn with one running.
 
 ## Report
 Full report → [REPORT PATH]: what was built · files · evidence (commands + output, URLs, SHAs, row ids) ·

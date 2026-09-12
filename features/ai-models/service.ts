@@ -51,6 +51,11 @@ import type {
 } from "./types";
 import { EMPTY_PROVIDER_SYNC_POLICY } from "./types";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import {
+  requireCanonicalCapabilities,
+  DEFAULT_CAPABILITIES,
+} from "./capabilities/parse";
+import type { ModelCapabilities } from "./capabilities/types";
 
 type ReplaceModelReferencesResult = {
   agents: number;
@@ -447,25 +452,32 @@ function parseProviderModelsCache(
   return cache;
 }
 
-function parseAiModelCapabilities(
-  value: unknown,
-  path: string,
-): AiModel["capabilities"] {
-  if (value === null || isJsonObject(value)) return value;
-  if (isJsonArray(value) && value.every((item) => typeof item === "string")) {
-    return value;
-  }
-  throw boundaryError(path, "a JSON object, string array, or null");
-}
-
 function withValidatedCapabilities(row: AiModelRow): Omit<AiModel, "maker"> {
   return {
     ...row,
-    capabilities: parseAiModelCapabilities(
+    capabilities: requireCanonicalCapabilities(
       row.capabilities,
-      `ai.model_definition.${row.id}.capabilities`,
+      { modelId: row.id, modelName: row.name },
     ),
   };
+}
+
+/** Keep Supabase writes from storing a provider alias or an incomplete JSONB
+ * shape. Newly composed rows get the same explicit text-turn value the UI has
+ * always meant by an unset capability field; persisted legacy shapes refuse. */
+function canonicalCapabilitiesForWrite(value: unknown): ModelCapabilities {
+  if (value === null || value === undefined) return { ...DEFAULT_CAPABILITIES };
+  return requireCanonicalCapabilities(value);
+}
+
+function canonicalizeModelWrite<T extends AiModelInsert | AiModelUpdate>(
+  payload: T,
+): T {
+  if (!("capabilities" in payload)) return payload;
+  return {
+    ...payload,
+    capabilities: canonicalCapabilitiesForWrite(payload.capabilities),
+  } as T;
 }
 
 function parseProvider(row: AiProviderRow): AiProvider {
@@ -560,10 +572,7 @@ function modelFieldUpdate(
       return { max_tokens: value };
     case "capabilities":
       return {
-        capabilities: parseAiModelCapabilities(
-          value,
-          "ai.model_definition.capabilities",
-        ),
+        capabilities: canonicalCapabilitiesForWrite(value),
       };
     default:
       throw new Error(
@@ -951,6 +960,12 @@ export const aiModelService = {
       .eq("id", modelId)
       .maybeSingle();
     if (error) throw error;
+    if (data) {
+      requireCanonicalCapabilities(data.capabilities, {
+        modelId: data.id ?? modelId,
+        modelName: data.name ?? undefined,
+      });
+    }
     return data;
   },
 
@@ -1066,7 +1081,7 @@ export const aiModelService = {
     const { data, error } = await supabase
       .schema("ai")
       .from("model_definition")
-      .insert(payload)
+      .insert(canonicalizeModelWrite(payload))
       .select()
       .single();
     if (error) throw error;
@@ -1077,7 +1092,7 @@ export const aiModelService = {
     const { data, error } = await supabase
       .schema("ai")
       .from("model_definition")
-      .update(payload)
+      .update(canonicalizeModelWrite(payload))
       .eq("id", id)
       .select()
       .single();

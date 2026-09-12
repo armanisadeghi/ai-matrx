@@ -11,6 +11,7 @@
 import { useEffect, useRef } from "react";
 import { Mic } from "lucide-react";
 import { subscribeLevel } from "../audio/continuousCapture";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 interface FastFireTimerBarProps {
   /** From the drill hook — fires per frame with (remainingMs, progress 0..1). */
@@ -34,7 +35,10 @@ export function FastFireTimerBar({ subscribeProgress }: FastFireTimerBarProps) {
           progress > 0.75 ? "rgb(239 68 68)" : "rgb(249 115 22)";
       }
       if (secondsRef.current) {
-        secondsRef.current.textContent = `${Math.ceil(remainingMs / 1000)}s`;
+        secondsRef.current.textContent = formatDurationSeconds(
+          Math.ceil(remainingMs / 1000),
+          { style: "compact" },
+        );
       }
     });
   }, [subscribeProgress]);

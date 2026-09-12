@@ -42,6 +42,7 @@ import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { PdfPresetPicker } from "@/features/pdf/components/PdfPresetPicker";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface Props {
   fileId: string;
@@ -218,7 +219,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
               Download {result.result.filename}
             </Button>
             <span className="ml-auto text-[10px] text-muted-foreground">
-              {(result.result.blob.size / 1024).toFixed(1)} KB
+              {formatFileSize(result.result.blob.size)}
             </span>
           </div>
         ) : null}

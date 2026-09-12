@@ -10,7 +10,8 @@
 
 import { createAuthenticatedClient } from "@/lib/api/backend-client";
 import { BackendApiError } from "@/lib/api/errors";
-import { formatBytes, probeUrl } from "@/features/admin/shared/UrlProbeField";
+import { probeUrl } from "@/features/admin/shared/UrlProbeField";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type {
   ResolveLinkResult,
   ResolvedFile,
@@ -190,7 +191,7 @@ export async function probeArtifactUrl(params: {
       return {
         status: "ok",
         detail: `verified server-side by the aidream resolver${
-          size !== null ? ` (${formatBytes(size)})` : ""
+          size !== null ? ` (${formatFileSize(size)})` : ""
         }`,
       };
     }

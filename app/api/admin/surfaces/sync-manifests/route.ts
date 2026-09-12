@@ -5,13 +5,19 @@
 //   - ui.ui_surface_agent_role
 //   - ui.ui_surface.url_pattern (from manifest.urlPattern or route defaults)
 // Body shape (all optional):
-//   { deleteStale?: boolean; createMissingSurfaces?: boolean }
+//   { deleteStale?: boolean; createMissingSurfaces?: boolean; includeRecent?: boolean }
 //
 // - `deleteStale: false` (default) leaves `db_only` rows alone so admins can
 //   review the drift report and decide.
 // - `createMissingSurfaces: false` (default) refuses to register manifests
 //   whose `surfaceName` isn't present in `ui.ui_surface`. Set true to
 //   auto-create the surface row before upserting its values.
+// - `includeRecent: false` (default) makes `deleteStale` skip any `db_only`
+//   row touched inside `RECENT_ROW_WINDOW_HOURS` — the sweep's version of the
+//   same recency guard `deleteMirrorRow` enforces per-row, because a recent
+//   row is common evidence of a sibling branch's in-flight, unmerged work.
+//   Skipped rows are reported on the result's `skippedRecentRows`. This flag
+//   is API-only for now — no admin UI control exists yet to set it.
 //
 // Super-admin only.
 
@@ -19,20 +25,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { applyManifestSync } from "@/features/surfaces/services/manifest-sync.service";
-
-function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
-  const status = message.startsWith("Unauthorized")
-    ? 401
-    : message.startsWith("Forbidden")
-      ? 403
-      : 500;
-  return NextResponse.json({ error: message }, { status });
-}
+import { apiSyncedFrom } from "@/features/surfaces/services/sync-provenance";
+// ONE error→status mapping for this route family, and the only thing that
+// describes a PostgREST failure (thrown as a plain object, never an Error).
+import { errorResponse } from "@/app/api/admin/surfaces/error-response";
 
 export async function POST(request: NextRequest) {
+  // The super admin whose session ran this sync — stamped onto every mirror
+  // row it writes (`synced_by`). It comes from the SAME call that authorizes
+  // the request, so the provenance can never name someone the gate did not
+  // actually check.
+  let syncedBy: string;
   try {
-    await requireSuperAdmin();
+    syncedBy = await requireSuperAdmin();
   } catch (e) {
     return errorResponse(e);
   }
@@ -40,6 +45,7 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as {
     deleteStale?: boolean;
     createMissingSurfaces?: boolean;
+    includeRecent?: boolean;
   } | null;
 
   try {
@@ -49,6 +55,8 @@ export async function POST(request: NextRequest) {
     const result = await applyManifestSync(supabase, {
       deleteStale: body?.deleteStale ?? false,
       createMissingSurfaces: body?.createMissingSurfaces ?? false,
+      includeRecent: body?.includeRecent ?? false,
+      provenance: { syncedBy, syncedFrom: apiSyncedFrom() },
     });
     return NextResponse.json({ result });
   } catch (e) {

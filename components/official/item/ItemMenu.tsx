@@ -14,8 +14,9 @@
  * gesture for clipboard, sonner toast.promise), so semantics cannot drift.
  */
 
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useRef, useState, type ReactNode } from "react";
 import { useScrollFade } from "@ai-matrx/design-system";
+import { ChevronDown } from "lucide-react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -317,9 +318,35 @@ export function ItemMenu({
   // Resolve while open so controlled open (whole-row click) and trigger open
   // share one path — no setState-during-render, no empty first frame.
   const resolved = open ? resolveItemMenuConfig(config) : null;
-  // Fades the overflowing edge so a long menu never looks like it ends at the
-  // clip. Measured, so a short menu gets no fade at all.
+  // ── A LONG MENU SAYS SO, IN WORDS ────────────────────────────────────────
+  //
+  // 🚨 Measured on production `/agents/all` at 1024x768 (one-resolution
+  // FIX-Q13): the menu's DANGER section sat at y~735, past the clip. It was
+  // reachable — the panel caps at the height Radix measured and scrolls — but
+  // the ONLY thing saying so was a `mask-image` fade, which renders the very
+  // control it is hinting at as a half-transparent smear. A live destructive
+  // action that looks half-erased is the disabled-looking screen law 4
+  // forbids, and the walker read the control as dead.
+  //
+  // So the fade is gone and the overflow is DECLARED: the panel is a flex
+  // column that does not scroll, the entries scroll inside it, and an explicit
+  // bar — legible text, a chevron, and a click that scrolls — sits at the
+  // bottom edge whenever there is more below. `state` is measured, so a menu
+  // that fits shows nothing at all.
   const scrollFade = useScrollFade();
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const setViewport = useCallback(
+    (node: HTMLDivElement | null) => {
+      viewportRef.current = node;
+      scrollFade.ref(node);
+    },
+    [scrollFade.ref],
+  );
+  const scrollToEnd = () => {
+    const el = viewportRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  };
 
   const handleOpenChange = (next: boolean) => {
     if (!isControlled) setUncontrolledOpen(next);
@@ -375,11 +402,8 @@ export function ItemMenu({
           // app menu is ~20 entries). It uses the space it has, and the fade
           // tells the eye when there is more.
           collisionPadding={12}
-          ref={scrollFade.ref}
-          {...scrollFade.fadeProps}
           className={cn(
-            "max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto",
-            scrollFade.fadeProps.className,
+            "flex max-h-[var(--radix-dropdown-menu-content-available-height)] flex-col overflow-hidden p-0",
           )}
           style={{ minWidth: contentMinWidth }}
           onCloseAutoFocus={onCloseAutoFocus}
@@ -387,21 +411,45 @@ export function ItemMenu({
             handleOpenChange(false),
           )}
         >
-          {resolved.header?.title && (
-            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-              {resolved.header.title}
-              {resolved.header.description && (
-                <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground/70">
-                  {resolved.header.description}
-                </span>
-              )}
-            </DropdownMenuLabel>
+          <div
+            ref={setViewport}
+            data-slot="item-menu-viewport"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1"
+          >
+            {resolved.header?.title && (
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                {resolved.header.title}
+                {resolved.header.description && (
+                  <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground/70">
+                    {resolved.header.description}
+                  </span>
+                )}
+              </DropdownMenuLabel>
+            )}
+            <MenuSections
+              family={dropdownFamily}
+              sections={resolved.sections}
+              onCloseRequest={() => handleOpenChange(false)}
+            />
+          </div>
+          {scrollFade.state.bottom && (
+            <button
+              type="button"
+              data-slot="item-menu-more-below"
+              // Not a menu item: it must never take roving focus or be picked
+              // by type-ahead, and Escape/arrow keys still belong to the list.
+              tabIndex={-1}
+              aria-hidden="true"
+              // Radix would otherwise close the menu on the pointer-down that
+              // starts this click.
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={scrollToEnd}
+              className="flex w-full shrink-0 items-center justify-center gap-1 border-t border-border bg-popover px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              <ChevronDown className="h-3 w-3" />
+              More actions below
+            </button>
           )}
-          <MenuSections
-            family={dropdownFamily}
-            sections={resolved.sections}
-            onCloseRequest={() => handleOpenChange(false)}
-          />
         </DropdownMenuContent>
       )}
     </DropdownMenu>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Archive,
   ArrowDownToLine,
@@ -17,6 +18,7 @@ import {
   Minus,
   Plus,
   RefreshCw,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { knobInts } from "@/lib/knobs/featureKnobs";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -36,10 +39,14 @@ import {
   selectSandboxRuntimeRevision,
   selectGitCommitDraft,
   setGitCommitDraft,
+  setRightOpen,
 } from "../../redux/codeWorkspaceSlice";
 import { openTab } from "../../redux/tabsSlice";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useOpenFile } from "../../hooks/useOpenFile";
+import { codeWorkspaceSurfaceKey } from "../../chat/begin-fresh-code-chat";
+import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
 import { HOVER_ROW, ROW_HEIGHT } from "../../styles/tokens";
 import {
@@ -58,6 +65,18 @@ import {
   pushRepository,
   type RepositoryMetadata,
 } from "./repositoryService";
+import {
+  buildRepositoryContextSnapshot,
+  GIT_REPOSITORY_CONTEXT_KEY,
+} from "./gitContext";
+
+const GIT_CONTEXT_KNOB_FEATURE = "code.source_control";
+const GIT_CONTEXT_KNOB_KEYS = [
+  "attachment_diff_characters",
+  "attachment_untracked_file_characters",
+  "attachment_untracked_total_characters",
+  "attachment_untracked_file_count",
+] as const;
 
 export function SourceControlPanel({ className }: { className?: string }) {
   const sandboxId = useAppSelector(selectActiveSandboxId);
@@ -91,6 +110,7 @@ function RepositoryPanel({
   className?: string;
 }) {
   const dispatch = useAppDispatch();
+  const searchParams = useSearchParams();
   const { filesystem, process } = useCodeWorkspace();
   const store = useAppStore();
   const alive = useRef(true);
@@ -104,6 +124,14 @@ function RepositoryPanel({
   const isCurrentSandbox = () =>
     alive.current && selectActiveSandboxId(store.getState()) === sandboxId;
   const openFile = useOpenFile();
+  const agentId = searchParams.get("agentId");
+  const conversationIdFromUrl = searchParams.get("conversationId");
+  const focusedConversationId = useAppSelector(
+    agentId
+      ? selectFocusedConversation(codeWorkspaceSurfaceKey(agentId))
+      : () => null,
+  );
+  const conversationId = focusedConversationId ?? conversationIdFromUrl;
   const explorerRoot = useAppSelector(selectExplorerRootOverride);
   const repoRoot = useAppSelector(selectActiveRepositoryRoot);
   const runtimeRevision = useAppSelector((state) =>
@@ -369,6 +397,154 @@ function RepositoryPanel({
         }),
       );
     });
+  }
+  async function attachRepositoryToChat() {
+    if (operation.current) return;
+    if (!agentId) {
+      dispatch(setRightOpen(true));
+      setError(
+        "Choose an agent in the Code chat before attaching repository context.",
+      );
+      return;
+    }
+    if (!conversationId) {
+      dispatch(setRightOpen(true));
+      setError(
+        "The Code chat is still opening. Wait for its conversation, then attach the repository.",
+      );
+      return;
+    }
+    if (!cwd) return;
+    operation.current = true;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const knobValues = await knobInts(
+        GIT_CONTEXT_KNOB_FEATURE,
+        GIT_CONTEXT_KNOB_KEYS,
+      );
+      const limits = {
+        maxDiffCharacters: knobValues.attachment_diff_characters,
+        maxUntrackedFileCharacters:
+          knobValues.attachment_untracked_file_characters,
+        maxUntrackedTotalCharacters:
+          knobValues.attachment_untracked_total_characters,
+        maxUntrackedFiles: knobValues.attachment_untracked_file_count,
+      };
+      const [latestRepository, latestStatus, stagedDiff, unstagedDiff] =
+        await Promise.all([
+          inspectRepository(process, cwd),
+          adapter.status({ cwd }),
+          adapter.diff({ cwd, staged: true }),
+          adapter.diff({ cwd, staged: false }),
+        ]);
+      if (!latestRepository) {
+        throw new Error("The selected folder is no longer a Git repository.");
+      }
+      const untrackedFiles: Array<{
+        path: string;
+        content?: string;
+        omission?: string;
+      }> = [];
+      let remainingUntrackedCharacters = limits.maxUntrackedTotalCharacters;
+      for (const [index, path] of latestStatus.untracked.entries()) {
+        if (index >= limits.maxUntrackedFiles) {
+          untrackedFiles.push({
+            path,
+            omission:
+              "omitted before read because the untracked file-count limit was reached",
+          });
+          continue;
+        }
+        const maximumFileCharacters = Math.min(
+          limits.maxUntrackedFileCharacters,
+          remainingUntrackedCharacters,
+        );
+        if (maximumFileCharacters <= 0) {
+          untrackedFiles.push({
+            path,
+            omission:
+              "omitted before read because the total untracked-content limit was reached",
+          });
+          continue;
+        }
+        try {
+          const stat = filesystem.stat
+            ? await filesystem.stat(`${cwd}/${path}`)
+            : null;
+          if (!stat || stat.kind !== "file") {
+            untrackedFiles.push({
+              path,
+              omission:
+                "omitted before read because its bounded file size could not be verified",
+            });
+            continue;
+          }
+          if (stat.size > maximumFileCharacters) {
+            untrackedFiles.push({
+              path,
+              omission: `omitted before read because its ${stat.size}-byte size exceeds the ${maximumFileCharacters}-character remaining limit`,
+            });
+            continue;
+          }
+          const content = await filesystem.readFile(`${cwd}/${path}`);
+          remainingUntrackedCharacters -= content.length;
+          untrackedFiles.push({ path, content });
+        } catch {
+          untrackedFiles.push({
+            path,
+            omission: "could not read bounded untracked content",
+          });
+        }
+      }
+      if (
+        !isCurrentSandbox() ||
+        selectActiveRepositoryRoot(store.getState()) !== cwd
+      ) {
+        throw new Error(
+          "The active sandbox or repository changed. Attach the current repository again.",
+        );
+      }
+      const snapshot = buildRepositoryContextSnapshot({
+        sandboxId,
+        repository: latestRepository,
+        status: latestStatus,
+        stagedDiff: stagedDiff.text,
+        unstagedDiff: unstagedDiff.text,
+        untrackedFiles,
+        limits,
+      });
+      dispatch(
+        setContextEntries({
+          conversationId,
+          entries: [
+            {
+              key: GIT_REPOSITORY_CONTEXT_KEY,
+              value: snapshot,
+              type: "json",
+              label: `Repository snapshot: ${latestRepository.branch ?? "detached HEAD"}`,
+            },
+          ],
+        }),
+      );
+      dispatch(setRightOpen(true));
+      setNotice(
+        snapshot.omissions.length
+          ? `Repository context attached with ${snapshot.omissions.length} documented omission${snapshot.omissions.length === 1 ? "" : "s"}.`
+          : "Repository context attached to the current Code chat.",
+      );
+    } catch (cause) {
+      const message =
+        cause instanceof Error
+          ? cause.message
+          : "Unable to attach repository context.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      operation.current = false;
+      if (alive.current) setBusy(false);
+    }
   }
   const disabled = busy || loading;
   const stage = (paths: string[]) => {
@@ -753,6 +929,15 @@ function RepositoryPanel({
           <>
             <div className="space-y-2 border-b p-2">
               <div className="flex flex-wrap gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => void attachRepositoryToChat()}
+                >
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  Attach to chat
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

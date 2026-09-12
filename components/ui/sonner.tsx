@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation"
 import { Toaster as Sonner } from "sonner"
 import {
   toast,
+  dismissAllTrackedToasts,
   dismissRecordToastsOffRoute,
-  sweepExpiredRecordToasts,
+  sweepExpiredToasts,
 } from "@/lib/toast"
 import { useThemeMode } from "@/styles/themes/useThemeMode"
 
@@ -104,6 +105,7 @@ function useStaleToastSweepOnReturn() {
         `[toaster] dismissed ${stacked} toast(s) that could not expire while this tab was hidden — sonner pauses their timers, and a stacked toast sits on top of the page and swallows clicks. The screen itself carries the record; a toast is only the courtesy.`,
       )
       toast.dismiss()
+      dismissAllTrackedToasts()
     }
     document.addEventListener("visibilitychange", onVisibility)
     return () => document.removeEventListener("visibilitychange", onVisibility)
@@ -122,8 +124,10 @@ function useStaleToastSweepOnReturn() {
  * not contain it means that record left the screen and its toasts go with it.
  * Navigating DEEPER into the same record keeps them.
  *
- * The visibility half re-checks wall-clock expiry, because a background tab
- * throttles our own timers to roughly once a minute.
+ * The visibility half re-checks wall-clock expiry for EVERY toast this app
+ * raises — since 2026-09-11 all of them run on the wall clock (`lib/toast.ts`,
+ * tier (b)) — because a background tab throttles our own timers to roughly
+ * once a minute.
  */
 function useRecordToastLifetime() {
   const pathname = usePathname()
@@ -145,7 +149,7 @@ function useRecordToastLifetime() {
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState !== "visible") return
-      sweepExpiredRecordToasts()
+      sweepExpiredToasts()
     }
     document.addEventListener("visibilitychange", onVisibility)
     return () => document.removeEventListener("visibilitychange", onVisibility)

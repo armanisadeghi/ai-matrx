@@ -33,6 +33,7 @@ import {
 import { assessmentService } from "../data/assessmentService";
 import type { AssessmentKind, AssessmentRow } from "../data/types";
 import { KIND_CONFIG, type KindConfig } from "./kindConfig";
+import { formatRelativeTime } from "@/utils/datetime";
 
 type VisibilityFilter = "all" | "mine" | "shared" | "public";
 const VISIBILITY_FILTERS: { id: VisibilityFilter; label: string }[] = [
@@ -65,17 +66,16 @@ const VISIBILITY_LABEL: Record<AssessmentRow["visibility"], string> = {
   public: "Public",
 };
 
+/** Past this age the list shows a calendar date instead of an age. */
+const RELATIVE_CUTOFF_MS = 30 * 24 * 60 * 60 * 1000;
+
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "";
-  const mins = Math.round((Date.now() - then) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
+  if (Date.now() - then >= RELATIVE_CUTOFF_MS) {
+    return new Date(iso).toLocaleDateString();
+  }
+  return formatRelativeTime(iso, { style: "short", fallback: "" });
 }
 
 function matchesQuery(a: AssessmentRow, q: string): boolean {

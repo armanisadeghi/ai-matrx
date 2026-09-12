@@ -56,7 +56,8 @@ import { cn } from "@/lib/utils";
 import { useImageStudio } from "../hooks/useImageStudio";
 import { getPresetById } from "../presets";
 import { slugifyFilename } from "../utils/slugify-filename";
-import { formatBytes, formatDimensions } from "../utils/format-bytes";
+import { formatDimensions } from "../utils/format-dimensions";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type { ImagePosition, StudioSourceFile } from "../types";
 import dynamic from "next/dynamic";
 import { StudioDropZone } from "./StudioDropZone";
@@ -1049,7 +1050,7 @@ function SourceHeader({
         )}
         <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
           {file.originalName} · {formatDimensions(file.width, file.height)} ·{" "}
-          {formatBytes(file.size)}
+          {formatFileSize(file.size)}
         </p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
@@ -1287,7 +1288,7 @@ function VariantCard({
         )}
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
           {size != null ? (
-            <span className="font-mono">{formatBytes(size)}</span>
+            <span className="font-mono">{formatFileSize(size)}</span>
           ) : (
             <span>—</span>
           )}

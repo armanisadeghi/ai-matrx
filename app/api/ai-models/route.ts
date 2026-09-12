@@ -1,4 +1,5 @@
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
+import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
 import { NextResponse } from "next/server";
 
 // Prevent build-time prerendering - this route requires Supabase at runtime
@@ -39,6 +40,12 @@ export async function GET() {
         );
         const models = (modelsRes.data ?? []).map((m) => ({
             ...m,
+            // This public cache route is a persistence boundary too. Never
+            // CDN-cache provider aliases or malformed JSONB for 12 hours.
+            capabilities: requireCanonicalCapabilities(m.capabilities, {
+                modelId: m.id,
+                modelName: m.name,
+            }),
             maker: m.provider_id
                 ? makerById.get(m.provider_id) ?? null
                 : null,
@@ -60,4 +67,3 @@ export async function GET() {
         );
     }
 }
-

@@ -18,7 +18,9 @@ import type { TaskDetailResponse } from "./schedulerApi.types";
 import type {
   AgendaTask,
   AgendaTrigger,
+  AutoSuspendedBlock,
   SchAgentTaskRow,
+  SchTaskMetadata,
   SchRunRow,
   SchTaskRow,
   SchTriggerRow,
@@ -32,9 +34,28 @@ const SELECT_AGENT_TASK = `
   triggers:sch_trigger(id, task_id, type, config, enabled, next_due_at, last_fired_at, created_at, updated_at)
 `;
 
+/**
+ * THE RECORD READ. Identical to `SELECT_AGENT_TASK` except the agent extension
+ * is a LEFT embed.
+ *
+ * A LIST may narrow itself however it likes — `/schedules` is a list of agent
+ * schedules and says so. A read of ONE record by its id may not: whatever it
+ * excludes, the surface reports as "we could not open this", and a surface that
+ * cannot open a row the database handed over says the untrue thing. `!inner`
+ * here is exactly such an exclusion — it silently drops any task with no
+ * `sch_agent_task` row, which `kind = 'ping'` (a live value of the table's CHECK
+ * constraint: `kind = ANY (ARRAY['agent','tool','ping'])`) never has.
+ */
+const SELECT_TASK_RECORD = `
+  *,
+  agent:sch_agent_task(agent_id, prompt, variables, persistent_conversation_id, auth_mode, max_runtime_seconds, max_concurrent),
+  triggers:sch_trigger(id, task_id, type, config, enabled, next_due_at, last_fired_at, created_at, updated_at)
+`;
+
 // ── Joined row shape returned by Supabase ──────────────────────────────────
 
 interface JoinedAgentTaskRow extends SchTaskRow {
+  /** Null for a task with no agent extension row (`kind = 'ping'`). */
   agent: Pick<
     SchAgentTaskRow,
     | "agent_id"
@@ -44,7 +65,7 @@ interface JoinedAgentTaskRow extends SchTaskRow {
     | "auth_mode"
     | "max_runtime_seconds"
     | "max_concurrent"
-  >;
+  > | null;
   triggers: Array<
     Pick<
       SchTriggerRow,
@@ -63,6 +84,61 @@ interface JoinedAgentTaskRow extends SchTaskRow {
 
 // ── Row → AgendaTask reshape (Supabase joined-read path) ───────────────────
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseAutoSuspended(value: unknown): AutoSuspendedBlock | undefined {
+  if (!isRecord(value)) return undefined;
+  const restored = isRecord(value.restored) ? value.restored : undefined;
+  return {
+    source: typeof value.source === "string" ? value.source : undefined,
+    at: typeof value.at === "string" ? value.at : undefined,
+    run_id: typeof value.run_id === "string" ? value.run_id : undefined,
+    failure_signature:
+      typeof value.failure_signature === "string" ? value.failure_signature : undefined,
+    consecutive_failures:
+      typeof value.consecutive_failures === "number" ? value.consecutive_failures : undefined,
+    reason: typeof value.reason === "string" ? value.reason : undefined,
+    overriding_approval:
+      typeof value.overriding_approval === "string" ? value.overriding_approval : undefined,
+    override_notice:
+      typeof value.override_notice === "string" ? value.override_notice : undefined,
+    restored: restored
+      ? {
+          at: typeof restored.at === "string" ? restored.at : undefined,
+          by: typeof restored.by === "string" ? restored.by : null,
+          restored_approval:
+            typeof restored.restored_approval === "string" ? restored.restored_approval : null,
+        }
+      : undefined,
+  };
+}
+
+/**
+ * The typed view of `sch_task.metadata`. Unknown keys are dropped, malformed
+ * known keys read as absent — a missing suspension record renders as "not
+ * suspended", which is the honest reading of a row that carries no record.
+ */
+export function parseTaskMetadata(raw: unknown): SchTaskMetadata {
+  if (!isRecord(raw)) return {};
+  const history = Array.isArray(raw.auto_suspended_history)
+    ? raw.auto_suspended_history
+        .map(parseAutoSuspended)
+        .filter((b): b is AutoSuspendedBlock => b !== undefined)
+    : undefined;
+  return {
+    auto_suspended: parseAutoSuspended(raw.auto_suspended),
+    auto_suspended_history: history && history.length > 0 ? history : undefined,
+    approval: typeof raw.approval === "string" ? raw.approval : undefined,
+    approved_by: typeof raw.approved_by === "string" ? raw.approved_by : undefined,
+    approved_at: typeof raw.approved_at === "string" ? raw.approved_at : undefined,
+    approved_interval:
+      typeof raw.approved_interval === "string" ? raw.approved_interval : undefined,
+    handler_gate_pending: raw.handler_gate_pending,
+  };
+}
+
 export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
   const triggers: AgendaTrigger[] = (row.triggers ?? []).map((t) => ({
     id: t.id,
@@ -78,6 +154,7 @@ export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
     id: row.id,
     userId: row.user_id,
     kind: row.kind,
+    metadata: parseTaskMetadata(row.metadata),
     title: row.title,
     description: row.description,
     queue: row.queue,
@@ -90,13 +167,19 @@ export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
 
-    agentId: row.agent.agent_id,
-    prompt: row.agent.prompt,
-    variables: (row.agent.variables ?? {}) as Record<string, unknown>,
-    persistentConversationId: row.agent.persistent_conversation_id,
-    authMode: row.agent.auth_mode,
-    maxRuntimeSeconds: row.agent.max_runtime_seconds,
-    maxConcurrent: row.agent.max_concurrent,
+    // A task with no `sch_agent_task` row (`kind = 'ping'`) has no agent
+    // extension. These are ABSENT, not defaulted-away: `agentId` is null and
+    // `prompt` is empty, which is what every consumer already branches on for
+    // a non-agent task. The alternative — dropping the row via `!inner` — is
+    // what told an admin they had no access to a schedule they own.
+    agentId: row.agent?.agent_id ?? null,
+    prompt: row.agent?.prompt ?? "",
+    variables: (row.agent?.variables ?? {}) as Record<string, unknown>,
+    persistentConversationId: row.agent?.persistent_conversation_id ?? null,
+    // The table's own defaults, so a ping task reads as the platform sees it.
+    authMode: row.agent?.auth_mode ?? "ask",
+    maxRuntimeSeconds: row.agent?.max_runtime_seconds ?? 600,
+    maxConcurrent: row.agent?.max_concurrent ?? 1,
 
     triggers,
   };
@@ -120,7 +203,11 @@ export function taskDetailToAgendaTask(detail: TaskDetailResponse): AgendaTask {
   return {
     id: t.id,
     userId: t.user_id,
-    kind: t.kind as "agent",
+    kind: t.kind === "tool" ? "tool" : "agent",
+    // The HTTP TaskResponse carries no metadata column. This reshape is used
+    // for a freshly CREATED task only (createScheduledTask); every update path
+    // re-reads the row through getAgentTask, which carries the real metadata.
+    metadata: {},
     title: t.title,
     description: t.description,
     queue: t.queue,
@@ -176,10 +263,28 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
   // Returns null on soft-deleted rows so the edit/detail pages render
   // their "not found" branch instead of letting users re-edit a row
   // they've already deleted.
+  //
+  // THE DOOR LAW (2026-09-11, completed 2026-09-12): this read answers
+  // `/schedules/<id>` for EVERY schedule, and carries NO predicate but the id
+  // and the soft-delete boundary. RLS is the ceiling; nobody gains a row here
+  // they could not already SELECT.
+  //
+  // It filtered `kind = 'agent'` once, so every platform `tool` system job the
+  // alarm banner and the scanner-health page named came back as zero rows and
+  // the page said "you don't have access" — a lie, since `platform_admin_all`
+  // had admitted the admin and the CLIENT threw the row away. The first repair
+  // widened that filter to `kind IN ('agent','tool')` and kept the
+  // `sch_agent_task!inner` join, which left the same defect standing for
+  // `kind = 'ping'` — a live value of the table's CHECK constraint, and one
+  // with no agent extension row for the inner join to match. A widened filter
+  // is still a filter. Both are gone.
+  //
+  // The rule this leaves behind: a read that backs a RECORD page narrows by
+  // the id and nothing else. Anything else it excludes gets reported to a
+  // person as an access failure it is not.
   const { data, error } = await schedulerDb(supabase)
     .schema("scheduler").from("sch_task")
-    .select(SELECT_AGENT_TASK)
-    .eq("kind", "agent")
+    .select(SELECT_TASK_RECORD)
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle()

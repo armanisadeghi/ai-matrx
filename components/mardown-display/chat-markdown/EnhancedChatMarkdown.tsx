@@ -112,6 +112,7 @@ const MEDIA_RENDER_BLOCK_TYPES = new Set([
 const DATA_CARD_RENDER_BLOCK_TYPES = new Set([
   "value_store_stored",
   "context_groomed",
+  "directive_receipt",
 ]);
 
 const _EMPTY_SEGMENTS: ContentSegment[] = [];

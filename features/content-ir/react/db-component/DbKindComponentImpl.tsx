@@ -40,6 +40,8 @@ import {
 } from "./dbKindComponentCache";
 import { DbKindComponentErrorBoundary } from "./DbKindComponentErrorBoundary";
 import { KindHtmlFrame } from "./KindHtmlFrame";
+import { KindSandboxFrame } from "./KindSandboxFrame";
+import { useKindSandboxEnabled } from "./useKindSandboxKnob";
 import type { RunKindAction } from "../actions/useKindActionRunner";
 import type {
   KindComponentUiOptions,
@@ -133,6 +135,11 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   );
 
   const { kind, value } = readInstanceValue(content, metadata);
+  // THE SANDBOX GATE (DD-123 §1.10). OFF is byte-identical to the behavior
+  // this file has always had; ON renders the same row inside /kind-sandbox.
+  // It is read here, at the ONE react-flavor mount, so all three call sites
+  // (chat, Kind Request, the directive window) inherit it together.
+  const sandboxEnabled = useKindSandboxEnabled();
   const registryVersion = useContentIrKindVersion(kind);
   void registryVersion;
 
@@ -192,6 +199,25 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
         kind={kind}
         html={resolution.componentSource}
         data={value}
+        className={className}
+      />
+    );
+  }
+
+  // ── react flavor, sandboxed: the body never enters this document ──────────
+  if (sandboxEnabled) {
+    return (
+      <KindSandboxFrame
+        kind={kind}
+        resolution={resolution}
+        // RAW value: the row's props_transform is organization-authored
+        // code too, so the FRAME applies it. Compiling it here would leave
+        // the hole the frame exists to close.
+        data={value}
+        config={kindComponentConfig(resolution.config, kind)}
+        runAction={runAction}
+        onResolve={onResolve}
+        uiOptions={uiOptions}
         className={className}
       />
     );

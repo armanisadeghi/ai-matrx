@@ -75,6 +75,36 @@ export function invalidateKindContractCache(kind?: string): void {
   else contractCache.clear();
 }
 
+/**
+ * The cached `emitted_json_schema` for `kind`, or `null` when it cannot be
+ * had (unregistered, no schema, catalog unreachable). Never throws.
+ *
+ * For callers that need to SHOW the contract rather than check against it —
+ * the `apply_surface_write` inline spec advertises each kind-bearing target's
+ * schema summary to the model, and must not pay a second network hop for a
+ * contract `validateAgainstKind` is about to fetch anyway. Same cache, same
+ * TTL, one source.
+ */
+export async function getCachedKindSchema(
+  kind: string,
+): Promise<unknown | null> {
+  const cached = contractCache.get(kind);
+  if (cached && Date.now() - cached.fetchedAt <= CONTRACT_TTL_MS) {
+    return cached.emittedJsonSchema ?? null;
+  }
+  try {
+    const fetched = await getKindInputContractBySlug(kind);
+    if (!fetched) return null;
+    contractCache.set(kind, {
+      emittedJsonSchema: fetched.emittedJsonSchema,
+      fetchedAt: Date.now(),
+    });
+    return fetched.emittedJsonSchema ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function degraded(
   kind: string,
   degradedReason: KindValidationDegradedReason,

@@ -5,6 +5,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Pencil, Plus, PlayCircle, Power, Trash2 } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
@@ -16,6 +18,7 @@ import {
   deleteScheduledTask,
   fetchScheduledTask,
   runTaskNowThunk,
+  setSystemTaskEnabled,
   toggleTaskEnabled,
   updateScheduledTask,
 } from "../../redux/tasks/thunks";
@@ -43,6 +46,15 @@ import {
 import { SpecCard } from "./SpecCard";
 import { TriggerCard } from "./TriggerCard";
 import { RunHistoryCard } from "./RunHistoryCard";
+import { SuspensionCard, approvalSentence } from "./SuspensionCard";
+import { humanizeRelative } from "../../utils/triggerHumanize";
+
+/**
+ * Where a platform system job's cadence, parameters and taxonomy are edited.
+ * The user editor (`/schedules/[id]/edit`) is the AGENT schedule form; a
+ * `tool` task has no agent to edit, so its Edit mode opens the console.
+ */
+const SYSTEM_JOBS_HREF = "/administration/automation/scheduling/system-jobs";
 
 interface Props {
   taskId: string;
@@ -136,6 +148,8 @@ function ScheduleDetailBody({ taskId }: Props) {
   // loaded, so reading them here for the record payload adds no fetch.
   const { runs, status: runsStatus, error: runsError } = useTaskRuns(taskId);
   const [running, setRunning] = useState(false);
+  const [flipping, setFlipping] = useState(false);
+  const isAdmin = useAppSelector(selectIsAdmin);
 
   if (status === "loading" || status === "idle") {
     return (
@@ -183,6 +197,84 @@ function ScheduleDetailBody({ taskId }: Props) {
     }
   };
 
+  // A platform system job (kind='tool'). Its enable/disable goes through the
+  // admin seam the System jobs console uses (task + trigger together, handler
+  // check, restore recorded) — the user PATCH refuses non-agent kinds. The
+  // server gates that seam on admin status, so the control is shown only to
+  // an admin: a button the server would refuse is a dead control.
+  const isSystemTask = task.kind === "tool";
+  const canFlip = !isSystemTask || isAdmin;
+  const suspended = task.metadata.auto_suspended;
+  const isGuardSuspended = Boolean(suspended) && !task.enabled;
+
+  /**
+   * THE ONE enable/disable control of this page. The header's Enable/Pause
+   * and the suspension card's Re-enable both call this — one handler, one
+   * confirm, one write path per kind.
+   */
+  const handleSetEnabled = async (enabled: boolean) => {
+    if (enabled && isGuardSuspended) {
+      // A destructive/expensive click states its consequence first: what
+      // fires, when, and what happens if the cause was not fixed.
+      const approval = approvalSentence(task);
+      // `sch_task.next_due_at` is the MIN over ENABLED triggers, so a
+      // suspended task carries null there while its (disabled) trigger still
+      // remembers when it was due. Read the trigger when the task is silent —
+      // otherwise the sentence about when it will run goes missing exactly on
+      // the rows this dialog exists for.
+      const nextDue = task.nextDueAt ?? task.triggers[0]?.nextDueAt ?? null;
+      const overdue = nextDue !== null && new Date(nextDue).getTime() < Date.now();
+      const failures = suspended?.consecutive_failures;
+      const ok = await confirm({
+        title: isSystemTask
+          ? "Re-enable this system schedule?"
+          : "Re-enable this schedule?",
+        description: [
+          isSystemTask
+            ? "Turns the schedule and its trigger back on together."
+            : "Turns the schedule back on.",
+          overdue
+            ? `It was due ${humanizeRelative(nextDue)}, so the scanner will run it on its next pass — within about a minute — not at the next scheduled time.`
+            : nextDue
+              ? `Its next run stays at ${humanizeRelative(nextDue)}.`
+              : "",
+          typeof failures === "number"
+            ? `If the cause is not fixed, the repeat guard will switch it off again after ${failures} more matching failures.`
+            : "If the cause is not fixed, the repeat guard will switch it off again.",
+          approval
+            ? `This restores the existing approval (${approval}) — it is not a new schedule and needs no new sign-off. The restore is recorded on the row.`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        confirmLabel: approval ? "Re-enable and restore approval" : "Re-enable",
+        variant: "default",
+      });
+      if (!ok) return;
+    }
+    setFlipping(true);
+    try {
+      if (isSystemTask) {
+        await dispatch(setSystemTaskEnabled(task.id, enabled));
+      } else {
+        await dispatch(toggleTaskEnabled(task.id, enabled));
+      }
+      toast.success(
+        enabled
+          ? isGuardSuspended
+            ? "Schedule re-enabled — the guard's suspension is closed and the approval restored"
+            : "Schedule enabled"
+          : "Schedule paused",
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to change the schedule",
+      );
+    } finally {
+      setFlipping(false);
+    }
+  };
+
   const handleDelete = async () => {
     const ok = await confirm({
       title: "Delete schedule",
@@ -212,11 +304,18 @@ function ScheduleDetailBody({ taskId }: Props) {
           href: `/schedules/${t.id}`,
           active: t.id === task.id,
         }))}
-        modes={[
-          { name: "View", href: `/schedules/${task.id}`, icon: Eye },
-          { name: "Edit", href: `/schedules/${task.id}/edit`, icon: Pencil },
-          { name: "New", href: "/schedules/new", icon: Plus },
-        ]}
+        modes={
+          isSystemTask
+            ? [
+                { name: "View", href: `/schedules/${task.id}`, icon: Eye },
+                { name: "Edit", href: SYSTEM_JOBS_HREF, icon: Pencil },
+              ]
+            : [
+                { name: "View", href: `/schedules/${task.id}`, icon: Eye },
+                { name: "Edit", href: `/schedules/${task.id}/edit`, icon: Pencil },
+                { name: "New", href: "/schedules/new", icon: Plus },
+              ]
+        }
         actions={[
           {
             label: "Run now",
@@ -225,26 +324,40 @@ function ScheduleDetailBody({ taskId }: Props) {
             primary: true,
             disabled: running,
           },
-          {
-            label: task.enabled ? "Pause" : "Enable",
-            icon: Power,
-            onPress: () => {
-              dispatch(toggleTaskEnabled(task.id, !task.enabled)).catch(
-                (err) => {
-                  toast.error(err instanceof Error ? err.message : "Failed");
+          ...(canFlip
+            ? [
+                {
+                  label: task.enabled ? "Pause" : "Enable",
+                  icon: Power,
+                  onPress: () => void handleSetEnabled(!task.enabled),
+                  disabled: flipping,
                 },
-              );
-            },
-          },
-          {
-            label: "Delete",
-            icon: Trash2,
-            onPress: () => void handleDelete(),
-            destructive: true,
-          },
+              ]
+            : []),
+          // A system job is retired from the System jobs console / the
+          // registry that declares it, never soft-deleted from a user page.
+          ...(isSystemTask
+            ? []
+            : [
+                {
+                  label: "Delete",
+                  icon: Trash2,
+                  onPress: () => void handleDelete(),
+                  destructive: true,
+                },
+              ]),
         ]}
       />
       <div className="space-y-4" data-surface-value="open_schedule">
+        <SuspensionCard
+          task={task}
+          onRestore={
+            canFlip
+              ? () => void handleSetEnabled(true)
+              : undefined
+          }
+          restoring={flipping}
+        />
         {/* Record-level copy. The plain click is the what-I-see payload (spec +
             trigger + run history with errors verbatim); the menu grades it into
             the two reasons this page gets copied. */}

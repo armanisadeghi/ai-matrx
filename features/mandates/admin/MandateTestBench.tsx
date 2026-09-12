@@ -105,6 +105,7 @@ import {
 } from "@/components/official/ConfigurationFields";
 import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -256,7 +257,7 @@ function ResultRow({
           <Badge variant="secondary">ran</Badge>
         )}
         <Badge variant="outline">
-          {((result.duration_ms ?? 0) / 1000).toFixed(1)}s
+          {formatDurationMs(result.duration_ms ?? 0, { style: "compact" })}
         </Badge>
         {result.promoted_to_reference_at && (
           <Badge variant="secondary" className="gap-1">

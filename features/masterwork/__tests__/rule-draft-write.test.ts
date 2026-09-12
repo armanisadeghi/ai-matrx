@@ -16,6 +16,7 @@ jest.mock("../service", () => ({
 }));
 
 import { requireRuleDraftInput } from "../agent-context/ruleDraftInput";
+import { masterworkRulebookManifest } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import { saveEditedRule } from "../ruleSave";
 import type { Rulebook, RulebookRule } from "../types";
 
@@ -131,7 +132,7 @@ describe("rule_draft → the Rulebook", () => {
     fakeStore(rulebook);
 
     expect(() => requireRuleDraftInput({ mode: "sideways" }, rulebook)).toThrow(
-      'Rule draft mode must be "new" or "edit".',
+      'Rule draft field "mode" must be exactly "new" or "edit"',
     );
     expect(() =>
       requireRuleDraftInput({ mode: "edit", rule_id: "nope" }, rulebook),
@@ -143,5 +144,42 @@ describe("rule_draft → the Rulebook", () => {
       requireRuleDraftInput({ mode: "new", statement: 12 }, rulebook),
     ).toThrow("Rule draft statement must be text.");
     expect(upsertRuleWithRetry).not.toHaveBeenCalled();
+  });
+
+  it("refuses a rule draft with NO mode, naming the field as required", () => {
+    // Wall W49-adjacent (2026-09-12): the Conductor sent a complete rule with
+    // no `mode` and read the old sentence as "wrong value", not "missing
+    // field". A required field must be refused at validation time, by name,
+    // before a single character is staged in the editor.
+    const rulebook = fakeRulebook();
+    fakeStore(rulebook);
+
+    const withoutMode = {
+      name: "The tell that a behaviour is the child's work",
+      statement: "Look at who chose the activity before judging the outcome.",
+      severity: "critical",
+    };
+
+    expect(() => requireRuleDraftInput(withoutMode, rulebook)).toThrow(
+      /missing the required field "mode"/,
+    );
+    // And the sentence has to teach both branches, or the model cannot fix it.
+    expect(() => requireRuleDraftInput(withoutMode, rulebook)).toThrow(
+      /mode: "new"[\s\S]*mode: "edit"/,
+    );
+    expect(upsertRuleWithRetry).not.toHaveBeenCalled();
+  });
+
+  it("documents mode as required in the target description the agent reads", () => {
+    // The refusal above is the floor. The tool spec the model is handed is
+    // built verbatim from this description (buildSurfaceWriteInlineSpec), so
+    // the requirement has to be visible BEFORE the call, not only after it.
+    const target = masterworkRulebookManifest.writeTargets?.find(
+      (entry) => entry.name === "rule_draft",
+    );
+    expect(target).toBeDefined();
+    expect(target!.description).toMatch(/mode is REQUIRED/);
+    expect(target!.description).toMatch(/mode="new"/);
+    expect(target!.description).toMatch(/mode="edit"/);
   });
 });

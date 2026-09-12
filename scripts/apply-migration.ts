@@ -79,8 +79,15 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MIGRATIONS_DIR = resolve(ROOT, "migrations");
 const SOURCE = "matrx-frontend";
-/** Same bound the aidream runner puts on every transactional migration. */
-const LOCK_TIMEOUT = "15s";
+/**
+ * Same production-safe bound as aidream and `ddl_lock_timeout_guard`.
+ *
+ * A waiting DDL command queues later readers behind its requested strong lock;
+ * 15 seconds is longer than the change-feed and readiness budgets.  Keep this
+ * explicit because an explicit nonzero setting wins over the event-trigger
+ * fallback, and because this runner's whole payload is one transaction.
+ */
+const LOCK_TIMEOUT = "2s";
 const STATEMENT_TIMEOUT = "600s";
 
 const C = {
@@ -438,6 +445,14 @@ async function selfTest(): Promise<number> {
   const path = resolve(MIGRATIONS_DIR, SELFTEST_FILE);
   const body =
     `create schema if not exists ${SELFTEST_SCHEMA};\n` +
+    // This is deliberately inside the file executed through applyFile, after
+    // its prologue.  It makes the lock-timeout contract red if this runner ever
+    // drifts above the database guard's 2s ceiling.
+    `do $$ begin\n` +
+    `  if current_setting('lock_timeout') <> '2s' then\n` +
+    `    raise exception 'db:apply lock_timeout must be 2s, got %', current_setting('lock_timeout');\n` +
+    `  end if;\n` +
+    `end $$;\n` +
     `create table ${SELFTEST_SCHEMA}.landed (id int primary key, note text);\n` +
     `insert into ${SELFTEST_SCHEMA}.landed (id, note) values (1, 'first statement');\n`;
   const trailing =

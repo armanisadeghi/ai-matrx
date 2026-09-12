@@ -56,7 +56,14 @@ export {
 };
 
 const cache = createDbKindComponentCache({
-  compile: compileSlotComponent,
+  // Every body this cache compiles comes out of `content_ir.kind_component`,
+  // i.e. it was authored by an organization through the Studio or an agent —
+  // never platform code, which ships in the bundle and never reaches a
+  // compiler. So the dangerous-global stubs are ON here (Q82 / B-17): a body
+  // that reaches for fetch/XHR/WebSocket/eval/storage throws a NAMED error the
+  // error boundary shows, instead of quietly reading the reader's session.
+  compile: (args) =>
+    compileSlotComponent({ ...args, sandboxDangerousGlobals: true }),
   defaultAllowedImports: getDefaultImportsForKindComponents,
   reportError: captureError,
   reportIncident: reportKindComponentIncident,

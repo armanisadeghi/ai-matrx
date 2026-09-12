@@ -18,6 +18,7 @@
  */
 
 import { useState } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   isPubliclyVisible,
   visibilityLabelShort,
@@ -64,6 +65,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatNumber } from "@/features/agent-apps/format";
+import { formatPercentFromFraction, formatUsd, isKnownNumber } from "@ai-matrx/kit/format";
 
 interface AgentAppOverviewContentProps {
   appId: string;
@@ -96,21 +98,9 @@ function StatChip({
   );
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function formatRelative(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const ms = Date.now() - +new Date(iso);
-  if (Number.isNaN(ms)) return "—";
-  const sec = Math.round(ms / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 48) return `${hr}h ago`;
-  const days = Math.round(hr / 24);
-  if (days < 30) return `${days}d ago`;
-  const mo = Math.round(days / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  return `${Math.round(mo / 12)}y ago`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 interface LabeledPillProps {
@@ -202,10 +192,10 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const variableCount = agentVariables?.length ?? 0;
   const contextPolicyCount = agentContextPolicies?.length ?? 0;
-  const successPct =
-    typeof app.success_rate === "number"
-      ? `${Math.round(app.success_rate * 100)}%`
-      : "—";
+  // `typeof === "number"` lets NaN through and prints "NaN%"; the honest
+  // formatter treats every unmeasurable value the same and still prints a
+  // real 0% as 0%.
+  const successPct = formatPercentFromFraction(app.success_rate);
 
   const codeLines =
     typeof app.component_code === "string"
@@ -463,11 +453,14 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             value={formatRelative(app.last_execution_at)}
             accent="text-muted-foreground"
           />
-          {typeof app.total_cost === "number" && app.total_cost > 0 && (
+          {/* A MEASURED $0 belongs on the strip; only an UNMEASURED cost is
+              omitted. Mirrors `agentAppKpis`, which this strip must match
+              verbatim per the page-KPI rule. */}
+          {isKnownNumber(app.total_cost) && (
             <StatChip
               icon={Zap}
               label="cost"
-              value={`$${app.total_cost.toFixed(2)}`}
+              value={formatUsd(app.total_cost)}
               accent="text-amber-500"
             />
           )}

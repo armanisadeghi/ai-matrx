@@ -49,6 +49,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@ai-matrx/design-system";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -473,12 +474,6 @@ export function VaultItemDetail({
   );
 }
 
-function readableBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function AttachmentsSection({
   item,
   busy,
@@ -657,7 +652,7 @@ function AttachmentRow({
           <dt className="font-medium text-muted-foreground">Type and size</dt>
           <dd className="text-foreground">
             {attachment.media_type || "Unknown type"} ·{" "}
-            {readableBytes(attachment.size_bytes)}
+            {formatFileSize(attachment.size_bytes)}
           </dd>
           <dt className="font-medium text-muted-foreground">Protection</dt>
           <dd className="text-foreground">

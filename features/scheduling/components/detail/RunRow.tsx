@@ -29,7 +29,10 @@ export function RunRow({ run, task = null }: Props) {
   const durationSec = computeDuration(run);
 
   return (
-    <div className="group border border-border rounded-md bg-card text-sm">
+    <div
+      id={`run-${run.id}`}
+      className="group border border-border rounded-md bg-card text-sm scroll-mt-24"
+    >
       <div className="flex items-stretch">
         <button
           onClick={() => setOpen((o) => !o)}

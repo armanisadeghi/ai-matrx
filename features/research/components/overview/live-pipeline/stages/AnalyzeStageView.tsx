@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Brain, Star } from "lucide-react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type {
   PipelineState,
   PipelineDerived,
@@ -64,7 +65,7 @@ function AnalyzeCard({ item }: { item: WorkItem }) {
     badges.push(<ModelBadge key="model" modelId={item.metadata.model_id} />);
   }
   const meta = item.metadata.result_length
-    ? `${(item.metadata.result_length / 1024).toFixed(1)} KB`
+    ? formatFileSize(item.metadata.result_length)
     : null;
 
   return (

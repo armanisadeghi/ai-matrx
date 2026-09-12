@@ -15,7 +15,7 @@ import {
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { buildSupabaseScopedMcpEndpoint } from "@/features/agents/services/mcp-oauth/endpoint";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -276,11 +276,16 @@ export default function IntegrationsPage() {
       undefined,
       endpointOverride,
     );
+    const ref = {
+      type: "mcp_server",
+      id: entry.serverId,
+      title: entry.name,
+    };
     if (outcome.ok) {
       dispatch(fetchCatalog());
-      toast.success(`Connected to ${entry.name}`);
+      recordToast.success(ref, `Connected to ${entry.name}`);
     } else if (!outcome.cancelled) {
-      toast.error(`Could not connect to ${entry.name}`, {
+      recordToast.error(ref, `Could not connect to ${entry.name}`, {
         description: outcome.error,
       });
     }

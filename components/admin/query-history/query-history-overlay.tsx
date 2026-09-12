@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import React, { useState, useEffect } from 'react';
 import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import { X, Search, Tag, Clock, Calendar, Copy, Edit, Trash, ChevronDown, ChevronUp, Download, Filter } from 'lucide-react';
@@ -357,7 +358,9 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
                       {query.executionTime && (
                         <span className="flex items-center text-xs text-slate-500 dark:text-slate-400">
                           <Clock className="h-3 w-3" />
-                          {(query.executionTime / 1000).toFixed(2)}s
+                          {formatDurationMs(query.executionTime, {
+                            style: "compact",
+                          })}
                         </span>
                       )}
                     </div>

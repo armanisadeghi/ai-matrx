@@ -88,6 +88,14 @@ export async function listBingConnectionInventory(
   signal?: AbortSignal,
 ): Promise<BingConnectionInventory> {
   const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  // This table is deliberately unavailable to `anon`. Redux can briefly
+  // describe the old identity while Supabase has already signed out, so the
+  // service must refuse the PostgREST read at the actual transport boundary.
+  if (!session?.access_token) return { connections: [], resources: [] };
+
   const connections = await supabase
     .schema("users")
     .from("integration_connections")

@@ -23,6 +23,7 @@
  * via this module + <ProcessingUnitsBadge>, never invent a parallel scale.
  */
 
+
 /** The one true multiplier. USD → Processing Units. */
 export const UNITS_PER_DOLLAR = 2000;
 
@@ -81,13 +82,13 @@ export function shouldWarn(units: number): boolean {
  * Null/undefined means "unpriced", which is NOT the same as free: it renders
  * "—" so an unpriced model can never be mistaken for a zero-cost one.
  */
-export function formatUsd(usd: number | null | undefined): string {
-  if (typeof usd !== "number" || !Number.isFinite(usd)) return "—";
-  if (usd === 0) return "$0.00";
-  if (usd < 0.01) return `$${usd.toFixed(5)}`;
-  if (usd < 1) return `$${usd.toFixed(4)}`;
-  return `$${usd.toFixed(2)}`;
-}
+// `formatUsd` LIVES IN THE PACKAGE, not here. Callers rendering a model or
+// run cost import it from "@ai-matrx/kit/format" with `digits: "adaptive"`,
+// which is the ladder this module used to hard-code (2 decimals at a dollar
+// or more, 4 down to a cent, more below) plus the same em-dash for an
+// unpriced model. A local wrapper would only presets an option while
+// shadowing the package's name — the exact hiding place the twins guard
+// exists to find.
 
 /** Format a unit count: 0 → "Free", else "1,234 units" (or "1,234 PU" short). */
 export function formatUnits(

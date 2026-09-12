@@ -27,7 +27,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import {
   ArrowLeft,
   FileSearch,
@@ -273,7 +273,8 @@ export function CreateFromSource() {
       // the meter decrements (honest even while enforced:false). Failed
       // branches above return first, so a failed generation never burns quota.
       await cardGen.commit();
-      toast.success(
+      recordToast.success(
+        { type: "flashcard_set", id: set.id, title: set.name },
         `Created "${set.name}" with ${savedCards.length} ${savedCards.length === 1 ? "card" : "cards"}`,
       );
       startNavigation(() => router.push(`${EDU_BASE}/${set.id}`));

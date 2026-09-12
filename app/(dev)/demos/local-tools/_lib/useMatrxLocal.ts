@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -787,7 +789,11 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
           if (!pending) return;
           pendingCallbacks.current.delete(reqId);
           setActiveRequests((prev) => prev.filter((r) => r.id !== reqId));
-          pending.reject(new Error(`Timeout (${timeoutMs / 1000}s)`));
+          pending.reject(
+            new Error(
+              `Timeout (${formatDurationMs(timeoutMs, { style: "compact" })})`,
+            ),
+          );
         }, timeoutMs);
 
         pendingCallbacks.current.set(reqId, {

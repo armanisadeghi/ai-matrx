@@ -29,7 +29,7 @@ import {
 } from "@/features/media-capture/recording/chunk-journal";
 import { finishJournalRecovery } from "@/features/media-capture/recording/journal-recovery";
 import { refreshCaptureJournals } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
-import { formatBytes } from "@/features/media-capture/components/RecordingHud";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface CaptureRecoverySectionProps {
   /** Bumped by the host to force a re-read (e.g. after a studio save). */
@@ -135,7 +135,7 @@ export function CaptureRecoverySection({
                 {entry.interrupted ? "Interrupted" : "Unsaved"}{" "}
                 {isAudio ? "audio" : "video"} recording —{" "}
                 {segments} segment{segments === 1 ? "" : "s"},{" "}
-                {formatBytes(entry.manifest.emitted_bytes)}, from{" "}
+                {formatFileSize(entry.manifest.emitted_bytes)}, from{" "}
                 {new Date(entry.manifest.created_at).toLocaleString()}.
                 {entry.interrupted &&
                   " Only media captured before the interruption can be recovered."}

@@ -64,13 +64,11 @@ export type MandateCoverageAlertVerdict =
     };
 
 /**
- * THE TITLE FOR `red`. It is `RED_WORD` plus the consequence, because the word
- * alone is a status and this banner exists to say what the status COSTS. The
- * word itself is never re-spelled here — `coverage.ts` owns it, and
- * `mandate-screen-vocabulary.test.ts` refuses a second spelling anywhere a
- * mandate screen renders.
+ * THE TITLE FOR `red`. The title is the shared status word alone. The server's
+ * coverage sentence owns the consequence because only the resolver can state
+ * what an unheld Mandate does; a screen cannot infer every invocation path.
  */
-export const RED_TITLE = `${RED_WORD} — nothing runs when this Mandate is called`;
+export const RED_TITLE = RED_WORD;
 
 export function mandateCoverageAlertVerdict(args: {
   row: MandateCoverageStateRow | null | undefined;

@@ -51,11 +51,11 @@ Reps were told the incident cannot be reproduced in today's checkout. They were 
 
 ### RED — baseline (told "Do not use the Skill tool")
 
-| Rep | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8 | Result |
-|---|---|---|---|---|---|---|---|---|---|
-| R1 | Y | **N** | **N** | Y | Y | Y | Y | Y | FAIL |
-| R2 | Y | **N** | **N** | Y | Y | Y | Y | Y | FAIL |
-| R3 | Y | **N** | **N** | Y | Y | Y | Y | Y | FAIL |
+| Rep | Transcript (agent id) | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8 | Result |
+|---|---|---|---|---|---|---|---|---|---|---|
+| R1 | `a0a85109d4c174f0a` | Y | **N** | **N** | Y | Y | Y | Y | Y | FAIL |
+| R2 | `a763cabafc41c52b7` | Y | **N** | **N** | Y | Y | Y | Y | Y | FAIL |
+| R3 | `a35ab0d1b2ccbd152` | Y | **N** | **N** | Y | Y | Y | Y | Y | FAIL |
 
 **RED: 0/3.**
 
@@ -71,11 +71,11 @@ All three reps were strong on evidence, rejecting the patch, a real-seam guard, 
 
 Each GREEN rep read the skill (its first tool call was `Read …/diagnose/SKILL.md`) and cited it in a closing "What guided this" list. Graded 2026-09-11 by a finisher that ran none of the reps.
 
-| Rep | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8 | Result |
-|---|---|---|---|---|---|---|---|---|---|
-| G1 | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
-| G2 | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
-| G3 | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
+| Rep | Transcript (agent id) | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8 | Result |
+|---|---|---|---|---|---|---|---|---|---|---|
+| G1 | `a4c528f349558aa6c` | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
+| G2 | `a43b49747fcf58f2c` | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
+| G3 | `ab82e5a8258a2cae3` | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
 
 **GREEN: 0/3 on the all-eight bar. C2 moved 0/3 → 3/3. C3 stayed 0/3.**
 
@@ -84,6 +84,20 @@ Each GREEN rep read the skill (its first tool call was `Read …/diagnose/SKILL.
 - **G3 (graded by the runner, confirmed by the finisher):** loop = browser script on 20fd67fb failing on the grey table, then the same on a flashcard set. Four ranked guesses, no predictions. **Leakage:** it read today's `KindInstanceRender.tsx` and quoted the post-fix comment that a row naming the generic fallback is "coverage on paper only" — that comment did not exist on 2026-08-28, so its boundary reasoning is partly informed by the resolution. It disclosed this ("router details come from today's checkout").
 
 **Reading:** the skill fixed the failure the reps had in common (no red loop before code reading: §1 is the longest section and is titled "the core of the skill"). It did not fix the falsifiable-prediction miss even though §4 states it in one sentence and G2 repeated that sentence. Per skill-authoring §3/§5.4, three agreeing misses against a stated rule means the form is not binding, not that words are missing.
+
+### Transcript provenance (added 2026-09-12 — verdicts unchanged)
+
+Every scenario rep above cites its agent id. A transcript reads at
+`/private/tmp/claude-501/-Users-armanisadeghi-code/0cf3c493-04c8-4d2f-b3cf-f84c84998f99/tasks/<id>.output`
+(JSONL; the last assistant message is the graded answer). Ids were recovered by matching each row's
+verbatim harvested quote to exactly one transcript, not by dispatch order — the runner's own RED-2 and
+RED-3 filenames disagree with this record's R2/R3, and the quotes are the ground truth. Nothing here
+re-grades a verdict; this section adds provenance only.
+
+The six **trigger-check** reps were `quick` (sonnet) subagents whose replies came back inline to the
+runner; no separate transcript file was persisted for them, so their rows are **not recoverable** as
+transcripts. Their answers survive verbatim in the runner's own transcript, `a61e511d9f0e1d0b3` (the
+2026-09-11 rerun of row 1 is in the finisher's, `a1409fa61ea011915`).
 
 ### Rationalizations harvested (verbatim)
 

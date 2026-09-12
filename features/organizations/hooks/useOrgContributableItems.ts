@@ -13,7 +13,7 @@
  */
 
 import React from "react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { shareWithOrg } from "@/utils/permissions/service";
 import type { ResourceType } from "@/utils/permissions/registry";
@@ -144,7 +144,10 @@ export function useOrgContributableItems(
       });
       if (result.success) {
         setJustShared((prev) => new Set(prev).add(item.id));
-        toast.success(`Shared "${item.title}" with ${orgName}`);
+        recordToast.success(
+          { type: entry.shareKey, id: item.id, title: item.title },
+          `Shared "${item.title}" with ${orgName}`,
+        );
         onShared?.();
       } else {
         toast.error(result.error ?? "Failed to share");

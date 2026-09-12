@@ -3,7 +3,7 @@
 /**
  * Organizations launcher — the parent to the org workspace.
  *
- * A polished home that lists the user's personal workspace and team orgs as
+ * A polished home that lists every organization the user belongs to as
  * rich cards (logo, role, members, created), with search and a create action.
  * Matches the OrgWorkspace aesthetic (gradient accents, single scroll, semantic
  * surfaces). Client component — same interactive-dashboard pattern as the rest
@@ -43,6 +43,8 @@ import { OrgScopeTree } from "@/features/organizations/components/OrgScopeTree";
 import type {
   OrganizationWithRole,
   OrgRole,
+} from "@/features/organizations/types";
+import {
 } from "@/features/organizations/types";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
@@ -107,14 +109,6 @@ const ROLE_META: Record<OrgRole, RoleMeta> = {
   },
 };
 
-const PERSONAL_META: RoleMeta = {
-  label: "Personal",
-  icon: UserIcon,
-  bar: "bg-gradient-to-r from-violet-500 to-sky-500",
-  text: "text-violet-600 dark:text-violet-400",
-  bg: "bg-violet-500/10",
-};
-
 function OrgCard({
   org,
   suggestions,
@@ -127,7 +121,9 @@ function OrgCard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
-  const meta = org.isPersonal ? PERSONAL_META : ROLE_META[org.role];
+  // Every organization shows the viewer's REAL role in it. Nothing is relabelled
+  // because the row carries `is_personal`.
+  const meta = ROLE_META[org.role];
   const RoleIcon = meta.icon;
   const href = `/organizations/${org.slug}`;
 
@@ -393,8 +389,10 @@ export default function OrganizationsPage() {
       ])
     : organizations;
 
-  const personal = filtered.filter((o) => o.isPersonal);
-  const teams = filtered.filter((o) => !o.isPersonal);
+  // ONE list, every organization under its own name. The personal/teams split
+  // grouped on `is_personal`, so a user who belonged to two personal
+  // organizations saw both under a "Personal" heading with no way to tell them
+  // apart (Arman, 2026-09-11: use the real name, always).
   const teamCount = organizations.filter((o) => !o.isPersonal).length;
   const kpis = organizationKpis(organizations);
 
@@ -583,41 +581,16 @@ export default function OrganizationsPage() {
             ) : (
               <>
                 <div data-surface-value="organizations_summary">
-                  {personal.length > 0 && (
-                    <section>
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        Personal
-                      </h2>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {personal.map((org) => (
-                          <OrgCard
-                            key={org.id}
-                            org={org}
-                            suggestions={suggestions}
-                            kpis={kpis}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {teams.length > 0 && (
-                    <section>
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        Teams
-                      </h2>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {teams.map((org) => (
-                          <OrgCard
-                            key={org.id}
-                            org={org}
-                            suggestions={suggestions}
-                            kpis={kpis}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filtered.map((org) => (
+                      <OrgCard
+                        key={org.id}
+                        org={org}
+                        suggestions={suggestions}
+                        kpis={kpis}
+                      />
+                    ))}
+                  </div>
                 </div>
               </>
             )}

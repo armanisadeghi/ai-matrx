@@ -34,6 +34,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { usePdfExtractor } from "../hooks/usePdfExtractor";
 import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugTrigger";
@@ -233,7 +234,7 @@ export function PdfStudioUpload({
                     {file.name}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    {(file.size / 1024).toFixed(1)} KB
+                    {formatFileSize(file.size)}
                   </p>
                 </div>
                 <button

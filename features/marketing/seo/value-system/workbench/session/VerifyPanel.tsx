@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
@@ -162,7 +162,14 @@ export function VerifyPanel({
           notes: `Conceded to the blind check: ${row.checker.reason}`,
         });
         decide(row.ruling.keywordId, "checker_right");
-        toast.success(`Restamped “${row.ruling.keyword}” as ${row.checker.valueLabel}.`);
+        recordToast.success(
+          {
+            type: "keyword",
+            id: row.ruling.keywordId,
+            title: row.ruling.keyword,
+          },
+          `Restamped “${row.ruling.keyword}” as ${row.checker.valueLabel}.`,
+        );
         await queryClient.invalidateQueries({ queryKey: ["marketing", "value"] });
       } catch (error) {
         toast.error("Could not restamp", {

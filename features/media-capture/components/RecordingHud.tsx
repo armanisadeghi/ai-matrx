@@ -34,6 +34,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AudioLevelIndicator } from "@/features/audio/components/AudioLevelIndicator";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 /** Past this fraction of a cap the gauge turns red and the alert appears. */
 const WARN_FRACTION = 0.8;
@@ -63,12 +64,6 @@ export function formatClock(ms: number): string {
   const mm = `${m}`.padStart(2, "0");
   const ss = `${s}`.padStart(2, "0");
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-}
-
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 export function RecordingHud({
@@ -155,7 +150,7 @@ export function RecordingHud({
           <div className="mb-1 flex justify-between text-xs text-muted-foreground">
             <span>Estimated size</span>
             <span className="tabular-nums">
-              {formatBytes(estimatedBytes)} / {formatBytes(maxBytes)}
+              {formatFileSize(estimatedBytes)} / {formatFileSize(maxBytes)}
             </span>
           </div>
           <Progress
@@ -170,7 +165,7 @@ export function RecordingHud({
           <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
           <AlertDescription className="text-xs text-orange-800 dark:text-orange-300">
             {nearSizeCap
-              ? `Approaching the maximum size — recording stops automatically at ${formatBytes(maxBytes)}.`
+              ? `Approaching the maximum size — recording stops automatically at ${formatFileSize(maxBytes)}.`
               : `Approaching the maximum duration — recording stops automatically at ${formatClock(maxDurationMs)}.`}{" "}
             Everything captured so far is kept.
           </AlertDescription>

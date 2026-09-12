@@ -24,6 +24,13 @@
 import * as React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/styles/themes/utils";
+// THE package initials + avatar-color formatters (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). Recorded display decision: a multi-part name takes
+// FIRST + LAST, so "Ana Maria Rivera" is AR — this surface previously took
+// first + second and printed "AM". `avatarPaletteIndex` reproduces this
+// file's own hash (hash*31 + charCode, |0 each step, abs % buckets) exactly,
+// so the 8-color palette below assigns identical colors to identical seeds.
+import { avatarPaletteIndex, getInitials } from "@ai-matrx/kit/format";
 
 /**
  * A deliberately permissive shape so this works with Redux users, Supabase rows
@@ -67,10 +74,7 @@ const fallbackPalette = [
 ];
 
 function colorFor(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++)
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  return fallbackPalette[Math.abs(hash) % fallbackPalette.length];
+  return fallbackPalette[avatarPaletteIndex(seed, fallbackPalette.length)];
 }
 
 /** Best available human name for a user, falling back to the email local-part. */
@@ -103,14 +107,7 @@ export function resolveUserAvatarUrl(
 }
 
 export function resolveUserInitials(user: UserLike | null | undefined): string {
-  const name = resolveUserName(user);
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  const letters = parts
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-  return letters || name[0]?.toUpperCase() || "?";
+  return getInitials(resolveUserName(user));
 }
 
 export interface UserAvatarDisplayProps {

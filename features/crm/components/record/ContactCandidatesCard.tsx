@@ -46,8 +46,8 @@ import {
 } from "../../enrichment/service";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { SectionCard } from "./SectionCard";
 
 interface Props {

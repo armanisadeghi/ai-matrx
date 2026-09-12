@@ -28,8 +28,13 @@
  *  - Validation is manifest-driven: only names declared in the resolved
  *    surface's `writeTargets` are accepted, so a UI cannot accept a write it
  *    never declared, and a caller cannot invent one.
+ *  - THE VALUE CONTRACT. A target declaring `valueKind` has its value checked
+ *    against that registered kind's schema BEFORE approval and BEFORE the
+ *    handler — for every origin. An unverifiable contract (kind unregistered,
+ *    catalog unreachable) FAILS naming the reason; a skip is never a pass.
  */
 
+import { validateAgainstKind } from "@/features/content-ir/registry/validate-against-kind";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
@@ -80,6 +85,21 @@ export type SurfaceWriteResult =
       declined?: true;
       /** The handler safely refused an invalid or stale domain request. */
       refused?: true;
+      /**
+       * NOTHING ON THIS PAGE CAN APPLY THIS WRITE — the surface that owns the
+       * target is not mounted here (the user is on a different page), so there
+       * is no handler to refuse it and no defect to capture. It is a
+       * WRONG-PLACE outcome, not a broken one, and it needs its own flag
+       * because the remedy is different from every other failure: go where the
+       * write can land, or take a route that needs no surface.
+       *
+       * Wall W49 (2026-09-12): a Masterwork Conductor called
+       * `apply_surface_write` from a plain `/chat/<id>` tab, which carries no
+       * surface handlers. The seam failed correctly and said so only in a
+       * toast that named no remedy — so the screen never told the user WHY
+       * nothing happened or what to do about it.
+       */
+      unapplicable?: true;
       /** Optional replacement instruction the user sent instead of approving. */
       instructions?: string;
     };
@@ -292,6 +312,65 @@ async function agentWriteAllowed(
   );
 }
 
+/**
+ * THE VALUE CONTRACT, enforced.
+ *
+ * A target that declares `valueKind` has a real contract — the registered
+ * kind's `emitted_json_schema` — and this is where it binds. Runs BEFORE the
+ * approval gate and before the handler, deliberately:
+ *
+ *  - Never ask a human to approve a value the platform already knows is
+ *    malformed. An approval card for garbage teaches people to click through.
+ *  - Never hand a handler a shape it did not declare; the hand-rolled throw
+ *    inside a page handler is exactly the per-instance validator this replaces.
+ *
+ * It applies to USER-origin writes too: the contract is the contract, and a
+ * kind-component action button emitting the wrong shape is the same defect as
+ * an agent doing it.
+ *
+ * A SKIP IS NEVER A PASS. `validateAgainstKind` reports `checked:false` when
+ * the kind is not registered, has no schema, has an uncompilable schema, or
+ * the catalog is unreachable. None of those mean "fine" — they mean the
+ * platform cannot tell, which for a write into the user's page is a failure
+ * naming the degraded reason, not a silent pass-through.
+ */
+async function valueContractHolds(
+  target: SurfaceWriteTarget,
+  surfaceName: string,
+  value: unknown,
+): Promise<SurfaceWriteResult | true> {
+  const kind = target.valueKind;
+  if (!kind) return true;
+
+  const verdict = await validateAgainstKind(value, kind);
+
+  if (!verdict.checked) {
+    return fail(
+      `"${target.label}" declares the value contract "${kind}", but that contract could not be checked (${verdict.degradedReason}): ${verdict.errors[0] ?? "no detail"}. The write was refused — an unverifiable contract is not an approved one.`,
+      {
+        targetName: target.name,
+        surfaceName,
+        valueKind: kind,
+        degradedReason: verdict.degradedReason,
+      },
+    );
+  }
+
+  if (!verdict.ok) {
+    return fail(
+      `"${target.label}" expects a value shaped like the "${kind}" kind, and this one isn't: ${verdict.errors.join("; ")}`,
+      {
+        targetName: target.name,
+        surfaceName,
+        valueKind: kind,
+        errors: verdict.errors,
+      },
+    );
+  }
+
+  return true;
+}
+
 function findDeclaredTarget(
   surfaceName: string,
   targetName: string,
@@ -316,6 +395,38 @@ function fail(
 }
 
 /**
+ * The page the user is looking at cannot apply this write at all.
+ *
+ * Loud on screen WITH the remedy (the user is the only one who can move to a
+ * page that can apply it), but deliberately NOT `captureError`: no code is
+ * broken. Treating "you are on the wrong page" as a platform defect fills the
+ * repair queue with user navigation and trains everyone to ignore it.
+ */
+function failUnapplicable(
+  message: string,
+  raw: Record<string, unknown>,
+): SurfaceWriteResult {
+  toast.error("This page can't apply that change", { description: message });
+  console.warn(`[surface-writeback] ${message}`, raw);
+  return { ok: false, error: message, unapplicable: true };
+}
+
+/**
+ * The one sentence a caller — human or model — gets when nothing on screen can
+ * receive the write. It states the fact, then BOTH honest ways forward, so the
+ * model can act on it instead of guessing (W49).
+ */
+function unapplicableMessage(targetName: string, detail: string): string {
+  return (
+    `${detail} No page open right now can apply "${targetName}", so nothing ` +
+    `was written and nothing was changed. Open the page that owns this ` +
+    `write — for a Rulebook that is the Rulebook's own workspace or its ` +
+    `conduct page — and ask again there, or ask for a route that does not ` +
+    `need that page.`
+  );
+}
+
+/**
  * Apply one value to one declared write target on the live page.
  * See the module header for resolution + safety semantics.
  */
@@ -329,10 +440,13 @@ export async function applySurfaceWrite(
   );
 
   if (stack.length === 0) {
-    return fail(
-      opts?.surfaceName
-        ? `Surface "${opts.surfaceName}" is not mounted — nothing can receive "${targetName}".`
-        : `No surface is mounted — nothing can receive "${targetName}".`,
+    return failUnapplicable(
+      unapplicableMessage(
+        targetName,
+        opts?.surfaceName
+          ? `Surface "${opts.surfaceName}" is not mounted here.`
+          : "This screen mounts no writable surface.",
+      ),
       { targetName, surfaceName: opts?.surfaceName ?? null },
     );
   }
@@ -351,6 +465,12 @@ export async function applySurfaceWrite(
         { targetName, surfaceName: runtime.surfaceName },
       );
     }
+
+    // The declared value contract binds before anything else looks at the
+    // value — no approval card for a malformed payload, no handler asked to
+    // re-validate what the kind already describes.
+    const contract = await valueContractHolds(target, runtime.surfaceName, value);
+    if (contract !== true) return contract;
 
     if ((opts?.origin ?? "user") === "agent") {
       // Returns `true` to proceed, or the exact result to hand back (already
@@ -393,10 +513,16 @@ export async function applySurfaceWrite(
     }
   }
 
-  return fail(`No mounted surface declares write target "${targetName}".`, {
-    targetName,
-    mounted: stack.map((entry) => entry.surfaceName),
-  });
+  return failUnapplicable(
+    unapplicableMessage(
+      targetName,
+      `The page open here (${stack.map((entry) => entry.surfaceName).join(", ")}) declares no write target by that name.`,
+    ),
+    {
+      targetName,
+      mounted: stack.map((entry) => entry.surfaceName),
+    },
+  );
 }
 
 /**

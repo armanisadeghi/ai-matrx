@@ -48,6 +48,12 @@ context plus the controls. Everything else is table.
 
 ## THE OFFERING COLUMN (2026-08-24)
 
+Inherited placements now carry a compact information marker beside the Offering.
+It names whether the brand, organization, or platform supplied the ruling and
+offers one explicit action to adopt the same Offering as this site's own ruling.
+The marker reads the canonical `seo.keyword_placement_resolve` ladder and writes
+through the existing placement mutation; it is not a second placement system.
+
 > 🚨 **Renamed 2026-08-24 (KI-047).** This column and its components were
 > called "Service" through 2026-08-24; every user-visible label and the
 > `ServicePicker`/`ServiceAssignPanel` components are now **Offering**. The
@@ -101,12 +107,14 @@ Two deliberate choices worth knowing:
 | `components/DimensionValuePicker.tsx` | The two-step dimension→value **composition** over the canonical `CreatablePicker`. |
 | `components/SavedViewTabs.tsx` | Saved views as tabs — rename, share, reorder, delete, and "keep these changes". The UI is this surface's own; the CRUD underneath (`listSavedViews`/`saveView`/`deleteSavedView`) is the shared `keyword-table/savedViews.ts` (KI-021). |
 | `components/cells.tsx` | The Class dropdown that ASSIGNS (with P11's door in it), and the stamp cell that assigns and filters. |
-| `components/ServiceCell.tsx` | THE OFFERING COLUMN's cell — the name, its root, who placed it, and the picker behind it. |
+| `components/ServiceCell.tsx` | THE OFFERING COLUMN's cell — the name, its root, who placed it, the inherited-placement (i), and the picker behind it. |
+| `components/InheritedPlacementMarker.tsx` | The tiny (i) beside an INHERITED Offering: which rung ruled (brand / organization / platform), what that means, and "Make it this site's own" through the same one placement write. Renders nothing for a site's own ruling. |
+| `scope-tiers.ts` | THE PLACEMENT LADDER vocabulary for `seo.keyword_topic.scope_tier`, said once and shared by the marker, the keyword dossier and the opt-in diff queue. NOT `engine_schedule.scope_tier` — different table, different ladder. |
 | `components/OfferingPicker.tsx` | The tree-shaped, creatable offering picker shared by the cell, the bulk panel, and the filter. |
 | `components/OfferingAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write. |
 | `components/ServiceFilterControl.tsx` | The Offering filter chip and picker (the shared bar cannot name a topic). |
 | `hooks/useSiteServices.ts` | The site's topic tree, flattened parent → child for a picker. Shares the topic screen's query keys. |
-| `data.ts` | The stamp/service RPC callers. **No write path of its own** — see below. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
+| `data.ts` | The stamp/service RPC callers — `getKeywordServices` reads `gsc_keyword_topics_for` (what the placement is) and `keyword_placement_resolve` (which rung decided it) over the SAME ≤2,000 ids. **No write path of its own** — see below. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
 
 > Deleted 2026-08-25 (dead since the 2026-08-24 grid extraction): this
 > folder's own `state.ts` and `components/ColumnChooser.tsx` — both were
@@ -240,6 +248,20 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   root sits under it in the size of a footnote.
 
 ## Change log
+
+- **2026-09-12** — WHO DECIDED THE OFFERING is now on screen. `getKeywordServices`
+  calls `seo.keyword_placement_resolve` beside `gsc_keyword_topics_for` over the
+  same page of ids (THE SCOPE RULE, ≤2,000 both), so every placement carries its
+  governing rung; `ServiceCell` marks an INHERITED one with a single tiny (i)
+  (Arman's ruling — never a column of tier badges) whose popover names the rung,
+  says what it means, and offers "Make it this site's own" through the SAME one
+  placement write. A site's own ruling wears nothing. Live-verified on Data
+  Destruction, Inc. (site `38eff4c9…`): "best way to destroy a hard drive" read
+  *Your organization placed it*, adopting wrote the `scope_tier='site'` row and
+  the marker went away; "hard drive crusher" read *The platform placed it* —
+  both cross-checked against the ladder in SQL. Every governing placement on
+  that site was inherited before this (12,306 platform, 382 organization, 0
+  site).
 
 - **2026-08-25** — The shared Filter trigger and the workbench's Offering
   filter now keep 44 px touch targets through tablet and phone widths,

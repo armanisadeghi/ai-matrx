@@ -10,7 +10,8 @@
     "PROVABLY not the same capability, and it must say why in `reason`.",
     "A WRAPPER is not a twin: a local function that BINDS the package function's options (unit, style, fallback) and delegates in a line or two is the sanctioned adapter, and needs no entry. A re-implemented BODY is a twin, always.",
     "",
-    "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs)."
+    "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs).",
+    "A SHAPE rule (`shapeWhy` + `shapeAllow` + `shapeCensus` on a row) catches the same capability under an UNREGISTERED name, or with no name at all. `shapeAllow` = provably NOT this capability, silent. `shapeCensus` = pre-existing bodies that ARE it and are not collapsed yet: loud every run, shrink-only, and a stale entry fails the guard."
   ],
   "twins": [
     {
@@ -152,6 +153,60 @@
       "name": "formatDurationMs",
       "package": "@ai-matrx/kit/format",
       "why": "THE UNIT LAW: the fleet's ~35 duration twins variously took milliseconds, seconds and minutes behind an identical `formatDuration(n)` signature, so kit ships formatDurationMs / formatDurationSeconds / formatDurationMinutes and NO bare `formatDuration`. Two host copies had already re-grown under this exact name (observational-memory format.ts, marketing crawl-session-panels.tsx) and were deleted 2026-09-07. A local `formatDuration` that BINDS unit+style+fallback and delegates is an adapter, not a twin; a local `formatDurationMs` is always a twin.",
+      "shapeWhy": "A millisecond count becoming a unit string is this capability whatever it is called. The name lane read GREEN on all four formatDuration* exports while aidream's dashboard carried SEVEN bodies under the private names fmtMs and fmtMsSummary, each with its own rounding, and 115 more files in this repo turned ms into `2.3s` / `1.5m` / `3m ago` inline. Pattern and its proof: scripts/duration-shape.mjs. Plain time arithmetic can never match — the rule requires a DIVISION, MODULO or THRESHOLD COMPARISON against a time base PAIRED with a duration unit label, so a timeout budget (30 * 1000), an API seconds field and a rate denominator all stay untouched. `shapeCensus` below is the pre-existing census, not an exemption: it is reported every run and is ratcheted shrink-only — a stale entry FAILS the guard.",
+      "allow": [],
+      "shapeCensus": [],
+      "shapeAllow": [
+        {
+          "file": "features/agent-apps/format.ts",
+          "why": "PROVABLY NOT A DURATION. `formatNumber` is a compact COUNT formatter — \"1.2k\" for thousands and \"3m\" for MILLIONS of agent-app installs/runs — and no time value of any kind enters this module: its only other export that touches time is `formatDateTime`, a bare `toLocaleString()`. The duration lane fires because `/ 1000` and `/ 1_000_000` are SI magnitude steps and the millions suffix `}m` is character-for-character a minutes label; the rule cannot tell a magnitude step from a time base here, and nothing in the file ever produces a duration string. (Checked 2026-09-11, duration shard 1.)"
+        },
+        {
+          "file": "features/marketing/seo/audit/checks.ts",
+          "reason": "NOT collapsible from this side: this whole module is declared a BYTE-IDENTICAL mirror of aidream `packages/matrx-scraper/matrx_scraper/seo_audit.py`, enforced by `checks.parity.test.ts` against a generated fixture. The two hits are `pyFixed(lcp / 1000, 1)` and `pyFixed(pythonRound(savings) / 1000, 1)` — Python's round-half-even expansion, always one decimal of seconds. `formatDurationMs` cannot reproduce them: it prints `800ms` where Python prints `0.8s`, and `12s` where Python prints `12.0s`, so adopting it here would change a user-facing audit sentence AND break parity in a repo this shard may not touch.",
+          "why": "The unit string here is not this repo's to format: it is a mirrored artifact of a Python check that owns the sentence, held byte-identical by a parity fixture test, so the rounding and the wording are decided in `seo_audit.py` and copied — not authored — here. Collapsing it needs a same-commit change on BOTH sides plus a kit style that always prints one decimal of seconds; until that lands, an unlabelled collapse would silently desynchronise the two halves of the ONE verdict layer."
+        }
+      ]
+    },
+    {
+      "name": "formatUsd",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE honest money formatter (kit 0.12.0, 2026-09-12). `$${(cost ?? 0).toFixed(4)}` rendered \"$0.0000\" for a cost NOBODY MEASURED and a reader walked away believing the run was free; the same `?? 0` then went into a SUM, so an unmeasured cost was invisible inside an analytics total that rode into an agent payload. Unknown is an em-dash, a MEASURED zero is still \"$0.00\". Named Usd not Currency under the UNIT LAW: it prepends a literal `$` with no locale handling, and a EUR amount wearing a `$` is the same class of lie. Census: currency in ~85 files across four clients with zero package coverage before this.",
+      "allow": []
+    },
+    {
+      "name": "formatCount",
+      "package": "@ai-matrx/kit/format",
+      "why": "Rides the formatUsd row's contract: locale-grouped integer, em-dash for unknown, \"0\" for a measured zero. There is deliberately no compact (\"1.2M\") voice yet — see features/admin/spend/explorer/labels.ts in the formatFileSize shapeAllow list, which is the collapse target waiting on one.",
+      "allow": [
+        {
+          "file": "features/user-lists/components/CategoryPanel.tsx",
+          "reason": "A DIFFERENT capability under the same name: this renders a COMPACT count (\"1.2k\") for a sidebar badge, and returns an EMPTY STRING for undefined rather than an em-dash, because the badge is absent when the count is unknown instead of showing a placeholder in a 20px chip. @ai-matrx/kit/format's `formatCount` is the grouped-integer voice (\"1,234\") and deliberately ships no compact voice yet. Collapse this the moment one exists — a waiting collapse target, not a permanent exemption. (Checked 2026-09-12.)"
+        }
+      ]
+    },
+    {
+      "name": "formatPercentFromFraction",
+      "package": "@ai-matrx/kit/format",
+      "why": "The percentage half of the honest-number contract (~149 files, zero package coverage before kit 0.12.0). The long name is the point: half the fleet's twins took a 0..1 fraction and half took a 0..100 percentage, a 100x error that renders plausibly, so the unit is in the name. Does NOT clamp — over 100% is usually a real signal.",
+      "allow": []
+    },
+    {
+      "name": "safeRatio",
+      "package": "@ai-matrx/kit/format",
+      "why": "The indeterminate-division guard behind formatPercentFromFraction. `0 / 0` is not zero, it is unknown, and this returns null for it rather than letting NaN reach the screen as \"NaN% used\".",
+      "allow": []
+    },
+    {
+      "name": "sumKnown",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE function that closes the lying-screen class. `?? 0` was never typed in front of a formatter — it was typed in front of `+`, because a nullable number must become a number before it can be added. This returns { total, known, unknown } so a caller cannot present a total as complete without ignoring a field it was handed, and it is the only thing that separates \"all zero\" from \"nothing measured\".",
+      "allow": []
+    },
+    {
+      "name": "isKnownNumber",
+      "package": "@ai-matrx/kit/format",
+      "why": "The predicate that makes `?? 0` unnecessary: true only for a real, usable measurement, so a measured 0 passes and null/undefined/NaN/Infinity do not. Rides the formatUsd row.",
       "allow": []
     },
     {
@@ -203,7 +258,35 @@
     {
       "name": "formatFileSize",
       "package": "@ai-matrx/kit/format",
-      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative — NEVER a confident '0 B').",
+      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative — NEVER a confident '0 B'). 2026-09-11: the name lane read GREEN while 134 byte-size bodies lived in 67 files under OTHER names — this row now also carries the SHAPE rule below, which is what actually closed the class.",
+      "shapeRule": "byte-size",
+      "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. A second review the same day proved the rule was blind to the DECIMAL (SI) family — 1000 / 1e6 / 1_000_000 — and to a GB-input body that MULTIPLIES; five live twins were returning zero findings. Both are covered now. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant can never match: the division arms require a DIVISION or THRESHOLD COMPARISON against a byte base, and the multiply arm requires BOTH a non-literal operand (so 80 * 1024 * 1024 is out) AND the unit label on the same line outside any comment (so `limitMb * 1024 * 1024; // 25 MB` is out). This repo has ~60 legitimate byte ceilings that must stay untouched.",
+      "shapeAllow": [
+        {
+          "file": "features/admin/spend/explorer/labels.ts",
+          "reason": "PROVABLY NOT A BYTE COUNT. `compactNumber` renders TOKEN counts for the spend explorer — \"1.2M\" tokens, \"340k\" tokens, \"812\" — and no byte value of any kind enters this module. The byte-size rule fires because /1_000 and /1_000_000 are magnitude steps beside a one-decimal `toFixed(1)`, which is character-for-character the shape of a KB/MB step; the rule cannot tell a decimal SI magnitude step from a binary byte step here. Note the units are DECIMAL (1,000) and the labels carry no \"B\", which is exactly how a count differs from a size. (Checked 2026-09-12 while clearing the duration lane.) This is a COUNT formatter and belongs in @ai-matrx/kit/format's forthcoming `formatCount` — it is a future collapse target under that name, not a permanent exemption from byte-size."
+        },
+        {
+          "file": "features/organizations/admin/utils.ts",
+          "reason": "NOT a display formatter: gbToBytes/bytesToGb convert between a storage-quota NUMBER and the bare number an admin types into a GB form field. There is no unit label and no rounding decision — the string is parsed back into a number on submit, so kit's '1.5 GB' would break the field. The same file's display door on line 27 IS the package (export const formatBytes = formatFileSize).",
+          "why": "bytesToGb/gbToBytes are FORM round-trip converters, not formatters: they turn a byte column into the bare number a GB input field edits and back again. There is no unit label and no rendered string — formatFileSize returns \"2.0 GB\", which cannot go in a number input."
+        },
+        {
+          "file": "utils/stream-profiler.ts",
+          "reason": "NOT a display formatter: memoryGrowthMB is a NUMBER written into a machine-readable profiler report whose unit lives in the COLUMN NAME (MemoryGrowthMB), consumed by console.table and by whoever reads the dump - there is no unit label and no human rounding decision. It is also signed: memory that SHRANK is a negative growth, and formatFileSize deliberately returns an em-dash for a negative size.",
+          "why": "memoryGrowthMB is a diagnostic REPORT FIELD whose unit lives in the key name (MemoryGrowthMB), pinned to MB on purpose so two runs are comparable. It is a number in a console table, never a unit string on a screen."
+        },
+        {
+          "file": "features/research/format.ts",
+          "reason": "NOT bytes: fmtCount is the research UI's compact COUNT abbreviator — the 'B' it prints is BILLION, beside 'M' for million and 'k' for thousand (1234 -> '1.2k', 6234393 -> '6.2M'). It divides by the SI base because a count of sources or characters is genuinely decimal. It became visible the day the byte rule learned the decimal family (2026-09-11) and is the one true collision between the two: the letter B means different things in the two vocabularies. formatFileSize would render '6.0 MB' for six million sources."
+        }
+      ],
+      "allow": []
+    },
+    {
+      "name": "extractErrorMessage",
+      "package": "@ai-matrx/data/net",
+      "why": "THE caught-value-to-string extractor (PostgrestError, axios, and a FastAPI `detail` body — a string, or an object carrying `message`). Two host bodies were deleted 2026-09-11. utils/errors.ts held a near-byte copy of the package's, which meant the 2026-08-31 FastAPI `detail` fix had to be written TWICE, and it had already fallen behind on the package's nested-error lookup and its `fallback` parameter; it is now a one-line re-export door so this repo's ~100 `@/utils/errors` importers keep their path. features/agent-shortcuts/components/ShortcutForm.tsx held a STALE copy with no `detail` branch at all, so a server refusal that said exactly why was flattened into the caller's generic fallback on that form.",
       "allow": []
     },
     {
@@ -753,6 +836,24 @@
       "name": "nextQueryState",
       "package": "@ai-matrx/design-system/data-table/query-control",
       "why": "Controlled table query-state transitions moved to the table package.",
+      "allow": []
+    },
+    {
+      "name": "_registerHost",
+      "package": "@ai-matrx/kit/opener",
+      "why": "The opener HOST REGISTRY. Four hand-rolled copies existed (kit's confirm plus this repo's sandbox-gate, scope-mismatch and value-prompts dialogs); the three host-side ones kept the registry in a module-level `let host`, which is the dual-loader-graph hazard — with unsplit dual ESM/CJS bundles each graph instantiates its own module, so host registration silently splits from its callers and the awaiting promise hangs forever with no error anywhere. Deleted here 2026-09-11 in the kit 0.10.0 adoption; `createOpener(slot)` owns the registry, the queue and the globalThis slot.",
+      "allow": []
+    },
+    {
+      "name": "_unregisterHost",
+      "package": "@ai-matrx/kit/opener",
+      "why": "The unregister half of the opener host registry, including the rule that only the CURRENT host may unregister (a superseded host's late unmount must not tear down the live one — the React double-mount / provider-swap case). Deleted here 2026-09-11 alongside _registerHost.",
+      "allow": []
+    },
+    {
+      "name": "useOpenerHost",
+      "package": "@ai-matrx/kit/opener-react",
+      "why": "The MOUNT-SIDE machinery of an imperative dialog host: registration, the ref-backed request queue, the tick-driven drain effect and the settle-once callback. Every dialog host in this repo was re-writing the same twenty lines, each with its own chance at the stale-`active`-closure bug that drops the second queued request forever. A host component that declares its own queueRef/tick/drain effect is this twin re-grown.",
       "allow": []
     }
   ]

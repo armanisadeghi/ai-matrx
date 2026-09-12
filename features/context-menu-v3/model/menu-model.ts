@@ -44,6 +44,7 @@ import {
   Search,
   Share2,
   Link2,
+  AtSign,
   Bug,
   Braces,
   BrainCircuit,
@@ -216,6 +217,8 @@ export interface MenuRoles {
   paste: MenuItemNode;
   selectAll: MenuItemNode;
   find: MenuItemNode;
+  /** "Insert reference…" (editable) / "Copy reference…" (read-only) — never absent. */
+  insertReference: MenuItemNode;
   chat: MenuItemNode;
   undo: MenuItemNode;
   redo: MenuItemNode;
@@ -619,6 +622,14 @@ export function buildMenuModel(
     iconClassName: "text-muted-foreground",
     onSelect: m.handleFind,
   };
+  const insertReference: MenuItemNode = {
+    kind: "item",
+    id: "insert-reference",
+    label: isEditable ? "Insert reference…" : "Copy reference…",
+    icon: AtSign,
+    iconClassName: "text-primary",
+    onSelect: m.handleInsertReference,
+  };
 
   // ── Tools ───────────────────────────────────────────────────────────────
   const chat: MenuItemNode = {
@@ -870,6 +881,7 @@ export function buildMenuModel(
       paste,
       selectAll,
       find,
+      insertReference,
     ]),
   });
   sections.push(...extras["after-clipboard"]);
@@ -922,6 +934,7 @@ export function buildMenuModel(
       paste,
       selectAll,
       find,
+      insertReference,
       chat,
       undo,
       redo,

@@ -18,6 +18,15 @@
 @source "../node_modules/@ai-matrx/media/dist";
 @source "../node_modules/@ai-matrx/diff/dist";
 @import "tw-animate-css";
+
+/* THE DATABASE-CLASS SAFELIST (DD-123 §1.8). Tailwind emits a utility only for
+   a class it SCANS in a source file — and the 162 organization-authored kind
+   component bodies are ROWS in content_ir.kind_component, which no scan can
+   see. Without this generated file those classes produce no CSS and the
+   component renders unstyled in that respect, here and in the Shape sandbox
+   frame (which compiles from this same file, so the two must never diverge).
+   GENERATED: pnpm gen:kind-sandbox-safelist · VERIFIED: pnpm check:kind-sandbox-safelist */
+@import "../features/content-ir/sandbox/generated/db-class-safelist.css";
 @plugin "@tailwindcss/typography";
 
 /* Enable dark mode variant for Tailwind v4 */
@@ -1638,7 +1647,11 @@
     margin-top: max(0.75rem, env(safe-area-inset-top, 0px));
   }
 
-  /* Page height utilities — subtract header height.
+  /* Page height utilities — subtract the header height, and NOTHING else.
+     These once also subtracted a global alarm banner's reserved height; that
+     reservation was deleted on Arman's ruling (2026-09-12) that an internal
+     notice never modifies the page underneath it. Global notices float and are
+     movable now, so no route gives up any height for one.
      Use ONLY on /administration/* and (transitional)/(legacy) ResponsiveLayout.
      (core) AppShell routes: use h-full — .shell-main is already full viewport. */
   .h-page {

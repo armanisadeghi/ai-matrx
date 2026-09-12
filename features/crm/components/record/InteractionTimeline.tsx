@@ -167,6 +167,9 @@ export function InteractionTimeline({
     }
   };
 
+  // The surface arrives as a prop; the only mount that passes one is
+  // `PartyRecordPage` (CRM_RECORD_SURFACE_NAME).
+  // surface-write-handlers-surface: matrx-user/crm-record
   useSurfaceWriteHandlers(writeSurfaceName ?? null, {
     log_interaction: async (raw: unknown) => {
       const parsed = parseInteraction(raw);

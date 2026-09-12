@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import {
   deleteSurface,
   listAgentBindings,
@@ -119,7 +119,10 @@ export function SurfaceDetailPanel({
     try {
       await updateSurface(surface.name, { is_active: next });
       onChanged();
-      toast.success(`${surface.name} ${next ? "activated" : "deactivated"}`);
+      recordToast.success(
+        { type: "ui_surface", id: surface.name, title: surface.name },
+        `${surface.name} ${next ? "activated" : "deactivated"}`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
     } finally {
@@ -155,6 +158,7 @@ export function SurfaceDetailPanel({
     setBusy(true);
     try {
       await deleteSurface(surface.name);
+      dismissRecordToasts({ type: "ui_surface", id: surface.name });
       toast.success(`${surface.name} deleted`);
       onDeleted(surface.name);
     } catch (e) {

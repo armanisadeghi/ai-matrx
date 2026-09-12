@@ -46,9 +46,25 @@ export const INTERACTION_MODES = [
 export type InteractionMode = typeof INTERACTION_MODES[number];
 
 // The complete feature vocabulary present on live `ai.model_definition` rows
-// (swept 2026-07-17). Adding a NEW feature value to the DB requires adding it
+// (swept 2026-09-12). Adding a NEW feature value to the DB requires adding it
 // here — `parseCapabilities` screams (captureError "data-shape") on any value
 // it doesn't recognize instead of silently dropping it.
+//
+// THE OTHER HALF OF THIS LIST lives server-side in
+// `aidream/packages/matrx-ai/matrx_ai/providers/capability_vocabulary.py`,
+// which is what the write path (the agent `sql`/`db_*` tools and
+// `scripts/set_model_capabilities.py`) now validates against, and what
+// `scripts/check_model_capability_vocabulary.py` proves the live rows obey.
+// Keep the two lists in lockstep; a term added to one belongs in both.
+//
+// Why the scream is worth keeping even with a write guard: on 2026-09-12 this
+// parser was the ONLY thing on the platform that noticed the model-sync agent
+// had written provider-doc spellings ("structured_outputs", "reasoning",
+// "code_interpreter", "batch", "pdf_input"). Server-side, nothing matched
+// them and nothing said so — gpt-6-astra resolved to free-text structured
+// output with schema output declared on its row. Provider aliases are
+// normalized at the catalog write boundary — they must never become stored
+// feature keys here.
 export const FEATURE_KEYS = [
   "streaming",
   "function_calling",
@@ -69,6 +85,10 @@ export const FEATURE_KEYS = [
   "batch_api",
   "prompt_caching",
   "context_caching",
+  // Anthropic context editing / tool-result clearing: the model manages what
+  // stays in its own context window. Distinct from the two caching features,
+  // which are about billing and latency, not retention.
+  "context_management",
   "partial_mode",
   // Extraction family (GLiNER2 / fastino models)
   "ner",
@@ -79,6 +99,9 @@ export const FEATURE_KEYS = [
   // Media generation / editing
   "image_generation",
   "image_editing",
+  // Mask-based region editing. A model can edit a whole image without
+  // accepting a mask, so this is not the same declaration as image_editing.
+  "inpainting",
   "image_to_video",
   "video_generation",
   "video_editing",

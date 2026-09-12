@@ -668,6 +668,10 @@ const CharacterCounterWindow = lazyOverlay(
     import("@/features/window-panels/windows/text-counter/CharacterCounterWindow"),
   { ssr: false },
 );
+const DailySpendWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/spend/DailySpendWindow"),
+  { ssr: false },
+);
 const StructuredValueWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/structured-value/StructuredValueWindow"),
@@ -814,6 +818,10 @@ const SiteCommandRunWindow = lazyOverlay(
 );
 const FindReplaceOverlay = lazyOverlay(
   () => import("@/features/overlays/components/FindReplaceOverlay"),
+  { ssr: false },
+);
+const ReferencePickerOverlay = lazyOverlay(
+  () => import("@/features/overlays/components/ReferencePickerOverlay"),
   { ssr: false },
 );
 const SurfaceContextInspectorWindow = lazyOverlay(
@@ -1335,6 +1343,9 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "sourceInspectorWindow"),
     ),
     findReplace: useAppSelector((s) => selectIsOverlayOpen(s, "findReplace")),
+    referencePicker: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "referencePicker"),
+    ),
     surfaceContextInspector: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextInspector"),
     ),
@@ -1411,6 +1422,9 @@ export default function OverlayController() {
     ),
     characterCounterWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "characterCounterWindow"),
+    ),
+    dailySpendWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "dailySpendWindow"),
     ),
     convertToShapeWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "convertToShapeWindow"),
@@ -1719,6 +1733,9 @@ export default function OverlayController() {
     findReplace: useAppSelector((s) =>
       selectOverlayData(s, "findReplace"),
     ) as Record<string, unknown> | null,
+    referencePicker: useAppSelector((s) =>
+      selectOverlayData(s, "referencePicker"),
+    ) as Record<string, unknown> | null,
     surfaceContextInspector: useAppSelector((s) =>
       selectOverlayData(s, "surfaceContextInspector"),
     ) as Record<string, unknown> | null,
@@ -1814,6 +1831,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     characterCounterWindow: useAppSelector((s) =>
       selectOverlayData(s, "characterCounterWindow"),
+    ) as Record<string, unknown> | null,
+    dailySpendWindow: useAppSelector((s) =>
+      selectOverlayData(s, "dailySpendWindow"),
     ) as Record<string, unknown> | null,
     convertToShapeWindow: useAppSelector((s) =>
       selectOverlayData(s, "convertToShapeWindow"),
@@ -4810,6 +4830,20 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* dailySpendWindow */}
+      {(() => {
+        const isOpen = isOpenById.dailySpendWindow;
+        if (!isOpen) return null;
+        return (
+          <DailySpendWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "dailySpendWindow" }))
+            }
+          />
+        );
+      })()}
+
       {/* convertToShapeWindow */}
       {(() => {
         const isOpen = isOpenById.convertToShapeWindow;
@@ -6507,6 +6541,28 @@ export default function OverlayController() {
                 ? data.callbackGroupId
                 : null
             }
+          />
+        );
+      })()}
+
+      {/* referencePicker */}
+      {(() => {
+        const isOpen = isOpenById.referencePicker;
+        const data = dataById.referencePicker as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <ReferencePickerOverlay
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "referencePicker" }))
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            mode={data?.mode === "insert" ? "insert" : "copy"}
           />
         );
       })()}

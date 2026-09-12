@@ -1,0 +1,7 @@
+{
+  "_law": "Arman, 2026-09-10: \"Never an env var. Env values are only for secrets, not for controlling behavior.\"",
+  "_rule": "THIS LIST ONLY SHRINKS, AND IT IS NOW EMPTY. It was seeded 2026-09-11 with the 15 behavioural env toggles that existed that day; LANE D of the Unified Settings Platform drained all 15 the same day (register USP-035 / USP-085) — one became a platform.feature_knob row, most became real CLI flags, the rest were deleted with the dead code or the unsafe bypass that carried them. Every BEHAVIOUR finding from here on is therefore NEW and fails the guard. Adding an entry here is the defect this guard exists to catch: convert it or delete it instead.",
+  "_how": "`pnpm check:settings-env-toggles --write` removes entries that no longer exist in the tree. It cannot add one.",
+  "_baselined": "2026-09-11",
+  "entries": []
+}

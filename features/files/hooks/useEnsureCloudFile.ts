@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { BackendApiError } from "@/lib/api/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
@@ -44,6 +45,20 @@ interface RequestState {
   status: Extract<EnsureCloudFileStatus, "missing" | "error">;
   error: string | null;
   readError: unknown;
+}
+
+/**
+ * A durable message can outlive a file grant or deletion. The files endpoint
+ * deliberately returns this typed state and consumers render an unavailable
+ * file/access gate; treating it as a console failure recreates a false
+ * production incident after the API capture boundary already excluded it.
+ */
+export function isExpectedUnavailableFileRead(error: unknown): boolean {
+  return (
+    error instanceof BackendApiError &&
+    ((error.status === 403 && error.code === "permission_denied") ||
+      (error.status === 404 && error.code === "file_not_found"))
+  );
 }
 
 export function useEnsureCloudFile(
@@ -92,11 +107,18 @@ export function useEnsureCloudFile(
           requestError instanceof Error
             ? requestError.message
             : "The file metadata could not be loaded.";
-        console.error(
-          "[files] useEnsureCloudFile: the file row could not be read:",
-          fileId,
-          requestError,
-        );
+        if (isExpectedUnavailableFileRead(requestError)) {
+          console.warn(
+            "[files] useEnsureCloudFile: referenced file is unavailable to this viewer:",
+            fileId,
+          );
+        } else {
+          console.error(
+            "[files] useEnsureCloudFile: the file row could not be read:",
+            fileId,
+            requestError,
+          );
+        }
         setRequestState({
           key: requestKey,
           status: "error",

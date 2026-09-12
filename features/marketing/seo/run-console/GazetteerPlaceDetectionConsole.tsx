@@ -50,14 +50,11 @@ import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/Surfa
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { RunConsoleLiveState } from "./run-console-scope";
 import type { PlaceDetectionRunOutcome } from "./types";
+import { formatRelativeTime } from "@/utils/datetime";
 
 function age(iso: string | null): string {
   if (!iso) return "never";
-  const ms = Date.now() - new Date(iso).getTime();
-  const hours = ms / 3_600_000;
-  if (hours < 1) return `${Math.max(1, Math.round(ms / 60_000))} min ago`;
-  if (hours < 48) return `${Math.round(hours)} h ago`;
-  return `${Math.round(hours / 24)} d ago`;
+  return formatRelativeTime(iso, { style: "short", fallback: "never" });
 }
 
 export function GazetteerPlaceDetectionConsole({

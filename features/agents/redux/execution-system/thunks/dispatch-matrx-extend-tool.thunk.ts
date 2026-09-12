@@ -35,7 +35,26 @@ export const dispatchMatrxExtendTool = createAsyncThunk<
     try {
       const invocation = await invokeMatrxExtendTool(toolName, args);
       if (!invocation.handled) {
-        const message = `Client has no handler for tool '${toolName}'.`;
+        // TWO VERY DIFFERENT FACTS, AND THE MODEL NEEDS TO KNOW WHICH.
+        // `invokeMatrxExtendTool` already distinguishes "no Matrx Extend is
+        // installed or reachable in this browser" from "Matrx Extend is here
+        // and does not own this tool name" — and this dispatcher used to
+        // collapse both into one generic sentence, keeping the real reason in
+        // Redux where only a developer could see it. That is the W49 class
+        // (2026-09-12): a delegated tool whose owner is absent must come back
+        // with something the model can ACT on, naming what is missing and what
+        // would fix it. Same rule, different absent owner.
+        const message =
+          invocation.reason === "matrx_extend_unavailable"
+            ? `'${toolName}' runs inside the Matrx Extend browser extension, and no ` +
+              `Matrx Extend is installed or reachable in this browser right now. ` +
+              `Nothing ran and nothing was changed. Tell the user plainly, and ask ` +
+              `them to install or enable Matrx Extend and reload this page — or ` +
+              `take a route that does not need the extension.`
+            : `Matrx Extend is installed here, but it does not own a tool named ` +
+              `'${toolName}', so nothing ran and nothing was changed. Do not retry ` +
+              `the same name: use a tool that is actually offered this turn, or ` +
+              `tell the user this capability is not available on this browser.`;
         dispatch(
           upsertToolLifecycle({
             requestId,

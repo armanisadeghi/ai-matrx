@@ -120,6 +120,14 @@ export interface FacetBackfillResult {
   ceiling_reached: boolean;
   queue_pending: number;
   queue_deferred: number;
+  /**
+   * How much of `queue_pending` is the historical click tail (`demand_tier` 1,
+   * aidream migration 0645): keywords that earned Search Console clicks at some
+   * point but have none inside the demand window. They are claimed strictly
+   * behind live demand, so a deep queue and a backlog of live demand are no
+   * longer the same number.
+   */
+  queue_tail_pending?: number;
   pending_clicks: number;
   error: string | null;
   top_phrases: string[];
@@ -145,6 +153,8 @@ export const FACET_BACKFILL_PATH = "/seo/keywords/classification/backfill";
  */
 export const FACET_BACKFILL_STAGES: Record<string, string> = {
   "seo.backfill_refreshed": "Re-measuring Search Console demand…",
+  "seo.backfill_click_tail":
+    "Enrolling keywords that used to earn clicks and stopped…",
   "seo.backfill_claimed": "Claiming the highest-demand keywords…",
   "seo.backfill_ceiling_reached": "Today's classification ceiling is reached",
   "seo.backfill_settled": "Saving what this pass classified…",

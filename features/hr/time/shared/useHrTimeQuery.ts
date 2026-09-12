@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { hrMockEnabled, type HrFixtureCase } from "@/features/hr/mock/transport";
 import { HrRpcError } from "../api/rpc";
 
 /**
@@ -30,7 +30,7 @@ import { HrRpcError } from "../api/rpc";
  */
 export function useHrMockCase(): HrFixtureCase | undefined {
   const params = useSearchParams();
-  if (!HR_MOCK_ENABLED) return undefined;
+  if (!hrMockEnabled()) return undefined;
   const raw = params.get("mockCase");
   if (raw === "happy" || raw === "empty" || raw === "error" || raw === "edge") return raw;
   return undefined;

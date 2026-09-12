@@ -12,6 +12,7 @@ Status: **live**. Owns app-level error boundaries, explicit chunk-load recovery,
 |---|---|---|
 | Prevention | Vercel **native Skew Protection** (Project Settings → Advanced — NOT `next.config.js deploymentId`, which is broken under Turbopack; see the comment at `next.config.js` `deploymentId`) | Old deployments keep serving their own chunks; stale tabs mostly never error. |
 | Proactive prompt | `NewVersionWatcher.tsx` (mounted in `app/layout.tsx`) | Bakes this deployment's `VERCEL_DEPLOYMENT_ID` in server-side, polls `app/api/version/route.ts` (custom fetches are not pinned by skew protection → always answers from the latest deploy), and on mismatch shows the sonner toast: "A new version is available — Refresh to see the latest changes" with **Refresh / Not now** (30-min snooze). |
+| Directed prompt | `refresh-directive.ts` + the `matrx:refresh-required` window event | The platform client-directive channel's `refresh_required` (server-published on `matrx-server-bus:*`, received by `components/client-directives/PlatformDirectiveSubscriber.tsx`) lands in the SAME toast with optional operator copy. It is an ask, not a command: there is no code path from a directive to `location.reload()`. Contract: `../../../common-docs/systems/platform/realtime/CLIENT-DIRECTIVES.md`. |
 | Pre-hydration guard | `ChunkRecoveryBootScript.tsx` (inline `<head>` script) | Explicit chunk fetch failure **before** React boots → one loop-guarded reload (lossless). **After** boot (`__MATRX_APP_BOOTED__`, set by `NewVersionWatcher`) → dispatches `matrx:chunk-load-error`; the watcher offers a cause-neutral Refresh prompt. |
 | Boundaries | `ErrorBoundaryView.tsx` (all route `error.tsx` delegate here), `app/global-error.tsx`, `MarkdownErrorBoundary.tsx` | Explicit chunk-load failure → calm recovery prompt/event, never an Error Inspector render defect. Non-chunk errors → normal error UI + one structured `react-render` capture; the DevTools scream uses `mirrorCapturedErrorToConsole`, never a second durable `console-error`. |
 | Detection helpers | `chunk-load-recovery.ts` | `CHUNK_LOAD_ERROR_PATTERNS` (THE explicit-fetch pattern set), `hasChunkLoadErrorSignature()`, `isChunkLoadError()`, `notifyChunkLoadError()`, `CHUNK_LOAD_ERROR_EVENT`, `APP_BOOTED_FLAG`. Generic runtime errors never enter this path. The boot script is the ONE allowed inline pattern copy; keep it in sync. |
@@ -29,6 +30,8 @@ Status: **live**. Owns app-level error boundaries, explicit chunk-load recovery,
 - **Visible Sonner toast cards restore `pointer-events: auto`.** Modal drawers disable body hit-testing; without this override, a toast paints above the sheet while taps pass through it.
 
 ## Change Log
+
+- 2026-09-11 — `refresh_required` off the platform client-directive channel becomes the third prompt path (`refresh-directive.ts`); same toast, same never-on-its-own law; works without a deployment id (local too).
 
 - 2026-09-02 — Route boundaries mirror their already structured render capture to DevTools without producing a duplicate durable `console-error` row.
 - 2026-08-27 — Excluded Next's exact successful RSC-to-document navigation fallback from durable error capture while retaining nearby application fetch failures.

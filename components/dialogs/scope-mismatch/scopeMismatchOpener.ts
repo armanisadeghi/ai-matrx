@@ -2,16 +2,19 @@
  * components/dialogs/scope-mismatch/scopeMismatchOpener.ts
  *
  * Pure-TS imperative API for the global chat↔scope mismatch dialog — the
- * 3-way "ask on mismatch" pre-send gate (see
- * features/scopes/utils/scopeMismatch.ts for the decision logic). Zero
- * React, zero dialog markup; statically importable from thunks, hooks,
- * and async handlers.
+ * 3-way "ask on mismatch" pre-send gate (decision logic lives in
+ * `features/scopes/utils/scopeMismatch.ts`). Zero React, zero dialog markup;
+ * statically importable from thunks, hooks and async handlers.
  *
- * Same host/queue contract as `confirm` (confirm/confirmDialogOpener.ts)
- * and `promptForValues` (value-prompts/valuePromptsOpener.ts): the host
- * registers on mount; calls made before hydration queue and resolve once
- * the host is alive. One dialog at a time; concurrent calls queue.
+ * THE MACHINERY IS NOT OURS. The host registry, the request queue, the
+ * pre-hydration queueing and the never-a-silent-default promise come from
+ * `@ai-matrx/kit/opener` — the same engine behind `confirm()`. This file used
+ * to hand-roll them in module-level state, which silently splits host
+ * registration from its callers across loader graphs. Never re-implement it
+ * here.
  */
+
+import { createOpener } from "@ai-matrx/kit/opener";
 
 import type {
   ScopeMismatchChoice,
@@ -25,33 +28,12 @@ export interface ScopeMismatchRequest {
   chat: ScopeMismatchDisplayItem[];
 }
 
-type Resolver = (choice: ScopeMismatchChoice) => void;
-
-interface PendingRequest {
-  req: ScopeMismatchRequest;
-  resolve: Resolver;
-}
-
-interface HostController {
-  show: (req: ScopeMismatchRequest, resolve: Resolver) => void;
-}
-
-let host: HostController | null = null;
-const queue: PendingRequest[] = [];
-
-/** @internal Called by `ScopeMismatchDialogHostImpl` on mount. */
-export function _registerHost(controller: HostController): void {
-  host = controller;
-  while (queue.length > 0) {
-    const next = queue.shift()!;
-    controller.show(next.req, next.resolve);
-  }
-}
-
-/** @internal Called by `ScopeMismatchDialogHostImpl` on unmount. */
-export function _unregisterHost(controller: HostController): void {
-  if (host === controller) host = null;
-}
+export const scopeMismatchOpener = createOpener<
+  ScopeMismatchRequest,
+  ScopeMismatchChoice
+>("matrx-frontend.scope-mismatch-opener-state", {
+  hostHint: "<ScopeMismatchDialogHost /> (mounted once in app/Providers.tsx)",
+});
 
 /**
  * Imperative 3-way mismatch prompt. Resolves with the user's choice:
@@ -62,11 +44,5 @@ export function _unregisterHost(controller: HostController): void {
 export function promptScopeMismatch(
   req: ScopeMismatchRequest,
 ): Promise<ScopeMismatchChoice> {
-  return new Promise<ScopeMismatchChoice>((resolve) => {
-    if (host) {
-      host.show(req, resolve);
-    } else {
-      queue.push({ req, resolve });
-    }
-  });
+  return scopeMismatchOpener.open(req);
 }

@@ -481,7 +481,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "analytics_totals",
     label: "Analytics: platform totals",
     description:
-      "Sum across every loaded app: totalExecutions, totalUniqueUsers, totalCost, totalTokens. Absent outside the analytics section.",
+      "Sum across every loaded app: totalExecutions, totalUniqueUsers, totalCost, totalTokens — plus appsMissing* counts saying how many apps reported nothing for each, which makes the matching total a floor rather than a measurement. Absent outside the analytics section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 100,
@@ -492,7 +492,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "analytics_overall_success_rate",
     label: "Analytics: overall success rate",
     description:
-      "Execution-weighted success rate across all apps, as a percentage (0-100). Absent outside the analytics section.",
+      "Execution-weighted success rate across all apps, as a percentage (0-100), computed over only the apps that report BOTH a rate and an execution count. Absent outside the analytics section, and absent when no app reports both.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 6,
@@ -907,6 +907,16 @@ export function createAdminAgentAppsScope(values: {
     totalUniqueUsers: number;
     totalCost: number;
     totalTokens: number;
+    /**
+     * How many loaded apps reported NOTHING for each counter. A sum that
+     * silently swallowed a null is a lie the agent cannot detect, so the
+     * totals carry their own incompleteness: any non-zero count here means
+     * the matching total is a floor, not a measurement.
+     */
+    appsMissingExecutions: number;
+    appsMissingUniqueUsers: number;
+    appsMissingCost: number;
+    appsMissingTokens: number;
   };
   analytics_overall_success_rate?: number;
   analytics_per_app_rows?: (AdminAgentAppsListRow & {

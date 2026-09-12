@@ -19,6 +19,12 @@
  *    model to retry the exact write the user just refused.
  *  - refused/failed → is_error TRUE. `applySurfaceWrite` already reported it
  *    loudly (toast + captureError); the error message tells the model why.
+ *  - nothing open can apply it → is_error TRUE with `reason:
+ *    "surface_not_available"`. Wall W49 (2026-09-12): the conversation outlives
+ *    the page it was launched from, so this tool can be armed on a tab (a plain
+ *    `/chat/<id>`) that mounts no surface at all. The page says so on screen
+ *    with the remedy, and the model is handed the same sentence — it must
+ *    report the write did not happen, never narrate a success.
  *
  * The instance is flipped to `paused` while the seam runs — an `ask` target
  * awaits a human, and `paused` is the honest state for that window (same
@@ -31,6 +37,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
 import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { resolveAgentName } from "@/features/surfaces/hooks/useAgentNames";
 import { requestInlineApproval } from "@/features/agents/ui-first-tools/redux/request-approval";
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
@@ -118,8 +125,12 @@ export const dispatchSurfaceWrite = createAsyncThunk<
     try {
       const state = getState();
       const agentId = state.conversations.byConversationId[conversationId]?.agentId;
+      // Resolve through the SAME module-cached lookup the header uses
+      // (useAgentNames) so this never opens a second fetch path; fall back
+      // to the agent-definition slice, which may already be hydrated.
       const actorLabel = agentId
-        ? selectAgentById(state, agentId)?.name
+        ? (await resolveAgentName(agentId)) ??
+          selectAgentById(state, agentId)?.name
         : undefined;
 
       const result = await applySurfaceWrite(target, args.value, {
@@ -187,6 +198,26 @@ export const dispatchSurfaceWrite = createAsyncThunk<
           message: result.error,
           ...(result.instructions ? { instructions: result.instructions } : {}),
         });
+        return;
+      }
+
+      if (result.unapplicable) {
+        // NOTHING OPEN CAN APPLY IT (wall W49). The conversation outlives the
+        // page it was started on: a Conductor launched from `/masterwork/<id>/
+        // conduct` keeps this tool armed when the user follows its own "open
+        // the full conversation in a new tab" link to `/chat/<id>`, which
+        // mounts no surface. The seam has already said so on screen with the
+        // remedy; the model gets the SAME sentence under its own reason code
+        // so it tells the user the write did not happen instead of narrating
+        // a success it never had.
+        finish(
+          {
+            ok: false,
+            reason: "surface_not_available",
+            message: result.error,
+          },
+          result.error,
+        );
         return;
       }
 

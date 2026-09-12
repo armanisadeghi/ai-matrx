@@ -254,25 +254,28 @@ describe("surfaceDelegatedToolCall", () => {
       "no tool result was submitted for the orphaned live call",
     );
 
-    expect(mockSubmitted).toEqual([
-      {
+    // W49 class (2026-09-12): the answer must NAME the absent owner and the
+    // remedy. "Client has no handler" told the model nothing it could act on.
+    expect(mockSubmitted).toHaveLength(1);
+    const [submitted] = mockSubmitted;
+    expect(submitted).toEqual(
+      expect.objectContaining({
         conversationId: CONVERSATION_ID,
         call_id: CALL_ID,
         tool_name: "local_file_ops",
         is_error: true,
-        output: {
-          ok: false,
-          reason: "unsupported_client_tool",
-          message: "Client has no handler for tool 'local_file_ops'.",
-        },
-        error_message: "Client has no handler for tool 'local_file_ops'.",
-      },
-    ]);
+      }),
+    );
+    const answer = (submitted as { output: { message: string } }).output.message;
+    expect(answer).toContain("Matrx Local");
+    expect(answer).toContain("no desktop is connected");
+    expect(answer).toContain("Nothing ran");
+    expect((submitted as { error_message: string }).error_message).toBe(answer);
     expect(requestRow(store).toolLifecycle[CALL_ID]).toEqual(
       expect.objectContaining({
         status: "error",
         errorType: "unsupported_client_tool",
-        errorMessage: "Client has no handler for tool 'local_file_ops'.",
+        errorMessage: answer,
       }),
     );
     expect(mockWatches).toEqual([]);

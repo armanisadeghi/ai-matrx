@@ -22,6 +22,7 @@ import {
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { launchAgentExecution } from "./launch-agent-execution.thunk";
 import { runHeadlessAgentJson } from "./run-headless-agent-json";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface BaseExtractionPayload {
   /** System agent key (e.g. `prompt-app-auto-create`) — maps to a mandate key. */
@@ -116,9 +117,9 @@ async function waitForAgentCompletion(
     }
   }
 
-  const elapsed = Math.round((Date.now() - startTime) / 1000);
+  const elapsed = formatDurationMs(Date.now() - startTime, { style: "compact" });
   throw new Error(
-    `AI response timed out after ${elapsed} seconds. ` +
+    `AI response timed out after ${elapsed}. ` +
       "If you switched browser tabs during this process, that may have caused the connection to be suspended. " +
       "Please keep this tab active and try again.",
   );

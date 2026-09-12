@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Unplug,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -262,7 +262,14 @@ export function GoogleWorkspaceReviewWorkspace({
       );
       await inventory.refetch();
       setSelectedResourceId(registered.id);
-      toast.success(`${registered.name} is ready.`);
+      recordToast.success(
+        {
+          type: "google_workspace_resource",
+          id: registered.id,
+          title: registered.name,
+        },
+        `${registered.name} is ready.`,
+      );
     });
   };
 

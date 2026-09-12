@@ -2,7 +2,11 @@
 
 export const contentBlocksConfig = {
     // Whether to use database-driven content blocks instead of static ones
-    useDatabase: process.env.NEXT_PUBLIC_USE_DATABASE_CONTENT_BLOCKS !== 'false', // Default to true now that DB is set up
+    // UNFINISHED, NOT DEAD: nothing imports this config yet — it is waiting to be
+    // wired to the content-blocks surface (/policies/unfinished-work-alarm.md).
+    // The two env switches that used to live here are gone: an env var may not
+    // control behaviour (Arman, 2026-09-10). Both become knobs when this is wired.
+    useDatabase: true,
     
     // Auto-refresh interval for database content (in milliseconds)
     autoRefreshInterval: 5 * 60 * 1000, // 5 minutes
@@ -22,7 +26,7 @@ export const contentBlocksConfig = {
     // Feature flags
     features: {
         // Enable the admin management interface
-        enableAdminInterface: process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_CONTENT_BLOCKS_ADMIN === 'true',
+        enableAdminInterface: process.env.NODE_ENV === 'development',
         
         // Enable real-time updates (if using Supabase realtime)
         enableRealTimeUpdates: false,

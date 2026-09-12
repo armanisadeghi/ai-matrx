@@ -13,6 +13,11 @@ import {
 } from "@/utils/browser-compat";
 import type { User } from "@supabase/supabase-js";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM".
+import { getInitials } from "@ai-matrx/kit/format";
 
 const BUTTON_CLASS =
   "w-full sm:w-auto text-base border border-zinc-300 dark:border-zinc-700 min-w-[140px]";
@@ -63,12 +68,7 @@ export function AuthAwareButton() {
     user.user_metadata?.name ||
     (user.email ? user.email.split("@")[0] : "User");
 
-  const initials = displayName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = getInitials(displayName);
 
   return (
     <Button

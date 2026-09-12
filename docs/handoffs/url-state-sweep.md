@@ -49,8 +49,8 @@ sub-view, date range, grouping, scope selectors (mine / shared / org / public).
 
 - **ONE dev server, machine-wide:** `pnpm preview:start` (port 3001) /
   `pnpm preview:stop`. Never `pnpm dev`. Never a second server.
-- **Log in:** `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/<route>` (token is in
-  `.env.local`), or `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>` at `/login`.
+- **Log in:** the nonce handshake — `openssl rand -hex 16 > .dev-login-nonce`, then
+  `/api/dev-login?nonce=<that value>&next=/<route>` — or `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>` at `/login`.
 - Use the provider's in-app browser, not the user's Chrome.
 
 ### 🚨 Verification traps that will lie to you

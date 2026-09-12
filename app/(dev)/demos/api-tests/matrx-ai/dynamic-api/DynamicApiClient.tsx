@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { extractErrorMessage } from "@/utils/errors";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   Tooltip,
   TooltipContent,
@@ -1091,12 +1094,14 @@ export default function DynamicApiClient() {
                 {timing.end && elapsedMs !== null && (
                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
                     <Clock className="h-3 w-3" />
-                    {(elapsedMs / 1000).toFixed(2)}s
+                    {formatDurationMs(elapsedMs, { style: "compact" })}
                   </span>
                 )}
                 {isRunning && timing.start && !timing.end && (
                   <span className="text-[10px] text-muted-foreground font-mono">
-                    {((Date.now() - timing.start) / 1000).toFixed(1)}s…
+                    {formatDurationMs(Date.now() - timing.start, {
+                      style: "compact",
+                    })}…
                   </span>
                 )}
                 <div className="ml-auto">
@@ -1141,9 +1146,7 @@ export default function DynamicApiClient() {
                 >
                   <div className="flex justify-between flex-shrink-0 mb-1">
                     <span className="text-[10px] text-muted-foreground">
-                      {responseBody
-                        ? `${(responseBody.length / 1024).toFixed(1)} KB`
-                        : ""}
+                      {responseBody ? formatFileSize(responseBody.length) : ""}
                     </span>
                     <CopyButton
                       text={responseBody ? tryPrettyJson(responseBody) : ""}

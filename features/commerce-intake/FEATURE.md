@@ -126,6 +126,12 @@ uniqueness forbids the duplicate row by design; re-scan now opens the existing a
   repoints them at `Database["commerce"]` and deletes the casts (labels/service.ts +
   the `/l/[code]` page).
 
+**Related:** printing is a platform hub, not a commerce feature — the label sheets, QR and
+barcode generators, ZPL export, and the label template registry these surfaces use are all
+indexed at `/print` ([`features/print/FEATURE.md`](../print/FEATURE.md)). `/commerce/labels`
+and `/commerce/labels/printers` are linked FROM that hub and carry a "Print hub" link back;
+never fork a printer here.
+
 ## Printer certification (2026-08-31 — `labels/printers/` module)
 
 `commerce.certified_printer` (applied + certified live 2026-08-31,
@@ -170,6 +176,39 @@ Arman in the loop.
   printer is the normal case, and a super-admin gate here would be over-tightening (db-rules §6).
 - Every write carries an EXPLICIT `organization_id` from `selectEffectiveOrganizationId`; the
   wizard refuses with a named remedy when no org or no signed-in user is present.
+
+### The failed-printer gate at print time — a KNOB, never a block in code
+
+`useFailedPrinterGate` + `PrinterCertificationNotice` (`labels/printers/`) sit in BOTH real print
+flows — `PrintLabelDialog` (asset detail) and `LabelBatchDetail` (print run). They read this org's
+live certifications for the stock in hand (`listCertificationsForTemplate`, complete by
+`readAllRows`) and the org-configurable knob
+**`commerce.printer_certification` / `failed_printer_behavior`** (enum `warn` | `block`, platform
+default **`warn`**, `overridable_by = {organization}`, registered live with a 2026-10-26 review)
+through the canonical client path (`useScopedKnobs` → `platform.knob_index`). Arman, 2026-09-11:
+*"I don't want us to keep putting these live money gates up… settings and configurations that do
+it."*
+
+The physical printer is chosen in the OS print dialog, which no web page can see — so the flows
+ask **which printer** only when this org holds certifications for that stock, remember the answer
+per device, and default to "A printer we have not certified" rather than guessing.
+
+| Knob | On screen |
+|---|---|
+| `warn` (default) | A loud warning naming the printer, the stock and every check answered No, what it costs (misaligned labels, wasted stock), and a door to `/commerce/labels/printers`. **The print goes through.** |
+| `block` | The Print button stays live (never disabled-looking): the click is refused with a toast, and the banner says printing is blocked because the org set failed printers to *Block printing*, linking **Organization settings → Configuration** (`/organizations/[orgId]/settings/configuration`). |
+| Knob unreadable — RPC error, row not registered, unrecognised value, or no active org | A warning banner says which of those happened and what to do, and the gate falls back to the SAFE honest behaviour **warn**. Never a hand-rolled default constant. |
+
+While either read is in flight the notice says so and a print click is refused with "still
+checking" — never a dead control. **Calibration and PDF are never gated**: the calibration page is
+the remedy and prints on plain paper. In `PrintLabelDialog` the refusal runs BEFORE a code is
+claimed, so a blocked print never burns a label code. The forcing test is
+`labels/printers/__tests__/failed-printer-gate.test.tsx` (block claims no code and sends nothing to
+the printer; warn on the same failed printer does both) — proven RED with the refusal removed.
+
+The `/print` hub deliberately does not fork these surfaces (it links to them) and its ZPL section
+generates sample text with no print action, so the gate lives only on the two flows above.
+Mechanism: `../../../common-docs/systems/platform/feature-knobs/FEATURE.md`.
 
 ## The two ironclad write rules
 
@@ -230,8 +269,9 @@ features/commerce-intake/
     ImportIdentifiersDialog)
     printers/                         printer certification (see § Printer certification):
       types.ts (row projection + CERTIFICATION_CHECKS) · service.ts · columns/listConfig/
-      useCertifiedPrinterRowActions · components/ (CertifyPrinterWizard,
-      CertifiedPrintersPage, TemplatePreviewButton)
+      useCertifiedPrinterRowActions · useFailedPrinterGate (the print-time gate
+      + its knob) · components/ (CertifyPrinterWizard, CertifiedPrintersPage,
+      TemplatePreviewButton, PrinterCertificationNotice)
 app/(core)/commerce/intake/           capture (ssr:false client boundary) + assets + answer + admin
 app/(core)/commerce/labels/           batches list + [batchId] print-run detail
 app/(public)/l/[code]/                the public label resolver (thin redirect)
@@ -276,6 +316,18 @@ On a phone, logged into an org:
    working; notes and voice keep working.
 
 ## Change log
+
+- 2026-09-11 — **The failed-printer gate is a knob, not a refusal in code** (Arman's ruling the
+  same day: stop putting live gates in the code, make them settings that show what is happening).
+  Both label print flows mount `useFailedPrinterGate` + `PrinterCertificationNotice`: this org's
+  certifications for the stock in hand, a per-device "Printing on" choice when any exist, and the
+  behaviour read from `commerce.printer_certification / failed_printer_behavior` (`warn` default,
+  `block` opt-in) via `useScopedKnobs`. Warn = loud in-place warning naming printer, stock and the
+  failed checks with the print still going through; block = an honest refusal naming the setting
+  and linking Organization settings → Configuration; unreadable knob = say so on screen and fall
+  back to warn (no fallback constant). Calibration and PDF stay ungated, and the refusal runs
+  before a code is claimed. Forcing test proven failing-then-passing; `pnpm type-check` clean on
+  these files.
 
 - 2026-08-31 — **Printer certification** (Arman's recorded wish P8). `commerce.certified_printer`
   via `platform.create_entity_table` (`iam.canonical_certify_ok` true in-migration;

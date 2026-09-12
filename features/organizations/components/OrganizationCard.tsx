@@ -40,10 +40,9 @@ interface OrganizationCardProps {
  *
  * Features:
  * - Shows org name, description, member count
- * - Role badge (Owner/Admin/Member/Personal)
+ * - Role badge (Owner/Admin/Member) — always the viewer's real role
  * - Quick action buttons based on role
  * - Explicit keyboard-accessible action to navigate to org settings
- * - Special styling for personal orgs
  */
 export function OrganizationCard({
   organization,
@@ -56,20 +55,15 @@ export function OrganizationCard({
   const navigate = useSettingsNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const isPersonal = organization.isPersonal;
+  // `isPersonalOrg` answers ONE question: is this somebody's private workspace,
+  // which the platform does not let outsiders administer? It gates ACTIONS only.
+  // It never changes what this card SAYS — the name, the abbreviation and the
+  // role badge are the organization's own, on every card, for every viewer.
+  const isPersonalOrg = organization.isPersonal;
   const role = organization.role;
 
-  // Get role icon and color
+  // Get role icon and color. Every organization shows the viewer's REAL role.
   const getRoleDisplay = () => {
-    if (isPersonal) {
-      return {
-        icon: <UserIcon className="h-3 w-3" />,
-        label: "Personal",
-        color:
-          "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-      };
-    }
-
     switch (role) {
       case "owner":
         return {
@@ -121,8 +115,6 @@ export function OrganizationCard({
     <Card
       className={cn(
         "p-5 transition-all duration-200 hover:shadow-md cursor-pointer group",
-        isPersonal &&
-          "border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10",
         isNavigating && "opacity-50 pointer-events-none",
       )}
       onClick={handleNavigate}
@@ -135,9 +127,7 @@ export function OrganizationCard({
             <div
               className={cn(
                 "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center",
-                isPersonal
-                  ? "bg-purple-100 dark:bg-purple-900/50"
-                  : "bg-blue-100 dark:bg-blue-900/50",
+                "bg-blue-100 dark:bg-blue-900/50",
               )}
             >
               <InlineMediaRef
@@ -150,9 +140,7 @@ export function OrganizationCard({
                     abbreviation={organization.abbreviation}
                     className={cn(
                       "text-sm",
-                      isPersonal
-                        ? "text-purple-600 dark:text-purple-400"
-                        : "text-blue-600 dark:text-blue-400",
+                      "text-blue-600 dark:text-blue-400",
                     )}
                   />
                 }
@@ -234,7 +222,7 @@ export function OrganizationCard({
               })
             }
           />
-          {canManageSettings && !isPersonal && (
+          {canManageSettings && !isPersonalOrg && (
             <Button
               asChild
               variant="ghost"
@@ -254,7 +242,7 @@ export function OrganizationCard({
             </Button>
           )}
 
-          {isPersonal && (
+          {isPersonalOrg && (
             <Button
               asChild
               variant="ghost"
@@ -274,7 +262,7 @@ export function OrganizationCard({
             </Button>
           )}
 
-          {!canManageSettings && !isPersonal && (
+          {!canManageSettings && !isPersonalOrg && (
             <Button
               asChild
               variant="ghost"

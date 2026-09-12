@@ -29,7 +29,7 @@
  * A shape assertion would pass on a UI that renders the right fields with the wrong meaning. These
  * are the meanings.
  *
- * RUN: `NEXT_PUBLIC_HR_MOCK=1 npx tsx features/hr/time/periods/__checks__/non-browser-contracts.ts`
+ * RUN: `npx tsx features/hr/time/periods/__checks__/non-browser-contracts.ts` (arms the mock lane itself)
  * (the script loads `.env.local` itself, because `features/hr/time/api/rpc.ts` imports the Supabase
  * browser client at module scope — see the DEBT note at the foot of this file).
  */
@@ -50,12 +50,13 @@ if (existsSync(envPath)) {
     if (!(match[1] in process.env)) process.env[match[1]] = value;
   }
 }
-process.env.NEXT_PUBLIC_HR_MOCK = "1";
 
 async function main(): Promise<void> {
   // Imported AFTER the env is populated, so the module-scope Supabase client can construct.
+  const { armHrMockLane, serveFromFixtures } = await import("@/features/hr/mock/transport");
+  // The mock lane is armed in code by the check that needs it (USD-5: never an env var).
+  armHrMockLane();
   const { callHrTimeRpc } = await import("@/features/hr/time/api/rpc");
-  const { serveFromFixtures } = await import("@/features/hr/mock/transport");
   const { HR_TIME_RPC_FIXTURES } = await import(
     "@/features/hr/time/api/mock/registry"
   );

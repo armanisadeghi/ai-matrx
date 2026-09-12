@@ -21,7 +21,8 @@ import {
     renderCropToCanvas,
     snapPointToAnchor,
 } from "../utils/compute-crop";
-import { formatBytes, formatDimensions } from "../utils/format-bytes";
+import { formatDimensions } from "../utils/format-dimensions";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface CropPreviewProps {
     sourceUrl: string | null;
@@ -252,7 +253,7 @@ export function CropPreview({
                         <span>Source</span>
                         <span className="font-mono normal-case text-muted-foreground/80">
                             {formatDimensions(sourceWidth, sourceHeight)}
-                            {sourceBytes != null && ` · ${formatBytes(sourceBytes)}`}
+                            {sourceBytes != null && ` · ${formatFileSize(sourceBytes)}`}
                         </span>
                     </p>
                     <div className="relative flex-1 min-h-0 rounded-lg border border-border bg-[conic-gradient(at_top_left,_rgba(0,0,0,0.08)_0deg,_rgba(0,0,0,0.12)_90deg,_rgba(0,0,0,0.08)_180deg,_rgba(0,0,0,0.12)_270deg)] bg-muted/20 overflow-hidden flex items-center justify-center">

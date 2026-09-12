@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { Activity, Check, Copy, Radio, Trash2 } from "lucide-react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -177,7 +178,7 @@ function RequestBlock({ session }: { session: BatchExtractDebugSession }) {
         <div>
           <span className="text-muted-foreground">Sizes:</span>{" "}
           {session.request.fileSizes
-            .map((s) => `${(s / 1024).toFixed(1)} KB`)
+            .map((s) => formatFileSize(s))
             .join(", ") || "—"}
         </div>
         <div className="col-span-2 break-all">

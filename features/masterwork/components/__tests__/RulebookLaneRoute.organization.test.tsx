@@ -67,6 +67,7 @@ jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
     <>{children}</>
   ),
   useSurfaceClientTools: () => undefined,
+  useSurfaceWriteHandlers: () => undefined,
 }));
 
 let container: HTMLDivElement;

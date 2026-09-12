@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/styles/themes/utils";
-import { formatUsd } from "@/lib/processing-units/units";
+import { formatUsd } from "@ai-matrx/kit/format";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
@@ -104,7 +104,7 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
         <span className="ml-auto flex items-center gap-2 text-[10px] tabular-nums text-muted-foreground">
           <span className="flex items-center gap-0.5">
             <Coins className="h-3 w-3" />
-            {formatUsd(call.cost)}
+            {formatUsd(call.cost, { digits: "adaptive" })}
           </span>
           <span className="flex items-center gap-0.5">
             <Clock className="h-3 w-3" />
@@ -221,7 +221,7 @@ function RunDetail({
         <StatusBadge status={run.status} />
         <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
           {calls.data?.length ?? 0} AI call
-          {(calls.data?.length ?? 0) === 1 ? "" : "s"} · {formatUsd(run.total_cost)}
+          {(calls.data?.length ?? 0) === 1 ? "" : "s"} · {formatUsd(run.total_cost, { digits: "adaptive" })}
         </span>
       </div>
       {run.error_text ? (
@@ -328,7 +328,7 @@ export function RunHistoryPanel() {
                     {run.total_cost > 0 ? (
                       <span className="flex items-center gap-0.5">
                         <Coins className="h-3 w-3" />
-                        {formatUsd(run.total_cost)}
+                        {formatUsd(run.total_cost, { digits: "adaptive" })}
                       </span>
                     ) : null}
                     <span className="flex items-center gap-0.5">

@@ -24,13 +24,11 @@ import {
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
 import { buildPlanRows } from "./plan-model";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 function stepDurationLabel(durationMs: number | null): string | null {
   if (durationMs === null || durationMs <= 0) return null;
-  if (durationMs < 1000) return "<1s";
-  const seconds = Math.round(durationMs / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  return formatDurationMs(durationMs, { style: "compact" });
 }
 
 export function PlanColumn({

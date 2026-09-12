@@ -28,6 +28,7 @@
  * only wraps consecutive items — it never reorders, drops, or duplicates
  * (guarded by foldAgentWork.test.ts alongside interleave-ordering.test.ts).
  */
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export type AgentWorkClass = "work" | "shortText" | "visible";
 
@@ -123,11 +124,10 @@ export function foldAgentWork<T>(
   return out;
 }
 
-/** "26s", "1m 12s" — the header's duration text. */
+/**
+ * "400ms", "26s", "1m 12s" — the header's duration text, in the fleet's one
+ * `compact` voice from `@ai-matrx/kit/format`.
+ */
 export function formatWorkDuration(durationMs: number): string {
-  const totalSeconds = Math.max(1, Math.round(durationMs / 1000));
-  if (totalSeconds < 60) return `${totalSeconds}s`;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  return formatDurationMs(durationMs, { style: "compact" });
 }

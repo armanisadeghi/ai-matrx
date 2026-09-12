@@ -9,9 +9,10 @@ import type {
   GitHubResourceRow,
 } from "./types";
 import { postJson, del as deleteJson } from "@/lib/python-client";
+import { operationFailed } from "@/utils/errors";
 
 const CONNECTION_SELECT =
-  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_item_id, vault_secret_key, deleted_at";
+  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, deleted_at";
 const RESOURCE_SELECT =
   "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata, created_at, updated_at, deleted_at";
 
@@ -65,6 +66,14 @@ export function githubRepositoryFromRow(
 
 export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionInventory> {
   const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  // `users.integration_connections` grants no access to `anon`. This direct
+  // service can also be called outside its hook, so make the last auth check
+  // immediately before constructing the PostgREST query.
+  if (!session?.access_token) return { connection: null, repositories: [] };
+
   const connectionResult = await supabase
     .schema("users")
     .from("integration_connections")
@@ -74,7 +83,12 @@ export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionI
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (connectionResult.error) throw new Error(connectionResult.error.message);
+  if (connectionResult.error) {
+    throw operationFailed(
+      "load your GitHub connection",
+      connectionResult.error,
+    );
+  }
 
   const connection: GitHubConnectionRow | null = connectionResult.data;
   if (!connection) return { connection: null, repositories: [] };

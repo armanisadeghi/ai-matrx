@@ -26,7 +26,7 @@ import {
   streamPdfExtractTextRemote,
 } from "@/features/pdf-extractor/service/streamPdf";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
-import { formatBytes } from "@/features/image-studio/utils/format-bytes";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { fetchYouTubeTranscript } from "./youtubeTranscript";
 import { extractOfficeText } from "./officeExtract";
@@ -85,8 +85,8 @@ function uploadProgressReporter(
       ratio,
       detail:
         total > 0
-          ? `${formatBytes(loaded)} of ${formatBytes(total)}`
-          : formatBytes(loaded),
+          ? `${formatFileSize(loaded)} of ${formatFileSize(total)}`
+          : formatFileSize(loaded),
     });
   };
 }
@@ -285,7 +285,7 @@ export function useIngest(): UseIngestResult {
         phase: "uploading",
         message: `Uploading ${file.name}…`,
         ratio: 0,
-        detail: `0 B of ${formatBytes(file.size)}`,
+        detail: `0 B of ${formatFileSize(file.size)}`,
       });
       const uploaded = await upload(
         { kind: "file", file },

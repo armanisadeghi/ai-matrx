@@ -32,7 +32,10 @@ import type {
   MessageTemplateDB,
 } from "@/features/message-templates/types/message-templates-db";
 import { readMessageTemplateMetadata } from "@/features/message-templates/types/message-templates-db";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -137,7 +140,7 @@ export function QuickMessageTemplateSaveCore({
       let saved: MessageTemplateDB;
       if (mode === "create") {
         saved = await createTemplate({
-          organization_id: requireSelectedOrgId(),
+          organization_id: await ensureOrganizationContext(),
           label: label.trim(),
           content: refine.workingContent.trim(),
           role,

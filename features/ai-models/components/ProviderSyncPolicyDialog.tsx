@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { aiModelService } from "@/features/ai-models/service";
 import type { ProviderSyncPolicy } from "@/features/ai-models/types";
@@ -148,7 +148,10 @@ export default function ProviderSyncPolicyDialog({
         },
       );
       await onSaved(target.providerId, saved);
-      toast.success(`${target.providerName} sync policy saved`);
+      recordToast.success(
+        { type: "ai.provider", id: target.providerId, title: target.providerName },
+        `${target.providerName} sync policy saved`,
+      );
       onClose();
     } catch (err) {
       toast.error(`Could not save the ${target.providerName} sync policy`, {

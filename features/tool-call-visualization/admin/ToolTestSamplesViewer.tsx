@@ -33,6 +33,7 @@ import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -403,7 +404,9 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     {durationMs !== null && (
-                        <span className="font-mono">{(durationMs / 1000).toFixed(2)}s</span>
+                        <span className="font-mono">
+                            {formatDurationMs(durationMs, { style: "compact" })}
+                        </span>
                     )}
                     <span>{formatDistanceToNow(new Date(sample.created_at), { addSuffix: true })}</span>
                 </div>

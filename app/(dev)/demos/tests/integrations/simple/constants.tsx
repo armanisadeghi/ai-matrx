@@ -8,11 +8,11 @@ import {
   FaEvernote, FaDiscord
 } from 'react-icons/fa';
 import { 
-  SiNotion, SiBox, SiAirtable, SiSalesforce, SiZapier, 
-   SiClickup, SiLinear, SiTwilio, 
+  SiNotion, SiBox, SiAirtable, SiZapier, 
+   SiClickup, SiLinear, 
   SiMailgun, SiPostman,  SiMixpanel,
   SiGoogleanalytics, SiGoogleads, SiGooglecloud, 
-  SiDigitalocean, SiHeroku, SiNetlify, SiVercel, SiFirebase,
+  SiDigitalocean, SiNetlify, SiVercel, SiFirebase,
   SiRedis, SiMongodb, SiPostgresql, SiMysql, SiElasticsearch,
   SiFigma
 } from 'react-icons/si';
@@ -26,6 +26,7 @@ import { VscAzure } from "react-icons/vsc";
 import { GiAmplitude } from "react-icons/gi";
 import { MdOutlineSegment } from "react-icons/md";
 import { MdAttachMoney } from "react-icons/md";
+import { CloudCog, MessageSquareText, Cloud } from "lucide-react";
 
 export const CATEGORIES = {
   PRODUCTIVITY: 'Productivity',
@@ -56,7 +57,7 @@ export const INTEGRATIONS: Integration[] = [
   { id: 'zoom', name: 'Zoom', icon: BiLogoZoom, description: 'Connect your Zoom account for meetings', category: CATEGORIES.COMMUNICATION },
   { id: 'intercom', name: 'Intercom', icon: FaIntercom, description: 'Connect your Intercom for customer messaging', category: CATEGORIES.COMMUNICATION },
   { id: 'discord', name: 'Discord', icon: FaDiscord, description: 'Connect your Discord server', category: CATEGORIES.COMMUNICATION },
-  { id: 'twilio', name: 'Twilio', icon: SiTwilio, description: 'Connect your Twilio account for SMS and voice', category: CATEGORIES.COMMUNICATION },
+  { id: 'twilio', name: 'Twilio', icon: MessageSquareText, description: 'Connect your Twilio account for SMS and voice', category: CATEGORIES.COMMUNICATION },
   
   // Development
   { id: 'github', name: 'GitHub', icon: FaGithub, description: 'Connect your GitHub repositories', category: CATEGORIES.DEVELOPMENT },
@@ -72,7 +73,7 @@ export const INTEGRATIONS: Integration[] = [
   { id: 'aws-s3', name: 'AWS S3', icon: FaAws, description: 'Connect your AWS S3 buckets', category: CATEGORIES.STORAGE },
   
   // Marketing & Sales
-  { id: 'salesforce', name: 'Salesforce', icon: SiSalesforce, description: 'Connect your Salesforce account', category: CATEGORIES.MARKETING },
+  { id: 'salesforce', name: 'Salesforce', icon: Cloud, description: 'Connect your Salesforce account', category: CATEGORIES.MARKETING },
   { id: 'hubspot', name: 'HubSpot', icon: FaHubspot, description: 'Connect your HubSpot account', category: CATEGORIES.MARKETING },
   { id: 'mailchimp', name: 'Mailchimp', icon: FaMailchimp, description: 'Connect your Mailchimp account', category: CATEGORIES.MARKETING },
   { id: 'sendinblue', name: 'Sendinblue', icon: SiBrevo, description: 'Connect your Sendinblue (Brevo) account', category: CATEGORIES.MARKETING },
@@ -111,7 +112,7 @@ export const INTEGRATIONS: Integration[] = [
   { id: 'google-cloud', name: 'Google Cloud', icon: SiGooglecloud, description: 'Connect your Google Cloud account', category: CATEGORIES.CLOUD },
   { id: 'azure', name: 'Microsoft Azure', icon: VscAzure, description: 'Connect your Azure account', category: CATEGORIES.CLOUD },
   { id: 'digitalocean', name: 'DigitalOcean', icon: SiDigitalocean, description: 'Connect your DigitalOcean account', category: CATEGORIES.CLOUD },
-  { id: 'heroku', name: 'Heroku', icon: SiHeroku, description: 'Connect your Heroku account', category: CATEGORIES.CLOUD },
+  { id: 'heroku', name: 'Heroku', icon: CloudCog, description: 'Connect your Heroku account', category: CATEGORIES.CLOUD },
   { id: 'netlify', name: 'Netlify', icon: SiNetlify, description: 'Connect your Netlify account', category: CATEGORIES.CLOUD },
   { id: 'vercel', name: 'Vercel', icon: SiVercel, description: 'Connect your Vercel account', category: CATEGORIES.CLOUD },
   { id: 'firebase', name: 'Firebase', icon: SiFirebase, description: 'Connect your Firebase account', category: CATEGORIES.CLOUD },

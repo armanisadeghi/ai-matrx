@@ -63,19 +63,10 @@ export function formatRate(rate: number | null | undefined): string {
   return rate === null || rate === undefined ? "—" : `${(rate * 100).toFixed(1)}%`;
 }
 
-/** Same rule for money: an unrecorded cost is not $0.00. */
-export function formatUsd(
-  value: number | null | undefined,
-  { precision = 2 }: { precision?: number } = {},
-): string {
-  if (value === null || value === undefined) return "—";
-  return `$${value.toLocaleString(undefined, {
-    minimumFractionDigits: precision,
-    maximumFractionDigits: precision,
-  })}`;
-}
+// THE money voice: @ai-matrx/kit/format owns "$1,234.50" with an em-dash for
+// an unrecorded cost. Its option is `digits`, where this said `precision`.
+export { formatUsd } from "@ai-matrx/kit/format";
 
-/** Same rule for counts: `accepted === null` means "no signal wired". */
-export function formatCount(value: number | null | undefined): string {
-  return value === null || value === undefined ? "—" : value.toLocaleString();
-}
+// THE count voice: @ai-matrx/kit/format owns grouped integers with an
+// em-dash for unknown. Collapsed 2026-09-12 (kit 0.12.x).
+export { formatCount } from "@ai-matrx/kit/format";

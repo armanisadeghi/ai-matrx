@@ -283,6 +283,9 @@ export type SystemTaskTrigger =
 
 export type SystemTaskLastRun = ApiComponents["schemas"]["SystemTaskLastRun"];
 
+export type SystemTaskTaxonomyNode =
+  ApiComponents["schemas"]["SystemTaskTaxonomyNode"];
+
 export type SystemTaskResponse = ApiComponents["schemas"]["SystemTaskItem"];
 
 export type SystemTaskListResponse =

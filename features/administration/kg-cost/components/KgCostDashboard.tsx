@@ -11,8 +11,17 @@
  * `_require_admin` on every Python handler.
  *
  * No emojis, Lucide icons only, semantic color tokens — per CLAUDE.md.
+ *
+ * SIBLING SURFACE: this page shows batch submissions only as an aggregate
+ * ("pending batches", "batch savings 7d"). Per-ITEM truth for the platform
+ * Batch system — every `batch.work_item`, its delivery outcome, and the
+ * answers that came back and were never delivered — lives at
+ * `/administration/knowledge/batch`
+ * (`features/administration/batch/FEATURE.md`). Do not grow a third cost
+ * surface here; send the operator there.
  */
 import { useEffect, useState } from "react";
+import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import {
@@ -56,6 +65,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { AppLink } from "@/components/navigation/AppLink";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   getKgCostSummary,
@@ -90,15 +100,9 @@ function fmtUsdShort(value: number | null | undefined): string {
   return `$${value.toFixed(4)}`;
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function fmtRelativeTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  const now = Date.now();
-  const diffSec = Math.round((now - then) / 1000);
-  if (diffSec < 60) return `${diffSec}s ago`;
-  if (diffSec < 3600) return `${Math.round(diffSec / 60)}m ago`;
-  if (diffSec < 86400) return `${Math.round(diffSec / 3600)}h ago`;
-  return `${Math.round(diffSec / 86400)}d ago`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 const STATUS_VARIANT: Record<
@@ -143,9 +147,8 @@ function fmtCompactTime(iso: string | null | undefined): string {
 function fmtDuration(ms: number | string | null | undefined): string {
   const value = num(ms);
   if (!value) return "—";
-  if (value < 1000) return `${value.toFixed(0)}ms`;
-  if (value < 60000) return `${(value / 1000).toFixed(1)}s`;
-  return `${(value / 60000).toFixed(1)}m`;
+  // THE compact duration voice (@ai-matrx/kit/format): 250ms, 5.2s, 5m 30s.
+  return formatDurationMs(value, { style: "compact" });
 }
 
 function isStuckRun(row: UnitEconomicsRecentRun): boolean {
@@ -1502,15 +1505,23 @@ export function KgCostDashboard() {
             submissions.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setRefreshTick((t) => t + 1)}
-          disabled={summaryLoading || orgsLoading || batchesLoading}
-        >
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <AppLink
+            href="/administration/knowledge/batch"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Batch system
+          </AppLink>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRefreshTick((t) => t + 1)}
+            disabled={summaryLoading || orgsLoading || batchesLoading}
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
       </header>
 
       <ScrollArea className="flex-1">
@@ -1529,7 +1540,15 @@ export function KgCostDashboard() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-sm font-semibold">In-flight batches</h2>
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold">In-flight batches</h2>
+              <AppLink
+                href="/administration/knowledge/batch"
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Per-item batch view
+              </AppLink>
+            </div>
             <PendingBatchesTable
               batches={batches}
               loading={batchesLoading}

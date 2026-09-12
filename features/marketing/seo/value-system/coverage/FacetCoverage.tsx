@@ -316,6 +316,13 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
 
   const owed = Math.max(row.queue_pending - row.queue_deferred, 0);
   const complete = owed === 0;
+  // 🚨 "DRAINED" IS NOT "DONE". `owed` excludes the rows the min_impressions
+  // floor holds back, and live on 2026-09-12 that was 30,011 of 75,904 pending
+  // rows — 20.3% of the corpus classified while this header said, with a tick,
+  // "Demand covered". The exclusion is disclosed further down the panel, but a
+  // verdict and its caveat two tiles apart is a verdict nobody reads with its
+  // caveat. The held-back count now travels BESIDE the verdict, always.
+  const heldBack = row.queue_deferred;
   const running = pass.running || row.queue_running > 0;
   const windowDays = row.demand_window_days ?? 90;
   const siteClicks = row.site_clicks ?? 0;
@@ -339,8 +346,21 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
           The 13 shared intent signals every value rule reads
         </p>
         {complete ? (
-          <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <span
+            className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground"
+            title={
+              heldBack > 0
+                ? `Every keyword above the demand floor is classified. ${formatCount(heldBack)} more are in the queue but held back by the floor, so they are measured and not classified.`
+                : "Every keyword in the queue is classified"
+            }
+          >
             <Check className="h-3 w-3" /> Demand covered
+            {heldBack > 0 ? (
+              <span className="tabular-nums">
+                {" · "}
+                {formatCount(heldBack)} held back
+              </span>
+            ) : null}
           </span>
         ) : (
           <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] tabular-nums text-primary">
@@ -395,7 +415,9 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
             disabled={running || complete}
             title={
               complete
-                ? "Every keyword above the demand floor is classified"
+                ? heldBack > 0
+                  ? `Every keyword above the demand floor is classified. ${formatCount(heldBack)} are held back by the floor — lower it to classify them.`
+                  : "Every keyword above the demand floor is classified"
                 : row.next_phrase
                   ? `Classify the next highest-demand keywords, starting with “${row.next_phrase}”`
                   : "Classify the next highest-demand keywords"

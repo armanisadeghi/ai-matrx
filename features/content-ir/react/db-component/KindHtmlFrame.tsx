@@ -23,6 +23,8 @@
 
 import React, { useMemo, useRef } from "react";
 
+import { inlineJson } from "@/features/content-ir/sandbox/inline-json";
+
 export interface KindHtmlFrameProps {
   kind: string;
   /** The row's component_source: a full HTML document. */
@@ -31,14 +33,6 @@ export interface KindHtmlFrameProps {
   data: unknown;
   title?: string;
   className?: string;
-}
-
-/** `</script>`-safe JSON serialization for inline embedding. */
-function safeInlineJson(value: unknown): string {
-  return JSON.stringify(value ?? null)
-    .replace(/</g, "\\u003c")
-    .replace(/\u2028/g, "\\u2028")
-    .replace(/\u2029/g, "\\u2029");
 }
 
 export const KindHtmlFrame: React.FC<KindHtmlFrameProps> = ({
@@ -51,7 +45,7 @@ export const KindHtmlFrame: React.FC<KindHtmlFrameProps> = ({
   const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   const srcDoc = useMemo(() => {
-    const payload = safeInlineJson({ kind, data });
+    const payload = inlineJson({ kind, data });
     // Appended AFTER the document: browsers relocate trailing elements into
     // <body>, so the slot is readable regardless of how the author closed
     // their document. Channel 1 of the injection contract.

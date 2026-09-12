@@ -994,7 +994,7 @@
                 "type": "null"
               }
             ],
-            "default": 0,
+            "default": 0.0,
             "title": "Cost"
           }
         },
@@ -1184,7 +1184,7 @@
             "title": "Total Cost"
           },
           "known_cost_subtotal": {
-            "default": 0,
+            "default": 0.0,
             "title": "Known Cost Subtotal",
             "type": "number"
           },
@@ -1352,7 +1352,7 @@
             "type": "null"
           }
         ],
-        "default": 0,
+        "default": 0.0,
         "title": "Cost"
       }
     },
@@ -1542,7 +1542,7 @@
         "title": "Total Cost"
       },
       "known_cost_subtotal": {
-        "default": 0,
+        "default": 0.0,
         "title": "Known Cost Subtotal",
         "type": "number"
       },
@@ -1952,7 +1952,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0,
+        "default": 0.0,
         "title": "Progress",
         "type": "number"
       },
@@ -4169,7 +4169,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0,
+        "default": 0.0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5281,7 +5281,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -5341,7 +5341,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -6309,7 +6309,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0,
+        "default": 0.0,
         "title": "Confidence",
         "type": "number"
       },
@@ -7239,6 +7239,66 @@
     "type": "object"
   },
   "MasterworkIngestCompleteData": {
+    "$defs": {
+      "MasterworkSourceAlreadyDistilled": {
+        "description": "This source has ALREADY produced rules in this Rulebook.\n\nThe named field that makes a repeat press honest (2026-09-12: a link was\ndistilled twice into one Rulebook — 115 rules then 123 more — and the\nduplicate check reported 0, because rule-level dedupe cannot answer a\nsource-level question). ``message`` is the sentence to show; ``can_replace``\nsays whether offering \"Distil again and replace\" is meaningful (it is not\nwhen every earlier rule has already been approved by the Expert, since a\nmachine never removes those).",
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
+          },
+          "rules": {
+            "default": 0,
+            "title": "Rules",
+            "type": "integer"
+          },
+          "draft_rules": {
+            "default": 0,
+            "title": "Draft Rules",
+            "type": "integer"
+          },
+          "approved_rules": {
+            "default": 0,
+            "title": "Approved Rules",
+            "type": "integer"
+          },
+          "run_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Run Ids",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "can_replace": {
+            "default": true,
+            "title": "Can Replace",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "message"
+        ],
+        "title": "MasterworkSourceAlreadyDistilled",
+        "type": "object"
+      }
+    },
     "additionalProperties": false,
     "description": "Terminal result of POST /masterworks/ingest.",
     "properties": {
@@ -7297,6 +7357,18 @@
         ],
         "default": null,
         "title": "Followup Seed"
+      },
+      "already_distilled": {
+        "items": {
+          "$ref": "#/$defs/MasterworkSourceAlreadyDistilled"
+        },
+        "title": "Already Distilled",
+        "type": "array"
+      },
+      "replaced_rules": {
+        "default": 0,
+        "title": "Replaced Rules",
+        "type": "integer"
       }
     },
     "required": [
@@ -7548,6 +7620,22 @@
             ],
             "default": null,
             "title": "Error"
+          },
+          "already_distilled": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/MasterworkSourceAlreadyDistilled"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "replaced_rules": {
+            "default": 0,
+            "title": "Replaced Rules",
+            "type": "integer"
           }
         },
         "required": [
@@ -7555,6 +7643,64 @@
           "status"
         ],
         "title": "MasterworkDumpResourceOutcome",
+        "type": "object"
+      },
+      "MasterworkSourceAlreadyDistilled": {
+        "description": "This source has ALREADY produced rules in this Rulebook.\n\nThe named field that makes a repeat press honest (2026-09-12: a link was\ndistilled twice into one Rulebook — 115 rules then 123 more — and the\nduplicate check reported 0, because rule-level dedupe cannot answer a\nsource-level question). ``message`` is the sentence to show; ``can_replace``\nsays whether offering \"Distil again and replace\" is meaningful (it is not\nwhen every earlier rule has already been approved by the Expert, since a\nmachine never removes those).",
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
+          },
+          "rules": {
+            "default": 0,
+            "title": "Rules",
+            "type": "integer"
+          },
+          "draft_rules": {
+            "default": 0,
+            "title": "Draft Rules",
+            "type": "integer"
+          },
+          "approved_rules": {
+            "default": 0,
+            "title": "Approved Rules",
+            "type": "integer"
+          },
+          "run_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Run Ids",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "can_replace": {
+            "default": true,
+            "title": "Can Replace",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "message"
+        ],
+        "title": "MasterworkSourceAlreadyDistilled",
         "type": "object"
       }
     },
@@ -7601,6 +7747,18 @@
         },
         "title": "Resources",
         "type": "array"
+      },
+      "already_distilled": {
+        "items": {
+          "$ref": "#/$defs/MasterworkSourceAlreadyDistilled"
+        },
+        "title": "Already Distilled",
+        "type": "array"
+      },
+      "replaced_rules": {
+        "default": 0,
+        "title": "Replaced Rules",
+        "type": "integer"
       }
     },
     "required": [
@@ -8113,7 +8271,7 @@
             "type": "object"
           },
           "confidence": {
-            "default": 0,
+            "default": 0.0,
             "title": "Confidence",
             "type": "number"
           },
@@ -8243,7 +8401,7 @@
             "type": "object"
           },
           "confidence": {
-            "default": 0,
+            "default": 0.0,
             "title": "Confidence",
             "type": "number"
           },
@@ -10409,7 +10567,7 @@
         "type": "integer"
       },
       "cost_usd": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost Usd",
         "type": "number"
       },
@@ -10458,7 +10616,7 @@
         "type": "string"
       },
       "month_to_date_usd": {
-        "default": 0,
+        "default": 0.0,
         "title": "Month To Date Usd",
         "type": "number"
       }
