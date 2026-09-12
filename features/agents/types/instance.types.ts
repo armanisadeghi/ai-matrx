@@ -653,6 +653,13 @@ export interface BuilderAdvancedSettings {
   addedTools?: string[];
 
   /**
+   * Connected MCP servers explicitly enabled for THIS conversation. These are
+   * server slugs (not registry-tool IDs) and are sent as `client.mcp`, so the
+   * server resolves the user's existing connection and its current tools.
+   */
+  addedMcpServers?: string[];
+
+  /**
    * Skills the user added to THIS conversation from the Smart Input skills menu
    * — registry skill UUIDs, additive on top of the agent's saved `skill_config`.
    * `buildSkillConfigForRequest` folds them into `included` for the request's
@@ -711,6 +718,7 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   disableToolInjection: false,
   surfaceOverride: null,
   addedTools: [],
+  addedMcpServers: [],
   addedSkills: [],
   manualEndpointOverride: null,
   agentFs: false,
