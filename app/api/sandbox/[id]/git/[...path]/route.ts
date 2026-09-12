@@ -1,7 +1,47 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { resolveProxyContext, forwardToOrchestrator } from '@/lib/sandbox/proxy-helpers'
 
 export const maxDuration = 180
+
+interface CloneRequest {
+    url?: unknown
+    dest?: unknown
+    branch?: unknown
+}
+
+function cloneRequestError(body: CloneRequest): string | null {
+    if (typeof body.url !== 'string' || body.url.startsWith('-')) {
+        return 'Repository URL must be an HTTPS URL.'
+    }
+    try {
+        const url = new URL(body.url)
+        if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+            return 'Repository URL must not contain credentials, query parameters, or fragments.'
+        }
+    } catch {
+        return 'Repository URL must be an HTTPS URL.'
+    }
+    if (typeof body.dest !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(body.dest)) {
+        return 'Destination must be one safe folder name.'
+    }
+    if (body.branch !== undefined && (typeof body.branch !== 'string' || body.branch.startsWith('-'))) {
+        return 'Branch names cannot start with a dash.'
+    }
+    return null
+}
+
+async function validateCloneRequest(request: NextRequest): Promise<NextResponse | null> {
+    let body: CloneRequest
+    try {
+        body = await request.clone().json() as CloneRequest
+    } catch {
+        return NextResponse.json({ detail: 'Clone request must be valid JSON.' }, { status: 400 })
+    }
+    const error = cloneRequestError(body)
+    return error
+        ? NextResponse.json({ detail: error }, { status: 400 })
+        : null
+}
 
 /**
  * Catchall proxy for the sandbox git API.
@@ -23,10 +63,14 @@ async function handle(
     { params }: { params: Promise<{ id: string; path: string[] }> }
 ) {
     const { id, path } = await params
+    const subpath = (path || []).join('/')
+    if (request.method === 'POST' && subpath === 'clone') {
+        const invalid = await validateCloneRequest(request)
+        if (invalid) return invalid
+    }
     const ctx = await resolveProxyContext(id)
     if (!ctx.ok) return ctx.response
 
-    const subpath = (path || []).join('/')
     const search = request.nextUrl.search
     const upstreamUrl = `${ctx.orchestrator.url}/sandboxes/${ctx.sandboxId}/git/${subpath}${search}`
 
