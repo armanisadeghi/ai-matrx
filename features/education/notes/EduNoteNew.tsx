@@ -22,8 +22,9 @@ export function EduNoteNew() {
 
   useEffect(() => {
     if (started.current) return;
-    started.current = true;
+    if (!organizationId) return;
     const capturedOrganizationId = requireOrganizationContext(organizationId);
+    started.current = true;
     void (async () => {
       try {
         const note = await NotesAPI.create({ label: "Untitled note", content: "", organization_id: capturedOrganizationId });

@@ -141,6 +141,11 @@ export function emptyNoteReuseUpdates(
   if (existingNote.folder_name !== targetFolder) {
     updates.folder_name = targetFolder;
   }
+  if (input.metadata !== undefined) updates.metadata = input.metadata;
+  if (input.position !== undefined) updates.position = input.position;
+  if (input.visibility !== undefined) updates.visibility = input.visibility;
+  if (input.project_id !== undefined) updates.project_id = input.project_id;
+  if (input.task_id !== undefined) updates.task_id = input.task_id;
   return updates;
 }
 

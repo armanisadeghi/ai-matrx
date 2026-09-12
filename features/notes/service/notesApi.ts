@@ -29,7 +29,8 @@ import type {
  *   label: "My Note",
  *   content: "Some content",
  *   folder_name: "Personal",
- *   tags: ["important"]
+ *   tags: ["important"],
+ *   organization_id: capturedOrganizationId,
  * });
  * ```
  */

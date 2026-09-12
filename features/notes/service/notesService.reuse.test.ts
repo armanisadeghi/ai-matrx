@@ -23,4 +23,8 @@ describe("emptyNoteReuseUpdates", () => {
   it("does not turn a default reuse into a redundant write", () => {
     expect(emptyNoteReuseUpdates(existing, { organization_id: ORGANIZATION_ID })).toEqual({});
   });
+
+  it("preserves explicit create metadata, ordering, visibility, and context links", () => {
+    expect(emptyNoteReuseUpdates(existing, { organization_id: ORGANIZATION_ID, metadata: { source: "test" }, position: 4, visibility: "link", project_id: "22222222-2222-4222-8222-222222222222", task_id: "33333333-3333-4333-8333-333333333333" })).toMatchObject({ metadata: { source: "test" }, position: 4, visibility: "link", project_id: "22222222-2222-4222-8222-222222222222", task_id: "33333333-3333-4333-8333-333333333333" });
+  });
 });
