@@ -62351,9 +62351,17 @@ export type Database = {
         Args: { p_file_id: string; p_operation_id: string }
         Returns: boolean
       }
+      lifecycle_file_custody_policy_revision: {
+        Args: { p_policy_id: string }
+        Returns: string
+      }
       lifecycle_file_custody_preflight: {
         Args: { p_file_id: string; p_operation_id: string }
         Returns: Json
+      }
+      lifecycle_file_custody_record_audit: {
+        Args: { p_detail: Json; p_run_id: string }
+        Returns: undefined
       }
       lifecycle_file_custody_scan_cursor: {
         Args: { p_run_id: string }
