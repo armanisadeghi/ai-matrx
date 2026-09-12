@@ -25,7 +25,8 @@ need; do not add a barrel or a page-local substitute.
 - Use **`SettingsNavigationSearch`** for the visible search input. Callers own
   query state and may supply exact-control results from their route adapter;
   results include their destination location and must suppress a competing
-  no-results message.
+  no-results message. Both navigation primitives own their Tailwind structural
+  and semantic styling, so they remain correct outside a route shell.
 
 ## Row and control rules
 
@@ -46,7 +47,8 @@ need; do not add a barrel or a page-local substitute.
 ## Change Log
 
 - 2026-09-12: Added flat navigation and shared search primitives for route and
-  overlay menus, including stable unheaded root groups and exact-control result adapters.
+  overlay menus, including stable unheaded root groups, exact-control result adapters,
+  and work-on-import structural styling.
 - 2026-09-12: Added compact presentation context, page/group/navigation
   compositions, responsive row behavior, stable ids, and accessibility rules.
 - 2026-09-12: Kept compact disclosure out of the row flow until requested.

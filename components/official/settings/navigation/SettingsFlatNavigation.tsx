@@ -17,8 +17,8 @@ export function SettingsNavigationSearch({
   inputRef?: Ref<HTMLInputElement>;
 }) {
   return (
-    <div className="settings-route-menu-search" role="search">
-      <Search aria-hidden className="settings-route-menu-search-icon" />
+    <div className="sticky top-0 z-10 my-1 bg-background py-0.5" role="search">
+      <Search aria-hidden className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <input
         ref={inputRef}
         type="search"
@@ -26,8 +26,9 @@ export function SettingsNavigationSearch({
         onChange={(event) => onValueChange(event.target.value)}
         placeholder={label}
         aria-label={label}
+        className="h-8 w-full rounded-md border border-border bg-background px-7 text-[0.8125rem] text-foreground shadow-sm outline-none focus:border-ring focus:outline-2 focus:outline-ring/20 focus:outline-offset-1"
       />
-      {value ? <button type="button" className="settings-route-menu-clear" onClick={() => onValueChange("")} aria-label="Clear search"><X aria-hidden /></button> : null}
+      {value ? <button type="button" className="absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" onClick={() => onValueChange("")} aria-label="Clear search"><X aria-hidden /></button> : null}
     </div>
   );
 }
@@ -125,15 +126,15 @@ export function SettingsFlatNavigation({
     return <div className="px-3 py-6 text-sm text-muted-foreground">{empty ?? "No settings match."}</div>;
   }
   return (
-    <div className="settings-flat-navigation">
+    <div className="flex flex-col gap-3 py-1">
       {sections.map((section) => (
-        <section key={section.id} className="settings-flat-navigation-section" aria-label={section.label ?? "Settings"}>
-          {section.label ? <h2 className={cn("settings-flat-navigation-heading", section.id === activeId && "settings-flat-navigation-heading-active")}>{section.label}</h2> : null}
-          <div className="settings-flat-navigation-items">
+        <section key={section.id} className="flex flex-col gap-0.5" aria-label={section.label ?? "Settings"}>
+          {section.label ? <h2 className={cn("m-0 px-2 py-1 text-xs font-medium leading-5 text-muted-foreground", section.id === activeId && "rounded bg-muted text-foreground")}>{section.label}</h2> : null}
+          <div className="flex flex-col gap-px">
             {section.items.map((item) => (
               <div
                 key={item.id}
-                className={cn("settings-flat-navigation-item", item.id === activeId && "settings-flat-navigation-item-active")}
+                className={cn("[&_.shell-nav-item]:min-h-[1.875rem] [&_.shell-nav-item]:pl-2 [&_.shell-nav-item]:text-[0.8125rem]", item.id === activeId && "[&_.shell-nav-item]:bg-muted [&_.shell-nav-item]:text-foreground")}
               >
                 {renderItem(item, item.id === activeId)}
               </div>
