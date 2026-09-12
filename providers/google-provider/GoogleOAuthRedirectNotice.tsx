@@ -9,7 +9,7 @@ export function GoogleOAuthRedirectNotice() {
     const status = url.searchParams.get("google_oauth");
     if (status !== "connected" && status !== "failed") return;
     if (status === "connected") {
-      toast.success("Google connected. Choose Google Drive again to continue.");
+      toast.success("Google connected.");
     } else {
       toast.error(
         url.searchParams.get("google_oauth_message") ||
