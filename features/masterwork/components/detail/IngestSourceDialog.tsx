@@ -24,6 +24,7 @@ import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -215,7 +216,6 @@ export function IngestSourceDialog({
   const progress = uploading
     ? [`Uploading “${file?.name ?? "your file"}”…`, ...run.stages]
     : run.stages;
-  const rejoining = run.status === "rejoining";
 
   const reset = () => {
     run.reset();
@@ -332,6 +332,15 @@ export function IngestSourceDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* A failure STAYS on screen with its reason and a way out. It used to
+            be a toast that removed itself, over a dialog that then showed the
+            empty form again (census D4). */}
+        <DurableRunFailure
+          error={run.error}
+          retry={run.retry}
+          running={run.running}
+        />
+
         {summary ? (
           <div className="space-y-3">
             <p className="text-sm text-foreground">{summary}</p>
@@ -380,9 +389,7 @@ export function IngestSourceDialog({
               <div className="flex items-start gap-2">
                 <LoadingSpinner size="sm" />
                 <p className="text-xs text-muted-foreground">
-                  {rejoining
-                    ? "Picking this back up — it kept reading while you were away."
-                    : "Working — this takes a minute."}
+                  {run.waitMessage ?? "Uploading your file…"}
                 </p>
               </div>
             ) : null}

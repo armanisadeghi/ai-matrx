@@ -92,6 +92,38 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
 };
 
 /**
+ * HOW LONG EACH LANE ACTUALLY TAKES — measured, not guessed.
+ *
+ * Every one of these dialogs used to print the same hardcoded sentence,
+ * "Working — this takes a minute." The live ledger says otherwise. Medians over
+ * every completed run on `platform.masterwork_run` (read 2026-09-12):
+ *
+ *   ingest        157s (p90 310s, max 352s)   ← "a minute" was never true
+ *   ingest_corpus 156s (p90 272s, max 312s)
+ *   ingest_dump    83s (p90 295s, max 402s)
+ *   checkup        78s      build 62s
+ *   audition       25s      ingest_chat 18s
+ *
+ * That gap is the whole of the 2026-09-12 "body of work hangs forever" report:
+ * corpus item 1a5fd47d read `paulgraham.com/simply.html` in 2m57s and SUCCEEDED
+ * with 13 rules, while the screen spent every one of those seconds promising a
+ * minute. The person left at ~90s. Nothing had failed.
+ *
+ * So the promise is now the measurement, and `useDurableRun` stops promising
+ * entirely past three times it. Re-measure these when a pipeline changes.
+ */
+const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
+  build: 60_000,
+  ingest: 160_000,
+  chat: 25_000,
+  dump: 90_000,
+  corpus: 160_000,
+  audition: 30_000,
+  checkup: 80_000,
+  clean_corpus: 60_000,
+};
+
+/**
  * Every Masterwork pipeline narrates itself with `step` + a human `message` the
  * SERVER wrote for this user. So there is nothing to translate: the stage line
  * IS that message. Anything without one is not a stage and is dropped rather
@@ -123,6 +155,13 @@ export interface UseMasterworkRunOptions<TResult> {
   /** Narrow/validate the terminal document. Return null to reject it loudly. */
   parseResult?: (raw: unknown) => TResult | null;
   /**
+   * Override the measured expectation for this surface — only when the SAME
+   * surface runs a materially different amount of work (a 200-conversation
+   * distillation is not a 3-conversation one). Everything else takes the
+   * measured `EXPECTED_MS` and must not hand-write a duration promise.
+   */
+  expectedMs?: number;
+  /**
    * Every domain event as it lands — for a pipeline that answers in PIECES.
    * The Final Checkup streams one finding at a time so the Expert can start
    * deciding while the rest are still being found.
@@ -153,11 +192,15 @@ export function useMasterworkRun<TResult>({
   parseResult,
   onDomainEvent,
   live,
+  expectedMs,
 }: UseMasterworkRunOptions<TResult>): MasterworkRunHandle<TResult> {
   return useDurableRun<TResult>({
     wire: MASTERWORK_RUN_WIRE,
     key: `${surface}:${rulebookId}`,
     path,
+    expectedMs: expectedMs ?? EXPECTED_MS[surface],
+    rejoiningMessage:
+      "Picking this back up — it kept working while you were away.",
     finalEvent: FINAL_EVENT[surface],
     stageLabels: {},
     stageFallback: STAGE_FALLBACK,

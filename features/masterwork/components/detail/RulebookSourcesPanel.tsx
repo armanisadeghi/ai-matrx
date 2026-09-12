@@ -30,7 +30,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  AlertCircle,
   ChevronDown,
   ChevronRight,
   ExternalLink,
@@ -61,6 +60,7 @@ import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { writeDumpUrlSources } from "../../service";
 import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
+import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 
 /**
  * The registered source→rulebook pairs (`platform.association_types`,
@@ -659,27 +659,26 @@ export function RulebookSourcesPanel({
                     <div className="flex items-start gap-2 pt-1">
                       <LoadingSpinner size="sm" />
                       <p className="text-xs text-muted-foreground">
-                        {run.status === "rejoining"
-                          ? "Picking this back up — it kept working while you were away."
-                          : "Working — this takes a minute."}
+                        {run.waitMessage}
                       </p>
                     </div>
                   ) : null}
                 </div>
               ) : null}
 
-              {run.error ? (
-                <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                  <div className="text-xs text-destructive">
-                    <p>{run.error}</p>
-                    <p className="mt-1 text-muted-foreground">
-                      Your attached sources are safe — nothing was lost. Fix the
-                      problem (or try again later) and press the button again.
-                    </p>
-                  </div>
-                </div>
-              ) : null}
+              {/* The dump lane was the only one that kept its failure on screen
+                  — but it asked the reader to "press the button again" instead
+                  of giving them a button. Same notice as every other lane now,
+                  with the way out attached. */}
+              <DurableRunFailure
+                error={run.error}
+                retry={run.retry}
+                running={run.running}
+              >
+                <p className="self-center text-xs text-muted-foreground">
+                  Your attached sources are safe — nothing was lost.
+                </p>
+              </DurableRunFailure>
 
               {run.result ? (
                 <DumpOutcomes summary={run.result} onDone={() => run.reset()} />
