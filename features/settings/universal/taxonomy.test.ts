@@ -19,11 +19,12 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@ai-matrx/data/db", () => ({
   readAllRows: mockReadAllRows,
   createSessionRetry: () => async (run: () => unknown) => run(),
+  createActiveOrgCookie: () => ({ get: () => null, set: jest.fn(), clear: jest.fn() }),
 }));
 jest.mock("./UniversalSettingsPane", () => ({ __esModule: true, default: () => null }));
 
 import { buildConfigTreeNodes } from "./configTree";
-import { groupDomains, systemKnob } from "./UniversalSettingsContext";
+import { filterKnobsForTarget, groupDomains, systemKnob } from "./UniversalSettingsContext";
 import {
   fetchTaxonomyIndex,
   taxonomyForNodeId,
@@ -97,5 +98,11 @@ describe("universal settings taxonomy", () => {
 
   it("keeps a sub-feature's controls under its canonical feature", () => {
     expect(taxonomyForNodeId("subfeature", taxonomy)?.feature_name).toBe("Surfaces");
+  });
+
+  it("never exposes an organization-only control on the user destination", () => {
+    const organizationOnly: ScopedKnob = { ...userKnob(), overridable_by: ["organization"] };
+    expect(filterKnobsForTarget([userKnob(), organizationOnly], "user")).toEqual([userKnob()]);
+    expect(filterKnobsForTarget([userKnob(), organizationOnly], "organization")).toEqual([organizationOnly]);
   });
 });

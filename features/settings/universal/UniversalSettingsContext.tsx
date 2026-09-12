@@ -18,9 +18,9 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import { useDefaultOrganization } from "@/features/organizations/hooks/useDefaultOrganization";
 import { fetchFeatureKnobs } from "@/features/admin/limits/service";
 import type { FeatureKnob } from "@/features/admin/limits/types";
 import { fetchKnobIndex, type KnobScopeRef } from "@/lib/scoped-config/service";
@@ -36,12 +36,6 @@ import {
   UNFILED_DOMAIN_SLUG,
   type TaxonomyIndex,
 } from "./taxonomy";
-import {
-  fetchScopeRows,
-  isSubOrgScopeKind,
-  type ScopeRow,
-  type SubOrgScopeKind,
-} from "./scopeRows";
 
 /** Registry slug → settings tab id segment ("human-resources" → "humanResources"). */
 export function slugToTabSegment(slug: string): string {
@@ -71,9 +65,18 @@ export type SettingsDomain = {
   domainLeafId: string | null;
 };
 
+/** A destination never renders a control it cannot write at that rung. */
+export function filterKnobsForTarget(
+  knobs: ScopedKnob[],
+  target: "user" | "organization" | "system",
+): ScopedKnob[] {
+  return knobs.filter((knob) =>
+    target === "system" || knob.overridable_by.includes(target),
+  );
+}
+
 export type UniversalSettingsValue = {
   editingContext: "user" | "organization" | "system";
-  selectEditingContext: (context: "user" | "organization" | "system") => void;
   canManageSystem: boolean;
   /** Show only values explicitly set at the selected editing level. */
   changedOnly: boolean;
@@ -85,22 +88,9 @@ export type UniversalSettingsValue = {
   /** People in the chosen organization — the org rung's blast radius. */
   memberCount: number | null;
   organizations: { id: string; name: string }[];
-  selectOrganization: (id: string) => void;
   userId: string | null;
   /** This browser's device rung id; null when storage is unavailable. */
   deviceId: string | null;
-  /**
-   * The sub-organization rungs this surface is standing inside, by kind —
-   * the host page's own (a brand page passes its brand) plus the ones the
-   * person picked here. Passed to knob_index as p_scopes.
-   */
-  selectedScopes: Partial<Record<SubOrgScopeKind, string>>;
-  /** Pick (or clear with null) the row for one sub-org rung. */
-  selectScope: (kind: SubOrgScopeKind, id: string | null) => void;
-  /** Rows available for each sub-org rung in the chosen organization. */
-  scopeRows: Partial<Record<SubOrgScopeKind, ScopeRow[]>>;
-  /** Sub-org rung kinds fixed by the host page (not pickable here). */
-  hostScopeKinds: SubOrgScopeKind[];
   /** Every key the read returned, by full key. */
   knobs: ScopedKnob[];
   knobByKey: (fullKey: string) => ScopedKnob | null;
@@ -115,7 +105,6 @@ export type UniversalSettingsValue = {
 
 const EMPTY: UniversalSettingsValue = {
   editingContext: "user",
-  selectEditingContext: () => {},
   canManageSystem: false,
   changedOnly: false,
   setChangedOnly: () => {},
@@ -124,13 +113,8 @@ const EMPTY: UniversalSettingsValue = {
   canManageOrganization: false,
   memberCount: null,
   organizations: [],
-  selectOrganization: () => {},
   userId: null,
   deviceId: null,
-  selectedScopes: {},
-  selectScope: () => {},
-  scopeRows: {},
-  hostScopeKinds: [],
   knobs: [],
   knobByKey: () => null,
   domains: [],
@@ -262,27 +246,33 @@ export function groupDomains(
 export function UniversalSettingsProvider({
   children,
   scopes,
+  target = "user",
+  organizationId: fixedOrganizationId,
+  canManageOrganization: fixedCanManageOrganization,
+  organizationName: fixedOrganizationName,
+  memberCount: fixedMemberCount,
 }: {
   children: React.ReactNode;
   /**
-   * Sub-organization rungs the host page is inside (brand, site, …). The
-   * settings route itself is inside none; a brand's own settings page passes
-   * its brand here and the same provider answers for that rung.
+   * Inherited sub-organization rungs supplied by a host (brand, site, …).
+   * They are read context only; this provider never creates a scope picker.
    */
   scopes?: KnobScopeRef[];
+  /** A host owns its destination; settings never select an acting-as context. */
+  target?: "user" | "organization" | "system";
+  organizationId?: string;
+  /** Route-derived authorization for an immutable organization destination. */
+  canManageOrganization?: boolean;
+  organizationName?: string | null;
+  memberCount?: number | null;
 }) {
   const userId = useAppSelector(selectUserId);
   const canManageSystem = useAppSelector(selectIsSuperAdmin);
   const { organizations } = useUserOrganizations();
-  const { defaultOrganizationId } = useDefaultOrganization();
-  const [chosenOrgId, setChosenOrgId] = useState<string | null>(null);
-  const [editingContext, selectEditingContext] = useState<"user" | "organization" | "system">("user");
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const editingContext = target;
   const [changedOnly, setChangedOnly] = useState(false);
-  const organizationId =
-    chosenOrgId ??
-    organizations.find((org) => org.id === defaultOrganizationId)?.id ??
-    organizations[0]?.id ??
-    null;
+  const organizationId = fixedOrganizationId ?? activeOrganizationId;
   const organization = organizations.find((org) => org.id === organizationId) ?? null;
   const [deviceId, setDeviceId] = useState<string | null>(null);
   useEffect(() => {
@@ -292,34 +282,16 @@ export function UniversalSettingsProvider({
   const [generation, setGeneration] = useState(0);
   const refresh = () => setGeneration((n) => n + 1);
 
-  // Sub-org rungs: the host page's own, then whatever the person picks here.
-  const [picked, setPicked] = useState<{
-    organizationId: string | null;
-    scopes: Partial<Record<SubOrgScopeKind, string>>;
-  }>({ organizationId: null, scopes: {} });
-  const pickedForOrg = picked.organizationId === organizationId ? picked.scopes : {};
-  const hostScopes: Partial<Record<SubOrgScopeKind, string>> = {};
-  for (const ref of scopes ?? []) {
-    if (isSubOrgScopeKind(ref.kind)) hostScopes[ref.kind] = ref.id;
-  }
-  const selectedScopes: Partial<Record<SubOrgScopeKind, string>> = {
-    ...pickedForOrg,
-    ...hostScopes,
-  };
-  const selectScope = (kind: SubOrgScopeKind, id: string | null) =>
-    setPicked((prev) => {
-      const base = prev.organizationId === organizationId ? prev.scopes : {};
-      const next = { ...base };
-      if (id) next[kind] = id;
-      else delete next[kind];
-      return { organizationId, scopes: next };
-    });
-  const effectiveScopes: KnobScopeRef[] = (
-    Object.entries(selectedScopes) as [SubOrgScopeKind, string][]
-  ).map(([kind, id]) => ({ kind, id }));
-
-  const scopesKey = JSON.stringify(effectiveScopes.length > 0 ? effectiveScopes : null);
-  const requestKey = `${organizationId ?? ""}|${userId ?? ""}|${deviceId ?? ""}|${scopesKey}`;
+  // A host may supply inherited scope/device read context. This surface never
+  // fabricates scope choices or probes picker rows: its destination is fixed.
+  const scopesKey = JSON.stringify(scopes ?? null);
+  // Each target has a distinct resolver contract. An organization page must
+  // never send a personal or device rung that could change the write target.
+  const resolverUserId = target === "user" ? userId ?? undefined : undefined;
+  const resolverDeviceId = target === "user" ? deviceId ?? undefined : undefined;
+  // Auth identity is always part of the key, including org/system reads where
+  // the RPC must not receive a personal rung but must still mask old results.
+  const requestKey = `${target}|${organizationId ?? ""}|auth:${userId ?? ""}|rung:${resolverUserId ?? ""}|${resolverDeviceId ?? ""}|${scopesKey}`;
 
   const [state, setState] = useState<{
     requestKey: string;
@@ -331,12 +303,12 @@ export function UniversalSettingsProvider({
   // loading. This independent complete read supplies the canonical empty
   // domains/features until the context-specific registry answer arrives.
   const [taxonomyState, setTaxonomyState] = useState<{
-    generation: number;
+    requestKey: string;
     taxonomy: TaxonomyIndex;
     error: string | null;
   } | null>(null);
   const [systemRows, setSystemRows] = useState<{
-    generation: number;
+    requestKey: string;
     rows: ScopedKnob[];
     taxonomy: TaxonomyIndex;
     error: string | null;
@@ -344,21 +316,22 @@ export function UniversalSettingsProvider({
 
   useEffect(() => {
     let cancelled = false;
+    const taxonomyRequestKey = `${requestKey}|${generation}`;
     void fetchTaxonomyIndex()
       .then((taxonomy) => {
-        if (!cancelled) setTaxonomyState({ generation, taxonomy, error: null });
+        if (!cancelled) setTaxonomyState({ requestKey: taxonomyRequestKey, taxonomy, error: null });
       })
       .catch((err: unknown) => {
         if (!cancelled) {
           setTaxonomyState({
-            generation,
+            requestKey: taxonomyRequestKey,
             taxonomy: { byId: new Map(), bySlug: new Map() },
             error: extractErrorMessage(err),
           });
         }
       });
     return () => { cancelled = true; };
-  }, [generation]);
+  }, [requestKey, generation]);
 
   useEffect(() => {
     if (!organizationId || !userId) return;
@@ -367,8 +340,8 @@ export function UniversalSettingsProvider({
     void Promise.all([
       fetchKnobIndex({
         organizationId,
-        userId,
-        deviceId: deviceId ?? undefined,
+        userId: resolverUserId,
+        deviceId: resolverDeviceId,
         scopes: parsedScopes ?? undefined,
       }),
       fetchTaxonomyIndex(),
@@ -389,101 +362,67 @@ export function UniversalSettingsProvider({
     return () => {
       cancelled = true;
     };
-  }, [organizationId, userId, deviceId, scopesKey, requestKey, generation]);
+  }, [organizationId, resolverUserId, resolverDeviceId, scopesKey, requestKey, generation]);
 
   useEffect(() => {
     if (editingContext !== "system" || !canManageSystem) return;
     let cancelled = false;
+    const systemRequestKey = `${requestKey}|${canManageSystem}|${generation}`;
     void Promise.all([fetchFeatureKnobs(), fetchTaxonomyIndex()])
       .then(([rows, taxonomy]) => {
-        if (!cancelled) setSystemRows({ generation, rows: rows.map((row) => systemKnob(row, taxonomy)), taxonomy, error: null });
+        if (!cancelled) setSystemRows({ requestKey: systemRequestKey, rows: rows.map((row) => systemKnob(row, taxonomy)), taxonomy, error: null });
       })
       .catch((err: unknown) => {
         if (!cancelled) setSystemRows({
-          generation,
+          requestKey: systemRequestKey,
           rows: [],
           taxonomy: { byId: new Map(), bySlug: new Map() },
           error: extractErrorMessage(err),
         });
       });
     return () => { cancelled = true; };
-  }, [editingContext, canManageSystem, generation]);
+  }, [editingContext, canManageSystem, requestKey, generation]);
 
   // Mask a previous organization's configuration synchronously: a stale answer
   // on screen is a lie about whose policy you are looking at.
   const current = state?.requestKey === requestKey ? state : null;
-  const system = systemRows?.generation === generation ? systemRows : null;
+  const system = systemRows?.requestKey === `${requestKey}|${canManageSystem}|${generation}` ? systemRows : null;
   const knobs = editingContext === "system" ? (system?.rows ?? []) : (current?.knobs ?? []);
 
-  // The rows a person may stand inside, for every sub-org rung some key names.
-  const neededKinds = [
-    ...new Set(
-      knobs.flatMap((knob) => knob.overridable_by).filter(isSubOrgScopeKind),
-    ),
-  ].sort();
-  const neededKey = `${organizationId ?? ""}|${neededKinds.join(",")}`;
-  const [rowsState, setRowsState] = useState<{
-    key: string;
-    rows: Partial<Record<SubOrgScopeKind, ScopeRow[]>>;
-  } | null>(null);
-  useEffect(() => {
-    if (!organizationId || neededKinds.length === 0) return;
-    let cancelled = false;
-    const kinds = neededKey.split("|")[1]!.split(",").filter(Boolean) as SubOrgScopeKind[];
-    void Promise.all(
-      kinds.map((kind) =>
-        fetchScopeRows(kind, organizationId).then(
-          (rows) => [kind, rows] as const,
-          // A rung whose rows cannot be read is still shown — with the reason.
-          (err: unknown) =>
-            [kind, [{ id: "__unlistable__", label: `Could not list: ${extractErrorMessage(err)}` }]] as const,
-        ),
-      ),
-    ).then((entries) => {
-      if (cancelled) return;
-      setRowsState({ key: neededKey, rows: Object.fromEntries(entries) });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, neededKey, neededKinds.length]);
-  const scopeRows = rowsState?.key === neededKey ? rowsState.rows : {};
-  const taxonomy = system?.taxonomy ?? current?.taxonomy ?? taxonomyState?.taxonomy ?? {
+  const taxonomyStateForRequest = taxonomyState?.requestKey === `${requestKey}|${generation}` ? taxonomyState : null;
+  const taxonomy = system?.taxonomy ?? current?.taxonomy ?? taxonomyStateForRequest?.taxonomy ?? {
     byId: new Map(),
     bySlug: new Map(),
   };
-  const domains = groupDomains(knobs, taxonomy, editingContext === "system");
-  const byKey = new Map(knobs.map((knob) => [knob.full_key, knob]));
+  // A fixed destination only sees keys it can write at that destination.
+  // In particular, user settings never expose an organization-only key that
+  // could otherwise be retargeted by a stale draft.
+  const destinationKnobs = filterKnobsForTarget(knobs, editingContext);
+  const domains = groupDomains(destinationKnobs, taxonomy, editingContext === "system");
+  const byKey = new Map(destinationKnobs.map((knob) => [knob.full_key, knob]));
 
   const value: UniversalSettingsValue = {
     editingContext,
-    selectEditingContext: (context) => {
-      if (context !== "system" || canManageSystem) selectEditingContext(context);
-    },
     canManageSystem,
     changedOnly,
     setChangedOnly,
     organizationId,
-    organizationName: organization?.name ?? null,
-    canManageOrganization:
-      organization?.role === "owner" || organization?.role === "admin",
-    memberCount: organization?.memberCount ?? null,
+    organizationName: fixedOrganizationName ?? organization?.name ?? null,
+    canManageOrganization: target === "organization"
+      ? fixedCanManageOrganization ?? false
+      : organization?.role === "owner" || organization?.role === "admin",
+    memberCount: fixedMemberCount ?? organization?.memberCount ?? null,
     organizations: organizations.map((org) => ({ id: org.id, name: org.name })),
-    selectOrganization: setChosenOrgId,
     userId: userId ?? null,
     deviceId,
-    selectedScopes,
-    selectScope,
-    scopeRows,
-    hostScopeKinds: Object.keys(hostScopes) as SubOrgScopeKind[],
-    knobs,
+    knobs: destinationKnobs,
     knobByKey: (fullKey) => byKey.get(fullKey) ?? null,
     domains,
     isLoading: editingContext === "system"
       ? canManageSystem && !system
       : Boolean(organizationId && userId) && !current,
-    error: editingContext === "system" ? system?.error ?? null : current?.error ?? taxonomyState?.error ?? null,
-    missing: knobs.filter((knob) => knob.origin === "missing"),
+    error: editingContext === "system" ? system?.error ?? null : current?.error ?? taxonomyStateForRequest?.error ?? null,
+    missing: destinationKnobs.filter((knob) => knob.origin === "missing"),
     refresh,
   };
 

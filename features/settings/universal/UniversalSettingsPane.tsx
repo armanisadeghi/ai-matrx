@@ -16,11 +16,9 @@
 // (a tab component takes no props), so the same component serves the route,
 // the window and the mobile drawer.
 
-import { Building2, ShieldCheck, UserRound } from "lucide-react";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
-import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsNavigationRow } from "@/components/official/settings/SettingsNavigationRow";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -32,37 +30,6 @@ import { resolveConfigSection } from "./configTree";
 import { useUniversalSettings } from "./UniversalSettingsContext";
 import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 import { auditedSettingsDispositions, dispositionFor } from "./disposition";
-import {
-  isSubOrgScopeKind,
-  scopeKindNoun,
-  SUB_ORG_SCOPE_KINDS,
-  type SubOrgScopeKind,
-} from "./scopeRows";
-
-/**
- * The rung a person edits a key at on this surface: their own rung when the
- * key is opened to people; otherwise the nearest sub-org rung they are
- * standing inside that the key names (this pay group, this site, …);
- * otherwise the organization. Nearest rung wins, exactly as the resolver
- * ranks them, so the row a person edits is the row that decides the value.
- */
-export function editRungFor(
-  knob: ScopedKnob,
-  selectedScopes: Partial<Record<SubOrgScopeKind, string>>,
-): { kind: KnobScopeKindName; scopeId: string | null } {
-  if (knob.overridable_by.includes("user")) return { kind: "user", scopeId: null };
-  const addressed = [...knob.scope_chain]
-    .reverse()
-    .find(
-      (rung) =>
-        isSubOrgScopeKind(rung.kind) && selectedScopes[rung.kind] !== undefined,
-    );
-  if (addressed && isSubOrgScopeKind(addressed.kind)) {
-    return { kind: addressed.kind, scopeId: selectedScopes[addressed.kind] ?? null };
-  }
-  if (knob.overridable_by.includes("organization")) return { kind: "organization", scopeId: null };
-  return { kind: knob.overridable_by[0] ?? "organization", scopeId: null };
-}
 
 export function UniversalSettingsRows({
   knobs,
@@ -78,14 +45,13 @@ export function UniversalSettingsRows({
     canManageOrganization,
     memberCount,
     organizationName,
-    selectedScopes,
   } = settings;
   if (settings.editingContext !== "system" && (!organizationId || !userId)) return null;
 
   const resolved = knobs.map((knob) => {
     const rung = settings.editingContext === "organization"
       ? { kind: "organization" as KnobScopeKindName, scopeId: null }
-      : editRungFor(knob, selectedScopes);
+      : { kind: "user" as KnobScopeKindName, scopeId: null };
     return {
       knob,
       scopeKind: settings.editingContext === "system" ? "organization" : rung.kind,
@@ -154,42 +120,6 @@ function readableGroupName(feature: string): string {
     .join(" ");
 }
 
-/** The organization the values belong to, when the person has several. */
-export function OrganizationRungSection() {
-  const { organizations, organizationId, selectOrganization } = useUniversalSettings();
-  return (
-    <div className="flex min-w-72 flex-wrap items-center gap-2 text-sm">
-      <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <label htmlFor="settings-organization" className="shrink-0 text-muted-foreground">Organization</label>
-      <select id="settings-organization" className="h-8 min-w-48 max-w-64 rounded-md border border-border bg-background px-2" value={organizationId ?? ""} onChange={(event) => selectOrganization(event.target.value)}>
-        {organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
-      </select>
-    </div>
-  );
-}
-
-/** Shared context selector used by the first screen and every registry section. */
-export function SettingsContextControls() {
-  const { editingContext, selectEditingContext, canManageSystem, organizationName, changedOnly, setChangedOnly } = useUniversalSettings();
-  const options = [
-    { value: "user", label: "Personal" },
-    { value: "organization", label: "Organization" },
-    ...(canManageSystem ? [{ value: "system", label: "System" }] : []),
-  ];
-  return (
-    <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-border/60 bg-muted/20 px-3 py-2 text-sm">
-      {editingContext === "system" ? <ShieldCheck className="h-4 w-4 text-muted-foreground" /> : <UserRound className="h-4 w-4 text-muted-foreground" />}
-      <label htmlFor="settings-context" className="text-muted-foreground">Editing</label>
-      <select id="settings-context" className="h-8 rounded-md border border-border bg-background px-2" value={editingContext} onChange={(event) => selectEditingContext(event.target.value as "user" | "organization" | "system")}>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-      {editingContext !== "system" && <OrganizationRungSection />}
-      <label className="ml-auto flex items-center gap-2 text-muted-foreground"><input type="checkbox" checked={changedOnly} onChange={(event) => setChangedOnly(event.target.checked)} /> Changed only</label>
-      <span className="basis-full text-xs text-muted-foreground">{editingContext === "system" ? "Platform defaults apply where no lower-level value exists." : `${editingContext === "user" ? "Personal" : "Organization"} values apply in ${organizationName ?? "the selected organization"}.`}</span>
-    </div>
-  );
-}
-
 /** Admin-only register audit. Counts are runtime facts, never a frozen baseline. */
 export function RegistryCoverage() {
   const { knobs, canManageSystem } = useUniversalSettings();
@@ -205,65 +135,6 @@ export function RegistryCoverage() {
       <SettingsCallout tone="warning" title="Known consumer gaps">
         {Object.values(auditedSettingsDispositions).filter((item) => item.stateOnlyAt.length > 0).length} audited settings have state-only contexts until their runtime consumer is connected. Table pagination and commerce labels do use the shared resolver.
       </SettingsCallout>
-    </SettingsSection>
-  );
-}
-
-/**
- * "Standing inside" — the sub-org rungs this section's keys name (pay group,
- * location, brand, site, employer profile). Picking a row addresses that rung
- * on the read, shows it in every field's ladder, and makes it the rung an
- * organization-level key is edited at. A rung the host page fixed (a brand's
- * own settings page) is shown, not pickable.
- */
-/** Select item values cannot be "" — a sentinel stands for "no sub-org rung". */
-const WHOLE_ORGANIZATION = "__whole_organization__";
-/** The provider's marker for a rung whose rows could not be listed. */
-export const UNLISTABLE = "__unlistable__";
-
-export function SubOrgRungSection({ knobs }: { knobs: ScopedKnob[] }) {
-  const { selectedScopes, selectScope, scopeRows, hostScopeKinds } = useUniversalSettings();
-  const kinds = SUB_ORG_SCOPE_KINDS.filter((kind) =>
-    knobs.some((knob) => knob.overridable_by.includes(kind)),
-  );
-  if (kinds.length === 0) return null;
-  return (
-    <SettingsSection
-      title="Standing inside"
-      description="These settings can also be set for one part of the organization. Pick the one you mean; leave it empty to work at the organization level."
-    >
-      {kinds.map((kind, index) => {
-        const rows = scopeRows[kind] ?? [];
-        const fixed = hostScopeKinds.includes(kind);
-        const value = selectedScopes[kind] ?? WHOLE_ORGANIZATION;
-        return (
-          <SettingsSelect
-            key={kind}
-            label={scopeKindNoun(kind)}
-            description={
-              fixed
-                ? "Fixed by the page you opened settings from."
-                : rows.length === 0
-                  ? `No ${scopeKindNoun(kind).toLowerCase()} rows exist in this organization yet.`
-                  : `Applies to everyone in that ${scopeKindNoun(kind).toLowerCase()} who has not set their own value.`
-            }
-            value={value}
-            disabled={fixed || rows.length === 0}
-            options={[
-              { value: WHOLE_ORGANIZATION, label: "Whole organization" },
-              ...rows.map((row) => ({
-                value: row.id,
-                label: row.label,
-                disabled: row.id === UNLISTABLE,
-              })),
-            ]}
-            onValueChange={(next) =>
-              selectScope(kind, next === WHOLE_ORGANIZATION ? null : next)
-            }
-            last={index === kinds.length - 1}
-          />
-        );
-      })}
     </SettingsSection>
   );
 }
@@ -322,9 +193,7 @@ export default function UniversalSettingsPane() {
             : `Settings that apply across ${section.domain.name}.`
         }
       />
-      <SettingsContextControls />
       {settings.editingContext === "system" && <RegistryCoverage />}
-      {settings.editingContext !== "system" && <SubOrgRungSection knobs={section.knobs} />}
       {section.feature === null && <DomainChildNavigation section={section} />}
       {hasNoRegisteredControls && (
         <SettingsCallout tone="info" title="No controls are registered yet">

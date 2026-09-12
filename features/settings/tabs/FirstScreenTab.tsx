@@ -31,7 +31,6 @@ import { THEME_MODE_OPTIONS, type ThemeMode } from "../agent-writable-settings";
 import { useUniversalSettings } from "../universal/UniversalSettingsContext";
 import {
   RegistryCoverage,
-  SettingsContextControls,
   UniversalSettingsRows,
 } from "../universal/UniversalSettingsPane";
 
@@ -77,7 +76,6 @@ export default function FirstScreenTab() {
         icon={SlidersHorizontal}
       />
 
-      <SettingsContextControls />
       {settings.editingContext === "system" && <RegistryCoverage />}
 
       {settings.editingContext === "user" && <SettingsSection title="Appearance" icon={Palette}>
