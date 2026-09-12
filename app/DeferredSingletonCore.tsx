@@ -27,6 +27,7 @@ import AssistsDock from "@/features/assists/components/AssistsDock";
 import CloudBrowserHandoffDeepLink from "@/features/cloud-browser/components/CloudBrowserHandoffDeepLink";
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
+import SystemScheduleAlarmBanner from "@/features/scheduling/components/alarm/SystemScheduleAlarmBanner";
 import { FirstSignInAgeGateMount } from "@/features/education/compliance/FirstSignInAgeGateMount";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
@@ -132,6 +133,11 @@ export default function DeferredSingletonCore() {
       <AdminFeatureProvider />
       <ErrorInspectorBadge />
       <LiveCaptureIndicator />
+      {/* Super-admin only; renders nothing for everyone else and nothing when
+          no system schedule needs a human. Global on purpose: on 2026-09-11
+          six critical suspended schedules sat unread for seventeen days on the
+          one admin page that showed them (see the component's header). */}
+      <SystemScheduleAlarmBanner />
       {/* Render-free. Asks a signed-in account with no declared age band for
           it ONCE, after they are in the app — never during signup (Arman,
           2026-08-20). Dismissible; re-asks next session. Guests are handled by

@@ -28,7 +28,7 @@ import type {
   ShareActionResult,
 } from "@/utils/permissions/types";
 import { PermissionLevelDescription } from "../PermissionBadge";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import {
   useUserConnections,

@@ -9,8 +9,9 @@
  * cancelled, and what did the grouping actually save.
  */
 import { Fragment, useState } from "react";
-import { ChevronRight, PackageOpen } from "lucide-react";
+import { ChevronRight, ListFilter, PackageOpen } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
 import { cn } from "@/lib/utils";
 import { num, type ProviderBatch } from "../service/batchAdminService";
@@ -34,12 +35,26 @@ export function ProviderBatchesPanel({
   batches,
   loading,
   error,
+  focusId,
+  onShowItems,
 }: {
   batches: ProviderBatch[] | null;
   loading: boolean;
   error: string | null;
+  /** A submission another panel asked to open — expanded on arrival. */
+  focusId: string | null;
+  /** Narrow the items tab to what this submission carried. */
+  onShowItems: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  // A new focus request from the items tab opens that row; adjusting state
+  // during render (not in an effect) is React's documented shape for "derive
+  // from a prop change" and avoids the extra committed frame.
+  const [seenFocus, setSeenFocus] = useState<string | null>(null);
+  if (focusId !== seenFocus) {
+    setSeenFocus(focusId);
+    if (focusId) setExpanded(focusId);
+  }
 
   if (loading) {
     return (
@@ -148,13 +163,14 @@ export function ProviderBatchesPanel({
                       <CostCell
                         actual={num(row.cost_usd)}
                         estLive={num(row.est_live_cost_usd)}
+                        settled={row.status === "completed"}
                       />
                     </td>
                   </tr>
                   {open && (
                     <tr className="border-b border-border">
                       <td colSpan={10} className="bg-muted/40 px-4 py-3">
-                        <ProviderBatchDetail row={row} />
+                        <ProviderBatchDetail row={row} onShowItems={onShowItems} />
                       </td>
                     </tr>
                   )}
@@ -183,11 +199,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ProviderBatchDetail({ row }: { row: ProviderBatch }) {
+function ProviderBatchDetail({
+  row,
+  onShowItems,
+}: {
+  row: ProviderBatch;
+  onShowItems: (id: string) => void;
+}) {
   const estBatch = num(row.est_cost_usd);
   const actual = num(row.cost_usd);
   return (
     <div className="space-y-3">
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 text-xs"
+        onClick={(e) => {
+          e.stopPropagation();
+          onShowItems(row.id);
+        }}
+      >
+        <ListFilter className="mr-1.5 h-3.5 w-3.5" />
+        Show its {fmtInt(row.request_count)}{" "}
+        {row.request_count === 1 ? "work item" : "work items"}
+      </Button>
       <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-4">
         <Field label="Provider batch id">{row.batch_id ?? "not assigned"}</Field>
         <Field label="Prefix group">{row.prefix_group_key}</Field>

@@ -89,8 +89,34 @@ batch pricing") rather than showing a blank panel or a spinner. The savings band
 with no completed work in the window says so in words and does not print `$0.00`
 as if it were a measurement.
 
+## No dead ends between the two tabs
+
+An item's expanded detail names its provider submission as a link that opens
+that submission on the Provider batches tab, already expanded; a submission's
+detail has a "Show its N work items" button that narrows the items tab to
+`provider_batch_row_id` (chip `submission <id8>`). A raw UUID that opens nothing
+is the dead-end class `no-dead-ends` forbids.
+
+A cost cell on an unsettled row (`status !== 'completed'`) says **not billed
+yet** and shows only the live estimate — never `$0.0000 -100%`, which would read
+as a measured total discount.
+
+## Verified
+
+2026-09-11, localhost as `admin@admin.com`, against the live DB: 32 work items
+(12 pending, 20 completed, 12 `handler_status='dead'` from `crm.party_kind`),
+3 provider batches; the alert band, chip filters, "Show these items", both
+cross-tab jumps, row expand with `handler_error` JSON, 7d/30d/all savings
+windows, and the 375px layout all exercised. Every read on the page returned
+200; the console 400s on admin pages are the known `@ai-matrx/associations`
+door probe (`lib/diagnostics/errorTierRules.ts`), not this surface.
+
 ## Change log
 
+- **2026-09-11** — Cross-tab jumps (item ↔ submission), honest unsettled cost
+  cell, `Input` imported from `@ai-matrx/design-system` (the host
+  `components/ui/input` no longer exports it — the page 500'd), phone layout of
+  the alert band. Browser-verified.
 - **2026-09-11** — Built. Route, service, three panels, nav entries under
   Administration → Knowledge → Knowledge Graph, and reciprocal links with
   `/administration/knowledge/kg-cost`.

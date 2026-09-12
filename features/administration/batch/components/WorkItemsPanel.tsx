@@ -54,12 +54,20 @@ export function WorkItemsPanel({
   handlerFilter,
   onStatusFilter,
   onHandlerFilter,
+  batchFilter,
+  onBatchFilter,
+  onOpenBatch,
   refreshTick,
 }: {
   statusFilter: string | null;
   handlerFilter: string | null;
   onStatusFilter: (s: string | null) => void;
   onHandlerFilter: (h: string | null) => void;
+  /** Narrow to the items one provider submission carried. */
+  batchFilter: string | null;
+  onBatchFilter: (id: string | null) => void;
+  /** Jump to a provider submission on the batches tab. */
+  onOpenBatch: (id: string) => void;
   refreshTick: number;
 }) {
   const [purpose, setPurpose] = useState<string | null>(null);
@@ -107,6 +115,7 @@ export function WorkItemsPanel({
         purpose,
         provider,
         search: debounced || null,
+        batchRowId: batchFilter,
       },
       { signal: controller.signal },
     )
@@ -125,18 +134,20 @@ export function WorkItemsPanel({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [statusFilter, handlerFilter, purpose, provider, debounced, refreshTick]);
+  }, [statusFilter, handlerFilter, purpose, provider, debounced, batchFilter, refreshTick]);
 
   const filtersActive =
     Boolean(statusFilter) ||
     Boolean(handlerFilter) ||
     Boolean(purpose) ||
     Boolean(provider) ||
-    Boolean(debounced);
+    Boolean(debounced) ||
+    Boolean(batchFilter);
 
   const clearAll = () => {
     onStatusFilter(null);
     onHandlerFilter(null);
+    onBatchFilter(null);
     setPurpose(null);
     setProvider(null);
     setSearch("");
@@ -144,6 +155,12 @@ export function WorkItemsPanel({
 
   const activeChips = useMemo(() => {
     const chips: { key: string; label: string; clear: () => void }[] = [];
+    if (batchFilter)
+      chips.push({
+        key: "batch",
+        label: `submission ${batchFilter.slice(0, 8)}`,
+        clear: () => onBatchFilter(null),
+      });
     if (statusFilter)
       chips.push({
         key: "status",
@@ -167,7 +184,17 @@ export function WorkItemsPanel({
         clear: () => setSearch(""),
       });
     return chips;
-  }, [statusFilter, handlerFilter, purpose, provider, debounced, onStatusFilter, onHandlerFilter]);
+  }, [
+    statusFilter,
+    handlerFilter,
+    purpose,
+    provider,
+    debounced,
+    batchFilter,
+    onStatusFilter,
+    onHandlerFilter,
+    onBatchFilter,
+  ]);
 
   return (
     <section className="rounded-lg border border-border bg-card">
@@ -305,6 +332,7 @@ export function WorkItemsPanel({
                           <CostCell
                             actual={num(row.actual_cost_usd)}
                             estLive={num(row.est_live_cost_usd)}
+                            settled={row.status === "completed"}
                           />
                         </td>
                         <td className="px-2 py-1.5 text-right font-mono tabular-nums text-muted-foreground">
@@ -326,7 +354,7 @@ export function WorkItemsPanel({
                       {open && (
                         <tr className="border-b border-border">
                           <td colSpan={8} className="bg-muted/40 px-4 py-3">
-                            <WorkItemDetail row={row} />
+                            <WorkItemDetail row={row} onOpenBatch={onOpenBatch} />
                           </td>
                         </tr>
                       )}
@@ -441,7 +469,13 @@ function Field({
   );
 }
 
-function WorkItemDetail({ row }: { row: WorkItem }) {
+function WorkItemDetail({
+  row,
+  onOpenBatch,
+}: {
+  row: WorkItem;
+  onOpenBatch: (id: string) => void;
+}) {
   const delivery = deliveryOf(row.handler_status);
   return (
     <div className="space-y-3">
@@ -474,7 +508,23 @@ function WorkItemDetail({ row }: { row: WorkItem }) {
         <Field label="Urgency">{row.urgency}</Field>
         <Field label="Prefix group">{row.prefix_group_key}</Field>
         <Field label="Dedupe key">{row.dedupe_key ?? "—"}</Field>
-        <Field label="Provider batch">{row.provider_batch_row_id ?? "not grouped yet"}</Field>
+        <Field label="Provider batch">
+          {row.provider_batch_row_id ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenBatch(row.provider_batch_row_id as string);
+              }}
+              className="underline decoration-dotted underline-offset-2 hover:text-primary"
+              title="Open this submission on the Provider batches tab"
+            >
+              {row.provider_batch_row_id.slice(0, 8)} · open submission
+            </button>
+          ) : (
+            "not grouped yet"
+          )}
+        </Field>
 
         {(row.deadline_at || row.escalated_at) && (
           <>

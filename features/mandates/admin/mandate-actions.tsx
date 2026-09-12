@@ -18,7 +18,7 @@ import {
   ShieldCheck,
   Building2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -308,7 +308,8 @@ export function PromoteToSystemMandateButton({
             setRefusal(null);
             try {
               const copy = await promoteMandateToSystem(mandate.id);
-              toast.success(
+              recordToast.success(
+                { type: "mandate", id: copy.id, title: copy.mandateKey },
                 `Promoted to the system mandate "${copy.mandateKey}". It carries no bindings yet.`,
               );
               onPromoted?.();
