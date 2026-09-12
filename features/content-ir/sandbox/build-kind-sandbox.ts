@@ -43,6 +43,7 @@ import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import postcss from "postcss";
 import tailwindcss from "@tailwindcss/postcss";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // features/content-ir/sandbox → repo root: 3 levels up.
@@ -109,12 +110,13 @@ const FORBIDDEN_CALLS: ReadonlyArray<readonly [RegExp, string]> = [
     [/(^|[^.\w$"'`])import\s*\(/, "a dynamic import()"],
 ];
 
+/**
+ * THE byte-size voice: @ai-matrx/kit/format owns "512 B" / "1.5 KB" / "12 MB".
+ * The local copy printed two decimals at MB; the package's one-decimal-under-
+ * ten rule is the fleet-wide decision.
+ */
 function formatBytes(n: number): string {
-    return n < 1024
-        ? `${n} B`
-        : n < 1024 * 1024
-          ? `${(n / 1024).toFixed(1)} KB`
-          : `${(n / 1024 / 1024).toFixed(2)} MB`;
+    return formatFileSize(n);
 }
 
 function shorten(p: string): string {
