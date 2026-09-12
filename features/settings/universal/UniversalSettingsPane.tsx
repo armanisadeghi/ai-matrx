@@ -203,7 +203,7 @@ export function RegistryCoverage() {
         {missingTaxonomy} need taxonomy filing; {missingUi} rely on their typed control because they have no presentation metadata; {unsupported} secret value{unsupported === 1 ? " is" : "s are"} state-only and link to Vault. Older account, session, and device preferences remain outside this registry and are labeled at their own controls.
       </SettingsCallout>
       <SettingsCallout tone="warning" title="Known consumer gaps">
-        {Object.keys(auditedSettingsDispositions).length} audited settings have state-only lower-level rows until their runtime consumer is connected. Table pagination and commerce labels do use the shared resolver.
+        {Object.values(auditedSettingsDispositions).filter((item) => item.stateOnlyAt.length > 0).length} audited settings have state-only contexts until their runtime consumer is connected. Table pagination and commerce labels do use the shared resolver.
       </SettingsCallout>
     </SettingsSection>
   );
