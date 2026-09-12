@@ -212,8 +212,10 @@ export default function SystemJobsPage() {
     // transports correctly refuse an organization-less request before the
     // wire, so wait for admission and rerun whenever the selected org changes.
     if (!canLoad) return;
-    setLoading(true);
-    setDbLoading(true);
+    // `load` / `loadDb` own their own loading flags (both set them in their
+    // `finally`), so the effect body stays free of synchronous setState — the
+    // cascading-render rule. `isFetching` is what marks a re-load after an org
+    // switch; `loading` stays true only until the FIRST answer lands.
     void load();
     void loadDb();
   }, [canLoad, load, loadDb, organizationId]);

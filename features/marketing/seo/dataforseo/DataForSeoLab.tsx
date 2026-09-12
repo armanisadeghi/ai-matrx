@@ -11,7 +11,7 @@ import {
   TerminalSquare,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { createClient } from "@/utils/supabase/client";
@@ -93,7 +93,9 @@ function JsonPanel({ title, value }: { title: string; value: unknown }) {
 }
 
 export function DataForSeoLab() {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // Sent in the POST body to the SEO server — the explicit selection, never
+  // the personal-org fallback (2026-09-12 class fix).
+  const organizationId = useAppSelector(selectOrganizationId);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const serviceTargets = useAppSelector(selectApiServiceTargets);
   const seoTarget = serviceTargets.find((target) => target.service === "seo");

@@ -34,7 +34,7 @@ import {
 } from "@/lib/supabase/mandateStorage";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { OutputPreview } from "./bench-output-preview";
@@ -142,7 +142,12 @@ export function TryItNowPanel({
   const { launchMandate } = useAgentLauncher();
   const [testMode, setTestMode] = useState<"server" | "display">("server");
   const viewerUserId = useAppSelector(selectUserId);
-  const viewerOrgId = useAppSelector(selectEffectiveOrganizationId);
+  // The org this test RUNS UNDER goes on the wire (principal.organization_id),
+  // so it must be the org the transport itself would send — the EXPLICIT
+  // selection. The effective selector could hand the personal org to a request
+  // the transport refuses, which is the "the header says I have an org but
+  // nothing loads" class (2026-09-12). Boot now always ends with a selection.
+  const viewerOrgId = useAppSelector(selectOrganizationId);
   const [testContext, setTestContext] = useState<"system" | "viewer">("system");
   const surfaceState = useMandateInputSurface(mandate.mandate_key);
   const surface = surfaceState.status === "ready" ? surfaceState.surface : null;
