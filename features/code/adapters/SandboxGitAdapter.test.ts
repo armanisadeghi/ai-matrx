@@ -126,7 +126,9 @@ describe("SandboxGitAdapter daemon translation", () => {
     );
     expect(commitRequest.author).toBe("A User <a@example.invalid>");
 
-    await adapter.add({ cwd: "/home/agent/demo", paths: ["-not-a-flag.ts"] });
+    await expect(
+      adapter.add({ cwd: "/home/agent/demo", paths: ["-not-a-flag.ts"] }),
+    ).resolves.toEqual({ ok: true, output: "" });
     const addRequest = JSON.parse(
       (globalThis.fetch as jest.Mock).mock.calls[3][1].body as string,
     );

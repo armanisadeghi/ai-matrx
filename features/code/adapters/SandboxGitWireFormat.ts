@@ -176,6 +176,12 @@ export function parseDaemonGitLog(payload: unknown): GitLogEntry[] {
   });
 }
 
+/**
+ * The daemon emits `{ status: "success" }` for `git add`; every other
+ * mutation currently includes command output. Keep that deliberate exception
+ * here so a future missing output in commit/push/pull/branch/stash/clone fails
+ * loudly instead of hiding a wire-contract regression.
+ */
 export function parseDaemonGitMutation(payload: unknown, operation: string): {
   ok: true;
   output: string;
@@ -184,6 +190,7 @@ export function parseDaemonGitMutation(payload: unknown, operation: string): {
   if (requiredString(response, "status", operation) !== "success") {
     throw new Error(`git ${operation} returned an unsuccessful response`);
   }
+  if (operation === "add") return { ok: true, output: "" };
   return { ok: true, output: requiredString(response, "output", operation) };
 }
 
