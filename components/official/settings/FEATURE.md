@@ -25,8 +25,12 @@ need; do not add a barrel or a page-local substitute.
 - Compact descriptions remain one desktop line. The accessible `About <label>`
   info icon exposes the full description and `helpText` on click; warnings and
   errors always wrap.
-- Generated control ids use React `useId`; pass `id` only when a durable
-  external target is required.
+- Input ids use React `useId`; `SettingsRow` owns a separate stable anchor
+  from its nearest `SettingsSection` title and label. Use
+  `settingsControlSearchId(sectionTitle, label)` for an exact `?control=` link.
+- `scripts/generate-static-settings-control-index.ts` catalogs only registry
+  tabs and literal `Settings*` labels. Dynamic labels or group titles are
+  excluded rather than guessed; regenerate after an authored static control changes.
 - Large controls stack below their label on narrow screens. Action targets are
   at least 44px tall on touch layouts.
 
@@ -35,3 +39,5 @@ need; do not add a barrel or a page-local substitute.
 - 2026-09-12: Added compact presentation context, page/group/navigation
   compositions, responsive row behavior, stable ids, and accessibility rules.
 - 2026-09-12: Kept compact disclosure out of the row flow until requested.
+- 2026-09-12: Added generated static-control deep links and portal-backed
+  compact help; collapsible headers are keyboard buttons with separate actions.
