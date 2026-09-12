@@ -67,8 +67,14 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   const bottomOpen = useAppSelector(selectTerminalOpen);
   const bottomTab = useAppSelector(selectTerminalActiveTab);
   const activeTab = useAppSelector(selectActiveTab);
+  // Next does not update this value for native `history.pushState`. Track its
+  // serialized value, not the ReadonlyURLSearchParams object identity: that
+  // object can be replaced during an unrelated render while still describing
+  // the pre-push URL, which would otherwise replay stale state and erase a
+  // freshly selected repository root.
+  const paramsSearch = params?.toString() ?? "";
   const [locationSearch, setLocationSearch] = useState(
-    () => params?.toString() ?? "",
+    () => paramsSearch,
   );
   const [restoreRevision, setRestoreRevision] = useState(0);
   const restoringSearchRef = useRef<string | null>(null);
@@ -124,8 +130,10 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   // Next navigation updates `useSearchParams`; direct browser back/forward
   // after our `history.replaceState` needs the native event too.
   useEffect(() => {
-    setLocationSearch(params?.toString() ?? "");
-  }, [params]);
+    setLocationSearch((current) =>
+      current === paramsSearch ? current : paramsSearch,
+    );
+  }, [paramsSearch]);
   useEffect(() => {
     const onPopState = () => {
       isHistoryNavigationRef.current = true;
