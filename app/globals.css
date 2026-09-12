@@ -1638,16 +1638,11 @@
     margin-top: max(0.75rem, env(safe-area-inset-top, 0px));
   }
 
-  /* Page height utilities — subtract header height AND the global alarm
-     banner's clearance. `.shell-main` reserves the banner's height as
-     padding-top (styles/shell.css, GLOBAL ALARM BANNER CLEARANCE), which
-     shrinks an `h-full` child but NOT a fixed `100dvh - header` one — so with a
-     banner up every `.h-page` route overflowed `.shell-main` by exactly the
-     banner's height and the page scrolled twice (the outer shell by 166px,
-     the inner main by the rest; measured on /administration/billing/spend,
-     2026-09-12). The variable is absent without a banner, so `0px` is what
-     every page resolves to then. The bare utilities keep the old value; the
-     `.shell-root`-scoped ones below carry the subtraction.
+  /* Page height utilities — subtract the header height, and NOTHING else.
+     These once also subtracted a global alarm banner's reserved height; that
+     reservation was deleted on Arman's ruling (2026-09-12) that an internal
+     notice never modifies the page underneath it. Global notices float and are
+     movable now, so no route gives up any height for one.
      Use ONLY on /administration/* and (transitional)/(legacy) ResponsiveLayout.
      (core) AppShell routes: use h-full — .shell-main is already full viewport. */
   .h-page {
@@ -1660,23 +1655,6 @@
 
   .max-h-page {
     max-height: calc(100dvh - var(--header-height));
-  }
-
-  /* Only INSIDE the app shell: `.shell-main` is the scroller that reserves the
-     banner's height as padding-top, so only there is the subtraction matched
-     by a reservation. A `(transitional)` route under ResponsiveLayout gets no
-     such padding, and shortening it would leave a dead strip at the bottom
-     with the banner still covering the top. */
-  .shell-root .h-page {
-    height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
-  }
-
-  .shell-root .min-h-page {
-    min-height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
-  }
-
-  .shell-root .max-h-page {
-    max-height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
   }
 
   .bg-textured {
