@@ -104,8 +104,8 @@ export function InheritedPlacementMarker({
           <span className="font-medium text-foreground">
             {placement.topicName}
           </span>{" "}
-          is what {source} says &ldquo;this keyword&rdquo; is about. This site
-          has never ruled on it.
+          is what {source} says this keyword is about. This site has never
+          ruled on it.
         </p>
         <p className="mt-1.5 text-[11px] text-muted-foreground">
           {SCOPE_TIER_MEANING[tier]}

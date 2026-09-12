@@ -3770,3 +3770,26 @@ user-scoped, not platform-admin. Whether a user-scoped, RLS-by-user route may ru
 ambient organization is a genuinely different question from the admin one, and the answer binds
 the tenancy model, so it was not decided by either agent. Decides: whoever owns matrx-connect
 auth admission.
+
+## `seo.gsc_keyword_topics_for` is TIER-BLIND and ORG-BLIND (found 2026-09-12)
+
+THE OFFERING COLUMN's read (`seo.gsc_keyword_topics_for`, the RPC behind
+`getKeywordServices`) selects EVERY `is_primary` row for a keyword with no
+scope filtering at all — no site/brand/organization/system ladder, and no
+`organization_id` check. It therefore (a) can return several rows for one
+keyword, which the TS reader collapses by "last row wins" (arbitrary), and (b)
+would hand this site another organization's placement if one existed, because
+nothing in the function is scoped to the caller's org. Its sibling
+`seo.keyword_placement_resolve` does the ladder correctly.
+
+NOT a live symptom today: no keyword currently carries more than one
+`is_primary` row (0 of 13,623, checked live 2026-09-12), so the two RPCs agree
+and the Offering column is showing the governing placement. The inherited
+marker shipped 2026-09-12 only attaches a rung when the resolver names the SAME
+topic the detail row describes, so a future disagreement degrades to "no
+marker", never to a wrong decision-maker.
+
+The real fix is in the DB: `gsc_keyword_topics_for` should take its candidate
+rows from `keyword_placement_resolve` rather than re-selecting them tier-blind.
+That is a migration against a function five surfaces read, so it was not made
+inside the marker task. Decides: whoever owns the SEO keyword placement ladder.
