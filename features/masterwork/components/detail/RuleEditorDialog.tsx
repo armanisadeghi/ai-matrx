@@ -29,8 +29,14 @@ import {
   readRuleEditorDraft,
 } from "../../agent-context/ruleImprove";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
-import { RuleFields } from "./RuleFields";
-import type { RulebookRule, RulebookSections, RuleSeverity } from "../../types";
+import { policyRulePatch, RuleFields } from "./RuleFields";
+import type {
+  PolicyActionKind,
+  PolicyLevel,
+  RulebookRule,
+  RulebookSections,
+  RuleSeverity,
+} from "../../types";
 
 /**
  * The plain-language rule form (Phase 4 directive): "What's the rule? Why?
@@ -125,6 +131,16 @@ function RuleEditorForm({
     [initial?.id, isNew, persistedEntry?.data, rulebookVersion],
   );
   const wasOpen = useRef(open);
+  // THE POLICY RULE (W58) — a decision rule's shape, editable field by field so
+  // "make it a test, not a question" is one control, not a rewrite.
+  const [isPolicy, setIsPolicy] = useState(initial?.kind === "policy");
+  const [precondition, setPrecondition] = useState(initial?.precondition ?? "");
+  const [nextAction, setNextAction] = useState(initial?.next_action ?? "");
+  const [actionKind, setActionKind] = useState<PolicyActionKind>(
+    initial?.action_kind ?? "ask",
+  );
+  const [cost, setCost] = useState<PolicyLevel>(initial?.cost ?? "low");
+  const [risk, setRisk] = useState<PolicyLevel>(initial?.risk ?? "low");
   const [name, setName] = useState(stagedDraft?.name ?? initial?.name ?? "");
   const [statement, setStatement] = useState(
     stagedDraft?.statement ?? initial?.statement ?? "",
@@ -278,6 +294,21 @@ function RuleEditorForm({
           quote: quote.trim() || undefined,
           severity,
           section,
+          ...policyRulePatch({
+            name,
+            statement,
+            rationale,
+            detection,
+            quote,
+            severity,
+            section,
+            isPolicy,
+            precondition,
+            nextAction,
+            actionKind,
+            cost,
+            risk,
+          }),
         },
       });
       dispatch(clearWizardDraft(wizardId));
@@ -408,6 +439,12 @@ function RuleEditorForm({
               quote,
               severity,
               section,
+              isPolicy,
+              precondition,
+              nextAction,
+              actionKind,
+              cost,
+              risk,
             }}
             onChange={(patch) => {
               if (patch.name !== undefined) setName(patch.name);
@@ -417,6 +454,13 @@ function RuleEditorForm({
               if (patch.quote !== undefined) setQuote(patch.quote);
               if (patch.severity !== undefined) setSeverity(patch.severity);
               if (patch.section !== undefined) setSection(patch.section);
+              if (patch.isPolicy !== undefined) setIsPolicy(patch.isPolicy);
+              if (patch.precondition !== undefined)
+                setPrecondition(patch.precondition);
+              if (patch.nextAction !== undefined) setNextAction(patch.nextAction);
+              if (patch.actionKind !== undefined) setActionKind(patch.actionKind);
+              if (patch.cost !== undefined) setCost(patch.cost);
+              if (patch.risk !== undefined) setRisk(patch.risk);
             }}
             sections={sections}
           />

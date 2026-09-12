@@ -82,6 +82,16 @@ function toFieldValues(
     quote: evidence,
     severity: proposal.severity,
     section: proposal.section,
+    // A checkup proposal is never a policy rule (the auditor proposes wording,
+    // not judgment shape), and this dialog does not write one — so the decision
+    // fields are OMITTED rather than shown as controls whose values would be
+    // dropped at Apply. Same contract as `quote` above.
+    isPolicy: false,
+    precondition: "",
+    nextAction: "",
+    actionKind: "ask",
+    cost: "low",
+    risk: "low",
   };
 }
 
@@ -269,7 +279,7 @@ export function CheckupSuggestionDialog({
               sections={rulebook.sections}
               idPrefix="checkup-rule"
               autoFocusName={false}
-              omitFields={["quote"]}
+              omitFields={["quote", "isPolicy"]}
             />
           ) : null}
         </div>

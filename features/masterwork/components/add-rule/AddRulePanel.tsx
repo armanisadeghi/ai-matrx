@@ -36,7 +36,11 @@ import { nextRuleId } from "../../ruleIds";
 import { getRulebook, upsertRuleWithRetry } from "../../service";
 import type { Rulebook, RulebookRule } from "../../types";
 import { SEVERITY_LABELS } from "../../types";
-import { RuleFields, type RuleFieldValues } from "../detail/RuleFields";
+import {
+  policyRulePatch,
+  RuleFields,
+  type RuleFieldValues,
+} from "../detail/RuleFields";
 
 export interface AddRulePanelProps {
   rulebookId: string;
@@ -48,6 +52,19 @@ export interface AddRulePanelProps {
 
 type Mode = "ai" | "manual";
 
+/** THE POLICY RULE (W58): off unless the Expert says this is a judgment call. */
+const POLICY_FIELD_DEFAULTS = {
+  isPolicy: false,
+  precondition: "",
+  nextAction: "",
+  actionKind: "ask",
+  cost: "low",
+  risk: "low",
+} as const satisfies Pick<
+  RuleFieldValues,
+  "isPolicy" | "precondition" | "nextAction" | "actionKind" | "cost" | "risk"
+>;
+
 const EMPTY_FIELDS = (section: string): RuleFieldValues => ({
   name: "",
   statement: "",
@@ -56,6 +73,7 @@ const EMPTY_FIELDS = (section: string): RuleFieldValues => ({
   quote: "",
   severity: "major",
   section,
+  ...POLICY_FIELD_DEFAULTS,
 });
 
 export function AddRulePanel({
@@ -143,6 +161,7 @@ export function AddRulePanel({
           quote: values.quote.trim() || undefined,
           severity: values.severity,
           section: values.section,
+          ...policyRulePatch(values),
           ...(opts.draft ? { draft: true } : {}),
           ...(opts.note ? { source_ref: { note: opts.note } } : {}),
         };
@@ -429,6 +448,9 @@ export function AddRulePanel({
                           quote: "",
                           severity: aiDraft.severity,
                           section: aiDraft.section,
+                          // The AI draft lane writes ordinary rules only; the
+                          // Expert turns one into a decision rule by editing it.
+                          ...POLICY_FIELD_DEFAULTS,
                         },
                         {
                           draft: true,
@@ -450,6 +472,7 @@ export function AddRulePanel({
                         rationale: aiDraft.rationale,
                         detection: aiDraft.detection,
                         quote: "",
+                        ...POLICY_FIELD_DEFAULTS,
                         severity: aiDraft.severity,
                         section: aiDraft.section,
                       });

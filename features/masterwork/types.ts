@@ -194,6 +194,59 @@ export interface RulebookRule {
    * compares, and relations are structural, not prose.
    */
   relates_to?: RuleRelation[];
+  /**
+   * 🚨 THE POLICY RULE (W58, 2026-09-12). `"policy"` means this is a DECISION
+   * rule, not a standing commandment: expert judgment under uncertainty —
+   * "given what is known at this point, do this ONE thing next, because Z, at
+   * this cost and this risk". Absent (or `""`) on every rule written before
+   * W58 and on every ordinary rule; absence means "an ordinary rule".
+   *
+   * The wall it closes: a rule was a static STATEMENT and nothing else, so a
+   * distilled judgment flattened into one prose sentence — the executing agent
+   * could not tell the precondition from the action, and the Expert could not
+   * change the action without rewriting a paragraph.
+   */
+  kind?: "policy";
+  /** Policy rule: what is known at the point this judgment applies. */
+  precondition?: string;
+  /** Policy rule: the ONE next move — a question, test, treatment, referral. */
+  next_action?: string;
+  /** Policy rule: which kind of move it is — see `POLICY_ACTION_KINDS`. */
+  action_kind?: PolicyActionKind;
+  /** Policy rule: cost OF THE ACTION (not of the situation). */
+  cost?: PolicyLevel;
+  /** Policy rule: risk OF THE ACTION (not of the situation). */
+  risk?: PolicyLevel;
+}
+
+/**
+ * The closed action vocabulary of a policy rule, with the plain-English label
+ * the Expert picks from — the server refuses any value outside this set by
+ * name, so the UI never invents a seventh.
+ */
+export const POLICY_ACTION_KINDS = [
+  { value: "ask", label: "Ask — get more information from the person" },
+  { value: "test", label: "Test — run a check or a measurement" },
+  { value: "treat", label: "Treat — act on the situation itself" },
+  { value: "refer", label: "Refer — hand it to someone else" },
+  { value: "wait", label: "Wait — deliberately do nothing yet, and re-look" },
+  { value: "commit", label: "Commit — settle on the answer and proceed" },
+] as const;
+
+export type PolicyActionKind = (typeof POLICY_ACTION_KINDS)[number]["value"];
+
+/** Cost and risk levels — of the ACTION, never of the situation. */
+export const POLICY_LEVELS = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+] as const;
+
+export type PolicyLevel = (typeof POLICY_LEVELS)[number]["value"];
+
+/** A rule whose shape is a judgment call rather than a standing statement. */
+export function isPolicyRule(rule: RulebookRule): boolean {
+  return rule.kind === "policy";
 }
 
 /**
@@ -267,6 +320,15 @@ export const RULE_CONTENT_FIELDS = [
   "quote",
   "severity",
   "section",
+  // The policy shape is CONTENT, not structure: changing the next action is
+  // changing the rule, so it resolves a rejection exactly like a statement
+  // edit does. (`relates_to` stays out — it is structural.)
+  "kind",
+  "precondition",
+  "next_action",
+  "action_kind",
+  "cost",
+  "risk",
 ] as const;
 
 function contentChanged(prev: RulebookRule, next: RulebookRule): boolean {

@@ -10,6 +10,7 @@
 
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { RulebookSections, RuleSeverity } from "../../types";
+import { GitBranch } from "lucide-react";
+import {
+  POLICY_ACTION_KINDS,
+  POLICY_LEVELS,
+  type PolicyActionKind,
+  type PolicyLevel,
+  type RulebookSections,
+  type RuleSeverity,
+} from "../../types";
 
 export interface RuleFieldValues {
   name: string;
@@ -28,6 +37,42 @@ export interface RuleFieldValues {
   quote: string;
   severity: RuleSeverity;
   section: string;
+  /**
+   * 🚨 THE POLICY RULE (W58). A rule used to be a static statement only, so a
+   * judgment call — "given what is known here, ask this one question next" —
+   * had to be flattened into prose. `isPolicy` reveals the decision fields;
+   * they are carried on the rule itself (`kind: "policy"`).
+   */
+  isPolicy: boolean;
+  precondition: string;
+  nextAction: string;
+  actionKind: PolicyActionKind;
+  cost: PolicyLevel;
+  risk: PolicyLevel;
+}
+
+/** The decision fields as a rule stores them — the ONE mapping, so no consumer
+ * invents its own. Returns the three clearing `undefined`s for an ordinary
+ * rule, so turning the toggle back off actually removes the shape. */
+export function policyRulePatch(values: RuleFieldValues) {
+  if (!values.isPolicy) {
+    return {
+      kind: undefined,
+      precondition: undefined,
+      next_action: undefined,
+      action_kind: undefined,
+      cost: undefined,
+      risk: undefined,
+    } as const;
+  }
+  return {
+    kind: "policy",
+    precondition: values.precondition.trim() || undefined,
+    next_action: values.nextAction.trim() || undefined,
+    action_kind: values.actionKind,
+    cost: values.cost,
+    risk: values.risk,
+  } as const;
 }
 
 export function RuleFields({
@@ -138,6 +183,123 @@ export function RuleFields({
           </Select>
         </div>
       </div>
+      {omitted.has("isPolicy") ? null : (
+      <>
+      {/* 🚨 THE POLICY RULE (W58). Off by default and silent when off: most
+          rules genuinely ARE standing statements, and a form that demanded a
+          precondition for every one of them would push Experts to invent
+          conditions they do not hold. */}
+      <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Label
+              htmlFor={`${idPrefix}-is-policy`}
+              className="flex items-center gap-1.5"
+            >
+              <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+              This is a decision rule
+            </Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Turn this on when the rule is a judgment call — &ldquo;when I know
+              this much, here&rsquo;s the one thing I do next&rdquo; — rather
+              than something that is always true.
+            </p>
+          </div>
+          <Switch
+            id={`${idPrefix}-is-policy`}
+            checked={values.isPolicy}
+            onCheckedChange={(checked) => onChange({ isPolicy: checked })}
+          />
+        </div>
+        {values.isPolicy ? (
+          <div className="mt-3 space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-precondition`}>
+                What do you know at this point?
+              </Label>
+              <ProTextarea
+                id={`${idPrefix}-precondition`}
+                value={values.precondition}
+                onChange={(e) => onChange({ precondition: e.target.value })}
+                placeholder="Everything you'd know before making this call — and nothing you wouldn't."
+                rows={4}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-next-action`}>
+                What do you do next?
+              </Label>
+              <ProTextarea
+                id={`${idPrefix}-next-action`}
+                value={values.nextAction}
+                onChange={(e) => onChange({ nextAction: e.target.value })}
+                placeholder="The one next move — the question you ask, the check you run, what you do."
+                rows={4}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>What kind of move is it?</Label>
+              <Select
+                value={values.actionKind}
+                onValueChange={(v) =>
+                  onChange({ actionKind: v as PolicyActionKind })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {POLICY_ACTION_KINDS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>What does it cost to do?</Label>
+                <Select
+                  value={values.cost}
+                  onValueChange={(v) => onChange({ cost: v as PolicyLevel })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {POLICY_LEVELS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>How risky is doing it?</Label>
+                <Select
+                  value={values.risk}
+                  onValueChange={(v) => onChange({ risk: v as PolicyLevel })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {POLICY_LEVELS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+      </>
+      )}
       {omitted.has("quote") ? null : (
         <div className="space-y-1.5">
           <Label htmlFor={`${idPrefix}-quote`}>
