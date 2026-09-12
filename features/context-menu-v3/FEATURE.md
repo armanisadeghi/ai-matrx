@@ -402,6 +402,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 
 ## Change Log
 
+- 2026-09-11 — **Controlled textarea insertions persist through the surface owner.** Reference fences and content blocks now send the complete next value through `onTextReplace` when a React-controlled field supplies it; direct DOM insertion remains the fallback for uncontrolled fields. `utils/text-insertion.test.ts` guards both paths. This closes the live `/notes` failure where choosing a reference dismissed the picker but React immediately restored the original note.
+
 - 2026-09-11 — **Mobile core verbs are parity-guarded after the reference omission.** `MobileMenuContent` now carries Insert/Copy reference, Speak, Listen, and the canonical `chat` id. `components/MobileMenuContent.core-verbs.test.ts` fails whenever a core verb in `menu-model.ts` is absent from the separately arranged mobile root list. The broader model/rendering consolidation remains future work; the doc no longer claims the hand-built mobile arrangement cannot drift.
 
 - 2026-09-11 — **"Insert reference…" / "Copy reference…" joins the core verbs.** New clipboard-section leaf (`insert-reference`, role `insertReference`) on every surface: opens the `referencePicker` overlay (type → action → search, common types first, all pickable types behind a grouped browse), inserts the canonical minified ```matrx reference fence at the caret on editable surfaces (own paragraph), copies with toast + manual-copy fallback everywhere else. Handler `handleInsertReference` in the engine; desktop layout parity pinned in `layout-parity.test.ts`; verified live on `/notes` (fence inserted, chip rendered in split preview, chip opens the chat).
