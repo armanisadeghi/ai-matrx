@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -11,27 +11,38 @@ import { fetchKnobOverrideCounts } from "@/lib/scoped-config/service";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 
 function isOverdue(setBy: string, reviewDue: string | null): boolean {
-  return setBy === "agent" && Boolean(reviewDue) && new Date(reviewDue!) < new Date();
+  return setBy === "agent" && reviewDue !== null && new Date(reviewDue) < new Date();
+}
+
+type CountSnapshot = { counts: Record<string, number>; error: string | null };
+let countSnapshot: CountSnapshot = { counts: {}, error: null };
+const countListeners = new Set<() => void>();
+const subscribeCounts = (listener: () => void) => {
+  countListeners.add(listener);
+  return () => countListeners.delete(listener);
+};
+const readCounts = () => countSnapshot;
+function refreshCounts() {
+  void fetchKnobOverrideCounts().then(
+    (rows) => {
+      countSnapshot = { counts: Object.fromEntries(rows.map((row) => [`${row.feature}.${row.key}`, row.total_count])), error: null };
+      countListeners.forEach((listener) => listener());
+    },
+    (error: unknown) => {
+      countSnapshot = { ...countSnapshot, error: error instanceof Error ? error.message : String(error) };
+      countListeners.forEach((listener) => listener());
+    },
+  );
 }
 
 function SystemKnobRows() {
   const settings = useUniversalSettings();
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const [countError, setCountError] = useState<string | null>(null);
-  const loadCounts = async () => {
-    try {
-      const rows = await fetchKnobOverrideCounts();
-      setCounts(Object.fromEntries(rows.map((row) => [`${row.feature}.${row.key}`, row.total_count])));
-      setCountError(null);
-    } catch (error) {
-      setCountError(error instanceof Error ? error.message : String(error));
-    }
-  };
+  const { counts, error: countError } = useSyncExternalStore(subscribeCounts, readCounts, readCounts);
 
   useEffect(() => {
-    void loadCounts();
+    refreshCounts();
     return registerDirectiveHandler("settings_changed", () => {
-      void loadCounts();
+      refreshCounts();
       settings.refresh();
     });
   }, [settings.refresh]);
@@ -51,7 +62,7 @@ function SystemKnobRows() {
       </div>
       <div className="mt-4">
         <UniversalSettingsRows knobs={settings.knobs} onChanged={() => {
-          void loadCounts();
+          refreshCounts();
           settings.refresh();
         }} />
       </div>
