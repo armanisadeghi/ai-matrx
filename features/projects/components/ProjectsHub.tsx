@@ -475,7 +475,8 @@ export function ProjectsHub({
     (scopeReadState === "loading" || scopeReadState === null);
   const scopeReadFailed = scopeReadState === "unavailable";
   const scopeReadError =
-    resolvedScopeProjects?.scopeId === scopeParam &&
+    resolvedScopeProjects !== null &&
+    resolvedScopeProjects.scopeId === scopeParam &&
     resolvedScopeProjects.state === "unavailable"
       ? resolvedScopeProjects.error
       : null;
