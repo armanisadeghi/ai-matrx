@@ -62,22 +62,43 @@ comment on view platform.visible_user_identity is
 revoke all on platform.visible_user_identity from public;
 grant select on platform.visible_user_identity to authenticated, service_role;
 
--- ═══════════════════════════════════════════════════ 2. the registry read the RPCs already make
--- `platform.entity_default_list_scope(token)` returns one word from `platform.entity_types` and
--- nothing else. Nine list RPCs already call it (DD-137b7); as definers they could. As invokers they
--- cannot without this grant, and a screen that cannot read where it should open is the exact defect
--- this axis exists to end.
+-- ═══════════════════════════════════════════════════ 2. declare both doors (db-rules §6d-4)
+-- 🚨 THE DECLARATION COMES BEFORE THE GRANT, AND THAT ORDER IS LOAD-BEARING. The
+-- `enforce_definer_client_grants` event trigger REVOKES a client EXECUTE grant on an undeclared
+-- SECURITY DEFINER function at `ddl_command_end`. Measured here the hard way: a bare
+-- `grant execute … to authenticated` on `platform.entity_default_list_scope` committed with no
+-- error at all, and the ACL afterwards was unchanged — the guard had already taken it back. It is
+-- the guard doing its job; what it does NOT do is say so, which is recorded in this lane's report
+-- as a finding against the guard rather than worked around here.
+insert into platform.client_callable_door(schema_name, function_name, identity_args, declared_by, reason)
+select d.schema_name, d.function_name, d.identity_args, 'DD-137c', d.reason
+  from (values
+    ('platform', 'visible_user_identity', '(view)',
+     'Peer-scoped owner identity for the SECURITY INVOKER list RPCs. Runs with the view owner''s '
+     'rights over auth.users, which `authenticated` cannot read at all, and narrows to: yourself, a '
+     'member of a non-personal organization you also belong to, or a platform administrator. '
+     'Classes touched: the identity of a person, never their content.'),
+    ('platform', 'entity_default_list_scope', 'p_token text',
+     'Where a list LANDS for one registry token — one word (`mine` or `organization`) read from '
+     'platform.entity_types. Nine `%_list_scoped` RPCs already call it (DD-137b7) and they become '
+     'SECURITY INVOKER in DD-137c, so the caller must be able to make the read. It reads no '
+     'person''s data of any class: the answer is identical for every caller and is a property of '
+     'the TABLE, not of a row.')
+  ) as d(schema_name, function_name, identity_args, reason)
+ where not exists (select 1 from platform.client_callable_door e
+                    where e.schema_name = d.schema_name and e.function_name = d.function_name);
+
+-- ═══════════════════════════════════════════════════ 3. the registry read the RPCs already make
 grant execute on function platform.entity_default_list_scope(text) to authenticated;
 
--- ═══════════════════════════════════════════════════ 3. declare the door (db-rules §6d-4)
-insert into platform.client_callable_door(schema_name, function_name, identity_args, declared_by, reason)
-select 'platform', 'visible_user_identity', '(view)', 'DD-137c',
-       'Peer-scoped owner identity for the SECURITY INVOKER list RPCs. Runs with the view owner''s '
-       'rights over auth.users, which `authenticated` cannot read at all, and narrows to: yourself, '
-       'a member of a non-personal organization you also belong to, or a platform administrator. '
-       'Classes touched: the identity of a person (confidential), never their content.'
- where not exists (select 1 from platform.client_callable_door d
-                    where d.schema_name = 'platform' and d.function_name = 'visible_user_identity');
+-- RESIDUE, named rather than hidden: while proving the paragraph above, this lane applied a
+-- one-line throwaway file (`zz_diag2.sql`, the bare grant, sha256 1572b56d41cb32ba…) to find out
+-- whether the grant was being reverted. The file is gone; its ledger row is not, and it claims a
+-- migration nobody can read ran on 2026-09-12. It cannot be removed from here — `db:apply` refuses
+-- any file that writes `public._schema_migrations`, and it is right to. `pnpm check:migrations`
+-- never sees it (it only reports files that exist on disk), so nothing is broken; it is recorded in
+-- this lane's report as a stray ledger row for the chair to sweep, because a ledger with a row
+-- nobody can explain is how a ledger stops being believed.
 
 -- ═══════════════════════════════════════════════════ 4. PROOF — live, real identities, rolled back
 -- The view is worth nothing unless it shows a peer and refuses a stranger. Both are asserted here
@@ -153,14 +174,20 @@ begin
 
   execute 'reset role';
 
-  -- (e) anonymous sees nobody at all.
+  -- (e) anonymous cannot reach the view AT ALL — there is no SELECT grant to `anon`, so the answer
+  -- is a refusal, not an empty list. A measured refusal is stronger than "RLS let nothing through":
+  -- it cannot be undone by a future policy edit, only by a future GRANT that this assertion catches.
   perform set_config('request.jwt.claims', null, true);
   execute 'set local role anon';
-  select count(*) into v_n from platform.visible_user_identity;
-  execute 'reset role';
-  if v_n <> 0 then
-    raise exception 'dd137c1: anonymous can read % identities through the view', v_n;
-  end if;
+  begin
+    select count(*) into v_n from platform.visible_user_identity;
+    execute 'reset role';
+    raise exception 'dd137c1: anonymous read % identities through the view — it must have no grant '
+                    'at all, and now it has one.', v_n;
+  exception
+    when insufficient_privilege then
+      begin execute 'reset role'; exception when others then null; end;
+  end;
 
   raise notice 'dd137c1 PROVEN: % sees themselves and their peer %, cannot see the stranger %, and '
                'anonymous sees nobody.', v_a, v_b, v_stranger;
