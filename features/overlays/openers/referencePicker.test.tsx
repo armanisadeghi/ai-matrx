@@ -42,6 +42,9 @@ describe("useOpenReferencePicker", () => {
     group!.onPicked({
       delivery: "insert",
       fence: "```matrx\n{}\n```",
+      shell: "{}",
+      directiveClass: "reference",
+      type: "conversation",
       title: "Test chat",
     });
     expect(onPicked).toHaveBeenCalledTimes(1);

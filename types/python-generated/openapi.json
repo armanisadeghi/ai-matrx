@@ -81554,6 +81554,48 @@
         }
       }
     },
+    "/admin/client-directives/refresh-required": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Client Directives"
+        ],
+        "summary": "Send Refresh Required",
+        "operationId": "send_refresh_required_admin_client_directives_refresh_required_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequiredRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectivePublishReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scheduling/validate-cron": {
       "post": {
         "tags": [
@@ -131821,6 +131863,10 @@
           "summary": {
             "type": "string",
             "title": "Summary"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
           }
         },
         "additionalProperties": false,
@@ -131831,7 +131877,8 @@
           "status",
           "resource_kind",
           "resource_ids",
-          "summary"
+          "summary",
+          "message"
         ],
         "title": "DirectiveItemApplied"
       },
@@ -131857,6 +131904,10 @@
           "fault": {
             "type": "string",
             "title": "Fault"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
           }
         },
         "additionalProperties": false,
@@ -131865,9 +131916,51 @@
           "directive",
           "index",
           "error",
-          "fault"
+          "fault",
+          "message"
         ],
         "title": "DirectiveItemFailed"
+      },
+      "DirectivePublishReport": {
+        "properties": {
+          "published": {
+            "type": "boolean",
+            "title": "Published"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "delivered_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Delivered Topics"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "published",
+          "topics",
+          "delivered_topics"
+        ],
+        "title": "DirectivePublishReport",
+        "description": "What happened to one directive publish. Never raised; always returned\nand logged, so an operator door can say the honest thing out loud."
       },
       "DirectiveReceipt": {
         "properties": {
@@ -170095,6 +170188,13 @@
           "reason": {
             "type": "string",
             "title": "Reason"
+          },
+          "holder_problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Holder Problems"
           }
         },
         "additionalProperties": false,
@@ -170175,6 +170275,13 @@
               }
             ],
             "title": "Reason"
+          },
+          "holder_problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Holder Problems"
           }
         },
         "additionalProperties": false,
@@ -205122,6 +205229,69 @@
         "type": "object",
         "title": "RefreshNowRequest",
         "description": "`catch_up` finishes what is unfinished; `refresh` re-opens discovery for\nkeywords whose search has aged out first."
+      },
+      "RefreshRequiredRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "deploy",
+              "breaking_change",
+              "operator"
+            ],
+            "title": "Reason",
+            "default": "operator"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "platform",
+              "user"
+            ],
+            "title": "Audience",
+            "default": "platform"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RefreshRequiredRequest"
       },
       "RefreshScheduleRequest": {
         "properties": {

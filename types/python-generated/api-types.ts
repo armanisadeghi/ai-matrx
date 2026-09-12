@@ -36232,6 +36232,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/client-directives/refresh-required": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Refresh Required */
+        post: operations["send_refresh_required_admin_client_directives_refresh_required_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scheduling/validate-cron": {
         parameters: {
             query?: never;
@@ -57798,6 +57815,8 @@ export interface components {
             resource_ids: string[];
             /** Summary */
             summary: string;
+            /** Message */
+            message: string;
         };
         /** DirectiveItemFailed */
         DirectiveItemFailed: {
@@ -57814,6 +57833,23 @@ export interface components {
             error: string;
             /** Fault */
             fault: string;
+            /** Message */
+            message: string;
+        };
+        /**
+         * DirectivePublishReport
+         * @description What happened to one directive publish. Never raised; always returned
+         *     and logged, so an operator door can say the honest thing out loud.
+         */
+        DirectivePublishReport: {
+            /** Published */
+            published: boolean;
+            /** Topics */
+            topics: string[];
+            /** Delivered Topics */
+            delivered_topics: string[];
+            /** Reason */
+            reason?: string | null;
         };
         /** DirectiveReceipt */
         DirectiveReceipt: {
@@ -75182,6 +75218,8 @@ export interface components {
             mandate_key: string;
             /** Reason */
             reason: string;
+            /** Holder Problems */
+            holder_problems?: string[];
         };
         /** MandateCoverageResponse */
         MandateCoverageResponse: {
@@ -75206,6 +75244,8 @@ export interface components {
             leader_key: string | null;
             /** Reason */
             reason: string | null;
+            /** Holder Problems */
+            holder_problems?: string[];
         };
         /** MandateCoverageStatesResponse */
         MandateCoverageStatesResponse: {
@@ -91350,6 +91390,27 @@ export interface components {
              * @default catch_up
              */
             mode?: string;
+        };
+        /** RefreshRequiredRequest */
+        RefreshRequiredRequest: {
+            /**
+             * Reason
+             * @default operator
+             * @enum {string}
+             */
+            reason?: "deploy" | "breaking_change" | "operator";
+            /** Title */
+            title?: string | null;
+            /** Body */
+            body?: string | null;
+            /**
+             * Audience
+             * @default platform
+             * @enum {string}
+             */
+            audience?: "platform" | "user";
+            /** User Id */
+            user_id?: string | null;
         };
         /**
          * RefreshScheduleRequest
@@ -173273,6 +173334,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContextRenderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_refresh_required_admin_client_directives_refresh_required_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequiredRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectivePublishReport"];
                 };
             };
             /** @description Validation Error */
