@@ -69,11 +69,34 @@ All three reps were strong on evidence, rejecting the patch, a real-seam guard, 
 
 ### GREEN — with the skill ("Before acting, read …/diagnose/SKILL.md and follow it")
 
-GREEN_PLACEHOLDER
+Each GREEN rep read the skill (its first tool call was `Read …/diagnose/SKILL.md`) and cited it in a closing "What guided this" list. Graded 2026-09-11 by a finisher that ran none of the reps.
+
+| Rep | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8 | Result |
+|---|---|---|---|---|---|---|---|---|---|
+| G1 | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
+| G2 | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
+| G3 | Y | Y | **N** | Y | Y | Y | Y | Y | FAIL (C3 only) |
+
+**GREEN: 0/3 on the all-eight bar. C2 moved 0/3 → 3/3. C3 stayed 0/3.**
+
+- **G1:** loop = "take the stored payload from 20fd67fb and render it through the published `KindInstanceRender`, using the version the frontend actually installs … assert that the purpose-built component appears and the key/value fallback does not", plus a browser DOM check, both before any fix. Four suspects (registry change, two package copies, key mismatch, swallowed import error) with "Each gets a test that should flip the loop" — no prediction per suspect. Guard at the package-to-app seam over real stored payloads, fail-then-pass. Named the fallback silence and "CI passed because those tests check source code" as a second defect.
+- **G2:** loop = browser check on 20fd67fb asserting "the kind's own component mounted, not the generic key/value one", with a flashcard message as the working sibling. Wrote the skill's own instruction back ("write 3–5 ranked guesses, each with a prediction") and then listed five guesses with no predictions; only agent drift got a test ("Checking the stored payload against the kind schema rules it in or out"). Found from code that `kindIsRoutable` never loads the component, so the fault is downstream of the teammate's evidence. Walkthrough stopgap "pin or revert to last-good" — pinning conflicts with the latest-law, a defect outside these criteria.
+- **G3 (graded by the runner, confirmed by the finisher):** loop = browser script on 20fd67fb failing on the grey table, then the same on a flashcard set. Four ranked guesses, no predictions. **Leakage:** it read today's `KindInstanceRender.tsx` and quoted the post-fix comment that a row naming the generic fallback is "coverage on paper only" — that comment did not exist on 2026-08-28, so its boundary reasoning is partly informed by the resolution. It disclosed this ("router details come from today's checkout").
+
+**Reading:** the skill fixed the failure the reps had in common (no red loop before code reading: §1 is the longest section and is titled "the core of the skill"). It did not fix the falsifiable-prediction miss even though §4 states it in one sentence and G2 repeated that sentence. Per skill-authoring §3/§5.4, three agreeing misses against a stated rule means the form is not binding, not that words are missing.
 
 ### Rationalizations harvested (verbatim)
 
-RATIONALIZATIONS_PLACEHOLDER
+RED (no skill):
+- R1: "The duplicate-package and registry theories are guesses to test" (hypotheses offered without predictions).
+- R2: "revert or pin the one bad change once step 4 finds it" (fix named before a loop exists).
+- R3: "Then I'd test locally with the package before and after the change to find the one that broke it" (differential run offered as the loop; no assertion).
+
+GREEN (skill read):
+- G1: "Each gets a test that should flip the loop" (a test promised in place of a prediction).
+- G2: "write 3–5 ranked guesses, each with a prediction" followed by five guesses and no predictions (the rule restated, then skipped).
+- G2: "if a bisect finds a bad package release, pin or revert to last-good. That is a proven, reversible move" (pin offered as safe; the workspace forbids pins).
+- G3: "I'd trace each step once, with tagged temporary logging, and find the first one where good data goes bad" (boundary walk correct, but ranked guesses came after it with no predictions).
 
 ### Trigger check (description as of 2026-09-10)
 
@@ -81,7 +104,7 @@ Each prompt went to a fresh `quick` (sonnet) subagent with this question: "Which
 
 | Prompt | Expected | Answer | Fired? |
 |---|---|---|---|
-| "/workflows/runs on aidream started returning 500s after yesterday's deploy — find out why" | fire | TRIGGER1_PLACEHOLDER | TRIGGER1_FIRED |
+| "/workflows/runs on aidream started returning 500s after yesterday's deploy — find out why" | fire | runner (2026-09-10): `server-log-analyzer`; finisher rerun (2026-09-11): `diagnose`: "a live 500-error regression after a deploy, and diagnose is the doctrine for root-causing any bug/regression before proposing a fix" | **MISS** on the recorded run; fire on rerun |
 | "Notes stopped saving sometime this week. No error … It worked last Friday." | fire | `diagnose`: "a 'worked before, now silently fails with no error' regression" | **fire** |
 | "I bumped the scraper client timeout to 60s like you said and the page fetches still fail about a third of the time. What now?" | fire | none: "server-log-analyzer/diagnose are for different scopes … I'd investigate directly" | **MISS** |
 | "Write a pytest for aidream's normalize_org_slug function" | silent | `aidream:task-hygiene` | silent |
@@ -90,13 +113,38 @@ Each prompt went to a fresh `quick` (sonnet) subagent with this question: "Which
 
 **Listing observation:** in the eval runner's own skill listing, which loads at the workspace root, `diagnose` appeared **name-only**, with no description. Per skill-authoring §1, the listing budget admits descriptions by usage score, and a new skill with no uses scores last. Subagent listings may differ. The scraper miss fits a reader who never saw the "immediately after a fix attempt did not work" trigger text.
 
-### Proposed refactors (NOT applied — SKILL.md is being edited by other sessions)
+### Proposed refactors (NOT applied — never edit a SKILL.md from an eval)
 
-REFACTOR_PLACEHOLDER
+Grounds: C3 missed 6/6 across RED and GREEN while §4 already says "Each states a prediction". Change the form, not the words (skill-authoring §3): make the prediction a required column and the missing column a red flag.
+
+```diff
+--- a/skills/diagnose/SKILL.md
++++ b/skills/diagnose/SKILL.md
+@@ ## 4. Hypothesize: several, falsifiable, one variable at a time
+-Write 3–5 ranked hypotheses before testing any — a single hypothesis locks onto the first plausible
+-story. Each states a prediction: *"if X is the cause, changing Y turns the loop green."* No
+-prediction → sharpen it or drop it. Test one variable per run (debugger/REPL or targeted boundary
+-logs), never "log everything and grep". A result that contradicts every hypothesis sends you back to
+-§3, not to a guess.
++Write 3–5 ranked hypotheses before testing any — a single hypothesis locks onto the first plausible
++story. Write them as this table; a row with an empty middle column is not a hypothesis, sharpen it or
++drop it:
++
++| # | If the cause is … | … then this one change turns the loop green | One-variable test |
++|---|---|---|---|
++
++Test one variable per run (debugger/REPL or targeted boundary logs), never "log everything and grep".
++A result that contradicts every hypothesis sends you back to §3, not to a guess.
+@@ ## Red flags — stop, go back to §1
+ - "Let me just try…" or "it's probably X" before a red loop exists
++- A list of suspects, guesses, or "theories to test" with no prediction column
+```
+
+Trigger: the recorded should-fire miss on "500s after yesterday's deploy" (picked `server-log-analyzer`) did not reproduce on a 2026-09-11 rerun. No description change is proposed from one non-reproducing miss; the scraper "what now?" miss (row 3) is the standing one and is covered by the listing observation above — rerun row 3 after the description gains usage before editing it.
 
 ### Limitations
 
 - Baseline subagents still saw the skill listing entry (at most its name and description). They were told not to load it, and no RED rep cited `diagnose`.
 - These were dry-run plans for a historical incident. No rep could run a loop. C2 therefore grades whether the plan names a concrete loop before any fix, not whether one was executed.
-- The runner graded all reps against the criteria above. No second grader was used.
+- The runner graded RED and G3; a separate finisher session (2026-09-11), which ran no rep, graded G1–G2, re-checked G3, and filled this record. Neither wrote the skill.
 - All reps shared one scenario (a frontend and package render path). A server-side or flake scenario is a sensible next rerun.
