@@ -69,6 +69,25 @@ export interface RuleSourceRef {
   entity?: { token: string; id: string };
   /** The dump Approach's provenance for a rule distilled from a URL source. */
   url?: string;
+  /**
+   * WHICH PIECE of a body of work this rule was distilled from — the canonical
+   * key of the `platform.masterwork_corpus_item` row, stamped on both piece
+   * paths (link and file) so it speaks the same vocabulary as a synthesized
+   * rule's `pieces` citations.
+   */
+  corpus_piece?: string;
+  /** The cross-piece synthesis pass wrote this rule. */
+  synthesis?: boolean;
+  /** The pieces a synthesized rule cites as proof — `corpus_piece` keys. */
+  pieces?: string[];
+  /**
+   * The distinct pieces that have produced this evidence rule. Its length is
+   * the rule's support; the promotion knob
+   * (`masterwork_distillation.evidence_promotion_pieces`) is the threshold.
+   */
+  evidence_pieces?: string[];
+  /** Support at the moment the server promoted this rule out of evidence. */
+  promoted_from_evidence?: number;
 }
 
 /**
@@ -149,6 +168,23 @@ export interface RulebookRule {
    * rule: the Scout applying it consumes it, and approval clears it.
    */
   feedback?: string;
+  /**
+   * 🚨 THE EVIDENCE STANDING (2026-09-12). `"evidence"` means this rule is what
+   * ONE piece of a body of work showed — the proof behind a cross-piece rule,
+   * not a question the Expert owes an answer on.
+   *
+   * The incident: 20 published pieces produced 416 per-piece drafts plus 4
+   * synthesized rules, all of them "Waiting on you", and the only controls were
+   * Approve-all or one-by-one — so the Expert pressed Approve-all, which is the
+   * failure this lane exists to prevent. Evidence rules are still drafts (a
+   * machine never activates anything), are excluded from the counters, the
+   * review queue and every built Masterwork, and are reached behind the
+   * synthesized rule that cites them. They become ordinary drafts when the
+   * Expert promotes one, or when the server sees the same judgment recur across
+   * enough distinct pieces. Absent on every rule written before 2026-09-12 and
+   * on every other lane — absence means "an ordinary rule".
+   */
+  standing?: "evidence";
   /** Back-reference to the source location this rule was distilled from. */
   source_ref?: RuleSourceRef;
   /**
@@ -160,14 +196,66 @@ export interface RulebookRule {
   relates_to?: RuleRelation[];
 }
 
-/** The one review state of a rule — precedence retired > rejected > draft > approved. */
-export type RuleState = "approved" | "draft" | "rejected" | "retired";
+/**
+ * The one review state of a rule — precedence
+ * retired > rejected > evidence > draft > approved.
+ *
+ * `evidence` sits above `draft` deliberately: an evidence rule IS a draft in
+ * the database (nothing a machine writes is ever active), and every surface
+ * that asks "is this waiting on the Expert?" must get NO for it.
+ */
+export type RuleState =
+  | "approved"
+  | "draft"
+  | "evidence"
+  | "rejected"
+  | "retired";
 
 export function ruleState(rule: RulebookRule): RuleState {
   if (rule.retired === true) return "retired";
   if (rule.rejected === true) return "rejected";
+  if (rule.standing === "evidence") return "evidence";
   if (rule.draft === true) return "draft";
   return "approved";
+}
+
+/** THE ONE predicate — mirrors `distill.is_evidence_rule` on the server. */
+export function isEvidenceRule(rule: RulebookRule): boolean {
+  return rule.standing === "evidence";
+}
+
+/** How many distinct pieces have produced this evidence rule. */
+export function evidenceSupport(rule: RulebookRule): number {
+  return new Set(rule.source_ref?.evidence_pieces ?? []).size;
+}
+
+/**
+ * The evidence rules a synthesized rule is built on: every evidence rule whose
+ * piece the synthesized rule cites. A rule with no citations has no evidence to
+ * show — never a guess.
+ */
+export function evidenceFor(
+  synthesized: RulebookRule,
+  rules: readonly RulebookRule[],
+): RulebookRule[] {
+  const cited = new Set(synthesized.source_ref?.pieces ?? []);
+  if (cited.size === 0) return [];
+  return rules.filter(
+    (rule) =>
+      isEvidenceRule(rule) &&
+      Boolean(rule.source_ref?.corpus_piece) &&
+      cited.has(rule.source_ref!.corpus_piece!),
+  );
+}
+
+/**
+ * Promoting an evidence rule to an ordinary draft — the Expert's one click.
+ * It raises standing only: the rule stays a draft awaiting their Approve, and
+ * not one word of it changes.
+ */
+export function promoteEvidenceRule(rule: RulebookRule): RulebookRule {
+  const { standing: _standing, ...rest } = rule;
+  return { ...rest, draft: true };
 }
 
 /** The fields an edit can change — the content of a rule, as opposed to its review state. */

@@ -31,6 +31,14 @@ export interface RulebookKpis {
   rejected: number;
   changeRequests: number;
   retired: number;
+  /**
+   * 🚨 Per-piece observations a body-of-work run filed as EVIDENCE behind the
+   * cross-piece rules they prove (`types.ts` § standing). They are NOT rules,
+   * NOT waiting on the Expert, and are excluded from `total`, `approved`,
+   * `drafts` and `progressPct` — counted here only so the page can offer the
+   * door to them honestly instead of hiding them.
+   */
+  evidence: number;
   /** 0-100, share of live rules the Expert has approved. */
   progressPct: number;
 }
@@ -89,24 +97,36 @@ export function computeKpis(rulebook: Pick<Rulebook, "rules">): RulebookKpis {
   let drafts = 0;
   let rejected = 0;
   let retired = 0;
+  let evidence = 0;
   let changeRequests = 0;
   for (const rule of rulebook.rules) {
     const state = ruleState(rule);
     if (state === "retired") retired += 1;
+    // 🚨 Evidence is counted and then set aside — never folded into "Rules" or
+    // "Waiting on you". 20 published pieces produced 416 per-piece drafts on
+    // 2026-09-12 and the strip asked the Expert for 416 decisions; they pressed
+    // Approve-all. An observation behind a pattern is not a question.
+    else if (state === "evidence") evidence += 1;
     else if (state === "rejected") rejected += 1;
     else if (state === "draft") drafts += 1;
     else approved += 1;
-    if (rule.feedback && state !== "rejected" && state !== "retired")
+    if (
+      rule.feedback &&
+      state !== "rejected" &&
+      state !== "retired" &&
+      state !== "evidence"
+    )
       changeRequests += 1;
   }
   const live = approved + drafts + rejected;
   return {
-    total: rulebook.rules.length,
+    total: rulebook.rules.length - evidence,
     approved,
     drafts,
     rejected,
     changeRequests,
     retired,
+    evidence,
     progressPct: live === 0 ? 0 : Math.round((approved / live) * 100),
   };
 }
