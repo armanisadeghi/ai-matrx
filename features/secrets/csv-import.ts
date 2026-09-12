@@ -248,15 +248,17 @@ export function isPossibleDuplicateRow(
     .flatMap((destination) =>
       destination.metadata ? [destination.metadata] : [],
     );
-  return existingItems.some(
-    (item) =>
-      item.displayName === title &&
-      item.loginUrls
-        .map(safeDestination)
-        .some((destination) =>
-          destination.metadata ? urls.includes(destination.metadata) : false,
-        ),
-  );
+  return existingItems.some((item) => {
+    if (item.displayName !== title) return false;
+    const existingOrigins = item.loginUrls
+      .map(safeDestination)
+      .flatMap((destination) =>
+        destination.metadata ? [destination.metadata] : [],
+      );
+    return urls.length > 0
+      ? existingOrigins.some((origin) => urls.includes(origin))
+      : existingOrigins.length === 0;
+  });
 }
 
 export function prepareCsvImportRow(input: {

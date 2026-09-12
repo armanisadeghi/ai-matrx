@@ -247,6 +247,45 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).toContain("account changed");
   });
 
+  it("opens cleanly after request-organization hydration while the dialog is closed and idle", async () => {
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open={false}
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    mockOrganizationId = "22222222-2222-4222-8222-222222222222";
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open={false}
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    expect(document.body.textContent).toContain("Choose import file");
+    expect(document.body.textContent).not.toContain("request organization changed");
+  });
+
   it("refuses a normalized over-limit row before the create transport", async () => {
     fetchCsvImportLimitsMock.mockResolvedValueOnce({
       maxFileBytes: 10_000,
@@ -413,6 +452,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () => workers[1]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "organization stale" })] } } as MessageEvent));
     expect(document.body.textContent).toContain("request organization changed");
     expect(document.body.textContent).not.toContain("organization stale");
+    expect(document.body.textContent).not.toContain("Import selected records");
   });
 
   it("does not resurrect a timed-out or errored JSON parse after worker cleanup", async () => {

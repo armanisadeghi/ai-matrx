@@ -114,8 +114,17 @@ export function parseBitwardenExport(text: string, limits: Pick<CsvImportLimits,
 }
 
 export function isPossibleBitwardenDuplicate(record: BitwardenImportRecord, existingItems: { displayName: string; loginUrls: string[] }[]): boolean {
+  if (record.status !== "supported") return false;
   const destination = record.urls[0];
-  return Boolean(destination) && existingItems.some((item) => item.displayName === record.title && item.loginUrls.map(safeDestination).some((url) => url.metadata === destination));
+  return existingItems.some((item) => {
+    if (item.displayName !== record.title) return false;
+    const existingOrigins = item.loginUrls
+      .map(safeDestination)
+      .flatMap((url) => (url.metadata ? [url.metadata] : []));
+    return destination
+      ? existingOrigins.includes(destination)
+      : existingOrigins.length === 0;
+  });
 }
 
 export function prepareBitwardenCommand(input: { record: BitwardenImportRecord; principal: VaultPrincipal; expectedActor: VaultExpectedActor; rowId: string; browserFillEnabled: boolean; includeTrash: boolean; limits: CsvImportLimits; existingItems?: { displayName: string; loginUrls: string[] }[]; skipPossibleDuplicate?: boolean }): CsvImportPreparation {

@@ -132,6 +132,9 @@ export function VaultCsvImportDialog({
   const progressCursor = useRef(0);
   const clearAfterRun = useRef(false);
   const invalidated = useRef(false);
+  // State updates do not cover the interval before actor lookup or worker setup.
+  // This ref marks a locally selected file synchronously for lifecycle invalidation.
+  const hasActiveFileIntake = useRef(false);
   const [source, setSource] = useState("generic");
   const [jsonRecords, setJsonRecords] = useState<BitwardenImportRecord[]>([]);
   const [jsonLoaded, setJsonLoaded] = useState(false);
@@ -153,6 +156,7 @@ export function VaultCsvImportDialog({
   const [otpItems, setOtpItems] = useState<{ id: string; title: string }[]>([]);
 
   const clearSensitiveDraft = (preserveResult = false) => {
+    hasActiveFileIntake.current = false;
     parseGeneration.current += 1;
     jsonWorker.current?.terminate();
     jsonWorker.current = null;
@@ -183,6 +187,14 @@ export function VaultCsvImportDialog({
     clearSensitiveDraft();
     setError(message);
   };
+  const invalidateActiveDraft = (message: string) => {
+    const hadActiveFileIntake = hasActiveFileIntake.current;
+    clearSensitiveDraft();
+    if (hadActiveFileIntake) {
+      invalidated.current = true;
+      setError(message);
+    }
+  };
 
   useEffect(
     () => () => {
@@ -204,7 +216,7 @@ export function VaultCsvImportDialog({
       data: { subscription },
     } = createClient().auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT" || event === "USER_UPDATED")
-        invalidateDraft(
+        invalidateActiveDraft(
           "Your account changed. Choose the file and review the import again.",
         );
     });
@@ -218,7 +230,7 @@ export function VaultCsvImportDialog({
   useEffect(() => {
     if (previousPrincipalKey.current === principalKey) return;
     previousPrincipalKey.current = principalKey;
-    invalidateDraft(
+    invalidateActiveDraft(
       "The import destination changed. Choose the file and review the import again.",
     );
   }, [principalKey]);
@@ -227,7 +239,7 @@ export function VaultCsvImportDialog({
   useEffect(() => {
     if (previousOrganizationId.current === selectedOrganizationId) return;
     previousOrganizationId.current = selectedOrganizationId;
-    invalidateDraft(
+    invalidateActiveDraft(
       "The request organization changed. Choose the file and review the import again.",
     );
   }, [selectedOrganizationId]);
@@ -242,6 +254,7 @@ export function VaultCsvImportDialog({
   };
   const load = async (file: File) => {
     clearSensitiveDraft();
+    hasActiveFileIntake.current = true;
     const generation = parseGeneration.current;
     cancelled.current = false;
     invalidated.current = false;
@@ -709,12 +722,6 @@ export function VaultCsvImportDialog({
                   );
                 })}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Possible duplicates use matching title and URL metadata. They
-                are skipped by default; existing credentials are never
-                overwritten. OTP data is preserved inactive and requires
-                explicit Authenticator setup after import.
-              </p>
               <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Switch
                   checked={enableBrowserFill}
@@ -739,6 +746,16 @@ export function VaultCsvImportDialog({
               {jsonRecords.some((record) => record.hasVisiblePublicKey) && <p className="text-xs text-muted-foreground">SSH public keys are visible metadata. Private keys and source records are revealable only, and none are injected into a sandbox.</p>}
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={metadataApproved} onCheckedChange={setMetadataApproved}/><span>I approve disclosure of the listed destination and public-key metadata.</span></label>
             </div>
+          )}
+          {(preview || jsonLoaded) && (
+            <p className="text-xs text-muted-foreground">
+              Possible duplicates use matching names and available destination
+              metadata. Records without a destination can match by name alone,
+              so distinct records may be flagged; choose Create separately to
+              keep both. Existing credentials are never overwritten. OTP data
+              is preserved inactive and requires explicit Authenticator setup
+              after import.
+            </p>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {result && (

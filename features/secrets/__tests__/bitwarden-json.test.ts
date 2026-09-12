@@ -1,4 +1,4 @@
-import { parseBitwardenExport, prepareBitwardenCommand } from "../bitwarden-json";
+import { isPossibleBitwardenDuplicate, parseBitwardenExport, prepareBitwardenCommand } from "../bitwarden-json";
 
 const limits = { maxFileBytes: 100_000, maxRecords: 20, maxColumns: 20, maxCellBytes: 10_000, maxFields: 202, maxPlaintextFieldBytes: 1_048_576, maxRequestBodyBytes: 12_582_912, maxJsonDepth: 64 };
 const source = (items: string) => `{\"encrypted\":false,\"folders\":[{\"id\":\"11111111-1111-4111-8111-111111111111\",\"name\":\"Personal\"}],\"items\":[${items}]}`;
@@ -53,5 +53,20 @@ describe("plain Bitwarden JSON", () => {
     const create = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: true, includeTrash: false, limits, existingItems: [], skipPossibleDuplicate: false });
     expect(create.status).toBe("ready");
     if (create.status === "ready") expect(create.command.body.login_urls).toEqual(["https://example.com"]);
+  });
+
+  test("flags same-title no-origin notes and SSH keys as possible duplicates while preserving Create separately", () => {
+    const [note] = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"Example","type":2,"secureNote":{"type":0}}'), limits);
+    const [ssh] = parseBitwardenExport(source('{"id":"44444444-4444-4444-8444-444444444444","name":"deploy","type":5,"sshKey":{"privateKey":"PRIVATE","publicKey":"PUBLIC","keyFingerprint":"SHA256:x"}}'), limits);
+    if (!note || !ssh) throw new Error("missing parsed records");
+    expect(isPossibleBitwardenDuplicate(note, [{ displayName: "Example", loginUrls: [] }])).toBe(true);
+    expect(isPossibleBitwardenDuplicate(ssh, [{ displayName: "deploy", loginUrls: [] }])).toBe(true);
+    expect(isPossibleBitwardenDuplicate(note, [{ displayName: "Different", loginUrls: [] }])).toBe(false);
+    expect(isPossibleBitwardenDuplicate(note, [{ displayName: "Example", loginUrls: ["https://example.test"] }])).toBe(false);
+    expect(isPossibleBitwardenDuplicate({ ...note, status: "unsupported" }, [{ displayName: "Example", loginUrls: [] }])).toBe(false);
+    const skipped = prepareBitwardenCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeTrash: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: true });
+    expect(skipped).toMatchObject({ status: "skipped", reason: "possible_duplicate" });
+    const create = prepareBitwardenCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeTrash: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: false });
+    expect(create.status).toBe("ready");
   });
 });

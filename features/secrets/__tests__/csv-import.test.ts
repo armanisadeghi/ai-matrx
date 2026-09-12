@@ -104,6 +104,28 @@ describe("Vault CSV import", () => {
     ).toBe(true);
   });
 
+  test("flags matching title-only records only when both records have no active origin", () => {
+    const preview = parseCsvText("name,note\nExample,plain note", limits);
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    const mapping = suggestedCsvMapping(preview.headers);
+    expect(
+      isPossibleDuplicateRow(row, preview, mapping, [
+        { displayName: "Example", loginUrls: [] },
+      ]),
+    ).toBe(true);
+    expect(
+      isPossibleDuplicateRow(row, preview, mapping, [
+        { displayName: "Different", loginUrls: [] },
+      ]),
+    ).toBe(false);
+    expect(
+      isPossibleDuplicateRow(row, preview, mapping, [
+        { displayName: "Example", loginUrls: ["https://example.test"] },
+      ]),
+    ).toBe(false);
+  });
+
   test("stops on an ambiguous retry without dispatching the next frozen row", async () => {
     const calls: string[] = [];
     const command = {
