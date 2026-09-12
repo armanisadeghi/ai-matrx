@@ -135,6 +135,9 @@ export function VaultCsvImportDialog({
   // State updates do not cover the interval before actor lookup or worker setup.
   // This ref marks a locally selected file synchronously for lifecycle invalidation.
   const hasActiveFileIntake = useRef(false);
+  // `undefined` is distinct from a signed-out `null`: the first observed
+  // actor conservatively invalidates any draft created before auth hydrated.
+  const authenticatedActorId = useRef<string | null | undefined>(undefined);
   const [source, setSource] = useState("generic");
   const [jsonRecords, setJsonRecords] = useState<BitwardenImportRecord[]>([]);
   const [jsonLoaded, setJsonLoaded] = useState(false);
@@ -214,8 +217,17 @@ export function VaultCsvImportDialog({
   useEffect(() => {
     const {
       data: { subscription },
-    } = createClient().auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT" || event === "USER_UPDATED")
+    } = createClient().auth.onAuthStateChange((event, session) => {
+      const nextActorId = session?.user.id ?? null;
+      const actorChanged = authenticatedActorId.current !== nextActorId;
+      const actorWasUnknown = authenticatedActorId.current === undefined;
+      authenticatedActorId.current = nextActorId;
+      if (
+        actorChanged ||
+        actorWasUnknown ||
+        event === "SIGNED_OUT" ||
+        event === "USER_UPDATED"
+      )
         invalidateActiveDraft(
           "Your account changed. Choose the file and review the import again.",
         );

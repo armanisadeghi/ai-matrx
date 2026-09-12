@@ -13,13 +13,17 @@ import { VaultWorkspace } from "./VaultWorkspace";
 import { fetchBitwardenJsonImportLimits, fetchCsvImportLimits } from "../csv-import-limits";
 import { createVaultItem, VaultImportTransportError } from "../vault-service";
 
-let mockAuthStateListener: ((event: string) => void) | undefined;
+let mockAuthStateListener:
+  | ((event: string, session?: { user: { id: string } } | null) => void)
+  | undefined;
 let mockOrganizationId = "11111111-1111-4111-8111-111111111111";
 
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
-      onAuthStateChange: (listener: (event: string) => void) => {
+      onAuthStateChange: (
+        listener: (event: string, session?: { user: { id: string } } | null) => void,
+      ) => {
         mockAuthStateListener = listener;
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       },
@@ -403,6 +407,32 @@ describe("VaultCsvImportDialog", () => {
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [{ ordinal: 0, title: "late" }] } } as MessageEvent));
     expect(document.body.textContent).not.toContain("late");
+  });
+
+  it("terminates a mounted JSON worker before a SIGNED_IN actor replacement can return its draft", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    const input = await chooseBitwardenJson();
+    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}")] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    if (!mockAuthStateListener) throw new Error("auth listener missing");
+    await act(async () => mockAuthStateListener?.("SIGNED_IN", { user: { id: "user-b" } }));
+    expect(workers[0]?.terminate).toHaveBeenCalled();
+    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "late signed in" })] } } as MessageEvent));
+    expect(document.body.textContent).not.toContain("late signed in");
+    expect(document.body.textContent).toContain("account changed");
+  });
+
+  it("keeps a loaded draft through a same-actor token refresh", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    if (!mockAuthStateListener) throw new Error("auth listener missing");
+    await act(async () => mockAuthStateListener?.("INITIAL_SESSION", { user: { id: "user-1" } }));
+    const input = document.body.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+    Object.defineProperty(input, "files", { configurable: true, value: [csvFile("title\nCredential")] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(document.body.textContent).toContain("Masked preview:");
+    await act(async () => mockAuthStateListener?.("TOKEN_REFRESHED", { user: { id: "user-1" } }));
+    expect(document.body.textContent).toContain("Masked preview:");
   });
 
   it("refuses an oversized JSON file before reading it", async () => {
