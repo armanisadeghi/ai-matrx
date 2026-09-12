@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-09
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-12
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -247,6 +247,7 @@ Personal and organization credentials render through the same
 | [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | The one create form for Vault and Authenticator: basic-purpose picker/full catalog, progressive website login parts, TOTP, recovery codes, secure notes, protected files, local password generation, and Custom builder.                                                                                                                            |
 | [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode, including authenticator, protected files, and first-class recovery-code copy/Mark-used behavior, plus share, transfer, fork, soft delete, and audit trail.                                                                                                                     |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                                                                      |
+| [`components/VaultCsvImportDialog.tsx`](./components/VaultCsvImportDialog.tsx) | Local CSV and plain-Bitwarden-JSON import session: bounded worker parsing, masked preflight, frozen idempotent commands, and truthful partial-result accounting.                                                                                                                                                                                                                                            |
 | [`authenticator-service.ts`](./authenticator-service.ts)                       | `/api/authenticator/*` client — metadata plus the signed-in owner's short-lived current-code request; never a seed.                                                                                                                                                                                                                                 |
 | [`authenticator-otpauth.ts`](./authenticator-otpauth.ts)                       | Pure client parse of a setup key / `otpauth://` URI, kept in lockstep with aidream's `otpauth.py`, for the instant enrollment preview.                                                                                                                                                                                                              |
 | [`hooks/use-authenticator.ts`](./hooks/use-authenticator.ts)                   | Authenticator metadata/manage hook: list, rename, enable/disable, and remove. Login creation/enrollment stays in the canonical Vault form.                                                                                                                                                                                                          |
@@ -299,7 +300,7 @@ the sealed setup seed has no reveal path at any privilege.
 6. Access never depends on the active organization — the viewed principal is an explicit prop.
 7. Every mutation surfaces its error via toast; catalog rows failing schema validation are skipped LOUDLY (`console.error`).
 8. **The context menu never carries a secret.** A revealed `SecretValue` puts plaintext in the DOM, so the vault menu must never let the v3 shell self-resolve `content` from the subtree and must never carry the user's `selection` — it passes an explicit `getApplicationScope` built from names, type, provider, host, status, tags and FIELD KEYS only. Never a field value, never `notes`, never a non-secret custom field's value (a user can and does paste a secret into a free-text box). No `entity` is passed either, so Attach To / Share stay hidden: a credential is not agent context.
-9. **CSV import stays local until per-row confirmation.** `VaultCsvImportDialog` uses Papa Parse's worker, masked previews and the effective `vault.import` knobs. It preserves source cells in encrypted `import_source_record`, never sends raw files or uses global/storage state; each frozen row calls canonical `POST /items` with `source=system_import`, its UUID idempotency key, explicit principal and a fresh expected actor/request-org check. Import never enters `useVault.run()` organization replay.
+9. **Password-manager imports stay local until per-row confirmation.** `VaultCsvImportDialog` uses Papa Parse for CSV and a bounded dedicated worker for plain Bitwarden JSON, with masked previews and effective `vault.import` knobs. A source/principal/request-org change, deadline, error, close, or unmount terminates the JSON worker; its late replies never revive the draft. JSON shows one selected destination origin, skips possible duplicates by default, and separately accounts for selected, skipped, invalid, unsupported, and deleted records before and after import. Every frozen row calls canonical `POST /items` with `source=system_import`, its UUID idempotency key, explicit principal and a fresh expected actor/request-org check; retry reuses only the unresolved command and UUID. Source cells remain in encrypted `import_source_record`; raw files never enter network, global state, or storage. Import never enters `useVault.run()` organization replay.
 
 ## MCP connections (Phase 4 cutover, 2026-07-23)
 
@@ -328,6 +329,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-09-12** — Completed the plain Bitwarden JSON lifecycle guard: terminal worker replies cannot repopulate a cleared session; previews and results distinguish duplicate skips, invalid, unsupported, and deleted records; retry preserves the unresolved command receipt.
 
 - **2026-09-12** — Added the first CSV password-manager import vertical: worker parsing, encrypted source preservation, effective-org limits, frozen per-row receipt identity, masked preview, duplicate skip and bounded sequential cancellation. Server receipt/schema integration remains a required live verification.
 

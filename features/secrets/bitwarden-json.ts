@@ -122,7 +122,7 @@ export function prepareBitwardenCommand(input: { record: BitwardenImportRecord; 
   const record = input.record;
   if (record.status === "invalid") return { status: "invalid", diagnostic: record.reason ?? "The record is invalid." };
   if (record.status === "unsupported") return { status: "skipped", reason: "unsupported" };
-  if (record.status === "skipped" && !input.includeTrash) return { status: "skipped", reason: "invalid" };
+  if (record.status === "skipped" && !input.includeTrash) return { status: "skipped", reason: "deleted" };
   if (!record.sourceRecord) return { status: "invalid", diagnostic: "The record has no source representation." };
   if (input.skipPossibleDuplicate && isPossibleBitwardenDuplicate(record, input.existingItems ?? [])) return { status: "skipped", reason: "possible_duplicate" };
   const fields: NonNullable<VaultItemCreateRequest["fields"]> = [{ field_key: "import_source_record", value: record.sourceRecord, handling: "revealable", editable: false, inject_into_sandbox: false }];

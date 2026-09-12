@@ -38,7 +38,7 @@ export type CsvImportPreparation =
   | { status: "ready"; command: CsvImportCommand }
   | {
       status: "skipped";
-      reason: "invalid" | "unsupported" | "possible_duplicate";
+      reason: "invalid" | "unsupported" | "deleted" | "possible_duplicate";
     }
   | { status: "invalid"; diagnostic: string };
 export type CsvImportOutcome = {
