@@ -15,7 +15,10 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { createTemplate, clearTemplateCache } from "@/features/message-templates/services/message-templates-service";
 import { useToast } from "@/components/ui/use-toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 interface SaveTemplateModalProps {
     isOpen: boolean;
@@ -144,7 +147,7 @@ export function SaveTemplateModal({
             setIsSaving(true);
             
             await createTemplate({
-                organization_id: requireSelectedOrgId(),
+                organization_id: await ensureOrganizationContext(),
                 label: label.trim(),
                 content: content.trim(),
                 role: role,
@@ -164,6 +167,9 @@ export function SaveTemplateModal({
             onSave(label, content, tags);
             onClose();
         } catch (error) {
+            // Declining the organization question is an answer, not a failure:
+            // nothing was written and nothing is said.
+            if (isOrganizationSelectionCancelled(error)) return;
             console.error('Error saving template:', error);
             toast({
                 title: "Error",
