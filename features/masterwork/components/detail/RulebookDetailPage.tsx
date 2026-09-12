@@ -68,6 +68,9 @@ import {
 } from "../../service";
 import {
   applyManualRuleEdit,
+  evidenceFor,
+  isEvidenceRule,
+  promoteEvidenceRule,
   ruleState,
   SEVERITY_LABELS,
   type Masterwork,
@@ -77,6 +80,7 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
+import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
@@ -291,6 +295,7 @@ function RuleRow({
   onImprove,
   onRequestChanges,
   onReconsider,
+  onPromoteEvidence,
 }: {
   rule: RulebookRule;
   /** Every rule in the Rulebook — a `relates_to` link resolves its sibling's
@@ -304,6 +309,8 @@ function RuleRow({
   onImprove: () => void;
   onRequestChanges: () => void;
   onReconsider: () => void;
+  /** Raise one of this rule's evidence observations to a rule of its own. */
+  onPromoteEvidence: (rule: RulebookRule) => void;
 }) {
   const [openRow, setOpenRow] = useState(false);
   const state = ruleState(rule);
@@ -444,6 +451,13 @@ function RuleRow({
             </div>
           ) : null}
           <RuleRelations rule={rule} allRules={allRules} />
+          {/* 🚨 THE EVIDENCE STANDING: the per-piece observations this pattern
+              was built from, behind one click — never 416 questions. */}
+          <RuleEvidenceDisclosure
+            evidence={evidenceFor(rule, allRules)}
+            canEdit={canEdit}
+            onPromote={onPromoteEvidence}
+          />
           {rule.source_ref ? (
             <RuleProvenance sourceRef={rule.source_ref} />
           ) : null}
@@ -866,8 +880,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       return [] as { code: string; label: string; rules: RulebookRule[] }[];
     const q = search.trim().toLowerCase();
     const match = (r: RulebookRule) => {
+      // 🚨 THE EVIDENCE STANDING: per-piece observations are never rows in this
+      // list. They are reached behind the synthesized rule that cites them
+      // (RuleEvidenceDisclosure) — that is what stops a body of work from
+      // becoming 416 questions. A SEARCH still reaches them, so nothing the
+      // Rulebook holds is unreachable.
+      if (isEvidenceRule(r) && !q) return false;
       const state = ruleState(r);
       const matchesFilter =
+        isEvidenceRule(r) ||
         ruleFilter === "all" ||
         (ruleFilter === "approved" && state === "approved") ||
         (ruleFilter === "draft" && state === "draft") ||
@@ -1217,6 +1238,28 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     setImproveTarget(rule);
     setImproveOpen(true);
   }, []);
+
+  // Promote one evidence observation to a rule of its own. It raises STANDING
+  // only: the rule stays a draft awaiting the Expert's Approve, and not one
+  // word of it changes. (Saving an edit is not approving — Arman, 2026-08-17.)
+  const promoteEvidence = useCallback(
+    async (rule: RulebookRule) => {
+      if (!rulebook) return;
+      try {
+        await persist(
+          rulebook.rules.map((r) =>
+            r.id === rule.id ? promoteEvidenceRule(r) : r,
+          ),
+        );
+        toast.success("Now a rule waiting for your approval", {
+          description: rule.name,
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not promote");
+      }
+    },
+    [rulebook, persist],
+  );
 
   // "Approve all" means the rules WAITING ON the Expert — never rejected ones
   // (those are the interviewer's queue, and approving them would erase the
@@ -1982,6 +2025,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                               setFeedbackTarget({ rule, mode: "request" })
                             }
                             onReconsider={() => void reconsiderRule(rule)}
+                            onPromoteEvidence={(evidenceRule) =>
+                              void promoteEvidence(evidenceRule)
+                            }
                           />
                         ))}
                       </div>

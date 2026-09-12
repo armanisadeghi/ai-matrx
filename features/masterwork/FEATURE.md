@@ -89,6 +89,22 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     to the old fail-closed behaviour, and the adoption ANNOUNCES itself with a toast naming the
     workspace. Guarded by `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
 
+19. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
+    the body-of-work lane turned 20 published pieces into 416 per-piece drafts plus 4 synthesized
+    cross-piece rules, this page counted all 420 as "Waiting on you", and the Expert pressed
+    Approve-all — the failure the review lane exists to prevent. `ruleState()` returns
+    `"evidence"` for those rules (precedence retired > rejected > evidence > draft > approved), so
+    every surface that asks "is this waiting on her?" gets NO for free: `computeKpis`, the review
+    wizard, Approve-all, the journey. They are **not rows in the rule list** — they are reached
+    behind the synthesized rule that cites their piece, through `RuleEvidenceDisclosure` ("proven
+    by N pieces — see them") with a one-click **Make it a rule** that calls `promoteEvidenceRule`
+    (raises standing only — the rule stays a draft awaiting Approve, and not one word changes). A
+    search still reaches them, so nothing the Rulebook holds is unreachable. Never re-derive any
+    of this: `isEvidenceRule` / `evidenceFor` / `evidenceSupport` in `types.ts` are the ONE set,
+    mirroring `distill.is_evidence_rule` on the server. Cross-repo SoR:
+    `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
+    Guard: `__tests__/evidence-standing.test.ts`.
+
 ## Files
 
 - `service.ts` — detail reads/writes (getRulebook, saveRules, createDraftRulebook,
@@ -152,6 +168,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
 
 - `2026-09-12` — 🚨 **The Conductor was promised a door that did not exist.** On `/masterwork/[id]/conduct` it reasoned its way to staging a rule through `apply_surface_write` / `rule_draft` and found no handler: the Rulebook surface declares the target, but only `RulebookDetailPage` registered it — every lane route mounted the surface with no write handlers at all. `RulebookLaneRoute` now registers `rule_draft`, validating through the ONE shared validator (`agent-context/ruleDraftInput.ts`, extracted from the detail page so both mounts hold one contract), staging into the SAME `RuleEditorDialog`, and landing the Expert's Save through the SAME canonical CAS upsert (`ruleSave.ts` → `upsertRuleWithRetry`, the Improve verb's existing landing) — saving still is not approving. The lane also publishes the `active_rule_draft` read twin and an honest `editor_open`. The class half lives in aidream: the server now advertises only the write targets the mounted page can actually apply. Guard: `features/masterwork/__tests__/rule-draft-write.test.ts` (agent value → validator → fake Rulebook, including draft-stays-draft and validate-then-apply refusals).
 
