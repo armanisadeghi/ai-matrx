@@ -202,6 +202,7 @@ if $STRICT; then
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
+        "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -564,6 +565,7 @@ else
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
+        "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from

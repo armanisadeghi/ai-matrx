@@ -13,7 +13,13 @@ type-errors/
 .worktrees/
 
 # dependencies
-node_modules/
+# SLASHLESS ON PURPOSE — do not "canonicalize" this to `node_modules/`. A trailing
+# slash matches directories only; a SYMLINK named node_modules is not a directory,
+# so `node_modules/` lets `git add -A` commit one. That happened three times
+# (2026-08-11, 08-31, 09-11) and each broken link took every checkout's
+# dependencies down with ELOOP on the next pull. This one line covers a directory
+# OR a link at any depth. Guard: pnpm check:dependency-dirs-untracked.
+node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
