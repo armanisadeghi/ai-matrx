@@ -28,7 +28,9 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/utils/cn";
 import { formatMoney, toFetchState } from "./lulu-api";
 import {
+  isDevOriginSurface,
   orderingAllowed as backendAllowsOrdering,
+  orderingBlockedReason,
   readPaymentMode,
   type PaymentModeProbe,
 } from "./ordering-gate";
@@ -152,20 +154,29 @@ function stripeCheckoutMode(url: string): "live" | "test" | null {
 }
 
 /**
- * LIVE-MONEY GATE — do not remove; if a type error appears here after
- * sync-types, fix the READER, never delete the gate
- * (reviewed 2026-09-07, review row d6a2d36d).
+ * LIVE-MONEY VISIBILITY — the server decides via knobs; this surface only
+ * reports honestly; never delete the badge.
  *
- * The honest answer to "is this real money?", in the buyer's line of sight.
- * Every word comes from the backend (see ./ordering-gate.ts) — this component
- * asserts nothing of its own, because what went wrong on 2026-09-07 was a
- * surface asserting a mode it could not know. While the backend has not
- * answered, it says so rather than guessing.
+ * The honest answer to "is this real money, and what are the settings doing?",
+ * in the buyer's line of sight. Every word comes from the backend (see
+ * ./ordering-gate.ts) — this component asserts nothing of its own, because what
+ * went wrong on 2026-09-07 was a surface asserting a mode it could not know.
+ * While the backend has not answered, it says so rather than guessing.
  *
- * Four states, all covered by `__tests__/order-gate.test.tsx`:
- * checking · test · live · off.
+ * Since Arman's 2026-09-11 ruling the two refusals are org-configurable
+ * settings, so the badge shows the MODE *and* what each setting is currently
+ * doing, in plain words, with where to change it.
+ *
+ * States, all covered by `__tests__/order-gate.test.tsx`:
+ * checking · test · live · blocked-by-setting · off.
  */
-function PaymentModeBadge({ probe }: { probe: PaymentModeProbe | null }) {
+function PaymentModeBadge({
+  probe,
+  devOrigin,
+}: {
+  probe: PaymentModeProbe | null;
+  devOrigin: boolean;
+}) {
   if (probe === null) {
     return (
       <div
@@ -193,9 +204,19 @@ function PaymentModeBadge({ probe }: { probe: PaymentModeProbe | null }) {
   }
 
   const { report } = probe;
-  const refused = !report.pairing_ok;
-  const live = report.charges_real_money;
+  const blockedReason = orderingBlockedReason(probe, devOrigin);
+  const refused = blockedReason !== null;
+  const live = report.payment_mode === "live";
   const Icon = refused ? ShieldAlert : live ? CreditCard : FlaskConical;
+
+  // Plain words for each setting, from the server's own resolved values — never
+  // this page's guess at what an admin configured.
+  const devOriginSetting = report.allow_dev_origin_live_charges
+    ? "Dev-origin orders: allowed by setting"
+    : "Dev-origin orders: blocked by setting — change it under Settings → Commerce";
+  const pairingSetting = report.require_mode_pairing
+    ? "Matching Lulu and Stripe modes: required by setting"
+    : "Matching Lulu and Stripe modes: not required by setting — mismatched orders are allowed, and every one is recorded";
 
   return (
     <div
@@ -213,12 +234,15 @@ function PaymentModeBadge({ probe }: { probe: PaymentModeProbe | null }) {
       <div className="space-y-1">
         <div className="font-semibold uppercase tracking-wide">
           {refused
-            ? "Ordering is off — the backend refuses this pairing"
+            ? "Ordering is off — a setting is blocking it"
             : live
               ? "Live mode — real money"
               : "Test mode — no real money"}
         </div>
-        <div>{report.message}</div>
+        <div>{blockedReason ?? report.message}</div>
+        <div className="opacity-80">
+          {devOriginSetting}. {pairingSetting}.
+        </div>
         <div className="opacity-80">
           Backend: printing via {report.lulu_api_base} ({report.lulu_environment})
           · payments in {report.payment_mode} mode.
@@ -246,10 +270,9 @@ export function OrderFlow({
   const [cancelingId, setCancelingId] = useState<string | null>(null);
 
   /**
-   * LIVE-MONEY GATE — do not remove; if a type error appears here after
-   * sync-types, fix the READER, never delete the gate (reviewed 2026-09-07,
-   * review row d6a2d36d). Null while the backend is being asked — and while it
-   * is null the order button stays shut.
+   * LIVE-MONEY VISIBILITY — the server decides via knobs; this surface only
+   * reports honestly; never delete the badge. Null while the backend is being
+   * asked — and while it is null the order button stays shut.
    */
   const [modeProbe, setModeProbe] = useState<PaymentModeProbe | null>(null);
 
@@ -279,10 +302,12 @@ export function OrderFlow({
     pageCount !== null &&
     shippingLevel !== null;
 
-  // LIVE-MONEY GATE — do not remove (reviewed 2026-09-07, review row d6a2d36d).
-  // See ./ordering-gate.ts: ordering opens only on the backend's own answer.
+  // LIVE-MONEY VISIBILITY — the server decides via knobs; this surface only
+  // reports honestly; never delete the badge. See ./ordering-gate.ts: ordering
+  // opens only on the backend's own answer, under the two commerce settings.
   // A complete form is not permission to spend money.
-  const paymentModeAllowsOrdering = backendAllowsOrdering(modeProbe);
+  const devOrigin = isDevOriginSurface();
+  const paymentModeAllowsOrdering = backendAllowsOrdering(modeProbe, devOrigin);
 
   const formComplete =
     paymentModeAllowsOrdering &&
@@ -401,8 +426,9 @@ export function OrderFlow({
           a file we can&apos;t print is refunded in full automatically.
         </p>
 
-        {/* LIVE-MONEY GATE — do not remove (review row d6a2d36d). */}
-        <PaymentModeBadge probe={modeProbe} />
+        {/* LIVE-MONEY VISIBILITY — the server decides via knobs; this surface
+            only reports honestly; never delete the badge. */}
+        <PaymentModeBadge probe={modeProbe} devOrigin={devOrigin} />
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
