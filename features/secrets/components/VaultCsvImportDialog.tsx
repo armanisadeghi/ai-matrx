@@ -20,6 +20,9 @@ import {
   CredenzaHeader,
   CredenzaTitle,
 } from "@/components/ui/credenza-modal/credenza";
+import { createClient } from "@/utils/supabase/client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import {
   hasAmbiguousCsvMapping,
@@ -30,12 +33,14 @@ import {
   toCsvImportCommand,
   safeDestination,
   type CsvColumnRole,
+  type CsvImportOutcome,
   type CsvImportPreview,
 } from "../csv-import";
 import {
   createVaultItem,
   getVaultImportActor,
   VaultImportTransportError,
+  type VaultExpectedActor,
 } from "../vault-service";
 import type { VaultPrincipal } from "../types";
 
@@ -62,10 +67,13 @@ const SOURCE_URLS: Record<string, string> = {
   lastpass:
     "https://support.lastpass.com/s/document-item?language=en_US&bundleId=lastpass&topicId=LastPass/export-your-vault-data.html",
   apple: "https://support.apple.com/en-au/guide/passwords/mchl35b12625/mac",
+  edge: "https://support.microsoft.com/en-us/edge/export-passwords-in-microsoft-edge",
+  firefox: "https://support.mozilla.org/en-US/kb/export-login-data-firefox",
   dashlane:
     "https://support.dashlane.com/hc/en-us/articles/32905278138002-Export-your-Dashlane-data-to-a-CSV",
   nordpass:
     "https://support.nordpass.com/hc/en-us/articles/360007646477-How-to-export-passwords-from-NordPass",
+  keeper: "https://docs.keeper.io/user-guides/web-vault",
   roboform:
     "https://help.roboform.com/hc/en-us/articles/230425008-How-to-export-your-RoboForm-logins-into-a-CSV-file",
   proton: "https://proton.me/support/pass-export",
@@ -100,6 +108,10 @@ export function VaultCsvImportDialog({
     ReturnType<typeof fetchCsvImportLimits>
   > | null>(null);
   const frozenCommands = useRef<ReturnType<typeof toCsvImportCommand>[]>([]);
+  const previewActor = useRef<VaultExpectedActor | null>(null);
+  const progressCursor = useRef(0);
+  const clearAfterRun = useRef(false);
+  const invalidated = useRef(false);
   const [source, setSource] = useState("generic");
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
   const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
@@ -110,34 +122,87 @@ export function VaultCsvImportDialog({
   const [createDuplicateRows, setCreateDuplicateRows] = useState<Set<number>>(
     new Set(),
   );
-  const [result, setResult] = useState<{
-    imported: number;
-    skipped: number;
-    failed: number;
-  } | null>(null);
+  const [result, setResult] = useState<CsvImportOutcome | null>(null);
+  const [otpItems, setOtpItems] = useState<{ id: string; title: string }[]>([]);
+
+  const clearSensitiveDraft = (preserveResult = false) => {
+    cancelled.current = true;
+    limitsRef.current = null;
+    frozenCommands.current = [];
+    previewActor.current = null;
+    progressCursor.current = 0;
+    setPreview(null);
+    setMapping([]);
+    setUnavailable(null);
+    setEnableBrowserFill(false);
+    setCreateDuplicateRows(new Set());
+    if (!preserveResult) {
+      setResult(null);
+      setOtpItems([]);
+    }
+  };
+  const invalidateDraft = (message: string) => {
+    invalidated.current = true;
+    clearSensitiveDraft();
+    setError(message);
+  };
 
   useEffect(
     () => () => {
       cancelled.current = true;
       limitsRef.current = null;
       frozenCommands.current = [];
+      previewActor.current = null;
+      progressCursor.current = 0;
     },
     [],
   );
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = createClient().auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" || event === "USER_UPDATED")
+        invalidateDraft(
+          "Your account changed. Choose the file and review the import again.",
+        );
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+  const principalKey =
+    principal.type === "organization"
+      ? `organization:${principal.organizationId}`
+      : "user";
+  const previousPrincipalKey = useRef(principalKey);
+  useEffect(() => {
+    if (previousPrincipalKey.current === principalKey) return;
+    previousPrincipalKey.current = principalKey;
+    invalidateDraft(
+      "The import destination changed. Choose the file and review the import again.",
+    );
+  }, [principalKey]);
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const previousOrganizationId = useRef(selectedOrganizationId);
+  useEffect(() => {
+    if (previousOrganizationId.current === selectedOrganizationId) return;
+    previousOrganizationId.current = selectedOrganizationId;
+    invalidateDraft(
+      "The request organization changed. Choose the file and review the import again.",
+    );
+  }, [selectedOrganizationId]);
   const close = (next: boolean) => {
-    if (!next && !running) {
+    if (!next) {
       cancelled.current = true;
-      setPreview(null);
-      setMapping([]);
       setError(null);
-      setResult(null);
-      limitsRef.current = null;
-      frozenCommands.current = [];
+      if (running) clearAfterRun.current = true;
+      else clearSensitiveDraft();
     }
     onOpenChange(next);
   };
   const load = async (file: File) => {
+    clearSensitiveDraft();
     cancelled.current = false;
+    invalidated.current = false;
+    clearAfterRun.current = false;
     setError(null);
     setUnavailable(null);
     setResult(null);
@@ -148,6 +213,7 @@ export function VaultCsvImportDialog({
         actor.userId,
       );
       if (cancelled.current) return;
+      previewActor.current = actor;
       limitsRef.current = limits;
       const parsed = await parseCsvFile(file, limits);
       if (cancelled.current) return;
@@ -174,8 +240,19 @@ export function VaultCsvImportDialog({
     setRunning(true);
     setError(null);
     cancelled.current = false;
+    invalidated.current = false;
     try {
       const actor = await getVaultImportActor();
+      if (
+        !previewActor.current ||
+        previewActor.current.userId !== actor.userId ||
+        previewActor.current.organizationId !== actor.organizationId
+      ) {
+        invalidateDraft(
+          "Your account or request organization changed. Choose the file and review the import again.",
+        );
+        return;
+      }
       const commands = retry
         ? frozenCommands.current
         : preview.rows.map((row) => {
@@ -191,28 +268,45 @@ export function VaultCsvImportDialog({
               browserFillEnabled: enableBrowserFill,
             });
             if (!command) return null;
-            return isPossibleDuplicateRow(row, preview, mapping, existingItems) &&
-              !createDuplicateRows.has(row.rowNumber)
+            return isPossibleDuplicateRow(
+              row,
+              preview,
+              mapping,
+              existingItems,
+            ) && !createDuplicateRows.has(row.rowNumber)
               ? null
               : command;
           });
-      if (!retry) frozenCommands.current = commands;
+      if (!retry) {
+        frozenCommands.current = commands;
+        progressCursor.current = 0;
+        setResult(null);
+        setOtpItems([]);
+      }
       const outcome = await runCsvImportCommands(
         commands,
         async (command) => {
           try {
-            await createVaultItem(command.body, {
+            const created = await createVaultItem(command.body, {
               idempotencyKey: command.rowId,
               expectedActor: command.expectedActor,
             });
+            if (command.hasOtp)
+              setOtpItems((current) =>
+                current.some((item) => item.id === created.id)
+                  ? current
+                  : [
+                      ...current,
+                      { id: created.id, title: created.display_name },
+                    ],
+              );
             return "committed" as const;
           } catch (cause) {
             if (
               cause instanceof VaultImportTransportError &&
               cause.code === "context_changed"
             ) {
-              setError(cause.message);
-              cancelled.current = true;
+              invalidateDraft(cause.message);
               return "definitive" as const;
             }
             if (
@@ -229,19 +323,40 @@ export function VaultCsvImportDialog({
           }
         },
         () => cancelled.current,
+        progressCursor.current,
       );
       await onCommitted();
-      setResult(outcome);
-      if (outcome.imported + outcome.skipped === commands.length) {
-        frozenCommands.current = [];
-        limitsRef.current = null;
-        setPreview(null);
-        setMapping([]);
+      if (!invalidated.current) {
+        progressCursor.current = outcome.progressCursor;
+        setResult((previous) => ({
+          imported: (retry ? (previous?.imported ?? 0) : 0) + outcome.imported,
+          skipped: (retry ? (previous?.skipped ?? 0) : 0) + outcome.skipped,
+          failed: outcome.failed,
+          cancelled: outcome.cancelled,
+          progressCursor: outcome.progressCursor,
+        }));
+        if (outcome.progressCursor === commands.length) {
+          clearSensitiveDraft(true);
+        }
       }
+    } catch (cause) {
+      invalidateDraft(
+        cause instanceof Error
+          ? "Your account or request organization is no longer available. Choose the file and review the import again."
+          : "The import could not continue. Choose the file and review it again.",
+      );
     } finally {
       setRunning(false);
+      if (clearAfterRun.current) {
+        clearAfterRun.current = false;
+        clearSensitiveDraft(true);
+      }
     }
   };
+  const invalidRows =
+    preview?.rows.filter((row) => row.issue === "invalid").length ?? 0;
+  const unsupportedRows =
+    preview?.rows.filter((row) => row.issue === "unsupported").length ?? 0;
   return (
     <Credenza open={open} onOpenChange={close}>
       <CredenzaContent className="md:max-w-3xl">
@@ -309,8 +424,11 @@ export function VaultCsvImportDialog({
             <div className="space-y-3">
               <p className="text-sm">
                 {preview.rows.length} records ready for review.{" "}
-                {preview.issues
-                  ? `${preview.issues} invalid rows will be skipped.`
+                {invalidRows
+                  ? `${invalidRows} invalid rows will be skipped. `
+                  : ""}
+                {unsupportedRows
+                  ? `${unsupportedRows} non-login, passkey, or attachment rows are unsupported by CSV and will be skipped.`
                   : ""}
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -346,9 +464,9 @@ export function VaultCsvImportDialog({
                   </div>
                 ))}
               </div>
-              <div className="space-y-2 rounded-md bg-muted p-3 text-xs text-muted-foreground">
+              <div className="max-h-80 space-y-2 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">
                 Masked preview:
-                {preview.rows.slice(0, 5).map((row) => {
+                {preview.rows.map((row) => {
                   const duplicate = isPossibleDuplicateRow(
                     row,
                     preview,
@@ -390,7 +508,7 @@ export function VaultCsvImportDialog({
                 Possible duplicates use matching title and URL metadata. They
                 are skipped by default; existing credentials are never
                 overwritten. OTP data is preserved inactive and requires
-                explicit Authenticator setup later.
+                explicit Authenticator setup after import.
               </p>
               <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Switch
@@ -399,19 +517,38 @@ export function VaultCsvImportDialog({
                   aria-label="Enable browser fill for eligible imported logins"
                 />
                 <span>
-                  Enable browser fill only for eligible HTTPS or local
-                  destinations. Matching destinations become visible credential
-                  metadata.
+                  Enable browser fill only for imported logins that have a
+                  username, password, and HTTPS destination. Matching
+                  destinations become visible credential metadata.
                 </span>
               </label>
             </div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {result && (
-            <p className="text-sm">
-              Imported {result.imported}; skipped {result.skipped}; failed{" "}
-              {result.failed}.
-            </p>
+            <div className="space-y-2 text-sm">
+              <p>
+                Imported {result.imported}; skipped {result.skipped}; failed{" "}
+                {result.failed}.
+                {result.cancelled
+                  ? " Stopped after the confirmed current row."
+                  : ""}
+              </p>
+              {otpItems.length > 0 && (
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <p>Finish authenticator setup for imported OTP records:</p>
+                  {otpItems.map((item) => (
+                    <a
+                      key={item.id}
+                      className="block text-primary underline"
+                      href={`/vault/${encodeURIComponent(item.id)}`}
+                    >
+                      Set up authenticator for {item.title}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           <div className="flex justify-end gap-2">
             {running && (
@@ -420,6 +557,7 @@ export function VaultCsvImportDialog({
                 variant="outline"
                 onClick={() => {
                   cancelled.current = true;
+                  clearAfterRun.current = true;
                 }}
               >
                 <X className="mr-2 h-4 w-4" />
@@ -454,7 +592,9 @@ function maskedRowSummary(
   preview: CsvImportPreview,
   mapping: CsvColumnRole[],
 ): string {
-  if (row.issue) return `Row ${row.rowNumber}: invalid — skipped`;
+  if (row.issue === "invalid") return `Row ${row.rowNumber}: invalid — skipped`;
+  if (row.issue === "unsupported")
+    return `Row ${row.rowNumber}: unsupported item type — skipped`;
   const value = (role: CsvColumnRole) =>
     row.cells[mapping.findIndex((entry) => entry === role)] ?? "";
   const hosts = row.cells

@@ -159,7 +159,8 @@ async function vaultFetch<T>(
   }
   if (!resp.ok) {
     if (expectedActor) {
-      if (resp.status === 503) throw new VaultImportTransportError("retryable");
+      if ([408, 429, 500, 502, 503, 504].includes(resp.status))
+        throw new VaultImportTransportError("retryable");
       if (
         resp.status === 401 ||
         resp.status === 403 ||

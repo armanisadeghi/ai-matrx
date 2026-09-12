@@ -44,6 +44,15 @@ function jsonResponse(body: unknown): Response {
   } as Response;
 }
 
+function errorResponse(status: number): Response {
+  return {
+    ok: false,
+    status,
+    json: async () => ({}),
+    text: async () => "",
+  } as Response;
+}
+
 describe("Vault and Authenticator organization transport", () => {
   const fetchMock = jest.fn<Promise<Response>, Parameters<typeof fetch>>();
 
@@ -112,6 +121,25 @@ describe("Vault and Authenticator organization transport", () => {
       "x-idempotency-key": "00000000-0000-4000-8000-000000000001",
     });
   });
+
+  test.each([408, 429, 500, 502, 503, 504])(
+    "ambiguous import response %i keeps the frozen idempotency command retryable",
+    async (status) => {
+      fetchMock.mockResolvedValueOnce(errorResponse(status));
+      await expect(
+        createVaultItem(
+          { display_name: "Imported", source: "system_import" },
+          {
+            idempotencyKey: "00000000-0000-4000-8000-000000000001",
+            expectedActor: {
+              userId: "user-1",
+              organizationId: ORGANIZATION_ID,
+            },
+          },
+        ),
+      ).rejects.toMatchObject({ code: "retryable" });
+    },
+  );
 
   test("Vault attachment bytes send the selected organization", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ id: "attachment-1" }));

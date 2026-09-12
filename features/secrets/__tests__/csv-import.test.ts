@@ -1,10 +1,12 @@
 import {
   hasAmbiguousCsvMapping,
+  isPossibleDuplicateRow,
   parseCsvText,
   runCsvImportCommands,
   safeDestination,
   suggestedCsvMapping,
   toCsvImportCommand,
+  type CsvImportCommand,
 } from "../csv-import";
 
 const limits = {
@@ -77,11 +79,28 @@ describe("Vault CSV import", () => {
   test("strips query and fragment metadata and refuses URL credentials", () => {
     expect(
       safeDestination("https://example.test/a?token=secret#fragment"),
-    ).toEqual({ metadata: "https://example.test/a", host: "example.test" });
+    ).toEqual({ metadata: "https://example.test", host: "example.test" });
     expect(safeDestination("https://user:secret@example.test/a")).toEqual({
       metadata: null,
       host: null,
     });
+  });
+
+  test("compares possible duplicates by exact title and normalized login origin", () => {
+    const preview = parseCsvText(
+      "name,url\nExample,https://example.test/import/path",
+      limits,
+    );
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    expect(
+      isPossibleDuplicateRow(
+        row,
+        preview,
+        suggestedCsvMapping(preview.headers),
+        [{ displayName: "Example", loginUrls: ["https://example.test/old"] }],
+      ),
+    ).toBe(true);
   });
 
   test("stops on an ambiguous retry without dispatching the next frozen row", async () => {
@@ -90,7 +109,7 @@ describe("Vault CSV import", () => {
       rowId: "00000000-0000-4000-8000-000000000001",
       body: { display_name: "one" },
       expectedActor: actor,
-    } as never;
+    } as CsvImportCommand;
     const result = await runCsvImportCommands(
       [command, command],
       async (entry) => {
@@ -110,7 +129,7 @@ describe("Vault CSV import", () => {
       rowId: "00000000-0000-4000-8000-000000000001",
       body: { display_name: "one" },
       expectedActor: actor,
-    } as never;
+    } as CsvImportCommand;
     const result = await runCsvImportCommands(
       [command, command],
       async () => {
@@ -126,6 +145,98 @@ describe("Vault CSV import", () => {
       skipped: 0,
       failed: 0,
       cancelled: true,
+      progressCursor: 1,
     });
+  });
+
+  test("retries only the unresolved frozen command after a confirmed row", async () => {
+    const first = {
+      rowId: "00000000-0000-4000-8000-000000000001",
+      body: { display_name: "one" },
+      expectedActor: actor,
+      hasOtp: false,
+    } as CsvImportCommand;
+    const second = {
+      rowId: "00000000-0000-4000-8000-000000000002",
+      body: { display_name: "two" },
+      expectedActor: actor,
+      hasOtp: false,
+    } as CsvImportCommand;
+    const firstCalls: string[] = [];
+    const firstPass = await runCsvImportCommands(
+      [first, second],
+      async (entry) => {
+        firstCalls.push(entry.rowId);
+        return entry === first ? "committed" : "retryable";
+      },
+      () => false,
+    );
+    const retryCalls: string[] = [];
+    const retry = await runCsvImportCommands(
+      [first, second],
+      async (entry) => {
+        retryCalls.push(entry.rowId);
+        return "committed";
+      },
+      () => false,
+      firstPass.progressCursor,
+    );
+    expect(firstCalls).toEqual([first.rowId, second.rowId]);
+    expect(retryCalls).toEqual([second.rowId]);
+    expect(retry.progressCursor).toBe(2);
+  });
+
+  test("reports non-login, passkey, and attachment records as unsupported", () => {
+    const preview = parseCsvText(
+      "name,type,passkey,attachment\nLogin,login,,\nPasskey,login,credential,\nFile,file,,backup.zip",
+      limits,
+    );
+    expect(preview.rows.map((row) => row.issue)).toEqual([
+      undefined,
+      "unsupported",
+      "unsupported",
+    ]);
+  });
+
+  test("requires username, password, HTTPS, and opt-in before browser fill", () => {
+    const preview = parseCsvText(
+      "name,username,password,url\nExample,user,secret,https://example.test/path",
+      limits,
+    );
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    const common = {
+      source: "generic",
+      preview,
+      row,
+      mapping: suggestedCsvMapping(preview.headers),
+      principal: { type: "user" } as const,
+      expectedActor: actor,
+      rowId: "00000000-0000-4000-8000-000000000001",
+      limits,
+    };
+    expect(toCsvImportCommand(common)?.body).toMatchObject({
+      login_urls: ["https://example.test"],
+      browser_fill_enabled: false,
+    });
+    expect(
+      toCsvImportCommand({ ...common, browserFillEnabled: true })?.body,
+    ).toMatchObject({ browser_fill_enabled: true });
+    const noPassword = parseCsvText(
+      "name,username,password,url\nExample,user,,https://example.test",
+      limits,
+    );
+    const missingPasswordRow = noPassword.rows[0];
+    if (!missingPasswordRow)
+      throw new Error("test fixture did not parse a row");
+    expect(
+      toCsvImportCommand({
+        ...common,
+        preview: noPassword,
+        row: missingPasswordRow,
+        mapping: suggestedCsvMapping(noPassword.headers),
+        browserFillEnabled: true,
+      })?.body,
+    ).toMatchObject({ browser_fill_enabled: false });
   });
 });

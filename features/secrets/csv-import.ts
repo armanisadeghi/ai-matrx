@@ -29,12 +29,15 @@ export type CsvImportCommand = {
   rowId: string;
   body: VaultItemCreateRequest;
   expectedActor: VaultExpectedActor;
+  hasOtp: boolean;
 };
 export type CsvImportOutcome = {
   imported: number;
   skipped: number;
   failed: number;
   cancelled: boolean;
+  /** The first command that was not confirmed. Reuse it on a same-session retry. */
+  progressCursor: number;
 };
 
 export type CsvImportDispatch = "committed" | "retryable" | "definitive";
@@ -74,17 +77,40 @@ function validateParsedCsv(
     throw new Error("The CSV has an unsupported number of columns.");
   if (data.length > limits.maxRecords)
     throw new Error("The CSV has more records than this organization allows.");
+  const nonLoginTypeColumn = headers.findIndex((header) =>
+    /^(item )?(type|kind|category)$/i.test(header.trim()),
+  );
+  const unsupportedValueColumns = headers
+    .map((header, index) =>
+      /(passkey|webauthn|fido|attachment|file)/i.test(header) ? index : -1,
+    )
+    .filter((index) => index >= 0);
   let issues = 0;
   const rows = data.map((cells, index) => {
     const invalid =
       cells.length !== headers.length ||
       cells.some((cell) => utf8ByteLength(cell) > limits.maxCellBytes) ||
       cells.every((cell) => cell.trim().length === 0);
-    if (invalid) issues += 1;
+    const type =
+      nonLoginTypeColumn >= 0
+        ? (cells[nonLoginTypeColumn] ?? "").trim().toLowerCase()
+        : "";
+    const unsupported =
+      !invalid &&
+      (unsupportedValueColumns.some((column) =>
+        Boolean(cells[column]?.trim()),
+      ) ||
+        (Boolean(type) &&
+          !/^(login|website|web|password|credential)$/.test(type)));
+    if (invalid || unsupported) issues += 1;
     return {
       rowNumber: index + 2,
       cells,
-      issue: invalid ? ("invalid" as const) : undefined,
+      issue: invalid
+        ? ("invalid" as const)
+        : unsupported
+          ? ("unsupported" as const)
+          : undefined,
     };
   });
   return { headers, rows, issues };
@@ -145,14 +171,11 @@ export function safeDestination(raw: string): {
 } {
   try {
     const parsed = new URL(raw);
-    if (!/^https?:$/.test(parsed.protocol) && parsed.protocol !== "http:")
+    if (!/^https?:$/.test(parsed.protocol))
       return { metadata: null, host: null };
     if (parsed.username || parsed.password)
       return { metadata: null, host: null };
-    return {
-      metadata: `${parsed.protocol}//${parsed.host}${parsed.pathname}`,
-      host: parsed.host,
-    };
+    return { metadata: parsed.origin, host: parsed.host };
   } catch {
     return { metadata: null, host: null };
   }
@@ -213,7 +236,11 @@ export function isPossibleDuplicateRow(
   return existingItems.some(
     (item) =>
       item.displayName === title &&
-      item.loginUrls.some((url) => urls.includes(url)),
+      item.loginUrls
+        .map(safeDestination)
+        .some((destination) =>
+          destination.metadata ? urls.includes(destination.metadata) : false,
+        ),
   );
 }
 
@@ -284,6 +311,7 @@ export function toCsvImportCommand(input: {
   const command: CsvImportCommand = {
     rowId: input.rowId,
     expectedActor: input.expectedActor,
+    hasOtp: Boolean(roleValue(row, mapping, "otp")),
     body: {
       principal:
         input.principal.type === "organization"
@@ -299,14 +327,10 @@ export function toCsvImportCommand(input: {
       uri_match_mode: "never",
       browser_fill_enabled:
         Boolean(input.browserFillEnabled) &&
-        urls.some((url) => {
-          const parsed = new URL(url);
-          return (
-            parsed.protocol === "https:" ||
-            parsed.hostname === "localhost" ||
-            parsed.hostname === "127.0.0.1"
-          );
-        }),
+        Boolean(roleValue(row, mapping, "username")) &&
+        Boolean(roleValue(row, mapping, "password")) &&
+        urls.length > 0 &&
+        urls.every((url) => new URL(url).protocol === "https:"),
       fields,
     },
   };
@@ -323,12 +347,21 @@ export async function runCsvImportCommands(
   commands: Array<CsvImportCommand | null>,
   dispatch: (command: CsvImportCommand) => Promise<CsvImportDispatch>,
   cancelled: () => boolean,
+  progressCursor = 0,
 ): Promise<CsvImportOutcome> {
   let imported = 0;
   let skipped = 0;
   let failed = 0;
-  for (const command of commands) {
-    if (cancelled()) return { imported, skipped, failed, cancelled: true };
+  for (let index = progressCursor; index < commands.length; index += 1) {
+    const command = commands[index];
+    if (cancelled())
+      return {
+        imported,
+        skipped,
+        failed,
+        cancelled: true,
+        progressCursor: index,
+      };
     if (!command) {
       skipped += 1;
       continue;
@@ -345,7 +378,14 @@ export async function runCsvImportCommands(
       skipped,
       failed,
       cancelled: result === "definitive" || cancelled(),
+      progressCursor: index,
     };
   }
-  return { imported, skipped, failed, cancelled: cancelled() };
+  return {
+    imported,
+    skipped,
+    failed,
+    cancelled: cancelled(),
+    progressCursor: commands.length,
+  };
 }
