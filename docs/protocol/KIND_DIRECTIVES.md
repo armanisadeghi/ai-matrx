@@ -443,6 +443,16 @@ Every `side_effect` class obeys this, whichever noun it names.
   `matrx_actions` (agent) · `client.apply_policy` (surface) · `user.apply_policy` (user).
   `POST /directives/execute` and `POST /directives/confirm` are *user*-proposed and bypass
   the gate by design — a human clicked.
+- 🚨 **THE AGENT RUNG IS THE ORGANIZATION'S TO GRANT** (2026-09-12). An agent config
+  reaching `auto` — `apply_policy: "auto"`, `auto_apply: true`, an `allow` list, or the
+  agent-declared `matrx_actions.directive` path — takes effect ONLY inside an organization
+  whose knob **`agent_directives.auto_apply_allowed`** is on. It is **off by default**;
+  where it is off the agent's flag is honoured as **`ask`** and the proposal card appears.
+  Whether a model may write to your data without asking you is an opinion about someone
+  else's data, and opinions become knobs: organizations decide, never agents. The gate is a
+  NARROWING — it can only turn an agent's `auto` into `ask`, never an `off` into a write —
+  and the surface and user rungs are untouched. One call site:
+  `output_directives/policy.py::organization_allows_agent_auto_apply`.
 - **Idempotency — one ledger, one key, PER ITEM, and NEVER on the wire** (so the model
   cannot fumble it). The key is
   `act:sha256(conversation_id \x00 type \x00 canonical(item))`, consulted against the one
@@ -463,10 +473,19 @@ Every `side_effect` class obeys this, whichever noun it names.
   the derived class and this same legacy type, so `(kind, type)` reconstructs the slug
   exactly (`slug_for_ledger_row`) — nothing is written that cannot be read back into the
   new grammar.
-- **Receipts.** Every executed item streams a typed receipt
+- **Receipts, and the SENTENCE on them.** Every executed item streams a typed receipt
   (`directive_apply.started` / `.item` / `.failed` / `.completed`), so the client always
   knows what landed. A bad item never rolls back good ones; each item's own write stays
-  atomic.
+  atomic. 🚨 Every outcome-bearing receipt also carries **`message`** — ONE sentence in
+  ordinary words, **authored by the server** (`output_directives/receipt_words.py`) from
+  the apply's own result: *"Created project “X” with 3 task(s)."* · *"Already applied —
+  nothing new was created."* · *"Proposed — confirm to create 1 project."* A client may
+  never compose it: only the server knows whether the ledger replayed, what the write-tree
+  touched, or what the handler called it. Before this field an applied write, a deduped
+  re-send and an unconfirmed proposal all rendered identically, and a user who sent one
+  request twice saw two identical cards for one project (walk K-1, 2026-09-12). The
+  frontend synthesizes ONE `directive_receipt` render block per receipt and prints
+  `message` verbatim.
 - **Warn, never fatal.** A failed apply warns with a fault tag; the delivered AI response
   always stands.
 
@@ -609,6 +628,12 @@ you are reading this because you want to import the shim somewhere else: the ans
 
 ## Change Log
 
+- **2026-09-12 — The receipt says what happened, and silent auto-apply became the
+  organization's choice (DD-118).** `message` added to every outcome-bearing
+  `directive_apply.*` receipt, composed only by `receipt_words.py`; a
+  `directive_receipt` render block added to the data-event vocabulary so the three
+  outcomes read as three different things. The agent rung of the cascade gated on
+  `agent_directives.auto_apply_allowed` (org knob, default off).
 - **2026-08-25 — Created by merging `MATRX_ENVELOPE.md`, `MATRX_DIRECTIVES.md`, and
   `MATRX_REFERENCES.md`, all three deleted.** This document teaches the CURRENT system
   only: the two-key `__kind`-first shell, the closed 8-class grammar with capability
