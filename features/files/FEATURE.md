@@ -117,6 +117,11 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-12 — Expected unavailable attachment reads stay typed UI state.**
+  A revoked grant or deleted row from exact-id metadata hydration still reaches
+  its file/access UI state, but no longer becomes a duplicate production
+  incident through `useEnsureCloudFile`'s console-error adapter.
+
 - **2026-09-11 — Exact-id hydration bypasses browser RLS planning.** Canonical
   `useEnsureCloudFile` metadata reads now use the authenticated file record gate with
   `include_urls=false`; it authorizes before returning metadata and avoids URL/thumbnail resolution.

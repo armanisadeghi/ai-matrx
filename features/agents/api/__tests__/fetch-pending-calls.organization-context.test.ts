@@ -13,8 +13,6 @@ import {
 } from "../fetch-pending-calls";
 
 const CONVERSATION_ID = "conversation-1";
-const CONVERSATION_ORGANIZATION_ID = "org-conversation";
-
 function state(conversationOrganizationId: string | null) {
   return {
     conversations: {
@@ -35,7 +33,7 @@ describe("conversation pending-call organization context", () => {
     ["recoverable", fetchConversationPendingCalls],
     ["strict", fetchConversationPendingCallsStrict],
   ])(
-    "pins the %s read to the saved conversation organization when no organization is selected globally",
+    "uses the active organization instead of a historical conversation organization",
     async (_label, thunkFactory) => {
       const dispatch = jest.fn((action: { kind?: string }) => {
         if (action.kind === "api-call") {
@@ -46,22 +44,19 @@ describe("conversation pending-call organization context", () => {
 
       await thunkFactory(CONVERSATION_ID)(
         dispatch as never,
-        (() => state(CONVERSATION_ORGANIZATION_ID)) as never,
+        (() => state("org-no-longer-a-member")) as never,
         undefined,
       );
 
-      expect(mockCallApi).toHaveBeenCalledWith(
-        expect.objectContaining({
-          pathParams: { conversation_id: CONVERSATION_ID },
-          scopeOverrides: {
-            organization_id: CONVERSATION_ORGANIZATION_ID,
-          },
-        }),
-      );
+      const [config] = mockCallApi.mock.calls[0] as [
+        { pathParams?: unknown; scopeOverrides?: unknown },
+      ];
+      expect(config.pathParams).toEqual({ conversation_id: CONVERSATION_ID });
+      expect(config).not.toHaveProperty("scopeOverrides");
     },
   );
 
-  it("leaves unsaved conversations on the active-selection path", async () => {
+  it("uses the active-selection path for an unsaved conversation too", async () => {
     const dispatch = jest.fn((action: { kind?: string }) => {
       if (action.kind === "api-call") {
         return Promise.resolve({ data: [], error: null });
@@ -75,8 +70,6 @@ describe("conversation pending-call organization context", () => {
       undefined,
     );
 
-    expect(mockCallApi).toHaveBeenCalledWith(
-      expect.objectContaining({ scopeOverrides: undefined }),
-    );
+    expect(mockCallApi.mock.calls[0]?.[0]).not.toHaveProperty("scopeOverrides");
   });
 });

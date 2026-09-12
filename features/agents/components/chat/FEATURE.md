@@ -288,6 +288,11 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-09-12` — Pending-call recovery now uses the active authenticated
+  organization, never a historical organization stored on the conversation.
+  The endpoint authorizes by user plus conversation id; replaying a membership-
+  revoked organization in its transport header caused a pre-route 400.
+
 - `2026-09-11` — Sandbox pickers use the existing stored label and show `Unnamed · <short ID>` when absent. Chat Options supports inline naming through `renameInstance`, refreshes mounted compute pickers, and opens the selected sandbox in a separate Code tab via `/code?sandbox=<row UUID>`. Label edits preserve the routing identity and chat binding.
 
 - `2026-09-10` — codex: **conversation input-capability overrides survive the first server turn.** Switch changes still persist immediately through the versioned metadata merge, and `executeInstance` now reconciles the browser-owned `input_capabilities` block again after the stream's server commit barrier. This closes the cross-writer race where a stale first-turn `last_request_context` metadata snapshot replaced a just-saved YouTube/image/file override; server-owned sibling keys remain intact.
