@@ -579,6 +579,7 @@ const notesSlice = createSlice({
       action: PayloadAction<{
         id: string;
         updatedAt?: string;
+        version?: number;
         /**
          * Fields written in this save. When provided, only those fields are
          * cleared from dirty — and only if the live value still matches —
@@ -599,6 +600,9 @@ const notesSlice = createSlice({
       record._firstSaveFailureAt = null;
       if (action.payload.updatedAt) {
         record.updated_at = action.payload.updatedAt;
+      }
+      if (action.payload.version !== undefined) {
+        record.version = action.payload.version;
       }
       if (action.payload.savedSnapshot) {
         markSavedSnapshotClean(record, action.payload.savedSnapshot);
@@ -643,13 +647,16 @@ const notesSlice = createSlice({
      *    (the old "Keep mine is a silent no-op" bug). */
     resolveNoteConflict(
       state,
-      action: PayloadAction<{ id: string; updatedAt?: string }>,
+      action: PayloadAction<{ id: string; updatedAt?: string; version?: number }>,
     ) {
       const record = state.notes[action.payload.id];
       if (!record) return;
       if (record._error === "conflict") record._error = null;
       if (action.payload.updatedAt) {
         record.updated_at = action.payload.updatedAt;
+      }
+      if (action.payload.version !== undefined) {
+        record.version = action.payload.version;
       }
     },
 
