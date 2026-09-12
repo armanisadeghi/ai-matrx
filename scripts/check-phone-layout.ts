@@ -82,9 +82,24 @@ const CLASS_ATTR = /className=(?:"([^"]*)"|\{`([^`]*)`\}|\{cn\(([\s\S]*?)\)\})/g
 const BASE_GRID = /(?:^|[\s"'`])grid-cols-(\d+)\b/;
 const RESPONSIVE_GRID = /\b(?:sm|md|lg|xl|2xl):grid-cols-/;
 
-export function scanSource(source: string, file: string): Finding[] {
+/**
+ * Blank out comments (line, block, and the JSX-braced block form) so prose that NAMES a
+ * banned token ("never `h-screen`") is not a finding. Newlines are kept so
+ * line numbers still line up with the source.
+ */
+export function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/(^|[^:\\])\/\/[^\n]*/g, (m, lead: string) =>
+      lead + " ".repeat(m.length - lead.length),
+    );
+}
+
+export function scanSource(rawSource: string, file: string): Finding[] {
   const findings: Finding[] = [];
-  const lines = source.split("\n");
+  const source = stripComments(rawSource);
+  // The `phone-ok` marker LIVES in a comment, so it is read off the raw text.
+  const rawLines = rawSource.split("\n");
   const lineOf = (idx: number) => source.slice(0, idx).split("\n").length;
 
   // T — a desktop-first table (one or more fixed-px columns among three or
@@ -126,7 +141,7 @@ export function scanSource(source: string, file: string): Finding[] {
       if (Number(base[1]) < 3) continue;
       if (RESPONSIVE_GRID.test(cls)) continue;
       const ln = lineOf(m.index ?? 0);
-      const window = lines.slice(Math.max(0, ln - 4), ln).join("\n");
+      const window = rawLines.slice(Math.max(0, ln - 4), ln).join("\n");
       if (/phone-ok/.test(window)) continue;
       findings.push({
         file,
@@ -188,6 +203,11 @@ function selfTest(): number {
       null,
     ],
     ["h-screen fails", `<div className="h-screen" />`, "V"],
+    [
+      "a comment that names h-screen / vh is not a finding",
+      `{/* we use h-dvh here, never h-screen or max-h-[70vh] */}\n// nor h-screen\n<div className="h-dvh" />`,
+      null,
+    ],
     ["max-h-[85vh] fails", `<div className="max-h-[85vh]" />`, "V"],
     ["h-dvh passes", `<div className="h-dvh max-h-[85dvh]" />`, null],
     [
