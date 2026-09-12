@@ -85,6 +85,7 @@ import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { IngestTimelineDialog } from "./IngestTimelineDialog";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
 import {
   fetchDistillationApproaches,
@@ -625,6 +626,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [chatImportOpen, setChatImportOpen] = useState(
     searchParams.get("chatImport") === "1",
   );
+  // The TIMELINE Approach ("a case that unfolded") lands here with
+  // ?intake=timeline — the unfolding dialog IS the next step. The registry row
+  // carries the same `{"intake":"timeline"}` in its `intake_query`, so the
+  // deep link and the in-page picker can never drift apart.
+  const [timelineOpen, setTimelineOpen] = useState(
+    searchParams.get("intake") === "timeline",
+  );
 
   /**
    * THE ONE MAP from a `platform.approach` row to the lane it opens on this
@@ -654,6 +662,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       ) {
         setRequestedIngestLane(q.ingest);
         setIngestOpen(true);
+        return;
+      }
+      if (q.intake === "timeline") {
+        setTimelineOpen(true);
         return;
       }
       if (q.body_of_work === "1") {
@@ -2203,6 +2215,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <BodyOfWorkDialog
             open={corpusOpen}
             onOpenChange={setCorpusOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+          />
+          <IngestTimelineDialog
+            open={timelineOpen}
+            onOpenChange={setTimelineOpen}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
           />

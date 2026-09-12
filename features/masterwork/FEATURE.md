@@ -157,6 +157,19 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   translation: `build/useBuildRun.ts`; page callbacks: `build/callbacks.ts`.
 - `components/detail/IngestSourceDialog.tsx` — "From a source" (paste →
   `POST /masterworks/ingest`; upload → `POST /masterworks/ingest-file`).
+- `components/detail/IngestTimelineDialog.tsx` — "From a case that unfolded", the TIMELINE
+  Approach (`?intake=timeline` → `POST /masterworks/ingest-timeline`; surface `timeline` on the
+  ONE durable run). Unfolds a pasted narrative into a `serial_observation_timeline` and either
+  distils it (role `teaching`) or SEALS it (role `heldout`). `buildTimelineRequest` is the one
+  place the wire body is built — the dialog and its guard both go through it.
+- `components/detail/HeldOutCasesSection.tsx` — the sealed cases on the Sources view
+  (`masterwork_corpus_item` rows, `kind = "timeline"`, `metadata.role = "heldout"`), read with
+  `readAllRows`. Label · date · licence and NOTHING else: the query selects no narrative, no
+  step and no resolution, so there is nothing in the component's props to leak. THE DOOR LAW's
+  one deliberate exception here — a door onto a sealed case is a door onto the answer.
+- `components/detail/RulePolicy.tsx` — the ONE renderer of a rule's `precondition` /
+  `next_action` ("When: …" / "Next: …"), used by the rule card and the review wizard. Always
+  UNDER `statement`, never instead of it.
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).
 - `components/masterworks/MasterworksPage.tsx` — Masterworks list, run links into
   workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors. Its
@@ -197,6 +210,29 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-12` — **The unfolding-case lane's frontend half (contract §1, §2, §5).** Three
+  additions, all additive; nothing any other lane does changes. **(1) Policy rule fields.**
+  `precondition` (summary + known/unknown) and `next_action` (kind, target, buys, cost, risk,
+  urgency) are two OPTIONAL fields on `RulebookRule`, rendered by ONE component
+  (`components/detail/RulePolicy.tsx`) on the rule card and in the review wizard, carried to
+  every Rulebook-reading agent by `agent-context/rulebookDocument.ts`, and typed into the ONE
+  shared rule form (`RuleFields`; the Final Checkup passes `omitFields={["quote","policy"]}` —
+  a checkup suggestion has nowhere to put them, so rendering the inputs there would discard
+  what was typed). `statement` stays the whole rule in prose — THE ANTI-MISLEADING LAW; a
+  half-filled next action emits nothing rather than "Next: —". Guard:
+  `__tests__/policy-rule-fields.test.tsx`. **(2) The timeline intake.** `?intake=timeline` opens
+  `IngestTimelineDialog`; the run rides the ONE durable-run wire under its own surface
+  (`timeline`) and pointer, so a timeline never rejoins the single-source ingest dialog. On
+  completion the unfolded case renders through its kind component and the Expert is handed the
+  drafts (teaching) or the sealed list (held-out). Guard: `__tests__/timeline-intake.test.ts`
+  (the wire body, the refusals and their remedies, and the held-out summary that never mentions
+  an outcome). **(3) Sealed cases** on the Sources view, label/date/licence only. The
+  `serial_observation_timeline` kind itself lives in `features/content-ir/kinds/` with ONE
+  component (`components/mardown-display/blocks/masterwork-timeline/`); its registry rows ride
+  `migrations/content_ir_serial_observation_timeline_kind.sql` and until that is applied the
+  kind renders the generic viewer, which is correct, not broken. Cross-repo SoR:
+  `../../../common-docs/systems/masterwork/unfolding-case-contract.md`.
 
 - `2026-09-12` — **The unfolding case reached the UI (trial 7, lane WS-D2).** A Masterwork whose
   workflow carries a `masterwork.case.disclose` node is a DESK: `TryMasterworkBox` now offers that

@@ -60,6 +60,7 @@ import type { paths } from "@/types/python-generated/api-types";
 import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { writeDumpUrlSources } from "../../service";
+import { HeldOutCasesSection } from "./HeldOutCasesSection";
 import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
 
 /**
@@ -644,6 +645,9 @@ export function RulebookSourcesPanel({
               />
             </div>
           ) : null}
+
+          {/* ── held-out cases (sealed) ──────────────────────────────── */}
+          <HeldOutCasesSection rulebookId={rulebook.id} />
 
           {/* ── the run ──────────────────────────────────────────────── */}
           {canEdit ? (
