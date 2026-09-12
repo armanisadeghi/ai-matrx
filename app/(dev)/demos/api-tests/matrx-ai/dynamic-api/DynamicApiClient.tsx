@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1092,12 +1094,14 @@ export default function DynamicApiClient() {
                 {timing.end && elapsedMs !== null && (
                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
                     <Clock className="h-3 w-3" />
-                    {(elapsedMs / 1000).toFixed(2)}s
+                    {formatDurationMs(elapsedMs, { style: "compact" })}
                   </span>
                 )}
                 {isRunning && timing.start && !timing.end && (
                   <span className="text-[10px] text-muted-foreground font-mono">
-                    {((Date.now() - timing.start) / 1000).toFixed(1)}s…
+                    {formatDurationMs(Date.now() - timing.start, {
+                      style: "compact",
+                    })}…
                   </span>
                 )}
                 <div className="ml-auto">

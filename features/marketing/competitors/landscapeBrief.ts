@@ -22,6 +22,7 @@ import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import { isJsonObject } from "@/types/json";
 import type { AppDispatch } from "@/lib/redux/store";
 import { guardedUpdate, type GuardedUpdateResult } from "@ai-matrx/data/db";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export type LandscapeBriefRow =
   Database["seo"]["Tables"]["landscape_brief"]["Row"];
@@ -71,9 +72,7 @@ export function reviewDeadlineNote(
   const remainingMs = new Date(row.auto_accept_at).getTime() - now;
   if (remainingMs <= 0)
     return "The review window has lapsed — the system is now working from these assumptions. Correcting them still overrides everything downstream.";
-  const hours = Math.floor(remainingMs / 3_600_000);
-  const minutes = Math.max(1, Math.round((remainingMs % 3_600_000) / 60_000));
-  const left = hours >= 1 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  const left = formatDurationMs(remainingMs, { style: "coarse" });
   return `You have ${left} to correct this. Nothing waits on you — after that the system just gets on with these assumptions, and you can still change them later.`;
 }
 

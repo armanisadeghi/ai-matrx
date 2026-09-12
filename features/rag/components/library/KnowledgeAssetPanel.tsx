@@ -81,6 +81,7 @@ import {
   getRepresentationState,
   type RepresentationState,
 } from "./knowledgeAssetStatus";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ---------------------------------------------------------------------------
 // Per-kind presentation metadata
@@ -1166,9 +1167,7 @@ function useElapsed(startedAt: number | null, running: boolean): string {
     return () => window.clearInterval(t);
   }, [running]);
   if (!startedAt) return "0s";
-  const sec = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-  if (sec < 60) return `${sec}s`;
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return s === 0 ? `${m}m` : `${m}m ${s}s`;
+  return formatDurationMs(Math.max(0, Date.now() - startedAt), {
+    style: "compact",
+  });
 }

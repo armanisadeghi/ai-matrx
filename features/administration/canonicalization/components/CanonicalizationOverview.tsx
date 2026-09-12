@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 /**
  * features/administration/canonicalization/components/CanonicalizationOverview.tsx
  *
@@ -158,7 +160,9 @@ export function CanonicalizationOverview() {
         typeof data.durationMs === "number" ? data.durationMs : 0;
       const note = typeof data.note === "string" ? data.note : "";
       toast.success(
-        `Audit store refreshed in ${(durationMs / 1000).toFixed(1)}s${note ? ` — ${note}` : ""}`,
+        `Audit store refreshed in ${formatDurationMs(durationMs, {
+          style: "compact",
+        })}${note ? ` — ${note}` : ""}`,
       );
       setRefreshOpen(false);
       await load();

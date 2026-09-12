@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -73,9 +75,7 @@ export function WorkbenchClient() {
           )}
           {wb.totals.totalMs > 0 && (
             <span className="shrink-0 font-mono">
-              {wb.totals.totalMs < 1000
-                ? `${Math.round(wb.totals.totalMs)}ms`
-                : `${(wb.totals.totalMs / 1000).toFixed(2)}s`}
+              {formatDurationMs(wb.totals.totalMs, { style: "compact" })}
             </span>
           )}
         </div>

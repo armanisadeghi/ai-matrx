@@ -28,6 +28,7 @@ import type { RootState } from "@/lib/redux/store";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 export interface ConversationReferenceRow {
   id: string;
@@ -53,19 +54,6 @@ export function formatConversationReference(
   return `my conversation "${title}" (conversation ${conversation.id})`;
 }
 
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const mins = Math.round((Date.now() - then) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
-
 function ConversationRow({
   row,
   onSelect,
@@ -88,7 +76,7 @@ function ConversationRow({
           {row.title?.trim() || "Untitled chat"}
         </div>
         <div className="truncate text-[10px] text-muted-foreground">
-          {relativeTime(row.updatedAt)}
+          {formatRelativeTime(row.updatedAt, { fallback: "" })}
           {agentName ? ` · ${agentName}` : ""}
         </div>
       </button>

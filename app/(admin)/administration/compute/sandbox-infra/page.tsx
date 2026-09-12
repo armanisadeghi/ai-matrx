@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { extractErrorMessage } from "@/utils/errors";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
@@ -105,12 +106,9 @@ function uptimeHuman(seconds: number): string {
     return `${(seconds / 86400).toFixed(1)}d`;
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function relativeTime(iso: string): string {
-    const ms = Date.now() - new Date(iso).getTime();
-    if (ms < 60_000) return `${Math.round(ms / 1000)}s ago`;
-    if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m ago`;
-    if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h ago`;
-    return `${Math.round(ms / 86_400_000)}d ago`;
+    return formatRelativeTime(iso, { style: "short" });
 }
 
 function pctClass(pct: number): string {

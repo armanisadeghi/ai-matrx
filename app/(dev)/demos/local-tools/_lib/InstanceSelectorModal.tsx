@@ -21,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,12 +37,9 @@ import { useAppInstances, type InstanceWithStatus } from "./useAppInstances";
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function timeAgo(iso: string): string {
-  const secs = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
-  if (secs < 60) return `${secs}s ago`;
-  if (secs < 3600) return `${Math.round(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.round(secs / 3600)}h ago`;
-  return `${Math.round(secs / 86400)}d ago`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 function PlatformIcon({ platform }: { platform: string | null }) {

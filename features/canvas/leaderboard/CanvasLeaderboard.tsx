@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trophy, Clock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { formatDurationMs } from '@ai-matrx/kit/format';
 
 interface CanvasLeaderboardProps {
     canvasId: string;
@@ -98,7 +99,7 @@ export function CanvasLeaderboard({
                                     <>
                                         <span>•</span>
                                         <Clock className="w-3 h-3" />
-                                        <span>{Math.round(entry.time_taken / 1000)}s</span>
+                                        <span>{formatDurationMs(entry.time_taken, { style: 'compact' })}</span>
                                     </>
                                 )}
                             </div>

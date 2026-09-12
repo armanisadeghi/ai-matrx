@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   Monitor,
   Radio,
@@ -28,12 +29,9 @@ import {
 } from "lucide-react";
 import type { LocalInstance } from "@/app/api/local-instances/route";
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function formatLastSeen(lastSeen: string): string {
-  const diff = Date.now() - new Date(lastSeen).getTime();
-  if (diff < 60_000) return "Just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
+  return formatRelativeTime(lastSeen, { style: "short" });
 }
 
 function PlatformIcon({ platform }: { platform: string | null }) {

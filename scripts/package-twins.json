@@ -1,12 +1,12 @@
 {
   "$comment": [
-    "THE TWIN REGISTER \u2014 every capability whose logic has been COLLAPSED into an",
+    "THE TWIN REGISTER — every capability whose logic has been COLLAPSED into an",
     "@ai-matrx/* package. A local definition of one of these names in this repo is a",
     "re-grown twin: the exact failure the client-package campaign exists to kill",
     "(Arman: 'the logic of the packages is NEVER duplicated outside of the package').",
     "",
     "Add a row the same session you delete a twin. Never add an allowlist entry to",
-    "silence a NEW twin \u2014 an allowlist entry is only for a definition that is",
+    "silence a NEW twin — an allowlist entry is only for a definition that is",
     "PROVABLY not the same capability, and it must say why in `reason`.",
     "A WRAPPER is not a twin: a local function that BINDS the package function's options (unit, style, fallback) and delegates in a line or two is the sanctioned adapter, and needs no entry. A re-implemented BODY is a twin, always.",
     "",
@@ -50,7 +50,7 @@
     {
       "name": "BACKOFF_RESET_AFTER_MS",
       "package": "@ai-matrx/realtime",
-      "why": "The stability-reset constant. Resetting the attempt counter on SUBSCRIBED lets a flapping channel cycle at the 1s floor forever, firing a full catch-up each time \u2014 the package encodes the 30s rule once.",
+      "why": "The stability-reset constant. Resetting the attempt counter on SUBSCRIBED lets a flapping channel cycle at the 1s floor forever, firing a full catch-up each time — the package encodes the 30s rule once.",
       "allow": []
     },
     {
@@ -62,7 +62,7 @@
     {
       "name": "attachRealtime",
       "package": "@ai-matrx/realtime",
-      "why": "Per-hook refcounted channel attach. Four hand-copied maps (useAnnotations, usePages, useFileAnalysis, useExtractionJobs) collapsed into lib/realtime/sharedChannel.ts on 2026-09-07, whose exported door is `openShared` \u2014 the ONE sanctioned home for the app-shaped fan-in the package's room registry deliberately does not cover for pg-changes. This row exists so a fifth per-hook copy cannot come back.",
+      "why": "Per-hook refcounted channel attach. Four hand-copied maps (useAnnotations, usePages, useFileAnalysis, useExtractionJobs) collapsed into lib/realtime/sharedChannel.ts on 2026-09-07, whose exported door is `openShared` — the ONE sanctioned home for the app-shaped fan-in the package's room registry deliberately does not cover for pg-changes. This row exists so a fifth per-hook copy cannot come back.",
       "allow": []
     },
     {
@@ -146,475 +146,46 @@
     {
       "name": "isRfc4122Uuid",
       "package": "@ai-matrx/kit/uuid",
-      "why": "The STRICT RFC-4122 predicate (version 1-5, variant 8/9/a/b) \u2014 the right question for a validation door on a public route, and it REJECTS what isUuidShape accepts (the nil UUID, v6/v7/v8). Eight host copies collapsed 2026-09-07: six invite/notify API doors plus the two voice readiness doors that had been ALLOWLISTED here because the package shipped only the lax predicate. Never swap one predicate for the other to make a test pass.",
+      "why": "The STRICT RFC-4122 predicate (version 1-5, variant 8/9/a/b) — the right question for a validation door on a public route, and it REJECTS what isUuidShape accepts (the nil UUID, v6/v7/v8). Eight host copies collapsed 2026-09-07: six invite/notify API doors plus the two voice readiness doors that had been ALLOWLISTED here because the package shipped only the lax predicate. Never swap one predicate for the other to make a test pass.",
       "allow": []
     },
     {
       "name": "formatDurationMs",
       "package": "@ai-matrx/kit/format",
       "why": "THE UNIT LAW: the fleet's ~35 duration twins variously took milliseconds, seconds and minutes behind an identical `formatDuration(n)` signature, so kit ships formatDurationMs / formatDurationSeconds / formatDurationMinutes and NO bare `formatDuration`. Two host copies had already re-grown under this exact name (observational-memory format.ts, marketing crawl-session-panels.tsx) and were deleted 2026-09-07. A local `formatDuration` that BINDS unit+style+fallback and delegates is an adapter, not a twin; a local `formatDurationMs` is always a twin.",
-      "shapeWhy": "A millisecond count becoming a unit string is this capability whatever it is called. The name lane read GREEN on all four formatDuration* exports while aidream's dashboard carried SEVEN bodies under the private names fmtMs and fmtMsSummary, each with its own rounding, and 115 more files in this repo turned ms into `2.3s` / `1.5m` / `3m ago` inline. Pattern and its proof: scripts/duration-shape.mjs. Plain time arithmetic can never match \u2014 the rule requires a DIVISION, MODULO or THRESHOLD COMPARISON against a time base PAIRED with a duration unit label, so a timeout budget (30 * 1000), an API seconds field and a rate denominator all stay untouched. `shapeCensus` below is the pre-existing census, not an exemption: it is reported every run and is ratcheted shrink-only \u2014 a stale entry FAILS the guard.",
+      "shapeWhy": "A millisecond count becoming a unit string is this capability whatever it is called. The name lane read GREEN on all four formatDuration* exports while aidream's dashboard carried SEVEN bodies under the private names fmtMs and fmtMsSummary, each with its own rounding, and 115 more files in this repo turned ms into `2.3s` / `1.5m` / `3m ago` inline. Pattern and its proof: scripts/duration-shape.mjs. Plain time arithmetic can never match — the rule requires a DIVISION, MODULO or THRESHOLD COMPARISON against a time base PAIRED with a duration unit label, so a timeout budget (30 * 1000), an API seconds field and a rate denominator all stay untouched. `shapeCensus` below is the pre-existing census, not an exemption: it is reported every run and is ratcheted shrink-only — a stale entry FAILS the guard.",
       "allow": [],
       "shapeCensus": [
         {
-          "file": "app/(admin)/administration/compute/sandbox-infra/page.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(admin)/administration/database/components/enhanced-sql-editor.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(core)/podcast/studio/run-d/_components/RunView.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/api-tests/agent/AgentTestClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/api-tests/matrx-ai/agent-demo/AgentDemoClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/api-tests/matrx-ai/dynamic-api/DynamicApiClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/api-tests/tool-testing/components/ResultsPanel.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/local-tools/_lib/InstanceSelectorModal.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/local-tools/_lib/useMatrxLocal.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/local-tools/scraper/page.dev.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/tests/google-apis/pagespeed/components/MetricsOverview.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(dev)/demos/tool-viz/in-action/page.dev.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "app/(transitional)/local/page.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/admin/controls/LargeIndicator.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/admin/controls/MediumIndicator.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/admin/debug/TokenStatusDebug.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/admin/query-history/query-history-overlay.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/admin/server-logs/CoolifyLogViewer.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/admin/state-analyzer/execution-inspector/ExecutionInstanceInspector.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/image/cloud/CloudImageList.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "components/mardown-display/blocks/data-events/FunctionResultBlock.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/admin/error-inspector/ErrorInspectorWindow.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/admin/relationships/components/ExposureAuditClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/administration/batch/components/presentation.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/administration/canonicalization/components/CanonicalizationOverview.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/administration/canonicalization/hooks/useAuditStore.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/administration/database-admin/workbench/QueryBlock.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/administration/database-admin/workbench/WorkbenchClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agent-apps/format.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agent-apps/route/AgentAppOverviewContent.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
           "file": "features/agent-connections/coding-sessions/captureGap.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/components/debug/StreamDebugPanel.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/components/messages-display/assistant/ProviderRetryCard.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/components/run-controls/panels/BackendTargetPanel.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/components/run-controls/panels/shared.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/components/undo-history/UndoHistoryOverlay.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/agents/redux/execution-system/thunks/run-ai-stream.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/ai-models/components/ProviderSyncDashboard.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/assists/quiet.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/canvas/leaderboard/CanvasLeaderboard.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/canvas/social/ScoreSubmissionDialog.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/code/editor/EditorToolbar.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/content-ir/admin/KindIncidentsTab.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/education/assessment/components/AssessmentHome.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/education/notes/EduNotesHome.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/education/onboard/components/elapsed.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/education/study/utils/summarizeSessionAttempts.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/flashcards/components/home/FlashcardsHome.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/flashcards/fast-fire/components/FastFireTimerBar.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/hr/tasks/urgency.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/html-pages/components/HtmlPageGridView.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/image-studio/components/ImageStudioShell.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/kg-suggestions/components/KgSuggestionRowItem.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/kg-suggestions/components/manager/SuggestionsTable.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/legal/wc/pd-ratings/CaPdCalculatorClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/legal/wc/pd-ratings/CasesListClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/mandates/admin/MandateTestBench.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/mandates/admin/TryItNowPanel.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/mandates/authoring/draft.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/marketing/competitors/landscapeBrief.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/marketing/components/crawls/CrawlScheduleCard.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/marketing/components/crawls/SiteCommandFeed.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/marketing/pagespeed/format.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/marketing/seo/audit/checks.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/marketing/seo/run-console/GazetteerPlaceDetectionConsole.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/marketing/seo/run-console/SituationalRefreshConsole.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/masterwork/components/masterworks/MasterworksPage.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/masterwork/encore/EncoreRunPage.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/masterwork/home/MasterworkHomePage.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/masterwork/record/format.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/notes/components/NoteDraftRecoveryBanner.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/notes/components/NoteSaveFailureBanner.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/notes/components/NoteSidebar.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/organizations/components/OrgPrivacyTab.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+          "reason": "Duration shard 1, 2026-09-11: this one IS a duration formatter and is DELIBERATELY left censused rather than collapsed or exempted. `formatGap` speaks a LONG-FORM ENGLISH voice — \"1 minute\", \"45 minutes\", \"23 hours\", \"3 days\" — and its output is embedded in prose the user reads (\"Nothing has been delivered for 3 days.\"). @ai-matrx/kit/format ships no long duration voice: `coarse` would render 3 days as \"72h\" and 45 minutes as \"45 min\" inside those sentences, which is a visible regression of user-facing copy (and would break the exact-string unit test in __tests__/captureGap.test.ts). THE FIX IS IN THE PACKAGE: add a `\"long\" DurationStyle (\"45 minutes\", \"3 hours\", \"3 days\") to @ai-matrx/kit/format, then collapse this file and delete this entry. Left loud on purpose so it cannot be forgotten."
         },
         {
           "file": "features/organizations/types.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/page-extraction/data-review/ExtractionCatalogClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/pdf/utils/inactivity.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/podcasts/studio/components/RunTruthInspector.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: `getExpiryDisplay` renders an invite countdown in DAYS (\"Expires in 3 days\", \"Expires in 5 hours\"), and @ai-matrx/kit/format has no day-scale voice — `coarse` would print \"72h\" for three days. Blocked on a kit `format` voice that speaks days; collapse the moment one exists."
         },
         {
           "file": "features/pricing/components/UsageLimitDialog.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: `formatCountdown` renders the billing-meter reset in days (\"2 days\", \"1 day, 5h\", then \"3h 20m\", \"5m\", \"<1m\"). @ai-matrx/kit/format's `coarse` voice has no day scale and would print \"48h\". Blocked on a kit day-scale voice."
         },
         {
           "file": "features/projects/types.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/proof-runs/components/ProofRunsClient.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/rag/components/library/KnowledgeAssetPanel.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/rag/components/library/LibraryPage.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/research/components/overview/live-pipeline/LivePipelineActivity.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/research/components/overview/live-pipeline/stageMeta.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/research/components/overview/pipeline-graph/LastRunSummary.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/research/components/tasks/TasksView.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/resource-manager/resource-picker/ConversationReferencePicker.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/review-walk/components/TurnDiagnosis.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/tool-call-visualization/admin/ToolUiComponentGenerator.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/tool-call-visualization/admin/ToolUiIncidentViewer.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/tool-call-visualization/grouping/foldAgentWork.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/transcript-studio/components/StudioSidebar.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/transcript-studio/components/scribe/AssistantAgentBar.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/transcript-studio/components/settings/IntervalSlider.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/transcription-cleanup/components/CleanupSessionList.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/transcripts/service/audioStorageService.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/voice-agent/components/VoiceDebugPanel.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/war-room/service/warRoomRecentActivity.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/window-panels/windows/code/CodeFileManagerWindow.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/workflow-runtime/bakeoff/dense/PlanLedger.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/workflow-runtime/bakeoff/reimagine-2/FocusWindow.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "features/workflow-runtime/bakeoff/sharp-2/PlanColumn.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: same day-scale `getExpiryDisplay` (\"Expires in 3 days\") as features/organizations/types.ts. @ai-matrx/kit/format's `coarse` voice stops at hours (\"72h\"), so collapsing would visibly degrade the screen. Blocked on a kit day-scale voice."
         },
         {
           "file": "features/workflow-runtime/interrupt/interrupt-view.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: `humanRemaining` speaks \"45 sec\" / \"12 min\" / \"3 hr\" / \"2 days\" — a spelled-out voice @ai-matrx/kit/format does not have (`coarse` rounds 45 sec to \"1 min\", prints \"3h\" not \"3 hr\", and has no days). __tests__/interrupt-view.test.ts asserts that exact copy. Blocked on a kit spelled-out/day-scale voice."
+        }
+      ],
+      "shapeAllow": [
+        {
+          "file": "features/agent-apps/format.ts",
+          "why": "PROVABLY NOT A DURATION. `formatNumber` is a compact COUNT formatter — \"1.2k\" for thousands and \"3m\" for MILLIONS of agent-app installs/runs — and no time value of any kind enters this module: its only other export that touches time is `formatDateTime`, a bare `toLocaleString()`. The duration lane fires because `/ 1000` and `/ 1_000_000` are SI magnitude steps and the millions suffix `}m` is character-for-character a minutes label; the rule cannot tell a magnitude step from a time base here, and nothing in the file ever produces a duration string. (Checked 2026-09-11, duration shard 1.)"
         },
         {
-          "file": "features/workflow-runtime/redux/workflow-runs.slice.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "hooks/sandbox/use-time-remaining.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "lib/entity-list/columns.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "lib/guided-setup/components/GuidedChecklist.tsx",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "lib/python-client.ts",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
-        },
-        {
-          "file": "scripts/validate.mjs",
-          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+          "file": "features/marketing/seo/audit/checks.ts",
+          "reason": "NOT collapsible from this side: this whole module is declared a BYTE-IDENTICAL mirror of aidream `packages/matrx-scraper/matrx_scraper/seo_audit.py`, enforced by `checks.parity.test.ts` against a generated fixture. The two hits are `pyFixed(lcp / 1000, 1)` and `pyFixed(pythonRound(savings) / 1000, 1)` — Python's round-half-even expansion, always one decimal of seconds. `formatDurationMs` cannot reproduce them: it prints `800ms` where Python prints `0.8s`, and `12s` where Python prints `12.0s`, so adopting it here would change a user-facing audit sentence AND break parity in a repo this shard may not touch.",
+          "why": "The unit string here is not this repo's to format: it is a mirrored artifact of a Python check that owns the sentence, held byte-identical by a parity fixture test, so the rounding and the wording are decided in `seo_audit.py` and copied — not authored — here. Collapsing it needs a same-commit change on BOTH sides plus a kit style that always prints one decimal of seconds; until that lands, an unlabelled collapse would silently desynchronise the two halves of the ONE verdict layer."
         }
       ]
     },
@@ -650,7 +221,7 @@
     {
       "name": "parseTimestamp",
       "package": "@ai-matrx/kit/format",
-      "why": "The Postgres correction: a zone-less `timestamp without time zone` is UTC, not the viewer's local time \u2014 the classic 'times are off by N hours' bug. It lived in @ai-matrx/diff and in matrx-frontend's utils/datetime.ts as byte-level twins until 2026-09-07.",
+      "why": "The Postgres correction: a zone-less `timestamp without time zone` is UTC, not the viewer's local time — the classic 'times are off by N hours' bug. It lived in @ai-matrx/diff and in matrx-frontend's utils/datetime.ts as byte-level twins until 2026-09-07.",
       "allow": [
         {
           "file": "utils/datetime.ts",
@@ -667,14 +238,14 @@
     {
       "name": "formatFileSize",
       "package": "@ai-matrx/kit/format",
-      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative \u2014 NEVER a confident '0 B'). 2026-09-11: the name lane read GREEN while 134 byte-size bodies lived in 67 files under OTHER names \u2014 this row now also carries the SHAPE rule below, which is what actually closed the class.",
+      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative — NEVER a confident '0 B'). 2026-09-11: the name lane read GREEN while 134 byte-size bodies lived in 67 files under OTHER names — this row now also carries the SHAPE rule below, which is what actually closed the class.",
       "shapeRule": "byte-size",
-      "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant (80 * 1024 * 1024) can never match \u2014 the rule requires a DIVISION or THRESHOLD COMPARISON against 1024, and this repo has ~60 legitimate byte ceilings that must stay untouched.",
+      "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant (80 * 1024 * 1024) can never match — the rule requires a DIVISION or THRESHOLD COMPARISON against 1024, and this repo has ~60 legitimate byte ceilings that must stay untouched.",
       "shapeAllow": [
         {
           "file": "features/organizations/admin/utils.ts",
-          "reason": "NOT a display formatter: gbToBytes/bytesToGb convert between a storage-quota NUMBER and the bare number an admin types into a GB form field. There is no unit label and no rounding decision \u2014 the string is parsed back into a number on submit, so kit's '1.5 GB' would break the field. The same file's display door on line 27 IS the package (export const formatBytes = formatFileSize).",
-          "why": "bytesToGb/gbToBytes are FORM round-trip converters, not formatters: they turn a byte column into the bare number a GB input field edits and back again. There is no unit label and no rendered string \u2014 formatFileSize returns \"2.0 GB\", which cannot go in a number input."
+          "reason": "NOT a display formatter: gbToBytes/bytesToGb convert between a storage-quota NUMBER and the bare number an admin types into a GB form field. There is no unit label and no rounding decision — the string is parsed back into a number on submit, so kit's '1.5 GB' would break the field. The same file's display door on line 27 IS the package (export const formatBytes = formatFileSize).",
+          "why": "bytesToGb/gbToBytes are FORM round-trip converters, not formatters: they turn a byte column into the bare number a GB input field edits and back again. There is no unit label and no rendered string — formatFileSize returns \"2.0 GB\", which cannot go in a number input."
         },
         {
           "file": "utils/stream-profiler.ts",
@@ -687,7 +258,7 @@
     {
       "name": "extractErrorMessage",
       "package": "@ai-matrx/data/net",
-      "why": "THE caught-value-to-string extractor (PostgrestError, axios, and a FastAPI `detail` body \u2014 a string, or an object carrying `message`). Two host bodies were deleted 2026-09-11. utils/errors.ts held a near-byte copy of the package's, which meant the 2026-08-31 FastAPI `detail` fix had to be written TWICE, and it had already fallen behind on the package's nested-error lookup and its `fallback` parameter; it is now a one-line re-export door so this repo's ~100 `@/utils/errors` importers keep their path. features/agent-shortcuts/components/ShortcutForm.tsx held a STALE copy with no `detail` branch at all, so a server refusal that said exactly why was flattened into the caller's generic fallback on that form.",
+      "why": "THE caught-value-to-string extractor (PostgrestError, axios, and a FastAPI `detail` body — a string, or an object carrying `message`). Two host bodies were deleted 2026-09-11. utils/errors.ts held a near-byte copy of the package's, which meant the 2026-08-31 FastAPI `detail` fix had to be written TWICE, and it had already fallen behind on the package's nested-error lookup and its `fallback` parameter; it is now a one-line re-export door so this repo's ~100 `@/utils/errors` importers keep their path. features/agent-shortcuts/components/ShortcutForm.tsx held a STALE copy with no `detail` branch at all, so a server refusal that said exactly why was flattened into the caller's generic fallback on that form.",
       "allow": []
     },
     {
@@ -710,13 +281,13 @@
     {
       "name": "escapeHtml",
       "package": "@ai-matrx/kit/html-escape",
-      "why": "TEN copies were live across the fleet and THEY DID NOT ESCAPE THE SAME CHARACTERS \u2014 three did & < > only, two added \", four added ' (two as &#39;, two as &#039;), and a tenth wore the name escapeHtmlAttr while escaping only & < \" into an HTML ATTRIBUTE. A string safe through one was an attribute break-out through another. kit ships ONE decided set: & < > \" ' \u2014 all five, always. It is not in @ai-matrx/print because an HTML escaper must not require jspdf + html2canvas.",
+      "why": "TEN copies were live across the fleet and THEY DID NOT ESCAPE THE SAME CHARACTERS — three did & < > only, two added \", four added ' (two as &#39;, two as &#039;), and a tenth wore the name escapeHtmlAttr while escaping only & < \" into an HTML ATTRIBUTE. A string safe through one was an attribute break-out through another. kit ships ONE decided set: & < > \" ' — all five, always. It is not in @ai-matrx/print because an HTML escaper must not require jspdf + html2canvas.",
       "allow": []
     },
     {
       "name": "Select",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": [
         {
           "file": "components/ui/loaders/select.tsx",
@@ -727,109 +298,109 @@
     {
       "name": "SelectTrigger",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "SelectContent",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "SelectItem",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "SelectLabel",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "SelectSeparator",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "SelectScrollUpButton",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "SelectScrollDownButton",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "selectTriggerVariants",
       "package": "@ai-matrx/design-system",
-      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
       "allow": []
     },
     {
       "name": "Command",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandDialog",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandInput",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandList",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandEmpty",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandGroup",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandItem",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandSeparator",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CommandShortcut",
       "package": "@ai-matrx/design-system",
-      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset \u2014 same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
       "allow": []
     },
     {
       "name": "CreatablePicker",
       "package": "@ai-matrx/design-system",
-      "why": "P23's every-picker-takes-new-input control. The package copy says it was 'promoted' from components/ui/creatable-picker.tsx, but the origin was never deleted \u2014 two bodies with the same name and the same CreatableOption interface sat side by side until 2026-09-07, when the host file became a re-export door. The locked-vocabulary door, the manage door, the createExtra slot and footerActions all live in the package.",
+      "why": "P23's every-picker-takes-new-input control. The package copy says it was 'promoted' from components/ui/creatable-picker.tsx, but the origin was never deleted — two bodies with the same name and the same CreatableOption interface sat side by side until 2026-09-07, when the host file became a re-export door. The locked-vocabulary door, the manage door, the createExtra slot and footerActions all live in the package.",
       "allow": []
     },
     {
@@ -846,7 +417,7 @@
     {
       "name": "buttonVariants",
       "package": "@ai-matrx/design-system",
-      "why": "The button's CVA recipe \u2014 the actual duplicated LOGIC behind the ButtonMine fork (deleted 2026-09-07). A re-grown `const buttonVariants = cva(...)` in this repo is a second button scale and a second palette; add the rung to the package instead.",
+      "why": "The button's CVA recipe — the actual duplicated LOGIC behind the ButtonMine fork (deleted 2026-09-07). A re-grown `const buttonVariants = cva(...)` in this repo is a second button scale and a second palette; add the rung to the package instead.",
       "allow": [
         {
           "file": "components/animated/Menu/AnimatedMenu.tsx",
@@ -861,25 +432,25 @@
     {
       "name": "Tooltip",
       "package": "@ai-matrx/design-system",
-      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed \u2014 this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it \u2014 so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
+      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed — this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it — so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
       "allow": []
     },
     {
       "name": "TooltipTrigger",
       "package": "@ai-matrx/design-system",
-      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed \u2014 this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it \u2014 so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
+      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed — this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it — so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
       "allow": []
     },
     {
       "name": "TooltipContent",
       "package": "@ai-matrx/design-system",
-      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed \u2014 this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it \u2014 so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
+      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed — this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it — so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
       "allow": []
     },
     {
       "name": "TooltipProvider",
       "package": "@ai-matrx/design-system",
-      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed \u2014 this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it \u2014 so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
+      "why": "The ONE tooltip in the fleet (design-system 0.7.0). Two implementations existed — this repo's components/ui/tooltip.tsx (182 import sites) and @ai-matrx/tap-target's inlined port of it — so tap-target 0.2.0 deleted its copy and this repo's file became a re-export. A third copy is the failure this register exists to catch.",
       "allow": []
     },
     {
@@ -939,79 +510,79 @@
     {
       "name": "RadixDialogModalProvider",
       "package": "@ai-matrx/design-system",
-      "why": "THE QUIET TWIN. A duplicated React CONTEXT never fails loudly \u2014 useContext matches by object identity, so a host provider and a package consumer silently miss each other. Owned by design-system since 0.5.0; the last host copy died with growth wave 2.",
+      "why": "THE QUIET TWIN. A duplicated React CONTEXT never fails loudly — useContext matches by object identity, so a host provider and a package consumer silently miss each other. Owned by design-system since 0.5.0; the last host copy died with growth wave 2.",
       "allow": []
     },
     {
       "name": "useRadixDialogModal",
       "package": "@ai-matrx/design-system",
-      "why": "THE QUIET TWIN. A duplicated React CONTEXT never fails loudly \u2014 useContext matches by object identity, so a host provider and a package consumer silently miss each other. Owned by design-system since 0.5.0; the last host copy died with growth wave 2.",
+      "why": "THE QUIET TWIN. A duplicated React CONTEXT never fails loudly — useContext matches by object identity, so a host provider and a package consumer silently miss each other. Owned by design-system since 0.5.0; the last host copy died with growth wave 2.",
       "allow": []
     },
     {
       "name": "AlertDialog",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogContent",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogContentPrimitive",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogOverlay",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogHeader",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogFooter",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogTitle",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogDescription",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogAction",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogCancel",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
       "name": "AlertDialogPortal",
       "package": "@ai-matrx/design-system",
-      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer \u2014 the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
+      "why": "The confirm/destroy surface (design-system 0.7.0). The package version is clamped to 85dvh with a sticky footer — the host fork could push Cancel/Continue below the fold on a short viewport, and Radix does not dismiss an ALERT dialog on backdrop click, so that was a dead end.",
       "allow": []
     },
     {
@@ -1086,57 +657,57 @@
     {
       "name": "Toggle",
       "package": "@ai-matrx/design-system",
-      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT \u2014 splitting them across files is how a context twin gets written.",
+      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT — splitting them across files is how a context twin gets written.",
       "allow": [
         {
           "file": "app/(dev)/demos/context-menu/layouts/page.dev.tsx",
-          "reason": "A labelled CHECKBOX row (label + native input), not the Radix pressed-state Toggle \u2014 a different capability that happens to share the word."
+          "reason": "A labelled CHECKBOX row (label + native input), not the Radix pressed-state Toggle — a different capability that happens to share the word."
         },
         {
           "file": "features/admin/relationships/access-planner/AccessPlannerImpl.tsx",
-          "reason": "A labelled SWITCH row (label + the package Switch), not the Radix pressed-state Toggle \u2014 a different capability."
+          "reason": "A labelled SWITCH row (label + the package Switch), not the Radix pressed-state Toggle — a different capability."
         }
       ]
     },
     {
       "name": "ToggleGroup",
       "package": "@ai-matrx/design-system",
-      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT \u2014 splitting them across files is how a context twin gets written.",
+      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT — splitting them across files is how a context twin gets written.",
       "allow": [
         {
           "file": "components/admin/server-logs/CoolifyLogViewer.tsx",
-          "reason": "A multi-select log FILTER bar (all/clear chips over a Set<T>), not the Radix toggle group \u2014 a different capability that shares the word."
+          "reason": "A multi-select log FILTER bar (all/clear chips over a Set<T>), not the Radix toggle group — a different capability that shares the word."
         }
       ]
     },
     {
       "name": "ToggleGroupItem",
       "package": "@ai-matrx/design-system",
-      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT \u2014 splitting them across files is how a context twin gets written.",
+      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT — splitting them across files is how a context twin gets written.",
       "allow": []
     },
     {
       "name": "toggleVariants",
       "package": "@ai-matrx/design-system",
-      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT \u2014 splitting them across files is how a context twin gets written.",
+      "why": "The pressed-state control and its group (design-system 0.7.0). They ship as ONE module because ToggleGroupItem reads the group's React CONTEXT — splitting them across files is how a context twin gets written.",
       "allow": []
     },
     {
       "name": "ResizablePanelGroup",
       "package": "@ai-matrx/design-system",
-      "why": "The react-resizable-panels v4 family (design-system 0.7.0). This repo had TWO forks \u2014 components/ui/resizable.tsx and components/ui/matrx/resizable.tsx \u2014 differing only in handle thickness, which is now the `size` prop. components/ui/matrx/resizable.tsx binds size=\"md\" and is allowlisted for ResizableHandle only.",
+      "why": "The react-resizable-panels v4 family (design-system 0.7.0). This repo had TWO forks — components/ui/resizable.tsx and components/ui/matrx/resizable.tsx — differing only in handle thickness, which is now the `size` prop. components/ui/matrx/resizable.tsx binds size=\"md\" and is allowlisted for ResizableHandle only.",
       "allow": []
     },
     {
       "name": "ResizablePanel",
       "package": "@ai-matrx/design-system",
-      "why": "The react-resizable-panels v4 family (design-system 0.7.0). This repo had TWO forks \u2014 components/ui/resizable.tsx and components/ui/matrx/resizable.tsx \u2014 differing only in handle thickness, which is now the `size` prop. components/ui/matrx/resizable.tsx binds size=\"md\" and is allowlisted for ResizableHandle only.",
+      "why": "The react-resizable-panels v4 family (design-system 0.7.0). This repo had TWO forks — components/ui/resizable.tsx and components/ui/matrx/resizable.tsx — differing only in handle thickness, which is now the `size` prop. components/ui/matrx/resizable.tsx binds size=\"md\" and is allowlisted for ResizableHandle only.",
       "allow": []
     },
     {
       "name": "ResizableHandle",
       "package": "@ai-matrx/design-system",
-      "why": "The react-resizable-panels v4 family (design-system 0.7.0). This repo had TWO forks \u2014 components/ui/resizable.tsx and components/ui/matrx/resizable.tsx \u2014 differing only in handle thickness, which is now the `size` prop. components/ui/matrx/resizable.tsx binds size=\"md\" and is allowlisted for ResizableHandle only.",
+      "why": "The react-resizable-panels v4 family (design-system 0.7.0). This repo had TWO forks — components/ui/resizable.tsx and components/ui/matrx/resizable.tsx — differing only in handle thickness, which is now the `size` prop. components/ui/matrx/resizable.tsx binds size=\"md\" and is allowlisted for ResizableHandle only.",
       "allow": [
         {
           "file": "components/ui/matrx/resizable.tsx",
@@ -1147,25 +718,25 @@
     {
       "name": "Accordion",
       "package": "@ai-matrx/design-system",
-      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation \u2014 workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up \u2014 host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
+      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation — workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up — host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
       "allow": []
     },
     {
       "name": "AccordionItem",
       "package": "@ai-matrx/design-system",
-      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation \u2014 workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up \u2014 host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
+      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation — workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up — host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
       "allow": []
     },
     {
       "name": "AccordionTrigger",
       "package": "@ai-matrx/design-system",
-      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation \u2014 workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up \u2014 host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
+      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation — workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up — host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
       "allow": []
     },
     {
       "name": "AccordionContent",
       "package": "@ai-matrx/design-system",
-      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation \u2014 workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up \u2014 host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
+      "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation — workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up — host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
       "allow": []
     },
     {
@@ -1177,7 +748,7 @@
     {
       "name": "ArchivedDisclosure",
       "package": "@ai-matrx/design-system",
-      "why": "THE ARCHIVED-ITEMS LAW's card-list control (design-system 0.14.0): the one-click \"Archived (N)\" reveal, closed by default, with `countLabel` for a capped/absent count and `keepWhileOpen` for a surface whose open state IS the archive view. Proven in Transcript Studio, lived at components/official/ArchivedDisclosure.tsx, deleted 2026-09-10 when the package took it \u2014 the law says the control is the same primitive everywhere, and a second home for half of it was the defect. Fourteen surfaces (masterwork \u00d74, pdf-extractor \u00d72, pdf scanner, page-extraction, canvas, hr fields, whatsapp-clone, organizations, agent templates, transcript-studio) import it from the package.",
+      "why": "THE ARCHIVED-ITEMS LAW's card-list control (design-system 0.14.0): the one-click \"Archived (N)\" reveal, closed by default, with `countLabel` for a capped/absent count and `keepWhileOpen` for a surface whose open state IS the archive view. Proven in Transcript Studio, lived at components/official/ArchivedDisclosure.tsx, deleted 2026-09-10 when the package took it — the law says the control is the same primitive everywhere, and a second home for half of it was the defect. Fourteen surfaces (masterwork ×4, pdf-extractor ×2, pdf scanner, page-extraction, canvas, hr fields, whatsapp-clone, organizations, agent templates, transcript-studio) import it from the package.",
       "allow": []
     },
     {
@@ -1242,13 +813,13 @@
     {
       "name": "_registerHost",
       "package": "@ai-matrx/kit/opener",
-      "why": "The opener HOST REGISTRY. Four hand-rolled copies existed (kit's confirm plus this repo's sandbox-gate, scope-mismatch and value-prompts dialogs); the three host-side ones kept the registry in a module-level `let host`, which is the dual-loader-graph hazard \u2014 with unsplit dual ESM/CJS bundles each graph instantiates its own module, so host registration silently splits from its callers and the awaiting promise hangs forever with no error anywhere. Deleted here 2026-09-11 in the kit 0.10.0 adoption; `createOpener(slot)` owns the registry, the queue and the globalThis slot.",
+      "why": "The opener HOST REGISTRY. Four hand-rolled copies existed (kit's confirm plus this repo's sandbox-gate, scope-mismatch and value-prompts dialogs); the three host-side ones kept the registry in a module-level `let host`, which is the dual-loader-graph hazard — with unsplit dual ESM/CJS bundles each graph instantiates its own module, so host registration silently splits from its callers and the awaiting promise hangs forever with no error anywhere. Deleted here 2026-09-11 in the kit 0.10.0 adoption; `createOpener(slot)` owns the registry, the queue and the globalThis slot.",
       "allow": []
     },
     {
       "name": "_unregisterHost",
       "package": "@ai-matrx/kit/opener",
-      "why": "The unregister half of the opener host registry, including the rule that only the CURRENT host may unregister (a superseded host's late unmount must not tear down the live one \u2014 the React double-mount / provider-swap case). Deleted here 2026-09-11 alongside _registerHost.",
+      "why": "The unregister half of the opener host registry, including the rule that only the CURRENT host may unregister (a superseded host's late unmount must not tear down the live one — the React double-mount / provider-swap case). Deleted here 2026-09-11 alongside _registerHost.",
       "allow": []
     },
     {

@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -796,7 +798,7 @@ export default function AgentDemoClient() {
                     <>
                       <span>{stats.events} evt</span>
                       <span>{formatFileSize(stats.bytes)}</span>
-                      <span>{(stats.ms / 1000).toFixed(1)}s</span>
+                      <span>{formatDurationMs(stats.ms, { style: "compact" })}</span>
                     </>
                   )}
                   <Button
@@ -926,7 +928,8 @@ export default function AgentDemoClient() {
                           )}
                       </div>
                       <div className="p-2 bg-muted rounded text-[11px] text-muted-foreground font-mono">
-                        {(stats.ms / 1000).toFixed(2)}s · {stats.events} events
+                        {formatDurationMs(stats.ms, { style: "compact" })} ·{" "}
+                        {stats.events} events
                       </div>
                     </div>
                   ) : (

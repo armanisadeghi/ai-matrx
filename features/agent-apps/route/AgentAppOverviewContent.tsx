@@ -18,6 +18,7 @@
  */
 
 import { useState } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   isPubliclyVisible,
   visibilityLabelShort,
@@ -96,21 +97,9 @@ function StatChip({
   );
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function formatRelative(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const ms = Date.now() - +new Date(iso);
-  if (Number.isNaN(ms)) return "—";
-  const sec = Math.round(ms / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 48) return `${hr}h ago`;
-  const days = Math.round(hr / 24);
-  if (days < 30) return `${days}d ago`;
-  const mo = Math.round(days / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  return `${Math.round(mo / 12)}y ago`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 interface LabeledPillProps {

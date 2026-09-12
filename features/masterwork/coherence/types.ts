@@ -33,7 +33,25 @@ export const TENSION_LABELS: Record<TensionKind, string> = {
  * - `dismissed` — "that isn't a real problem."
  */
 export const SETTLED_STATES = ["answered", "accepted", "dismissed"] as const;
-export type TensionState = "open" | (typeof SETTLED_STATES)[number];
+
+/**
+ * Closed because the rules it is ABOUT were removed — not settled (nobody
+ * answered it), but just as final. Mirrors `coherence.MOOT_STATE`: every
+ * rule-removing server write closes the tensions it orphans this way.
+ *
+ * Why it exists (2026-09-12, Rulebook "Montessori Parenting Adviser"): a repair
+ * removed 123 duplicate rules and four open questions were left pointing at
+ * ids that no longer existed. This card could not show them; the page header
+ * counted them anyway and told the Expert four questions were waiting.
+ */
+export const MOOT_STATE = "moot";
+
+/** Every final state: settled by the Expert, or moot. Never asked again. */
+export const CLOSED_STATES = [...SETTLED_STATES, MOOT_STATE] as const;
+export type TensionState =
+  | "open"
+  | (typeof SETTLED_STATES)[number]
+  | typeof MOOT_STATE;
 
 export interface Tension {
   id: string;
@@ -55,6 +73,9 @@ export interface Tension {
   answer?: string;
   answered_at?: string;
   conversation_id?: string;
+  /** Set only with `state: "moot"` — names the rules that went and the write. */
+  moot_reason?: string;
+  moot_at?: string;
 }
 
 /** `platform.rulebook.metadata.coherence` — derived, disposable, never `rules`. */
@@ -88,7 +109,7 @@ function parseTension(raw: unknown): Tension | null {
       : [],
     recommendation: typeof rec.recommendation === "string" ? rec.recommendation : "",
     confidence: typeof rec.confidence === "number" ? rec.confidence : 0,
-    state: (SETTLED_STATES as readonly string[]).includes(String(rec.state))
+    state: (CLOSED_STATES as readonly string[]).includes(String(rec.state))
       ? (rec.state as TensionState)
       : "open",
     detected_at: typeof rec.detected_at === "string" ? rec.detected_at : "",
@@ -99,6 +120,10 @@ function parseTension(raw: unknown): Tension | null {
     ...(typeof rec.conversation_id === "string"
       ? { conversation_id: rec.conversation_id }
       : {}),
+    ...(typeof rec.moot_reason === "string"
+      ? { moot_reason: rec.moot_reason }
+      : {}),
+    ...(typeof rec.moot_at === "string" ? { moot_at: rec.moot_at } : {}),
   };
 }
 
@@ -114,12 +139,19 @@ export function allTensions(rulebook: Pick<Rulebook, "metadata">): Tension[] {
 }
 
 /**
- * The questions still waiting, most confident first.
+ * 🚨 THE ONE PREDICATE for "an open question" on the client, most confident
+ * first — what the panel lists AND what any headline may count. Mirrors the
+ * server's `coherence.askable_tensions`, deliberately duplicated rather than
+ * fetched because the page already holds the Rulebook.
  *
- * A tension whose rules no longer all exist is dropped — the Expert resolved it
- * by editing, and asking about a rule that is gone is worse than asking nothing.
- * Same rule as the server's `open_tensions`, deliberately duplicated rather than
- * fetched, because the page already holds the Rulebook.
+ * A question is open when it is `state: "open"` AND every rule it is about is
+ * still live. Never count `state === "open"` anywhere else: on 2026-09-12
+ * `journey.ts` did exactly that and printed "4 questions only you can settle
+ * are still open." one line above this panel showing none of them, because a
+ * repair had removed the rules those four were about.
+ *
+ * A retired rule is dropped here rather than closed server-side on purpose —
+ * un-retiring is one click, and the question comes back with it.
  */
 export function openTensions(
   rulebook: Pick<Rulebook, "metadata" | "rules">,
@@ -134,8 +166,29 @@ export function openTensions(
     .sort((a, b) => b.confidence - a.confidence);
 }
 
+/** How many open questions there are. THE number a headline prints. */
+export function openTensionCount(
+  rulebook: Pick<Rulebook, "metadata" | "rules">,
+): number {
+  return openTensions(rulebook).length;
+}
+
+/**
+ * The ones the EXPERT ruled on — never the moot ones. Nobody answered those,
+ * and counting a machine's bookkeeping as "you already settled this" would put
+ * words in her mouth. Mirrors the server's `settled_tensions`.
+ */
 export function settledTensions(
   rulebook: Pick<Rulebook, "metadata">,
 ): Tension[] {
-  return allTensions(rulebook).filter((t) => t.state !== "open");
+  return allTensions(rulebook).filter((t) =>
+    (SETTLED_STATES as readonly string[]).includes(t.state),
+  );
+}
+
+/** Closed because their rules were removed. Kept for the Record, never asked. */
+export function mootTensions(
+  rulebook: Pick<Rulebook, "metadata">,
+): Tension[] {
+  return allTensions(rulebook).filter((t) => t.state === MOOT_STATE);
 }

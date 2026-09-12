@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { extractErrorMessage } from "@/utils/errors";
@@ -92,10 +93,9 @@ function shortId() {
   return Math.random().toString(36).substring(2, 8);
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function timeAgo(date: Date) {
-  const s = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  return `${Math.floor(s / 60)}m ago`;
+  return formatRelativeTime(date, { style: "short" });
 }
 
 // ─────────────────────────────────────────────────────

@@ -57,6 +57,7 @@ import {
 } from "@/components/official/mobile-table/mobileTable";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 type SortKey = "updated" | "name" | "rows" | "source";
 
@@ -388,7 +389,7 @@ export function ExtractionCatalogClient() {
                         )}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                        {formatRelative(e.updatedAt)}
+                        {formatRelativeTime(e.updatedAt)}
                       </td>
                       <td
                         className="px-3 py-2 text-center"
@@ -485,17 +486,4 @@ function EmptyState({ hasAny }: { hasAny: boolean }) {
       </div>
     </div>
   );
-}
-
-function formatRelative(iso: string): string {
-  const then = new Date(iso).getTime();
-  const diff = Date.now() - then;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
 }

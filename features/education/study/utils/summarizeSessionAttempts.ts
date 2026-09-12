@@ -9,6 +9,7 @@
 // it — recompute from the ledger, which is always current.
 
 import type { StudyAttemptRow, StudySessionRow } from "../types";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface SessionSummary {
   total: number;
@@ -82,9 +83,5 @@ export function summarizeSessionAttempts(
 
 /** "1m 42s" / "48s" — compact duration for a scorecard, not a stopwatch. */
 export function formatSessionDuration(ms: number): string {
-  const totalSeconds = Math.max(0, Math.round(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  if (minutes === 0) return `${seconds}s`;
-  return `${minutes}m ${seconds}s`;
+  return formatDurationMs(Math.max(0, ms), { style: "compact" });
 }

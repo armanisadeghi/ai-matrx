@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface TimeRemaining {
   /** Pre-formatted string for display (e.g. "1h 5m 23s"). */
@@ -76,18 +77,11 @@ export function computeTimeRemaining(
   if (diff <= 0) {
     return { text: "Ended", isExpired: true, millisRemaining: 0 };
   }
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  const s = Math.floor((diff % 60000) / 1000);
-  const text =
-    granularity === "second"
-      ? h > 0
-        ? `${h}h ${m}m ${s}s`
-        : m > 0
-          ? `${m}m ${s}s`
-          : `${s}s`
-      : h > 0
-        ? `${h}h ${m}m`
-        : `${m}m`;
+  // THE ONE HOME for "a millisecond count becomes a unit string" is
+  // `@ai-matrx/kit/format`. A per-second countdown is the `clock` voice
+  // ("1:05:23"); a per-minute one is `coarse` ("1h 5m", "45 min").
+  const text = formatDurationMs(diff, {
+    style: granularity === "second" ? "clock" : "coarse",
+  });
   return { text, isExpired: false, millisRemaining: diff };
 }

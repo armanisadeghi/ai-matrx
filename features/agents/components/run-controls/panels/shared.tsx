@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 /**
  * Shared primitives for request/session stat panels.
  *
@@ -70,10 +72,9 @@ export function makeSelectRequestById(requestId: string) {
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
+/** THE compact duration voice (@ai-matrx/kit/format): 250ms, 5.2s, 5m 30s. */
 export function fmtMs(ms: number | null | undefined): string {
-  if (ms == null) return "—";
-  if (ms < 1000) return `${ms.toFixed(0)}ms`;
-  return `${(ms / 1000).toFixed(2)}s`;
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 export function fmtTokens(n: number | null | undefined): string {

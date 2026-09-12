@@ -73,6 +73,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -765,7 +766,7 @@ function FileRow({
         {file.language}
       </span>
       <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0 tabular-nums hidden md:inline">
-        {formatRelative(file.updated_at)}
+        {formatRelativeTime(file.updated_at, { fallback: "" })}
       </span>
       <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100">
         <IconButtonSmall
@@ -789,23 +790,6 @@ function FileRow({
       </div>
     </div>
   );
-}
-
-function formatRelative(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const diff = Date.now() - then;
-  const abs = Math.abs(diff);
-  const min = Math.round(abs / 60_000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h`;
-  const d = Math.round(hr / 24);
-  if (d < 30) return `${d}d`;
-  const mo = Math.round(d / 30);
-  if (mo < 12) return `${mo}mo`;
-  return `${Math.round(mo / 12)}y`;
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────

@@ -42,6 +42,7 @@ import type {
   ExtensionScrapeQueue,
   UserVerdict,
 } from "../../types";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 // ============================================================================
 // Capture-ladder metadata
@@ -209,20 +210,6 @@ const VERDICT_META: Record<UserVerdict, VerdictMeta> = {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function formatRelative(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms)) return null;
-  const sec = Math.round(ms / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 48) return `${hr}h ago`;
-  const day = Math.round(hr / 24);
-  return `${day}d ago`;
-}
 
 function safeHostname(url: string): string {
   try {
@@ -552,7 +539,8 @@ function TaskRow({
     null,
   );
   const isPasteLevel = item.next_level === 4;
-  const lastAttempt = formatRelative(item.last_attempt_at);
+  const lastAttempt =
+    formatRelativeTime(item.last_attempt_at, { fallback: "" }) || null;
   const host = safeHostname(item.url);
 
   const handleVerdictClick = async (verdict: UserVerdict) => {

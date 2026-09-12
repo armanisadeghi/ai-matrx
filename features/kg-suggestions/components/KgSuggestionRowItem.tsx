@@ -77,6 +77,7 @@ import {
 import { HeavyHitterAcceptDialog } from "./HeavyHitterAcceptDialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
+import { formatRelativeTime } from "@/utils/datetime";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MATCH_LABEL: Partial<Record<KgMatchKind, string>> = {
@@ -1133,20 +1134,7 @@ function formatCurrentValue(v: ResolvedSuggestionValue | null): string | null {
 }
 
 function formatRelative(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "recently";
-  const diff = Date.now() - then;
-  const sec = Math.round(diff / 1000);
-  if (sec < 60) return "just now";
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.round(hr / 24);
-  if (day < 30) return `${day}d ago`;
-  const mo = Math.round(day / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  return `${Math.round(mo / 12)}y ago`;
+  return formatRelativeTime(iso, { style: "short", fallback: "recently" });
 }
 
 export default KgSuggestionRowItem;

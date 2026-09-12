@@ -30,6 +30,7 @@
 import { execSync, spawnSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, "..");
@@ -54,8 +55,7 @@ const C = {
 };
 
 function fmtMs(ms) {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 const steps = [];

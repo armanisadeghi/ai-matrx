@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface IntervalSliderProps {
   label: string;
@@ -19,10 +20,7 @@ interface IntervalSliderProps {
 }
 
 function formatInterval(ms: number): string {
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
-  const min = Math.floor(ms / 60_000);
-  const remSec = Math.round((ms - min * 60_000) / 1000);
-  return remSec === 0 ? `${min}m` : `${min}m ${remSec}s`;
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 export function IntervalSlider({

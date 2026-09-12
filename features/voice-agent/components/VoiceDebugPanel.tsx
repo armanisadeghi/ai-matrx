@@ -24,19 +24,12 @@ import {
   type VoiceDebugEntry,
 } from "../debug/voiceDebugBus";
 import { micStreamDebug } from "@ai-matrx/browser-audio/core";
+import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 
 interface VoiceDebugPanelProps {
   instanceId: string;
   /** Start collapsed by default. */
   defaultOpen?: boolean;
-}
-
-function agoLabel(ms: number | null): string {
-  if (ms === null) return "—";
-  const d = Date.now() - ms;
-  if (d < 1000) return "just now";
-  if (d < 60_000) return `${Math.floor(d / 1000)}s ago`;
-  return `${Math.floor(d / 60_000)}m ago`;
 }
 
 function Flag({
@@ -105,7 +98,9 @@ export function VoiceDebugPanel({
 
   const sessionAge =
     flags.sessionStartedAt !== null
-      ? `${Math.floor((Date.now() - flags.sessionStartedAt) / 1000)}s`
+      ? formatDurationMs(Date.now() - flags.sessionStartedAt, {
+          style: "compact",
+        })
       : "—";
 
   const handleCopy = async () => {
@@ -122,7 +117,7 @@ export function VoiceDebugPanel({
             ? " (intent)"
             : " (net)"
       }`,
-      `last event: ${flags.lastEventType ?? "—"} · ${agoLabel(flags.lastEventAt)}`,
+      `last event: ${flags.lastEventType ?? "—"} · ${formatRelativeTime(flags.lastEventAt)}`,
       `mic flow: captured=${flags.micFramesCaptured} · sent=${flags.micFramesSent} · rms=${flags.micRms.toFixed(3)}`,
       `worklet: process calls=${flags.micProcessCalls} · hasInput=${flags.micHasInput}`,
       `audio ctx: ${flags.micCtxState}`,
@@ -253,7 +248,7 @@ export function VoiceDebugPanel({
             <div className="col-span-2">
               last event:{" "}
               <span className="text-zinc-200">
-                {flags.lastEventType ?? "—"} · {agoLabel(flags.lastEventAt)}
+                {flags.lastEventType ?? "—"} · {formatRelativeTime(flags.lastEventAt)}
               </span>
             </div>
             <div

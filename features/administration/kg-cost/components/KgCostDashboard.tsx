@@ -21,6 +21,7 @@
  * surface here; send the operator there.
  */
 import { useEffect, useState } from "react";
+import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import {
@@ -99,15 +100,9 @@ function fmtUsdShort(value: number | null | undefined): string {
   return `$${value.toFixed(4)}`;
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function fmtRelativeTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  const now = Date.now();
-  const diffSec = Math.round((now - then) / 1000);
-  if (diffSec < 60) return `${diffSec}s ago`;
-  if (diffSec < 3600) return `${Math.round(diffSec / 60)}m ago`;
-  if (diffSec < 86400) return `${Math.round(diffSec / 3600)}h ago`;
-  return `${Math.round(diffSec / 86400)}d ago`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 const STATUS_VARIANT: Record<
@@ -152,9 +147,8 @@ function fmtCompactTime(iso: string | null | undefined): string {
 function fmtDuration(ms: number | string | null | undefined): string {
   const value = num(ms);
   if (!value) return "—";
-  if (value < 1000) return `${value.toFixed(0)}ms`;
-  if (value < 60000) return `${(value / 1000).toFixed(1)}s`;
-  return `${(value / 60000).toFixed(1)}m`;
+  // THE compact duration voice (@ai-matrx/kit/format): 250ms, 5.2s, 5m 30s.
+  return formatDurationMs(value, { style: "compact" });
 }
 
 function isStuckRun(row: UnitEconomicsRecentRun): boolean {

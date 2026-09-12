@@ -1,3 +1,4 @@
+import { formatDurationMs } from "@ai-matrx/kit/format";
 // components/admin/debug/TokenStatusDebug.tsx
 'use client';
 
@@ -37,13 +38,11 @@ export default function TokenStatusDebug() {
         let expiresIn: string | undefined;
 
         if (expiresAt) {
-          const ms = expiresAt * 1000 - Date.now();
-          const hours = Math.floor(ms / (1000 * 60 * 60));
-          const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-          const days = Math.floor(hours / 24);
-          expiresIn = days > 0
-            ? `${days}d ${hours % 24}h ${minutes}m`
-            : `${hours}h ${minutes}m`;
+          // THE coarse duration voice (@ai-matrx/kit/format): minutes and
+          // hours, never seconds — what a token countdown is read at.
+          expiresIn = formatDurationMs(expiresAt * 1000 - Date.now(), {
+            style: "coarse",
+          });
         }
 
         setStatus({

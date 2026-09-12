@@ -35,6 +35,7 @@ import {
   PhaseIcon,
 } from "../../components/readout-parts";
 import type { UseWorkflowRunResult } from "../../hooks/useWorkflowRun";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export function FocusWindow({
   runId,
@@ -118,7 +119,7 @@ export function FocusWindow({
             />
           ) : settledMs !== null ? (
             <span className="tabular-nums">
-              {(settledMs / 1000).toFixed(settledMs < 10_000 ? 1 : 0)}s
+              {formatDurationMs(settledMs, { style: "compact" })}
             </span>
           ) : null}
         </span>

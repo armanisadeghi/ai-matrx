@@ -1,6 +1,7 @@
 import { Search, Download, Brain, Layers, FileText } from "lucide-react";
 import type { StageState, StageKind } from "../../../hooks/usePipelineProgress";
 import { sourcesDiscoveredFromItems } from "../../../hooks/usePipelineProgress";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 /**
  * Canonical per-stage display metadata shared by the live-pipeline surfaces
@@ -40,14 +41,9 @@ export const STAGE_ROUTE: Record<StageKind, string> = {
 
 export function stageDuration(stage: StageState): string | null {
   if (stage.startedAt == null || stage.completedAt == null) return null;
-  const sec = Math.max(
-    1,
-    Math.round((stage.completedAt - stage.startedAt) / 1000),
-  );
-  if (sec < 60) return `${sec}s`;
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return formatDurationMs(stage.completedAt - stage.startedAt, {
+    style: "compact",
+  });
 }
 
 const fmt = (n: number): string => n.toLocaleString();

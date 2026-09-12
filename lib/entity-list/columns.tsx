@@ -16,6 +16,7 @@
 // the default hidden set from that one registry.
 
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /**
  * A date column's finite value set is "how recently", not "which exact
@@ -66,16 +67,12 @@ export function defaultHiddenColumns<TRow>(
   return specs.filter((c) => c.defaultHidden).map((c) => c.id);
 }
 
+/**
+ * "5m ago", "3h ago", "2d ago" — the fleet's one `short` relative voice from
+ * `@ai-matrx/kit/format`, which every entity list speaks.
+ */
 export function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 31) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return formatRelativeTime(iso);
 }
 
 export function Muted({ children }: { children: React.ReactNode }) {

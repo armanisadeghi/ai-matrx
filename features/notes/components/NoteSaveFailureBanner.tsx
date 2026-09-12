@@ -38,14 +38,11 @@ import {
   getNoteLiveContent,
   subscribeNoteLiveContent,
 } from "../utils/noteLiveContent";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 function sinceLabel(from: number | null): string | null {
   if (!from) return null;
-  const minutes = Math.floor((Date.now() - from) / 60_000);
-  if (minutes < 1) return "less than a minute";
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours} hour${hours === 1 ? "" : "s"}`;
+  return formatDurationMs(Date.now() - from, { style: "coarse" });
 }
 
 interface NoteSaveFailureBannerProps {

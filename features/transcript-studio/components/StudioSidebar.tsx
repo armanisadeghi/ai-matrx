@@ -34,6 +34,7 @@ import {
 } from "../redux/thunks";
 import { NEW_SESSION_DEFAULT_TITLE } from "../constants";
 import type { StudioSession } from "../types";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 interface StudioSidebarProps {
   className?: string;
@@ -413,23 +414,9 @@ function formatSessionSubtitle(session: StudioSession): string {
   if (session.status !== "idle" && session.status !== "stopped") {
     parts.push(session.status);
   }
-  parts.push(timeAgo(session.updatedAt));
+  parts.push(formatRelativeTime(session.updatedAt, { fallback: "" }));
   if (session.moduleId && session.moduleId !== "tasks") {
     parts.push(session.moduleId);
   }
   return parts.join(" · ");
-}
-
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms)) return "";
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return "just now";
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d ago`;
-  return new Date(iso).toLocaleDateString();
 }

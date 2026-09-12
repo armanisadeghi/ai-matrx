@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -640,7 +642,7 @@ export default function ConversationDemoClient() {
                   {(stats.events > 0 || isRunning) && (
                     <>
                       <span>{stats.events} evt</span>
-                      <span>{(stats.ms / 1000).toFixed(1)}s</span>
+                      <span>{formatDurationMs(stats.ms, { style: "compact" })}</span>
                     </>
                   )}
                   <Button

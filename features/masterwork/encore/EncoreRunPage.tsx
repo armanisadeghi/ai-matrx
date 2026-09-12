@@ -34,12 +34,7 @@ import {
 } from "./service";
 
 function runWhen(run: EncoreRun): string {
-  const ms = Date.now() - new Date(run.created_at).getTime();
-  const minutes = Math.round(ms / 60000);
-  if (minutes < 60) return `${Math.max(minutes, 1)}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
+  return formatRelativeTime(run.created_at, { style: "short" });
 }
 
 const RUN_STATUS_STYLES: Record<string, string> = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, type ReactNode } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,11 +65,11 @@ function formatField(field: string): string {
 
 function formatTimestamp(ts: number): string {
   const d = new Date(ts);
-  const now = Date.now();
-  const diffMs = now - ts;
-
-  if (diffMs < 60_000) return "just now";
-  if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
+  // THE relative-time voice (@ai-matrx/kit/format) inside the hour; a wall
+  // clock past it, which is what an undo list is actually read against.
+  if (Date.now() - ts < 3_600_000) {
+    return formatRelativeTime(ts, { style: "short" });
+  }
   return d.toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",

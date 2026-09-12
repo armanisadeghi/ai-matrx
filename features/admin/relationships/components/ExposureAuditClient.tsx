@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { usePaginatedData } from "@ai-matrx/data/react";
 import { useTablePaginationPolicy } from "@/lib/data-table/useTablePaginationPolicy";
 import {
@@ -87,16 +88,9 @@ function sumSummary(
   return summaries.reduce((total, row) => total + row[key], 0);
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function relativeTime(value: string): string {
-  const elapsed = Date.now() - new Date(value).getTime();
-  const minutes = Math.max(0, Math.floor(elapsed / 60_000));
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d`;
-  return new Date(value).toLocaleDateString();
+  return formatRelativeTime(value, { style: "short" });
 }
 
 function ResourceIcon({ row }: { row: ExposureAuditRow }) {

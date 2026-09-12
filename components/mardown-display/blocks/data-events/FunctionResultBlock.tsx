@@ -1,4 +1,6 @@
 "use client";
+
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import React, { useState } from "react";
 import { Terminal, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from "lucide-react";
 
@@ -39,7 +41,7 @@ const FunctionResultBlock: React.FC<FunctionResultBlockProps> = ({
             {durationMs != null && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />
-                {durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(2)}s`}
+                {formatDurationMs(durationMs, { style: "compact" })}
               </span>
             )}
           </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -612,7 +614,9 @@ function ResearchPanel({ local }: { local: UseMatrxLocalReturn }) {
                 </Badge>
               )}
               <Badge variant="outline" className="text-muted-foreground">
-                {(result.meta.elapsed_ms / 1000).toFixed(1)}s
+                {formatDurationMs(result.meta.elapsed_ms, {
+                  style: "compact",
+                })}
               </Badge>
               <Badge variant="outline" className="text-muted-foreground">
                 {Math.round(result.meta.content_length / 1000)}KB content

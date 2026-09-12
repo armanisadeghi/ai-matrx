@@ -58,6 +58,7 @@ import {
   isCompactEvent,
   type TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ---------------------------------------------------------------------------
 // Request ID helper
@@ -1193,7 +1194,7 @@ export async function downloadBlobWithProgress(
       reject(
         new BackendApiError({
           code: "internal",
-          detail: `Download timed out after ${Math.round(xhr.timeout / 1000)}s`,
+          detail: `Download timed out after ${formatDurationMs(xhr.timeout, { style: "compact" })}`,
           userMessage:
             "The file took too long to load — the server may be warming up. Please retry.",
           requestId,

@@ -23,7 +23,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
-import { compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
+import { blastRadiusFor, compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
 import type { KnobScopeKindName, ScopedKnob } from "@/lib/scoped-config/types";
 import { useActiveSettingsTabId } from "../components/SettingsTabHost";
 import { resolveConfigSection } from "./configTree";
@@ -99,20 +99,18 @@ export function UniversalSettingsRows({
     <>
       {[...groups.entries()].map(([group, rows]) => (
         <SettingsSection key={group} title={group}>
-          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId }) => (
+          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId, ladder }) => (
             <KnobOverrideRow
               key={knob.full_key}
               knob={knob}
               scopeKind={scopeKind}
               scopeId={scopeId}
               organizationId={organizationId}
-              blastRadius={
-                scopeKind === "user"
-                  ? "Applies only to you, in this organization."
-                  : memberCount === null
-                    ? `Applies across ${organizationName ?? "this organization"}.`
-                    : `Applies across ${organizationName ?? "this organization"} for ${memberCount} member${memberCount === 1 ? "" : "s"}.`
-              }
+              ladder={ladder}
+              blastRadius={blastRadiusFor(scopeKind, {
+                organizationName,
+                members: memberCount,
+              })}
               showUserLockControl={
                 scopeKind === "organization" && canManageOrganization
               }
