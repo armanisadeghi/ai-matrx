@@ -1,8 +1,13 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { usePathname } from "next/navigation"
 import { Toaster as Sonner } from "sonner"
-import { toast } from "@/lib/toast"
+import {
+  toast,
+  dismissRecordToastsOffRoute,
+  sweepExpiredRecordToasts,
+} from "@/lib/toast"
 import { useThemeMode } from "@/styles/themes/useThemeMode"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
@@ -105,10 +110,53 @@ function useStaleToastSweepOnReturn() {
   }, [])
 }
 
+/**
+ * 🚨 A TOAST THAT NAMES RECORD A MUST NOT SURVIVE THE NAVIGATION TO RECORD B
+ * (FIX-Q12). The backlog sweep above is record-BLIND — it only fires when a
+ * hidden tab returns, so a client-side navigation inside a tab that never went
+ * hidden leaves «Saved "Acme intake"» sitting on top of a different record's
+ * page, where the sentence is simply false.
+ *
+ * `recordToast.*` (`lib/toast.ts`) carries each such toast's record identity,
+ * and a record's id appears in its own URL — so landing on a path that does
+ * not contain it means that record left the screen and its toasts go with it.
+ * Navigating DEEPER into the same record keeps them.
+ *
+ * The visibility half re-checks wall-clock expiry, because a background tab
+ * throttles our own timers to roughly once a minute.
+ */
+function useRecordToastLifetime() {
+  const pathname = usePathname()
+  const lastPath = useRef<string | null>(null)
+  useEffect(() => {
+    const path = pathname ?? ""
+    // First run is the mount that raised nothing — only real navigation counts.
+    if (lastPath.current !== null && lastPath.current !== path) {
+      const dismissed = dismissRecordToastsOffRoute(path)
+      if (dismissed > 0) {
+        console.warn(
+          `[toaster] dismissed ${dismissed} toast(s) naming a record that is no longer on screen after navigating to ${path}. A toast that names a record it can no longer point at is a false sentence; the screen itself carries the record.`,
+        )
+      }
+    }
+    lastPath.current = path
+  }, [pathname])
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return
+      sweepExpiredRecordToasts()
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => document.removeEventListener("visibilitychange", onVisibility)
+  }, [])
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const theme = useThemeMode()
   useStaleToastHeightHeal()
   useStaleToastSweepOnReturn()
+  useRecordToastLifetime()
 
   return (
     <Sonner
