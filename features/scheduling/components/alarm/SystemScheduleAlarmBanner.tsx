@@ -98,13 +98,10 @@ import {
 const COLLAPSED_KEY = "matrx.schedule-alarm-banner.collapsed";
 const POSITION_KEY = "matrx.schedule-alarm-banner.position";
 
-/** Below this width the full card would own most of the screen. */
-const NARROW_VIEWPORT_PX = 768;
-
 /**
  * Collapsed state for THIS tab. Absent means "not chosen yet", and the default
- * then depends on the screen: on a phone the full card is most of the viewport,
- * so it starts as the pill and opens on a tap. An explicit choice always wins.
+ * is the compact pill on every screen so an operational notice cannot cover
+ * the page the person is trying to inspect. An explicit choice always wins.
  */
 function readCollapsed(): boolean {
   try {
@@ -114,7 +111,7 @@ function readCollapsed(): boolean {
   } catch {
     // Storage refused (private mode) — fall through to the screen default.
   }
-  return window.innerWidth < NARROW_VIEWPORT_PX;
+  return true;
 }
 
 function writeCollapsed(value: boolean): void {
