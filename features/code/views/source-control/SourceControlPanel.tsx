@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { extractErrorMessage } from "@/utils/errors";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Archive,
   ArrowDownToLine,
@@ -11,6 +10,7 @@ import {
   ChevronRight,
   CircleAlert,
   Eye,
+  FolderOpen,
   GitBranch,
   KeyRound,
   Loader2,
@@ -20,501 +20,1057 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectActiveSandboxId,
   selectExplorerRootOverride,
+  selectActiveRepositoryRoot,
+  setActiveRepositoryRoot,
+  setExplorerRootOverride,
+  revealView,
+  selectSandboxRuntimeRevision,
+  selectGitCommitDraft,
+  setGitCommitDraft,
 } from "../../redux/codeWorkspaceSlice";
 import { openTab } from "../../redux/tabsSlice";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
+import { useOpenFile } from "../../hooks/useOpenFile";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
 import { HOVER_ROW, ROW_HEIGHT } from "../../styles/tokens";
 import {
   SandboxGitAdapter,
-  type GitFileChange,
   type GitStatusResponse,
 } from "../../adapters/SandboxGitAdapter";
+import { RepositoryStashes } from "./RepositoryStashes";
 import { CredentialsModal } from "./CredentialsModal";
+import { CloneRepoDialog } from "../sandboxes/CloneRepoDialog";
+import {
+  discoverRepositories,
+  inspectRepository,
+  initRepository,
+  unstageRepositoryPaths,
+  executeRepositoryGit,
+  type RepositoryMetadata,
+} from "./repositoryService";
 
-interface SourceControlPanelProps {
-  className?: string;
+export function SourceControlPanel({ className }: { className?: string }) {
+  const sandboxId = useAppSelector(selectActiveSandboxId);
+  const dispatch = useAppDispatch();
+  if (!sandboxId)
+    return (
+      <div className={cn("p-4 text-sm", className)}>
+        <p>Connect a sandbox to work with Git repositories.</p>
+        <Button
+          className="mt-3"
+          onClick={() => dispatch(revealView("sandboxes"))}
+        >
+          Choose sandbox
+        </Button>
+      </div>
+    );
+  return (
+    <RepositoryPanel
+      key={sandboxId}
+      sandboxId={sandboxId}
+      className={className}
+    />
+  );
 }
 
-export const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
+function RepositoryPanel({
+  sandboxId,
   className,
-}) => {
+}: {
+  sandboxId: string;
+  className?: string;
+}) {
   const dispatch = useAppDispatch();
-  const activeSandboxId = useAppSelector(selectActiveSandboxId);
-  const explorerRootOverride = useAppSelector(selectExplorerRootOverride);
-  const { filesystem } = useCodeWorkspace();
-
-  const cwd = (explorerRootOverride ?? filesystem.rootPath) || "/home/agent";
-  const adapter = useMemo(
-    () =>
-      activeSandboxId
-        ? new SandboxGitAdapter({ instanceId: activeSandboxId })
-        : null,
-    [activeSandboxId],
+  const { filesystem, process } = useCodeWorkspace();
+  const store = useAppStore();
+  const alive = useRef(true);
+  const refreshQueued = useRef(false);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const isCurrentSandbox = () =>
+    alive.current && selectActiveSandboxId(store.getState()) === sandboxId;
+  const openFile = useOpenFile();
+  const explorerRoot = useAppSelector(selectExplorerRootOverride);
+  const repoRoot = useAppSelector(selectActiveRepositoryRoot);
+  const runtimeRevision = useAppSelector((state) =>
+    selectSandboxRuntimeRevision(state, sandboxId),
   );
-
+  const [adapter] = useState(
+    () => new SandboxGitAdapter({ instanceId: sandboxId }),
+  );
+  const [repo, setRepo] = useState<RepositoryMetadata | null>(null);
+  const [repositories, setRepositories] = useState<RepositoryMetadata[]>([]);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [status, setStatus] = useState<GitStatusResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [commitMessage, setCommitMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [path, setPath] = useState(
+    explorerRoot || filesystem.rootPath || "/home/agent",
+  );
   const [showCredentials, setShowCredentials] = useState(false);
+  const [showClone, setShowClone] = useState(false);
+  const [showOpen, setShowOpen] = useState(false);
+  const [newBranch, setNewBranch] = useState("");
+  const [showBranch, setShowBranch] = useState(false);
+  const [remoteName, setRemoteName] = useState("origin");
+  const [remoteUrl, setRemoteUrl] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [authorEmail, setAuthorEmail] = useState("");
+  const [savedAction, setSavedAction] = useState<{
+    branch: string;
+    action: "restore" | "delete";
+  } | null>(null);
+  const [autoStashes, setAutoStashes] = useState<AutoStashEntry[]>([]);
   const [collapsed, setCollapsed] = useState({
     staged: false,
     unstaged: false,
     untracked: false,
     autoStash: false,
   });
-  /**
-   * Auto-stash branches written by the matrx_agent persistence module on
-   * graceful shutdown (Phase 3 of the persistence plan). Each entry is a
-   * `matrx/auto-stash/<ts>` branch containing the dirty + untracked work
-   * the previous sandbox closed with.
-   */
-  const [autoStashes, setAutoStashes] = useState<AutoStashEntry[]>([]);
+  const generation = useRef(0);
+  const operation = useRef(false);
+  const cwd = repo?.rootPath;
+  const commitDraftRepositoryRoot = cwd ?? repoRoot;
+  const commitMessage = useAppSelector((state) =>
+    selectGitCommitDraft(state, sandboxId, commitDraftRepositoryRoot),
+  );
+  const setCommitMessage = (draft: string) => {
+    if (!commitDraftRepositoryRoot) return;
+    dispatch(
+      setGitCommitDraft({
+        sandboxId,
+        repositoryRoot: commitDraftRepositoryRoot,
+        draft,
+      }),
+    );
+  };
 
-  // ── Refresh ─────────────────────────────────────────────────────────────
-  const refresh = useCallback(async () => {
-    if (!adapter) {
+  async function readRepository(root: string, ticket: number) {
+    const metadata = await inspectRepository(process, root);
+    if (ticket !== generation.current) return;
+    if (!metadata) {
+      setRepo(null);
       setStatus(null);
-      setError(
-        "No sandbox connected — Source Control needs an active sandbox.",
-      );
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const next = await adapter.status({ cwd });
-      setStatus(next);
-    } catch (err) {
-      setError(extractErrorMessage(err));
-      setStatus(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [adapter, cwd]);
-
-  // ── Auto-stash discovery ────────────────────────────────────────────────
-  const refreshAutoStashes = useCallback(async () => {
-    if (!activeSandboxId) {
       setAutoStashes([]);
       return;
     }
-    const found = await listAutoStashBranches(activeSandboxId, cwd);
-    setAutoStashes(found);
-  }, [activeSandboxId, cwd]);
+    const next = await adapter.status({ cwd: metadata.rootPath });
+    const saved = await executeRepositoryGit(process, metadata.rootPath, [
+      "for-each-ref",
+      "--format=%(refname:short)|%(objectname:short)|%(committerdate:iso-strict)",
+      "refs/heads/matrx/auto-stash/",
+    ]);
+    if (ticket !== generation.current) return;
+    setRepo(metadata);
+    setStatus(next);
+    setRefreshVersion((version) => version + 1);
+    setAutoStashes(
+      saved.stdout
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => {
+          const [branch, shortSha, date] = line.split("|");
+          return { branch, shortSha, date };
+        }),
+    );
+    if (!selectActiveRepositoryRoot(store.getState()))
+      dispatch(setActiveRepositoryRoot(metadata.rootPath));
+  }
 
-  useEffect(() => {
-    void refresh();
-    void refreshAutoStashes();
-  }, [refresh, refreshAutoStashes]);
-
-  // ── Mutations ───────────────────────────────────────────────────────────
-  const wrap = useCallback(
-    async (action: () => Promise<unknown>, busyMessage?: string) => {
-      if (!adapter) return;
-      setBusy(true);
-      setError(null);
-      try {
-        await action();
-        await refresh();
-      } catch (err) {
-        setError(
-          (busyMessage ? `${busyMessage}: ` : "") + extractErrorMessage(err),
-        );
-      } finally {
-        setBusy(false);
-      }
-    },
-    [adapter, refresh],
-  );
-
-  const stage = useCallback(
-    (paths: string[]) => wrap(() => adapter!.add({ cwd, paths }), "stage"),
-    [adapter, cwd, wrap],
-  );
-  const stageAll = useCallback(() => stage(["."]), [stage]);
-  const unstage = useCallback(
-    (path: string) =>
-      wrap(
-        () => adapter!.add({ cwd, paths: [`:!${path}`] }), // negative pathspec = unstage
-        "unstage",
-      ),
-    [adapter, cwd, wrap],
-  );
-
-  const commit = useCallback(async () => {
-    const msg = commitMessage.trim();
-    if (!msg) {
-      setError("Enter a commit message first.");
+  async function refresh(scan = false) {
+    if (operation.current) {
+      refreshQueued.current = true;
       return;
     }
-    if (!adapter) return;
-    await wrap(async () => {
-      await adapter.commit({ cwd, message: msg });
-      setCommitMessage("");
-    }, "commit");
-  }, [adapter, cwd, commitMessage, wrap]);
-
-  const push = useCallback(
-    () => wrap(() => adapter!.push({ cwd }), "push"),
-    [adapter, cwd, wrap],
-  );
-  const pull = useCallback(
-    () => wrap(() => adapter!.pull({ cwd }), "pull"),
-    [adapter, cwd, wrap],
-  );
-  const commitAndPush = useCallback(async () => {
-    await commit();
-    if (!error) await push();
-  }, [commit, push, error]);
-
-  // ── Auto-stash actions ──────────────────────────────────────────────────
-  const applyAutoStash = useCallback(
-    async (entry: AutoStashEntry) => {
-      if (!activeSandboxId) return;
-      await wrap(async () => {
-        // `git checkout <branch> -- .` overlays files from the branch onto
-        // the working tree without creating a merge commit. The user then
-        // reviews via the existing Staged/Unstaged sections and commits when
-        // ready. Predictable and conflict-free for the common case.
-        const r = await execInSandbox(
-          activeSandboxId,
-          `git checkout ${quote(entry.branch)} -- .`,
-          cwd,
+    const ticket = ++generation.current;
+    setLoading(true);
+    setError(null);
+    try {
+      await readRepository(
+        selectActiveRepositoryRoot(store.getState()) ||
+          explorerRoot ||
+          filesystem.rootPath ||
+          "/home/agent",
+        ticket,
+      );
+      if (scan) {
+        const found = await discoverRepositories(
+          process,
+          filesystem.rootPath || "/home/agent",
+          {},
         );
-        if (r.exit_code !== 0) {
-          throw new Error(r.stderr || `git checkout exit ${r.exit_code}`);
-        }
-      }, "apply auto-stash");
-    },
-    [activeSandboxId, cwd, wrap],
-  );
-
-  const viewAutoStashDiff = useCallback(
-    async (entry: AutoStashEntry) => {
-      if (!activeSandboxId) return;
-      try {
-        const r = await execInSandbox(
-          activeSandboxId,
-          `git diff HEAD..${quote(entry.branch)}`,
-          cwd,
-        );
-        const text = r.stdout || "(no diff)";
-        const tabId = `auto-stash-diff:${activeSandboxId}:${entry.branch}`;
-        dispatch(
-          openTab({
-            id: tabId,
-            path: `auto-stash://${entry.branch}`,
-            name: `Δ ${entry.branch.replace(/^matrx\/auto-stash\//, "")}`,
-            language: "diff",
-            content: text,
-            pristineContent: text,
-            dirty: false,
-          }),
-        );
-      } catch (err) {
-        setError(extractErrorMessage(err));
+        if (ticket === generation.current) setRepositories(found);
       }
-    },
-    [activeSandboxId, cwd, dispatch],
-  );
-
-  const discardAutoStash = useCallback(
-    async (entry: AutoStashEntry) => {
-      if (!activeSandboxId) return;
-      await wrap(async () => {
-        // Local delete (always); push delete is best-effort because the
-        // remote branch may not exist (auto-stash only pushes when creds
-        // were configured at shutdown).
-        const r = await execInSandbox(
-          activeSandboxId,
-          `git branch -D ${quote(entry.branch)}; git push origin :${quote(entry.branch)} 2>/dev/null || true`,
-          cwd,
+    } catch (cause) {
+      if (ticket === generation.current) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Unable to inspect repository.",
         );
-        if (r.exit_code !== 0 && /not found|no such ref/i.test(r.stderr)) {
-          // Already gone — treat as success.
-          return;
-        }
-        if (r.exit_code !== 0) {
-          throw new Error(r.stderr || `branch -D exit ${r.exit_code}`);
-        }
-        await refreshAutoStashes();
-      }, "discard auto-stash");
-    },
-    [activeSandboxId, cwd, refreshAutoStashes, wrap],
-  );
-
-  // ── Diff preview ────────────────────────────────────────────────────────
-  const openDiff = useCallback(
-    async (path: string, staged: boolean) => {
-      if (!adapter) return;
-      try {
-        const diff = await adapter.diff({ cwd, path, staged });
-        const tabId = `git-diff:${activeSandboxId}:${staged ? "staged" : "working"}:${path}`;
-        const text = diff.text || "(no diff)";
-        dispatch(
-          openTab({
-            id: tabId,
-            path: `git-diff://${path}${staged ? "?staged" : ""}`,
-            name: `Δ ${path.split("/").pop() ?? path}`,
-            language: "diff",
-            content: text,
-            pristineContent: text,
-            dirty: false,
-          }),
-        );
-      } catch (err) {
-        setError(extractErrorMessage(err));
+        setStatus(null);
       }
-    },
-    [adapter, cwd, activeSandboxId, dispatch],
-  );
+    } finally {
+      if (ticket === generation.current) setLoading(false);
+    }
+  }
 
-  // ── Render ──────────────────────────────────────────────────────────────
-  const stagedCount = status?.staged.length ?? 0;
-  const unstagedCount = status?.unstaged.length ?? 0;
-  const untrackedCount = status?.untracked.length ?? 0;
-  const conflictCount = status?.conflicted.length ?? 0;
+  useEffect(() => {
+    setRepo(null);
+    setStatus(null);
+    setAutoStashes([]);
+    setNotice(null);
+    if (filesystem.id !== `sandbox:${sandboxId}` || !process.isReady) return;
+    void refresh(true);
+    return () => {
+      generation.current++;
+    };
+    // Repository choice is independent of browsing Explorer folders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repoRoot, process, filesystem.id, sandboxId, runtimeRevision]);
+
+  async function run(action: () => Promise<void>, success?: string) {
+    if (operation.current) return;
+    operation.current = true;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    const ticket = generation.current;
+    try {
+      await action();
+      if (ticket !== generation.current) return;
+      if (cwd) await readRepository(cwd, ticket);
+      if (success) setNotice(success);
+    } catch (cause) {
+      if (ticket === generation.current) {
+        const message =
+          cause instanceof Error ? cause.message : "Git operation failed.";
+        setError(message);
+        toast.error(message);
+      }
+    } finally {
+      operation.current = false;
+      if (alive.current) {
+        setBusy(false);
+        if (refreshQueued.current) {
+          refreshQueued.current = false;
+          void refresh(true);
+        }
+      }
+    }
+  }
+
+  async function chooseRepository(root: string) {
+    await run(async () => {
+      const found = await inspectRepository(process, root);
+      if (!found)
+        throw new Error(
+          "This folder is not inside a Git repository. Choose another folder or initialize it.",
+        );
+      if (!isCurrentSandbox()) return;
+      dispatch(setActiveRepositoryRoot(found.rootPath));
+      setShowOpen(false);
+    });
+  }
+  function revealRepository() {
+    if (cwd) {
+      dispatch(setExplorerRootOverride(cwd));
+      dispatch(revealView("explorer"));
+    }
+  }
+  async function commit(pushAfter = false) {
+    if (
+      !cwd ||
+      !status ||
+      busy ||
+      !commitMessage.trim() ||
+      status.staged.length === 0 ||
+      status.conflicted.length > 0
+    )
+      return;
+    const message = commitMessage.trim();
+    await run(
+      async () => {
+        await adapter.commit({ cwd, message });
+        setCommitMessage("");
+        if (pushAfter && isCurrentSandbox())
+          await adapter.push({
+            cwd,
+            remote:
+              repo?.remotes.find((remote) => remote.name === remoteName)
+                ?.name || repo?.remotes[0]?.name,
+            branch: repo?.branch || undefined,
+          });
+      },
+      pushAfter
+        ? "Committed and pushed."
+        : "Committed. Your changes are saved in this repository.",
+    );
+  }
+  async function openDiff(path: string, staged: boolean, untracked = false) {
+    if (!cwd) return;
+    await run(async () => {
+      if (untracked) {
+        await openFile(`${cwd}/${path}`);
+        return;
+      }
+      const diff = await adapter.diff({ cwd, path, staged });
+      const id = `git-diff:${sandboxId}:${cwd}:${staged ? "staged" : "working"}:${path}`;
+      const text = diff.text || "No changes in this comparison.";
+      dispatch(
+        openTab({
+          id,
+          path: `git-diff://${cwd}/${path}`,
+          name: `${path.split("/").pop()} · ${staged ? "staged" : "working"}`,
+          language: "diff",
+          content: text,
+          pristineContent: text,
+          dirty: false,
+          readOnly: true,
+        }),
+      );
+    });
+  }
+  const disabled = busy || loading;
+  const stage = (paths: string[]) => {
+    if (cwd)
+      void run(async () => {
+        await adapter.add({ cwd, paths });
+      });
+  };
+  const sections = status
+    ? [
+        {
+          key: "staged" as const,
+          title: "Staged changes",
+          entries: status.staged,
+        },
+        {
+          key: "unstaged" as const,
+          title: "Changes",
+          entries: status.unstaged,
+        },
+        {
+          key: "untracked" as const,
+          title: "Untracked files",
+          entries: status.untracked.map((path) => ({ path, status: "??" })),
+        },
+      ]
+    : [];
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <SidePanelHeader
         title="Source Control"
-        subtitle={
-          status
-            ? `${status.branch}${status.ahead ? ` ↑${status.ahead}` : ""}${
-                status.behind ? ` ↓${status.behind}` : ""
-              }`
-            : undefined
-        }
         actions={
           <>
             <SidePanelAction
               icon={KeyRound}
-              label="Manage credentials"
+              label="Manage GitHub connection and credentials"
               onClick={() => setShowCredentials(true)}
             />
             <SidePanelAction
-              icon={ArrowDownToLine}
-              label="Pull"
-              onClick={() => void pull()}
-            />
-            <SidePanelAction
-              icon={ArrowUpFromLine}
-              label="Push"
-              onClick={() => void push()}
-            />
-            <SidePanelAction
-              icon={Plus}
-              label="Stage all"
-              onClick={() => void stageAll()}
-            />
-            <SidePanelAction
-              icon={loading ? Loader2 : RefreshCw}
-              label="Refresh"
-              onClick={() => void refresh()}
+              icon={RefreshCw}
+              label="Refresh repositories and changes"
+              onClick={() => {
+                if (!disabled) void refresh(true);
+              }}
             />
           </>
         }
       />
-      <div className="border-b border-neutral-200 p-2 dark:border-neutral-800">
-        <ProTextarea
-          value={commitMessage}
-          onChange={(e) => setCommitMessage(e.target.value)}
-          placeholder="Commit message (⌘+Enter to commit, ⌘+⇧+Enter to commit & push)"
-          autoGrow
-          minHeight={48}
-          maxHeight={160}
-          onKeyDown={(e) => {
-            // Keyboard commit shortcuts live here (the panel's own buttons stay
-            // the primary action, so no duplicate ProTextarea submit button).
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-              e.preventDefault();
-              if (e.shiftKey) void commitAndPush();
-              else void commit();
-            }
-          }}
-          className="p-1.5 text-[12px]"
-        />
-        <div className="mt-1 flex gap-1">
-          <button
-            type="button"
-            onClick={() => void commit()}
-            disabled={busy || stagedCount === 0 || !commitMessage.trim()}
-            className="flex flex-1 items-center justify-center gap-1 rounded-sm border border-blue-400 bg-blue-500 px-2 py-1 text-[11px] text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="space-y-2 border-b p-3">
+          <label
+            className="block text-xs font-medium"
+            htmlFor="code-git-repository"
           >
-            {busy ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : (
-              <Check size={12} />
-            )}
-            Commit{stagedCount > 0 ? ` (${stagedCount})` : ""}
-          </button>
-          <button
-            type="button"
-            onClick={() => void commitAndPush()}
-            disabled={busy || stagedCount === 0 || !commitMessage.trim()}
-            className="flex items-center justify-center gap-1 rounded-sm border border-neutral-300 bg-white px-2 py-1 text-[11px] text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
-            title="Commit & push"
+            Repository in this sandbox
+          </label>
+          <select
+            id="code-git-repository"
+            aria-label="Repository"
+            className="h-9 w-full min-w-0 rounded border bg-background px-2 text-xs"
+            value={repoRoot || ""}
+            disabled={disabled}
+            onChange={(e) => {
+              if (e.target.value) void chooseRepository(e.target.value);
+            }}
           >
-            <ArrowUpFromLine size={12} />
-          </button>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {error && (
-          <div className="mx-2 mt-2 flex items-start gap-1.5 rounded border border-red-300 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-            <CircleAlert size={12} className="mt-0.5 shrink-0" />
-            <span className="flex-1">{error}</span>
+            <option value="">Choose a repository…</option>
+            {[
+              ...new Set([
+                ...(repoRoot ? [repoRoot] : []),
+                ...repositories.map((item) => item.rootPath),
+              ]),
+            ].map((root) => (
+              <option key={root} value={root}>
+                {root}
+              </option>
+            ))}
+          </select>
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              onClick={() => setShowOpen(!showOpen)}
+            >
+              <FolderOpen className="mr-1 h-3.5 w-3.5" />
+              Open folder
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              onClick={() => setShowClone(true)}
+            >
+              <GitBranch className="mr-1 h-3.5 w-3.5" />
+              Clone
+            </Button>
           </div>
-        )}
-        {status &&
-          status.staged.length === 0 &&
-          status.unstaged.length === 0 &&
-          status.untracked.length === 0 &&
-          status.conflicted.length === 0 &&
-          autoStashes.length === 0 &&
-          !error && (
-            <div className="flex flex-col items-center gap-2 px-6 py-8 text-center text-neutral-500 dark:text-neutral-400">
-              <GitBranch size={28} strokeWidth={1.2} />
-              <p className="text-xs">Working tree is clean.</p>
+          <p className="text-[10px] text-muted-foreground">
+            Discovery checks up to four folder levels. Open a path directly for
+            deeper projects.
+          </p>
+          {(showOpen || (!repo && !loading)) && (
+            <div className="space-y-2">
+              <label
+                htmlFor="code-repository-path"
+                className="text-xs text-muted-foreground"
+              >
+                Repository folder
+              </label>
+              <Input
+                id="code-repository-path"
+                value={path}
+                onChange={(e) => setPath(e.target.value)}
+                placeholder="/home/agent/my-project"
+                disabled={disabled}
+              />
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  size="sm"
+                  disabled={disabled || !path.trim()}
+                  onClick={() => void chooseRepository(path.trim())}
+                >
+                  Open
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={disabled || !path.trim()}
+                  onClick={() =>
+                    void run(async () => {
+                      const created = await initRepository(
+                        process,
+                        path.trim(),
+                        filesystem.rootPath,
+                      );
+                      if (!isCurrentSandbox()) return;
+                      dispatch(setActiveRepositoryRoot(created.rootPath));
+                      dispatch(setExplorerRootOverride(created.rootPath));
+                      setShowOpen(false);
+                    })
+                  }
+                >
+                  Initialize repository
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Initialize adds Git tracking to this folder. It does not stage,
+                commit, or publish files.
+              </p>
             </div>
           )}
-        {autoStashes.length > 0 && (
-          <Section
-            title="Auto-saved from previous session"
-            count={autoStashes.length}
-            collapsed={collapsed.autoStash}
-            onToggle={() =>
-              setCollapsed((prev) => ({
-                ...prev,
-                autoStash: !prev.autoStash,
-              }))
-            }
-            tone="info"
+          {repo && (
+            <>
+              <button
+                type="button"
+                title="Show repository files in Explorer"
+                onClick={revealRepository}
+                className="block w-full truncate text-left font-mono text-[11px] text-primary hover:underline"
+              >
+                {repo.rootPath}
+              </button>
+              <button
+                type="button"
+                className="flex max-w-full items-center gap-1 text-xs"
+                onClick={() => setShowBranch(!showBranch)}
+              >
+                <GitBranch className="h-3.5 w-3.5" />
+                <span className="truncate">
+                  {repo.branch || "Detached HEAD"}
+                </span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {showBranch && (
+                <div className="space-y-2">
+                  <Input
+                    aria-label="Branch name"
+                    placeholder="New or existing branch"
+                    value={newBranch}
+                    onChange={(e) => setNewBranch(e.target.value)}
+                  />
+                  <div className="flex flex-wrap gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={disabled || !newBranch.trim()}
+                      onClick={() =>
+                        void run(async () => {
+                          await executeRepositoryGit(process, repo.rootPath, [
+                            "check-ref-format",
+                            "--branch",
+                            newBranch.trim(),
+                          ]);
+                          await executeRepositoryGit(process, repo.rootPath, [
+                            "switch",
+                            "-c",
+                            newBranch.trim(),
+                          ]);
+                          setShowBranch(false);
+                        })
+                      }
+                    >
+                      Create branch
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={disabled || !newBranch.trim()}
+                      onClick={() =>
+                        void run(async () => {
+                          await executeRepositoryGit(process, repo.rootPath, [
+                            "check-ref-format",
+                            "--branch",
+                            newBranch.trim(),
+                          ]);
+                          await executeRepositoryGit(process, repo.rootPath, [
+                            "switch",
+                            newBranch.trim(),
+                          ]);
+                          setShowBranch(false);
+                        })
+                      }
+                    >
+                      Switch
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                {repo.upstream
+                  ? `Tracking ${repo.upstream}`
+                  : "No upstream branch"}
+                {status?.ahead ? ` · ${status.ahead} ahead` : ""}
+                {status?.behind ? ` · ${status.behind} behind` : ""}
+              </p>
+              <details className="space-y-2 text-xs">
+                <summary className="cursor-pointer text-muted-foreground">
+                  Repository settings
+                </summary>
+                {repo.remotes.map((remote) => (
+                  <div key={remote.name} className="break-all text-[11px]">
+                    <strong>{remote.name}</strong>
+                    <div className="text-muted-foreground">
+                      {remote.fetchUrl}
+                    </div>
+                  </div>
+                ))}
+                <label className="block text-[11px]" htmlFor="git-remote-name">
+                  Remote name
+                </label>
+                <Input
+                  id="git-remote-name"
+                  value={remoteName}
+                  onChange={(event) => setRemoteName(event.target.value)}
+                  placeholder="origin"
+                />
+                <label className="block text-[11px]" htmlFor="git-remote-url">
+                  Add remote URL
+                </label>
+                <Input
+                  id="git-remote-url"
+                  value={remoteUrl}
+                  onChange={(event) => setRemoteUrl(event.target.value)}
+                  placeholder="https://github.com/owner/repository.git"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={disabled || !remoteName.trim() || !remoteUrl.trim()}
+                  onClick={() =>
+                    void run(async () => {
+                      if (
+                        !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(remoteName.trim())
+                      )
+                        throw new Error(
+                          "Use letters, numbers, dots, underscores, or hyphens for the remote name.",
+                        );
+                      if (
+                        /^https?:\/\/[^/]*@/i.test(remoteUrl.trim()) ||
+                        remoteUrl.trim().startsWith("-")
+                      )
+                        throw new Error(
+                          "Use a remote URL without embedded credentials. Connect GitHub through Credentials.",
+                        );
+                      await executeRepositoryGit(process, repo.rootPath, [
+                        "remote",
+                        "add",
+                        remoteName.trim(),
+                        remoteUrl.trim(),
+                      ]);
+                      setRemoteUrl("");
+                    }, "Remote added.")
+                  }
+                >
+                  Add remote
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Pull and push use {remoteName || "origin"}. Adding a remote
+                  does not publish files.
+                </p>
+                <label className="block text-[11px]" htmlFor="git-author-name">
+                  Commit author name
+                </label>
+                <Input
+                  id="git-author-name"
+                  value={authorName}
+                  onChange={(event) => setAuthorName(event.target.value)}
+                  placeholder="Your name"
+                />
+                <label className="block text-[11px]" htmlFor="git-author-email">
+                  Commit author email
+                </label>
+                <Input
+                  id="git-author-email"
+                  value={authorEmail}
+                  onChange={(event) => setAuthorEmail(event.target.value)}
+                  placeholder="you@example.com"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={
+                    disabled || !authorName.trim() || !authorEmail.trim()
+                  }
+                  onClick={() =>
+                    void run(async () => {
+                      await executeRepositoryGit(process, repo.rootPath, [
+                        "config",
+                        "--local",
+                        "user.name",
+                        authorName.trim(),
+                      ]);
+                      await executeRepositoryGit(process, repo.rootPath, [
+                        "config",
+                        "--local",
+                        "user.email",
+                        authorEmail.trim(),
+                      ]);
+                    }, "Commit identity saved for this repository.")
+                  }
+                >
+                  Save commit identity
+                </Button>
+              </details>
+            </>
+          )}
+        </div>
+        {loading && (
+          <div
+            role="status"
+            className="flex items-center gap-2 p-3 text-xs text-muted-foreground"
           >
-            <div className="px-2 pb-1 text-[10px] leading-snug text-neutral-500 dark:text-neutral-400">
-              Found {autoStashes.length} auto-saved stash branch
-              {autoStashes.length === 1 ? "" : "es"}. Apply overlays the saved
-              files onto your current working tree — no merge commit. Discard
-              deletes the branch (and its remote copy if any).
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Inspecting repositories…
+          </div>
+        )}
+        {error && (
+          <div
+            role="alert"
+            className="m-2 break-words rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive"
+          >
+            {error}
+          </div>
+        )}
+        {notice && (
+          <p
+            role="status"
+            className="px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300"
+          >
+            {notice}
+          </p>
+        )}
+        {!repo && !loading && !error && (
+          <p className="p-3 text-xs text-muted-foreground">
+            No repository selected. Open an existing project, clone from GitHub,
+            or initialize a project folder.
+          </p>
+        )}
+        {repo && status && (
+          <>
+            <div className="space-y-2 border-b p-2">
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled || repo.remotes.length === 0}
+                  onClick={() =>
+                    void run(async () => {
+                      await adapter.pull({
+                        cwd: repo.rootPath,
+                        remote:
+                          repo?.remotes.find(
+                            (remote) => remote.name === remoteName,
+                          )?.name || repo?.remotes[0]?.name,
+                        branch: repo.branch || undefined,
+                      });
+                    }, "Pulled remote changes.")
+                  }
+                >
+                  <ArrowDownToLine className="mr-1 h-3.5 w-3.5" />
+                  Pull
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled || repo.remotes.length === 0}
+                  onClick={() =>
+                    void run(async () => {
+                      await adapter.push({
+                        cwd: repo.rootPath,
+                        remote:
+                          repo?.remotes.find(
+                            (remote) => remote.name === remoteName,
+                          )?.name || repo?.remotes[0]?.name,
+                        branch: repo.branch || undefined,
+                      });
+                    }, "Pushed commits.")
+                  }
+                >
+                  <ArrowUpFromLine className="mr-1 h-3.5 w-3.5" />
+                  Push
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={
+                    disabled ||
+                    (!status.unstaged.length && !status.untracked.length)
+                  }
+                  onClick={() => stage(["."])}
+                >
+                  Stage all
+                </Button>
+              </div>
+              <ProTextarea
+                aria-label="Commit message"
+                value={commitMessage}
+                onChange={(e) => setCommitMessage(e.target.value)}
+                placeholder="Describe these changes"
+                autoGrow
+                minHeight={60}
+                maxHeight={160}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    void commit(e.shiftKey);
+                  }
+                }}
+              />
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  disabled={
+                    disabled ||
+                    !status.staged.length ||
+                    !!status.conflicted.length ||
+                    !commitMessage.trim()
+                  }
+                  onClick={() => void commit()}
+                >
+                  <Check className="mr-1 h-3.5 w-3.5" />
+                  Commit
+                  {status.staged.length ? ` (${status.staged.length})` : ""}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  aria-label="Commit and push"
+                  title="Commit and push"
+                  disabled={
+                    disabled ||
+                    !status.staged.length ||
+                    !!status.conflicted.length ||
+                    !commitMessage.trim() ||
+                    !repo.remotes.length
+                  }
+                  onClick={() => void commit(true)}
+                >
+                  <ArrowUpFromLine className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-            {autoStashes.map((entry) => (
-              <AutoStashRow
-                key={entry.branch}
-                entry={entry}
-                busy={busy}
-                onApply={() => void applyAutoStash(entry)}
-                onView={() => void viewAutoStashDiff(entry)}
-                onDiscard={() => void discardAutoStash(entry)}
-              />
-            ))}
-          </Section>
-        )}
-        {conflictCount > 0 && (
-          <Section
-            title="Merge Conflicts"
-            count={conflictCount}
-            collapsed={false}
-            onToggle={() => {}}
-            tone="danger"
-          >
-            {status!.conflicted.map((path) => (
-              <ChangeRow
-                key={`c:${path}`}
-                path={path}
-                status="U"
-                onClickEntry={() => void openDiff(path, false)}
-                onPrimary={() => stage([path])}
-                primaryIcon={Plus}
-                primaryLabel="Stage"
-              />
-            ))}
-          </Section>
-        )}
-        {stagedCount > 0 && (
-          <Section
-            title="Staged Changes"
-            count={stagedCount}
-            collapsed={collapsed.staged}
-            onToggle={() =>
-              setCollapsed((prev) => ({ ...prev, staged: !prev.staged }))
-            }
-          >
-            {status!.staged.map((entry: GitFileChange) => (
-              <ChangeRow
-                key={`s:${entry.path}`}
-                path={entry.path}
-                status={entry.status}
-                onClickEntry={() => void openDiff(entry.path, true)}
-                onPrimary={() => unstage(entry.path)}
-                primaryIcon={Minus}
-                primaryLabel="Unstage"
-              />
-            ))}
-          </Section>
-        )}
-        {unstagedCount > 0 && (
-          <Section
-            title="Changes"
-            count={unstagedCount}
-            collapsed={collapsed.unstaged}
-            onToggle={() =>
-              setCollapsed((prev) => ({ ...prev, unstaged: !prev.unstaged }))
-            }
-          >
-            {status!.unstaged.map((entry: GitFileChange) => (
-              <ChangeRow
-                key={`u:${entry.path}`}
-                path={entry.path}
-                status={entry.status}
-                onClickEntry={() => void openDiff(entry.path, false)}
-                onPrimary={() => stage([entry.path])}
-                primaryIcon={Plus}
-                primaryLabel="Stage"
-              />
-            ))}
-          </Section>
-        )}
-        {untrackedCount > 0 && (
-          <Section
-            title="Untracked"
-            count={untrackedCount}
-            collapsed={collapsed.untracked}
-            onToggle={() =>
-              setCollapsed((prev) => ({ ...prev, untracked: !prev.untracked }))
-            }
-          >
-            {status!.untracked.map((path: string) => (
-              <ChangeRow
-                key={`?:${path}`}
-                path={path}
-                status="??"
-                onClickEntry={() => void openDiff(path, false)}
-                onPrimary={() => stage([path])}
-                primaryIcon={Plus}
-                primaryLabel="Stage"
-              />
-            ))}
-          </Section>
+            {status.conflicted.length > 0 && (
+              <Section
+                title="Merge conflicts"
+                count={status.conflicted.length}
+                collapsed={false}
+                onToggle={() => {}}
+                tone="danger"
+              >
+                {status.conflicted.map((file) => (
+                  <ChangeRow
+                    key={file}
+                    path={file}
+                    status="U"
+                    onClickEntry={() =>
+                      void openFile(`${repo.rootPath}/${file}`)
+                    }
+                    onPrimary={() => stage([file])}
+                    primaryIcon={Plus}
+                    primaryLabel="Stage resolved file"
+                    busy={disabled}
+                  />
+                ))}
+              </Section>
+            )}
+            {sections.map(
+              (section) =>
+                section.entries.length > 0 && (
+                  <Section
+                    key={section.key}
+                    title={section.title}
+                    count={section.entries.length}
+                    collapsed={collapsed[section.key]}
+                    onToggle={() =>
+                      setCollapsed((previous) => ({
+                        ...previous,
+                        [section.key]: !previous[section.key],
+                      }))
+                    }
+                  >
+                    {section.entries.map((entry) => (
+                      <ChangeRow
+                        key={entry.path}
+                        path={entry.path}
+                        status={entry.status}
+                        busy={disabled}
+                        onClickEntry={() =>
+                          void openDiff(
+                            entry.path,
+                            section.key === "staged",
+                            section.key === "untracked",
+                          )
+                        }
+                        onPrimary={() =>
+                          section.key === "staged"
+                            ? void run(() =>
+                                unstageRepositoryPaths(process, repo.rootPath, [
+                                  entry.path,
+                                ]),
+                              )
+                            : stage([entry.path])
+                        }
+                        primaryIcon={section.key === "staged" ? Minus : Plus}
+                        primaryLabel={
+                          section.key === "staged"
+                            ? `Unstage ${entry.path}`
+                            : `Stage ${entry.path}`
+                        }
+                      />
+                    ))}
+                  </Section>
+                ),
+            )}
+            {!status.staged.length &&
+              !status.unstaged.length &&
+              !status.untracked.length &&
+              !status.conflicted.length && (
+                <p className="p-4 text-center text-xs text-muted-foreground">
+                  Working tree is clean.
+                </p>
+              )}
+            <RepositoryStashes
+              process={process}
+              cwd={repo.rootPath}
+              disabled={disabled}
+              revision={refreshVersion}
+              onMutate={run}
+            />
+            {autoStashes.length > 0 && (
+              <Section
+                title="Saved session branches"
+                count={autoStashes.length}
+                collapsed={collapsed.autoStash}
+                onToggle={() =>
+                  setCollapsed((previous) => ({
+                    ...previous,
+                    autoStash: !previous.autoStash,
+                  }))
+                }
+              >
+                {autoStashes.map((entry) => (
+                  <div key={entry.branch} className="border-b px-2 py-1">
+                    <button
+                      type="button"
+                      className="block w-full truncate px-3 py-2 text-left text-xs text-primary"
+                      onClick={() =>
+                        void run(async () => {
+                          const result = await executeRepositoryGit(
+                            process,
+                            repo.rootPath,
+                            ["diff", `HEAD..${entry.branch}`],
+                          );
+                          dispatch(
+                            openTab({
+                              id: `auto-stash-diff:${sandboxId}:${repo.rootPath}:${entry.branch}`,
+                              path: `auto-stash://${entry.branch}`,
+                              name: entry.branch,
+                              language: "diff",
+                              content: result.stdout,
+                              pristineContent: result.stdout,
+                              readOnly: true,
+                            }),
+                          );
+                        })
+                      }
+                    >
+                      {entry.branch}
+                    </button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={disabled}
+                        onClick={() =>
+                          setSavedAction({
+                            branch: entry.branch,
+                            action: "restore",
+                          })
+                        }
+                      >
+                        Restore files
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={disabled}
+                        onClick={() =>
+                          setSavedAction({
+                            branch: entry.branch,
+                            action: "delete",
+                          })
+                        }
+                      >
+                        Delete local copy
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <p className="p-2 text-[11px] text-muted-foreground">
+                  Review a saved branch before restoring its files. Remote
+                  copies are retained when deleting a local copy.
+                </p>
+              </Section>
+            )}
+          </>
         )}
       </div>
-      {showCredentials && adapter && (
+      <ConfirmDialog
+        open={!!savedAction}
+        onOpenChange={(open) => {
+          if (!open) setSavedAction(null);
+        }}
+        title={
+          savedAction?.action === "restore"
+            ? "Restore saved files?"
+            : "Delete saved local branch?"
+        }
+        description={
+          savedAction?.action === "restore"
+            ? "This replaces tracked files with the saved session version and stages them for review. Your working tree must be clean. No commit or push is created."
+            : "This permanently removes the local saved branch. Its files will not be applied. Any remote copy is retained."
+        }
+        confirmLabel={
+          savedAction?.action === "restore"
+            ? "Restore files"
+            : "Delete local branch"
+        }
+        onConfirm={() => {
+          const action = savedAction;
+          setSavedAction(null);
+          if (!action || !cwd) return;
+          void run(async () => {
+            if (action.action === "restore") {
+              const current = await adapter.status({ cwd });
+              if (
+                current.staged.length ||
+                current.unstaged.length ||
+                current.untracked.length ||
+                current.conflicted.length
+              )
+                throw new Error(
+                  "Commit or stash your current changes before restoring a saved session.",
+                );
+              await executeRepositoryGit(process, cwd, [
+                "restore",
+                `--source=${action.branch}`,
+                "--staged",
+                "--worktree",
+                "--",
+                ".",
+              ]);
+            } else
+              await executeRepositoryGit(process, cwd, [
+                "branch",
+                "-D",
+                "--",
+                action.branch,
+              ]);
+          });
+        }}
+      />
+      {showCredentials && (
         <CredentialsModal
           adapter={adapter}
           onClose={() => setShowCredentials(false)}
         />
       )}
+      {showClone && (
+        <CloneRepoDialog
+          workspaceRoot={filesystem.rootPath}
+          instanceId={sandboxId}
+          open={showClone}
+          onOpenChange={setShowClone}
+          onCloned={(root) => {
+            if (!isCurrentSandbox()) return;
+            dispatch(setActiveRepositoryRoot(root));
+            dispatch(setExplorerRootOverride(root));
+          }}
+        />
+      )}
     </div>
   );
-};
+}
 
 interface SectionProps {
   title: string;
@@ -562,146 +1118,6 @@ interface AutoStashEntry {
   shortSha: string;
 }
 
-interface AutoStashRowProps {
-  entry: AutoStashEntry;
-  busy: boolean;
-  onApply: () => void;
-  onView: () => void;
-  onDiscard: () => void;
-}
-
-const AutoStashRow: React.FC<AutoStashRowProps> = ({
-  entry,
-  busy,
-  onApply,
-  onView,
-  onDiscard,
-}) => {
-  const label = entry.branch.replace(/^matrx\/auto-stash\//, "");
-  return (
-    <div
-      className={cn(
-        "group flex items-center gap-1 px-2 text-[12px]",
-        ROW_HEIGHT,
-        HOVER_ROW,
-      )}
-    >
-      <Archive size={12} className="shrink-0 text-blue-500" />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-mono text-[11px]">{label}</span>
-        {entry.date && (
-          <span className="truncate text-[9px] text-neutral-500 dark:text-neutral-400">
-            {entry.shortSha} · {formatStashDate(entry.date)}
-          </span>
-        )}
-      </div>
-      <button
-        type="button"
-        aria-label="View diff"
-        title="View diff vs HEAD"
-        onClick={onView}
-        disabled={busy}
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-      >
-        <Eye size={12} />
-      </button>
-      <button
-        type="button"
-        aria-label="Apply auto-stash"
-        title="Apply (overlay files onto working tree)"
-        onClick={onApply}
-        disabled={busy}
-        className="flex h-5 shrink-0 items-center gap-0.5 rounded-sm border border-blue-400 bg-blue-500 px-1.5 text-[10px] text-white hover:bg-blue-600 disabled:opacity-50"
-      >
-        <Plus size={11} />
-        Apply
-      </button>
-      <button
-        type="button"
-        aria-label="Discard auto-stash"
-        title="Delete this auto-stash branch"
-        onClick={onDiscard}
-        disabled={busy}
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-neutral-500 hover:bg-red-100 hover:text-red-600 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-red-950/50 dark:hover:text-red-400"
-      >
-        <Trash2 size={12} />
-      </button>
-    </div>
-  );
-};
-
-function formatStashDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const now = Date.now();
-  const diffMs = now - d.getTime();
-  const diffH = diffMs / (1000 * 60 * 60);
-  if (diffH < 1) return `${Math.max(1, Math.round(diffMs / 60000))}m ago`;
-  if (diffH < 24) return `${Math.round(diffH)}h ago`;
-  if (diffH < 24 * 7) return `${Math.round(diffH / 24)}d ago`;
-  return d.toLocaleDateString();
-}
-
-/**
- * Discover `matrx/auto-stash/*` branches in the active repo. Uses the
- * sandbox's exec endpoint directly because the daemon's structured `branch`
- * action only handles create/delete/switch — there's no "list with metadata"
- * primitive yet. Errors are swallowed (treated as "no stashes").
- */
-async function listAutoStashBranches(
-  instanceId: string,
-  cwd: string,
-): Promise<AutoStashEntry[]> {
-  try {
-    const r = await execInSandbox(
-      instanceId,
-      `git for-each-ref --format='%(refname:short)|%(objectname:short)|%(committerdate:iso-strict)' refs/heads/matrx/auto-stash/`,
-      cwd,
-    );
-    if (r.exit_code !== 0) return [];
-    return r.stdout
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [branch, shortSha, date] = line.split("|");
-        return { branch, shortSha, date };
-      })
-      .filter((e) => e.branch && e.branch.startsWith("matrx/auto-stash/"))
-      .sort((a, b) => (a.date < b.date ? 1 : -1)); // newest first
-  } catch {
-    return [];
-  }
-}
-
-interface RawExecResult {
-  stdout: string;
-  stderr: string;
-  exit_code: number;
-}
-
-async function execInSandbox(
-  instanceId: string,
-  command: string,
-  cwd: string,
-): Promise<RawExecResult> {
-  const resp = await fetch(`/api/sandbox/${instanceId}/exec`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ command, cwd, timeout: 30 }),
-  });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => resp.statusText);
-    throw new Error(`exec failed (${resp.status}): ${text}`);
-  }
-  return (await resp.json()) as RawExecResult;
-}
-
-/** POSIX-shell-safe single-quoting. */
-function quote(s: string): string {
-  return `'${s.replace(/'/g, "'\\''")}'`;
-}
-
 interface ChangeRowProps {
   path: string;
   status: string;
@@ -709,6 +1125,7 @@ interface ChangeRowProps {
   onPrimary: () => void;
   primaryIcon: React.ComponentType<{ size?: number }>;
   primaryLabel: string;
+  busy?: boolean;
 }
 
 const ChangeRow: React.FC<ChangeRowProps> = ({
@@ -718,6 +1135,7 @@ const ChangeRow: React.FC<ChangeRowProps> = ({
   onPrimary,
   primaryIcon: PrimaryIcon,
   primaryLabel,
+  busy,
 }) => (
   <div
     className={cn(
@@ -739,7 +1157,8 @@ const ChangeRow: React.FC<ChangeRowProps> = ({
       aria-label={primaryLabel}
       title={primaryLabel}
       onClick={onPrimary}
-      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-neutral-500 opacity-0 transition-opacity hover:bg-neutral-200 hover:text-neutral-900 group-hover:opacity-100 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+      disabled={busy}
+      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-neutral-500 opacity-100 transition-opacity hover:bg-neutral-200 hover:text-neutral-900 group-hover:opacity-100 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
     >
       <PrimaryIcon size={12} />
     </button>
