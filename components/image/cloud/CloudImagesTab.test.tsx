@@ -1,6 +1,9 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CloudImagesTab } from "@/components/image/cloud/CloudImagesTab";
+import {
+  CloudImagesTab,
+  cloudImagesTerminalOwnerClass,
+} from "@/components/image/cloud/CloudImagesTab";
 
 const mockFiles = {
   treeStatus: "loaded",
@@ -125,5 +128,11 @@ describe("CloudImagesTab", () => {
     expect(html).toContain("Couldn’t load your images");
     expect(html).toContain("Try again");
     expect(html).not.toContain("No images in your cloud yet");
+  });
+
+  it("reserves terminal clearance on the gallery scroll owner only while the fixed bulk toolbar is visible", () => {
+    expect(cloudImagesTerminalOwnerClass(false)).not.toContain("pb-40");
+    expect(cloudImagesTerminalOwnerClass(true)).toContain("pb-40");
+    expect(cloudImagesTerminalOwnerClass(true)).toContain("md:pb-24");
   });
 });
