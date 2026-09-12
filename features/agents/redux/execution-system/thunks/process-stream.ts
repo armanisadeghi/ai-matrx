@@ -3463,10 +3463,18 @@ function toSnapshot(extracted: {
   };
 }
 
-// Matches an OPENING reasoning tag only (`<thinking>`, `<think>`, `<reasoning>`)
-// — a closing `</thinking>` never appears without its opener, and prose that
-// merely mentions the word must not trip the guard, so we require the tag shape.
-const REASONING_TAG_MARKER = /<(thinking|think|reasoning)(\s|>)/i;
+// Matches an OPENING **or CLOSING** reasoning tag (`<thinking>`, `<think>`,
+// `<reasoning>` and their closers). Prose that merely mentions the word must
+// not trip the guard, so we require the tag shape.
+//
+// 🚨 It used to match openers only, on the assumption that "a closing
+// `</thinking>` never appears without its opener". That is false, and the cost
+// was total silence: on 2026-09-12 a shared-state race in the provider parser
+// (aidream `providers/reasoning_stream_state.py`) sent a turn its `</reasoning>`
+// with no opener, the literal tag rendered as message content, and NOTHING was
+// captured — the one guard watching this boundary could not see it.
+const REASONING_TAG_MARKER =
+  /<\/?(thinking|think|reasoning)(\s|>|\/)/i;
 
 /** True when `answerText` still contains a reasoning tag (the boundary broke). */
 function hasReasoningLeak(answerText: string): boolean {

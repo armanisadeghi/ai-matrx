@@ -100,6 +100,40 @@ acknowledgement rendered as normal visible prose. The two symptoms look like one
 reasoning-boundary parsing bug in the stream pipeline (`pnpm check:thinking-leak` guards the
 fence-leak half). A user watching these surfaces sees an agent that answers nothing.
 
+**DIAGNOSED AND FIXED — 2026-09-12 (standard/opus lane).** One mechanism, not a parsing bug in
+this repo. Anthropic streams thinking to the client as inline `\n<reasoning>\n … \n</reasoning>\n`
+inside the ORDINARY text channel (`aidream/packages/matrx-ai/.../anthropic_api.py`), so that tag
+pair is the only thing separating chain-of-thought from the answer. Its open/closed flag lived on
+`self._reasoning_open` — of a provider client object aidream memoizes **process-wide**
+(`unified_client._provider_client_cache`: "the shared cache keeps each provider's pool alive for
+the process lifetime"). Two turns streaming at once therefore SHARED one flag: the second turn's
+wrapper never opened (its thinking streamed to the reader as the answer and its `</reasoning>`
+printed as literal content) and the first turn's never closed (its whole answer landed inside the
+collapsed "Thought process"). Both recorded symptoms, one cause, and intermittent exactly as
+observed — it needs concurrent runs, which this WP7 verification session was producing.
+**Reproduced against PRODUCTION** before the fix (six concurrent live agent turns, NDJSON captured
+off the wire): 1 balanced, 2 with `</reasoning>` twice and no opener, 1 with no wrapper at all —
+e.g. `"57 times 23 comes out to 1311.\n\n\n</reasoning>\n**1,311.** …"` delivered as message
+content. FIX (aidream): `providers/reasoning_stream_state.py` — per-STREAM state keyed on that
+stream's emitter; `anthropic`, `openai`, `google` and `xai` converted, `together`/`groq`/
+`generic_openai` censused (already local variables). Guard:
+`packages/matrx-ai/tests/test_provider_reasoning_wrapper_concurrency.py`, 3 of its 4 cases proven
+RED against the pre-fix shared shape. FIX (this repo — honesty, not repair; only the provider
+knows where thinking ended): `stream-block-accumulator.ts` strips an orphan `</reasoning>` out of
+the reader's content and captures it, and captures a stream that ENDS inside a reasoning region,
+both naming the remedy; `process-stream.ts`'s `hasReasoningLeak` now matches CLOSING tags — it
+matched openers only ("a closing `</thinking>` never appears without its opener"), which is why
+the live leak produced zero captures. Guard:
+`features/agents/redux/execution-system/utils/__tests__/reasoning-boundary-unbalanced.test.ts`
+(2 of 4 cases proven RED). `pnpm check:thinking-leak` does NOT cover this class — it is a static
+scan for surfaces rendering a live stream outside the canonical pipeline and never runs a stream.
+**Still open:** the aidream half ships on the deploy cadence, so the live UI re-check on `/tasks`
+(refusal prose visible, nothing but real reasoning in the collapsed block) belongs to whoever
+verifies after the server SHA carrying `reasoning_stream_state.py` is live at
+`https://server.app.matrxserver.com/health/version`. Row 1e's OTHER half is untouched:
+`apply_surface_write` still never surfaces a named "assignee is not a declared write target"
+refusal.
+
 **Environment notes, not findings.** (i) A Turbopack full reload fired mid-run-1 (shared
 checkout, another session's edit) and closed the task editor, discarding the staged drafts —
 re-driven cleanly in round 2. (ii) `/tasks?task=<id>` is stripped to `/tasks` on load, so the
