@@ -650,7 +650,7 @@ export function MandatesConsole() {
       dismissRecordToasts(mandateRecordRef(row));
       recordToast.success(
         mandateRecordRef(row),
-        `Removed "${row.mandateKey}" — nothing runs it now.`,
+        `Removed "${row.mandateKey}" — resolving it now refuses.`,
       );
       reload();
     } catch (error: unknown) {
