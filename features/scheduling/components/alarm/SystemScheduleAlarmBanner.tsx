@@ -41,11 +41,20 @@
  *     an "all clear" strip — wallpaper is how the next alarm gets missed.
  *   - A failed read is SAID, not swallowed: a super-admin sees "could not be
  *     read" with Retry, because silence here would read as healthy.
- *   - Fixed, not in flow: the shell's `.shell-main` is a full-viewport scroll
- *     container, so an in-flow strip above it grows the document by its own
- *     height. It sits just under the (transparent) header, like the other
- *     global indicators (ErrorInspectorBadge, AssistsDock) sit fixed at the
- *     bottom corners.
+ *   - Fixed, but it RESERVES ITS SPACE: the shell's `.shell-main` is a
+ *     full-viewport scroll container, so an in-flow strip above it would grow
+ *     the document by its own height. It is therefore positioned `fixed` just
+ *     under the (transparent) header — and it publishes its measured height as
+ *     `--shell-alarm-h` on the document root, which the shell's scroll
+ *     containers consume as `padding-top` (`styles/shell.css`).
+ *
+ *     THE DEFECT THAT TAUGHT US THIS (D-2026-09-11-A): without the
+ *     reservation, a fixed banner COVERS the top of every page — including
+ *     `/schedules/<id>`, the very record page its own links open, whose
+ *     `PageHeader` and enable control sit exactly there. An alarm that hides
+ *     the fix is worse than no alarm. The offset is published by the banner
+ *     and consumed by the shell, so it holds on every route at once and no
+ *     route is ever special-cased.
  *   - It can be COLLAPSED to a pill for this tab session, never dismissed:
  *     the only thing that removes it is fixing the schedules. Collapse state
  *     is per tab (sessionStorage) so a reload in the same tab does not
@@ -74,6 +83,17 @@ import {
 } from "../../lib/system-schedule-alarm-notice";
 
 const COLLAPSED_KEY = "matrx.schedule-alarm-banner.collapsed";
+
+/**
+ * The custom property the shell's scroll containers consume as `padding-top`
+ * (`styles/shell.css`). The banner is the only writer; it is REMOVED, never set
+ * to 0, whenever the banner is absent, so a stale reservation can never leave a
+ * gap at the top of every page.
+ */
+const ALARM_HEIGHT_VAR = "--shell-alarm-h";
+
+/** Clearance above and below the banner, matching its own `top` offset. */
+const ALARM_GUTTER_PX = 16;
 
 function readCollapsed(): boolean {
   try {
@@ -105,6 +125,7 @@ export default function SystemScheduleAlarmBanner() {
   const [state, setState] = useState<ReadState>({ kind: "idle" });
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [bannerEl, setBannerEl] = useState<HTMLDivElement | null>(null);
 
   const canRead = Boolean(isSuperAdmin && authReady && accessToken);
 
@@ -142,6 +163,43 @@ export default function SystemScheduleAlarmBanner() {
     return () => window.removeEventListener("focus", onFocus);
   }, [canRead, load]);
 
+  /**
+   * RESERVE THE SPACE THIS BANNER OCCUPIES.
+   *
+   * A `fixed` banner is outside flow, so without this it sits ON TOP of the
+   * page — including the record pages its own links open. The element measures
+   * itself (its height changes with collapse, with the number of schedules
+   * named, and with viewport width as the list wraps) and publishes the result
+   * on the document root; `styles/shell.css` turns it into top padding on every
+   * shell scroll container, so no route is ever special-cased.
+   *
+   * A callback ref, not `useRef`: the banner has three mutually exclusive
+   * render shapes (error / collapsed pill / full) and the element identity
+   * changes between them. The callback fires on every swap, so the effect
+   * re-measures instead of holding a stale node.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!bannerEl) {
+      root.style.removeProperty(ALARM_HEIGHT_VAR);
+      return;
+    }
+    const publish = () => {
+      const height = bannerEl.getBoundingClientRect().height;
+      root.style.setProperty(
+        ALARM_HEIGHT_VAR,
+        height > 0 ? `${Math.ceil(height) + ALARM_GUTTER_PX}px` : "0px",
+      );
+    };
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(bannerEl);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty(ALARM_HEIGHT_VAR);
+    };
+  }, [bannerEl]);
+
   if (!canRead) return null;
   if (state.kind === "idle") return null;
 
@@ -157,7 +215,7 @@ export default function SystemScheduleAlarmBanner() {
 
   if (state.kind === "failed") {
     return (
-      <div className={shell} style={top} data-surface-value="schedule_alarm_banner_error">
+      <div ref={setBannerEl} className={shell} style={top} data-surface-value="schedule_alarm_banner_error">
         <CalloutBanner
           tone="warning"
           icon={AlertTriangle}
@@ -182,7 +240,7 @@ export default function SystemScheduleAlarmBanner() {
   if (collapsed) {
     const count = notice.criticalCount + notice.warningCount;
     return (
-      <div className={shell} style={top} data-surface-value="schedule_alarm_banner_collapsed">
+      <div ref={setBannerEl} className={shell} style={top} data-surface-value="schedule_alarm_banner_collapsed">
         <button
           type="button"
           onClick={toggleCollapsed}
@@ -205,7 +263,7 @@ export default function SystemScheduleAlarmBanner() {
   }
 
   return (
-    <div className={shell} style={top} data-surface-value="schedule_alarm_banner">
+    <div ref={setBannerEl} className={shell} style={top} data-surface-value="schedule_alarm_banner">
       <CalloutBanner
         tone={notice.tone}
         icon={Icon}

@@ -1389,6 +1389,40 @@ button.shell-nav-flyout-item {
      Routes that need space below the header add their own top padding/offset.
      No shell-level padding-top: routes own their own internal top spacing. */
   margin-top: calc(-1 * var(--shell-header-h));
+  /* …except the space a GLOBAL ALARM BANNER has taken. See below. */
+  padding-top: var(--shell-alarm-h, 0px);
+  scroll-padding-top: var(--shell-alarm-h, 0px);
+}
+
+/* ---------------------------------------------------------------------------
+   GLOBAL ALARM BANNER CLEARANCE — `--shell-alarm-h`
+
+   A global banner is `position: fixed` (an in-flow strip above `.shell-main`
+   would grow a full-viewport scroll container by its own height). Fixed means
+   out of flow, and out of flow means it sits ON TOP of the page — including,
+   in the defect that produced this rule (D-2026-09-11-A), the top of
+   `/schedules/<id>`: the very record page the banner's own links open, whose
+   header and enable control are exactly what it covered. An alarm that hides
+   its own fix is worse than no alarm.
+
+   The contract is one variable, written by the banner and read by the shell:
+     - The banner MEASURES itself (its height changes with collapse, with how
+       many records it names, and with viewport width as that list wraps) and
+       sets `--shell-alarm-h` on the document root. It REMOVES the property
+       when it is absent — never sets it to 0 — so the fallback `0px` here is
+       what every page without an alarm resolves to.
+     - Every scroll container that owns a page's top edge reserves it as
+       `padding-top`. Reserving it here rather than at any route keeps the fix
+       route-independent: no page is special-cased, and a page added tomorrow
+       inherits the clearance.
+
+   `padding-top` and not a height/margin change on purpose: padding shrinks the
+   content box of the scroll container, so `h-full` route bodies stay inside the
+   viewport instead of overflowing by the banner's height.
+   --------------------------------------------------------------------------- */
+main[data-public-main] {
+  padding-top: var(--shell-alarm-h, 0px);
+  scroll-padding-top: var(--shell-alarm-h, 0px);
 }
 
 /* Natural-height reading/list surfaces keep a generous final runway so fixed
