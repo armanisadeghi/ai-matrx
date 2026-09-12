@@ -607,9 +607,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // The `timeline` Approach ("A case that unfolds in time") is its OWN lane and
   // its own dialog — a case is chunked by step, not by word count — so
   // ?ingest=timeline opens that dialog rather than the single-source one.
-  const [timelineOpen, setTimelineOpen] = useState(
-    searchParams.get("ingest") === "timeline",
-  );
+  const timelineParam = searchParams.get("ingest") === "timeline";
+  const [timelineOpen, setTimelineOpen] = useState(timelineParam);
+  // Watched, not read once: the sibling lanes above open when the param
+  // APPEARS, and a client navigation to the advertised timeline link on an
+  // already-mounted page must do the same (Bugbot, 1d692d66).
+  useEffect(() => {
+    if (timelineParam) setTimelineOpen(true);
+  }, [timelineParam]);
   // THE APPROACH PICKER (2026-08-20). Every lane below is opened by a query
   // param read ONCE at mount, so the in-page picker cannot reach them by
   // changing the URL. Each param therefore gets a state twin the picker sets;

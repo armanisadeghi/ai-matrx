@@ -29,7 +29,7 @@ import {
   readRuleEditorDraft,
 } from "../../agent-context/ruleImprove";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
-import { policyRulePatch, RuleFields } from "./RuleFields";
+import { improveFieldsFrom, policyRulePatch, RuleFields } from "./RuleFields";
 import {
   mergeRuleFieldValues,
   ruleFieldForElementId,
@@ -174,7 +174,7 @@ function RuleEditorForm({
         wizardId,
         patch: {
           baseVersion: rulebookVersion,
-          fields: draftSnapshot(),
+          fields: improveFieldsFrom(draftSnapshot()),
           beforeTidy,
         },
       }),
@@ -291,7 +291,7 @@ function RuleEditorForm({
     try {
       const cleaned = await cleanupRun.run<RulebookDraftSnapshot>({
         surfaceKey: "masterwork-rule-tidy",
-        fields: before,
+        fields: improveFieldsFrom(before),
         // Empty guidance IS the tidy shape — see useRuleImproveRun.
         expertInput: "",
         context,

@@ -59,6 +59,19 @@ export function policyRulePatch(values: RuleFieldValues) {
   } as const;
 }
 
+/**
+ * The form values as the improve / tidy Mandate reads them: every text field
+ * plus the decision shape under its STORED names (`kind`, `next_action`, …),
+ * because `useRuleImproveRun` enumerates `RULE_CONTENT_FIELDS`, not the form's
+ * camelCase keys. Handing it the raw form values sent a decision rule to the
+ * model with an empty kind and next action, so tidy polished the prose and
+ * dropped the judgment (Bugbot, 1d692d66). ONE derivation, on top of the ONE
+ * storage mapping — never a second spelling of the field names.
+ */
+export function improveFieldsFrom(values: RuleFieldValues) {
+  return { ...values, ...policyRulePatch(values) };
+}
+
 export function RuleFields({
   values,
   onChange,

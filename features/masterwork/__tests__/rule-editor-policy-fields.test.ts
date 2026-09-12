@@ -17,6 +17,8 @@
  */
 
 import { readRuleEditorDraft } from "../agent-context/ruleImprove";
+import { improveFieldsFrom } from "../components/detail/RuleFields";
+import { RULE_CONTENT_FIELDS } from "../types";
 import type { RulebookDraftSnapshot } from "../agent-context/rulebookSurfaceScope";
 import {
   mergeRuleFieldValues,
@@ -65,6 +67,27 @@ describe("the rule editor's form values", () => {
     expect(reopened).toEqual(SAVED);
     expect(reopened.isPolicy).toBe(true);
     expect(reopened.nextAction).toBe(POLICY_RULE.next_action);
+  });
+
+  it("hands the improve / tidy Mandate the decision shape under its STORED names", () => {
+    // Bugbot on 1d692d66: Clean up with AI sent the camelCase form values to
+    // a hook that reads RULE_CONTENT_FIELDS, so a decision rule reached the
+    // model with an empty kind and next action.
+    const fields = improveFieldsFrom(SAVED);
+    expect(fields.kind).toBe("policy");
+    expect(fields.precondition).toBe(POLICY_RULE.precondition);
+    expect(fields.next_action).toBe(POLICY_RULE.next_action);
+    expect(fields.action_kind).toBe("ask");
+    expect(fields.cost).toBe("low");
+    expect(fields.risk).toBe("medium");
+    // Every content field the hook enumerates is present by its stored name.
+    for (const key of RULE_CONTENT_FIELDS) expect(key in fields).toBe(true);
+    // An ordinary rule clears the shape rather than carrying stale values.
+    const ordinary = improveFieldsFrom(
+      mergeRuleFieldValues(SAVED, { isPolicy: false }),
+    );
+    expect(ordinary.kind).toBeUndefined();
+    expect(ordinary.next_action).toBeUndefined();
   });
 
   it("keeps an ordinary rule ordinary when nothing is staged", () => {
