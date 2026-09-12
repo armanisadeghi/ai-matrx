@@ -48,8 +48,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 import { fetchKgGraph } from "../service/kgGraphService";
 import {

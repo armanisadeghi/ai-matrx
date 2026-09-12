@@ -72,8 +72,8 @@ import {
 } from "../setup/draft";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
 import { useSitePipeline } from "../hooks/useSitePipeline";

@@ -66,8 +66,8 @@ import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 const PdfPreview = lazy(() => import("./PdfPreview"));
 

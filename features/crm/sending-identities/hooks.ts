@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
-import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import * as Api from "./service";
 import type {
   ConnectableMailbox,

@@ -37,8 +37,8 @@ import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads"
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import {
   OrganizationRequiredNotice,
-  isOrganizationRequiredError,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   DISCOVERY_STEP_ORDER,
   getDiscoveryStatus,

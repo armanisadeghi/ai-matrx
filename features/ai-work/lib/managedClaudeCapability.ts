@@ -13,7 +13,7 @@
  */
 
 import { apiGet } from "@/lib/api/typed-client";
-import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 export type ManagedCapability = {
   state: "loading" | "ready" | "error";
