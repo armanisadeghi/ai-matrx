@@ -51027,6 +51027,36 @@ export type Database = {
           },
         ]
       }
+      definer_class_exemption: {
+        Row: {
+          declared_at: string
+          declared_by: string
+          function_name: string
+          id: string
+          identity_args: string
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          declared_at?: string
+          declared_by: string
+          function_name: string
+          id?: string
+          identity_args?: string
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          declared_at?: string
+          declared_by?: string
+          function_name?: string
+          id?: string
+          identity_args?: string
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
       emergency_door_request: {
         Row: {
           created_at: string
@@ -51759,11 +51789,16 @@ export type Database = {
     Views: {
       definer_class_census: {
         Row: {
+          asks_an_admin: boolean | null
           asks_the_gate: boolean | null
           classed_tokens: string | null
           declared: boolean | null
+          exempt_reason: string | null
           function_name: unknown
           identity_args: string | null
+          is_trigger: boolean | null
+          narrows_to_caller: boolean | null
+          org_scoped: boolean | null
           reachable_by: string | null
           reads_classed: boolean | null
           schema_name: unknown
@@ -52083,6 +52118,21 @@ export type Database = {
       }
       assert_class_allows: {
         Args: { p_action: string; p_row_org?: string; p_token: string }
+        Returns: undefined
+      }
+      assert_class_read: {
+        Args: { p_row_org?: string; p_token: string }
+        Returns: undefined
+      }
+      assert_may_transfer: {
+        Args: {
+          p_container_id?: string
+          p_container_type?: string
+          p_row_org?: string
+          p_row_owner: string
+          p_target_owner: string
+          p_token: string
+        }
         Returns: undefined
       }
       auto_organization_name: {
