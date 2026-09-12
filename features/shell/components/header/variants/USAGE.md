@@ -24,6 +24,8 @@ The top row is **shared space**: the shell owns the edges; the route owns the ce
 
 **Never render a page-level toolbar in the body** (`<header border-b bg-card>` with title + refresh + New). That duplicates the shell row, pushes actions behind the avatar (hence `pr-12` hacks), and leaves a dead band at the bottom when combined with header-height subtraction.
 
+**Work-page identity belongs in the shared header, not a body introduction.** On `(core)` pages where someone is doing work, the first body row is data, an editor, or a task control. Do not repeat the route title in a standalone body row or add explanatory description copy. Put useful navigation, selection, and actions in `PageHeader` / `RouteHeader`; a compact title is allowed only when it helps operate the route. Keep record data, validation and error/confirmation copy, and purposeful empty-state guidance. This rule does not apply to public marketing pages. Classify the element before removing it — never hide paragraphs with a global CSS rule.
+
 Reference routes: `/chat/[conversationId]`, `/tasks`, `/agents/[id]/build`.
 
 Audit: `pnpm check:page-headers` (strict: `pnpm check:page-headers:strict`).
@@ -42,7 +44,7 @@ Audit: `pnpm check:page-headers` (strict: `pnpm check:page-headers:strict`).
 
 Sticky sub-toolbars that must remain outside the glass fade use `top: var(--shell-header-clearance)`. This shared geometry includes `--shell-header-h` plus `--shell-header-fade-h`; section jump offsets also include the measured toolbar height.
 
-Sub-toolbars **below** the header zone (filters, search) are fine. Forbidden: a **page title bar** in the body.
+Sub-toolbars **below** the header zone (filters, search) are fine. Forbidden: a **page title bar or explanatory intro** in the body.
 
 **Exceptions:** `/administration/*` and `(transitional)`/`(legacy)` `ResponsiveLayout` — content sits below the header, not behind it. There, `.h-page` / `calc(100dvh - var(--header-height))` is correct. Do not apply those wrappers to `(core)` routes.
 
