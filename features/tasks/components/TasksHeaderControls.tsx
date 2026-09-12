@@ -8,6 +8,8 @@ import { usePanelControls } from "@/features/resizable-panels/PanelControlProvid
 import { TasksAssistStrip } from "@/features/tasks/components/TasksAssistStrip";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
 
 /**
  * Header controls for the /tasks route. Lives inside the shell glass header
@@ -22,6 +24,7 @@ import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
  */
 export function TasksHeaderControls() {
   const { toggle, isCollapsed } = usePanelControls();
+  const selectedTaskId = useAppSelector(selectSelectedTaskId);
   const sidebarCollapsed = isCollapsed("sidebar");
   const listCollapsed = isCollapsed("list");
 
@@ -37,12 +40,14 @@ export function TasksHeaderControls() {
           ariaLabel={sidebarCollapsed ? "Show filters" : "Hide filters"}
           tooltip={sidebarCollapsed ? "Show filters" : "Hide filters"}
         />
-        <MenuTapButton
-          onClick={() => toggle("list")}
-          variant={listCollapsed ? "transparent" : "glass"}
-          ariaLabel={listCollapsed ? "Show task list" : "Hide task list"}
-          tooltip={listCollapsed ? "Show task list" : "Hide task list"}
-        />
+        {selectedTaskId ? (
+          <MenuTapButton
+            onClick={() => toggle("list")}
+            variant={listCollapsed ? "transparent" : "glass"}
+            ariaLabel={listCollapsed ? "Show task list" : "Hide task list"}
+            tooltip={listCollapsed ? "Show task list" : "Hide task list"}
+          />
+        ) : null}
       </div>
       <h1 className="ml-0 md:ml-2 text-sm font-medium text-foreground truncate">
         Tasks

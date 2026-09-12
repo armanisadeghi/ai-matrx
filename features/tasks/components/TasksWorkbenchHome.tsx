@@ -2,11 +2,19 @@
 
 import { useMemo } from "react";
 import { Building2, Layers, ListTodo } from "lucide-react";
+import { Skeleton } from "@ai-matrx/design-system";
 import {
   MetricNavigation,
   type MetricNavigationItem,
 } from "@/components/navigation/MetricNavigation";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { Button } from "@/components/ui/button";
+import {
+  selectFullContextError,
+  selectFullContextStatus,
+} from "@/features/agent-context/redux/hierarchySlice";
+import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { useEnsureHierarchyLoaded } from "@/features/agent-context/hooks/useNavTree";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
 import { SMART_VIEWS } from "@/features/tasks/constants/smartViews";
 import {
@@ -25,7 +33,11 @@ import {
   selectOrganizationsList,
 } from "@/features/scopes/redux/selectors/tree";
 import { primaryNavItems } from "@/features/shell/constants/nav-data";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useDispatchThunk,
+} from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
@@ -35,6 +47,10 @@ import { cn } from "@/utils/cn";
 /** Root-only composition for the empty desktop editor pane. */
 export function TasksWorkbenchHome() {
   const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
+  useEnsureHierarchyLoaded();
+  const hierarchyStatus = useAppSelector(selectFullContextStatus);
+  const hierarchyError = useAppSelector(selectFullContextError);
   const smartView = useAppSelector(selectSmartView);
   const smartViewCounts = useAppSelector(selectSmartViewCounts);
   const orgId = useAppSelector(selectOrganizationId);
@@ -79,6 +95,41 @@ export function TasksWorkbenchHome() {
         description: item.description,
       }));
   }, []);
+
+  // `selectSmartViewCounts` and `selectFilteredTasks` are projections of the
+  // hierarchy cache. Until its one canonical read succeeds, an empty adapter
+  // means "unknown", never zero tasks or an empty filtered result.
+  if (hierarchyStatus !== "success") {
+    if (hierarchyStatus === "error") {
+      return (
+        <section
+          aria-label="Task workbench"
+          className="flex h-full min-h-0 items-start bg-background p-4"
+        >
+          <StaleDataNotice
+            hasData={false}
+            what="your tasks"
+            detail={hierarchyError}
+            onRetry={() => {
+              void dispatchThunk(fetchFullContext());
+            }}
+          />
+        </section>
+      );
+    }
+
+    return (
+      <section
+        aria-label="Loading tasks"
+        aria-busy="true"
+        className="flex h-full min-h-0 flex-col bg-background p-4"
+      >
+        <Skeleton className="h-5 w-36" />
+        <Skeleton className="mt-3 h-8 w-full max-w-xl" />
+        <Skeleton className="mt-5 h-64 w-full" />
+      </section>
+    );
+  }
 
   return (
     <section

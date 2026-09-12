@@ -88,20 +88,24 @@ export function TasksDesktopShell({
           </RegisteredPanel>
           <Handle hideWhenCollapsed={["sidebar"]} />
 
-          <RegisteredPanel
-            registerAs="list"
-            groupKey={GROUP_KEY}
-            id="list"
-            collapsible
-            collapsedSize="0%"
-            defaultSize="16%"
-            minSize="8%"
-          >
-            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-              <TaskListPane />
-            </div>
-          </RegisteredPanel>
-          <Handle hideWhenCollapsed={["list"]} />
+          {selectedTaskId ? (
+            <>
+              <RegisteredPanel
+                registerAs="list"
+                groupKey={GROUP_KEY}
+                id="list"
+                collapsible
+                collapsedSize="0%"
+                defaultSize="16%"
+                minSize="8%"
+              >
+                <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+                  <TaskListPane />
+                </div>
+              </RegisteredPanel>
+              <Handle hideWhenCollapsed={["list"]} />
+            </>
+          ) : null}
 
           <Panel id="editor" minSize="30%">
             <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">

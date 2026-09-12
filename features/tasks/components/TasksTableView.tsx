@@ -576,6 +576,7 @@ export default function TasksTableView() {
                 sortDir={sortDir}
                 onSort={toggleSort}
                 k="title"
+                className="min-w-[18rem]"
                 filter={
                   <ColumnFilterButton
                     active={columnFilters.title.trim().length > 0}
@@ -774,7 +775,7 @@ export default function TasksTableView() {
                         )}
                       </button>
                     </TableCell>
-                    <TableCell className="py-1.5 max-w-[200px]">
+                    <TableCell className="w-full py-1.5 min-w-[18rem]">
                       <div className="min-w-0">
                         {/* THE DOOR LAW. The row already selects the task into
                             the detail pane, and that is the RIGHT plain click

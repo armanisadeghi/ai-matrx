@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-11`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -33,7 +33,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 **Feature code — `features/tasks/`**
 
 - `components/` (incl. `TaskEditor.tsx`, `TasksDesktopShell.tsx`, `TasksWorkbenchHome.tsx`, `TaskAssociatedResources.tsx` (new)), `hooks/`, `services/taskService.ts`, `utils/`, `types/`
-- `components/TasksWorkbenchHome.tsx` — root-only no-selection composition in `/tasks`: canonical smart-view actions and counts, active organization/scope dimensions, registered Workspaces destinations, quick-create, and the existing interactive `TasksTableView`. It never changes the generic `TaskEditor` empty state used by embedded consumers.
+- `components/TasksWorkbenchHome.tsx` — root-only no-selection composition in `/tasks`: canonical smart-view actions and counts, active organization/scope dimensions, registered Workspaces destinations, quick-create, and the existing interactive `TasksTableView`. It waits for the canonical hierarchy read before showing counts or filtered rows, and exposes the same read's retry action if it fails. The desktop shell omits its duplicate task-list panel while this workbench is active, then restores that panel at the saved width when a task is selected. It never changes the generic `TaskEditor` empty state used by embedded consumers.
 - `components/TaskSmsReminderButton.tsx` — confirmed **Text reminder** action shared by every canonical `TaskEditorBody` host; it uses the communication producer rather than a task-local sender.
 - `components/TaskAssigneePicker.tsx` — compact assignee selector; inline filtering and the advanced `UserSearchField` window both operate on the caller's existing connection list.
 - `redux/` — `taskUiSlice`, `selectors`, `thunks`, `taskAssociationsSlice` (M2M engine: `associateWithTask`/`dissociateFromTask` — UI panel pending)
