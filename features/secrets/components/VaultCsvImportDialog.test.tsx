@@ -1,8 +1,11 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { TextDecoder } from "util";
 
 import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
-import { parseCsvFile } from "../csv-import";
+import { VaultWorkspace } from "./VaultWorkspace";
+import { fetchCsvImportLimits } from "../csv-import-limits";
+import { createVaultItem } from "../vault-service";
 
 let mockAuthStateListener: ((event: string) => void) | undefined;
 
@@ -19,6 +22,28 @@ jest.mock("@/utils/supabase/client", () => ({
 
 jest.mock("@/hooks/use-media-query", () => ({
   useMediaQuery: () => true,
+}));
+
+jest.mock("@/features/organizations/hooks", () => ({
+  useUserOrganizations: () => ({ organizations: [] }),
+}));
+
+jest.mock("../vault-hooks", () => ({
+  useVault: () => ({
+    items: [],
+    loading: false,
+    busy: false,
+    error: null,
+    refresh: async () => undefined,
+    actions: {},
+  }),
+  useVaultDefinitions: () => ({ definitions: [] }),
+}));
+
+jest.mock("./VaultContextMenu", () => ({
+  VaultContextMenu: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
@@ -46,21 +71,25 @@ jest.mock("../vault-service", () => ({
   VaultImportTransportError: class VaultImportTransportError extends Error {},
 }));
 
-jest.mock("../csv-import", () => ({
-  parseCsvFile: jest.fn(),
-  suggestedCsvMapping: (headers: string[]) => headers.map(() => "keep"),
-  hasAmbiguousCsvMapping: () => false,
-  isPossibleDuplicateRow: () => false,
-  safeDestination: () => ({ metadata: null, host: null }),
-  runCsvImportCommands: jest.fn(),
-  toCsvImportCommand: jest.fn(),
-}));
-
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & { TextDecoder?: typeof TextDecoder }
+).TextDecoder = TextDecoder;
 
-const parseCsvFileMock = jest.mocked(parseCsvFile);
+const createVaultItemMock = jest.mocked(createVaultItem);
+const fetchCsvImportLimitsMock = jest.mocked(fetchCsvImportLimits);
+
+function csvFile(text: string): File {
+  const file = new File([text], "passwords.csv", { type: "text/csv" });
+  Object.defineProperty(file, "arrayBuffer", {
+    value: async () =>
+      Uint8Array.from([...text].map((character) => character.charCodeAt(0)))
+        .buffer,
+  });
+  return file;
+}
 
 describe("VaultCsvImportDialog", () => {
   let root: Root;
@@ -70,7 +99,7 @@ describe("VaultCsvImportDialog", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
-    parseCsvFileMock.mockReset();
+    createVaultItemMock.mockReset();
     mockAuthStateListener = undefined;
   });
 
@@ -80,14 +109,6 @@ describe("VaultCsvImportDialog", () => {
   });
 
   it("renders every masked CSV row, including rows after the former five-row cutoff", async () => {
-    parseCsvFileMock.mockResolvedValue({
-      headers: ["title"],
-      issues: 0,
-      rows: Array.from({ length: 6 }, (_, index) => ({
-        rowNumber: index + 2,
-        cells: [`Credential ${index + 1}`],
-      })),
-    });
     await act(async () => {
       root.render(
         <VaultCsvImportDialog
@@ -104,22 +125,20 @@ describe("VaultCsvImportDialog", () => {
       throw new Error("file input missing");
     Object.defineProperty(input, "files", {
       configurable: true,
-      value: [new File(["masked"], "passwords.csv", { type: "text/csv" })],
+      value: [
+        csvFile(
+          "title\nCredential 1\nCredential 2\nCredential 3\nCredential 4\nCredential 5\nCredential 6",
+        ),
+      ],
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await Promise.resolve();
-      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(document.body.textContent).toContain("Row 7: Imported credential 7");
+    expect(document.body.textContent).toContain("Row 7: Credential 6");
   });
 
   it("clears a loaded preview when the signed-in account changes", async () => {
-    parseCsvFileMock.mockResolvedValue({
-      headers: ["title"],
-      issues: 0,
-      rows: [{ rowNumber: 2, cells: ["Credential"] }],
-    });
     await act(async () => {
       root.render(
         <VaultCsvImportDialog
@@ -136,17 +155,119 @@ describe("VaultCsvImportDialog", () => {
       throw new Error("file input missing");
     Object.defineProperty(input, "files", {
       configurable: true,
-      value: [new File(["masked"], "passwords.csv", { type: "text/csv" })],
+      value: [csvFile("title\nCredential")],
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await Promise.resolve();
-      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(document.body.textContent).toContain("Masked preview:");
     if (!mockAuthStateListener) throw new Error("auth listener missing");
     await act(async () => mockAuthStateListener?.("SIGNED_OUT"));
     expect(document.body.textContent).not.toContain("Masked preview:");
     expect(document.body.textContent).toContain("account changed");
+  });
+
+  it("refuses a normalized over-limit row before the create transport", async () => {
+    fetchCsvImportLimitsMock.mockResolvedValueOnce({
+      maxFileBytes: 10_000,
+      maxRecords: 20,
+      maxColumns: 20,
+      maxCellBytes: 1_000,
+      maxFields: 202,
+      maxPlaintextFieldBytes: 4,
+      maxRequestBodyBytes: 10_000,
+    });
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    const input = document.body.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement))
+      throw new Error("file input missing");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [csvFile("title,password\nExample,secret")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(document.body.textContent).toContain(
+      "Row 2 exceeds this organization’s encrypted field limit.",
+    );
+    const button = [...document.querySelectorAll("button")].find((candidate) =>
+      candidate.textContent?.includes("Import selected records"),
+    );
+    if (!(button instanceof HTMLButtonElement))
+      throw new Error("import button missing");
+    await act(async () => button.click());
+    expect(createVaultItemMock).not.toHaveBeenCalled();
+  });
+
+  it("clears a definitive rejection instead of retrying its frozen command", async () => {
+    createVaultItemMock
+      .mockResolvedValueOnce({ id: "first", display_name: "First" } as never)
+      .mockRejectedValueOnce(new Error("validation rejected"));
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    const input = document.body.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement))
+      throw new Error("file input missing");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [csvFile("title,password\nFirst,one\nSecond,two")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const button = [...document.querySelectorAll("button")].find((candidate) =>
+      candidate.textContent?.includes("Import selected records"),
+    );
+    if (!(button instanceof HTMLButtonElement))
+      throw new Error("import button missing");
+    await act(async () => {
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(createVaultItemMock).toHaveBeenCalledTimes(2);
+    expect(document.body.textContent).toContain(
+      "Imported 1; skipped 0; failed 1.",
+    );
+    expect(document.body.textContent).not.toContain("Retry current row");
+    expect(document.body.textContent).not.toContain("Import selected records");
+  });
+
+  it("opens the real CSV dialog from the full workspace", async () => {
+    await act(async () => {
+      root.render(
+        <VaultWorkspace principal={{ type: "user" }} presentation="full" />,
+      );
+    });
+    const button = [...document.querySelectorAll("button")].find((candidate) =>
+      candidate.textContent?.includes("Import passwords"),
+    );
+    if (!(button instanceof HTMLButtonElement))
+      throw new Error("full import trigger missing");
+    await act(async () => button.click());
+    expect(document.body.textContent).toContain("Import passwords from CSV");
+    expect(document.body.textContent).toContain("Choose CSV file");
   });
 });

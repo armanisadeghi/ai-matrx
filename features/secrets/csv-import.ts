@@ -1,6 +1,7 @@
 /** Local-only CSV normalization for Vault's first password-manager import. */
 import Papa from "papaparse";
 
+import { isLoopbackApiUrl } from "@/lib/api/service-routing";
 import type { VaultExpectedActor } from "./vault-service";
 import type { VaultItemCreateRequest, VaultPrincipal } from "./types";
 
@@ -31,11 +32,19 @@ export type CsvImportCommand = {
   expectedActor: VaultExpectedActor;
   hasOtp: boolean;
 };
+export type CsvImportPreparation =
+  | { status: "ready"; command: CsvImportCommand }
+  | {
+      status: "skipped";
+      reason: "invalid" | "unsupported" | "possible_duplicate";
+    }
+  | { status: "invalid"; diagnostic: string };
 export type CsvImportOutcome = {
   imported: number;
   skipped: number;
   failed: number;
   cancelled: boolean;
+  definitive: boolean;
   /** The first command that was not confirmed. Reuse it on a same-session retry. */
   progressCursor: number;
 };
@@ -82,7 +91,11 @@ function validateParsedCsv(
   );
   const unsupportedValueColumns = headers
     .map((header, index) =>
-      /(passkey|webauthn|fido|attachment|file)/i.test(header) ? index : -1,
+      /(?:^|[\s_-])(passkey|webauthn|fido|attachment|file)(?:$|[\s_-])/i.test(
+        header.trim(),
+      )
+        ? index
+        : -1,
     )
     .filter((index) => index >= 0);
   let issues = 0;
@@ -244,7 +257,7 @@ export function isPossibleDuplicateRow(
   );
 }
 
-export function toCsvImportCommand(input: {
+export function prepareCsvImportRow(input: {
   source: string;
   preview: CsvImportPreview;
   row: CsvImportRow;
@@ -254,8 +267,23 @@ export function toCsvImportCommand(input: {
   rowId: string;
   limits: CsvImportLimits;
   browserFillEnabled?: boolean;
-}): CsvImportCommand | null {
-  if (input.row.issue) return null;
+  existingItems?: { displayName: string; loginUrls: string[] }[];
+  skipPossibleDuplicate?: boolean;
+}): CsvImportPreparation {
+  if (input.row.issue === "invalid")
+    return { status: "skipped", reason: "invalid" };
+  if (input.row.issue === "unsupported")
+    return { status: "skipped", reason: "unsupported" };
+  if (
+    input.skipPossibleDuplicate &&
+    isPossibleDuplicateRow(
+      input.row,
+      input.preview,
+      input.mapping,
+      input.existingItems ?? [],
+    )
+  )
+    return { status: "skipped", reason: "possible_duplicate" };
   const { headers } = input.preview;
   const { row, mapping } = input;
   const title =
@@ -307,7 +335,10 @@ export function toCsvImportCommand(input: {
         utf8ByteLength(field.value) > input.limits.maxPlaintextFieldBytes,
     )
   )
-    return null;
+    return {
+      status: "invalid",
+      diagnostic: `Row ${row.rowNumber} exceeds this organization’s encrypted field limit.`,
+    };
   const command: CsvImportCommand = {
     rowId: input.rowId,
     expectedActor: input.expectedActor,
@@ -330,7 +361,9 @@ export function toCsvImportCommand(input: {
         Boolean(roleValue(row, mapping, "username")) &&
         Boolean(roleValue(row, mapping, "password")) &&
         urls.length > 0 &&
-        urls.every((url) => new URL(url).protocol === "https:"),
+        urls.every(
+          (url) => new URL(url).protocol === "https:" || isLoopbackApiUrl(url),
+        ),
       fields,
     },
   };
@@ -338,8 +371,19 @@ export function toCsvImportCommand(input: {
     utf8ByteLength(JSON.stringify(command.body)) >
     input.limits.maxRequestBodyBytes
   )
-    return null;
-  return command;
+    return {
+      status: "invalid",
+      diagnostic: `Row ${row.rowNumber} exceeds this organization’s request size limit.`,
+    };
+  return { status: "ready", command };
+}
+
+/** Compatibility helper for callers that only need a command after preparation. */
+export function toCsvImportCommand(
+  input: Parameters<typeof prepareCsvImportRow>[0],
+): CsvImportCommand | null {
+  const prepared = prepareCsvImportRow(input);
+  return prepared.status === "ready" ? prepared.command : null;
 }
 
 /** Dispatch only one immutable command at a time; cancellation never rolls back a committed row. */
@@ -360,6 +404,7 @@ export async function runCsvImportCommands(
         skipped,
         failed,
         cancelled: true,
+        definitive: false,
         progressCursor: index,
       };
     if (!command) {
@@ -378,6 +423,7 @@ export async function runCsvImportCommands(
       skipped,
       failed,
       cancelled: result === "definitive" || cancelled(),
+      definitive: result === "definitive",
       progressCursor: index,
     };
   }
@@ -386,6 +432,7 @@ export async function runCsvImportCommands(
     skipped,
     failed,
     cancelled: cancelled(),
+    definitive: false,
     progressCursor: commands.length,
   };
 }

@@ -533,16 +533,28 @@ export function VaultWorkspace({
                   credential{filtered.length === 1 ? "" : "s"}
                 </p>
                 {canCreate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => setImportOpen(true)}
-                    disabled={vault.busy}
-                  >
-                    <Upload className="mr-1.5 h-3.5 w-3.5" />
-                    Import .env
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setImportOpen(true)}
+                      disabled={vault.busy}
+                    >
+                      <Upload className="mr-1.5 h-3.5 w-3.5" />
+                      Import .env
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setCsvImportOpen(true)}
+                      disabled={vault.busy}
+                    >
+                      <Upload className="mr-1.5 h-3.5 w-3.5" />
+                      Import passwords
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
