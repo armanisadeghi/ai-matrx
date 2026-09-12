@@ -5,11 +5,12 @@
  * Mounted lazily by `ScopeMismatchDialogHost.tsx` via
  * `next/dynamic({ ssr: false })`.
  *
- * Imperative model (mirrors ValuePromptsDialogHostImpl):
- * `promptScopeMismatch(...)` calls push requests onto a ref-backed queue;
- * this component drains one at a time and renders a single dialog showing
- * both scope sets by name grouped by scope type. Any of the three action
- * buttons resolves its choice; dismiss (Escape / outside click / X)
+ * Imperative model: `promptScopeMismatch(...)` pushes a request into the
+ * opener's queue and `useOpenerHost` (`@ai-matrx/kit/opener-react`) drains it
+ * one at a time — the registration, queue and settle-once machinery are the
+ * package's, never re-implemented here. This component renders a single dialog
+ * showing both scope sets by name, grouped by scope type. Any of the three
+ * action buttons resolves its choice; dismiss (Escape / outside click / X)
  * resolves `"cancel"` — the caller aborts the send, composer text intact.
  */
 
@@ -26,20 +27,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useOpenerHost } from "@ai-matrx/kit/opener-react";
 import type {
   ScopeMismatchChoice,
   ScopeMismatchDisplayItem,
 } from "@/features/scopes/utils/scopeMismatch";
-import {
-  _registerHost,
-  _unregisterHost,
-  type ScopeMismatchRequest,
-} from "./scopeMismatchOpener";
-
-interface ActiveRequest {
-  req: ScopeMismatchRequest;
-  resolve: (choice: ScopeMismatchChoice) => void;
-}
+import { scopeMismatchOpener } from "./scopeMismatchOpener";
 
 function ScopeSetList({
   heading,
@@ -91,49 +84,23 @@ function ScopeSetList({
 }
 
 export default function ScopeMismatchDialogHostImpl() {
-  const [active, setActive] = React.useState<ActiveRequest | null>(null);
-  const [tick, setTick] = React.useState(0);
-  const queueRef = React.useRef<ActiveRequest[]>([]);
-
-  React.useEffect(() => {
-    const controller = {
-      show: (
-        req: ScopeMismatchRequest,
-        resolve: (choice: ScopeMismatchChoice) => void,
-      ) => {
-        queueRef.current.push({ req, resolve });
-        setTick((n) => n + 1);
-      },
-    };
-    _registerHost(controller);
-    return () => _unregisterHost(controller);
-  }, []);
-
-  React.useEffect(() => {
-    if (active === null && queueRef.current.length > 0) {
-      setActive(queueRef.current.shift()!);
-    }
-  }, [active, tick]);
+  const { request, open, settle } = useOpenerHost(scopeMismatchOpener);
 
   const resolveWith = React.useCallback(
-    (choice: ScopeMismatchChoice) => {
-      if (!active) return;
-      active.resolve(choice);
-      setActive(null);
-    },
-    [active],
+    (choice: ScopeMismatchChoice) => settle(choice),
+    [settle],
   );
 
   const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      if (open) return;
+    (next: boolean) => {
+      if (next) return;
       resolveWith("cancel");
     },
     [resolveWith],
   );
 
   return (
-    <Dialog open={!!active} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
@@ -147,11 +114,11 @@ export default function ScopeMismatchDialogHostImpl() {
         <div className="grid gap-4 py-1 sm:grid-cols-2">
           <ScopeSetList
             heading="Current selection"
-            items={active?.req.current ?? []}
+            items={request?.current ?? []}
           />
           <ScopeSetList
             heading="This chat's context"
-            items={active?.req.chat ?? []}
+            items={request?.chat ?? []}
           />
         </div>
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">

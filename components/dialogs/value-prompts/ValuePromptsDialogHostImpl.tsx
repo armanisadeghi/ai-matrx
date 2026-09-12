@@ -4,12 +4,17 @@
  * Heavy implementation of the global value-prompts dialog host. Mounted
  * lazily by `ValuePromptsDialogHost.tsx` via `next/dynamic({ ssr: false })`.
  *
- * Imperative model (mirrors ConfirmDialogHostImpl): `promptForValues(...)`
- * calls push requests onto a ref-backed queue; this component drains one at
- * a time and renders a single dialog with one input per field. Submit
- * resolves `{ name: answer }`; dismiss resolves `null` — but dismissal is
- * blocked while any field is `required` (per the ValueMapping contract:
- * "the user cannot cancel; submit is the only way out").
+ * Imperative model: `promptForValues(...)` pushes a request into the opener's
+ * queue and `useOpenerHost` (`@ai-matrx/kit/opener-react`) drains it one at a
+ * time — the registration, queue and settle-once machinery are the package's,
+ * never re-implemented here. This component renders a single dialog with one
+ * input per field. Submit resolves `{ name: answer }`; dismiss resolves `null`
+ * — but dismissal is blocked while any field is `required` (per the
+ * ValueMapping contract: "the user cannot cancel; submit is the only way out").
+ *
+ * The per-request answer state is seeded through the hook's `onActivate`, which
+ * runs inside the same React update that makes a request active — so no frame
+ * ever shows the previous request's answers.
  */
 
 "use client";
@@ -25,17 +30,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useOpenerHost } from "@ai-matrx/kit/opener-react";
 import {
-  _registerHost,
-  _unregisterHost,
+  valuePromptsOpener,
   type ValuePromptsRequest,
 } from "./valuePromptsOpener";
 import { ProTextarea } from "@/components/official/ProTextarea";
-
-interface ActiveRequest {
-  req: ValuePromptsRequest;
-  resolve: (answers: Record<string, string> | null) => void;
-}
 
 function initialAnswers(req: ValuePromptsRequest): Record<string, string> {
   const out: Record<string, string> = {};
@@ -49,57 +49,33 @@ function initialAnswers(req: ValuePromptsRequest): Record<string, string> {
 }
 
 export default function ValuePromptsDialogHostImpl() {
-  const [active, setActive] = React.useState<ActiveRequest | null>(null);
   const [answers, setAnswers] = React.useState<Record<string, string>>({});
-  const [tick, setTick] = React.useState(0);
-  const queueRef = React.useRef<ActiveRequest[]>([]);
+  const { request, open, settle } = useOpenerHost(valuePromptsOpener, {
+    onActivate: (next) => setAnswers(initialAnswers(next)),
+  });
 
-  React.useEffect(() => {
-    const controller = {
-      show: (
-        req: ValuePromptsRequest,
-        resolve: (answers: Record<string, string> | null) => void,
-      ) => {
-        queueRef.current.push({ req, resolve });
-        setTick((n) => n + 1);
-      },
-    };
-    _registerHost(controller);
-    return () => _unregisterHost(controller);
-  }, []);
-
-  React.useEffect(() => {
-    if (active === null && queueRef.current.length > 0) {
-      const next = queueRef.current.shift()!;
-      setAnswers(initialAnswers(next.req));
-      setActive(next);
-    }
-  }, [active, tick]);
-
-  const hasRequired = !!active?.req.fields.some((f) => f.required);
-  const missingRequired = !!active?.req.fields.some(
+  const hasRequired = !!request?.fields.some((f) => f.required);
+  const missingRequired = !!request?.fields.some(
     (f) => f.required && !(answers[f.name] ?? "").trim(),
   );
 
   const handleSubmit = React.useCallback(() => {
-    if (!active || missingRequired) return;
-    active.resolve(answers);
-    setActive(null);
-  }, [active, answers, missingRequired]);
+    if (!request || missingRequired) return;
+    settle(answers);
+  }, [request, answers, missingRequired, settle]);
 
   const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      if (open || !active) return;
+    (next: boolean) => {
+      if (next || !request) return;
       // Required fields lock the dialog open — re-render keeps it visible.
       if (hasRequired) return;
-      active.resolve(null);
-      setActive(null);
+      settle(null);
     },
-    [active, hasRequired],
+    [request, hasRequired, settle],
   );
 
   return (
-    <Dialog open={!!active} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="sm:max-w-md"
         onInteractOutside={(e) => {
@@ -110,13 +86,13 @@ export default function ValuePromptsDialogHostImpl() {
         }}
       >
         <DialogHeader>
-          <DialogTitle>{active?.req.title ?? ""}</DialogTitle>
+          <DialogTitle>{request?.title ?? ""}</DialogTitle>
           <DialogDescription>
             This action needs a few values from you before it runs.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-1">
-          {active?.req.fields.map((field) => (
+          {request?.fields.map((field) => (
             <div key={field.name} className="flex flex-col gap-1.5">
               <Label
                 htmlFor={`value-prompt-${field.name}`}
@@ -147,11 +123,7 @@ export default function ValuePromptsDialogHostImpl() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                if (!active) return;
-                active.resolve(null);
-                setActive(null);
-              }}
+              onClick={() => settle(null)}
             >
               Cancel
             </Button>

@@ -5,9 +5,10 @@
  * next/dynamic({ ssr: false }) so this file — and the heavy SandboxPanel it
  * embeds — is NOT in the static graph of any route entry.
  *
- * Imperative model mirrors ConfirmDialogHostImpl: `openSandboxGate(...)` pushes a
- * request onto a ref-backed queue; this component drains it one at a time. The
- * Promise<SandboxGateChoice> resolves on:
+ * Imperative model: `openSandboxGate(...)` pushes a request into the opener's
+ * queue and `useOpenerHost` (`@ai-matrx/kit/opener-react`) drains it one at a
+ * time — the registration, queue and settle-once machinery are the package's,
+ * never re-implemented here. The Promise<SandboxGateChoice> resolves on:
  *   • "Retry with sandbox"      → "attach"  (user managed/attached a live box)
  *   • "Send without sandbox"    → "detach"
  *   • dismiss (Esc/backdrop/X)  → "cancel"  (so a stray dismiss never sends)
@@ -28,62 +29,22 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
-import {
-  _registerHost,
-  _unregisterHost,
-  type SandboxGateChoice,
-  type SandboxGateOptions,
-} from "./sandboxGateOpener";
-
-interface ActiveRequest {
-  opts: SandboxGateOptions;
-  resolve: (choice: SandboxGateChoice) => void;
-}
+import { useOpenerHost } from "@ai-matrx/kit/opener-react";
+import { sandboxGateOpener } from "./sandboxGateOpener";
 
 export default function SandboxGateHostImpl() {
-  const [active, setActive] = React.useState<ActiveRequest | null>(null);
-  const [tick, setTick] = React.useState(0);
-  const queueRef = React.useRef<ActiveRequest[]>([]);
-
-  React.useEffect(() => {
-    const controller = {
-      show: (
-        opts: SandboxGateOptions,
-        resolve: (choice: SandboxGateChoice) => void,
-      ) => {
-        queueRef.current.push({ opts, resolve });
-        setTick((n) => n + 1);
-      },
-    };
-    _registerHost(controller);
-    return () => _unregisterHost(controller);
-  }, []);
-
-  React.useEffect(() => {
-    if (active === null && queueRef.current.length > 0) {
-      setActive(queueRef.current.shift()!);
-    }
-  }, [active, tick]);
-
-  const settle = React.useCallback(
-    (choice: SandboxGateChoice) => {
-      if (!active) return;
-      active.resolve(choice);
-      setActive(null);
-    },
-    [active],
-  );
+  const { request, open, settle } = useOpenerHost(sandboxGateOpener);
 
   // Any dismiss (Esc / backdrop / X) is a cancel — never a silent send.
   const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      if (!open) settle("cancel");
+    (next: boolean) => {
+      if (!next) settle("cancel");
     },
     [settle],
   );
 
   return (
-    <Dialog open={!!active} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -98,9 +59,9 @@ export default function SandboxGateHostImpl() {
           </DialogDescription>
         </DialogHeader>
 
-        {active ? (
+        {request ? (
           <div className="max-h-[50dvh] overflow-y-auto rounded-md border border-border">
-            <SandboxPanel conversationId={active.opts.conversationId} />
+            <SandboxPanel conversationId={request.conversationId} />
           </div>
         ) : null}
 
