@@ -188,6 +188,39 @@ wants an *identified* account. The current enforced plan dimensions are recorded
 in `PLAN_MODEL.md`; this page does not keep a second list. Rationale:
 [`docs/handoffs/outreach-system.md`](../../docs/handoffs/outreach-system.md) §5.6.
 
+## AI spend budgets — entitlement vs guardrail (2026-09-11)
+
+Arman, 2026-08-27: *"we do need those caps … the UI needs to be at multiple levels. One is
+the admin UI where I can determine what these budgets are gonna be in the big picture … then
+you need the org to be able to impose their own overrides where they can set their own
+budgets, and then the users as well."*
+
+Two different questions, two different tables — never conflated:
+
+| Question | Table | Direction | Who edits | Where |
+|---|---|---|---|---|
+| What is the account **entitled** to? | `billing.plan_limit` (+ `billing.account_addon`) | add-on only ever **raises** | platform admin | `/administration/users/limits` |
+| What does it **cap itself** at? | `billing.spend_guardrail` scope `org` | only ever **lowers** | org owner/admin | `/organizations/[orgId]/settings#ai-budget` |
+| What does the **person** cap themselves at? | `billing.spend_guardrail` scope `user` | only ever **lowers** | the person | `/user-settings/plan` |
+
+**Effective limit = min(entitlement, org guardrail, user guardrail)**, from the ONE declared door
+`billing.resolve_capability_effective(p_user, p_capability, p_org)` — its envelope carries
+`entitlement_limit`, `org_guardrail`, `user_guardrail`, `org_used`, `user_used`, `effective_limit`,
+**`limit_source`** (which layer bound it), `effective_remaining`, `effective_allowed`, `would_block`.
+Server mirror: `aidream/services/billing/ai_points.py` (`resolve_points`, `points_gate`).
+
+Files: `guardrails/service.ts` (reads/writes straight to `billing.spend_guardrail` under RLS,
+units: **20,000 points = $1**), `guardrails/useSpendBudget.ts`, `guardrails/SpendBudgetCard.tsx`
+— ONE card in `mode="org"` (org settings) and `mode="user"` (Plan & usage) so the two surfaces can
+never disagree on what a limit means.
+
+Rules the card keeps: a limit is never shown without its source; the database refuses a guardrail
+above the entitlement (trigger `billing._spend_guardrail_validate`) and the refusal is shown
+verbatim with the real ceiling; a 0-row RLS write throws instead of toasting success; and while
+`platform.points` is `enforced = false` every surface says **"Tracking only"** in plain words —
+that flip is Arman's, never an agent's. `seo.provider_spend` is a different capability in
+micro-dollars; the card is points-only.
+
 ## 🚨 D-5 — THE CORE-PRACTICE LAW: core practice is never metered
 
 > **Source:** Arman, education program law **D-5** — recorded in

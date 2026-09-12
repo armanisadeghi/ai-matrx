@@ -29,6 +29,7 @@ import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptur
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
 import SystemScheduleAlarmBanner from "@/features/scheduling/components/alarm/SystemScheduleAlarmBanner";
 import { FirstSignInAgeGateMount } from "@/features/education/compliance/FirstSignInAgeGateMount";
+import { DailySpendPopoverMount } from "@/features/admin/spend/DailySpendPopoverMount";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
@@ -143,6 +144,12 @@ export default function DeferredSingletonCore() {
           2026-08-20). Dismissible; re-asks next session. Guests are handled by
           EducationAgeGateMount, where their block actually bites. */}
       {user?.id && <FirstSignInAgeGateMount />}
+      {/* Render-free. Raises the floating "spent so far today" window for a
+          Super Admin on their first app open each local day (Arman,
+          2026-09-11: scare me with the number, never block the code). Cadence
+          is the knob platform.spend_popover.times_per_day — 0 turns it off; a
+          dismissal ends the day. Internally gated on selectIsSuperAdmin. */}
+      {user?.id && <DailySpendPopoverMount />}
     </>
   );
 }
