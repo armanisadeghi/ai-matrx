@@ -68,6 +68,14 @@ run_split(){
   rm -rf "$work"
   return "$status"
 }
+run_one_with_hostile_search_path(){
+  local draft=$1 number=$2 work="$TMP/search-path-${RANDOM}-${RANDOM}"
+  mkdir "$work"; split_draft "$draft" "$work"
+  # The draft itself must reset this before deparsing helper definitions; the
+  # caller's default path is deliberately hostile to the capture's empty path.
+  { echo 'SET search_path TO workbench;'; cat "$(printf '%s/%02d.sql' "$work" "$number")"; } | "${P[@]}"
+  rm -rf "$work"
+}
 must_fail(){ local expected=$1; shift; if "$@" > "$TMP/failure.out" 2>&1; then echo "expected failure" >&2; exit 1; fi; rg -q "$expected" "$TMP/failure.out"; }
 postflight_rejects(){
   local name=$1 mutation=$2 expected=$3 draft
@@ -87,6 +95,13 @@ import json,sys
 x={i['name']:i for i in json.loads(sys.argv[1])['indexes']}
 for n in ('note_folders_created_by_name_unique','note_folders_organization_created_by_name_unique','note_folders_id_organization_unique'): assert x[n]['unique'] and x[n]['valid'] and x[n]['ready']
 PY
+
+# Both fingerprinting DO blocks must be invariant to a client path that differs
+# from the capture's empty search_path. The statements reset it transaction-locally.
+seed; hostile_path=$(fixture)
+run_one_with_hostile_search_path "$hostile_path" 3 >/dev/null
+run_split "$hostile_path" 4 5 >/dev/null
+run_one_with_hostile_search_path "$hostile_path" 6 >/dev/null
 
 seed; wrong=$(fixture)
 "${P[@]}" -c 'CREATE UNIQUE INDEX note_folders_organization_created_by_name_unique ON workbench.note_folders(created_by,organization_id,name)' >/dev/null

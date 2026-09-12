@@ -1,11 +1,11 @@
--- PREPARED ONLY — DO NOT MOVE TO migrations/ OR APPLY.
+-- PREPARED ONLY — AWAITING FINAL OWNER ACTIVATION. DO NOT MOVE TO migrations/ OR APPLY.
 -- N01 adds only two concurrent supporting unique indexes. It changes no rows,
 -- FK, trigger, policy, ACL, old unique index, or table shape. A stop after one
 -- CREATE is PARTIAL/PREPARED, not success; rerun accepts only exact valid-ready
 -- named indexes. Use only the sanctioned aidream autocommit runner.
--- The runner sends every top-level statement on a separately routable pooled
--- session. These SET statements are therefore NOT proven to govern either
--- concurrent CREATE; runner activation remains a prerequisite for any apply.
+-- The accepted canonical runner owns autocommit execution. These SET statements
+-- are not relied on as proof of either concurrent CREATE's timeout behavior;
+-- runner activation remains a prerequisite for any apply.
 SET lock_timeout = '2s';
 SET statement_timeout = '10min';
 
@@ -14,7 +14,7 @@ DECLARE
   v_relation_oid constant oid := 1711434;
   v_acl constant text := '0aeef0cb1a270e08c63e9cd8456a2463';
   v_columns constant text := '6cd92dd38240133f953bb2c661fec513';
-  v_triggers constant text := 'a2a15d1372417efcb443d55cbff18e59';
+  v_triggers constant text := 'dcb6c082765a0c9ec2c7fe395c15a022';
   v_policies constant text := 'd9e12a49ae193c694ded6ffc3a60f157';
   v_fks constant text := '6fec6c3bd5369ebeb9b705a6716df044';
   v_old constant text := 'CREATE UNIQUE INDEX note_folders_created_by_name_unique ON workbench.note_folders USING btree (created_by, name)';
@@ -22,6 +22,7 @@ DECLARE
   v_parent constant text := 'CREATE UNIQUE INDEX note_folders_id_organization_unique ON workbench.note_folders USING btree (id, organization_id)';
   v_stage text := 'precondition';
 BEGIN
+  PERFORM set_config('search_path', '', true);
   IF 'workbench.note_folders'::regclass::oid <> v_relation_oid THEN RAISE EXCEPTION 'N01 % failed: note_folders OID changed',v_stage; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_class c WHERE c.oid=v_relation_oid AND c.relowner='postgres'::regrole AND c.relrowsecurity AND NOT c.relforcerowsecurity) THEN RAISE EXCEPTION 'N01 % failed: owner or RLS changed',v_stage; END IF;
   IF (SELECT md5(jsonb_build_object('acl_is_null',c.relacl IS NULL,'grants',coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',coalesce(g.rolname,'PUBLIC'),'grantee',coalesce(r.rolname,'PUBLIC'),'privilege',(x).privilege_type,'grantable',(x).is_grantable) ORDER BY coalesce(g.rolname,'PUBLIC'),coalesce(r.rolname,'PUBLIC'),(x).privilege_type,(x).is_grantable) FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x LEFT JOIN pg_roles g ON g.oid=(x).grantor LEFT JOIN pg_roles r ON r.oid=(x).grantee),'[]'::jsonb))::text) FROM pg_class c WHERE c.oid=v_relation_oid) IS DISTINCT FROM v_acl THEN RAISE EXCEPTION 'N01 % failed: ACL changed',v_stage; END IF;
@@ -43,13 +44,14 @@ DECLARE
   v_relation_oid constant oid := 1711434;
   v_acl constant text := '0aeef0cb1a270e08c63e9cd8456a2463';
   v_columns constant text := '6cd92dd38240133f953bb2c661fec513';
-  v_triggers constant text := 'a2a15d1372417efcb443d55cbff18e59';
+  v_triggers constant text := 'dcb6c082765a0c9ec2c7fe395c15a022';
   v_policies constant text := 'd9e12a49ae193c694ded6ffc3a60f157';
   v_fks constant text := '6fec6c3bd5369ebeb9b705a6716df044';
   v_old constant text := 'CREATE UNIQUE INDEX note_folders_created_by_name_unique ON workbench.note_folders USING btree (created_by, name)';
   v_scoped constant text := 'CREATE UNIQUE INDEX note_folders_organization_created_by_name_unique ON workbench.note_folders USING btree (organization_id, created_by, name)';
   v_parent constant text := 'CREATE UNIQUE INDEX note_folders_id_organization_unique ON workbench.note_folders USING btree (id, organization_id)';
 BEGIN
+  PERFORM set_config('search_path', '', true);
   IF 'workbench.note_folders'::regclass::oid <> v_relation_oid THEN RAISE EXCEPTION 'N01 postflight failed: note_folders OID changed'; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_class c WHERE c.oid=v_relation_oid AND c.relowner='postgres'::regrole AND c.relrowsecurity AND NOT c.relforcerowsecurity) THEN RAISE EXCEPTION 'N01 postflight failed: owner or RLS changed'; END IF;
   IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'not_null',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid,false)) ORDER BY a.attname),'[]'::jsonb)::text) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=v_relation_oid AND a.attname IN ('id','organization_id','created_by','name','parent_id') AND NOT a.attisdropped) IS DISTINCT FROM v_columns THEN RAISE EXCEPTION 'N01 postflight failed: identity columns changed'; END IF;
