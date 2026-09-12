@@ -29,9 +29,13 @@
 -- 2. Insert exactly one row through the same Supabase admin client primitive as
 --    sync-feature-docs, with a unique `__org_canary__/...` path and the explicit
 --    system organization above. Verify its returned organization_id exactly.
--- 3. Attempt the same insert with organization_id omitted; it must fail after
---    this draft is applied. Attempt a malformed UUID at the CLI boundary; it
---    must make zero network/database calls.
+-- 3. The production sync primitive must refuse missing/malformed organization
+--    input before store I/O; that proves admission, not the database NOT NULL
+--    constraint. After this draft is applied, run the separately named raw
+--    negative probe using the same parser/payload and a unique reserved path:
+--      pnpm exec tsx scripts/feature-docs-org-canary.ts --negative-probe
+--    It omits organization_id, must return PostgreSQL 23502, and verifies that
+--    the reserved path has zero rows. Never run it before default retirement.
 -- 4. Delete only the returned canary id while also filtering by its captured
 --    organization_id and unique path. Verify the delete affected one row. Never
 --    use bulk sync deletion as cleanup.
