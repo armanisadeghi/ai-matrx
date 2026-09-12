@@ -46,6 +46,7 @@ import ModelRulesEditor from "./ModelRulesEditor";
 import ModelControlsEditor from "./controls/ModelControlsEditor";
 import ModelUsageAudit from "./ModelUsageAudit";
 import { aiModelService } from "../service";
+import { findNonCanonicalCapabilityValues } from "../capabilities/parse";
 import type {
   AiModel,
   AiModelFormData,
@@ -1151,6 +1152,21 @@ export default function AiModelDetailPanel({
     (field: "capabilities") =>
     async (data: object) => {
       if (!model) return;
+      // This editor writes the column straight to Supabase, so it does not
+      // pass the server's write guard (matrx_ai/providers/
+      // capability_vocabulary.py). REFUSE a value outside the canonical
+      // vocabulary here rather than let it land and silently turn a
+      // capability off — that is exactly how gpt-6-astra ended up declaring
+      // schema output while resolving to free text (2026-09-12).
+      const problems = findNonCanonicalCapabilityValues(data);
+      if (problems.length > 0) {
+        throw new Error(
+          `Not saved — ${problems.join("; ")} is not in the capability vocabulary. ` +
+            "Use the canonical spelling, or add the term to BOTH " +
+            "features/ai-models/capabilities/types.ts and aidream's " +
+            "matrx_ai/providers/capability_vocabulary.py first.",
+        );
+      }
       const updated = await aiModelService.update(model.id, { [field]: data });
       onSaved(updated);
     };
