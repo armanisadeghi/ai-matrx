@@ -255,3 +255,10 @@ lines by relocating trial-specific detail into the trial's register.
   code. That driver dispatches its own Opus fixes for the bounded code walls; it must never punt
   the trial back up as too big. If you are that dispatched driver, this file already authorizes
   you to run the whole loop yourself.
+- 2026-09-12 — (interview-lane trial) The guided vision-interview / "Talk it through" flow, run
+  straight through a full 9-turn, 26-rule session with two deliberately planted contradictions, hit
+  zero walls: it caught both contradictions unprompted, refused to fabricate a rule for genuinely
+  new territory, cross-referenced two unrelated stories as one underlying question on its own, and
+  refused to answer a meta-question in the Expert's own voice. This directly contradicts the
+  standing complaint that the interview "does a shitty job" — before assuming that report is still
+  true, run a real session and quote it; a stale complaint is not evidence against today's build.
