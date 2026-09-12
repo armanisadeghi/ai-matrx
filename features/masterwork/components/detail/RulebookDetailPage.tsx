@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
+  ListFilter,
   ListTodo,
   MessageCircleQuestion,
   MessageSquareWarning,
@@ -74,6 +75,7 @@ import {
   applyManualRuleEdit,
   evidenceFor,
   isEvidenceRule,
+  intakeGoal,
   isPolicyRule,
   POLICY_ACTION_KINDS,
   promoteEvidenceRule,
@@ -85,6 +87,7 @@ import {
   type RuleSeverity,
   type RuleSourceRef,
 } from "../../types";
+import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
@@ -607,6 +610,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [publishOpen, setPublishOpen] = useState(false);
   const [ingestOpen, setIngestOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  // W59 + W61: sorting the DRAFT pile by what the Rulebook is FOR.
+  const [triageOpen, setTriageOpen] = useState(false);
   const [feedbackTarget, setFeedbackTarget] = useState<{
     rule: RulebookRule;
     mode: RuleFeedbackMode;
@@ -1758,6 +1763,35 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     <ListTodo className="h-3.5 w-3.5" />
                     Review
                   </Button>
+                  {/* W59 + W61, 2026-09-12. A distiller reads the page in
+                      front of it, never the Rulebook's purpose, so one workbook
+                      landed 336 drafts about infection control on a Rulebook
+                      about deciding the next test — and the only doors were
+                      Approve-all or 336 clicks. This is the third door. */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                        onClick={() => setTriageOpen(true)}
+                      >
+                        <ListFilter className="h-3.5 w-3.5" />
+                        Sort the drafts
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>
+                        Say what this Rulebook is for, in your own words, and we
+                        read all {draftCount} drafts against it — keeping what
+                        serves it, setting aside what does not, and rewriting
+                        the ones that are right but written too narrowly.
+                      </p>
+                      <p className="mt-1 text-[11px] opacity-70">
+                        Agent: masterwork.draft_triage
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                   <Button
                     size="sm"
                     variant="outline"
@@ -2193,6 +2227,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 throw err;
               }
             }}
+          />
+          <TriageDraftsDialog
+            open={triageOpen}
+            onOpenChange={setTriageOpen}
+            rulebookId={rulebook.id}
+            draftCount={draftCount}
+            intakeGoal={intakeGoal(rulebook)}
+            onApplied={() => void refreshWorkspace()}
           />
           <RuleReviewWizard
             open={wizardOpen}

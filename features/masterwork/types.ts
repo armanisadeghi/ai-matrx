@@ -392,6 +392,21 @@ export interface DumpUrlSource {
   added_at: string;
 }
 
+/**
+ * What the Expert said this Rulebook is FOR, from her own intake answer
+ * (`metadata.intake.goal`). Tolerant read: an older Rulebook whose intake never
+ * asked, or was never answered, has none, and an empty string is the honest
+ * answer — never a placeholder sentence nobody said.
+ */
+export function intakeGoal(rulebook: Rulebook): string {
+  const meta = rulebook.metadata;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return "";
+  const intake = (meta as Record<string, unknown>).intake;
+  if (!intake || typeof intake !== "object" || Array.isArray(intake)) return "";
+  const goal = (intake as Record<string, unknown>).goal;
+  return typeof goal === "string" ? goal.trim() : "";
+}
+
 /** The staged dump URLs off a Rulebook's metadata (tolerant read). */
 export function dumpUrlSources(rulebook: Rulebook): DumpUrlSource[] {
   const meta = rulebook.metadata;

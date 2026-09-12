@@ -128,6 +128,11 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   is exactly what the house pattern forbids.
 - `components/detail/IngestTimelineDialog.tsx` — the `timeline` Approach: a case pasted in the
   order it happened, read one moment at a time with the ending withheld by default.
+- `triage/` — "Sort the drafts by what this Rulebook is for" (W59 + W61): `TriageDraftsDialog.tsx`
+  (two plain-English fields, the first prefilled from the Expert's own intake goal, plus a
+  "show me the plan first" switch = `dry_run`), `useTriageRun.ts` (durable-run surface `triage`
+  → `POST /masterworks/triage`), `types.ts` (the terminal payload + `triageSummary`). It is the
+  THIRD door on a pile of drafts, beside Review (one at a time) and Approve all.
 - `durable-run/useMasterworkRun.ts` — the ONE way a dialog here runs something long. A face over
   `lib/durable-run/useDurableRun.ts` (shared with SEO): remembers the run id, rejoins on load,
   settles from server truth, keeps a finished answer across a refresh. Both ingest lanes share one
@@ -179,6 +184,9 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-12` — 🚨 **The third door on a pile of drafts: sort them by what the Rulebook is FOR (W59 + W61).** A chunk distiller reads the page in front of it and never the Rulebook's purpose, so an 18,000-word clinical training workbook landed **336** drafts about PPE, hand hygiene, CPR technique and snakebite on a Rulebook whose intake says "given the first facts of an acutely ill person, decide the next question or test", and a back-pain guideline landed **83** about disclaimers and GRADE wording. The Expert's own next move — asking the Scout to "retire, as classes, every draft that is …" — died TWICE at the model's 16,000-token output ceiling with **zero tool calls** (~$0.53 each, nothing saved), because `retire_rule` took one id per call and the agent tried to plan ~250 retirements in prose. The product's only other doors were Approve-all and 336 clicks, and the Expert pressed Approve-all. New `triage/` surface: her two sentences ("Keep rules about…", prefilled from her intake answer; "Set aside rules about…") posted to the new durable lane `POST /masterworks/triage` on its own run surface, streaming per-batch progress so the pile is visibly shrinking. Three verdicts, not two — keep, set aside, and **rewrite** (a rule that is right but written about one case comes back generalised as a NEW draft, its ancestor retired in the same save). "Show me the plan first" is ON by default and writes nothing. The result line never hides the two dishonest cases: drafts the run could not sort, and rules it refused to touch because she had approved them. Server half + the bulk `retire_rules` tool action: `aidream/services/distillation/triage.py` and its FEATURE.md.
+
 
 - `2026-09-12` — 🚨 **A rule can now BE a decision, and the Expert can edit it as one (W58, part 2).** The `timeline` lane distils judgment under uncertainty, but the only rule shape the UI knew was a static statement — so a policy rule reached the Expert as prose she could not correct field by field, and any manual edit of one silently dropped its shape. `RulebookRule` gains the optional `kind: "policy"` + `precondition` / `next_action` / `action_kind` / `cost` / `risk` (vocabularies exported once as `POLICY_ACTION_KINDS` / `POLICY_LEVELS`; the server refuses anything outside them by name), and they are in `RULE_CONTENT_FIELDS` because changing the next action IS changing the rule. THE ONE rule form (`RuleFields`) gained a "This is a decision rule" switch revealing five plain-English controls ("What do you know at this point?" / "What do you do next?" / what kind of move / cost / risk) and ONE mapping to the stored fields (`policyRulePatch`), consumed by both the editor dialog and the Add-rule window; the Final Checkup omits the block through the existing `omitFields` contract rather than showing controls whose values it would drop. The existing rule row — never a second renderer — shows a policy rule as "When you know … → do …" with move/cost/risk chips and a "Decision rule" badge. `ruleSave.ts` needed no change (it merges through `applyManualRuleEdit`), which the new content-field list is what keeps true.
 

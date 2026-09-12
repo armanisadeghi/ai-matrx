@@ -66,6 +66,7 @@ export type MasterworkRunSurface =
   | "dump"
   | "corpus"
   | "timeline"
+  | "triage"
   | "audition"
   | "checkup"
   | "clean_corpus";
@@ -89,6 +90,10 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // rejoins the single-source ingest dialog or vice versa, even though it lands
   // the same terminal event.
   timeline: "masterwork_ingest_complete",
+  // Sorting the DRAFT pile by what the Rulebook is FOR
+  // (`/masterworks/triage`, W59 + W61). Its own surface + pointer: a triage is
+  // not an ingest, and a reload must never rejoin one as the other.
+  triage: "masterwork_triage_complete",
   audition: "masterwork_audition_verdict",
   checkup: "masterwork_checkup_complete",
   // The manual "clean up what I said" pass (`/masterworks/clean-corpus`) — a
