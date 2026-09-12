@@ -283,3 +283,6 @@ instead of fanning out through both services.
 ## Realtime
 
 Realtime moved onto `@ai-matrx/realtime` (2026-09-07). The middleware's ~60-line `isOwnEcho`, its backoff ladder, `BACKOFF_RESET_AFTER_MS` and `RECONNECT_ALARM_ATTEMPT` are DELETED — the package's write ledger and jittered backoff own them. Own writes are registered on the ledger at the ONE convergence point every write path shares (`markNoteSaving` / `markNoteSaved`), which is what makes echo suppression work at all. The catch-up is now `onBackfill`, so it fires on tab wake and network restore too, not only after a channel error. The freeze-class guard is pinned failing-then-passing in `redux/realtimeMiddleware.test.ts`.
+# 2026-09-12 — Folder identity
+
+Folder sidebar grouping, expansion, drag/drop, and pending empty-note reuse use `(organization_id, folder_id)` when a folder row exists. The display name is no longer a persisted identity, so same-named folders in the active and personal organizations remain distinct.

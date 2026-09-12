@@ -97,6 +97,12 @@ export interface FolderReference {
     name: string;
 }
 
+export function noteFolderIdentityKey(note: Pick<Note, "organization_id" | "folder_id" | "folder_name">): string {
+    return note.folder_id
+        ? `folder:${note.organization_id ?? "unassigned"}:${note.folder_id}`
+        : `pending:${note.organization_id ?? "unassigned"}:${note.folder_name ?? "Uncategorized"}`;
+}
+
 export type UpdateNoteInput = Pick<
     NoteUpdate,
     | "label"

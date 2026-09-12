@@ -658,18 +658,21 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
  */
 export const moveNoteToFolder = createAsyncThunk<
   void,
-  { noteId: string; folder: string }
+  { noteId: string; folder: string; folderId?: string; organizationId?: string }
 >(
   "notes/moveNoteToFolder",
-  async ({ noteId, folder }, { dispatch, getState }) => {
+  async ({ noteId, folder, folderId: suppliedFolderId, organizationId: targetOrganizationId }, { dispatch, getState }) => {
     const state = getState() as RootState;
     getUserId(getState);
     const note = state.notes.notes[noteId] as NoteRecord | undefined;
     if (!note) throw new Error("Note not found in state");
     const organizationId = requireOrganizationContext(note.organization_id);
+    if (targetOrganizationId && targetOrganizationId !== organizationId) {
+      throw new Error("A note can only move to a folder in its own organization.");
+    }
 
     // Resolve folder_id for the target folder
-    const folderId = await resolveFolderId(folder, organizationId);
+    const folderId = suppliedFolderId ?? (await resolveFolderId(folder, organizationId));
 
     dispatch(
       setNoteField({
