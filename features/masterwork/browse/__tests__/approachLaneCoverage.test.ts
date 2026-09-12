@@ -54,8 +54,16 @@ type RegistryRow = Pick<
  */
 const REGISTRY_SNAPSHOT_2026_09_12: RegistryRow[] = [
   {
+    // Flipped `enabled` false -> true on 2026-09-12 through the platform's own
+    // registry write path (`aidream/scripts/set_approach_enabled.py`, the
+    // Matrx ORM ApproachManager). The row was declaring "not live" while its
+    // own `launch_href` page ran a real interview end to end (census row 10),
+    // and the catalog rendered it under "Ready now" anyway. `enabled` now
+    // means only "this Approach is live"; whether the GUIDED START can run it
+    // is asked of its lane (`startableApproaches` -> `hasIntakeLane`), which
+    // still, correctly, excludes this row — its door is its own page.
     key: "vision_interview",
-    enabled: false,
+    enabled: true,
     availability: "available",
     intakeQuery: {},
     launchHref: "/masterwork/vision-interview/new",

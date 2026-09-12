@@ -21,18 +21,11 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
+  approachState,
   fetchDistillationApproaches,
   type DistillationApproach,
 } from "./approaches";
 import { ApproachCard } from "./ApproachCard";
-
-/** Where a card goes: its own page, or the guided start pre-picked to it. */
-function hrefFor(a: DistillationApproach): string | undefined {
-  if (a.availability === "coming_soon") return undefined;
-  if (a.launchHref) return a.launchHref;
-  if (a.enabled) return `/masterwork/new?approach=${encodeURIComponent(a.key)}`;
-  return undefined;
-}
 
 function Section({
   title,
@@ -52,7 +45,11 @@ function Section({
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {approaches.map((a) => (
-          <ApproachCard key={a.id} approach={a} href={hrefFor(a)} />
+          <ApproachCard
+            key={a.id}
+            approach={a}
+            href={approachState(a).href ?? undefined}
+          />
         ))}
       </div>
     </section>
@@ -96,9 +93,12 @@ export function ApproachCatalogPage() {
       </div>
     );
 
-  const ready = approaches.filter((a) => a.availability === "available");
-  const partial = approaches.filter((a) => a.availability === "partial");
-  const soon = approaches.filter((a) => a.availability === "coming_soon");
+  // ONE predicate decides the section AND the door — never two rules for one
+  // card (that is how `vision_interview` sat under "Ready now" while the
+  // registry said it was not enabled).
+  const ready = approaches.filter((a) => approachState(a).status === "ready");
+  const partial = approaches.filter((a) => approachState(a).status === "partial");
+  const soon = approaches.filter((a) => approachState(a).status === "coming_soon");
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 pb-12 pt-2">

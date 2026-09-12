@@ -54,6 +54,15 @@ jest.mock("next/navigation", () => ({
   usePathname: () => "/masterwork/new",
 }));
 
+/** The live registry's own `intake_query` for each of these keys — a fixture
+ *  row with no lane cannot exist in `platform.approach`, and the funnel now
+ *  (correctly) refuses to offer a Start it has no way to run. */
+const LIVE_INTAKE_QUERY: Record<string, Record<string, string>> = {
+  interview: { interview: "1" },
+  chat_import: { chatImport: "1" },
+  source: { ingest: "source" },
+};
+
 function approach(
   key: string,
   label: string,
@@ -67,7 +76,7 @@ function approach(
     whatItNeeds: "a few minutes",
     costTimeShape: "start now",
     mandateKey: `masterwork.${key}`,
-    intakeQuery: {},
+    intakeQuery: LIVE_INTAKE_QUERY[key] ?? { ingest: "source" },
     sortOrder,
     enabled: true,
     availability: "available",

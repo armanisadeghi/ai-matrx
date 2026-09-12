@@ -39,6 +39,11 @@ import { cn } from "@/lib/utils";
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import {
+  composerKeyIntent,
+  intentTakesTheKey,
+} from "@/components/official/composer/composerSubmit";
+import { selectSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 
 interface NewChatLandingInputProps {
   /** Default-agent conversation bound to this input — same Redux state the
@@ -83,6 +88,9 @@ export function NewChatLandingInput({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const text = useAppSelector(selectUserInputText(conversationId));
+  /** The Expert's own setting, read from the SAME place the conversation
+   *  composer reads it — the landing box is not a different product. */
+  const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const allResourcesResolved = useAppSelector(
@@ -165,13 +173,25 @@ export function NewChatLandingInput({
   // (regression 7420db832, removed 2026-07-28 on Arman's order).
   const submit = rawSubmit;
 
+  // THE ONE COMPOSER RULE — `components/official/composer/composerSubmit.ts`.
+  // This composer used to hardcode Enter-sends and ignore the Expert's own
+  // per-conversation setting, so the same key meant different things on
+  // /chat/new and inside the conversation it created (census defect D2).
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter submits; Shift+Enter inserts a newline (ChatGPT convention).
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      if (voiceBusy) return;
-      submit();
-    }
+    const intent = composerKeyIntent(
+      {
+        key: e.key,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        isComposing: e.nativeEvent.isComposing,
+      },
+      { submitOnEnter },
+    );
+    if (!intentTakesTheKey(intent)) return;
+    e.preventDefault();
+    if (voiceBusy) return;
+    submit();
   };
 
   // Live surface scope for the right-click agent menu. Plain function (NOT

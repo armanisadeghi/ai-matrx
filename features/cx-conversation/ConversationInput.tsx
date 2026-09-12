@@ -80,6 +80,10 @@ import type { Resource } from "@/features/agents/resources/types";
 import type { ConversationResource } from "@/features/cx-chat/types/conversation";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import {
+  composerKeyIntent,
+  intentTakesTheKey,
+} from "@/components/official/composer/composerSubmit";
 // PromptSettings / PromptVariable replaced with agents equivalents.
 // PromptSettings was @/features/prompts/types/core — model_id added as it isn't in LLMParams.
 type PromptSettings = LLMParams & { model_id?: string };
@@ -479,18 +483,21 @@ export function ConversationInput({
     [onSubmitOverride, resources],
   );
 
+  // THE ONE COMPOSER RULE — `components/official/composer/composerSubmit.ts`.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (submitOnEnter && e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    } else if (
-      !submitOnEnter &&
-      e.key === "Enter" &&
-      (e.metaKey || e.ctrlKey)
-    ) {
-      e.preventDefault();
-      handleSubmit();
-    }
+    const intent = composerKeyIntent(
+      {
+        key: e.key,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        isComposing: e.nativeEvent.isComposing,
+      },
+      { submitOnEnter },
+    );
+    if (!intentTakesTheKey(intent)) return;
+    e.preventDefault();
+    handleSubmit();
   };
 
   const handleVoiceMicToggle = () => {

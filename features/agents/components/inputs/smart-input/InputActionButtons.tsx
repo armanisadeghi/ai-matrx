@@ -49,6 +49,7 @@ import {
   cancelExecution,
 } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { ComposerHint } from "@/components/official/composer/ComposerHint";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
 
@@ -230,6 +231,17 @@ export function InputActionButtons({
             }
             active={autoClear}
           />
+        )}
+
+        {/* A SCREEN NEVER LIES. Whether Return sends is a per-conversation
+            setting, and until 2026-09-12 nothing on the composer said which
+            way it was set — on the Scout interview panel, which HIDES the
+            toggle below, an Expert whose setting was off pressed Return,
+            watched nothing happen, and had no way to find out why (census
+            defect D2). The hint states the rule in force wherever the toggle
+            is not there to state it. */}
+        {!showSubmitOnEnterToggle && (
+          <ComposerHint submitOnEnter={submitOnEnter} className="mr-1 hidden sm:inline" />
         )}
 
         {showSubmitOnEnterToggle && (

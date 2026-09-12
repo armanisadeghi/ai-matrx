@@ -45,10 +45,75 @@ export interface KeyValueGridProps {
 /** Inline cap on the number of object entries shown before "+N more". */
 const INLINE_ENTRY_CAP = 8;
 
-const IDENTIFIER_KEY = /^(id|uuid|_id|.*_id)$/i;
+/**
+ * KEYS THAT NAME A MACHINE IDENTIFIER — never the reader's answer.
+ *
+ * The parenting-benchmark judge (2026-09-12) caught raw rule-id slugs
+ * (`bedtime-and-bath-schedule`) printed on a screen written for a parent. The
+ * floor already knew `rule_id` was an identifier; it only ACTED on that when
+ * the VALUE looked like a UUID, so a human-authored slug walked straight
+ * through as an ordinary field. An identifier is identified by its KEY —
+ * what the value happens to look like decides nothing.
+ */
+const IDENTIFIER_KEY =
+  /^(id|uuid|guid|slug|_id|.*_id|.*_uuid|.*_slug|.*_key|.*Id|.*Uuid|.*Slug|.*Key)$/;
 
-function isIdentifierKey(key: string): boolean {
-  return IDENTIFIER_KEY.test(key);
+/** The plural of the same thing: `all_cited_rule_ids`, `rule_keys`, `slugs`. */
+const IDENTIFIER_LIST_KEY =
+  /^(ids|uuids|guids|slugs|.*_ids|.*_uuids|.*_slugs|.*_keys|.*Ids|.*Uuids|.*Slugs|.*Keys)$/;
+
+export function isIdentifierKey(key: string): boolean {
+  return IDENTIFIER_KEY.test(key) || IDENTIFIER_KEY.test(key.toLowerCase());
+}
+
+export function isIdentifierListKey(key: string): boolean {
+  return (
+    IDENTIFIER_LIST_KEY.test(key) || IDENTIFIER_LIST_KEY.test(key.toLowerCase())
+  );
+}
+
+/** Readable twins, in the order a payload usually spells them. */
+const NAME_SUFFIX = ["name", "label", "title", "text"] as const;
+
+/**
+ * THE ID DEFERS TO THE NAME BESIDE IT. Given `rule_id` in an object that also
+ * carries `rule_name`, the name IS the answer and the id is a detail hung off
+ * it — never a second row of equal weight. Returns the sibling key, or null
+ * when the payload gives the reader no readable twin (then the id is all
+ * there is, and it renders as a quiet identifier chip instead).
+ */
+export function humanNameSiblingKey(
+  key: string,
+  row: Record<string, unknown>,
+): string | null {
+  if (!isIdentifierKey(key)) return null;
+  const stem = key
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/_?(id|uuid|guid|slug|key)$/, "");
+  for (const suffix of NAME_SUFFIX) {
+    for (const candidate of stem
+      ? [`${stem}_${suffix}`, `${stem}${suffix[0].toUpperCase()}${suffix.slice(1)}`]
+      : [suffix]) {
+      const found = Object.keys(row).find(
+        (k) => k.toLowerCase() === candidate.toLowerCase(),
+      );
+      if (found && typeof row[found] === "string" && row[found]) return found;
+    }
+  }
+  return null;
+}
+
+/** The identifier this readable field speaks for, if any — the hover detail. */
+function identifierForNameKey(
+  nameKey: string,
+  row: Record<string, unknown>,
+): string | null {
+  for (const [k, v] of Object.entries(row)) {
+    if (typeof v !== "string" || !v) continue;
+    if (humanNameSiblingKey(k, row) === nameKey) return v;
+  }
+  return null;
 }
 
 /**
@@ -78,7 +143,7 @@ export function formatMetaNumber(n: number): string {
 
 /** True when a value renders on a single short line (fit for an inline row). */
 function isInlineValue(key: string, val: unknown): boolean {
-  if (typeof val === "string" && isIdentifierKey(key) && looksLikeUuid(val)) {
+  if (typeof val === "string" && isIdentifierKey(key)) {
     return true;
   }
   const shape = detectResultShape(val);
@@ -107,7 +172,7 @@ function renderFieldValue(
   if (detectResultShape(val).kind === "empty") {
     return <span className="text-sm text-muted-foreground/70">None</span>;
   }
-  if (typeof val === "string" && isIdentifierKey(key) && looksLikeUuid(val)) {
+  if (typeof val === "string" && isIdentifierKey(key)) {
     return <ShortId value={val} variant="full" />;
   }
   // Dotted enum reprs ("SklSkillType.REFERENCE") read as machine noise —
@@ -135,6 +200,39 @@ function renderFieldValue(
 
 type Entry = [string, unknown];
 
+/**
+ * A list of machine identifiers, shown as a count the reader can open —
+ * never as a bullet list of raw slugs. NOTHING FAILS SILENTLY: the count says
+ * it is there and one click shows every one of them.
+ */
+const IdentifierListRow: React.FC<{ label: string; ids: string[] }> = ({
+  label,
+  ids,
+}) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="text-xs text-muted-foreground">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="font-medium hover:underline"
+      >
+        {label} ({ids.length}){open ? " — hide" : " — show"}
+      </button>
+      {open && (
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {ids.map((id, i) => (
+            <ShortId key={`${id}-${i}`} value={id} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
   value,
   density = "inline",
@@ -154,19 +252,37 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
   const inline: Entry[] = [];
   const blocks: Entry[] = [];
   const ids: Array<[string, string]> = [];
+  const idLists: Array<[string, string[]]> = [];
   for (const entry of shown) {
     const [key, val] = entry;
-    // INLINE DENSITY INTELLIGENCE (owner rules, 2026-07-15):
-    //  • empty values are NOISE in chat ("Category · No result returned") —
-    //    skip them; full density + the Raw tab still carry every key.
-    //  • uuid identifier fields never earn a full row — they collect into ONE
-    //    quiet trailing chip row (compact ShortId, hover-copy).
-    if (density === "inline") {
-      if (detectResultShape(val).kind === "empty") continue;
-      if (typeof val === "string" && isIdentifierKey(key) && looksLikeUuid(val)) {
-        ids.push([key, val]);
-        continue;
-      }
+    // INLINE DENSITY INTELLIGENCE (owner rules, 2026-07-15): empty values are
+    // NOISE in chat ("Category · No result returned") — skip them; full
+    // density + the Raw tab still carry every key.
+    if (density === "inline" && detectResultShape(val).kind === "empty") continue;
+
+    // THE ID NEVER OUTRANKS THE NAME BESIDE IT. When the object also carries
+    // the readable twin, the id leaves the field list entirely and rides
+    // along on that row's hover. (Judge finding, 2026-09-12: a parent-facing
+    // regimen printed `rule_id` slugs next to every `rule_name`.)
+    if (typeof val === "string" && humanNameSiblingKey(key, value) !== null) {
+      continue;
+    }
+    // An identifier with no readable twin is still not a headline — it is a
+    // quiet chip on the trailing identifier row, at EVERY density.
+    if (typeof val === "string" && isIdentifierKey(key)) {
+      ids.push([key, val]);
+      continue;
+    }
+    // A LIST of identifiers is the same fact repeated: `all_cited_rule_ids`
+    // rendered as a bullet list of raw slugs is the exact leak the judge saw.
+    if (
+      isIdentifierListKey(key) &&
+      Array.isArray(val) &&
+      val.length > 0 &&
+      val.every((v) => typeof v === "string")
+    ) {
+      idLists.push([key, val as string[]]);
+      continue;
     }
     if (isMetaCountField(key, val)) chips.push(entry);
     else if (isInlineValue(key, val)) inline.push(entry);
@@ -185,7 +301,10 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
               >
                 {humanizeKey(key)}
               </dt>
-              <dd className="min-w-0 text-sm">
+              <dd
+                className="min-w-0 text-sm"
+                title={identifierForNameKey(key, value) ?? undefined}
+              >
                 {renderFieldValue(key, val, density, depth, embedMedia)}
               </dd>
             </React.Fragment>
@@ -218,10 +337,17 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
           >
             {humanizeKey(key)}
           </div>
-          <div className="mt-1 min-w-0">
+          <div
+            className="mt-1 min-w-0"
+            title={identifierForNameKey(key, value) ?? undefined}
+          >
             {renderFieldValue(key, val, density, depth, embedMedia)}
           </div>
         </div>
+      ))}
+
+      {idLists.map(([key, list]) => (
+        <IdentifierListRow key={key} label={humanizeKey(key)} ids={list} />
       ))}
 
       {ids.length > 0 && (
