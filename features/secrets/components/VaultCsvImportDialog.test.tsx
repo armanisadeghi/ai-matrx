@@ -338,4 +338,16 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).not.toContain("late");
   });
 
+  it("refuses an oversized JSON file before reading it", async () => {
+    fetchBitwardenJsonImportLimitsMock.mockResolvedValueOnce({ maxFileBytes: 1, maxRecords: 20, maxColumns: 20, maxCellBytes: 1_000, maxFields: 202, maxPlaintextFieldBytes: 1_000, maxRequestBodyBytes: 10_000, maxJsonDepth: 64, jsonWorkerTimeoutMs: 50 });
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    const input = await chooseBitwardenJson();
+    const file = jsonFile("{}", 2);
+    Object.defineProperty(input, "files", { configurable: true, value: [file] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    expect(file.arrayBuffer).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("exceeds");
+    expect(document.body.textContent).not.toContain("administrator");
+  });
+
 });
