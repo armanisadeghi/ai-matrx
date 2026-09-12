@@ -105,6 +105,14 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `lib/durable-run/useDurableRun.ts` (shared with SEO): remembers the run id, rejoins on load,
   settles from server truth, keeps a finished answer across a refresh. Both ingest lanes share one
   run (one dialog, one answer, one pointer). Never fork it — add a `DurableRunWire` instead.
+  **A lost stream is never a failed run (2026-09-12).** The live replay channel is per-PROCESS and
+  the API runs many workers, so a rejoin that lands elsewhere gets the durable ROW — mid-run that
+  row says `processing`. The hook used to print `unfinishedMessage` ("nothing was saved") over it:
+  on 2026-09-12 03:11Z an ingest whose socket was cut at +60s said that while run
+  `4587e534-316c-4db1-af3a-02241f7b551f` went on to land 115 rules at 03:15Z, and the Expert paid
+  for a second full distillation. `useDurableRun` now reconnects instead — "Lost the live view —
+  the run is still going on the server. Reconnecting…" — and only a TERMINAL row status may end a
+  run on screen (`lib/durable-run/useDurableRun.stream-loss.test.tsx`).
 - `components/detail/RulebookDetailPage.tsx` + `RuleEditorDialog.tsx` — the Expert surface. Plain
   language only: "rules", "how to spot a violation", "how bad is breaking it". Zero jargon is a
   requirement, not a style choice (THE MISMATCH RULE). Its summary keeps rule KPIs and rule actions

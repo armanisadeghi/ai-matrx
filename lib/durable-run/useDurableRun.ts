@@ -450,7 +450,10 @@ export function useDurableRun<TResult>(
   /** Read the live status through a call — a bare ref read gets narrowed by
    *  control flow to whatever this function last wrote, which is the opposite
    *  of the point: the STREAM handler writes it between awaits. */
-  const currentStatus = useCallback((): DurableRunStatus => statusRef.current, []);
+  const currentStatus = useCallback(
+    (): DurableRunStatus => statusRef.current,
+    [],
+  );
   const runIdRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
   const reconnectAbortRef = useRef<AbortController | null>(null);
@@ -709,8 +712,11 @@ export function useDurableRun<TResult>(
   const startReconnect = useCallback(
     (runId: string) => {
       if (reconnectingRef.current || !mountedRef.current) return;
-      const { wire, key, scopeOverrides: defaultScopeOverrides } =
-        optionsRef.current;
+      const {
+        wire,
+        key,
+        scopeOverrides: defaultScopeOverrides,
+      } = optionsRef.current;
       reconnectingRef.current = true;
       const controller = new AbortController();
       reconnectAbortRef.current = controller;
@@ -761,8 +767,7 @@ export function useDurableRun<TResult>(
             if (now === "done" || now === "error") return;
             unreachable = failure ? unreachable + 1 : 0;
             const giveUp =
-              unreachable >= RECONNECT_MAX_UNREACHABLE ||
-              Date.now() > deadline;
+              unreachable >= RECONNECT_MAX_UNREACHABLE || Date.now() > deadline;
             if (giveUp) {
               // Loud, and still never a lie: we do not know that it failed, so
               // we do not say it did.
@@ -944,16 +949,19 @@ export function useDurableRun<TResult>(
     setState(initialState<TResult>());
   }, [stopReconnect]);
 
-  const fail = useCallback((message: string) => {
-    stopReconnect();
-    statusRef.current = "error";
-    setState((prev) => ({
-      ...prev,
-      status: "error",
-      stage: null,
-      error: message,
-    }));
-  }, [stopReconnect]);
+  const fail = useCallback(
+    (message: string) => {
+      stopReconnect();
+      statusRef.current = "error";
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        stage: null,
+        error: message,
+      }));
+    },
+    [stopReconnect],
+  );
 
   // Nothing may keep asking the server on behalf of a screen that is gone.
   useEffect(
