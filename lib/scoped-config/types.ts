@@ -17,6 +17,10 @@ export type KnobScopeKindName =
   | "pay_group"
   | "site"
   | "location"
+  /** DD-131: precedence 50, keyed by a `platform.entity_types` row — the entity table a `records.*` knob applies to. */
+  | "table"
+  /** DD-131: precedence 60, keyed by an `agent.definition` row. */
+  | "agent"
   | "user"
   /** USD-9: precedence 110, below `user`; keyed by a device / instance id. */
   | "device";

@@ -34,6 +34,19 @@ export const SUB_ORG_SCOPE_SOURCES = [
   { kind: "pay_group", noun: "Pay group" },
   { kind: "site", noun: "Site" },
   { kind: "location", noun: "Location" },
+  // DD-131: `platform.knob_scope_kind` names `table` (scope_schema/scope_table
+  // = platform.entity_types) and `agent` (agent.definition). Listed here per
+  // this file's own promise — "a rung listed here is addressed on the read
+  // and offered as a picker" — but `table`'s door is UNPROVEN: unlike every
+  // other row above, `platform.entity_types` has NO `organization_id` column
+  // (it is the platform-wide table-type catalog, not a per-org row set), and
+  // `platform.knob_scope_rows` (aidream 0639) filters every rung's query by
+  // `organization_id`. Picking "the table" rung here will error live until
+  // that door is taught the difference — flagged in the B-49 report as an
+  // aidream-side follow-up, not fixed here (out of this repo's migration
+  // reach). `agent` has `organization_id` and works with no change.
+  { kind: "table", noun: "Table" },
+  { kind: "agent", noun: "Agent" },
 ] as const satisfies readonly {
   kind: SubOrgScopeKind;
   noun: string;
