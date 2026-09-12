@@ -26,7 +26,7 @@
 // Approve / Reject / Improve / Edit are the verbs for a machine-authored ITEM the
 // human accepts into their work. A question is not an item — there is nothing to
 // approve, edit or rewrite, only to answer. The four verbs map here as: answer it
-// in your own words · both are right · that isn't a problem · talk it through with
+// in your own words · keep both positions · that isn't a problem · talk it through with
 // the interviewer. That is this surface's honest equivalent, declared per that rule.
 
 import { useState } from "react";
@@ -37,7 +37,12 @@ import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDicta
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import type { Rulebook } from "../types";
-import { openTensions, TENSION_LABELS, type Tension } from "./types";
+import {
+  CONTRADICTION_GUIDANCE,
+  openTensions,
+  TENSION_LABELS,
+  type Tension,
+} from "./types";
 import { settleTension } from "./service";
 
 export interface OpenQuestionsCardProps {
@@ -78,6 +83,8 @@ export function OpenQuestionsCard({
 }: OpenQuestionsCardProps) {
   const questions = openTensions(rulebook);
   const [answering, setAnswering] = useState<string | null>(null);
+  /** The "keep both" form, where the condition between two positions is typed. */
+  const [keepingBoth, setKeepingBoth] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -98,6 +105,7 @@ export function OpenQuestionsCard({
       });
       if (result.status === "saved") {
         setAnswering(null);
+        setKeepingBoth(null);
         setDraft("");
         await onSettled();
         return;
@@ -150,6 +158,7 @@ export function OpenQuestionsCard({
       <ul className="divide-y divide-border">
         {questions.map((tension) => {
           const isAnswering = answering === tension.id;
+          const isKeepingBoth = keepingBoth === tension.id;
           const isBusy = busy === tension.id;
           return (
             <li key={tension.id} className="px-4 py-3">
@@ -189,7 +198,56 @@ export function OpenQuestionsCard({
 
               {canEdit ? (
                 <div className="mt-2.5 pl-2">
-                  {isAnswering ? (
+                  {isKeepingBoth ? (
+                    // "Both are right" is not a shrug: it KEEPS both rules and
+                    // links them to each other, carrying the Expert's own line
+                    // between them when they have one. Typing it is optional —
+                    // "they both just hold" is a real, final answer.
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        We&apos;ll keep both rules and link them to each other.
+                        If each one applies in its own situation, say when —
+                        it&apos;s saved on both rules.
+                      </p>
+                      <ProTextarea
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        placeholder="When does each one apply? Optional — one sentence."
+                        autoGrow
+                        minHeight={56}
+                        maxHeight={140}
+                        className="text-xs"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          className="h-7"
+                          disabled={isBusy}
+                          onClick={() =>
+                            void settle(
+                              tension,
+                              "accepted",
+                              draft.trim() || undefined,
+                            )
+                          }
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          Keep both
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7"
+                          onClick={() => {
+                            setKeepingBoth(null);
+                            setDraft("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : isAnswering ? (
                     <div className="space-y-2">
                       {tension.options.map((option) => (
                         <button
@@ -204,7 +262,15 @@ export function OpenQuestionsCard({
                           {option}
                         </button>
                       ))}
-                      {tension.recommendation ? (
+                      {/* 🚨 A contradiction NEVER shows the partner's
+                          recommendation: it reads as "keep this one", and both
+                          positions are the Expert's. It shows what the outcome
+                          does instead. */}
+                      {tension.kind === "contradiction" ? (
+                        <p className="text-xs text-muted-foreground">
+                          {CONTRADICTION_GUIDANCE}
+                        </p>
+                      ) : tension.recommendation ? (
                         <p className="text-xs text-muted-foreground">
                           If it helps: {tension.recommendation}
                         </p>
@@ -251,6 +317,7 @@ export function OpenQuestionsCard({
                         disabled={isBusy}
                         onClick={() => {
                           setAnswering(tension.id);
+                          setKeepingBoth(null);
                           setDraft("");
                         }}
                       >
@@ -271,9 +338,13 @@ export function OpenQuestionsCard({
                         variant="ghost"
                         className="h-7"
                         disabled={isBusy}
-                        onClick={() => void settle(tension, "accepted")}
+                        onClick={() => {
+                          setKeepingBoth(tension.id);
+                          setDraft("");
+                        }}
+                        title="Keeps both rules, links them to each other, and records the condition you name."
                       >
-                        Both are right
+                        Both are right — keep both
                       </Button>
                       <Button
                         size="sm"

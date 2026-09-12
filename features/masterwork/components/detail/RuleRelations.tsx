@@ -82,6 +82,19 @@ export function RuleRelations({
               {relation.note ? (
                 <span className="text-muted-foreground">— {relation.note}</span>
               ) : null}
+              {/* 🚨 THE RETAINED DISAGREEMENT. Two positions the Expert holds,
+                  and the line THEY drew between them. Rendered in their own
+                  words beside the link, because a reader who opens one of these
+                  rules alone must be able to see the other one and know when
+                  each applies — that is the whole ruling. When they said both
+                  simply hold, there is no condition and nothing is missing. */}
+              {relation.kind === "disagrees_with" ? (
+                <span className="basis-full pl-[18px] text-muted-foreground">
+                  {relation.condition
+                    ? `When each applies: ${relation.condition}`
+                    : "You said both of these hold."}
+                </span>
+              ) : null}
             </li>
           );
         })}

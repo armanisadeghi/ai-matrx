@@ -97,11 +97,26 @@ function ruleBlock(rule: RulebookRule): string[] {
   if (rule.relates_to?.length) {
     for (const rel of rule.relates_to) {
       lines.push(
-        `Connected: ${rel.kind} ${rel.rule_id}${rel.note ? ` — ${rel.note}` : ""}`,
+        `Connected: ${rel.kind} ${rel.rule_id}${rel.note ? ` — ${rel.note}` : ""}` +
+          // A RETAINED DISAGREEMENT reaches the agent WITH the line the Expert
+          // drew between the two positions, or it reads as a contradiction the
+          // agent has to resolve on its own — which is exactly what it must not do.
+          (rel.kind === "disagrees_with"
+            ? rel.condition
+              ? ` — when each applies: ${rel.condition}`
+              : " — the Expert holds both; neither replaces the other"
+            : ""),
       );
     }
   }
   if (rule.feedback) lines.push(`Review feedback: ${rule.feedback}`);
+  // What this rule used to say. An agent about to rewrite it has to know it was
+  // already rewritten once, and what the Expert held before.
+  for (const entry of rule.history ?? []) {
+    lines.push(
+      `Earlier position: "${entry.statement}"${entry.reason ? ` — changed because ${entry.reason}` : ""}`,
+    );
+  }
   return lines;
 }
 
@@ -204,7 +219,12 @@ export function renderRulebookDocument(rulebook: Rulebook): string {
         "as written, offer the options, say which you would pick. Record the " +
         "answer with `rulebook action=settle_tension` in their VERBATIM words. " +
         "Nothing waits on these — an unanswered question is not a problem, and " +
-        "'it depends' is a real answer.",
+        "'it depends' is a real answer. \u{1F6A8} A contradiction between two of " +
+        "their rules is NOT a defect to close: if they still hold both, settle " +
+        "it as `accepted` with the condition they named (both rules are kept " +
+        "and linked), or add the new position with `add_rules` linked " +
+        "`disagrees_with`. Rewrite an existing rule only when they say the " +
+        "earlier one was wrong.",
     );
     for (const tension of questions) {
       lines.push(
@@ -215,8 +235,17 @@ export function renderRulebookDocument(rulebook: Rulebook): string {
         ...(tension.options.length
           ? [`Options to offer: ${tension.options.map((o) => `"${o}"`).join(" | ")}`]
           : []),
-        ...(tension.recommendation
+        // Never a recommendation on a contradiction: "keep this one" is the
+        // consensus collapse Arman's mandate forbids, and the agent repeats
+        // whatever it is handed.
+        ...(tension.recommendation && tension.kind !== "contradiction"
           ? [`Your recommendation: ${tension.recommendation}`]
+          : []),
+        ...(tension.kind === "contradiction"
+          ? [
+              "Both positions can stand: ask what separates them, never which " +
+                "to keep.",
+            ]
           : []),
       );
     }
