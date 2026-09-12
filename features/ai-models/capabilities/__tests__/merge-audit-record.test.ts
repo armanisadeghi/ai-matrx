@@ -94,6 +94,37 @@ describe("mergeAuditRecordIntoCapabilities", () => {
     });
   });
 
+  it("accepts the live model-catalog vocabulary without dropping features", () => {
+    // Regression guard for the model-picker data-shape incidents recorded on
+    // 2026-09-12: the database is the producer and a new supported feature
+    // must remain visible to every consumer of the canonical parser.
+    const features = [
+      "inpainting",
+      "structured_outputs",
+      "code_interpreter",
+      "reasoning",
+      "batch",
+      "context_management",
+      "pdf_input",
+    ] as const;
+
+    expect(
+      parseCapabilities({
+        input: ["text", "image"],
+        output: ["text", "image"],
+        features,
+        interaction: "turn",
+        multilingual: false,
+      }),
+    ).toEqual({
+      input: ["text", "image"],
+      output: ["text", "image"],
+      features,
+      interaction: "turn",
+      multilingual: false,
+    });
+  });
+
   it("untouched Save is lossless on an extraction-model row", () => {
     const edited = toAuditRecord(parseCapabilities(EXTRACTION_ROW));
     const merged = mergeAuditRecordIntoCapabilities(EXTRACTION_ROW, edited);
