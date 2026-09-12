@@ -649,6 +649,17 @@ export interface Masterwork {
    */
   understudy: boolean;
   /**
+   * Understudy only — WHEN this stand-in was last rebuilt from the Rulebook,
+   * and WHAT it was rebuilt from. Stamped by aidream's understudy builder into
+   * the workflow row's metadata on every rebuild. The card shows both, because
+   * a stand-in silently two hours behind the rules is the same lie as a stale
+   * cache: on 2026-09-12 an Expert approved 88 rules and tested a stand-in
+   * that had seen none of them. Null on a row built before the stamp existed.
+   */
+  understudy_refreshed_at: string | null;
+  /** Understudy only — the rule counts baked into the running stand-in. */
+  understudy_rules: { approved: number; unconfirmed: number } | null;
+  /**
    * THE ARCHIVED-ITEMS LAW (`common-docs/policies/archived-items.md`, Arman
    * 2026-09-09). `workflow.definition.is_archived` — carried on EVERY
    * Masterwork read so no surface downstream can mistake an archived system

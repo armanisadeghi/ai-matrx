@@ -1844,6 +1844,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     rulebookId={rulebook.id}
                     understudy={understudy}
                     approvedCount={approvedCount}
+                    rulebookVersion={rulebook.version}
                     canEdit={canEdit}
                     onCreated={reloadMasterworks}
                   />
@@ -1884,6 +1885,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 rulebookId={rulebook.id}
                 understudy={understudy}
                 approvedCount={approvedCount}
+                rulebookVersion={rulebook.version}
                 canEdit={canEdit}
                 onCreated={reloadMasterworks}
               />

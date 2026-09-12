@@ -591,6 +591,19 @@ export interface MasterworkDefinitionRow {
   is_archived: boolean;
 }
 
+/** The Understudy's baked rule counts, as the builder stamps them. */
+function parseUnderstudyRules(
+  value: unknown,
+): { approved: number; unconfirmed: number } | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const approved = typeof raw.approved === "number" ? raw.approved : null;
+  const unconfirmed =
+    typeof raw.unconfirmed === "number" ? raw.unconfirmed : null;
+  if (approved === null || unconfirmed === null) return null;
+  return { approved, unconfirmed };
+}
+
 /** The one metadata→Masterwork projection — every read path goes through it. */
 export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
   const meta = (row.metadata ?? {}) as Record<string, unknown>;
@@ -620,6 +633,11 @@ export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
     released_at:
       typeof meta.released_at === "string" ? meta.released_at : null,
     understudy: meta.understudy === true,
+    understudy_refreshed_at:
+      typeof meta.understudy_refreshed_at === "string"
+        ? meta.understudy_refreshed_at
+        : null,
+    understudy_rules: parseUnderstudyRules(meta.understudy_rules),
     is_archived: row.is_archived === true,
     version: row.version,
     created_at: row.created_at,

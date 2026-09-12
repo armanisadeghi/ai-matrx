@@ -78,7 +78,21 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     `RulebookSections`, `RulebookSource`. Never rewrite an existing rule's `id` — audits cite it.
 16. **The Understudy is never releasable to Encore** and is filtered out of the built-Masterworks
     list; release is gated on a real Build. Never describe the Understudy as the finished system.
-17. **`TryMasterworkBox` asks `runIsOver` (`features/workflow-runtime/types.ts`), never a narrower
+17. 🚨 **THE STAND-IN NEVER LIES ABOUT WHAT IT KNOWS.** `pokeUnderstudy` rebuilds the Understudy
+    after every rules write, fire-and-forget — so its failure has to be visible somewhere a
+    person looks. It records every outcome in the staleness ledger in `understudy/refresh.ts`
+    (`subscribeToUnderstudyRefresh` / `getUnderstudyRefreshState`, fed by
+    `refreshUnderstudyTracked`), and `UnderstudyCard` subscribes: a failed rebuild, or a row
+    whose baked `rulebook_version` is behind the Rulebook's, raises a named warning saying which
+    version the stand-in is performing from versus where the Rulebook now is, plus "Bring it up
+    to date". The card also shows that version, the baked approved/in-review counts and the
+    rebuild time UNCONDITIONALLY, because the ledger is per-tab and a reload would otherwise
+    erase the only evidence. Never go back to a `console.error` alone: on 2026-09-12 every
+    refresh returned HTTP 500 for two hours (the server write named no actor system), an Expert
+    reviewed 94 rules, and she then tested a stand-in built from zero of them under a page
+    reading "88 approved". The Masterwork read projects the two stamps
+    (`understudy_refreshed_at`, `understudy_rules`) through the ONE `parseMasterworkRow`.
+18. **`TryMasterworkBox` asks `runIsOver` (`features/workflow-runtime/types.ts`), never a narrower
     set** — a run the engine records as `errored` is over for anything WATCHING it, but the
     generated `TERMINAL_RUN_STATUSES` answers the engine's resume question and excludes it. Asking
     that set directly is how a run that errored left the box "Working…" forever, with nothing told
@@ -89,7 +103,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     runs, not in the box that is waiting for one. A freshly started run always replaces the
     remembered id (a re-attach check still in flight stands down against a start generation), and
     the box SAYS which run it is showing. Wall W15, 2026-09-10.
-18. **Every Rulebook door adopts the Rulebook's own organization** — `RulebookLaneRoute` and
+19. **Every Rulebook door adopts the Rulebook's own organization** — `RulebookLaneRoute` and
     `RulebookDetailPage` both call `useAdoptRecordOrganization`
     (`features/organizations/useAdoptRecordOrganization.ts`) and hold their body until it answers.
     The row carries `organization_id`, so a reload must never leave the Expert's every action
@@ -98,7 +112,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     to the old fail-closed behaviour, and the adoption ANNOUNCES itself with a toast naming the
     workspace. Guarded by `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
 
-19. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
+20. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
     the body-of-work lane turned 20 published pieces into 416 per-piece drafts plus 4 synthesized
     cross-piece rules, this page counted all 420 as "Waiting on you", and the Expert pressed
     Approve-all — the failure the review lane exists to prevent. `ruleState()` returns
@@ -273,6 +287,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   (the picker appears with the node and never without it; the W15 and W33 tests stay green).
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
+
+- `2026-09-12` — 🚨 **The Understudy could not be rebuilt, and the UI said nothing** (trial 12). Every `POST /masterworks/understudy/refresh` returned HTTP 500: the server's write to `workflow.definition` declared actor tier `code` and named no actor system, which Postgres refuses. So an existing Understudy never rebuilt and a brand-new Rulebook got none at all — "the system that runs from minute one" ran for nobody — while `pokeUnderstudy` caught the 500 into a `console.error`. The server half is fixed in aidream (`masterworks/understudy.py`, `build.py` now declare `masterwork_understudy` / `masterwork_build`). Here: the refresh outcome is recorded in a subscribable staleness ledger, `UnderstudyCard` shows a plain-English warning naming the version the stand-in performs from versus the Rulebook's current version plus a "Bring it up to date" retry, and the card now always shows that version, the baked approved/in-review counts and the last rebuild time (`understudy_refreshed_at` / `understudy_rules`, projected through `parseMasterworkRow`).
 
 - `2026-09-12` — 🚨 **The Conductor was promised a door that did not exist.** On `/masterwork/[id]/conduct` it reasoned its way to staging a rule through `apply_surface_write` / `rule_draft` and found no handler: the Rulebook surface declares the target, but only `RulebookDetailPage` registered it — every lane route mounted the surface with no write handlers at all. `RulebookLaneRoute` now registers `rule_draft`, validating through the ONE shared validator (`agent-context/ruleDraftInput.ts`, extracted from the detail page so both mounts hold one contract), staging into the SAME `RuleEditorDialog`, and landing the Expert's Save through the SAME canonical CAS upsert (`ruleSave.ts` → `upsertRuleWithRetry`, the Improve verb's existing landing) — saving still is not approving. The lane also publishes the `active_rule_draft` read twin and an honest `editor_open`. The class half lives in aidream: the server now advertises only the write targets the mounted page can actually apply. Guard: `features/masterwork/__tests__/rule-draft-write.test.ts` (agent value → validator → fake Rulebook, including draft-stays-draft and validate-then-apply refusals).
 
