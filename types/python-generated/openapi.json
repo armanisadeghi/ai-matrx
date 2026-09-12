@@ -73014,6 +73014,18 @@
               "type": "string",
               "title": "File Id"
             }
+          },
+          {
+            "name": "include_urls",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include the durable render/download URL envelope and thumbnail. Metadata hydration can set this false to avoid variant resolution.",
+              "default": true,
+              "title": "Include Urls"
+            },
+            "description": "Include the durable render/download URL envelope and thumbnail. Metadata hydration can set this false to avoid variant resolution."
           }
         ],
         "responses": {
@@ -78743,7 +78755,7 @@
           "Admin Shape Incidents"
         ],
         "summary": "List Kind Incidents",
-        "description": "Triage-weight page of Shape render incidents, most-recently-seen first.",
+        "description": "Newest-filed page of Shape render incidents with a stable ID tie-break.",
         "operationId": "list_kind_incidents_admin_kind_incidents_get",
         "parameters": [
           {
@@ -78830,6 +78842,23 @@
             }
           },
           {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -78847,7 +78876,6 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 100000,
               "minimum": 0,
               "default": 0,
               "title": "Offset"
@@ -144183,6 +144211,17 @@
             "type": "string",
             "title": "Owner Id"
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
           "file_path": {
             "type": "string",
             "title": "File Path"
@@ -144244,6 +144283,64 @@
               }
             ],
             "title": "Parent Folder Id"
+          },
+          "parent_file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent File Id"
+          },
+          "derivation_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derivation Kind"
+          },
+          "derivation_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derivation Metadata"
+          },
+          "duplicate_of_file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of File Id"
+          },
+          "canonical_processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Processed Document Id"
           },
           "metadata": {
             "additionalProperties": {
@@ -156030,6 +156127,16 @@
             ],
             "title": "Source Note",
             "description": "Where this came from ('my ChatGPT export, Aug 2026')."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
           }
         },
         "additionalProperties": false,
@@ -156105,6 +156212,16 @@
             ],
             "title": "Source Note",
             "description": "Optional label ('my AI Matrx SEO chats')."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
           }
         },
         "additionalProperties": false,
@@ -156199,6 +156316,16 @@
             ],
             "title": "Source Note",
             "description": "Where this body of work is from ('my blog, 2019-2026')."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
           }
         },
         "additionalProperties": false,
@@ -156284,6 +156411,16 @@
             ],
             "title": "Source Note",
             "description": "Where this dump came from ('everything about my SEO method')."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
           }
         },
         "additionalProperties": false,
@@ -156402,6 +156539,16 @@
             ],
             "title": "Source Ref Extra",
             "description": "Extra provenance keys merged into every rule's source_ref — how a delegating lane anchors rules to the piece they came from. Never overrides the lane's own keys."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
           }
         },
         "additionalProperties": false,
@@ -156743,6 +156890,16 @@
             ],
             "title": "Source Ref Extra",
             "description": "Extra provenance keys merged into every rule's source_ref — how a delegating lane (the corpus lane) anchors rules to the piece they came from ({url, corpus_item_id}). Never overrides the lane's own keys."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
           }
         },
         "additionalProperties": false,

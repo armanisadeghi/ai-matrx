@@ -35343,7 +35343,7 @@ export interface paths {
         };
         /**
          * List Kind Incidents
-         * @description Triage-weight page of Shape render incidents, most-recently-seen first.
+         * @description Newest-filed page of Shape render incidents with a stable ID tie-break.
          */
         get: operations["list_kind_incidents_admin_kind_incidents_get"];
         put?: never;
@@ -63189,6 +63189,8 @@ export interface components {
             id: string;
             /** Owner Id */
             owner_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
             /** File Path */
             file_path: string;
             /** File Name */
@@ -63211,6 +63213,18 @@ export interface components {
             current_version?: number;
             /** Parent Folder Id */
             parent_folder_id?: string | null;
+            /** Parent File Id */
+            parent_file_id?: string | null;
+            /** Derivation Kind */
+            derivation_kind?: string | null;
+            /** Derivation Metadata */
+            derivation_metadata?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Duplicate Of File Id */
+            duplicate_of_file_id?: string | null;
+            /** Canonical Processed Document Id */
+            canonical_processed_document_id?: string | null;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -69111,6 +69125,13 @@ export interface components {
              * @description Where this came from ('my ChatGPT export, Aug 2026').
              */
             source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
         };
         /**
          * IngestConversationsRequest
@@ -69148,6 +69169,13 @@ export interface components {
              * @description Optional label ('my AI Matrx SEO chats').
              */
             source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
         };
         /**
          * IngestCorpusRequest
@@ -69206,6 +69234,13 @@ export interface components {
              * @description Where this body of work is from ('my blog, 2019-2026').
              */
             source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
         };
         /**
          * IngestDumpRequest
@@ -69253,6 +69288,13 @@ export interface components {
              * @description Where this dump came from ('everything about my SEO method').
              */
             source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
         };
         /**
          * IngestFileRequest
@@ -69324,6 +69366,13 @@ export interface components {
             source_ref_extra?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
         };
         /** IngestReport */
         IngestReport: {
@@ -69452,6 +69501,13 @@ export interface components {
             source_ref_extra?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
         };
         /**
          * InitialIterationRequest
@@ -167749,7 +167805,10 @@ export interface operations {
     };
     get_file_files__file_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Include the durable render/download URL envelope and thumbnail. Metadata hydration can set this false to avoid variant resolution. */
+                include_urls?: boolean;
+            };
             header?: never;
             path: {
                 file_id: string;
@@ -171616,6 +171675,7 @@ export interface operations {
                 error_type?: string | null;
                 platform?: string | null;
                 since?: string | null;
+                until?: string | null;
                 limit?: number;
                 offset?: number;
             };

@@ -54000,6 +54000,62 @@ export type Database = {
         }
         Relationships: []
       }
+      v_reference_latest: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string | null
+          file_path: string | null
+          flag: string | null
+          id: string | null
+          identity_hash: string | null
+          language: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string | null
+          occurrence_n: number | null
+          organization_id: string | null
+          package_name: string | null
+          package_path: string | null
+          presence: string | null
+          reference_type_id: string | null
+          repo_slug: string | null
+          revision: string | null
+          revision_kind: string | null
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_shortcut: {
         Row: {
           agent_id: string | null

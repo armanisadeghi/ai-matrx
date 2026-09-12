@@ -945,6 +945,19 @@ export interface MasterworkDumpResourceOutcome {
   rules_added?: number;
   duplicates?: number;
   error?: string | null;
+  already_distilled?: MasterworkSourceAlreadyDistilled | null;
+  replaced_rules?: number;
+}
+
+export interface MasterworkSourceAlreadyDistilled {
+  source: string;
+  label?: string | null;
+  rules?: number;
+  draft_rules?: number;
+  approved_rules?: number;
+  run_ids?: string[];
+  message: string;
+  can_replace?: boolean;
 }
 
 export interface MasterworkDumpCompleteData {
@@ -956,6 +969,8 @@ export interface MasterworkDumpCompleteData {
   quotes_verified?: number;
   quotes_unverified?: number;
   resources?: MasterworkDumpResourceOutcome[];
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  replaced_rules?: number;
 }
 
 export interface MasterworkDumpProgressData {
@@ -984,6 +999,8 @@ export interface MasterworkIngestCompleteData {
   failed_chunks?: number;
   skipped_words?: number;
   followup_seed?: string | null;
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  replaced_rules?: number;
 }
 
 export interface MasterworkIngestProgressData {
