@@ -44,7 +44,7 @@ function sinceLabel(from: number | null): string | null {
   if (!from) return null;
   // THE PROSE VOICE. This lands mid-sentence — "over the last 5 minutes" —
   // so it is `long`, not `coarse`. `coarse` said "over the last 5 min".
-  return formatDurationMs(Date.now() - from, { style: "compact" });
+  return formatDurationMs(Date.now() - from, { style: "long" });
 }
 
 interface NoteSaveFailureBannerProps {

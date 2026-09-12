@@ -41,7 +41,7 @@ interface UsageLimitDialogProps {
  */
 function formatCountdown(diffMs: number) {
   if (diffMs <= 0) return "Now";
-  return formatDurationMs(diffMs, { style: "coarse" });
+  return formatDurationMs(diffMs, { style: "long" });
 }
 
 function formatResetDate(date: Date) {

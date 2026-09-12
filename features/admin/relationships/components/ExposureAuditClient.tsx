@@ -93,7 +93,7 @@ function sumSummary(
  * these are dense audit cells under a header that already says when.
  */
 function relativeTime(value: string): string {
-  return formatRelativeTime(value, { style: "short" }).replace(/ ago$/, "");
+  return formatRelativeTime(value, { style: "short", suffix: false });
 }
 
 function ResourceIcon({ row }: { row: ExposureAuditRow }) {

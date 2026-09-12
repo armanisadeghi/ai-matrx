@@ -86,9 +86,9 @@ export function computeTimeRemaining(
   // user half a minute they did not have. A countdown floors, always.
   // (`clock` already truncates by construction; passing it is harmless and
   // keeps the rule visible at the one call site that must never forget it.)
-  const displayMs = granularity === "second" ? diff : Math.floor(diff / 60_000) * 60_000;
-  const text = formatDurationMs(displayMs, {
+  const text = formatDurationMs(diff, {
     style: granularity === "second" ? "clock" : "coarse",
+    round: "down",
   });
   return { text, isExpired: false, millisRemaining: diff };
 }

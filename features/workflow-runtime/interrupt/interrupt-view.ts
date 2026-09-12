@@ -392,7 +392,7 @@ export function escalationLine(
  * promises the user time they do not have.
  */
 export function humanRemaining(ms: number): string {
-  return formatDurationMs(ms, { style: "compact" });
+  return formatDurationMs(ms, { style: "long" });
 }
 
 // ---------------------------------------------------------------------------

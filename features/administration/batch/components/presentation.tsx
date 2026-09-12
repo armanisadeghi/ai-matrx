@@ -36,7 +36,7 @@ export function fmtInt(value: number | string | null | undefined): string {
  * says nothing the header has not.
  */
 export function fmtAge(iso: string | null | undefined): string {
-  return formatRelativeTime(iso, { style: "short" }).replace(/ ago$/, "");
+  return formatRelativeTime(iso, { style: "short", suffix: false });
 }
 
 export function fmtStamp(iso: string | null | undefined): string {

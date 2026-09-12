@@ -296,28 +296,57 @@ for (const lane of LANES) {
   );
 }
 
-if (findings.length === 0 && shapeFailures === 0) {
+/**
+ * THE TWO MODES ARE DELIBERATE, and this line exists so exit 0 can never be
+ * mistaken for "clean". The default run is a CENSUS that informs without
+ * blocking: it prints every finding loudly and exits 0, so a developer whose
+ * change has nothing to do with byte sizes is never stopped by a pre-existing
+ * body someone else left. `--strict` is the blocking run, and it is what the
+ * release gates call (`check:package-twins:strict`). An independent review in
+ * 2026-09-11 asked whether the split was an accident; it is not — but it was
+ * silent about itself, which is how a loud report gets read as a pass.
+ */
+function advisoryNote(count) {
+  if (STRICT) return;
+  console.error(
+    `check:package-twins: ADVISORY mode — ${count} finding(s) above and ` +
+      `exiting 0 anyway. Exit 0 here does NOT mean clean. The blocking run is ` +
+      `\`pnpm check:package-twins:strict\`, which the release gates call.\n`,
+  );
+}
+
+const clean = findings.length === 0 && shapeFailures === 0;
+
+if (clean) {
   console.log(
     `check:package-twins OK — ${scanned} file(s) scanned, zero local ` +
       `definitions of the ${TWINS.length} collapsed @ai-matrx export(s), and ` +
       `zero un-censused bodies across ${LANES.length} SHAPE rule(s).`,
   );
-  process.exit(0);
+} else {
+  if (findings.length > 0) {
+    console.error(
+      `check:package-twins: ${findings.length} re-grown twin(s) of logic that ` +
+        `lives in an @ai-matrx package:\n`,
+    );
+    for (const f of findings) {
+      console.error(`  ${f.file}:${f.line}  ${f.text}`);
+      console.error(`    owns it: ${f.row.package}  —  ${f.row.why}`);
+      console.error(
+        `    fix: import { ${f.name} } from "${f.row.package}" and delete ` +
+          `this definition. If it is genuinely a DIFFERENT capability, add ` +
+          `this file to the row's \`allow\` list in ` +
+          `scripts/package-twins.json WITH a reason.\n`,
+      );
+    }
+  }
+  advisoryNote(findings.length + shapeFailures);
 }
 
-if (findings.length === 0) process.exit(STRICT ? 1 : 0);
-
-console.error(
-  `check:package-twins: ${findings.length} re-grown twin(s) of logic that ` +
-    `lives in an @ai-matrx package:\n`,
-);
-for (const f of findings) {
-  console.error(`  ${f.file}:${f.line}  ${f.text}`);
-  console.error(`    owns it: ${f.row.package}  —  ${f.row.why}`);
-  console.error(
-    `    fix: import { ${f.name} } from "${f.row.package}" and delete this ` +
-      `definition. If it is genuinely a DIFFERENT capability, add this file to ` +
-      `the row's \`allow\` list in scripts/package-twins.json WITH a reason.\n`,
-  );
-}
-process.exit(STRICT ? 1 : 0);
+/**
+ * `process.exitCode` rather than `process.exit()`. The advisory line above is
+ * the LAST thing written, and an explicit exit can cut a final piped stderr
+ * write off before it flushes — which is exactly what happened the first time
+ * this note was added, so it printed to a terminal and vanished into a pipe.
+ */
+process.exitCode = clean ? 0 : STRICT ? 1 : 0;
