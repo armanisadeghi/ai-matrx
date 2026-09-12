@@ -51,7 +51,7 @@ import {
   shapeInstancePermalink,
   shapeRecordsTableHref,
 } from "@/features/content-ir/studio/constants";
-import { RecordConfirmationBadge } from "./RecordConfirmationBadge";
+import { ConfirmationBadge } from "./ConfirmationBadge";
 import { resolveKindRecordDisposition } from "./kind-record-registry";
 import "./record-kinds";
 import {
@@ -275,7 +275,7 @@ export function KindRecordChrome({
                 {record.title?.trim() || `This ${disposition.label}`}
                 <ExternalLink className="h-3 w-3" aria-hidden />
               </Link>
-              <RecordConfirmationBadge confirmation={record.confirmation} />
+              <ConfirmationBadge confirmation={record.confirmation} />
               {record.archivedAt && (
                 <span className="text-muted-foreground">Archived</span>
               )}

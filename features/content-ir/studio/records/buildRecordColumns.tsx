@@ -16,7 +16,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { timeCell, Muted } from "@/lib/entity-list/columns";
 import { shapeInstancePermalink } from "@/features/content-ir/studio/constants";
-import { ConfirmationBadge } from "./ConfirmationBadge";
+import { ConfirmationBadge } from "@/features/content-ir/records/ConfirmationBadge";
 import type { KindRecordRow } from "./types";
 
 /** One property of the kind's emitted schema, as a column needs to see it. */
@@ -269,6 +269,7 @@ export function buildRecordColumns(
           <ConfirmationBadge
             confirmation={row.confirmation}
             archivedAt={row.archivedAt}
+            variant="grid"
           />
         </span>
       ),

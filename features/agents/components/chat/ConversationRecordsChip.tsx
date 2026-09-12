@@ -36,7 +36,7 @@ import Link from "next/link";
 import { Boxes, RotateCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { RecordConfirmationBadge } from "@/features/content-ir/records/RecordConfirmationBadge";
+import { ConfirmationBadge } from "@/features/content-ir/records/ConfirmationBadge";
 import {
   fetchRecordsForConversation,
   type KindRecord,
@@ -177,7 +177,7 @@ function RecordRow({ record }: { record: KindRecord }) {
           {record.kind || "unknown Shape"}
         </span>
       </div>
-      <RecordConfirmationBadge
+      <ConfirmationBadge
         confirmation={record.confirmation}
         className="shrink-0"
       />
