@@ -54,14 +54,12 @@ export const FEATURE_KEYS = [
   "function_calling",
   "tool_calling",
   "thinking",
-  // OpenAI Responses / image families
-  "reasoning",
-  "structured_outputs",
-  "code_interpreter",
+  // Canonical additions for context editing and mask-based image work.
+  // Provider aliases (for example `reasoning`, `structured_outputs`, and
+  // `code_interpreter`) are normalized on the catalog write boundary; they
+  // must not become stored feature keys here.
   "inpainting",
-  "batch",
   "context_management",
-  "pdf_input",
   "structured_output",
   "json_mode",
   "web_search",

@@ -94,18 +94,14 @@ describe("mergeAuditRecordIntoCapabilities", () => {
     });
   });
 
-  it("accepts the live model-catalog vocabulary without dropping features", () => {
-    // Regression guard for the model-picker data-shape incidents recorded on
-    // 2026-09-12: the database is the producer and a new supported feature
-    // must remain visible to every consumer of the canonical parser.
+  it("accepts the canonical additions without dropping features", () => {
+    // Regression guard for the model-catalog incidents recorded on 2026-09-12.
+    // These are canonical stored feature keys, shared with aidream's
+    // capability_vocabulary.py. Provider aliases are normalized before write;
+    // accepting them here would let the database vocabulary drift again.
     const features = [
       "inpainting",
-      "structured_outputs",
-      "code_interpreter",
-      "reasoning",
-      "batch",
       "context_management",
-      "pdf_input",
     ] as const;
 
     expect(
