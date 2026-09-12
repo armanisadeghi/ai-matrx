@@ -16,7 +16,20 @@ describe("plain Bitwarden JSON", () => {
   });
 
   test("refuses duplicate keys, protected components, and out-of-range enums", () => {
-    expect(() => parseBitwardenExport(source(login('"name":"duplicate"')), limits)).toThrow("duplicate keys");
+    const duplicateKeyError = "The JSON export has duplicate keys or could not be read safely.";
+    const rootCanary = '{"encrypted":false,"folders":[],"items":[],"encrypted":false}';
+    const equalValueDuplicates = [
+      rootCanary,
+      '{"encrypted":false,"folders":[],"items":[],"marker":"same","marker":"same"}',
+      '{"encrypted":false,"folders":[],"items":[],"marker":12345678901234567890,"marker":12345678901234567890}',
+      '{"encrypted":false,"folders":[],"items":[],"marker":null,"marker":null}',
+      '{"encrypted":false,"folders":[],"items":[],"marker":{"nested":[true,null]},"marker":{"nested":[true,null]}}',
+      '{"encr\\u0079pted":false,"folders":[],"items":[],"encrypted":false}',
+      '{"encrypted":false,"folders":[],"items":[{"name":"same","name":"same"}]}',
+    ];
+    for (const text of equalValueDuplicates) expect(() => parseBitwardenExport(text, limits)).toThrow(duplicateKeyError);
+    expect(() => parseBitwardenExport('{"encrypted":false,"folders":[],"items":[],"marker":1,"marker":2}', limits)).toThrow(duplicateKeyError);
+    expect(parseBitwardenExport(source(login()), limits)).toHaveLength(1);
     const [passkey] = parseBitwardenExport(source(login().replace('"uris":[{"uri":"https://example.com/login","match":0}]', '"uris":[],"fido2Credentials":[{}]')), limits);
     expect(passkey?.status).toBe("unsupported");
     const [bad] = parseBitwardenExport(source(login().replace('"match":0', '"match":900719925474099312345')), limits);

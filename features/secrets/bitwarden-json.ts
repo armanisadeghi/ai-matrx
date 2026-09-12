@@ -105,7 +105,7 @@ function itemRecord(item: JsonObject, ordinal: number, maxCellBytes: number, max
 
 export function parseBitwardenExport(text: string, limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords" | "maxCellBytes"> & { maxJsonDepth: number }): BitwardenImportRecord[] {
   if (bytes(text) > limits.maxFileBytes) throw new Error("The file exceeds this organization’s import size limit.");
-  // lossless-json rejects duplicate keys by default; keep its details out of UI.
+  // Our pinned lossless-json patch rejects every duplicate key, including equal values; keep its details out of UI.
   let root: JsonObject; try { root = object(parse(text)) ?? {}; } catch { throw new Error("The JSON export has duplicate keys or could not be read safely."); }
   if (!depthOk(root, limits.maxJsonDepth) || !only(root, rootKeys) || root.encrypted !== false || !Array.isArray(root.folders) || !Array.isArray(root.items)) throw new Error(root.encrypted === true ? "Encrypted Bitwarden exports need local decryption support before they can be imported." : "This is not a supported plain Bitwarden JSON export.");
   if (root.items.length > limits.maxRecords) throw new Error("The export has more records than this organization allows.");
