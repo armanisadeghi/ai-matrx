@@ -31,6 +31,11 @@ A beautiful, feature-rich menu component with automatic action feedback, mobile 
 - Constrains maximum height to viewport with internal scrolling
 - Recursion prevention: stops adjusting once centered to avoid infinite loops
 
+📏 **It always fits** (defect D6)
+- `children` on a `MenuItem` makes that row a SUBMENU TRIGGER: one visible row with a "›" and a child count, drilling into its own panel with a back row (Escape goes back before it closes). Use it for any family of near-identical variants — nine "Save as" formats, five "Copy" formats.
+- Overflow safety net: past `AUTO_COLLAPSE_THRESHOLD` (20) visible rows, a categorized menu automatically collapses every category after the first into a submenu row, so no group can be stranded tens of rows below the fold. Opt out with `autoCollapse={false}` only for a menu that must stay flat.
+- A 600px desktop panel on a 768px-tall viewport shows about 17 rows. Design to that; the scroll fade is a hint, never the plan.
+
 🎨 **Highly Customizable**
 - Multiple positioning options
 - Categorized items with headers

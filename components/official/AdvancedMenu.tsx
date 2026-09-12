@@ -1,7 +1,13 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { LucideIcon, Check, Loader2 } from "lucide-react";
+import {
+  LucideIcon,
+  Check,
+  Loader2,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -20,6 +26,14 @@ export interface MenuItem {
   disabled?: boolean;
   /** When true, item is omitted from the menu */
   hidden?: boolean;
+  /**
+   * Nested items. A row with children is a SUBMENU TRIGGER: it never runs an
+   * action, it renders a visible "›" affordance and drills into its own panel
+   * (with a back row). This is how a long family of variants — nine "Save as"
+   * formats, four "Copy" formats — stays one visible row instead of nine or
+   * four rows that push everything below them out of the viewport.
+   */
+  children?: MenuItem[];
   showToast?: boolean; // Default true
   successMessage?: string;
   errorMessage?: string;
@@ -61,6 +75,13 @@ export interface AdvancedMenuProps {
   showBackdrop?: boolean; // Default true
   backdropBlur?: boolean; // Default true
   categorizeItems?: boolean; // Default true if items have categories
+  /**
+   * Overflow safety net (default true). When a menu would render more than
+   * `AUTO_COLLAPSE_THRESHOLD` visible rows, every category after the first is
+   * collapsed into a single submenu row so no group can end up buried tens of
+   * rows below the fold. Pass false only for a menu that must stay flat.
+   */
+  autoCollapse?: boolean;
 
   // Mobile
   forceMobileCenter?: boolean; // Force center positioning on mobile (legacy, ignored — always Drawer on mobile)
@@ -82,6 +103,50 @@ interface MenuItemsContentProps {
   onAction: (item: MenuItem) => void;
   getDirectiveState: (key: string) => DirectiveState;
   mobile?: boolean;
+}
+
+/**
+ * Above this many visible rows a categorized menu auto-collapses its
+ * non-primary categories into submenu rows. ~17 rows is all that fits in the
+ * 600px desktop panel on a 768px-tall viewport, so anything past that is
+ * invisible unless the user guesses to scroll.
+ */
+export const AUTO_COLLAPSE_THRESHOLD = 20;
+
+/** Build the root row list, collapsing overflow categories into submenus. */
+export function buildRootItems(
+  items: MenuItem[],
+  categorizeItems: boolean,
+  autoCollapse: boolean,
+): MenuItem[] {
+  const visible = items.filter((item) => !item.hidden);
+  if (!autoCollapse || !categorizeItems) return visible;
+  if (visible.length <= AUTO_COLLAPSE_THRESHOLD) return visible;
+
+  const groups = new Map<string, MenuItem[]>();
+  for (const item of visible) {
+    const category = item.category || "Actions";
+    const bucket = groups.get(category);
+    if (bucket) bucket.push(item);
+    else groups.set(category, [item]);
+  }
+
+  const entries = Array.from(groups.entries());
+  if (entries.length < 2) return visible;
+
+  const [primaryName, primaryItems] = entries[0];
+  const collapsed = entries.slice(1).map(([name, groupItems]) => ({
+    key: `__group__${name}`,
+    icon: groupItems[0].icon,
+    label: name,
+    action: () => {},
+    // Same category as the primary group so the panel renders as one
+    // uninterrupted list rather than a header per collapsed row.
+    category: primaryName,
+    children: groupItems,
+  }));
+
+  return [...primaryItems, ...collapsed];
 }
 
 const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
@@ -106,6 +171,7 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
           {categoryItems.map((item) => {
             const state = getDirectiveState(item.key);
             const Icon = item.icon;
+            const hasChildren = !!item.children?.length;
             const isLoading = state === "loading";
             const isSuccess = state === "success";
             const isError = state === "error";
@@ -119,6 +185,8 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
                   if (!isDisabled) onAction(item);
                 }}
                 disabled={isDisabled}
+                aria-haspopup={hasChildren ? "menu" : undefined}
+                data-submenu-trigger={hasChildren ? "true" : undefined}
                 className={cn(
                   "flex w-full items-center gap-2.5 rounded-md px-2 py-0",
                   mobile ? "min-h-11" : "min-h-8",
@@ -178,6 +246,17 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
                     </span>
                   )}
                 </div>
+
+                {/* Submenu affordance — the row says out loud that more sits
+                    behind it, with the count so nothing is a surprise. */}
+                {hasChildren && (
+                  <div className="flex-shrink-0 flex items-center gap-1 text-gray-400 dark:text-gray-500">
+                    <span className="text-[11px] tabular-nums">
+                      {item.children!.filter((child) => !child.hidden).length}
+                    </span>
+                    <ChevronRight size={14} />
+                  </div>
+                )}
               </button>
             );
           })}
@@ -205,6 +284,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
   showBackdrop = true,
   backdropBlur = true,
   categorizeItems = true,
+  autoCollapse = true,
   onActionStart,
   onActionSuccess,
   onActionError,
@@ -221,6 +301,8 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     left: number;
   } | null>(null);
   const [hasScrollBelow, setHasScrollBelow] = useState(false);
+  /** Drill-in path: each entry is the submenu trigger the user opened. */
+  const [trail, setTrail] = useState<MenuItem[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -300,7 +382,12 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
     // Double-RAF ensures menu is laid out before measuring
     requestAnimationFrame(() => requestAnimationFrame(compute));
-  }, [isOpen, anchorElement, position, width, isMobile, items]);
+  }, [isOpen, anchorElement, position, width, isMobile, items, trail.length]);
+
+  // A reopened menu always starts at the top level.
+  useEffect(() => {
+    if (!isOpen) setTrail([]);
+  }, [isOpen]);
 
   // Close on outside click (desktop only — Drawer handles its own backdrop)
   useEffect(() => {
@@ -321,7 +408,13 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     if (!isOpen) return undefined;
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      // Inside a submenu, Escape goes back one level before it closes.
+      setTrail((prev) => {
+        if (prev.length) return prev.slice(0, -1);
+        onClose();
+        return prev;
+      });
     };
 
     document.addEventListener("keydown", handleEscape);
@@ -366,6 +459,12 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
   const handleAction = async (item: MenuItem) => {
     if (item.disabled) return;
 
+    // Submenu trigger — drill in, never run an action, never close.
+    if (item.children?.length) {
+      setTrail((prev) => [...prev, item]);
+      return;
+    }
+
     const state = getDirectiveState(item.key);
     if (state === "loading") return;
 
@@ -403,11 +502,25 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     }
   };
 
-  const groupedItems = React.useMemo(() => {
-    const visible = items.filter((item) => !item.hidden);
-    if (!categorizeItems) return { "": visible };
+  const rootItems = React.useMemo(
+    () => buildRootItems(items, categorizeItems, autoCollapse),
+    [items, categorizeItems, autoCollapse],
+  );
 
-    return visible.reduce(
+  const activeParent = trail.length ? trail[trail.length - 1] : null;
+
+  const activeItems = React.useMemo(
+    () =>
+      activeParent
+        ? (activeParent.children ?? []).filter((item) => !item.hidden)
+        : rootItems,
+    [activeParent, rootItems],
+  );
+
+  const groupedItems = React.useMemo(() => {
+    if (!categorizeItems) return { "": activeItems };
+
+    return activeItems.reduce(
       (acc, item) => {
         const category = item.category || "Actions";
         if (!acc[category]) acc[category] = [];
@@ -416,7 +529,9 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
       },
       {} as Record<string, MenuItem[]>,
     );
-  }, [items, categorizeItems]);
+  }, [activeItems, categorizeItems]);
+
+  const goBack = () => setTrail((prev) => prev.slice(0, -1));
 
   const sharedItemProps: MenuItemsContentProps = {
     groupedItems,
@@ -441,7 +556,23 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
           {/* Drag handle is rendered by DrawerContent automatically */}
 
           {/* Header — DrawerTitle always rendered for a11y; visually hidden when showHeader is false */}
-          {showHeader && title ? (
+          {activeParent ? (
+            <div className="px-2 pt-1 pb-2 border-b border-zinc-200/60 dark:border-zinc-700/60 flex-shrink-0">
+              <button
+                type="button"
+                onClick={goBack}
+                className="flex w-full items-center gap-2 rounded-md px-2 min-h-11 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800/70"
+              >
+                <ChevronLeft
+                  size={16}
+                  className="text-gray-500 dark:text-gray-400"
+                />
+                <DrawerTitle className="text-[15px] font-semibold text-gray-900 dark:text-gray-100">
+                  {activeParent.label}
+                </DrawerTitle>
+              </button>
+            </div>
+          ) : showHeader && title ? (
             <div className="px-4 pt-1 pb-3 border-b border-zinc-200/60 dark:border-zinc-700/60 flex-shrink-0">
               <DrawerTitle className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 text-center">
                 {title}
@@ -515,13 +646,31 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
           className,
         )}
       >
-        {/* Header */}
-        {showHeader && title && (
-          <div className="px-2.5 py-1.5 border-b border-zinc-200/60 dark:border-zinc-700/60 flex-shrink-0">
-            <h3 className="text-[11px] font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-              {title}
-            </h3>
-          </div>
+        {/* Header — a back row whenever the user has drilled into a submenu,
+            so the way out is always on screen. */}
+        {activeParent ? (
+          <button
+            type="button"
+            onClick={goBack}
+            className="flex w-full items-center gap-1.5 px-2 py-1.5 border-b border-zinc-200/60 dark:border-zinc-700/60 flex-shrink-0 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800/70"
+          >
+            <ChevronLeft
+              size={14}
+              className="text-gray-500 dark:text-gray-400"
+            />
+            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+              {activeParent.label}
+            </span>
+          </button>
+        ) : (
+          showHeader &&
+          title && (
+            <div className="px-2.5 py-1.5 border-b border-zinc-200/60 dark:border-zinc-700/60 flex-shrink-0">
+              <h3 className="text-[11px] font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                {title}
+              </h3>
+            </div>
+          )
         )}
 
         {/* Scrollable items — relative so the fade overlay sits inside */}
