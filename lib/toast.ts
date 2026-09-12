@@ -248,10 +248,15 @@ function raise(
   options?: RecordToastOptions,
 ): ToastId {
   const requested = options?.duration;
+  // `duration: Infinity` from a caller means "this one stays until something
+  // withdraws it" — it must not then be swept by wall-clock expiry, so the
+  // instant it is due is Infinity too, not the default.
   const lifetimeMs =
-    typeof requested === "number" && Number.isFinite(requested)
-      ? requested
-      : DEFAULT_RECORD_TOAST_MS;
+    requested === Infinity
+      ? Infinity
+      : typeof requested === "number" && Number.isFinite(requested)
+        ? requested
+        : DEFAULT_RECORD_TOAST_MS;
 
   // Sonner's own timer is the thing that freezes while the document is
   // hidden, so it is taken out of the loop entirely and replaced by ours.

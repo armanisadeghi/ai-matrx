@@ -35,6 +35,7 @@ import {
   recordToast,
   dismissRecordToasts,
   dismissAllRecordToasts,
+  sweepExpiredRecordToasts,
   liveRecordToastRefs,
 } from "@/lib/toast";
 
@@ -207,6 +208,27 @@ describe("a record toast cannot outlive its record on screen", () => {
     });
 
     expect(liveRecordToastRefs()).toHaveLength(0);
+  });
+
+  it("a duration:Infinity record toast is never swept by wall-clock expiry", async () => {
+    hideDocument();
+    await act(async () => {
+      recordToast.info(RECORD_A, 'Renaming "ZZZ Alpha"…', {
+        duration: Infinity,
+      });
+    });
+    await settle();
+
+    await act(async () => {
+      await wait(50);
+      // The sweep the Toaster runs when a hidden tab comes back, asked from
+      // far in the future: an Infinity toast is due at no instant at all.
+      sweepExpiredRecordToasts(Date.now() + 10 * 60_000);
+      await wait(0);
+    });
+
+    expect(liveRecordToastRefs()).toHaveLength(1);
+    expect(toastText()).toContain("ZZZ Alpha");
   });
 
   it("resolves when the record it names is deleted", async () => {

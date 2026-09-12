@@ -22,6 +22,7 @@ import {
   type TaskRecord,
 } from "@/features/agent-context/redux/tasksSlice";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { adjustProjectTaskCount } from "@/features/agent-context/redux/projectsSlice";
 import {
   setIsCreatingProject,
@@ -562,6 +563,18 @@ export const moveTaskThunk = createAsyncThunk<
   },
 );
 
+/**
+ * Move a task to the trash.
+ *
+ * 🚨 THE CONFIRMATION LIVES HERE, not at the six buttons that call this (DD-119).
+ * Before 2026-09-12 only the task editor asked anything, and what it asked was
+ * false — "This cannot be undone" over a hard `DELETE` that took the task's
+ * subtasks with it and left nothing to restore. Every other delete control (the
+ * list row, its context menu, the details panel, both mobile surfaces, the
+ * subtask rows) destroyed the row on a single click with no question at all.
+ * One door, one question, and the question names the consequence:
+ * `common-docs/policies/destructive-and-expensive-actions.md`.
+ */
 export const deleteTaskThunk = createAsyncThunk<
   void,
   { taskId: string; projectId: string },
@@ -570,14 +583,40 @@ export const deleteTaskThunk = createAsyncThunk<
   "tasksUi/deleteTask",
   async ({ taskId, projectId }, { dispatch, getState }) => {
     if (getState().tasksUi.operatingTaskIds.includes(taskId)) return;
-    dispatch(addOperatingTaskId(taskId));
     const current = getState().tasks.entities[taskId];
-    if (!current) {
-      dispatch(removeOperatingTaskId(taskId));
+    if (!current) return;
+
+    // Subtasks are PARTS of a task: the database's declared cascade edge trashes
+    // them with their parent and restores them with it, so the person is told how
+    // many are going along.
+    // The slice only ever holds LIVE tasks — `TaskRecord` has no `deleted_at`
+    // and `tasksRealtimeMiddleware` drops any row that arrives carrying one — so
+    // everything here with this parent is a subtask that is about to follow it.
+    const subtasks = Object.values(getState().tasks.entities).filter(
+      (t): t is NonNullable<typeof t> => !!t && t.parent_task_id === taskId,
+    );
+    const subtaskIds = subtasks.map((t) => t.id);
+    const parts =
+      subtaskIds.length === 0
+        ? ""
+        : subtaskIds.length === 1
+          ? " and its 1 subtask"
+          : ` and its ${subtaskIds.length} subtasks`;
+
+    if (
+      !(await confirm({
+        title: "Move this task to the trash?",
+        description: `This moves "${current.title}"${parts} to the trash. Nothing is destroyed — a task in the trash can be restored.`,
+        confirmLabel: "Move to trash",
+        variant: "destructive",
+      }))
+    ) {
       return;
     }
 
+    dispatch(addOperatingTaskId(taskId));
     dispatch(removeTaskFromSlice(taskId));
+    for (const id of subtaskIds) dispatch(removeTaskFromSlice(id));
     if (projectId && projectId !== "__unassigned__") {
       dispatch(
         adjustProjectTaskCount({
@@ -591,13 +630,21 @@ export const deleteTaskThunk = createAsyncThunk<
     try {
       const ok = await taskService.deleteTask(taskId);
       if (!ok) {
-        // Rollback
+        // Rollback — the task and every subtask that went with it.
         dispatch(
           upsertTaskWithLevel({
             record: current as TaskRecord,
             level: "full-data",
           }),
         );
+        for (const sub of subtasks) {
+          dispatch(
+            upsertTaskWithLevel({
+              record: sub as TaskRecord,
+              level: "full-data",
+            }),
+          );
+        }
         if (projectId && projectId !== "__unassigned__") {
           dispatch(
             adjustProjectTaskCount({
