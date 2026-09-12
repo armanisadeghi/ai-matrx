@@ -71,6 +71,9 @@ long-lived media and agent execution stay in aidream.
   because the disclosed owner-beta program promised capture after consent. A connected relay greets
   the caller with `Recording has started. How can I help you?`; a preparation failure says the AI
   could not connect and ends the recorded call. Neither path claims the test worked.
+- Relay-preparation failure telemetry is deliberately bounded: it records only a typed failure
+  code and, for an HTTP refusal, a validated status. It never persists an upstream response body,
+  exception text, signature, signed URL, or session reference.
 - `storage-canary-readiness.ts` reads the latest owner-program pass/fail receipt from the existing
   `platform.activity_log` ledger and validates the exact bucket, prefix, writer ARN, retention
   policy, deny checks, application HEAD/read/hash, and canonical index/access/delete receipts. An
@@ -131,6 +134,10 @@ credential is returned.
 - **2026-09-11** — Made Voice GET distinguish standing readiness for a future consented call from
   the current call's required affirmative consent. It remains non-recording and never reports a
   historic consent as current consent.
+
+- **2026-09-11** — Retained typed ConversationRelay preparation failure codes and validated HTTP
+  statuses in `ops.system_error`, so a post-consent backend refusal is diagnosable without retaining
+  signed request material or upstream error content.
 
 - **2026-09-11** — Separated the live AI welcome greeting from the honest recorded-but-unconnected
   terminal response; neither caller-facing path claims the recording test succeeded.

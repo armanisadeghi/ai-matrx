@@ -4,9 +4,20 @@ import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 jest.mock("server-only", () => ({}));
 
+const mockInsert = jest.fn();
+const mockFrom = jest.fn(() => ({ insert: mockInsert }));
+const mockSchema = jest.fn(() => ({ from: mockFrom }));
+const mockCreateAdminClient = jest.fn(() => ({ schema: mockSchema }));
+
+jest.mock("@/utils/supabase/adminClient", () => ({
+  createAdminClient: mockCreateAdminClient,
+}));
+
 import {
   CONVERSATION_RELAY_PREPARATION_TIMEOUT_MS,
+  ConversationRelayPreparationFailure,
   prepareConversationRelaySession,
+  recordConversationRelayPreparationFailure,
 } from "./conversation-relay-preparation";
 
 describe("prepareConversationRelaySession", () => {
@@ -19,6 +30,10 @@ describe("prepareConversationRelaySession", () => {
   beforeEach(() => {
     global.fetch = fetchMock;
     fetchMock.mockReset();
+    mockInsert.mockReset().mockResolvedValue({ error: null });
+    mockFrom.mockClear();
+    mockSchema.mockClear();
+    mockCreateAdminClient.mockClear();
   });
 
   afterEach(() => {
@@ -66,8 +81,8 @@ describe("prepareConversationRelaySession", () => {
     );
   });
 
-  test("refuses a failed aidream preparation response", async () => {
-    fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }));
+  test("returns typed, safe facts for a failed aidream preparation response", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 409 }));
 
     await expect(
       prepareConversationRelaySession({
@@ -75,7 +90,13 @@ describe("prepareConversationRelaySession", () => {
         signature: "twilio-hmac",
         parameters: { AccountSid: "AC123", CallSid: "CA123" },
       }),
-    ).rejects.toThrow("HTTP 503");
+    ).rejects.toEqual(
+      expect.objectContaining({
+        code: "http_response",
+        httpStatus: 409,
+        message: "ConversationRelay session preparation failed",
+      }),
+    );
   });
 
   test("fails closed and redacts a malformed successful response", async () => {
@@ -102,8 +123,8 @@ describe("prepareConversationRelaySession", () => {
     } catch (error) {
       expect(error).toEqual(
         expect.objectContaining({
-          message:
-            "ConversationRelay session preparation returned an invalid response",
+          code: "invalid_response",
+          httpStatus: null,
         }),
       );
       expect(error).not.toEqual(
@@ -112,5 +133,47 @@ describe("prepareConversationRelaySession", () => {
         }),
       );
     }
+  });
+
+  test("persists only typed failure code and HTTP status", async () => {
+    await recordConversationRelayPreparationFailure(
+      new ConversationRelayPreparationFailure("http_response", 409),
+      "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+    );
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_text:
+          "ConversationRelay session preparation failed after consented recording began.",
+        error_type: "ConversationRelayPreparationFailure",
+        metadata: {
+          boundary: "conversation_relay_session_preparation",
+          failure_code: "http_response",
+          http_status: 409,
+          provider: "twilio",
+          recording_started: true,
+        },
+      }),
+    );
+  });
+
+  test("redacts an arbitrary thrown error from persisted telemetry", async () => {
+    await recordConversationRelayPreparationFailure(
+      new Error("secret signed URL and response body"),
+      "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+    );
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_type: "ConversationRelayPreparationFailure",
+        metadata: expect.objectContaining({
+          failure_code: "transport_failure",
+          http_status: null,
+        }),
+      }),
+    );
+    expect(JSON.stringify(mockInsert.mock.calls[0])).not.toContain(
+      "secret signed URL",
+    );
   });
 });
