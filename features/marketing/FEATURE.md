@@ -679,6 +679,19 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- **2026-09-11 — `/marketing` is now the signed-in agency working home.** The
+  static pillar map was replaced with the real Brands portfolio, preserving
+  every registry destination in the shared compact `MetricNavigation` strip.
+  The brands destination alone carries a count: the exact accessible total
+  from the existing portfolio query (and says when that count is unavailable);
+  no cross-client page, site, or performance sum is inferred. `BrandsPortfolio`
+  now composes either as its existing route or as the embedded home workspace,
+  retaining the single brand query, table search/filter/sort, creation/editor,
+  destructive confirmation, row actions, context menu, and canonical brand/site
+  doors. Cards and table consume the same paged query; cards surface per-brand
+  sites plus social, asset, fact, and pending-review dimensions rather than a
+  decorative dashboard metric.
+
 - 2026-09-10 — Codex: **Industry-pack review controls retain their dense desktop geometry and meet the shared 44px touch floor on tablet and phone.** The review root now opts into `matrx-touch-targets`, covering per-section all/none actions, keyword doors, rationale disclosures, navigation, and the sticky adoption footer. Row checkboxes keep their 14px visual chrome while gaining an invisible 44px hit area, matching the canonical table and research patterns. A source contract guards both pieces so later pack rows cannot silently shrink the interaction surface again.
 
 - 2026-09-10 — Codex: **Reset-to-pack comparisons speak the current meaning-item contract.** The live status RPC now emits `meaning` items, but the dialog still formatted only the retired `rule` shape, leaving every destructive comparison blank after “you have” and “pack says.” Meaning rows now name current versus proposed worth and phrase counts, archived rows stay explicit, the shared type mirrors the live kind, and the top bulk selector meets the phone touch floor.
@@ -1536,4 +1549,5 @@ placement` / `User-posted`), and `r412` renders as `Authority 412`. The
 ## Realtime
 
 `useSiteCrawlActivity` moved onto `@ai-matrx/realtime` (2026-09-07), deleting ~55 lines of reconnect ladder, attempt counter and backoff-reset timer. `CrawlRealtimeStatus` is now an alias of the package's `RealtimeStatus`, so the polling fallback cannot drift from the real channel state, and the catch-up read fires on tab wake and network restore rather than only after a channel error.
+
 - 2026-09-10: Rulebook pack provenance formats the canonical meaning status payload (`worth_effect`, `worth_amount`, and matcher count) through the same helper as Reset to pack, so current-versus-pack values cannot regress to `NaN` through the retired multiplier shape.
