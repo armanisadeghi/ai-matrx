@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import {
   NotePickerPopover,
   invalidateNotePickerCache,
@@ -236,7 +236,7 @@ export function CleanupContextPanel({
       }
       setSavingId(blockId);
       try {
-        const capturedOrganizationId = requireOrganizationContext(organizationId);
+        const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
         const note = await NotesAPI.create({
           label: block.title.trim() || "Transcription Context",
           content: block.text,

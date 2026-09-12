@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import type { Note } from "@/features/notes/types";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 
@@ -185,7 +185,7 @@ export function TranscriptionCleanupContextPanel({
         }
         setSavingId(blockId);
         try {
-          const capturedOrganizationId = requireOrganizationContext(organizationId);
+          const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
           const note = await NotesAPI.create({
             label: block.title.trim() || "Transcription Context",
             content: block.text,

@@ -40,7 +40,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
@@ -84,7 +84,7 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
-          const capturedOrganizationId = requireOrganizationContext(organizationId);
+          const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
           const { createNewNote } =
             await import("@/features/notes/redux/thunks");
           const note = await dispatch(createNewNote({ organization_id: capturedOrganizationId })).unwrap();

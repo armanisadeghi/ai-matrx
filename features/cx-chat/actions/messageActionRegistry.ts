@@ -41,7 +41,7 @@ import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContent
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -514,7 +514,7 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
           )
         )
           return;
-        const organizationId = requireOrganizationContext(ctx.organizationId);
+        const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
         await NotesAPI.create({
           label: "New Note",
           content,

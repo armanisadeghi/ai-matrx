@@ -22,7 +22,7 @@ import type { NoteListItem } from "@/features/notes/types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 type VisibilityFilter = "all" | "mine" | "shared" | "public";
 const VISIBILITY_FILTERS: { id: VisibilityFilter; label: string }[] = [
@@ -118,7 +118,7 @@ export function EduNotesHome() {
     if (creating) return;
     setCreating(true);
     try {
-      const capturedOrganizationId = requireOrganizationContext(organizationId);
+      const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
       const note = await NotesAPI.create({ label: "Untitled note", content: "", organization_id: capturedOrganizationId });
       startTransition(() => router.push(`/education/notes/${note.id}`));
     } catch (e) {

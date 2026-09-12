@@ -23,7 +23,7 @@ import {
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 // Vocabulary lives in a pure module so the surface manifest can import the
 // same constants this hook validates against (see quickNoteSaveVocabulary).
@@ -136,7 +136,7 @@ export function useQuickNoteSave({
     const selectedNoteForUpdate = mode === "update" ? selectedNote : undefined;
 
     const requestId = `note_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-    const organizationId = requireOrganizationContext(selectedOrganizationId);
+    const organizationId = await ensureOrganizationContext({ organizationId: selectedOrganizationId });
     const trimmedContent = workingContent.trim();
     const isCreate = mode === "create";
     const label = isCreate

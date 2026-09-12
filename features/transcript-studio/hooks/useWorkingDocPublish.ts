@@ -27,7 +27,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { create as createNote } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 export interface UseWorkingDocPublishArgs {
   /** Current working-document content to publish. */
@@ -65,7 +65,7 @@ export function useWorkingDocPublish({
       return false;
     }
     if (publishing) return false;
-    const capturedOrganizationId = requireOrganizationContext(organizationId);
+    const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
     setPublishing(true);
     try {
       // 1) Persist durably to a note the user owns + sees in their notes list.

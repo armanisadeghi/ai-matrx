@@ -14,7 +14,7 @@ import { NotesAPI } from "../service/notesApi";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 interface SaveSelectionButtonProps {
   folder?: string;
@@ -51,7 +51,7 @@ export function SaveSelectionButton({
 
     setIsSaving(true);
     try {
-      const capturedOrganizationId = requireOrganizationContext(organizationId);
+      const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
       await NotesAPI.create({
         label: "New Note",
         content: selectedText,

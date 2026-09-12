@@ -28,7 +28,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 function noteUpdatedAtMs(updatedAt: string | null): number {
     return updatedAt ? new Date(updatedAt).getTime() : 0;
@@ -141,7 +141,7 @@ export function CategoryNotesModal({
 
         setActionLoading(true);
         try {
-            const capturedOrganizationId = requireOrganizationContext(organizationId);
+            const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
             const newNote = await createNote({
                 label: newNoteLabel.trim() || undefined,
                 content: newNoteContent.trim(),
@@ -240,7 +240,7 @@ export function CategoryNotesModal({
                 content: sourceNote.content,
                 folder_name: categoryName,
                 tags: sourceNote.tags,
-                organization_id: requireOrganizationContext(organizationId),
+                organization_id: await ensureOrganizationContext({ organizationId }),
             });
             
             toast.success(`Imported: ${sourceNote.label}`);
