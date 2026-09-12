@@ -11,6 +11,14 @@
  * `_require_admin` on every Python handler.
  *
  * No emojis, Lucide icons only, semantic color tokens — per CLAUDE.md.
+ *
+ * SIBLING SURFACE: this page shows batch submissions only as an aggregate
+ * ("pending batches", "batch savings 7d"). Per-ITEM truth for the platform
+ * Batch system — every `batch.work_item`, its delivery outcome, and the
+ * answers that came back and were never delivered — lives at
+ * `/administration/knowledge/batch`
+ * (`features/administration/batch/FEATURE.md`). Do not grow a third cost
+ * surface here; send the operator there.
  */
 import { useEffect, useState } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -56,6 +64,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { AppLink } from "@/components/navigation/AppLink";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   getKgCostSummary,
@@ -1502,15 +1511,23 @@ export function KgCostDashboard() {
             submissions.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setRefreshTick((t) => t + 1)}
-          disabled={summaryLoading || orgsLoading || batchesLoading}
-        >
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <AppLink
+            href="/administration/knowledge/batch"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Batch system
+          </AppLink>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRefreshTick((t) => t + 1)}
+            disabled={summaryLoading || orgsLoading || batchesLoading}
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
       </header>
 
       <ScrollArea className="flex-1">
@@ -1529,7 +1546,15 @@ export function KgCostDashboard() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-sm font-semibold">In-flight batches</h2>
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold">In-flight batches</h2>
+              <AppLink
+                href="/administration/knowledge/batch"
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Per-item batch view
+              </AppLink>
+            </div>
             <PendingBatchesTable
               batches={batches}
               loading={batchesLoading}

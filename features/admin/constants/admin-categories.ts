@@ -253,6 +253,21 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Billing",
+    iconName: "DollarSign",
+    iconColor: "text-emerald-600",
+    features: [
+      {
+        title: "Platform Spend",
+        description:
+          "What the platform spent today, yesterday, this week and this month, by organization, person, day and cost source — including the sources that record nothing.",
+        iconName: "DollarSign",
+        link: "/administration/billing/spend",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Knowledge Graph",
     iconName: "Network",
     iconColor: "text-teal-600",
@@ -263,6 +278,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Auto-ingest spend per org, in-flight provider batches, and cap KPIs (spend today, 7d, orgs near cap, pending batches).",
         iconName: "DollarSign",
         link: "/administration/knowledge/kg-cost",
+        isNew: true,
+      },
+      {
+        title: "Batch System",
+        description:
+          "Per-item view of background AI work run at batch pricing: queue state, work items, provider submissions, realized savings, and answers that returned but were never delivered.",
+        iconName: "ServerCog",
+        link: "/administration/knowledge/batch",
         isNew: true,
       },
       {

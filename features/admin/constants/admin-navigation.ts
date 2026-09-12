@@ -267,6 +267,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Network",
         destinations: [
           destination("/administration/knowledge/kg-cost"),
+          destination("/administration/knowledge/batch"),
           destination("/administration/knowledge/kg-inspector"),
         ],
       },
@@ -501,6 +502,21 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/applications/installations"),
           destination("/administration/applications/history"),
         ],
+      },
+    ],
+  },
+  {
+    // Money lives in its own domain rather than under Users: "where is the
+    // money going" is a platform question, not an account question.
+    name: "Billing",
+    slug: "billing",
+    iconName: "DollarSign",
+    iconColor: "text-emerald-600",
+    sections: [
+      {
+        name: "Spend",
+        iconName: "DollarSign",
+        destinations: [destination("/administration/billing/spend")],
       },
     ],
   },
