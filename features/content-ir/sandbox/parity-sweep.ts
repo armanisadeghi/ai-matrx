@@ -222,8 +222,20 @@ function pageHtml(cases: Case[]): string {
      found (fixed in runtime/sandbox.css). */
   body { margin: 0; padding: 16px; background: hsl(var(--background)); color: hsl(var(--foreground));
          font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif); }
+  /* 🚨 EVERY BOX IN THIS PAGE'S OWN CHROME IS A WHOLE NUMBER OF PIXELS, and
+     that is load-bearing, not tidiness. The header used to be 11px/1.4 —
+     a 15.4 px line box plus 8 px of padding — so EVERY case's two columns
+     began at a y ending in .4. There the columns stop being comparable: the
+     unframed render is laid out AT that fraction and its glyphs are positioned
+     against it, while the framed render is laid out at 0 inside its own
+     document and its layer is then composited on a whole pixel. Two pictures
+     of the SAME layout, a fraction of a pixel apart, which reads as 1-6 % of
+     pixels differing on any text-heavy body and moves with whatever sat above
+     it (the "not comparable across batch compositions" limit in B-36 §5).
+     11px/16px + 4 px padding is exactly 24 px; __SNAP__ keeps the cases
+     below it on whole pixels too. */
   .case { margin: 0 0 24px; }
-  .case > header { font: 11px/1.4 ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
+  .case > header { font: 11px/16px ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   /* THE CLIP — what KindSandboxFrame does, and for the same reason (S5b,
      sandbox/protocol.ts, THE READER'S VIEWPORT): the iframe is as wide as the
