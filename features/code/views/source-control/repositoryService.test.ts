@@ -7,6 +7,7 @@ import {
   discoverRepositories,
   initRepository,
   inspectRepository,
+  pushRepository,
   unstageRepositoryPaths,
 } from "./repositoryService";
 
@@ -162,6 +163,50 @@ describe("repositoryService", () => {
       expect(git(repository, ["diff", "--", "tracked.txt"])).toContain(
         "changed but retained",
       );
+    } finally {
+      rmSync(workspace, { recursive: true, force: true });
+    }
+  });
+
+  it("publishes to a bare remote with an upstream, then uses normal pushes and pulls", async () => {
+    const workspace = mkdtempSync(join(tmpdir(), "matrx-repository-push-"));
+    const repository = join(workspace, "repository");
+    const remote = join(workspace, "remote.git");
+    const clone = join(workspace, "clone");
+    const git = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" });
+    try {
+      execFileSync("git", ["init", repository], { encoding: "utf8", stdio: "pipe" });
+      execFileSync("git", ["init", "--bare", remote], { encoding: "utf8", stdio: "pipe" });
+      git(repository, ["config", "user.name", "Test User"]);
+      git(repository, ["config", "user.email", "test@example.invalid"]);
+      writeFileSync(join(repository, "initial.txt"), "initial\n");
+      git(repository, ["add", "--", "initial.txt"]);
+      git(repository, ["commit", "-m", "initial"]);
+      git(repository, ["remote", "add", "origin", remote]);
+      const branch = git(repository, ["branch", "--show-current"]).trim();
+      const process = localProcess(repository);
+
+      await pushRepository(process, repository, "origin", branch, { setUpstream: true });
+      expect(git(repository, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]).trim()).toBe(
+        `origin/${branch}`,
+      );
+      expect(git(remote, ["show-ref", "--verify", `refs/heads/${branch}`])).toContain("refs/heads/");
+
+      writeFileSync(join(repository, "second.txt"), "second\n");
+      git(repository, ["add", "--", "second.txt"]);
+      git(repository, ["commit", "-m", "second"]);
+      await pushRepository(process, repository, "origin", branch);
+      execFileSync("git", ["clone", remote, clone], { encoding: "utf8", stdio: "pipe" });
+      git(clone, ["config", "user.name", "Other User"]);
+      git(clone, ["config", "user.email", "other@example.invalid"]);
+      writeFileSync(join(clone, "remote.txt"), "remote\n");
+      git(clone, ["add", "--", "remote.txt"]);
+      git(clone, ["commit", "-m", "remote"]);
+      git(clone, ["push"]);
+
+      git(repository, ["pull", "--ff-only"]);
+      expect(git(repository, ["log", "-1", "--format=%s"]).trim()).toBe("remote");
     } finally {
       rmSync(workspace, { recursive: true, force: true });
     }

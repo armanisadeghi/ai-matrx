@@ -236,3 +236,35 @@ export async function unstageRepositoryPaths(
     await executeRepositoryGit(process, root, ["rm", "--cached", "-r", "--", ...paths]);
   }
 }
+
+export interface PushRepositoryOptions {
+  /** Establish `remote/branch` as the current branch's upstream. Use only for
+   * the first publish; later pushes retain the existing tracking relation. */
+  setUpstream?: boolean;
+}
+
+/** Pushes a branch through the ProcessAdapter. Initial publishing can set an
+ * upstream atomically so later Pull and Push commands target the same branch. */
+export function pushRepository(
+  process: ProcessAdapter,
+  cwd: string,
+  remote: string,
+  branch: string,
+  options: PushRepositoryOptions = {},
+): Promise<ProcessResult> {
+  const safeRemote = remote.trim();
+  const safeBranch = branch.trim();
+  if (!safeRemote || safeRemote.startsWith("-")) {
+    throw new Error("Choose a valid Git remote before pushing.");
+  }
+  if (!safeBranch || safeBranch.startsWith("-")) {
+    throw new Error("Choose a valid branch before pushing.");
+  }
+  return executeRepositoryGit(process, cwd, [
+    "push",
+    ...(options.setUpstream ? ["--set-upstream"] : []),
+    "--",
+    safeRemote,
+    safeBranch,
+  ]);
+}
