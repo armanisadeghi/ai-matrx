@@ -146,6 +146,58 @@ describe("rule_draft → the Rulebook", () => {
     expect(upsertRuleWithRetry).not.toHaveBeenCalled();
   });
 
+  it("stages the W58 decision fields and refuses a value outside their closed sets", () => {
+    // Bugbot on ca7e6aba: a `rule_draft` carrying isPolicy / precondition /
+    // nextAction was silently dropped, so the Conductor could not stage a
+    // decision rule and an edit sending only those fields never reached the
+    // editor.
+    const rulebook = fakeRulebook();
+    fakeStore(rulebook);
+
+    const { draft } = requireRuleDraftInput(
+      {
+        mode: "new",
+        name: "Sodium first",
+        isPolicy: true,
+        precondition: "Confusion of unknown cause; sodium not yet measured.",
+        nextAction: "Order a serum sodium.",
+        actionKind: "test",
+        cost: "low",
+        risk: "medium",
+      },
+      rulebook,
+    );
+    expect(draft).toMatchObject({
+      isPolicy: true,
+      precondition: "Confusion of unknown cause; sodium not yet measured.",
+      nextAction: "Order a serum sodium.",
+      actionKind: "test",
+      cost: "low",
+      risk: "medium",
+    });
+
+    expect(() =>
+      requireRuleDraftInput({ mode: "new", actionKind: "guess" }, rulebook),
+    ).toThrow("Rule draft actionKind must be one of ask, test, treat, refer, wait, commit.");
+    expect(() =>
+      requireRuleDraftInput({ mode: "new", risk: "enormous" }, rulebook),
+    ).toThrow("Rule draft risk must be one of low, medium, high");
+    expect(() =>
+      requireRuleDraftInput({ mode: "new", isPolicy: "yes" }, rulebook),
+    ).toThrow("Rule draft isPolicy must be true");
+    expect(upsertRuleWithRetry).not.toHaveBeenCalled();
+  });
+
+  it("documents the decision fields in the target description the agent reads", () => {
+    const target = masterworkRulebookManifest.writeTargets?.find(
+      (entry) => entry.name === "rule_draft",
+    );
+    expect(target!.description).toMatch(/isPolicy=true/);
+    expect(target!.description).toMatch(/precondition/);
+    expect(target!.description).toMatch(/nextAction/);
+    expect(target!.description).toMatch(/actionKind \(ask, test, treat, refer, wait, or commit\)/);
+  });
+
   it("refuses a rule draft with NO mode, naming the field as required", () => {
     // Wall W49-adjacent (2026-09-12): the Conductor sent a complete rule with
     // no `mode` and read the old sentence as "wrong value", not "missing

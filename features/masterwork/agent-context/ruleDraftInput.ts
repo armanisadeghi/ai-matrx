@@ -13,7 +13,12 @@
  * error envelope it reads) and nothing half-lands in the editor.
  */
 
-import type { Rulebook, RulebookRule } from "../types";
+import {
+  POLICY_ACTION_KINDS,
+  POLICY_LEVELS,
+  type Rulebook,
+  type RulebookRule,
+} from "../types";
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
 
 export function requireRuleDraftInput(
@@ -68,12 +73,18 @@ export function requireRuleDraftInput(
     mode: input.mode,
     rule_id: initial?.id ?? null,
   };
+  // Every TEXT field of the ONE form set (`RuleFieldValues`), the W58 decision
+  // fields included: a draft that only sends `precondition` / `nextAction`
+  // used to be dropped on the floor, so the Conductor could not stage a
+  // decision rule at all (Bugbot, ca7e6aba).
   for (const key of [
     "name",
     "statement",
     "rationale",
     "detection",
     "quote",
+    "precondition",
+    "nextAction",
   ] as const) {
     const field = input[key];
     if (field === undefined) continue;
@@ -91,6 +102,41 @@ export function requireRuleDraftInput(
       throw new Error("Rule draft severity must be critical, major, or minor.");
     }
     draft.severity = input.severity;
+  }
+  if (input.isPolicy !== undefined) {
+    if (typeof input.isPolicy !== "boolean") {
+      throw new Error(
+        "Rule draft isPolicy must be true (a decision rule: precondition → " +
+          "next action) or false (an ordinary rule).",
+      );
+    }
+    draft.isPolicy = input.isPolicy;
+  }
+  if (input.actionKind !== undefined) {
+    const kinds = POLICY_ACTION_KINDS.map((entry) => entry.value);
+    if (
+      typeof input.actionKind !== "string" ||
+      !kinds.includes(input.actionKind as (typeof kinds)[number])
+    ) {
+      throw new Error(
+        `Rule draft actionKind must be one of ${kinds.join(", ")}.`,
+      );
+    }
+    draft.actionKind = input.actionKind as (typeof kinds)[number];
+  }
+  for (const key of ["cost", "risk"] as const) {
+    const field = input[key];
+    if (field === undefined) continue;
+    const levels = POLICY_LEVELS.map((entry) => entry.value);
+    if (
+      typeof field !== "string" ||
+      !levels.includes(field as (typeof levels)[number])
+    ) {
+      throw new Error(
+        `Rule draft ${key} must be one of ${levels.join(", ")} — the ${key} OF THE ACTION, not of the situation.`,
+      );
+    }
+    draft[key] = field as (typeof levels)[number];
   }
   if (input.section !== undefined) {
     if (

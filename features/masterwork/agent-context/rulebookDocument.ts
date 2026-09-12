@@ -35,7 +35,7 @@
  * never happen again is the FIRST read being a tool call.
  */
 
-import { ruleState, type Rulebook, type RulebookRule } from "../types";
+import { ruleState, type Rulebook, type RulebookRule, isPolicyRule } from "../types";
 import { openTensions } from "../coherence/types";
 
 /** The variable name every Rulebook-reading agent declares. */
@@ -72,6 +72,16 @@ function ruleBlock(rule: RulebookRule): string[] {
     `State: ${ruleState(rule)} · Severity: ${rule.severity}`,
     rule.statement,
   ];
+  // A policy rule (W58) is a DECISION, not a statement: the agents that read
+  // this document (Conductor, Scout, improver, triage) must see the shape
+  // field by field, or a distilled judgment flattens back into one sentence
+  // nobody can correct at the field level (Bugbot, ca7e6aba).
+  if (isPolicyRule(rule)) {
+    lines.push(
+      `Decision rule — given: ${rule.precondition || "(precondition not stated)"}`,
+      `Next action (${rule.action_kind ?? "unspecified"}; cost ${rule.cost ?? "unspecified"}, risk ${rule.risk ?? "unspecified"}): ${rule.next_action || "(next action not stated)"}`,
+    );
+  }
   if (rule.rationale) lines.push(`Why: ${rule.rationale}`);
   if (rule.detection) lines.push(`Detection: ${rule.detection}`);
   if (rule.quote) lines.push(`Source words: ${rule.quote}`);

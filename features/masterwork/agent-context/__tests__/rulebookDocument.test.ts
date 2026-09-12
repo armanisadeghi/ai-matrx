@@ -85,6 +85,36 @@ describe("renderRulebookDocument", () => {
     expect(doc).toContain("Orphan");
   });
 
+  it("renders a policy rule's decision shape field by field, never as prose alone", () => {
+    // Bugbot on ca7e6aba: the bound `rulebook_document` flattened a W58
+    // decision rule back into its statement, so the Conductor, Scout and
+    // triage could not see (or correct) the precondition, the next action, or
+    // the cost and risk of that action.
+    const doc = renderRulebookDocument(
+      rulebook({
+        rules: [
+          rule({
+            id: "p1",
+            name: "Sudden hyponatraemia",
+            statement: "Check the sodium before treating the confusion.",
+            kind: "policy",
+            precondition: "Confusion of unknown cause; sodium not yet measured.",
+            next_action: "Order a serum sodium.",
+            action_kind: "test",
+            cost: "low",
+            risk: "low",
+          }),
+        ],
+      }),
+    );
+    expect(doc).toContain(
+      "Decision rule — given: Confusion of unknown cause; sodium not yet measured.",
+    );
+    expect(doc).toContain(
+      "Next action (test; cost low, risk low): Order a serum sodium.",
+    );
+  });
+
   it("renders documented connections, so a rule is never read as standalone", () => {
     const doc = renderRulebookDocument(
       rulebook({
