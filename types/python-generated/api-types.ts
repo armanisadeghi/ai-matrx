@@ -24131,6 +24131,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/ingest-timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Timeline
+         * @description The `timeline` Approach: a case written in the order it happened. A
+         *     segmenter finds the case's own moments, and each moment is distilled
+         *     knowing only what was known at the time — the ending is kept back by
+         *     default — so the rules come back forward-looking ("given what you know now,
+         *     do X") instead of static and written with hindsight.
+         */
+        post: operations["ingest_rulebook_timeline_masterworks_ingest_timeline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/triage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Triage Rulebook Drafts
+         * @description Sort the DRAFT pile by what the Rulebook is FOR (W59 + W61).
+         *
+         *     A distiller reads the page in front of it, never the Rulebook's purpose, so
+         *     one training workbook produced 336 drafts about infection control for a
+         *     Rulebook about deciding the next diagnostic question. Asking the Scout to
+         *     "retire them as classes" died at the model's output ceiling with zero tool
+         *     calls, twice, because retiring was one rule per call. This lane takes the
+         *     Expert's own two sentences — what belongs, what to set aside — and reads
+         *     every draft against them in batches, applying each batch in one write.
+         *     `dry_run` returns the plan and writes nothing.
+         */
+        post: operations["triage_rulebook_drafts_masterworks_triage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/ingest-file": {
         parameters: {
             query?: never;
@@ -24304,6 +24357,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/audition-outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Audition Outcome Endpoint
+         * @description The OUTCOME Audition — judge a Masterwork run over a SEALED CASE by the
+         *     fact the case only reveals at the bottom, and by the path it took there.
+         *
+         *     Not the text-vs-text comparison ``/audition`` runs: the desk's committed
+         *     answer is judged against the published resolution, and every score is
+         *     derived mechanically from the case's own disclosure ledger (the judge is
+         *     never asked for a number).
+         */
+        post: operations["audition_outcome_endpoint_masterworks_audition_outcome_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/clean-corpus": {
         parameters: {
             query?: never;
@@ -24344,6 +24423,51 @@ export interface paths {
          *     (`services/masterwork_corpus/`).
          */
         get: operations["read_expert_corpus_masterworks__rulebook_id__corpus_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/sealed-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Sealed Case Endpoint
+         * @description Seal one case onto a Rulebook — the source a Masterwork has to INTERROGATE.
+         *
+         *     Refuses BEFORE writing anything when the ``resolution_marker`` does not
+         *     locate the ending: a case whose resolution cannot be proven removed would
+         *     hand the answer to the first agent that asked it a question.
+         */
+        post: operations["create_sealed_case_endpoint_masterworks_sealed_cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/sealed-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sealed Cases Endpoint
+         * @description The sealed cases on this Rulebook. NEVER the case text or the resolution —
+         *     a list that leaked either would be the seal, opened, from a GET.
+         */
+        get: operations["list_sealed_cases_endpoint_masterworks__rulebook_id__sealed_cases_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -25372,30 +25496,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -42567,6 +42667,57 @@ export interface components {
             vanilla_input?: string | null;
         };
         /**
+         * AuditionOutcomeRequest
+         * @description Judge one Masterwork run over a SEALED CASE by the held-out later fact.
+         *
+         *     Not a text-vs-text comparison: the desk's committed answer is judged against
+         *     the case's published resolution, and the path it took (every fact it had to
+         *     ask the case for, what each cost and risked) is scored mechanically from the
+         *     case's own disclosure ledger. ``run_scope`` is the identity of the RUN whose
+         *     ledger is being judged — two runs over the same case keep separate ledgers,
+         *     and the count of what one run had to ask IS the measurement.
+         */
+        AuditionOutcomeRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Case Id
+             * @description platform.masterwork_corpus_item id (sealed_case)
+             */
+            case_id: string;
+            /**
+             * Run Scope
+             * @description The run whose disclosure ledger is judged, e.g. 'workflow_run:<id>'.
+             */
+            run_scope: string;
+            /**
+             * Compare Vanilla
+             * @description Also hand the WHOLE case (resolution stripped) to the same model tier in one call, with nothing to ask, and judge it the same way. A paid call.
+             * @default false
+             */
+            compare_vanilla?: boolean;
+            /**
+             * Masterwork Id
+             * @description The built Masterwork this run came from, when the caller knows it.
+             */
+            masterwork_id?: string | null;
+        };
+        /**
          * AudiusTrackStatistics
          * @description Safe factual projection of one public, listed Audius track.
          */
@@ -54737,6 +54888,55 @@ export interface components {
             /** Display Name */
             display_name: string;
         };
+        /**
+         * CreateSealedCaseRequest
+         * @description Seal one case onto a Rulebook.
+         *
+         *     Inherits ``AcceptsInjectedScope`` because the FE's ``callApi`` merges
+         *     ``organization_id`` / ``project_id`` / ``task_id`` onto every POST body.
+         */
+        CreateSealedCaseRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Case Text
+             * @description The FULL case, ending included.
+             */
+            case_text: string;
+            /**
+             * Resolution
+             * @description The final answer, VERBATIM — what a run is graded against.
+             */
+            resolution: string;
+            /**
+             * Resolution Marker
+             * @description A phrase that appears exactly where the answer begins. Everything from it onward is removed before the case is ever asked anything.
+             */
+            resolution_marker: string;
+            /** Url */
+            url?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** License */
+            license?: string | null;
+        };
         /** CreateSendingIdentityRequest */
         CreateSendingIdentityRequest: {
             /**
@@ -57439,33 +57639,6 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /**
          * DevtoServiceStatus
@@ -70093,6 +70266,84 @@ export interface components {
              * @enum {string}
              */
             standing?: "evidence" | "rule";
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestTimelineRequest
+         * @description Distill a case that UNFOLDS IN TIME into forward-looking POLICY rules.
+         *
+         *     The `timeline` Approach (W58). A case report, an incident write-up, a
+         *     deal that took four meetings: the expert skill in such a document is not
+         *     a list of facts, it is the SEQUENCE of choices — what was known at each
+         *     moment, what was still unknown, what was done next, and what that cost
+         *     and risked.
+         *
+         *     So this lane does NOT chunk by size. A segmenter reads the narrative into
+         *     ordered steps, and ONE distiller run sees ONE step: everything known up to
+         *     the previous step, this step's new facts, and the action taken — with the
+         *     future, including the ending, withheld. Rules come back as "given what you
+         *     know now, do X, because Y".
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestTimelineRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Text
+             * @description The narrative, in the order it happened, verbatim.
+             */
+            text: string;
+            /**
+             * Source Note
+             * @description Where this case came from ('ED case 3, March 2026').
+             */
+            source_note?: string | null;
+            /**
+             * Approach
+             * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults to 'timeline'.
+             */
+            approach?: string | null;
+            /**
+             * Hide Resolution
+             * @description 🚨 Keep the ENDING away from the distiller (default). A rule written by an agent that already knows how the case turned out is hindsight wearing a rule's clothes — it says 'suspect X' where the expert, at that moment, could only say 'this is what makes X worth ruling out'. The resolution is still STORED on the Rulebook (metadata.timeline_sources) so the Audition can score against it. Set false only when the ending itself is the lesson.
+             * @default true
+             */
+            hide_resolution?: boolean;
+            /**
+             * Chunk Words
+             * @description Word budget for the cumulative `known_before` history handed to each step. The step's own facts are never trimmed; the OLDEST history is.
+             * @default 2500
+             */
+            chunk_words?: number;
+            /**
+             * Source Ref Extra
+             * @description Extra provenance keys merged into every rule's source_ref — how a delegating lane anchors rules to the piece they came from. Never overrides the lane's own keys.
+             */
+            source_ref_extra?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
             /**
              * Redistill
              * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
@@ -96712,6 +96963,45 @@ export interface components {
              */
             reason?: string;
         };
+        /** SealedCaseListResponse */
+        SealedCaseListResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Cases */
+            cases?: components["schemas"]["SealedCaseSummary"][];
+        };
+        /**
+         * SealedCaseSummary
+         * @description A sealed case as a LIST row — never carries raw_value or the resolution.
+         */
+        SealedCaseSummary: {
+            /** Case Id */
+            case_id: string;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Title */
+            title?: string | null;
+            /** Canonical Key */
+            canonical_key: string;
+            /** Url */
+            url?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** License */
+            license?: string | null;
+            /**
+             * Words
+             * @default 0
+             */
+            words?: number;
+            /**
+             * Sealed
+             * @default true
+             */
+            sealed?: boolean;
+            /** Run Scopes */
+            run_scopes?: string[];
+        };
         /** SearchAndScrapeLimitedRequest */
         SearchAndScrapeLimitedRequest: {
             /**
@@ -107107,6 +107397,71 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.tresorit.com";
+        };
+        /**
+         * TriageDraftsRequest
+         * @description Sort a Rulebook's DRAFT pile by what the Rulebook is FOR.
+         *
+         *     🚨 W59 + W61, 2026-09-12. A Rulebook's intake says, in the Expert's own
+         *     words, what it is for ("given the first facts of an acutely ill person,
+         *     decide the next question or test"). The chunk distiller never sees it, so
+         *     an 18,000-word training workbook produced 336 draft rules about PPE, hand
+         *     hygiene, CPR technique and snakebite, and a back-pain guideline produced 83
+         *     about disclaimers, GRADE wording and drug choices. Then the Expert asked
+         *     the Scout, in one sentence, to "retire, as classes, every draft that is
+         *     …" — and the turn died at the model's 16,000-token output ceiling with
+         *     ZERO tool calls, because the only retirement verb took one id at a time and
+         *     the agent tried to plan 250 retirements in prose. Twice, at ~$0.53 each,
+         *     nothing landed.
+         *
+         *     So the sorting is a LANE, not a conversation: the Expert says what to keep
+         *     and what to set aside in plain English, and the platform reads every draft
+         *     against it in batches sized to the holder's output ceiling.
+         *
+         *     Human-first, unchanged: only DRAFT rules are ever touched, an approved rule
+         *     is refused by id, and a rewrite lands as a NEW draft the Expert reviews.
+         */
+        TriageDraftsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Keep
+             * @description What SERVES this Rulebook, in the Expert's own words — the kind of rule that belongs here.
+             */
+            keep: string;
+            /**
+             * Set Aside
+             * @description The classes to set aside, in the Expert's own words. Optional: `keep` alone is a complete instruction, and an empty value means 'anything that does not serve the purpose'.
+             * @default
+             */
+            set_aside?: string;
+            /**
+             * Batch Size
+             * @description How many drafts one triage run reads. A CEILING, never a promise: the lane sizes every batch against the holder's real output ceiling and halves a batch whose reply was cut.
+             * @default 80
+             */
+            batch_size?: number;
+            /**
+             * Dry Run
+             * @description Return the plan — every draft with its verdict and reason — and write NOTHING. The Expert's 'show me first'.
+             * @default false
+             */
+            dry_run?: boolean;
         };
         /**
          * TriggerCreate
@@ -152671,6 +153026,72 @@ export interface operations {
             };
         };
     };
+    ingest_rulebook_timeline_masterworks_ingest_timeline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestTimelineRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    triage_rulebook_drafts_masterworks_triage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriageDraftsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     ingest_rulebook_file_masterworks_ingest_file_post: {
         parameters: {
             query?: never;
@@ -152935,6 +153356,39 @@ export interface operations {
             };
         };
     };
+    audition_outcome_endpoint_masterworks_audition_outcome_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditionOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     clean_expert_corpus_endpoint_masterworks_clean_corpus_post: {
         parameters: {
             query?: never;
@@ -152986,6 +153440,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpertCorpusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_sealed_case_endpoint_masterworks_sealed_cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSealedCaseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SealedCaseSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sealed_cases_endpoint_masterworks__rulebook_id__sealed_cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SealedCaseListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -154890,41 +155408,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
