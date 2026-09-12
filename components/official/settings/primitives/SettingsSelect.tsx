@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   Select,
   SelectContent,
@@ -55,14 +56,13 @@ export function SettingsSelect<T extends string = string>({
   last,
   ...rowProps
 }: SettingsSelectProps<T>) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
   const variant = stacked ? "stacked" : "inline";
   const effectiveWidth: Width = stacked ? "full" : width;
 
   return (
-    <SettingsRow {...rowProps} id={id} variant={variant} last={last}>
+    <SettingsRow {...rowProps} id={id} variant={variant} controlLayout="wide" last={last}>
       <Select
         value={value}
         onValueChange={(v) => onValueChange(v as T)}

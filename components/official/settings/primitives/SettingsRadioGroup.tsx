@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { SettingsRow } from "../SettingsRow";
 import { cn } from "@/lib/utils";
 import type { SettingsCommonProps, SettingsOption } from "../types";
@@ -22,9 +23,8 @@ export function SettingsRadioGroup<T extends string = string>({
   last,
   ...rowProps
 }: SettingsRadioGroupProps<T>) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   return (
     <SettingsRow {...rowProps} id={id} variant="stacked" last={last}>

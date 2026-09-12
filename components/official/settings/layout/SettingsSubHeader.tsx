@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSettingsDesign } from "../SettingsDesignProvider";
 
 export type SettingsSubHeaderProps = {
   title: string;
@@ -21,16 +22,18 @@ export function SettingsSubHeader({
   icon: Icon,
   divider = true,
 }: SettingsSubHeaderProps) {
+  const { variant } = useSettingsDesign();
   return (
     <div
       className={cn(
-        "px-4 pb-4 mb-4",
+        "px-4",
+        variant === "compact" ? "pb-3 mb-3" : "pb-4 mb-4",
         divider && "border-b border-border/40",
       )}
     >
       <div className="flex items-center gap-2">
         {Icon && <Icon className="h-5 w-5 text-foreground" />}
-        <h2 className="text-lg font-semibold text-foreground leading-tight">
+        <h2 className={cn("font-semibold text-foreground leading-tight", variant === "compact" ? "text-base" : "text-lg")}>
           {title}
         </h2>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps, SettingsControlSize } from "../types";
 
@@ -43,9 +43,8 @@ export function SettingsNumberInput({
   last,
   ...rowProps
 }: SettingsNumberInputProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   const [draft, setDraft] = useState(String(value));
 
@@ -67,7 +66,7 @@ export function SettingsNumberInput({
   };
 
   return (
-    <SettingsRow {...rowProps} id={id} variant="inline" last={last}>
+    <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
       <div className="flex items-center gap-1.5">
         <input
           id={id}

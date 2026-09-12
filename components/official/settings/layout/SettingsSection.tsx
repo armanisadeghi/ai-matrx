@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSettingsDesign } from "../SettingsDesignProvider";
 
 export type SettingsSectionProps = {
   title: string;
@@ -19,6 +20,8 @@ export type SettingsSectionProps = {
   action?: React.ReactNode;
   children: React.ReactNode;
 };
+
+export type SettingsGroupProps = SettingsSectionProps;
 
 const emphasisTitleClass = {
   subtle: "text-xs font-semibold uppercase tracking-wide text-muted-foreground",
@@ -40,11 +43,12 @@ export function SettingsSection({
   action,
   children,
 }: SettingsSectionProps) {
+  const { variant } = useSettingsDesign();
   const [open, setOpen] = useState(defaultOpen);
   const isOpen = collapsible ? open : true;
 
   return (
-    <section className="mb-6">
+    <section className={cn(variant === "compact" ? "mb-4" : "mb-6")}>
       <header
         className={cn(
           "flex items-center gap-2 px-4 mb-2",
@@ -75,10 +79,15 @@ export function SettingsSection({
         </p>
       )}
       {isOpen && (
-        <div className="rounded-lg border border-border/40 bg-card/30 overflow-hidden">
+        <div className={cn("overflow-hidden border border-border/40 bg-card/30", variant === "compact" ? "rounded-md" : "rounded-lg")}>
           {children}
         </div>
       )}
     </section>
   );
+}
+
+/** A named reusable settings group with the exact SettingsSection contract. */
+export function SettingsGroup(props: SettingsGroupProps) {
+  return <SettingsSection {...props} />;
 }

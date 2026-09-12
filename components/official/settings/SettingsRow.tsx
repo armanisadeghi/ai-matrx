@@ -14,6 +14,7 @@ import type {
   SettingsRowDensity,
   SettingsBadge,
 } from "./types";
+import { useSettingsDesign } from "./SettingsDesignProvider";
 
 type SettingsRowProps = SettingsCommonProps & {
   /** Layout variant. Defaults to "inline". */
@@ -24,6 +25,8 @@ type SettingsRowProps = SettingsCommonProps & {
   children: React.ReactNode;
   /** Whether this row is the last in a section. Removes trailing border. */
   last?: boolean;
+  /** Wide controls stack below their label on narrow screens. */
+  controlLayout?: "compact" | "wide";
 };
 
 const densityStyles: Record<SettingsRowDensity, string> = {
@@ -81,7 +84,9 @@ export function SettingsRow({
   density = "default",
   children,
   last,
+  controlLayout = "compact",
 }: SettingsRowProps) {
+  const { variant: designVariant } = useSettingsDesign();
   const generatedId =
     id ?? `settings-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
@@ -107,7 +112,7 @@ export function SettingsRow({
           {label}
         </label>
         {badge && <BadgePill badge={badge} />}
-        {helpText && (
+        {helpText && designVariant !== "compact" && (
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -126,15 +131,21 @@ export function SettingsRow({
           </TooltipProvider>
         )}
       </div>
-      {description && (
-        <div
-          className={cn(
-            "text-xs text-muted-foreground mt-0.5 leading-snug",
-            disabled && "opacity-50",
-          )}
-        >
+      {description ? (
+        <div className={cn("mt-0.5 text-xs leading-snug text-muted-foreground", designVariant === "compact" && "sm:truncate", disabled && "opacity-50")}>
           {description}
         </div>
+      ) : null}
+      {designVariant === "compact" && (description || helpText) && (
+        <details className="mt-1 text-xs text-muted-foreground">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded px-1 text-xs underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-8">
+            About {label}
+          </summary>
+          <div className="mt-1 whitespace-normal leading-snug">
+            {description && <div>{description}</div>}
+            {helpText && <div className={cn(description && "mt-1")}>{helpText}</div>}
+          </div>
+        </details>
       )}
       {warning && (
         <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
@@ -156,9 +167,8 @@ export function SettingsRow({
       <div
         className={cn(
           "px-4 border-b border-border/40",
-          densityStyles[density],
+          densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
           last && "border-b-0",
-          disabled && "pointer-events-none",
         )}
       >
         {children}
@@ -171,9 +181,8 @@ export function SettingsRow({
       <div
         className={cn(
           "px-4 border-b border-border/40",
-          densityStyles[density],
+          densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
           last && "border-b-0",
-          disabled && "pointer-events-none",
         )}
       >
         <div className="mb-2.5">{labelBlock}</div>
@@ -185,14 +194,15 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-4 px-4 border-b border-border/40",
-        densityStyles[density],
+        controlLayout === "wide"
+          ? "flex flex-col items-stretch gap-2 px-4 sm:flex-row sm:items-center sm:gap-4 border-b border-border/40"
+          : "flex items-center gap-4 px-4 border-b border-border/40",
+        densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
         last && "border-b-0",
-        disabled && "pointer-events-none",
       )}
     >
       {labelBlock}
-      <div className={cn("shrink-0", disabled && "opacity-50")}>{children}</div>
+      <div className={cn("min-w-0 max-w-full shrink-0 [&_button]:max-w-full [&_input]:max-w-full sm:self-auto", disabled && "opacity-50")}>{children}</div>
     </div>
   );
 }
