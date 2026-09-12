@@ -96,11 +96,12 @@ export default function ProviderTable({ providers, isLoading, selectedId, onSele
       pageSizeOptions={[10, 25, 50, 100]}
       defaultSort={{ id: "name", direction: "asc" }}
       onRowOpen={onSelect}
+      detail={{ enabled: false }}
       rowClassName={(item) => item.id === selectedId ? "bg-primary/10 hover:bg-primary/15" : undefined}
-      emptyState={{ title: "No providers found", icon: Building2 }}
+      emptyState={{ title: "No providers found", icon: <Building2 className="h-8 w-8" /> }}
       toolbar={{ leading: <div className="flex items-center gap-2"><h2 className="text-sm font-semibold">AI Providers</h2><Badge variant="outline" className="text-xs">{providers.length}</Badge></div>, actions: <Button size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={onCreate}><Plus className="h-3.5 w-3.5" />New Provider</Button> }}
       rowActions={(item) => <RowActions item={item} onEdit={onEdit} onDelete={onDelete} />}
-      mobileCards={(item, _index, controls) => <article className={item.id === selectedId ? "space-y-2 rounded-md border border-primary/40 bg-primary/10 p-3" : "space-y-2 rounded-md border border-border p-3"}><div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate font-medium">{item.name}</p><p className="truncate font-mono text-xs text-muted-foreground">{item.slug || "—"}</p></div>{item.is_system ? <Badge variant="outline" className="shrink-0 gap-1 text-xs"><Lock className="h-3 w-3" />System</Badge> : null}</div><ProviderLinks item={item} /><div className="flex justify-end">{controls.actions}</div></article>}
+      mobileCards={(item, _index, controls) => <article className={item.id === selectedId ? "space-y-2 rounded-md border border-primary/40 bg-primary/10 p-3" : "space-y-2 rounded-md border border-border p-3"}><div className="flex items-start justify-between gap-2"><div className="min-w-0"><button type="button" className="block max-w-full truncate text-left font-medium hover:underline" onClick={() => onSelect(item)}>{item.name}</button><p className="truncate font-mono text-xs text-muted-foreground">{item.slug || "—"}</p></div>{item.is_system ? <Badge variant="outline" className="shrink-0 gap-1 text-xs"><Lock className="h-3 w-3" />System</Badge> : null}</div><ProviderLinks item={item} /><div className="flex justify-end">{controls.actions}</div></article>}
     />
   </div>;
 }
