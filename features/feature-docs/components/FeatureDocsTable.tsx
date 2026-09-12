@@ -241,7 +241,6 @@ export default function FeatureDocsTable({
         getRowId={(row) => row.id}
         defaultSort={{ id: "path", direction: "asc" }}
         isFetching={loading && rows.length > 0}
-        pageSize={0}
         emptyState={{
           title: "No docs in this zone match your filters.",
         }}

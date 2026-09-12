@@ -94,7 +94,7 @@ describe("FeatureDocsTable", () => {
     });
 
     if (!tableProps) throw new Error("Feature docs table did not render");
-    expect(tableProps.pageSize).toBe(0);
+    expect(tableProps.pageSize).toBeUndefined();
     expect(tableProps.defaultSort).toEqual({ id: "path", direction: "asc" });
     expect(tableProps.getRowId(rows[0])).toBe("1");
     expect(tableProps.data.map((row) => row.id)).toEqual(["1", "2"]);
