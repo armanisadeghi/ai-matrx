@@ -796,14 +796,19 @@ export const aiModelService = {
   // ── Endpoint CRUD (ai.endpoint — one row per serving vendor) ──
 
   async fetchEndpoints(): Promise<AiEndpoint[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("endpoint")
-      .select("*")
-      .is("deleted_at", null)
-      .order("display_name", { ascending: true });
-    if (error) throw error;
-    return data.map(parseEndpoint);
+    const rows = await readAllRows<AiEndpointRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("endpoint")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("display_name", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.endpoint" },
+    );
+    return rows.map(parseEndpoint);
   },
 
   async createEndpoint(payload: AiEndpointInsert): Promise<AiEndpoint> {
@@ -844,14 +849,19 @@ export const aiModelService = {
   // ── API CRUD (ai.api — one row per wire contract / translator) ──
 
   async fetchApis(): Promise<AiApi[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("api")
-      .select("*")
-      .is("deleted_at", null)
-      .order("display_name", { ascending: true });
-    if (error) throw error;
-    return data.map(parseApi);
+    const rows = await readAllRows<AiApiRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("api")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("display_name", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.api" },
+    );
+    return rows.map(parseApi);
   },
 
   async createApi(payload: AiApiInsert): Promise<AiApi> {
