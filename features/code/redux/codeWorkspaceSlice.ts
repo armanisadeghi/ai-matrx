@@ -188,11 +188,12 @@ const slice = createSlice({
       state.farRightOpen = action.payload;
     },
     setActiveSandboxId(state, action: PayloadAction<string | null>) {
+      const changedSandbox = state.activeSandboxId !== action.payload;
       state.activeSandboxId = action.payload;
       // Reset any custom explorer root when a new sandbox is connected so
       // the user always starts at the adapter's default path.
       state.explorerRootOverride = null;
-      state.activeRepositoryRoot = null;
+      if (changedSandbox) state.activeRepositoryRoot = null;
       // Disconnecting clears the proxy URL too; re-connecting will set
       // it via `setActiveSandboxProxyUrl` below.
       if (action.payload === null) {
@@ -201,10 +202,12 @@ const slice = createSlice({
       }
     },
     setActiveSandbox(state, action: PayloadAction<SandboxInstance | null>) {
+      const nextSandboxId = action.payload?.id ?? null;
+      const changedSandbox = state.activeSandboxId !== nextSandboxId;
       state.activeSandbox = action.payload;
-      state.activeSandboxId = action.payload?.id ?? null;
+      state.activeSandboxId = nextSandboxId;
       state.activeSandboxProxyUrl = action.payload?.proxy_url ?? null;
-      state.activeRepositoryRoot = null;
+      if (changedSandbox) state.activeRepositoryRoot = null;
       if (action.payload === null) {
         state.explorerRootOverride = null;
       }

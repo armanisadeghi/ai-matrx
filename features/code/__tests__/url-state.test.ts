@@ -6,6 +6,7 @@ import {
   withCodeWorkspaceUrlState,
 } from "../url-state";
 import codeWorkspaceReducer, {
+  setActiveSandbox,
   setActiveRepositoryRoot,
   setActiveSandboxId,
   setExplorerSandboxMode,
@@ -128,5 +129,17 @@ describe("code workspace URL state", () => {
       codeWorkspaceReducer(withRepository, setActiveSandboxId("sandbox-2"))
         .activeRepositoryRoot,
     ).toBeNull();
+  });
+
+  it("preserves the repository when current sandbox metadata refreshes", () => {
+    const withRepository = codeWorkspaceReducer(
+      codeWorkspaceReducer(undefined, setActiveSandboxId("sandbox-2")),
+      setActiveRepositoryRoot("/workspace/repo"),
+    );
+    const refreshed = codeWorkspaceReducer(
+      withRepository,
+      setActiveSandbox({ id: "sandbox-2", proxy_url: null } as never),
+    );
+    expect(refreshed.activeRepositoryRoot).toBe("/workspace/repo");
   });
 });
