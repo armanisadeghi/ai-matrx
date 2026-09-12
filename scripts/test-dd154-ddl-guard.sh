@@ -110,7 +110,7 @@ console.log('PASS fixture: 9 default expression hashes exactly match production 
 NODE
 
 set +e
-"${PSQL[@]}" -f "$REPO/scripts/migration-drafts/dd154_org_assignment_ddl_prevention.sql" >"$RUN_DIR/original.out" 2>&1
+"${PSQL[@]}" -f "$REPO/migrations/dd154_org_assignment_ddl_prevention.sql" >"$RUN_DIR/original.out" 2>&1
 ORIGINAL_RC=$?
 set -e
 if [[ $ORIGINAL_RC -eq 0 ]] || ! grep -q 'frozen organization-default debt changed (expected 9 exact attrdef rows, found 0)' "$RUN_DIR/original.out"; then
@@ -125,9 +125,9 @@ echo 'PASS red control: original production-OID migration refused the local clon
 "${PSQL[@]}" -c "CREATE TABLE public.preexisting_tenth_default (organization_id uuid NOT NULL DEFAULT public.current_personal_org_id())" >/dev/null
 echo 'ATTACK setup: added a tenth pre-existing organization default after the nine-row capture' | tee -a "$RESULTS"
 
-node - "$REPO/scripts/migration-drafts/dd154_org_assignment_ddl_prevention.sql" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" "$REPO/scripts/migration-drafts/dd154_rollback_probes.sql" <<'NODE'
+node - "$REPO/migrations/dd154_org_assignment_ddl_prevention.sql" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" <<'NODE'
 const fs=require('fs'),crypto=require('crypto');
-const [src,mapfile,out,probes]=process.argv.slice(2);
+const [src,mapfile,out]=process.argv.slice(2);
 const old=new Map([
 ['admin.feature_docs','1702067'],['context.system_context_item','3421071'],['education.learn_doc','1700870'],
 ['platform.output_feedback','1700228'],['seo.keyword','1709788'],['seo.keyword_edge','1709833'],
@@ -159,11 +159,13 @@ for(const [ref,oid] of rows){
 let reversed=sql;
 for(const [ref,oid] of rows) reversed=reversed.split(`${oid}::oid`).join(`${old.get(ref)}::oid`);
 if(reversed!==original) throw new Error('mapped migration changed bytes beyond nine OID constants');
-const probeSql=fs.readFileSync(probes,'utf8');
+const probeMarker='-- dd154 rollback-only live probes.';
+if (original.split(probeMarker).length !== 2) throw new Error('applied migration must contain exactly one rollback-probe section');
+const probeSql=original.slice(original.indexOf(probeMarker));
 const invertedProbeSql=probeSql.replace(') <> 1 THEN', ') = 1 THEN');
 if (invertedProbeSql === probeSql) throw new Error('rollback positive-probe inversion control was not generated');
 fs.writeFileSync(out,sql);
-fs.writeFileSync(`${out}.with-probes.sql`, `${sql}\n${probeSql}`);
+fs.writeFileSync(`${out}.with-probes.sql`, sql);
 fs.writeFileSync(`${out}.inverted-probes.sql`, invertedProbeSql);
 console.log(`PASS harness transform: only 9 OID constants changed, each in exactly 2 sites; reverse SHA ${crypto.createHash('sha256').update(reversed).digest('hex')}`);
 NODE
