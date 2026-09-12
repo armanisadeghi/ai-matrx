@@ -257,7 +257,11 @@ export function KnobOverrideRow(props: {
 
   // The ladder is what names the control. Without one (the flat HR callers)
   // there is no `control` to honour, so the by-type editor below still runs.
-  const fieldLadder = ladder && hasFieldControl(ladder.control) ? ladder : null;
+  const fieldLadder = ladder && hasFieldControl(ladder.control)
+    ? system
+      ? { ...ladder, value: knob.platform_default, canWrite: system.canWrite, cannotWriteBecause: null }
+      : ladder
+    : null;
 
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"

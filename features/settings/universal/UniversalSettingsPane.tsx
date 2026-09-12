@@ -22,6 +22,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSegmented } from "@/components/official/settings/primitives/SettingsSegmented";
+import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { blastRadiusFor, compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
@@ -91,8 +92,13 @@ export function UniversalSettingsRows({
       ladder: resolveKnobLadder(knob, rung.kind, { isOrgAdmin: canManageOrganization }),
     };
   });
+  const visible = settings.changedOnly
+    ? resolved.filter(({ knob, ladder }) => settings.editingContext === "system"
+      ? JSON.stringify(knob.platform_default) !== JSON.stringify(knob.shipped_default)
+      : ladder.setHere)
+    : resolved;
   const groups = new Map<string, typeof resolved>();
-  for (const row of resolved) {
+  for (const row of visible) {
     const list = groups.get(row.ladder.group) ?? [];
     list.push(row);
     groups.set(row.ladder.group, list);
@@ -152,7 +158,7 @@ export function OrganizationRungSection() {
 
 /** Shared context selector used by the first screen and every registry section. */
 export function SettingsContextControls() {
-  const { editingContext, selectEditingContext, canManageSystem, organizationName } = useUniversalSettings();
+  const { editingContext, selectEditingContext, canManageSystem, organizationName, changedOnly, setChangedOnly } = useUniversalSettings();
   const options = [
     { value: "user", label: "Personal" },
     { value: "organization", label: "Organization" },
@@ -170,6 +176,14 @@ export function SettingsContextControls() {
         value={editingContext}
         options={options}
         onValueChange={(value) => selectEditingContext(value as "user" | "organization" | "system")}
+      />
+      <SettingsSwitch
+        label="Changed only"
+        description={editingContext === "system"
+          ? "Show only platform values that differ from their registered default."
+          : "Show only settings with an override saved at this level."}
+        checked={changedOnly}
+        onCheckedChange={setChangedOnly}
         last
       />
     </SettingsSection>

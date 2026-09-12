@@ -73,6 +73,9 @@ export type UniversalSettingsValue = {
   editingContext: "user" | "organization" | "system";
   selectEditingContext: (context: "user" | "organization" | "system") => void;
   canManageSystem: boolean;
+  /** Show only values explicitly set at the selected editing level. */
+  changedOnly: boolean;
+  setChangedOnly: (changedOnly: boolean) => void;
   organizationId: string | null;
   organizationName: string | null;
   /** The caller may write the organization rung (owner/admin). */
@@ -112,6 +115,8 @@ const EMPTY: UniversalSettingsValue = {
   editingContext: "user",
   selectEditingContext: () => {},
   canManageSystem: false,
+  changedOnly: false,
+  setChangedOnly: () => {},
   organizationId: null,
   organizationName: null,
   canManageOrganization: false,
@@ -243,6 +248,7 @@ export function UniversalSettingsProvider({
   const { defaultOrganizationId } = useDefaultOrganization();
   const [chosenOrgId, setChosenOrgId] = useState<string | null>(null);
   const [editingContext, selectEditingContext] = useState<"user" | "organization" | "system">("user");
+  const [changedOnly, setChangedOnly] = useState(false);
   const organizationId =
     chosenOrgId ??
     organizations.find((org) => org.id === defaultOrganizationId)?.id ??
@@ -391,6 +397,8 @@ export function UniversalSettingsProvider({
       if (context !== "system" || canManageSystem) selectEditingContext(context);
     },
     canManageSystem,
+    changedOnly,
+    setChangedOnly,
     organizationId,
     organizationName: organization?.name ?? null,
     canManageOrganization:

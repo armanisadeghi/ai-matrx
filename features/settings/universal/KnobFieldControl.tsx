@@ -45,6 +45,7 @@ import { availableVoices } from "@/lib/cartesia/voices";
 import { formatKnobValue, type KnobControl, type KnobLadder } from "@/lib/scoped-config/ladder";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 /** The control kinds this file renders. Anything else keeps the row's own editor. */
 const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
@@ -54,6 +55,7 @@ const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
   "model",
   "voice",
   "secret",
+  "json",
 ]);
 
 export function hasFieldControl(control: KnobControl): boolean {
@@ -91,9 +93,54 @@ export function KnobFieldControl(props: KnobFieldControlProps) {
       return <VoiceField {...props} />;
     case "secret":
       return <SecretField knob={knob} />;
+    case "json":
+      return <JsonField {...props} />;
     default:
       return null;
   }
+}
+
+/** Structured values are inspectable by default and editable only on intent. */
+function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
+  const [editing, setEditing] = useState(false);
+  const [raw, setRaw] = useState(() => JSON.stringify(ladder.value, null, 2));
+  const [error, setError] = useState<string | null>(null);
+  const reset = () => {
+    setRaw(JSON.stringify(ladder.value, null, 2));
+    setError(null);
+    setEditing(false);
+  };
+  if (!editing) {
+    return (
+      <Button size="sm" variant="outline" disabled={disabled} onClick={() => setEditing(true)}>
+        Edit structured value
+      </Button>
+    );
+  }
+  return (
+    <div className="w-full min-w-64 space-y-2">
+      <Textarea
+        aria-label="Structured value"
+        className="min-h-28 font-mono text-xs"
+        value={raw}
+        disabled={disabled}
+        onChange={(event) => { setRaw(event.target.value); setError(null); }}
+      />
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <div className="flex gap-2">
+        <Button size="sm" disabled={disabled} onClick={() => {
+          try {
+            const parsed: unknown = JSON.parse(raw);
+            setError(null);
+            void Promise.resolve(onCommit(parsed)).then(() => setEditing(false));
+          } catch {
+            setError("Enter valid JSON before saving.");
+          }
+        }}>Save structured value</Button>
+        <Button size="sm" variant="ghost" disabled={disabled} onClick={reset}>Cancel</Button>
+      </div>
+    </div>
+  );
 }
 
 function SwitchField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
