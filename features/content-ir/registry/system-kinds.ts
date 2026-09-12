@@ -102,7 +102,6 @@ import { TABLE_KINDS_KIND_DEFINITIONS } from "../kinds/table-kinds";
 import { TRUST_ENVELOPE_KIND_DEFINITIONS } from "../kinds/trust-envelope";
 import { COMMERCE_KINDS_KIND_DEFINITIONS } from "../kinds/commerce-kinds";
 import { PRINT_LULU_KIND_DEFINITIONS } from "../kinds/print-kinds";
-import { MEET_RESULT_KIND_DEFINITIONS } from "../kinds/meet-results";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -209,8 +208,6 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // destination, a cover canvas, the catalog subset matching a filter, and a
   // print job. Every amount is a decimal string and stays one.
   ...PRINT_LULU_KIND_DEFINITIONS,
-  // Meet durable-operation results reuse the platform operation-result route.
-  ...MEET_RESULT_KIND_DEFINITIONS,
   // Compiled MIRROR of the already-registered python-owned `trust_envelope` +
   // `citation` kinds (their DB rows carry a NULL `data[]`, so nothing else can
   // resolve them). Registered here so every kind that carries grounding
