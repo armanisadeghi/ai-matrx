@@ -402,6 +402,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 
 ## Change Log
 
+- 2026-09-11 — **"Insert reference…" / "Copy reference…" joins the core verbs.** New clipboard-section leaf (`insert-reference`, role `insertReference`) on every surface: opens the `referencePicker` overlay (type → action → search, common types first, all pickable types behind a grouped browse), inserts the canonical minified ```matrx reference fence at the caret on editable surfaces (own paragraph), copies with toast + manual-copy fallback everywhere else. Handler `handleInsertReference` in the engine; layout parity pinned in `layout-parity.test.ts`; verified live on `/notes` (fence inserted, chip rendered in split preview, chip opens the chat).
+
 - 2026-09-08 — Rollout program handoff written (`docs/handoffs/context-menu-everywhere-rollout.md`) and the census docstring re-synced with what the script actually reports (`form-fields`, `attribution`, plus the `deliberately-absent` / `covered-by` markers). Verified live: 6 rollout primitives intact, 119/119 tests, type-check green, 39 registered identities.
 
 - `2026-08-31` — **Mobile long-press has a deterministic touch-path witness.** A focused component test dispatches a real `touchstart`, proves the drawer stays closed through 479 ms, and proves it opens at the canonical 480 ms threshold for `matrx-user/settings`. This distinguishes genuine press-and-hold behavior from the separate mobile `contextmenu` compatibility path.

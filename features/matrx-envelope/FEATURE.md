@@ -283,6 +283,8 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
+- 2026-09-11 — **User-grade reference picker.** `components/reference-picker/` (ReferencePickerBody + referencePickerTypes) is the "Add a reference" flow behind the v3 menu's Insert/Copy reference action — composes `ReferenceTypeAdder`/`RecordReferencePicker`, the entity registry, and the directive catalog (other actions loaded lazily, Link default). `referenceFence.ts` gained `buildDirectiveFence(class, noun, items)` — the same ONE minting seam, class-generic; `buildReferenceFence` now delegates to it.
+
 - 2026-09-08 — Two defects found on the SHIPPED card at demos.aimatrx.com and fixed: a full
   UUID rendered as a fact chip (`model_id` is 36 chars, the scalar cutoff was 40 — an id is
   now never a chip, guarded by two regression tests), and the item name lost the space fight
