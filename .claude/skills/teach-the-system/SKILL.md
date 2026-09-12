@@ -294,3 +294,24 @@ lines by relocating trial-specific detail into the trial's register.
   real miss: it accepted a false "I already told you" claim without checking the record, leaving a
   genuine gap uncaptured — worth watching across future trials before calling it a pattern. Test the
   hard persona, not just the easy one, before judging an interviewer's real quality.
+- 2026-09-12 — (trial 9, runs 3–6) A fix to a kind's MODEL is not live until its registry row is
+  republished; a CI amnesty list that "warns" on a fatally-enforced kind is a hole (W57). The
+  Conductor wires template paths blind to the upstream shape; nothing checks `$item.x` before money
+  is spent (W58). Four parallel agents deadlock on the secrets battery's per-generation UPDATE;
+  a transient SQLSTATE was never retried anywhere (W59). Each was the NEXT step after the previous
+  fix — run the desk again after every fix; the walls are sequential, not parallel.
+- 2026-09-12 — An empty-but-schema-valid answer passes kind validation and the run says "completed"
+  (W60: the audit, $2.24, three calls, every field blank). Read the deliverable's fields, not the
+  run status, before calling a run a success.
+- 2026-09-12 — Another agent's live migration can take the whole platform down under you (W61: a
+  `current_user = 'service_role'` test inside a SECURITY DEFINER body is never true — current_user
+  is the OWNER there). When the Conductor panel refuses with a mandate message, read the function
+  and `_schema_migrations` since the last time it worked before blaming the product.
+- 2026-09-12 — The exam judgment is the capability finding: the desk held 416 craft rules and the
+  writer obeyed few of the ones that matter, because NO step judges a Masterwork's output against
+  its own Rulebook and the Audition cannot do a gap analysis against a sealed reference. Feed the
+  editor's instructions back to the Conductor as rules and self-checks, not as a rewrite.
+- 2026-09-12 — Exam fairness: the published piece carried reporting the bundle lacked (interviews,
+  later cases). Tell the judge to score only what the record allows, or bundle what the newsroom
+  actually had; otherwise the verdict measures access, not craft.
+
