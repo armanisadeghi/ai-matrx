@@ -3717,7 +3717,7 @@ the source package has the exports, the installed copy does not. Fix = publish `
 adopt it here in the same session (THE SAME-SESSION LAW). Pre-existing and unrelated to the
 organization work; left untouched rather than widening scope. Decides: nobody — do it.
 
-### D312 — aidream refuses every authenticated request with no organization, including platform-admin reads (2026-09-12)
+### D312 — PARTLY RESOLVED — org admission vs platform-admin reads (2026-09-12)
 Verdict recorded from reading the routes, not guessed. `packages/matrx-connect/matrx_connect/middleware/auth.py`
 gates EVERY authenticated non-exempt request on a resolved organization
 (`_organization_admission_reason`), so a client cannot drop `X-Organization-Id` even where the
@@ -3734,3 +3734,22 @@ adding to the org-admission exempt list is a platform auth-policy edit with a bl
 this frontend class, and the frontend side is now honest either way (the console states the
 condition and offers the picker). Decides: whoever owns matrx-connect auth admission — the two
 existing exemptions are the precedent, not a new argument.
+
+**RESOLVED for the admin half, 2026-09-12 (aidream `9356694f6` + `91975b486`).** A peer working the
+server half of this same class made exactly this edit and guarded it: `ORGANIZATION_EXEMPT_PATHS`
+now states the rule once for `/admin`, `/scheduling/admin`, `/rag/admin`, `/knowledge/admin` and
+`/agent-usage` (each with its legacy `/api/...` twin), on the reasoning already written there.
+Guard `aidream/api/tests/test_admin_routes_are_admin_gated_not_org_gated.py` (6 tests) was
+independently re-verified by the owning session: reverting the exemptions fails
+`test_admin_paths_are_exempt` AND the real-request test that reproduces the exact 400; restoring
+them passes, file byte-identical. That guard also found a NEW defect on its first run —
+`GET /legal/admin/version` is the one route under an `/…/admin` mount with no admin check, so
+`/legal/admin` was deliberately LEFT gated rather than opened (filed separately as AD226 in
+aidream's ledger).
+
+**STILL OPEN: `/scheduler`.** That prefix was NOT exempted and should not be on the admin
+argument — it serves a signed-in person's OWN scheduled tasks (`/schedules`), which is
+user-scoped, not platform-admin. Whether a user-scoped, RLS-by-user route may run without an
+ambient organization is a genuinely different question from the admin one, and the answer binds
+the tenancy model, so it was not decided by either agent. Decides: whoever owns matrx-connect
+auth admission.
