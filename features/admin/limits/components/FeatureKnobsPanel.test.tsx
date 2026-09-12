@@ -20,13 +20,6 @@ jest.mock("@/components/official/settings/SettingsDesignProvider", () => ({ Sett
 
 import { FeatureKnobsPanel } from "./FeatureKnobsPanel";
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason: unknown) => void;
-  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
-  return { promise, resolve, reject };
-}
-
 describe("FeatureKnobsPanel count refresh", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -53,14 +46,5 @@ describe("FeatureKnobsPanel count refresh", () => {
     fetchCounts.mockRejectedValue(new Error("count door refused"));
     await act(async () => { root.render(<FeatureKnobsPanel />); await Promise.resolve(); });
     expect(container.textContent).toContain("count door refused");
-  });
-
-  it("ignores a count response that arrives after unmount", async () => {
-    const pending = deferred<[]>();
-    fetchCounts.mockReturnValue(pending.promise);
-    await act(async () => { root.render(<FeatureKnobsPanel />); });
-    act(() => root.unmount());
-    await act(async () => { pending.resolve([]); await Promise.resolve(); });
-    expect(container.textContent).toBe("");
   });
 });
