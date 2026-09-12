@@ -28,24 +28,41 @@ interface OrchestratorSystemInfo {
     error?: string
     /** Raw payload from {orchestrator}/system when ok */
     system?: Record<string, unknown>
-    /** Raw payload from {orchestrator}/ when ok */
-    info?: Record<string, unknown>
-    /** Raw /api-surface route count when ok */
+    /** Release identity reported by the running orchestrator. */
+    release?: {
+        version?: string
+        sourceSha?: string
+    }
+    /** Authoritative /api-surface route count when available. */
     routeCount?: number
     fetchedAt: string
 }
 
-async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSystemInfo> {
+function stringField(payload: unknown, field: string): string | undefined {
+    if (!payload || typeof payload !== 'object') return undefined
+    const value = (payload as Record<string, unknown>)[field]
+    return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function routeCountFromSurface(payload: unknown): number | undefined {
+    if (!payload || typeof payload !== 'object') return undefined
+    const routes = (payload as Record<string, unknown>).routes
+    return Array.isArray(routes) ? routes.length : undefined
+}
+
+export async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSystemInfo> {
     const target = resolveOrchestratorByTier(tier)
     const fetchedAt = new Date().toISOString()
     const headers = orchestratorJsonHeaders(target)
 
     try {
-        // Three reads in parallel: /system (auth) + / (no auth) + /api-surface (no auth)
+        // All three endpoints are protected by the per-tier API key. Metadata
+        // without that key used to be silently omitted while the system card
+        // still looked healthy.
         const [systemResp, rootResp, surfaceResp] = await Promise.allSettled([
             fetch(`${target.url}/system`, { headers, signal: AbortSignal.timeout(8000) }),
-            fetch(`${target.url}/`, { signal: AbortSignal.timeout(5000) }),
-            fetch(`${target.url}/api-surface`, { signal: AbortSignal.timeout(5000) }),
+            fetch(`${target.url}/`, { headers, signal: AbortSignal.timeout(5000) }),
+            fetch(`${target.url}/api-surface`, { headers, signal: AbortSignal.timeout(5000) }),
         ])
 
         const sys =
@@ -79,8 +96,11 @@ async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSystemInfo>
             ok: true,
             status: 'healthy',
             system: sys,
-            info,
-            routeCount: surface?.routes?.length,
+            release: {
+                version: stringField(info, 'version') ?? stringField(surface, 'version'),
+                sourceSha: stringField(info, 'source_sha') ?? stringField(surface, 'source_sha'),
+            },
+            routeCount: routeCountFromSurface(surface),
             fetchedAt,
         }
     } catch (err) {
