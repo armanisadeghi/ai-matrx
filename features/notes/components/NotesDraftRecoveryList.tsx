@@ -25,7 +25,6 @@ import {
 } from "../redux/slice";
 import { createNewNote, fetchNoteContent } from "../redux/thunks";
 import { selectInstanceTabs, selectNotesMap } from "../redux/selectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { isOrganizationSelectionCancelled, requestOrganizationContextChoice } from "@/lib/organization/organization-gate";
 import { discardNoteDraft, listNoteDrafts } from "../utils/notesDrafts";
 import {
@@ -43,7 +42,6 @@ export function NotesDraftRecoveryList({
 }: NotesDraftRecoveryListProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector((state) => state.userAuth.id);
-  const organizationId = useAppSelector(selectOrganizationId);
   const notesMap = useAppSelector(selectNotesMap);
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
   const [busyKey, setBusyKey] = useState<string | null>(null);
