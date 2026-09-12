@@ -3424,6 +3424,14 @@ export interface SearchReplaceRenderData {
   language?: string | null;
 }
 
+export interface DirectiveReceiptRenderData {
+  directive: string;
+  outcome: "proposed" | "applied" | "already_applied" | "failed" | "blocked";
+  message: string;
+  resource_kind?: string;
+  resource_ids?: string[];
+}
+
 export interface UnknownDataEventData {
   [key: string]: unknown;
   _dataType: string;
@@ -3567,6 +3575,15 @@ export interface SearchReplaceRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/** Kind Directive apply receipt — FE-synthesized from the kind-discriminated directive_apply.* events. Carries the SERVER's own sentence for the outcome (created / already applied / proposed / failed / blocked); never composed client-side. Never persisted to cx_message.content. */
+export interface DirectiveReceiptRenderBlock {
+  type: "directive_receipt";
+  /** Always null — a non-null content would leak into committed message parts. The payload lives on `data`. */
+  content: null;
+  data: DirectiveReceiptRenderData;
+  metadata?: Record<string, unknown>;
+}
+
 /** Fallback for data events whose type is not recognized; _dataType preserves the original type string. */
 export interface UnknownDataEventRenderBlock {
   type: "unknown_data_event";
@@ -3586,10 +3603,11 @@ export type ServerProtocolRenderBlock =
   | ScrapeBatchCompleteRenderBlock
   | ValueStoreStoredRenderBlock
   | ContextGroomedRenderBlock
-  | SearchReplaceRenderBlock;
+  | SearchReplaceRenderBlock
+  | DirectiveReceiptRenderBlock;
 
 export const SERVER_PROTOCOL_RENDER_BLOCK_TYPES = new Set<string>([
-  "function_result", "workflow_step", "search_error", "structured_input_warning", "podcast_stage", "podcast_complete", "scrape_batch_complete", "value_store_stored", "context_groomed", "search_replace",
+  "function_result", "workflow_step", "search_error", "structured_input_warning", "podcast_stage", "podcast_complete", "scrape_batch_complete", "value_store_stored", "context_groomed", "search_replace", "directive_receipt",
 ]);
 
 /** Generated-media delivery blocks — generic media primitives. */

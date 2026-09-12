@@ -27,6 +27,13 @@ export interface ProposedDirective {
   directiveClass: string;
   noun: string;
   summary: string | null;
+  /**
+   * THE SERVER'S SENTENCE (DD-118) — what confirming WILL make, e.g. "Proposed —
+   * confirm to create 1 project." Rendered verbatim on the card: the
+   * destructive-click law says an expensive or creating click names its
+   * consequence, and the client is not the party that knows the consequence.
+   */
+  message: string;
   itemCount: number;
   /** The round-tripped two-key shell the client POSTs back verbatim. */
   shell: Record<string, unknown>;

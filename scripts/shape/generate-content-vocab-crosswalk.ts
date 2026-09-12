@@ -146,6 +146,7 @@ const PROTOCOL_ITEMS: ReadonlyMap<string, string> = new Map([
   ["podcast_complete", "podcast pipeline lifecycle event"],
   ["scrape_batch_complete", "scrape pipeline lifecycle event"],
   ["search_replace", "document search/replace edit-operation event"],
+  ["directive_receipt", "Kind Directive apply receipt event — carries the server's outcome sentence; protocol, not content"],
 ]);
 
 /** Generic scalar / markup / media primitives — real content, but no domain contract worth a Shape. */

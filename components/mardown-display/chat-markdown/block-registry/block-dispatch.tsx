@@ -1270,6 +1270,28 @@ const PROTOCOL_BLOCK_DISPATCH = {
     );
   },
 
+  directive_receipt: ({ block, index }) => {
+    // THE RECEIPT (DD-118). `message` is the SERVER's sentence and is rendered
+    // verbatim — an applied write, a deduped re-send and an unconfirmed
+    // proposal are three different sentences because the server wrote three
+    // different sentences, never because this file decided so.
+    const sd = block.serverData ?? {};
+    return (
+      <BlockComponents.DirectiveReceiptBlock
+        key={index}
+        directive={(sd.directive as string) ?? ""}
+        outcome={
+          (sd.outcome as React.ComponentProps<
+            typeof BlockComponents.DirectiveReceiptBlock
+          >["outcome"]) ?? "applied"
+        }
+        message={(sd.message as string) ?? ""}
+        resourceKind={sd.resource_kind as string | undefined}
+        resourceIds={sd.resource_ids as string[] | undefined}
+      />
+    );
+  },
+
   context_groomed: ({ block, index }) => {
     // Groom receipt — the MODEL's view was compacted; user view unchanged.
     const sd = block.serverData ?? {};

@@ -62,6 +62,10 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
     : proposal.directive;
   const itemLabel = `${proposal.itemCount} item${proposal.itemCount === 1 ? "" : "s"}`;
 
+  // THE CONSEQUENCE, NAMED BEFORE THE CLICK (DD-118). The server composed this
+  // sentence from the directive it is holding; the card shows it verbatim so
+  // Approve is never a button whose effect the user has to infer from a title.
+
   const dismiss = () =>
     dispatch(
       removeProposal({
@@ -110,8 +114,12 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
             <div className="truncate text-sm font-medium text-foreground">
               {title}
             </div>
-            <div className="truncate text-xs text-muted-foreground">
-              {proposal.summary ?? `${proposal.directive} (${itemLabel})`}
+            {/* The server's sentence, verbatim. `summary` is the machine line
+                (`directive_v1_… (1 item)`) and is the fallback only. */}
+            <div className="text-xs text-muted-foreground">
+              {proposal.message ||
+                proposal.summary ||
+                `${proposal.directive} (${itemLabel})`}
             </div>
           </div>
         </div>
