@@ -262,3 +262,15 @@ lines by relocating trial-specific detail into the trial's register.
   refused to answer a meta-question in the Expert's own voice. This directly contradicts the
   standing complaint that the interview "does a shitty job" — before assuming that report is still
   true, run a real session and quote it; a stale complaint is not evidence against today's build.
+- 2026-09-12 — (interview-lane trial 2, hard persona) Arman: a cooperative, articulate persona only
+  tests an easy human — his complaint is about a real one (terse, impatient, contradicts itself,
+  refuses, half-answers). Re-running the same interview lane with a terse GM persona (flat refusal,
+  a false "already told you" claim, a cross-turn contradiction, a within-message self-correcting
+  exception) still hit zero blocking walls: it deferred a spotted contradiction to finish a live
+  story, then returned unprompted quoting both original statements verbatim; it told apart a real
+  unresolved exception (refused to fold it in without the axis) from a self-correcting one (its own
+  stated trigger, correctly folded in without manufacturing a false contradiction); it remembered a
+  stated time limit nine turns later unprompted and accepted a flat refusal without nagging. One
+  real miss: it accepted a false "I already told you" claim without checking the record, leaving a
+  genuine gap uncaptured — worth watching across future trials before calling it a pattern. Test the
+  hard persona, not just the easy one, before judging an interviewer's real quality.
