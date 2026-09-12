@@ -158,6 +158,34 @@ export function VaultItemDetail({
     (field) => !primaryIds.has(field.id) && field.id !== recoveryCodesField?.id,
   );
   const hasProtectedExecutionField = item.fields.some(isProtectedExecutionField);
+  const panelEligibility: Record<Panel, boolean> = {
+    none: true,
+    share: caps.can_manage === true,
+    give:
+      caps.can_manage === true &&
+      Boolean(item.user_id) &&
+      !hasProtectedExecutionField,
+    transfer: caps.can_manage === true && !hasProtectedExecutionField,
+    fork: caps.can_use === true && !hasProtectedExecutionField,
+    audit: true,
+  };
+  const panelEligibilityRef = useRef(panelEligibility);
+  panelEligibilityRef.current = panelEligibility;
+  const panelIdentity = JSON.stringify([
+    item.id,
+    item.user_id,
+    hasProtectedExecutionField,
+    caps.can_use,
+    caps.can_edit,
+    caps.can_reveal,
+    caps.can_manage,
+  ]);
+  const panelIdentityRef = useRef(panelIdentity);
+  useEffect(() => {
+    if (panelIdentityRef.current === panelIdentity) return;
+    panelIdentityRef.current = panelIdentity;
+    setPanel("none");
+  }, [panelIdentity]);
 
   const renderField = (field: VaultField, emphasis: boolean) => (
     <FieldRow
@@ -182,22 +210,20 @@ export function VaultItemDetail({
       key: "transfer",
       icon: ArrowLeftRight,
       label: "Move scope",
-      show: caps.can_manage === true && !hasProtectedExecutionField,
+      show: panelEligibility.transfer,
     },
     {
       key: "give",
       icon: UserPlus,
       label: "Give ownership",
       show:
-        caps.can_manage === true &&
-        Boolean(item.user_id) &&
-        !hasProtectedExecutionField,
+        panelEligibility.give,
     },
     {
       key: "fork",
       icon: GitFork,
       label: "Copy as independent",
-      show: caps.can_use === true && !hasProtectedExecutionField,
+      show: panelEligibility.fork,
     },
     { key: "audit", icon: History, label: "Audit trail", show: true },
   ];
@@ -425,41 +451,46 @@ export function VaultItemDetail({
         )}
       </div>
 
-      {panel === "share" && (
+      {panel === "share" && panelEligibility.share && (
         <SharePanel item={item} busy={busy} actions={actions} />
       )}
-      {panel === "give" && (
+      {panel === "give" && panelEligibility.give && (
         <GiveOwnershipPanel
           item={item}
           busy={busy}
-          onGive={actions.giveOwnership}
+          onGive={async (itemId, email) => {
+            if (!panelEligibilityRef.current.give || itemId !== item.id) return;
+            await actions.giveOwnership(itemId, email);
+          }}
           onDone={() => {
             setPanel("none");
             onClose();
           }}
         />
       )}
-      {panel === "transfer" && (
+      {panel === "transfer" && panelEligibility.transfer && (
         <TransferPanel
           item={item}
           busy={busy}
           onTransfer={async (to) => {
+            if (!panelEligibilityRef.current.transfer) return;
             await actions.transfer(item.id, to);
             setPanel("none");
           }}
         />
       )}
-      {panel === "fork" && (
+      {panel === "fork" && panelEligibility.fork && (
         <ForkPanel
           item={item}
           busy={busy}
           onFork={async (to) => {
+            if (!panelEligibilityRef.current.fork) return;
             await actions.fork(item.id, to);
             setPanel("none");
           }}
         />
       )}
-      {panel === "audit" && <AuditPanel itemId={item.id} />}
+      {panel === "audit" && panelEligibility.audit && <AuditPanel itemId={item.id} />}
 
       <ConfirmDialog
         open={confirmDelete}
