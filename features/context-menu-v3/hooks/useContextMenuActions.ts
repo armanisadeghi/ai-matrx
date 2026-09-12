@@ -875,7 +875,10 @@ export function useContextMenuActions(
     }
     if (!editorId && getTextarea) {
       const textarea = getTextarea();
-      if (textarea && insertTextAtTextareaCursor(textarea, template)) {
+      if (
+        textarea &&
+        insertTextAtTextareaCursor(textarea, template, onTextReplace)
+      ) {
         onContentInserted?.();
         return;
       }
@@ -958,7 +961,13 @@ export function useContextMenuActions(
       const after = textarea.value.slice(textarea.selectionEnd);
       const lead = before.length === 0 || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
       const tail = after.length === 0 || after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
-      if (insertTextAtTextareaCursor(textarea, `${lead}${pick.fence}${tail}`)) {
+      if (
+        insertTextAtTextareaCursor(
+          textarea,
+          `${lead}${pick.fence}${tail}`,
+          onTextReplace,
+        )
+      ) {
         onContentInserted?.();
         return;
       }
