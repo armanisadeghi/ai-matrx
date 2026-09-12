@@ -74,9 +74,12 @@ jest.mock("../vault-service", () => ({
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
-(
-  globalThis as typeof globalThis & { TextDecoder?: typeof TextDecoder }
-).TextDecoder = TextDecoder;
+if (typeof globalThis.TextDecoder === "undefined") {
+  Object.defineProperty(globalThis, "TextDecoder", {
+    configurable: true,
+    value: TextDecoder,
+  });
+}
 
 const createVaultItemMock = jest.mocked(createVaultItem);
 const fetchCsvImportLimitsMock = jest.mocked(fetchCsvImportLimits);
