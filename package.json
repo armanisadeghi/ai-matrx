@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.1875",
+  "version": "0.4.1876",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -333,6 +333,9 @@
     "check:doc-claims": "tsx scripts/check-doc-claims.ts",
     "check:shared-skills": "tsx scripts/check-shared-skills.ts",
     "check:doc-claims:strict": "tsx scripts/check-doc-claims.ts --strict",
+    "check:list-scope": "tsx scripts/check-list-scope.ts",
+    "check:list-scope:strict": "tsx scripts/check-list-scope.ts --strict",
+    "check:list-scope:self-test": "tsx scripts/check-list-scope.ts --self-test",
     "check:admin-door": "tsx scripts/check-admin-door.ts",
     "check:admin-door:strict": "tsx scripts/check-admin-door.ts --strict",
     "check:admin-door:self-test": "tsx scripts/check-admin-door.ts --self-test",
@@ -383,7 +386,11 @@
     "check:record-toasts": "tsx scripts/check-record-toasts.ts",
     "check:record-toasts:strict": "tsx scripts/check-record-toasts.ts --strict",
     "check:record-toasts:update": "tsx scripts/check-record-toasts.ts --update",
-    "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test"
+    "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test",
+    "test:kind-sandbox:browser": "playwright test -c playwright.kind-sandbox.config.ts",
+    "check:kind-sandbox-protocol": "tsx scripts/check-kind-sandbox-protocol.ts",
+    "check:kind-sandbox-protocol:self-test": "tsx scripts/check-kind-sandbox-protocol.ts --self-test",
+    "test:kind-sandbox": "jest features/content-ir/sandbox/__tests__ --no-coverage"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
@@ -606,7 +613,7 @@
     "@babel/types": "^7.29.8",
     "@iconify/react": "^6.0.2",
     "@next/bundle-analyzer": "^16.3.5",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/typography": "0.5.20",
     "@types/chroma-js": "^3.1.2",
@@ -614,6 +621,7 @@
     "@types/jest": "latest",
     "@types/lodash": "^4.17.25",
     "@types/node": "latest",
+    "@types/pg": "^8.23.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@types/react-katex": "latest",
@@ -642,6 +650,7 @@
     "madge": "^8.0.0",
     "openapi-typescript": "^7.13.0",
     "os-browserify": "latest",
+    "pg": "^8.23.0",
     "postcss": "latest",
     "process": "latest",
     "react-email": "^6.9.5",

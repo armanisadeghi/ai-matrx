@@ -1,4 +1,7 @@
-import { findImagesRoute, IMAGES_ROUTES } from "./imagesRoutes";
+import {
+  findImagesRoute,
+  IMAGES_ROUTES,
+} from "@/features/image-manager/components/imagesRoutes";
 
 describe("Images route authentication boundary", () => {
   it("gates only the private cloud routes in the reviewed guest-access scope", () => {

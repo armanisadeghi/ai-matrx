@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
 import { SettingsRow } from "../SettingsRow";
 import { cn } from "@/lib/utils";
@@ -34,9 +34,8 @@ export function SettingsMultiSelect<T extends string = string>({
   last,
   ...rowProps
 }: SettingsMultiSelectProps<T>) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   const [open, setOpen] = useState(false);
 

@@ -19,11 +19,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowUpRight, Infinity as InfinityIcon, Loader2, Plus } from "lucide-react";
+import {
+  ArrowUpRight,
+  Infinity as InfinityIcon,
+  Loader2,
+  Plus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
-import { fetchPlanStatus, type PlanDimension, type PlanStatus } from "../plan-service";
+import {
+  fetchPlanStatus,
+  type PlanDimension,
+  type PlanStatus,
+} from "../plan-service";
 import { CAPABILITY_REGISTRY, isCapability } from "../registry";
 
 /** Bytes get human units; everything else is a plain count. */
@@ -37,7 +46,11 @@ function formatValue(capability: string, value: number): string {
 function label(capability: string): string {
   return isCapability(capability)
     ? CAPABILITY_REGISTRY[capability].label
-    : capability;
+    : capability
+        .split(/[._]+/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
 }
 
 function periodLabel(period: string | null): string {
@@ -80,6 +93,16 @@ function DimensionRow({ d }: { d: PlanDimension }) {
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-sm font-medium text-foreground">
           {label(d.capability)}
+          <span
+            className={cn(
+              "ml-1.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium",
+              d.enforced
+                ? "bg-primary/10 text-primary"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {d.enforced ? "Enforced" : "Planning only"}
+          </span>
           {d.fromAddon ? (
             <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
               <Plus className="h-2.5 w-2.5" aria-hidden />
@@ -124,7 +147,8 @@ function DimensionRow({ d }: { d: PlanDimension }) {
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
         {limit !== null && used !== null && d.resetsAt ? (
           <span>
-            Resets {new Date(d.resetsAt).toLocaleDateString(undefined, {
+            Resets{" "}
+            {new Date(d.resetsAt).toLocaleDateString(undefined, {
               month: "short",
               day: "numeric",
             })}
@@ -139,12 +163,7 @@ function DimensionRow({ d }: { d: PlanDimension }) {
               : "Counted live by the agent system"}
           </span>
         ) : null}
-        {/* The honest disclosure: is this limit real today, or just visible? */}
-        {!d.enforced && limit !== null && limit !== 0 ? (
-          <span>Shown for planning — not enforced yet</span>
-        ) : null}
-        {d.nextPlanLimit != null && limit != null &&
-        d.nextPlanLimit > limit ? (
+        {d.nextPlanLimit != null && limit != null && d.nextPlanLimit > limit ? (
           <span>
             Next plan: {formatValue(d.capability, d.nextPlanLimit)}
             {periodLabel(d.period) ? ` ${periodLabel(d.period)}` : ""}
@@ -181,7 +200,9 @@ export function PlanUsagePanel({
   // this doctrine exists to kill. Say what's missing and how to fix it.
   if (!organizationId) {
     return (
-      <div className={cn("rounded-lg border border-border bg-card p-4", className)}>
+      <div
+        className={cn("rounded-lg border border-border bg-card p-4", className)}
+      >
         <p className="text-sm text-foreground">
           Pick an organization to see its plan.
         </p>
@@ -213,11 +234,18 @@ export function PlanUsagePanel({
   if (!status?.plan) {
     // Never a dead end: say what happened and give a way on.
     return (
-      <div className={cn("rounded-lg border border-border bg-card p-4", className)}>
+      <div
+        className={cn("rounded-lg border border-border bg-card p-4", className)}
+      >
         <p className="text-sm text-foreground">
           We couldn&apos;t load your plan just now.
         </p>
-        <Button size="sm" variant="outline" className="mt-2" onClick={() => void load()}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2"
+          onClick={() => void load()}
+        >
           Try again
         </Button>
       </div>
@@ -233,8 +261,8 @@ export function PlanUsagePanel({
         : `$${(plan.monthlyCents / 100).toFixed(0)}${plan.perSeat ? " per seat" : ""} / month`;
 
   return (
-    <div className={cn("rounded-lg border border-border bg-card", className)}>
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
+    <div className={cn("rounded-md border border-border bg-card", className)}>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-3 sm:p-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-foreground">
@@ -266,7 +294,7 @@ export function PlanUsagePanel({
         )}
       </div>
 
-      <div className="px-4">
+      <div className="px-3 sm:px-4">
         {dimensions.length === 0 ? (
           <p className="py-4 text-sm text-muted-foreground">
             This plan has no limits configured.

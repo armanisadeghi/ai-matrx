@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { SettingsRow } from "../SettingsRow";
 import { cn } from "@/lib/utils";
 import type { SettingsCommonProps } from "../types";
@@ -29,9 +29,8 @@ export function SettingsReadOnlyValue({
   last,
   ...rowProps
 }: SettingsReadOnlyValueProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   const [copied, setCopied] = useState(false);
 
@@ -46,7 +45,7 @@ export function SettingsReadOnlyValue({
   };
 
   return (
-    <SettingsRow {...rowProps} id={id} variant="inline" last={last}>
+    <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
       <div className="flex items-center gap-1.5">
         <span
           className={cn(

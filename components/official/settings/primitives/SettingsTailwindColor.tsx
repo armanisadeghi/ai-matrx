@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps } from "../types";
@@ -25,9 +26,8 @@ export function SettingsTailwindColor({
   last,
   ...rowProps
 }: SettingsTailwindColorProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   return (
     <SettingsRow {...rowProps} id={id} variant="inline" last={last}>

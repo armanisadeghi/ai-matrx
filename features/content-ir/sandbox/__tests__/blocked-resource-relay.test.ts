@@ -27,9 +27,17 @@ import { SANDBOX_PROTOCOL_VERSION } from "../protocol";
 
 describe("a resource the frame's CSP refuses", () => {
     let uninstall: (() => void) | null = null;
+    const openChannels: NodeMessageChannel[] = [];
     afterEach(() => {
         uninstall?.();
         uninstall = null;
+        // Close every port: an open MessagePort keeps the jest worker alive
+        // and leaks this file's state into whatever runs next.
+        for (const channel of openChannels) {
+            channel.port1.close();
+            channel.port2.close();
+        }
+        openChannels.length = 0;
         document.body.innerHTML = "";
     });
 
@@ -38,6 +46,7 @@ describe("a resource the frame's CSP refuses", () => {
         const { mount } = recordingMount();
         uninstall = installTrackedFrameBridge(mount);
         const channel = new NodeMessageChannel();
+        openChannels.push(channel);
         const fromFrame: unknown[] = [];
         (channel.port1 as unknown as MessagePort).onmessage = (event) => {
             fromFrame.push((event as MessageEvent).data);
@@ -59,6 +68,12 @@ describe("a resource the frame's CSP refuses", () => {
                     props: { data: {}, kind: "employee_card", config: {}, uiOptions: {} },
                     themeTokens: {},
                     colorScheme: "light",
+                    // S5b: a real host always says how wide the reader's
+                    // window is and how much of it this component gets; a
+                    // frame told neither says so, which would be a second
+                    // error message in every assertion below.
+                    readerViewportWidth: 1400,
+                    contentWidth: 674,
                 },
                 origin: window.location.origin,
                 ports: [channel.port2 as unknown as MessagePort],

@@ -48,17 +48,44 @@ test.describe("the Shape sandbox boundary, in a real browser", () => {
     test("a live component renders in the frame, reaches nothing, and is refused by name", async ({
         page,
     }) => {
-        // Every request the page or any of its frames makes, with the frame it
-        // came from — this is what "zero outbound" is measured against.
-        const requests: Array<{ url: string; fromSandbox: boolean }> = [];
-        const record = (request: Request) => {
+        /**
+         * WHAT "ZERO OUTBOUND" ACTUALLY MEANS, measured honestly.
+         *
+         * Chromium creates a request object and THEN refuses it, so a
+         * `request` event fires for a URL that never leaves the machine —
+         * asserting on that event alone would report an escape that did not
+         * happen. What separates the two is the outcome: a refused request
+         * ends in `requestfailed` with the block named in `errorText`, and a
+         * request that actually left produces a `response`. This records both
+         * and asserts on the outcome.
+         */
+        // Keyed by the Request OBJECT, never by its URL: the framed probes and
+        // the in-page control probes fetch the SAME urls, and a url-keyed map
+        // lets the second silently overwrite the first — which reported "the
+        // frame tried nothing" while it had tried twice.
+        const attempts = new Map<Request, { fromSandbox: boolean; url: string; outcome: string }>();
+        const fromSandbox = (request: Request) => {
             const frame = request.frame();
-            requests.push({
+            return Boolean(frame && frame.url().includes("/kind-sandbox"));
+        };
+        const onRequest = (request: Request) => {
+            attempts.set(request, {
+                fromSandbox: fromSandbox(request),
                 url: request.url(),
-                fromSandbox: Boolean(frame && frame.url().includes("/kind-sandbox")),
+                outcome: "pending",
             });
         };
-        page.on("request", record);
+        const onFailed = (request: Request) => {
+            const entry = attempts.get(request);
+            if (entry) entry.outcome = `failed: ${request.failure()?.errorText ?? "?"}`;
+        };
+        const onResponse = (response: { request: () => Request; status: () => number }) => {
+            const entry = attempts.get(response.request());
+            if (entry) entry.outcome = `answered ${response.status()}`;
+        };
+        page.on("request", onRequest);
+        page.on("requestfailed", onFailed);
+        page.on("response", onResponse);
 
         await page.goto(WITNESS, { waitUntil: "load" });
         await page.waitForFunction(() => (window as never as { __READY__?: boolean }).__READY__ === true);
@@ -155,20 +182,38 @@ test.describe("the Shape sandbox boundary, in a real browser", () => {
             "the javascript: URL did not run in the page either — the probe itself is broken",
         ).toBe(true);
 
-        // (a) zero outbound from the frame.
-        const escaped = requests.filter(
-            (r) => r.fromSandbox && !r.url.startsWith(page.url().split("/__kind")[0]),
+        // (a) ZERO OUTBOUND from the frame: every probe URL the frame tried
+        // ended in a failure, and not one of them was ever answered.
+        const appOrigin = new URL(page.url()).origin;
+        const leftTheFrame = [...attempts.values()].filter(
+            (entry) => entry.fromSandbox && !entry.url.startsWith(appOrigin),
         );
+        // eslint-disable-next-line no-console
+        console.log("FROM THE FRAME " + JSON.stringify(leftTheFrame));
         expect(
-            escaped.map((r) => r.url),
-            "a request left the sandbox frame",
+            leftTheFrame.length,
+            "the frame tried nothing at all — the probes never ran in it",
+        ).toBeGreaterThan(0);
+        for (const entry of leftTheFrame) {
+            expect(
+                entry.outcome,
+                `${entry.url} was ANSWERED — it left the frame`,
+            ).toMatch(/^failed:/);
+        }
+        expect(
+            [...attempts.values()]
+                .filter(
+                    (entry) =>
+                        entry.url.includes("sandbox-probe.example") &&
+                        entry.outcome.startsWith("answered"),
+                )
+                .map((entry) => entry.url),
+            "a probe request was actually answered somewhere on this page",
         ).toEqual([]);
-        expect(
-            requests.filter((r) => r.url.includes("sandbox-probe.example")).length,
-            "a probe request actually reached the network from somewhere on this page",
-        ).toBe(0);
 
-        page.off("request", record);
+        page.off("request", onRequest);
+        page.off("requestfailed", onFailed);
+        page.off("response", onResponse);
     });
 
     test("the frame's origin is opaque: top, parent, cookies and storage all throw", async ({
@@ -201,10 +246,33 @@ test.describe("the Shape sandbox boundary, in a real browser", () => {
         expect(framed["parent.document"]).toMatch(/SecurityError/);
         expect(framed["document.cookie"]).toMatch(/SecurityError/);
         expect(framed.localStorage).toMatch(/SecurityError/);
+        expect(framed.sessionStorage).toMatch(/SecurityError/);
+
+        /**
+         * THE TWO ORIGINS (the S6 correction). `frame-bridge.ts` compares
+         * `event.origin` against the origin the document was SERVED from,
+         * parsed out of `location.href`. Until S6 the comment beside it said
+         * `location.origin` is the string "null" inside a sandboxed frame and
+         * that the old code "refused the real host every single time". V-30
+         * measured otherwise and this asserts it, so the sentence can never
+         * drift back: `self.origin` is the opaque one; `Location.origin`
+         * follows the document URL.
+         */
+        expect(
+            framed["self.origin"],
+            "self.origin is not opaque — this frame is not sandboxed the way it must be",
+        ).toBe("null");
+        expect(
+            framed["location.origin"],
+            'location.origin inside the frame IS "null" after all — the S6 comment correction is wrong and frame-bridge.ts must be re-read',
+        ).not.toBe("null");
+        expect(framed["url.origin"]).toBe(framed["location.origin"]);
+        expect(framed["location.origin"]).toBe(new URL(page.url()).origin);
 
         // THE RED CONTROL: the page reaches all four without complaint.
         expect(inPage["window.top"]).toBe("allowed");
         expect(inPage["document.cookie"]).toBe("allowed");
         expect(inPage.localStorage).toBe("allowed");
+        expect(inPage.sessionStorage).toBe("allowed");
     });
 });

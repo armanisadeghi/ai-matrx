@@ -97,8 +97,40 @@ describe("the project directive card, with nothing written yet", () => {
     expect(view.text).toContain("Nothing has been created yet");
     expect(view.text).toContain("no project by this name exists");
     // And it still gives the remedy for the other reading — an apply that has
-    // landed but not yet been polled.
-    expect(view.text).toContain("refresh to see it");
+    // landed but not yet been polled. The remedy CHANGED on 2026-09-12 (DD-135,
+    // V-34): it used to be the sentence "refresh to see it", which kept standing
+    // after the apply succeeded, above a receipt saying the project WAS created.
+    // The remedy is now a control that asks again, so the guard's intent — the
+    // card never leaves the reader stuck — is asserted on the control.
+    expect(view.text).not.toContain("refresh to see it");
+    expect(view.text).toContain("Check again");
     view.cleanup();
+  });
+
+  it("renders NOTHING for a directive with zero items", () => {
+    // DD-135 / V-34: a bound agent answering a plain question emits its shell
+    // with an empty items array. This used to draw "Project directive — waiting
+    // for project details…" — a card that promises something still coming when
+    // nothing is. Absent, never a false pending state.
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root: Root | null = null;
+    const empty = {
+      slug: SLUG,
+      items: [],
+      shell: { __kind: SLUG, items: [] },
+      parsed: { executes: true },
+    } as unknown as DecodedDirective;
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <Provider store={configureStore({ reducer: { overlay: overlayReducer } })}>
+          <CreateProjectWithTasksRenderer directive={empty} />
+        </Provider>,
+      );
+    });
+    expect((host.textContent ?? "").trim()).toBe("");
+    act(() => root?.unmount());
+    host.remove();
   });
 });

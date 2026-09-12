@@ -1,12 +1,3 @@
----
-name: teach-the-system
-type: Skill
-title: "teach-the-system — teach the platform one body of expertise until it breaks, fix it, continue"
-description: "Trial protocol for teaching AI Matrx a real expert's knowledge as a non-technical user, running it until the platform breaks, fixing the platform, and reporting what improved. Use when asked to distil a book, guide, or expert into a Masterwork, test whether the system can capture a human skill, or run an expertise trial. NOT for building a feature you already know is missing (use build-sub-feature)."
-tags: [masterwork, distillation, expertise, trial, platform-testing, doctrine]
-timestamp: 2026-09-11T16:30:00Z
----
-
 <!-- SYNCED COPY — do not edit here.
      Canonical: common-docs/skills/teach-the-system/SKILL.md
      This file is distributed to every consuming repo by

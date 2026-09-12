@@ -65,8 +65,17 @@ interface ProposedDirectivesZoneProps {
 export function ProposedDirectivesZone({
   conversationId,
 }: ProposedDirectivesZoneProps) {
-  const proposals = useAppSelector(selectProposedDirectives(conversationId));
+  const allProposals = useAppSelector(selectProposedDirectives(conversationId));
   const { receipts, loadError } = useConversationReceipts(conversationId);
+
+  // AN APPROVE THAT WOULD WRITE NOTHING IS NEVER SHOWN (DD-135, V-34 2026-09-12).
+  // A bound agent answering a plain question emits its shell with an EMPTY items
+  // array; the server now drops that before it is ever proposed, and this is the
+  // client's own half of the same rule, so no stored or replayed zero-item
+  // proposal can put a live Approve on screen for nothing. Not disabled — ABSENT.
+  const proposals = allProposals.filter(
+    (p) => ((p.shell?.items as unknown[] | undefined)?.length ?? p.itemCount) > 0,
+  );
 
   if (proposals.length === 0 && receipts.length === 0 && !loadError) return null;
   return (

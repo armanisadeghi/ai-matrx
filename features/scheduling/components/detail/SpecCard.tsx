@@ -55,6 +55,7 @@ export function SpecCard({ task }: Props) {
           <SectionTitle icon={Rocket} label="Agent" />
           <CopyButtons
             size="xs"
+            unified
             label={`${task.title} spec`}
             className="lg:opacity-0 lg:group-hover/spec:opacity-100 lg:focus-within:opacity-100 transition-opacity"
             human={specHuman}

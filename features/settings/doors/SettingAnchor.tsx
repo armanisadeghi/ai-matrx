@@ -53,6 +53,7 @@ export function SettingAnchor({
       ref={ref}
       id={id}
       data-setting-control={id}
+      data-setting-search-key={id}
       tabIndex={-1}
       className={cn(
         "scroll-mt-20 outline-none transition-[box-shadow] duration-300",

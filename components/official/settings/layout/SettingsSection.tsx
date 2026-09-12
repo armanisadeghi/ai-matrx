@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSettingsDesign } from "../SettingsDesignProvider";
+import { SettingsSectionProvider } from "../SettingsSectionContext";
 
 export type SettingsSectionProps = {
   title: string;
@@ -19,6 +21,8 @@ export type SettingsSectionProps = {
   action?: React.ReactNode;
   children: React.ReactNode;
 };
+
+export type SettingsGroupProps = SettingsSectionProps;
 
 const emphasisTitleClass = {
   subtle: "text-xs font-semibold uppercase tracking-wide text-muted-foreground",
@@ -40,34 +44,40 @@ export function SettingsSection({
   action,
   children,
 }: SettingsSectionProps) {
+  const { variant } = useSettingsDesign();
   const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId().replace(/:/g, "");
   const isOpen = collapsible ? open : true;
 
   return (
-    <section className="mb-6">
-      <header
-        className={cn(
-          "flex items-center gap-2 px-4 mb-2",
-          collapsible && "cursor-pointer select-none",
+    <section className={cn(variant === "compact" ? "mb-4" : "mb-6")}>
+      <header className="flex items-center gap-2 px-4 mb-2">
+        {collapsible ? (
+          <button
+            type="button"
+            className="-mx-2 flex min-w-0 items-center gap-2 rounded px-2 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-expanded={isOpen}
+            aria-controls={contentId}
+            onClick={() => setOpen((value) => !value)}
+          >
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
+                !isOpen && "-rotate-90",
+              )}
+              aria-hidden="true"
+            />
+            {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+            <span className={emphasisTitleClass[emphasis]}>{title}</span>
+          </button>
+        ) : (
+          <>
+            {Icon && <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
+            <h3 className={emphasisTitleClass[emphasis]}>{title}</h3>
+          </>
         )}
-        onClick={collapsible ? () => setOpen((o) => !o) : undefined}
-      >
-        {collapsible && (
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 text-muted-foreground transition-transform",
-              !isOpen && "-rotate-90",
-            )}
-          />
-        )}
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-        <h3 className={emphasisTitleClass[emphasis]}>{title}</h3>
         <div className="flex-1" />
-        {action && (
-          <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-            {action}
-          </div>
-        )}
+        {action && <div className="shrink-0">{action}</div>}
       </header>
       {description && isOpen && (
         <p className="px-4 text-xs text-muted-foreground mb-2 leading-snug">
@@ -75,10 +85,15 @@ export function SettingsSection({
         </p>
       )}
       {isOpen && (
-        <div className="rounded-lg border border-border/40 bg-card/30 overflow-hidden">
-          {children}
+        <div id={contentId} className={cn("border border-border/40 bg-card/30", variant === "compact" ? "rounded-md" : "rounded-lg")}>
+          <SettingsSectionProvider title={title}>{children}</SettingsSectionProvider>
         </div>
       )}
     </section>
   );
+}
+
+/** A named reusable settings group with the exact SettingsSection contract. */
+export function SettingsGroup(props: SettingsGroupProps) {
+  return <SettingsSection {...props} />;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { SettingsRow } from "../SettingsRow";
@@ -24,15 +25,14 @@ export function SettingsLink({
   last,
   ...rowProps
 }: SettingsLinkProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
   const isExternal = external ?? /^https?:\/\//i.test(href);
   const Icon = isExternal ? ExternalLink : ArrowRight;
   const labelText = actionLabel ?? (isExternal ? "Open" : "View");
 
   const anchorClasses = cn(
-    "inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 h-8 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+    "inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-8",
     rowProps.disabled && "pointer-events-none opacity-50",
   );
 

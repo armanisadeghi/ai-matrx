@@ -42,7 +42,7 @@ export async function GET(
       }
       console.error("Error fetching sandbox instance:", error);
       return NextResponse.json(
-        { error: "Failed to fetch sandbox instance", details: error.message },
+        { error: "Failed to fetch sandbox instance" },
         { status: 500 },
       );
     }
@@ -51,10 +51,7 @@ export async function GET(
   } catch (error) {
     console.error("Sandbox detail API error:", error);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -112,7 +109,7 @@ export async function PATCH(
         );
       }
       return NextResponse.json(
-        { error: "Failed to rename sandbox", details: error.message },
+        { error: "Failed to rename sandbox" },
         { status: 500 },
       );
     }
@@ -120,10 +117,7 @@ export async function PATCH(
     return NextResponse.json({ instance: decorateSandboxRow(data) });
   } catch (error) {
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -206,10 +200,7 @@ export async function PUT(
   } catch (error) {
     console.error("Sandbox update API error:", error);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }
@@ -267,10 +258,7 @@ export async function DELETE(
   } catch (error) {
     console.error("Sandbox delete API error:", error);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

@@ -34,7 +34,6 @@ import {
   buildScheduleRunValues,
 } from "../../lib/schedules-scope";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildScheduleRecordPayload,
@@ -375,6 +374,7 @@ function ScheduleDetailBody({ taskId }: Props) {
           <div className="flex shrink-0 items-center gap-1">
             <CopyButtons
               size="sm"
+              unified
               label={`Schedule ${task.title}`}
               human={() => scheduleSummary(task)}
               json={() => ({ schedule: task, runs })}
@@ -400,14 +400,13 @@ function ScheduleDetailBody({ taskId }: Props) {
                 runsError,
                 kpis: scheduleKpis(tasks),
               }))}
-            />
-            <ExportMenu
-              label={`Schedule ${task.title}`}
-              items={[
-                jsonExportItem(() => ({ schedule: task, runs })),
-                csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
-              ]}
-              sheetRows={() => runCsvRows(runs)}
+              export={{
+                items: [
+                  jsonExportItem(() => ({ schedule: task, runs })),
+                  csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
+                ],
+                sheetRows: () => runCsvRows(runs),
+              }}
             />
           </div>
         </div>

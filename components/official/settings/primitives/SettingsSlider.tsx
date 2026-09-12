@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Slider } from "@/components/ui/slider";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps } from "../types";
@@ -44,9 +45,8 @@ export function SettingsSlider({
   last,
   ...rowProps
 }: SettingsSliderProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
   const effectivePrecision =
     precision !== undefined
       ? precision

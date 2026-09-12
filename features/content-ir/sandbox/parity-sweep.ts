@@ -2,9 +2,9 @@
  * parity-sweep — the DD-123 S5 rendering-parity proof over EVERY live
  * organization-authored component body.
  *
- *   pnpm sweep:kind-sandbox-parity          # all 162 live bodies, light + dark
+ *   pnpm sweep:kind-sandbox-parity          # all 139 live bodies, light + dark
  *   pnpm check:kind-sandbox-parity          # the fixed sample, fails on regression
- *   pnpm sweep:kind-sandbox-parity --keys a,b,c
+ *   pnpm sweep:kind-sandbox-parity --keys=a,b,c
  *
  * WHAT IT PROVES. For each body it renders the SAME live source twice in one
  * document, at the same moment, at the same width:
@@ -32,7 +32,7 @@ import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/
 import { inlineJson } from "./inline-json";
 import { SANDBOX_PROTOCOL_VERSION } from "./protocol";
 import { launch, type Rect } from "./parity/cdp";
-import { readPng, diff } from "./parity/png";
+import { readPng, bestAlignedDiff } from "./parity/png";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "../../..");
@@ -75,11 +75,21 @@ interface Case {
     data: unknown;
 }
 
+export interface ParityMeasurement {
+    /** percentage of pixels that differ, at the best small alignment */
+    pct: number;
+    maxDelta: number;
+    /** the vertical offset that alignment used, in pixels */
+    shiftY: number;
+    offH: number;
+    onH: number;
+}
+
 export interface ParityCaseResult {
     componentKey: string;
     kind: string;
-    light: { pct: number; maxDelta: number; offH: number; onH: number } | null;
-    dark: { pct: number; maxDelta: number; offH: number; onH: number } | null;
+    light: ParityMeasurement | null;
+    dark: ParityMeasurement | null;
     verdict: "match" | "differs" | "did-not-render";
     note: string | null;
 }
@@ -202,11 +212,40 @@ function pageHtml(cases: Case[]): string {
 <title>Kind sandbox parity sweep</title>
 <link rel="stylesheet" href="/kind-sandbox.css">
 <style>
-  body { margin: 0; padding: 16px; background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: system-ui, sans-serif; }
+  /* 🚨 THE FONT MUST BE THE APP'S, ON BOTH SIDES. In the app the typeface
+     comes from a class on <body> in the Next layout; this page has no layout,
+     so it names the same token the app resolves. Get this wrong in either
+     direction and the two columns are set in different faces, their text wraps
+     at different points, and every text-heavy body reports a double-digit
+     "difference" that is really the instrument's. Measured 2026-09-12: the
+     frame's own document had no font at all, which is the defect this page
+     found (fixed in runtime/sandbox.css). */
+  body { margin: 0; padding: 16px; background: hsl(var(--background)); color: hsl(var(--foreground));
+         font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif); }
+  /* 🚨 EVERY BOX IN THIS PAGE'S OWN CHROME IS A WHOLE NUMBER OF PIXELS, and
+     that is load-bearing, not tidiness. The header used to be 11px/1.4 —
+     a 15.4 px line box plus 8 px of padding — so EVERY case's two columns
+     began at a y ending in .4. There the columns stop being comparable: the
+     unframed render is laid out AT that fraction and its glyphs are positioned
+     against it, while the framed render is laid out at 0 inside its own
+     document and its layer is then composited on a whole pixel. Two pictures
+     of the SAME layout, a fraction of a pixel apart, which reads as 1-6 % of
+     pixels differing on any text-heavy body and moves with whatever sat above
+     it (the "not comparable across batch compositions" limit in B-36 §5).
+     11px/16px + 4 px padding is exactly 24 px; __SNAP__ keeps the cases
+     below it on whole pixels too. */
   .case { margin: 0 0 24px; }
-  .case > header { font: 11px ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
+  .case > header { font: 11px/16px ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  iframe { width: 100%; border: 0; display: block; }
+  /* THE CLIP — what KindSandboxFrame does, and for the same reason (S5b,
+     sandbox/protocol.ts, THE READER'S VIEWPORT): the iframe is as wide as the
+     READER'S window so viewport media queries inside the frame answer the same
+     question they answer in the page, and this element is the component's real
+     column. A sweep whose host page did not do this would measure the host's
+     bug, not the frame's parity. */
+  .col { min-width: 0; }
+  .clip { overflow: hidden; min-width: 0; width: 100%; }
+  iframe { border: 0; display: block; max-width: none; }
 </style>
 </head>
 <body>
@@ -252,6 +291,8 @@ function rootTokens() {
   return out;
 }
 function scheme() { return document.documentElement.classList.contains("dark") ? "dark" : "light"; }
+/** The width the HOST page's own media queries answer against. */
+function readerViewportWidth() { return document.documentElement.clientWidth || window.innerWidth; }
 
 var host = document.getElementById("cases");
 var ports = {};
@@ -263,7 +304,7 @@ window.__CASES__.forEach(function (item, index) {
     '<header>' + item.componentKey + ' · kind=' + item.kind + ' · ' + item.sourceBytes + ' bytes · ' + item.dataSource + '</header>' +
     '<div class="cols">' +
       '<div class="col"><div class="unframed" id="off-' + index + '"></div></div>' +
-      '<div class="col"><div id="on-' + index + '"></div></div>' +
+      '<div class="col"><div class="clip" id="on-' + index + '"></div></div>' +
     '</div>';
   host.appendChild(section);
 
@@ -287,6 +328,7 @@ window.__CASES__.forEach(function (item, index) {
   frame.src = "/kind-sandbox";
   frame.title = item.componentKey + " — component";
   frame.style.height = "200px";
+  frame.style.width = readerViewportWidth() + "px";
   frameWrap.appendChild(frame);
 
   frame.addEventListener("load", function () {
@@ -311,7 +353,9 @@ window.__CASES__.forEach(function (item, index) {
       propsTransform: null,
       props: { data: item.data, kind: item.kind, config: {}, uiOptions: {} },
       themeTokens: rootTokens(),
-      colorScheme: scheme()
+      colorScheme: scheme(),
+      readerViewportWidth: readerViewportWidth(),
+      contentWidth: frameWrap.clientWidth
     }, "*", [channel.port2]);
   });
 });
@@ -322,6 +366,35 @@ window.__SETTLED__ = function () {
     if (window.__PARITY__[keys[i]].heights.length === 0) return false;
   }
   return true;
+};
+
+/**
+ * SNAP EVERY CASE TO A WHOLE PIXEL BEFORE ANYTHING IS SHOT.
+ *
+ * A component is 912.31 px tall, so the NEXT case in the page starts at a
+ * fractional y — and there the two columns stop being comparable: the unframed
+ * render is laid out AT that fraction (Chrome rounds its borders and text
+ * baselines against it), while the framed render is laid out at 0 inside its
+ * own document and then composited at the fraction. The pictures are then one
+ * sharp image and one half-pixel-shifted image of the SAME layout, which reads
+ * as 4-6 % of pixels differing on any text-heavy body — a difference the
+ * product does not have and the DOM does not have.
+ *
+ * It is also why a body's number used to move with the batch it was measured
+ * in (B-36 §5): a different neighbour above it meant a different fraction.
+ * Rounding each case's height puts every case back on a whole pixel.
+ */
+window.__SNAP__ = function () {
+  var sections = document.querySelectorAll(".case");
+  // Release any previous snap first: a theme change can make a body taller,
+  // and a case frozen at yesterday's height would clip it instead of measuring
+  // it — a parity number taken off a clipped render proves nothing.
+  for (var i = 0; i < sections.length; i++) sections[i].style.height = "";
+  void document.body.offsetHeight;
+  for (var j = 0; j < sections.length; j++) {
+    sections[j].style.height = Math.ceil(sections[j].getBoundingClientRect().height) + "px";
+  }
+  return sections.length;
 };
 
 window.__SET_THEME__ = function (dark) {
@@ -339,7 +412,9 @@ window.__RECTS__ = function (index) {
     var r = el.getBoundingClientRect();
     return { x: r.x + window.scrollX, y: r.y + window.scrollY, width: r.width, height: r.height };
   }
-  return { off: box(document.getElementById('off-' + index)), on: box(document.querySelector('#on-' + index + ' iframe')) };
+  // The CLIP is the component's column; the iframe inside it is deliberately
+  // as wide as the whole window, so shooting the iframe would shoot the page.
+  return { off: box(document.getElementById('off-' + index)), on: box(document.getElementById('on-' + index)) };
 };
 window.__READY__ = true;
 </script>
@@ -394,7 +469,19 @@ async function runBatch(
         // The page has to exist before anything can be asked of it. A batch
         // whose page never loads is reported as a batch that never loaded —
         // it is never allowed to look like a parity result.
-        const loaded = await waitFor(page, "!!window.__READY__", 30000);
+        let loaded = await waitFor(page, "!!window.__READY__", 30000);
+        if (!loaded) {
+            // The dev server restarting mid-sweep once cost a whole 35-batch
+            // run (observed 2026-09-12: every batch came back "never finished
+            // loading" because the app had been restarted under it). One
+            // re-navigate distinguishes a page that is genuinely broken from a
+            // server that was briefly not there.
+            await new Promise((r) => setTimeout(r, 5000));
+            await page.navigate(
+                `${ORIGIN}/__kind-sandbox-parity-sweep-${batchIndex}.html`,
+            );
+            loaded = await waitFor(page, "!!window.__READY__", 30000);
+        }
         if (!loaded) {
             return cases.map((c) => ({
                 componentKey: c.componentKey,
@@ -419,10 +506,13 @@ async function runBatch(
         }
         // One more frame for the host to apply the last reported height.
         await new Promise((r) => setTimeout(r, 1200));
+        // …then put every case back on a whole pixel (see `__SNAP__`).
+        await page.evaluate("window.__SNAP__()").catch(() => undefined);
+        await new Promise((r) => setTimeout(r, 300));
 
         const perTheme: Record<
             "light" | "dark",
-            Array<{ pct: number; maxDelta: number; offH: number; onH: number } | null>
+            Array<ParityMeasurement | null>
         > = { light: [], dark: [] };
 
         for (const theme of ["light", "dark"] as const) {
@@ -433,6 +523,10 @@ async function runBatch(
             // the sweep waits the transition out rather than reporting a
             // difference that does not exist a second later.
             await new Promise((r) => setTimeout(r, 3000));
+            // A theme change can change type metrics and therefore heights, so
+            // the whole-pixel snap is re-taken for this theme.
+            await page.evaluate("window.__SNAP__()").catch(() => undefined);
+            await new Promise((r) => setTimeout(r, 300));
             for (let i = 0; i < cases.length; i++) {
                 const rects = await page.evaluate<{ off: Rect; on: Rect }>(
                     `window.__RECTS__(${i})`,
@@ -458,10 +552,11 @@ async function runBatch(
                     width: w,
                     height: h,
                 });
-                const d = diff(readPng(offFile), readPng(onFile));
+                const d = bestAlignedDiff(readPng(offFile), readPng(onFile));
                 perTheme[theme].push({
                     pct: d.pct,
                     maxDelta: d.maxDelta,
+                    shiftY: d.shiftY,
                     offH: Math.round(rects.off.height),
                     onH: Math.round(rects.on.height),
                 });
@@ -489,6 +584,8 @@ async function runBatch(
                 notes.push(`unframed errors: ${rec.offErrors.join(" | ")}`);
             if (light && light.offH !== light.onH)
                 notes.push(`height off=${light.offH} on=${light.onH}`);
+            if (light?.shiftY)
+                notes.push(`aligned by ${light.shiftY} px`);
             results.push({
                 componentKey: c.componentKey,
                 kind: c.kind,
@@ -528,6 +625,7 @@ function markdown(results: ParityCaseResult[], skipped: Array<{ componentKey: st
 async function main(): Promise<void> {
     const argv = process.argv.slice(2);
     const isCheck = argv.includes("--check");
+    const writeBaseline = argv.includes("--write-baseline");
     const keysArg = argv.find((a) => a.startsWith("--keys="));
     let keys: string[] | null = keysArg ? keysArg.slice(7).split(",") : null;
 
@@ -584,6 +682,36 @@ async function main(): Promise<void> {
     // eslint-disable-next-line no-console
     console.log(`report → ${OUT_DIR}/parity-report.md`);
 
+    if (writeBaseline) {
+        const sample = results
+            .filter((r) => r.verdict !== "did-not-render")
+            .map((r) => r.componentKey)
+            .sort();
+        const recorded: Record<string, number> = {};
+        for (const r of results) {
+            if (r.verdict === "did-not-render") continue;
+            recorded[r.componentKey] = Math.max(
+                r.light?.pct ?? 0,
+                r.dark?.pct ?? 0,
+            );
+        }
+        writeFileSync(
+            BASELINE,
+            `${JSON.stringify(
+                {
+                    recordedAt: new Date().toISOString(),
+                    note: "Worst-of-light-and-dark pixel difference between the framed and unframed render of each body in the parity sample. Regenerate with: pnpm sweep:kind-sandbox-parity --keys=<the sample> --write-baseline",
+                    sample,
+                    results: recorded,
+                },
+                null,
+                2,
+            )}\n`,
+        );
+        // eslint-disable-next-line no-console
+        console.log(`baseline → ${BASELINE} (${sample.length} bodies)`);
+    }
+
     if (isCheck) {
         const failures: string[] = [];
         for (const r of results) {
@@ -595,7 +723,17 @@ async function main(): Promise<void> {
                 continue;
             }
             const worst = Math.max(r.light?.pct ?? 100, r.dark?.pct ?? 100);
-            const ceiling = Math.max(allowed, PARITY_NOISE_FLOOR_PCT) + 0.25;
+            // THE MARGIN IS DELIBERATELY WIDE. A browser screenshot is not
+            // deterministic to the pixel: a body caught mid-transition, a
+            // scrollbar that appears for one frame, a font that finishes
+            // loading a beat late — one body in the S5 sample was measured at
+            // 0.000 % and 4.400 % on two consecutive runs with nothing
+            // changed. A guard that cries at 0.25 % gets muted, which is worse
+            // than no guard. What this catches is the failure it exists for:
+            // the frame losing the app's stylesheet, its theme tokens, or its
+            // database-class safelist — every one of which moves a body by
+            // double digits.
+            const ceiling = Math.max(allowed, PARITY_NOISE_FLOOR_PCT) + 1.5;
             if (worst > ceiling) {
                 failures.push(
                     `\`${r.componentKey}\` now renders ${worst.toFixed(3)} % different inside the sandbox frame; the recorded baseline is ${allowed.toFixed(
@@ -613,7 +751,7 @@ async function main(): Promise<void> {
         }
         // eslint-disable-next-line no-console
         console.log(
-            `✓ Every body in the parity sample still renders the same framed as unframed (${results.length} bodies, light and dark).`,
+            `✓ Every body in the parity sample renders inside the sandbox frame exactly as its recorded baseline says it should (${results.length} bodies, light and dark).`,
         );
     }
 }

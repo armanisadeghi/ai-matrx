@@ -501,6 +501,20 @@ else
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
+        # IMPL DOORS ran NOWHERE until 2026-09-12 — not here, not in the strict
+        # list, not in ci.yml — while three migrations cite it as the gate holding
+        # their decision (d31, dd146, schema_templates_reference_write_doors_b8). It
+        # is the census of client-callable SECURITY DEFINER functions: D3 (anon holds
+        # nothing), D4 (no undeclared client door), D7 (no client-executable definer
+        # runs DDL — DD-146). Listed with `:strict` for the same reason as HR punch
+        # below: release.sh runs THIS list `--advisory || true`, so a bare invocation
+        # would exit 0 and print a silent green [OK]; with `:strict` the checker
+        # exits 1, run_gate prints a red [FAIL] naming the doors, and advisory mode
+        # still exits 0 — scream, never block. Deliberately NOT in the strict list:
+        # it carries a real backlog today (3 findings, 2026-09-12 — declared doors
+        # whose bodies still need the DD-116 visibility filter), so putting it there
+        # would block every release over a defect that predates the gate.
+        "Impl doors: client-callable SECURITY DEFINER census (D3/D4/D7)|pnpm check:impl-doors:strict"
         "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference"
         # HR PUNCH WRITE PATH — BLOCKING in --strict (see the strict list above for
         # why RLS does not prevent a client-direct `insert into hr.punch`). Listed

@@ -16,6 +16,7 @@
 // RouteModeNav.
 
 import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent-run-route";
+import { USER_SETTINGS_PATH_PATTERN } from "@/features/settings/route-shell/settings-route-path";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 
 export interface RouteMenuEntry {
@@ -32,6 +33,12 @@ export interface RouteMenuEntry {
 
 export const routeMenuRegistry: RouteMenuEntry[] = [
   {
+    pathPattern: USER_SETTINGS_PATH_PATTERN,
+    iconName: "Settings",
+    label: "Settings",
+    importFn: () => import("@/features/settings/route-menu/SettingsRouteMenu"),
+  },
+  {
     pathPattern: AGENT_RUN_PATH_PATTERN,
     iconName: "Webhook",
     label: "Agent Runs",
@@ -42,8 +49,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: /^\/administration(?:\/|$)/,
     iconName: "ShieldCheck",
     label: "Administration",
-    importFn: () =>
-      import("@/features/admin/components/AdminRouteSidebarMenu"),
+    importFn: () => import("@/features/admin/components/AdminRouteSidebarMenu"),
   },
   {
     pathPattern: /^\/chat(?:\/|$)/,
@@ -69,6 +75,6 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     iconName: "Images",
     label: "Images",
     importFn: () =>
-      import("@/app/(core)/images/_components/ImagesSidebarMenu"),
+      import("@/features/image-manager/components/ImagesSidebarMenu"),
   },
 ];

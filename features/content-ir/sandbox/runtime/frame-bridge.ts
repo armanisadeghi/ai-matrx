@@ -95,13 +95,27 @@ export function installFrameBridge(mount: FrameMountApi): void {
         // THE FRAME-SIDE ORIGIN CHECK: only the origin this document was
         // SERVED from may hand the frame its port.
         //
-        // 🚨 IT CANNOT USE `location.origin`. The frame is sandboxed without
-        // `allow-same-origin`, so its execution origin is opaque and
-        // `location.origin` is the string "null" — comparing against it
-        // refuses the real host every single time (observed in the browser
-        // 2026-09-12: the host posted init and the frame never answered).
-        // `location.href` still carries the URL the document was served from,
-        // so the scheme+host parsed out of it is the honest expectation.
+        // WHICH ORIGIN, and the correction that belongs here. The frame is
+        // sandboxed without `allow-same-origin`, so it RUNS on an opaque
+        // origin — but only some of the ways to ask about it say so. Measured
+        // inside a real `/kind-sandbox` frame (Chrome 153, 2026-09-12, V-30,
+        // and asserted every run by `browser/kind-sandbox.spec.ts`):
+        //
+        //     self.origin / window.origin   →  "null"      (the opaque one)
+        //     location.origin               →  "http://localhost:3000"
+        //     new URL(location.href).origin →  "http://localhost:3000"
+        //
+        // An earlier version of this comment said `location.origin` is the
+        // string "null" here and that comparing against it "refuses the real
+        // host every single time". That is NOT what Chrome does, and no such
+        // bug existed — the false sentence is corrected rather than repeated
+        // (S6). `Location.origin` follows the document URL; it is
+        // `Window.origin` that serializes an opaque origin to "null".
+        //
+        // The code still parses `location.href`, deliberately: it is the one
+        // spelling that is correct in every engine, including any that follows
+        // the spec's latitude and reports an opaque `location.origin`. Same
+        // answer, no reliance on which of the two an engine picked.
         if (event.origin !== servedOrigin()) {
             refuse(
                 `Ignored a message from "${event.origin}". This frame only accepts its host page at ${servedOrigin()}.`,
@@ -124,6 +138,7 @@ export function installFrameBridge(mount: FrameMountApi): void {
             );
             return;
         }
+        window.removeEventListener("message", onWindowMessage);
         startInstance(data as unknown as SandboxInitMessage, port, mount);
     };
 
@@ -168,6 +183,37 @@ function startInstance(
                 "The sandbox document has no mount point, so the component could not be rendered.",
         });
         return;
+    }
+
+    // ── the reader's viewport, not the frame's box (S5b) ──────────────────
+    //
+    // The whole reasoning lives once, in `protocol.ts` § THE READER'S VIEWPORT.
+    // Here: the host has given the IFRAME ELEMENT the reader's viewport width,
+    // so this document's media queries and viewport units already answer the
+    // right question; what is left is to lay the component out at the width it
+    // is actually allotted rather than across the whole viewport.
+    const applyAllottedWidth = (width: unknown): boolean => {
+        if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) {
+            return false;
+        }
+        container.style.width = `${width}px`;
+        // `main` carries `max-width: 100vw` unlayered in the app's own sheet;
+        // an allotted width narrower than the viewport must survive it.
+        container.style.maxWidth = "none";
+        return true;
+    };
+
+    if (!applyAllottedWidth(init.contentWidth)) {
+        // NOTHING SILENT (Law 4). Without the allotted width the component is
+        // laid out across the reader's whole viewport, which is not where it
+        // sits in the page — the reader would see a component wider than its
+        // column. Say which half is missing and what it costs.
+        send({
+            type: "matrx:sandbox:error",
+            instanceId,
+            message:
+                "The page did not tell this component how wide it is allowed to be, so it is being laid out across the whole window instead of inside its own column. The component may be wider than the space it sits in.",
+        });
     }
 
     // ── what the frame's CSP refused, said out loud (S5) ─────────────────
@@ -434,6 +480,15 @@ function startInstance(
             case "matrx:sandbox:theme":
                 handle.setTheme(message.themeTokens ?? {}, message.colorScheme);
                 // A theme change can change type metrics and therefore height.
+                scheduleSize();
+                break;
+            case "matrx:sandbox:layout":
+                // The reader resized, rotated, or opened a panel beside the
+                // component. The host has already resized the iframe element
+                // to the new viewport width; this re-fits the component to the
+                // width it is now allotted. The numbers were validated by
+                // `checkHostMessage`, so this cannot silently do nothing.
+                applyAllottedWidth(message.contentWidth);
                 scheduleSize();
                 break;
             case "matrx:sandbox:action-result": {

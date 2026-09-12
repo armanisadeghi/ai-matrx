@@ -45,9 +45,9 @@ export default function PrivacyTab() {
       />
 
       <SettingsCallout tone="info">
-        Granular telemetry settings aren't implemented yet. This tab surfaces the
-        capture-related preferences that exist today, plus the door onto your
-        data's deletion schedule.
+        Granular telemetry settings aren't implemented yet. This tab surfaces
+        the capture-related preferences that exist today, plus the door onto
+        your data's deletion schedule.
       </SettingsCallout>
 
       <SettingsSection title="Assistant" icon={Eye}>
@@ -84,7 +84,7 @@ export default function PrivacyTab() {
       <SettingsSection title="Knowledge Graph" icon={Lightbulb}>
         <SettingsSwitch
           label="Auto knowledge-graph"
-          description="Let Matrx analyze your notes, tasks, and files in the background to suggest scope fills. Suggestions are never applied automatically — you accept each one."
+          description="Let Matrx analyze your notes, tasks, and files in the background to suggest useful connections. Suggestions are never applied automatically — you accept each one."
           checked={autoRag.enabled}
           onCheckedChange={handleAutoRagChange}
           disabled={autoRag.loading || autoRag.saving}

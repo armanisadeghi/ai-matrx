@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 512 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 513 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "44ae90088515";
+export const KIND_REGISTRY_FINGERPRINT = "ce24b4c88da0";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -870,6 +870,19 @@ export interface CannibalizationRisk {
   __kind?: "cannibalization_v1";
   sibling_url: string;
   shared_query?: string;
+}
+
+/**
+ * One approved rule, as a running agent needs to see it.
+ *  *
+ *  * From kind `masterwork_canon`.
+ */
+export interface CanonRule {
+  id: string;
+  name?: string;
+  section?: string;
+  severity?: string;
+  statement?: string;
 }
 
 /**
@@ -1948,13 +1961,7 @@ export interface GatherHole {
   /**
    * Structured error carried with the hole when available. A user-skip clears the failed attempt's error, so this is usually None.
    */
-  error?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  } | null;
+  error?: Record<string, JsonValue> | null;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -8841,7 +8848,7 @@ export interface FormattedDatetime {
 }
 
 /**
- * Kind `gather_result` (registry v6).
+ * Kind `gather_result` (registry v8).
  */
 export interface GatherResult {
   /**
@@ -8857,7 +8864,7 @@ export interface GatherResult {
    */
   __kind?: "gather_result";
   /**
-   * The succeeded values, in item-index order (engine mode) or channel order (legacy mode).
+   * THE RAW per-item results, in item-index order (engine mode) or channel order (legacy mode) — every field the step emitted, an AI step's whole `messages` history included. Map an edge at this key only when the next step genuinely needs the raw objects; for AI items prefer `structured_outputs` / `final_texts` below.
    */
   values?: JsonValue[];
   /**
@@ -8865,9 +8872,21 @@ export interface GatherResult {
    */
   expected?: number | null;
   /**
+   * For AI items: each gathered result's `final_text`, index-aligned with `values` (empty string where an item has none).
+   */
+  final_texts?: string[];
+  /**
+   * How many gathered values looked like an AI step result (carried `final_text` or `structured_output`). 0 means the two collections above are all-empty by construction, not by loss.
+   */
+  ai_item_count?: number;
+  /**
    * Item indexes the user skipped (engine mode only).
    */
   skipped_indexes?: number[];
+  /**
+   * For AI items: each gathered result's `structured_output`, index-aligned with `values` (null where an item has none). This is what a merge step almost always wants — passing `values` instead carries every message, usage and metadata blob into the next prompt.
+   */
+  structured_outputs?: JsonValue[];
 }
 
 /**
@@ -10634,6 +10653,51 @@ export interface Markdown {
    * The registered kind this payload is an instance of.
    */
   __kind?: "markdown";
+}
+
+/**
+ * A Masterwork's Rulebook as it stands RIGHT NOW, for one run.
+ *  *
+ *  * Kind `masterwork_canon` (registry v2).
+ */
+export interface MasterworkCanon {
+  /**
+   * The approved rules themselves.
+   */
+  rules?: CanonRule[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "masterwork_canon";
+  /**
+   * False = rules were dropped; do not trust a check against it.
+   */
+  complete?: boolean;
+  /**
+   * THE CLOSED VOCABULARY: every approved rule id, complete, never capped.
+   */
+  rule_ids?: string[];
+  /**
+   * When the rules were read, ISO-8601.
+   */
+  loaded_at?: string;
+  rule_count?: number;
+  /**
+   * platform.rulebook id this canon was read from.
+   */
+  rulebook_id: string;
+  rulebook_name?: string;
+  rulebook_status?: string;
+  truncation_note?: string;
+  rulebook_version?: number;
+  /**
+   * Rules on the row before the approved/unconfirmed split.
+   */
+  source_rule_count?: number;
+  /**
+   * Un-reviewed drafts — real rules, but not law, so never citable.
+   */
+  unconfirmed_rule_ids?: string[];
 }
 
 /**
@@ -21333,6 +21397,7 @@ export type GeneratedKindSlug =
   | "map_result"
   | "mapped_list_result"
   | "markdown"
+  | "masterwork_canon"
   | "masterwork_checkup_finding"
   | "masterwork_result"
   | "math_problem"
@@ -21848,6 +21913,7 @@ export interface KindPayloadBySlug {
   "map_result": MapResult;
   "mapped_list_result": MappedListResult;
   "markdown": Markdown;
+  "masterwork_canon": MasterworkCanon;
   "masterwork_checkup_finding": MasterworkCheckupFinding;
   "masterwork_result": MasterworkResult;
   "math_problem": MathProblem;
@@ -22367,6 +22433,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "map_result",
   "mapped_list_result",
   "markdown",
+  "masterwork_canon",
   "masterwork_checkup_finding",
   "masterwork_result",
   "math_problem",

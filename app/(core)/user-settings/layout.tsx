@@ -1,12 +1,8 @@
 import { SlidersHorizontal } from "lucide-react";
 
-import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
-import { SettingsRouteShell } from "@/features/settings/route-shell/SettingsRouteShell";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
-
-const COOKIE_NAME = "panels:settings:v1";
 
 export const metadata = createRouteMetadata("/user-settings", {
   title: "Settings",
@@ -15,13 +11,8 @@ export const metadata = createRouteMetadata("/user-settings", {
 });
 
 /**
- * Persistent shell for the new /user-settings route family. Mirrors the
- * `/agent-connections` shell pattern (server reads cookie, hands a Layout to
- * the client shell).
- *
- * Lives at /user-settings during migration to avoid colliding with the
- * existing `/settings/*` standalone pages and the live `userPreferencesWindow`
- * overlay. Once the overlay is retired this should be renamed to `/settings`.
+ * The global AppShell supplies the settings route navigation and its shared
+ * provider. This layout owns only access gating for the route family.
  */
 export default async function SettingsLayout({
   children,
@@ -40,11 +31,5 @@ export default async function SettingsLayout({
     );
   }
 
-  const defaultLayout = await readLayoutCookie(COOKIE_NAME);
-
-  return (
-    <SettingsRouteShell defaultLayout={defaultLayout} cookieName={COOKIE_NAME}>
-      {children}
-    </SettingsRouteShell>
-  );
+  return children;
 }

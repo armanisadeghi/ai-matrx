@@ -105,6 +105,7 @@ const STAMP = "2026-09-01T10:00:00.000Z";
 const scopeTypeRow = {
   color: "blue",
   created_at: STAMP,
+  created_by: SIGNED_IN_USER,
   default_variable_keys: ["client_name"],
   deleted_at: null,
   description: "Companies we serve",

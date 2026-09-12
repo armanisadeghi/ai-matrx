@@ -5,7 +5,10 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { BrowseImageProvider } from "@/features/image-manager/browse/BrowseImageProvider";
-import { findImagesRoute, IMAGES_ROOT_PATH } from "./_components/imagesRoutes";
+import {
+  findImagesRoute,
+  IMAGES_ROOT_PATH,
+} from "@/features/image-manager/components/imagesRoutes";
 import { ImagesListHeader } from "./_components/ImagesListHeader";
 
 export const metadata = createRouteMetadata("/images", {

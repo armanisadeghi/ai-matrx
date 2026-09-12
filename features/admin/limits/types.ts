@@ -28,7 +28,16 @@ export interface FeatureKnob {
   override_direction: "any" | "lower_only" | "raise_only";
   /** Statutory floor an override may never cross, distinct from the default. */
   bound_value: unknown;
+  /** Presentation and filing metadata are part of the registry, not a second settings map. */
+  ui: unknown;
+  taxonomy_node_id: string | null;
+  propagation: "next_load" | "instant";
 }
+
+/** `feature_knob_set` deliberately returns refusals in-band so callers can explain them. */
+export type FeatureKnobSetResult =
+  | { ok: true; feature?: string; key?: string }
+  | { ok: false; reason: string; detail?: string; feature?: string; key?: string };
 
 /** One plan's allowance for one metered capability. */
 export interface PlanLimit {

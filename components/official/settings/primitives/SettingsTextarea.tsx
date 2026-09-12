@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -29,9 +29,8 @@ export function SettingsTextarea({
   last,
   ...rowProps
 }: SettingsTextareaProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   const [draft, setDraft] = useState(value);
 
