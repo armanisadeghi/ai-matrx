@@ -75,6 +75,10 @@ export function VaultCsvImportDialog({
 }) {
   const fileInput = useRef<HTMLInputElement | null>(null);
   const cancelled = useRef(false);
+  const limitsRef = useRef<Awaited<
+    ReturnType<typeof fetchCsvImportLimits>
+  > | null>(null);
+  const frozenCommands = useRef<ReturnType<typeof toCsvImportCommand>[]>([]);
   const [source, setSource] = useState("generic");
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
   const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
@@ -90,6 +94,8 @@ export function VaultCsvImportDialog({
   useEffect(
     () => () => {
       cancelled.current = true;
+      limitsRef.current = null;
+      frozenCommands.current = [];
     },
     [],
   );
@@ -100,6 +106,8 @@ export function VaultCsvImportDialog({
       setMapping([]);
       setError(null);
       setResult(null);
+      limitsRef.current = null;
+      frozenCommands.current = [];
     }
     onOpenChange(next);
   };
@@ -115,6 +123,7 @@ export function VaultCsvImportDialog({
         actor.userId,
       );
       if (cancelled.current) return;
+      limitsRef.current = limits;
       const parsed = await parseCsvFile(file, limits);
       if (cancelled.current) return;
       setPreview(parsed);
@@ -128,8 +137,9 @@ export function VaultCsvImportDialog({
         );
     }
   };
-  const importRows = async () => {
-    if (!preview) return;
+  const importRows = async (retry = false) => {
+    const limits = limitsRef.current;
+    if (!preview || !limits) return;
     if (hasAmbiguousCsvMapping(mapping)) {
       setError(
         "Map each title, username, password, notes, and OTP column once before importing.",
@@ -141,20 +151,24 @@ export function VaultCsvImportDialog({
     cancelled.current = false;
     try {
       const actor = await getVaultImportActor();
-      const commands = preview.rows.map((row) => {
-        const command = toCsvImportCommand({
-          source,
-          preview,
-          row,
-          mapping,
-          principal,
-          expectedActor: actor,
-          rowId: crypto.randomUUID(),
-        });
-        return command && !existingNames.includes(command.body.display_name)
-          ? command
-          : null;
-      });
+      const commands = retry
+        ? frozenCommands.current
+        : preview.rows.map((row) => {
+            const command = toCsvImportCommand({
+              source,
+              preview,
+              row,
+              mapping,
+              principal,
+              expectedActor: actor,
+              rowId: crypto.randomUUID(),
+              limits,
+            });
+            return command && !existingNames.includes(command.body.display_name)
+              ? command
+              : null;
+          });
+      if (!retry) frozenCommands.current = commands;
       const outcome = await runCsvImportCommands(
         commands,
         async (command) => {
@@ -163,6 +177,7 @@ export function VaultCsvImportDialog({
               idempotencyKey: command.rowId,
               expectedActor: command.expectedActor,
             });
+            return "committed" as const;
           } catch (cause) {
             if (
               cause instanceof VaultImportTransportError &&
@@ -170,14 +185,31 @@ export function VaultCsvImportDialog({
             ) {
               setError(cause.message);
               cancelled.current = true;
+              return "definitive" as const;
             }
-            throw cause;
+            if (
+              cause instanceof VaultImportTransportError &&
+              cause.code === "retryable"
+            ) {
+              setError(cause.message);
+              return "retryable" as const;
+            }
+            setError(
+              "This row was rejected. Review the import before creating a new session.",
+            );
+            return "definitive" as const;
           }
         },
         () => cancelled.current,
       );
       await onCommitted();
       setResult(outcome);
+      if (outcome.imported + outcome.skipped === commands.length) {
+        frozenCommands.current = [];
+        limitsRef.current = null;
+        setPreview(null);
+        setMapping([]);
+      }
     } finally {
       setRunning(false);
     }
@@ -325,18 +357,20 @@ export function VaultCsvImportDialog({
                 Stop after current row
               </Button>
             )}
-            {preview && !result && (
+            {preview && (!result || result.failed > 0) && (
               <Button
                 type="button"
                 disabled={running}
-                onClick={() => void importRows()}
+                onClick={() => void importRows(Boolean(result?.failed))}
               >
                 {running ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Upload className="mr-2 h-4 w-4" />
                 )}
-                Import selected records
+                {result?.failed
+                  ? "Retry current row"
+                  : "Import selected records"}
               </Button>
             )}
           </div>

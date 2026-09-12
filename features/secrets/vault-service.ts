@@ -97,7 +97,9 @@ async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
   organizationId: string;
   headers: Record<string, string>;
 }> {
-  const organizationId = requireOrganizationContext(requireSelectedOrgId());
+  const initialOrganizationId = expectedActor
+    ? null
+    : requireOrganizationContext(requireSelectedOrgId());
   const supabase = createClient();
   const [
     {
@@ -110,6 +112,10 @@ async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
   ] = await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
   if (!session?.access_token || userError || !user)
     throw new Error("Not signed in");
+  // Imports reread request context after final auth await; ordinary transport
+  // keeps its existing fail-before-auth behavior.
+  const organizationId =
+    initialOrganizationId ?? requireOrganizationContext(requireSelectedOrgId());
   if (
     expectedActor &&
     (expectedActor.userId !== user.id ||
@@ -200,13 +206,13 @@ export function createVaultItem(
 
 /** Freeze actor + request organization at confirmation, then recheck both at every send. */
 export async function getVaultImportActor(): Promise<VaultExpectedActor> {
-  const organizationId = requireOrganizationContext(requireSelectedOrgId());
   const supabase = createClient();
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
   if (error || !user) throw new Error("Not signed in");
+  const organizationId = requireOrganizationContext(requireSelectedOrgId());
   return { userId: user.id, organizationId };
 }
 

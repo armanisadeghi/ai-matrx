@@ -9,6 +9,9 @@ export type CsvImportLimits = {
   maxRecords: number;
   maxColumns: number;
   maxCellBytes: number;
+  maxFields: number;
+  maxPlaintextFieldBytes: number;
+  maxRequestBodyBytes: number;
 };
 export type CsvColumnRole =
   "title" | "username" | "password" | "url" | "notes" | "otp" | "keep";
@@ -34,6 +37,8 @@ export type CsvImportOutcome = {
   cancelled: boolean;
 };
 
+export type CsvImportDispatch = "committed" | "retryable" | "definitive";
+
 function utf8ByteLength(value: string): number {
   if (typeof TextEncoder !== "undefined")
     return new TextEncoder().encode(value).byteLength;
@@ -48,7 +53,7 @@ export function parseCsvText(
     throw new Error("The file exceeds this organization’s import size limit.");
   const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ""), {
     delimiter: ",",
-    skipEmptyLines: "greedy",
+    skipEmptyLines: false,
   });
   if (
     parsed.errors.some(
@@ -73,7 +78,8 @@ function validateParsedCsv(
   const rows = data.map((cells, index) => {
     const invalid =
       cells.length !== headers.length ||
-      cells.some((cell) => utf8ByteLength(cell) > limits.maxCellBytes);
+      cells.some((cell) => utf8ByteLength(cell) > limits.maxCellBytes) ||
+      cells.every((cell) => cell.trim().length === 0);
     if (invalid) issues += 1;
     return {
       rowNumber: index + 2,
@@ -92,35 +98,64 @@ export function parseCsvFile(
     return Promise.reject(
       new Error("The file exceeds this organization’s import size limit."),
     );
-  return new Promise((resolve, reject) => {
-    Papa.parse<string[]>(file, {
-      worker: true,
-      delimiter: ",",
-      skipEmptyLines: "greedy",
-      complete: (result) => {
-        if (
-          result.errors.some(
-            (error) =>
-              error.code !== "TooFewFields" && error.code !== "TooManyFields",
-          )
-        ) {
+  return file.arrayBuffer().then((bytes) => {
+    let text: string;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      throw new Error("The CSV must be valid UTF-8.");
+    }
+    return new Promise<CsvImportPreview>((resolve, reject) =>
+      Papa.parse<string[]>(text.replace(/^\uFEFF/, ""), {
+        worker: true,
+        delimiter: ",",
+        skipEmptyLines: false,
+        complete: (result) => {
+          if (
+            result.errors.some(
+              (error) =>
+                error.code !== "TooFewFields" && error.code !== "TooManyFields",
+            )
+          ) {
+            reject(
+              new Error(
+                "The CSV could not be read. Fix the file and try again.",
+              ),
+            );
+            return;
+          }
+          try {
+            resolve(validateParsedCsv(result.data, limits));
+          } catch (error) {
+            reject(error);
+          }
+        },
+        error: () =>
           reject(
             new Error("The CSV could not be read. Fix the file and try again."),
-          );
-          return;
-        }
-        try {
-          resolve(validateParsedCsv(result.data, limits));
-        } catch (error) {
-          reject(error);
-        }
-      },
-      error: () =>
-        reject(
-          new Error("The CSV could not be read. Fix the file and try again."),
-        ),
-    });
+          ),
+      }),
+    );
   });
+}
+
+export function safeDestination(raw: string): {
+  metadata: string | null;
+  host: string | null;
+} {
+  try {
+    const parsed = new URL(raw);
+    if (!/^https?:$/.test(parsed.protocol) && parsed.protocol !== "http:")
+      return { metadata: null, host: null };
+    if (parsed.username || parsed.password)
+      return { metadata: null, host: null };
+    return {
+      metadata: `${parsed.protocol}//${parsed.host}${parsed.pathname}`,
+      host: parsed.host,
+    };
+  } catch {
+    return { metadata: null, host: null };
+  }
 }
 
 export function suggestedCsvMapping(headers: string[]): CsvColumnRole[] {
@@ -168,15 +203,19 @@ export function toCsvImportCommand(input: {
   principal: VaultPrincipal;
   expectedActor: VaultExpectedActor;
   rowId: string;
+  limits: CsvImportLimits;
 }): CsvImportCommand | null {
   if (input.row.issue) return null;
   const { headers } = input.preview;
   const { row, mapping } = input;
   const title =
     roleValue(row, mapping, "title") || `Imported credential ${row.rowNumber}`;
-  const urls = row.cells
+  const rawUrls = row.cells
     .filter((_, index) => mapping[index] === "url")
     .filter(Boolean);
+  const urls = rawUrls
+    .map(safeDestination)
+    .flatMap((url) => (url.metadata ? [url.metadata] : []));
   const fields: NonNullable<VaultItemCreateRequest["fields"]> = [];
   const used = new Set<string>();
   const add = (field_key: string, value: string, editable = true) => {
@@ -211,7 +250,15 @@ export function toCsvImportCommand(input: {
     }),
     false,
   );
-  return {
+  if (
+    fields.length > input.limits.maxFields ||
+    fields.some(
+      (field) =>
+        utf8ByteLength(field.value) > input.limits.maxPlaintextFieldBytes,
+    )
+  )
+    return null;
+  const command: CsvImportCommand = {
     rowId: input.rowId,
     expectedActor: input.expectedActor,
     body: {
@@ -231,12 +278,18 @@ export function toCsvImportCommand(input: {
       fields,
     },
   };
+  if (
+    utf8ByteLength(JSON.stringify(command.body)) >
+    input.limits.maxRequestBodyBytes
+  )
+    return null;
+  return command;
 }
 
 /** Dispatch only one immutable command at a time; cancellation never rolls back a committed row. */
 export async function runCsvImportCommands(
   commands: Array<CsvImportCommand | null>,
-  dispatch: (command: CsvImportCommand) => Promise<void>,
+  dispatch: (command: CsvImportCommand) => Promise<CsvImportDispatch>,
   cancelled: () => boolean,
 ): Promise<CsvImportOutcome> {
   let imported = 0;
@@ -248,12 +301,19 @@ export async function runCsvImportCommands(
       skipped += 1;
       continue;
     }
-    try {
-      await dispatch(command);
+    const result = await dispatch(command);
+    if (result === "committed") {
       imported += 1;
-    } catch {
-      failed += 1;
+      continue;
     }
+    failed += 1;
+    // A retryable or definitive outcome retains this exact command/UUID for review.
+    return {
+      imported,
+      skipped,
+      failed,
+      cancelled: result === "definitive" || cancelled(),
+    };
   }
   return { imported, skipped, failed, cancelled: cancelled() };
 }

@@ -2,6 +2,7 @@ import {
   hasAmbiguousCsvMapping,
   parseCsvText,
   runCsvImportCommands,
+  safeDestination,
   suggestedCsvMapping,
   toCsvImportCommand,
 } from "../csv-import";
@@ -11,6 +12,9 @@ const limits = {
   maxRecords: 20,
   maxColumns: 20,
   maxCellBytes: 10_000,
+  maxFields: 202,
+  maxPlaintextFieldBytes: 1_048_576,
+  maxRequestBodyBytes: 12_582_912,
 };
 const actor = {
   userId: "user-1",
@@ -33,6 +37,7 @@ describe("Vault CSV import", () => {
       principal: { type: "user" },
       expectedActor: actor,
       rowId: "00000000-0000-4000-8000-000000000001",
+      limits,
     });
     expect(command?.body.fields).toEqual(
       expect.arrayContaining([
@@ -69,6 +74,35 @@ describe("Vault CSV import", () => {
     expect(hasAmbiguousCsvMapping(["url", "url", "keep"])).toBe(false);
   });
 
+  test("strips query and fragment metadata and refuses URL credentials", () => {
+    expect(
+      safeDestination("https://example.test/a?token=secret#fragment"),
+    ).toEqual({ metadata: "https://example.test/a", host: "example.test" });
+    expect(safeDestination("https://user:secret@example.test/a")).toEqual({
+      metadata: null,
+      host: null,
+    });
+  });
+
+  test("stops on an ambiguous retry without dispatching the next frozen row", async () => {
+    const calls: string[] = [];
+    const command = {
+      rowId: "00000000-0000-4000-8000-000000000001",
+      body: { display_name: "one" },
+      expectedActor: actor,
+    } as never;
+    const result = await runCsvImportCommands(
+      [command, command],
+      async (entry) => {
+        calls.push(entry.rowId);
+        return "retryable";
+      },
+      () => false,
+    );
+    expect(calls).toHaveLength(1);
+    expect(result).toMatchObject({ imported: 0, failed: 1, cancelled: false });
+  });
+
   test("stops dispatch after the current committed row when cancelled", async () => {
     const calls: string[] = [];
     let cancel = false;
@@ -82,6 +116,7 @@ describe("Vault CSV import", () => {
       async () => {
         calls.push("sent");
         cancel = true;
+        return "committed";
       },
       () => cancel,
     );

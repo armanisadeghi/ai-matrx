@@ -7,6 +7,9 @@ const KEYS = [
   "max_records",
   "max_columns",
   "max_cell_bytes",
+  "max_fields",
+  "max_plaintext_field_bytes",
+  "max_request_body_bytes",
 ] as const;
 
 /** The import is intentionally unavailable until the scoped knob authority is live. */
@@ -33,5 +36,8 @@ export async function fetchCsvImportLimits(
     maxRecords: parsed[1],
     maxColumns: parsed[2],
     maxCellBytes: parsed[3],
+    maxFields: parsed[4],
+    maxPlaintextFieldBytes: parsed[5],
+    maxRequestBodyBytes: parsed[6],
   };
 }
