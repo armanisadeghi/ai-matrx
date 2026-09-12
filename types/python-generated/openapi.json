@@ -64752,7 +64752,7 @@
           "Mandates Admin"
         ],
         "summary": "Agent Impact",
-        "description": "One verdict per mandate rung the named agents hold, directly or through a\nduplicate of them. Read-only. Optionally graded against a proposed change\nthat has not been written yet (``delta``), so a batch can be judged BEFORE\nit runs.",
+        "description": "One verdict per mandate rung the named agents hold, directly or through a\nduplicate of them. Read-only. Optionally graded against a proposed change\nthat has not been written yet (``delta``), so a batch can be judged BEFORE\nit runs.\n\nThe envelope also carries ``withheld``: how many rungs exist on these agents\nthat this caller may not read, by principal kind and with the reason (R31).\nA short list is never shown as if it were the whole answer.",
         "operationId": "agent_impact_mandates_impact_post",
         "requestBody": {
           "content": {
@@ -64770,11 +64770,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ImpactVerdict"
-                  },
-                  "type": "array",
-                  "title": "Response Agent Impact Mandates Impact Post"
+                  "$ref": "#/components/schemas/ImpactReport"
                 }
               }
             }
@@ -64816,11 +64812,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ImpactVerdict"
-                  },
-                  "type": "array",
-                  "title": "Response Agent Impact Mine Mandates Impact Mine Post"
+                  "$ref": "#/components/schemas/ImpactReport"
                 }
               }
             }
@@ -156687,6 +156679,41 @@
         ],
         "title": "ImpactPrincipal"
       },
+      "ImpactReport": {
+        "properties": {
+          "verdicts": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactVerdict"
+            },
+            "type": "array",
+            "title": "Verdicts"
+          },
+          "withheld": {
+            "$ref": "#/components/schemas/ImpactWithheld"
+          },
+          "agents_examined": {
+            "type": "integer",
+            "title": "Agents Examined",
+            "default": 0
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "computed_at": {
+            "type": "string",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "computed_at"
+        ],
+        "title": "ImpactReport",
+        "description": "The envelope. ``verdicts`` is the frozen contract; the rest is what the\nread must SAY about its own completeness rather than leave a screen to\nguess."
+      },
       "ImpactRequest": {
         "properties": {
           "agent_ids": {
@@ -156877,6 +156904,61 @@
           "apply_token"
         ],
         "title": "ImpactVerdict"
+      },
+      "ImpactWithheld": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "by_principal_kind": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactWithheldGroup"
+            },
+            "type": "array",
+            "title": "By Principal Kind"
+          },
+          "sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ImpactWithheld",
+        "description": "Rungs that EXIST on these agents and this caller may not read (R31).\n\n🚨 COUNTS ONLY, grouped by principal kind — never an id, a mandate key, an\norganization or a person. R26 forbids leaking WHICH mandates exist; R31\nforbids a silent short list that lets a screen imply it showed everything.\nA count with a reason is the one shape that satisfies both, and it is why\nthese numbers are computed here rather than by widening ``iam.has_access``,\nwhich is not an agent's call."
+      },
+      "ImpactWithheldGroup": {
+        "properties": {
+          "principal_kind": {
+            "type": "string",
+            "title": "Principal Kind"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "principal_kind",
+          "count",
+          "explanation"
+        ],
+        "title": "ImpactWithheldGroup"
       },
       "ImpairmentAvailableAttributes": {
         "properties": {
@@ -185772,6 +185854,36 @@
               }
             ],
             "title": "Default Organization Id"
+          },
+          "default_preference_status": {
+            "type": "string",
+            "enum": [
+              "malformed",
+              "stale",
+              "unavailable",
+              "unset",
+              "valid"
+            ],
+            "title": "Default Preference Status",
+            "default": "unset"
+          },
+          "warnings": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "membership_organization_missing",
+                "organization_preference_unavailable"
+              ]
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          },
+          "missing_organization_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Missing Organization Count",
+            "default": 0
           }
         },
         "type": "object",
@@ -247192,6 +247304,15 @@
           "field_key": {
             "type": "string",
             "title": "Field Key"
+          },
+          "execution_purpose": {
+            "type": "string",
+            "enum": [
+              "general",
+              "passkey_private"
+            ],
+            "title": "Execution Purpose",
+            "default": "general"
           },
           "env_key": {
             "anyOf": [

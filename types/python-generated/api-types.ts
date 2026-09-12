@@ -29967,6 +29967,10 @@ export interface paths {
          *     duplicate of them. Read-only. Optionally graded against a proposed change
          *     that has not been written yet (``delta``), so a batch can be judged BEFORE
          *     it runs.
+         *
+         *     The envelope also carries ``withheld``: how many rungs exist on these agents
+         *     that this caller may not read, by principal kind and with the reason (R31).
+         *     A short list is never shown as if it were the whole answer.
          */
         post: operations["agent_impact_mandates_impact_post"];
         delete?: never;
@@ -69351,6 +69355,29 @@ export interface components {
             subject_user_id?: string | null;
         };
         /**
+         * ImpactReport
+         * @description The envelope. ``verdicts`` is the frozen contract; the rest is what the
+         *     read must SAY about its own completeness rather than leave a screen to
+         *     guess.
+         */
+        ImpactReport: {
+            /** Verdicts */
+            verdicts?: components["schemas"]["ImpactVerdict"][];
+            withheld?: components["schemas"]["ImpactWithheld"];
+            /**
+             * Agents Examined
+             * @default 0
+             */
+            agents_examined?: number;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /** Computed At */
+            computed_at: string;
+        };
+        /**
          * ImpactRequest
          * @description There is no batch id on ``agent.definition_version`` — a batch writer
          *     passes the ids it touched. A time window is NOT accepted: it sweeps
@@ -69412,6 +69439,37 @@ export interface components {
              * @default false
              */
             auto_advance_eligible?: boolean;
+        };
+        /**
+         * ImpactWithheld
+         * @description Rungs that EXIST on these agents and this caller may not read (R31).
+         *
+         *     🚨 COUNTS ONLY, grouped by principal kind — never an id, a mandate key, an
+         *     organization or a person. R26 forbids leaking WHICH mandates exist; R31
+         *     forbids a silent short list that lets a screen imply it showed everything.
+         *     A count with a reason is the one shape that satisfies both, and it is why
+         *     these numbers are computed here rather than by widening ``iam.has_access``,
+         *     which is not an agent's call.
+         */
+        ImpactWithheld: {
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /** By Principal Kind */
+            by_principal_kind?: components["schemas"]["ImpactWithheldGroup"][];
+            /** Sentence */
+            sentence?: string | null;
+        };
+        /** ImpactWithheldGroup */
+        ImpactWithheldGroup: {
+            /** Principal Kind */
+            principal_kind: string;
+            /** Count */
+            count: number;
+            /** Explanation */
+            explanation: string;
         };
         /**
          * ImpairmentAvailableAttributes
@@ -82603,6 +82661,22 @@ export interface components {
             organizations: components["schemas"]["OrganizationSummary"][];
             /** Default Organization Id */
             default_organization_id: string | null;
+            /**
+             * Default Preference Status
+             * @default unset
+             * @enum {string}
+             */
+            default_preference_status?: "malformed" | "stale" | "unavailable" | "unset" | "valid";
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings?: ("membership_organization_missing" | "organization_preference_unavailable")[];
+            /**
+             * Missing Organization Count
+             * @default 0
+             */
+            missing_organization_count?: number;
         };
         /** OrganizationSecretContributeRequest */
         OrganizationSecretContributeRequest: {
@@ -110291,6 +110365,12 @@ export interface components {
             credential_item_id: string;
             /** Field Key */
             field_key: string;
+            /**
+             * Execution Purpose
+             * @default general
+             * @enum {string}
+             */
+            execution_purpose?: "general" | "passkey_private";
             /** Env Key */
             env_key?: string | null;
             /**
@@ -163776,7 +163856,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ImpactVerdict"][];
+                    "application/json": components["schemas"]["ImpactReport"];
                 };
             };
             /** @description Validation Error */
@@ -163809,7 +163889,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ImpactVerdict"][];
+                    "application/json": components["schemas"]["ImpactReport"];
                 };
             };
             /** @description Validation Error */
