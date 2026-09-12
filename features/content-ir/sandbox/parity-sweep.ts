@@ -394,7 +394,19 @@ async function runBatch(
         // The page has to exist before anything can be asked of it. A batch
         // whose page never loads is reported as a batch that never loaded —
         // it is never allowed to look like a parity result.
-        const loaded = await waitFor(page, "!!window.__READY__", 30000);
+        let loaded = await waitFor(page, "!!window.__READY__", 30000);
+        if (!loaded) {
+            // The dev server restarting mid-sweep once cost a whole 35-batch
+            // run (observed 2026-09-12: every batch came back "never finished
+            // loading" because the app had been restarted under it). One
+            // re-navigate distinguishes a page that is genuinely broken from a
+            // server that was briefly not there.
+            await new Promise((r) => setTimeout(r, 5000));
+            await page.navigate(
+                `${ORIGIN}/__kind-sandbox-parity-sweep-${batchIndex}.html`,
+            );
+            loaded = await waitFor(page, "!!window.__READY__", 30000);
+        }
         if (!loaded) {
             return cases.map((c) => ({
                 componentKey: c.componentKey,
@@ -528,6 +540,7 @@ function markdown(results: ParityCaseResult[], skipped: Array<{ componentKey: st
 async function main(): Promise<void> {
     const argv = process.argv.slice(2);
     const isCheck = argv.includes("--check");
+    const writeBaseline = argv.includes("--write-baseline");
     const keysArg = argv.find((a) => a.startsWith("--keys="));
     let keys: string[] | null = keysArg ? keysArg.slice(7).split(",") : null;
 
@@ -583,6 +596,36 @@ async function main(): Promise<void> {
     );
     // eslint-disable-next-line no-console
     console.log(`report → ${OUT_DIR}/parity-report.md`);
+
+    if (writeBaseline) {
+        const sample = results
+            .filter((r) => r.verdict !== "did-not-render")
+            .map((r) => r.componentKey)
+            .sort();
+        const recorded: Record<string, number> = {};
+        for (const r of results) {
+            if (r.verdict === "did-not-render") continue;
+            recorded[r.componentKey] = Math.max(
+                r.light?.pct ?? 0,
+                r.dark?.pct ?? 0,
+            );
+        }
+        writeFileSync(
+            BASELINE,
+            `${JSON.stringify(
+                {
+                    recordedAt: new Date().toISOString(),
+                    note: "Worst-of-light-and-dark pixel difference between the framed and unframed render of each body in the parity sample. Regenerate with: pnpm sweep:kind-sandbox-parity --keys=<the sample> --write-baseline",
+                    sample,
+                    results: recorded,
+                },
+                null,
+                2,
+            )}\n`,
+        );
+        // eslint-disable-next-line no-console
+        console.log(`baseline → ${BASELINE} (${sample.length} bodies)`);
+    }
 
     if (isCheck) {
         const failures: string[] = [];
