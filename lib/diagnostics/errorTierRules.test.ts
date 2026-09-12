@@ -27,6 +27,32 @@ function captured(over: Partial<CapturedError>): CapturedError {
 }
 
 describe("classifyTier", () => {
+  it("keeps Next's cancelled superseded navigation transition out of the durable queue", () => {
+    const c = classifyTier(
+      captured({
+        source: "unhandled-rejection",
+        name: "AbortError",
+        message: "Transition was skipped",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.persist).toBe(false);
+    expect(c.ruleId).toBe("next-transition-skipped");
+  });
+
+  it("keeps other unhandled AbortErrors red", () => {
+    const c = classifyTier(
+      captured({
+        source: "unhandled-rejection",
+        name: "AbortError",
+        message: "A real operation was aborted",
+      }),
+    );
+
+    expect(c.tier).toBe("red");
+  });
+
   it("downgrades a server stream warning that declares itself recoverable", () => {
     // The real payload: content-plan deepen warning that the page has no
     // keyword and the site has no keyword library. aidream emits this

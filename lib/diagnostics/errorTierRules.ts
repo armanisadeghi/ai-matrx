@@ -362,6 +362,19 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "next-transition-skipped",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "React cancelled a superseded Next navigation transition. This is expected control flow when a newer transition wins; retain the local breadcrumb without filing a durable implementation incident.",
+    addedAt: "2026-09-12",
+    match: {
+      source: "unhandled-rejection",
+      name: "AbortError",
+      messageIncludes: "Transition was skipped",
+    },
+  },
+  {
     id: "supabase-browser-transport-loss",
     tier: "yellow",
     persist: false,
