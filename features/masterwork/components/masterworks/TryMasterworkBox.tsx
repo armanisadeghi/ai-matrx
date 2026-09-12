@@ -48,8 +48,13 @@ import { useWorkflowRun } from "@/features/workflow-runtime/hooks/useWorkflowRun
 import {
   selectNodeAggregate,
   selectNodeAggregatePhases,
+  selectRunEmissions,
   selectRunStatus,
 } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
+import {
+  absentResultReason,
+  readPresentedResult,
+} from "@/features/workflow-runtime/run-result/presented-result";
 import {
   runIsOver,
   type WorkflowRunStatus,
@@ -332,6 +337,8 @@ export function TryMasterworkBox({
     selectNodeAggregate(runId ?? "", finalStep?.nodeId ?? ""),
   );
   const finalInvocation = finalAggregate.invocations[0] ?? null;
+  /** What the run's nodes PRESENTED — live SSE and durable replay alike. */
+  const emissions = useAppSelector(selectRunEmissions(runId ?? ""));
 
   // ── Terminal handling: tell the caller once, explain a failure once ──────
   useEffect(() => {
@@ -428,14 +435,40 @@ export function TryMasterworkBox({
   // are one document (edit). Both keys are `masterwork_result`'s, declared by
   // the builder on the terminal step; `report` is the pre-2026-08-26 key and
   // is read so runs built before that still offer the door.
-  const candidateText =
-    terminal && runStatus === "completed" && finalInvocation?.output
-      ? String(
-          (finalInvocation.output as Record<string, unknown>).deliverable ??
-            (finalInvocation.output as Record<string, unknown>).ruling ??
-            (finalInvocation.output as Record<string, unknown>).report ??
-            "",
-        ).trim() || null
+  //
+  // ── W33, 2026-09-12: THE PRESENTED PAYLOAD WINS ─────────────────────────
+  // This used to read the terminal step's STORED output and nothing else. A
+  // terminal `output.to_frontend` step emits the restructured shape and
+  // returns its input unchanged (by design, so routing is unaffected), so the
+  // Verification Desk's `{ruling, verdict_pack}` never appeared in `output`:
+  // a completed run with `ruling.verdict = "NOT REAL"` on the wire offered no
+  // Audition door at all. `readPresentedResult` reads what the step PRESENTED
+  // first and falls back to what it stored — the shared reader, in the runtime
+  // layer, so every surface that asks this question inherits the fix.
+  const presentedResult = useMemo(
+    () =>
+      terminal && runStatus === "completed"
+        ? readPresentedResult({
+            nodeId: finalStep?.nodeId,
+            emissions,
+            output: finalInvocation?.output,
+          })
+        : null,
+    [terminal, runStatus, finalStep?.nodeId, emissions, finalInvocation?.output],
+  );
+  const candidateText = presentedResult?.text ?? null;
+  /**
+   * A COMPLETED run with no judgeable result says WHY, in one line. It never
+   * prints "Runs land in your recent runs below." — that sentence is true
+   * before a run exists and a lie after one finished with nothing to show.
+   */
+  const noResultReason =
+    terminal && runStatus === "completed" && !presentedResult
+      ? absentResultReason({
+          nodeId: finalStep?.nodeId,
+          emissions,
+          output: finalInvocation?.output,
+        })
       : null;
 
   return (
@@ -518,7 +551,7 @@ export function TryMasterworkBox({
                 ? "Working…"
                 : (submitLabel ?? "")}
         </Button>
-        {onCompare && !candidateText ? (
+        {onCompare && !candidateText && !noResultReason ? (
           <span className="text-xs text-muted-foreground">
             Runs land in your recent runs below.
           </span>
@@ -625,6 +658,16 @@ export function TryMasterworkBox({
           <Scale className="mr-1 h-4 w-4" />
           Judge this against your own work
         </Button>
+      ) : onCompare && noResultReason ? (
+        // THE DOOR IS ABSENT AND HONEST, never a filler sentence about where
+        // runs land: this run FINISHED, and this line says what it finished
+        // with instead.
+        <p
+          className="text-xs text-muted-foreground"
+          data-masterwork-audition="absent"
+        >
+          {noResultReason}
+        </p>
       ) : null}
     </div>
   );

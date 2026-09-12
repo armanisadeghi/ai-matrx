@@ -54,6 +54,7 @@ import { TryMasterworkBox } from "./TryMasterworkBox";
 
 let adoptedRunId: string | null = null;
 const getMasterworkRunVerdict = jest.fn();
+const getMasterworkDefinition = jest.fn();
 
 // TRANSPORT ONLY. The real adapter opens SSE/pollers against the server; its
 // first step is `attachRun`, and that is the part this test needs so the real
@@ -89,7 +90,8 @@ jest.mock("@/features/rich-document/RichDocument", () => ({
 }));
 
 jest.mock("../../service", () => ({
-  getMasterworkDefinition: () => Promise.resolve(null),
+  getMasterworkDefinition: (...args: unknown[]) =>
+    getMasterworkDefinition(...args),
   getMasterworkRunVerdict: (...args: unknown[]) =>
     getMasterworkRunVerdict(...args),
 }));
@@ -121,6 +123,8 @@ beforeEach(() => {
   store = makeStore();
   adoptedRunId = null;
   getMasterworkRunVerdict.mockReset();
+  getMasterworkDefinition.mockReset();
+  getMasterworkDefinition.mockResolvedValue(null);
   sessionStorage.clear();
 });
 
@@ -150,7 +154,10 @@ function runErrored(runId: string, message: string): WorkflowRunEvent {
 const MASTERWORK_ID = "11111111-1111-4111-8111-111111111111";
 const RUN_ID = "22222222-2222-4222-8222-222222222222";
 
-function renderBox(onRunFinished: jest.Mock) {
+function renderBox(
+  onRunFinished: jest.Mock,
+  onCompare?: (candidate: string) => void,
+) {
   return act(async () => {
     root.render(
       <Provider store={store}>
@@ -158,6 +165,7 @@ function renderBox(onRunFinished: jest.Mock) {
           masterworkId={MASTERWORK_ID}
           masterworkKind="edit"
           onRunFinished={onRunFinished}
+          onCompare={onCompare}
         />
       </Provider>,
     );
@@ -258,4 +266,186 @@ it("forgets a remembered run whose row cannot be read at all", async () => {
     sessionStorage.getItem(`matrx.masterwork.run.${MASTERWORK_ID}`),
   ).toBeNull();
   expect(container.textContent).not.toContain("Working…");
+});
+
+/**
+ * ── WALL W33 (Expert Book Challenge, 2026-09-12) ───────────────────────────
+ * THE DEFECT: the Audition door was opened off the terminal step's STORED
+ * output only. The engine's `output.to_frontend` node EMITS the restructured
+ * shape and returns its INPUT unchanged as its output (by design — routing
+ * must not change), so the Verification Desk's `{ruling, verdict_pack}` never
+ * reached `output`. Live run cdd2eb12-60a0-4d74-8e88-da38e94e257a completed
+ * with `ruling.verdict = "NOT REAL"` on the wire, showed no door, and printed
+ * "Runs land in your recent runs below." where the reason belonged.
+ *
+ * ONE-LINE BUG EACH TEST CATCHES:
+ *  · first — `readPresentedResult` ignoring `node_emitted` payloads (drop the
+ *    emitted branch and the door never opens);
+ *  · second — a completed run with nothing to judge falling back to the idle
+ *    filler sentence instead of saying why.
+ *
+ * Only TRANSPORT is stubbed. The events below are the engine's own frames,
+ * folded through the real reducer into the real store.
+ */
+
+/** The Verification Desk's shape: an io.user_input step then the to_frontend
+ *  handover, exactly as a programmatic definition carries it (`type` on the
+ *  node, no builder-written `data.spec_type`). */
+const DESK_DEFINITION = {
+  nodes: [
+    { id: "ask", type: "io.user_input", data: { label: "The claim" } },
+    { id: "present", type: "output.to_frontend", data: { label: "The ruling" } },
+  ],
+  edges: [{ source: "ask", target: "present" }],
+};
+
+/** node_completed for the to_frontend step: it passes its INPUT through. */
+function presentCompleted(
+  runId: string,
+  output: Record<string, unknown>,
+): WorkflowRunEvent {
+  return {
+    ts: new Date().toISOString(),
+    event: "node_completed",
+    run_id: runId,
+    step: 2,
+    node_id: "present",
+    spec_type: "output.to_frontend",
+    attempt: 1,
+    duration_ms: 12,
+    output,
+    output_kind: null,
+    output_kind_ok: null,
+    output_kind_errors: null,
+    output_kind_version: null,
+    output_kind_degraded: null,
+    metadata: null,
+    wrapper: null,
+  } as WorkflowRunEvent;
+}
+
+/** The node_emitted frame to_frontend sends in `restructured` mode. */
+function presentEmitted(
+  runId: string,
+  payload: Record<string, unknown>,
+): WorkflowRunEvent {
+  return {
+    ts: new Date().toISOString(),
+    event: "node_emitted",
+    run_id: runId,
+    step: 2,
+    node_id: "present",
+    attempt: 1,
+    mode: "restructured",
+    payload,
+    component_ref: null,
+    surface: "workflow",
+    title: null,
+    presentation: "panel",
+    kind: null,
+    kind_ok: null,
+    metadata: null,
+  } as WorkflowRunEvent;
+}
+
+function runCompleted(runId: string): WorkflowRunEvent {
+  return {
+    ts: new Date().toISOString(),
+    event: "run_completed",
+    run_id: runId,
+    status: "completed",
+    steps_executed: 2,
+    last_outputs: {},
+    channel_values: {},
+  } as WorkflowRunEvent;
+}
+
+/** Rejoin a live run, then fold the terminal frames it produces. */
+async function runToCompletion(
+  events: WorkflowRunEvent[],
+  onCompare?: (candidate: string) => void,
+) {
+  sessionStorage.setItem(`matrx.masterwork.run.${MASTERWORK_ID}`, RUN_ID);
+  getMasterworkRunVerdict.mockResolvedValue({ status: "running", error: null });
+  getMasterworkDefinition.mockResolvedValue(DESK_DEFINITION);
+
+  await renderBox(jest.fn(), onCompare);
+  await settle();
+  expect(adoptedRunId).toBe(RUN_ID);
+
+  await act(async () => {
+    events.forEach((event, index) => {
+      store.dispatch(
+        applyRunEvent({ runId: RUN_ID, event, seq: index + 1, replay: false }),
+      );
+    });
+  });
+  await settle();
+}
+
+it("opens the Audition door from the PRESENTED payload when the terminal step stored no result key", async () => {
+  const onCompare = jest.fn();
+  await runToCompletion(
+    [
+      // What to_frontend RETURNS: its input, untouched. No result key in sight.
+      presentCompleted(RUN_ID, {
+        claim: "The photo shows a flood in Rio.",
+        evidence_items: 4,
+      }),
+      // What to_frontend PRESENTS: the restructured ruling.
+      presentEmitted(RUN_ID, {
+        ruling: {
+          verdict: "NOT REAL",
+          headline: "The photo is from a 2011 flood in Thailand.",
+          reasoning: "Reverse image search puts it in Bangkok, eight years earlier.",
+        },
+        verdict_pack: { confidence: "high" },
+      }),
+      runCompleted(RUN_ID),
+    ],
+    onCompare,
+  );
+
+  expect(container.textContent).toContain("Judge this against your own work");
+  // …and the idle filler is gone the moment a run has finished.
+  expect(container.textContent).not.toContain(
+    "Runs land in your recent runs below.",
+  );
+
+  const door = Array.from(container.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Judge this against your own work"),
+  );
+  await act(async () => {
+    door?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  // An OBJECT-shaped ruling reaches the Audition as the text a person reads:
+  // verdict, then headline, then reasoning — never "[object Object]".
+  expect(onCompare).toHaveBeenCalledWith(
+    "NOT REAL\n\nThe photo is from a 2011 flood in Thailand.\n\nReverse image search puts it in Bangkok, eight years earlier.",
+  );
+});
+
+it("says WHY there is nothing to judge when neither the presented payload nor the stored output carries a result", async () => {
+  const onCompare = jest.fn();
+  await runToCompletion(
+    [
+      presentCompleted(RUN_ID, { claim: "The photo shows a flood in Rio." }),
+      presentEmitted(RUN_ID, { notes: "Nothing conclusive.", sources: [] }),
+      runCompleted(RUN_ID),
+    ],
+    onCompare,
+  );
+
+  expect(container.textContent).not.toContain(
+    "Judge this against your own work",
+  );
+  // NEVER the idle filler on a finished run.
+  expect(container.textContent).not.toContain(
+    "Runs land in your recent runs below.",
+  );
+  expect(container.textContent).toContain(
+    "This Masterwork's final step returned no ruling, deliverable or report",
+  );
+  // The honest line names what it DID return, so the builder can fix it.
+  expect(container.textContent).toContain("notes, sources");
 });
