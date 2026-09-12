@@ -35,7 +35,14 @@
  * never happen again is the FIRST read being a tool call.
  */
 
-import { ruleState, type Rulebook, type RulebookRule } from "../types";
+import {
+  isPolicyRule,
+  ruleActionKind,
+  rulePolicyLevel,
+  ruleState,
+  type Rulebook,
+  type RulebookRule,
+} from "../types";
 import { openTensions } from "../coherence/types";
 
 /** The variable name every Rulebook-reading agent declares. */
@@ -72,6 +79,18 @@ function ruleBlock(rule: RulebookRule): string[] {
     `State: ${ruleState(rule)} · Severity: ${rule.severity}`,
     rule.statement,
   ];
+  // 🚨 THE DECISION HALF (W58). An agent handed only `statement` for a policy
+  // rule is handed a commandment where the Expert taught a judgment — the
+  // whole "if → then, at this cost and this risk" is the operational form.
+  if (isPolicyRule(rule)) lines.push("Kind: a DECISION, not a standing rule");
+  if (rule.precondition) lines.push(`When: ${rule.precondition}`);
+  if (rule.next_action) lines.push(`Then do: ${rule.next_action}`);
+  const actionKind = ruleActionKind(rule);
+  if (actionKind) lines.push(`Kind of move: ${actionKind}`);
+  const cost = rulePolicyLevel(rule.cost);
+  const risk = rulePolicyLevel(rule.risk);
+  if (cost) lines.push(`Cost of the action: ${cost}`);
+  if (risk) lines.push(`Risk of the action: ${risk}`);
   if (rule.rationale) lines.push(`Why: ${rule.rationale}`);
   if (rule.detection) lines.push(`Detection: ${rule.detection}`);
   if (rule.quote) lines.push(`Source words: ${rule.quote}`);

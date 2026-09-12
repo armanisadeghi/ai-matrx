@@ -80,7 +80,9 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
+import { RuleHistory } from "./RuleHistory";
 import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
+import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
@@ -289,7 +291,8 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   );
 }
 
-function RuleRow({
+// Exported ONLY so the policy-rule guard can drive the real card.
+export function RuleRow({
   rule,
   allRules,
   canEdit,
@@ -352,6 +355,7 @@ function RuleRow({
                 {rule.name}
               </span>
               {severityBadge(rule.severity)}
+              <RuleDecisionBadge rule={rule} />
               {state === "draft" ? (
                 <Badge
                   variant="outline"
@@ -429,6 +433,8 @@ function RuleRow({
       ) : null}
       {openRow ? (
         <div className="space-y-2 border-t border-border px-9 py-2 text-sm">
+          {/* 🚨 THE DECISION HALF first — for a policy rule it IS the rule. */}
+          <RuleDecision rule={rule} />
           {rule.rationale ? (
             <div>
               <div className="text-xs font-medium text-muted-foreground">
@@ -456,6 +462,8 @@ function RuleRow({
             </div>
           ) : null}
           <RuleRelations rule={rule} allRules={allRules} />
+          {/* What this rule used to say, when a machine rewrote it. */}
+          <RuleHistory rule={rule} />
           {/* 🚨 THE EVIDENCE STANDING: the per-piece observations this pattern
               was built from, behind one click — never 416 questions. */}
           <RuleEvidenceDisclosure

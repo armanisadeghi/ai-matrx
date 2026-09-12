@@ -121,6 +121,7 @@ export const RULE_RELATION_KINDS = [
   "depends_on",
   "exception_to",
   "contrast_with",
+  "disagrees_with",
 ] as const;
 
 export type RuleRelationKind = (typeof RULE_RELATION_KINDS)[number];
@@ -131,6 +132,7 @@ export const RULE_RELATION_LABELS: Record<RuleRelationKind, string> = {
   depends_on: "Only applies after",
   exception_to: "Is the exception to",
   contrast_with: "Easy to confuse with",
+  disagrees_with: "Disagrees with",
 };
 
 /**
@@ -154,6 +156,110 @@ export interface RuleRelation {
   kind: RuleRelationKind;
   /** One short clause naming WHAT connects them — the link's label. */
   note?: string;
+  /**
+   * 🚨 `disagrees_with` only — THE RETAINED DISAGREEMENT (2026-09-12, Arman's
+   * expertise mandate: "Surface, retain, and make navigable divergent
+   * approaches, dissent, and controversy… without collapsing them into
+   * consensus").
+   *
+   * The Expert's own plain words for what separates the two positions ("on a
+   * client site the first one; on our own site the second"). ABSENT is a real
+   * and final answer, never a gap to fill in: it means they said both simply
+   * hold. Neither position is a defect and neither is waiting to be resolved.
+   */
+  condition?: string;
+}
+
+/**
+ * One position this rule USED to state, kept when a machine or a tool rewrote
+ * its `statement` (`rulebook_writes.push_rule_history` on the server). The
+ * Expert's own edits are not history entries — the Rulebook row's version
+ * history already holds those.
+ *
+ * Why it exists (interview lane, trial 2, 2026-09-12): the Scout caught a real
+ * cross-turn contradiction and resolved it by rewriting the rule in place to
+ * carry "the real line". Nothing recorded that the Expert had ever held the
+ * earlier one.
+ */
+export interface RuleHistoryEntry {
+  /** The words that were replaced — verbatim. */
+  statement: string;
+  rationale?: string;
+  changed_at: string;
+  /** The tool or lane that rewrote it, with the acting user. */
+  changed_by: string;
+  /** Why, in one clause. */
+  reason?: string;
+}
+
+/**
+ * 🚨 THE POLICY RULE SHAPE (W58, 2026-09-12) — the DECISION half of a rule.
+ *
+ * A case that unfolds in time does not teach a static commandment; it teaches a
+ * judgment: *given what is known at this moment, do X, and here is what it
+ * costs and risks.* The distillers write this half onto rules
+ * (`aidream/services/distillation/distill.py`), and until 2026-09-12 no
+ * frontend surface declared it or rendered it — 592 live rules carried an
+ * if → then that every screen hid. Law 4: a screen never lies by omission.
+ *
+ * Both vocabularies MIRROR the server byte-for-byte
+ * (`distill.py::ACTION_KINDS` / `POLICY_LEVELS`); the guard in
+ * `features/masterwork/__tests__/policy-rule-surface.test.tsx` parses that file
+ * and fails the moment either list drifts. An unknown value is a value the
+ * server would have dropped: render nothing for it rather than invent a label.
+ */
+export const RULE_POLICY_KIND = "policy" as const;
+
+/** What the Expert DID at this step. A closed vocabulary. */
+export const RULE_ACTION_KINDS = [
+  "ask",
+  "test",
+  "treat",
+  "refer",
+  "wait",
+  "commit",
+] as const;
+
+export type RuleActionKind = (typeof RULE_ACTION_KINDS)[number];
+
+/** Cost and risk both speak this three-value ladder. */
+export const RULE_POLICY_LEVELS = ["low", "medium", "high"] as const;
+
+export type RulePolicyLevel = (typeof RULE_POLICY_LEVELS)[number];
+
+/** How the chosen move reads to the Expert, in their language — never jargon. */
+export const RULE_ACTION_KIND_LABELS: Record<RuleActionKind, string> = {
+  ask: "Ask",
+  test: "Test",
+  treat: "Treat",
+  refer: "Refer",
+  wait: "Wait",
+  commit: "Commit",
+};
+
+export const RULE_POLICY_LEVEL_LABELS: Record<RulePolicyLevel, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/** A rule that teaches a decision rather than a standing commandment. */
+export function isPolicyRule(rule: RulebookRule): boolean {
+  return rule.kind === RULE_POLICY_KIND;
+}
+
+/** The value only when the server's own vocabulary contains it. */
+export function ruleActionKind(rule: RulebookRule): RuleActionKind | null {
+  const value = rule.action_kind;
+  return value && (RULE_ACTION_KINDS as readonly string[]).includes(value)
+    ? (value as RuleActionKind)
+    : null;
+}
+
+export function rulePolicyLevel(value: string | undefined): RulePolicyLevel | null {
+  return value && (RULE_POLICY_LEVELS as readonly string[]).includes(value)
+    ? (value as RulePolicyLevel)
+    : null;
 }
 
 /** One rule of the Rulebook. `id` is the citable handle every audit verdict points at. */
@@ -215,6 +321,39 @@ export interface RulebookRule {
    * compares, and relations are structural, not prose.
    */
   relates_to?: RuleRelation[];
+  /**
+   * 🚨 THE DECISION HALF (W58, 2026-09-12) — see `RULE_POLICY_KIND` above.
+   * `"policy"` means this rule is a judgment made under uncertainty; the five
+   * fields below carry it. Absent on an ordinary rule, and absent on every rule
+   * written before 2026-09-12 — absence means "a standing commandment".
+   * Deliberately NOT in `RULE_CONTENT_FIELDS`: that list is the prose fields a
+   * manual edit compares, and these are set through the `rulebook` tool's
+   * `update_rule`, one field at a time.
+   */
+  kind?: string;
+  /** What is known at the point this judgment applies — the "if". */
+  precondition?: string;
+  /** The ONE next move chosen at that point — the "then". */
+  next_action?: string;
+  /** One of `RULE_ACTION_KINDS`. */
+  action_kind?: string;
+  /** Cost OF THE ACTION — one of `RULE_POLICY_LEVELS`. */
+  cost?: string;
+  /** Risk OF THE ACTION — one of `RULE_POLICY_LEVELS`. */
+  risk?: string;
+  /**
+   * The positions this rule used to state, oldest first — see
+   * `RuleHistoryEntry`. Absent on every rule no machine has ever rewritten.
+   */
+  history?: RuleHistoryEntry[];
+  /**
+   * Who settled the coherence question this rule was part of, and when —
+   * stamped on BOTH rules when the Expert rules on a tension, so a reader of
+   * either rule alone can see that a human decided this. Absent means nobody
+   * has.
+   */
+  settled_by?: string;
+  settled_at?: string;
 }
 
 /**
