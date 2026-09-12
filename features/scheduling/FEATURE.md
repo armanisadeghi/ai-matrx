@@ -217,6 +217,11 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-11** — **The door the alarm points at now opens, and acts.**
+  `/schedules/<id>` refused every `kind='tool'` system schedule with the
+  AccessGate ("You don't have access to this scheduled task"), so the banner and
+  scanner-health rows led nowhere and raw SQL was the only way to re-enable a
+  wrongly-suspended schedule. See *A system schedule's record page* below.
 - **2026-09-11** — `SystemScheduleAlarmBanner`: critical schedule alarms reach
   every super-admin page (global singleton, fixed under the header, one door per
   schedule). Six suspended system schedules had been unread for 17 days.
@@ -527,6 +532,46 @@ ruling — a notification is never a chip; `scheduler_` is dispositioned
 `notification` and ambient presentation is off), the Notification System (the
 right destination once it has an in-app channel — today email/SMS only, server
 producers only), and the Error Inspector (client errors, no record door).
+
+## A system schedule's record page (2026-09-11)
+
+**The refusal was the CLIENT's, not the database's.** `scheduler.sch_task`
+carries a `platform_admin_all` policy (`FOR ALL USING is_platform_admin()`), so
+RLS had already admitted the super-admin to every system schedule — verified
+live: as a non-admin `authenticated` JWT the same two rows return 0. What
+refused was `getAgentTask`, which filtered `.eq("kind", "agent")` and threw the
+row away, leaving the detail page's zero-row branch to render `<AccessGate>`.
+The read now accepts `agent` + `tool` (both kinds carry a `sch_agent_task`
+row). **No migration, no new RLS, no new SECURITY DEFINER door** — nothing was
+widened; a non-super-admin still sees nothing and still meets the AccessGate.
+
+On the page, for a task the guard switched off (`components/detail/SuspensionCard.tsx`):
+
+- the suspension record from `sch_task.metadata.auto_suspended` — when, how many
+  consecutive failures, the reason verbatim through `TextWithDoors` (its own ids
+  become doors), the override notice when the guard overrode a human approval,
+  and an anchor to the run that tipped it (`#run-<id>` in the history below);
+- the recorded approval (`metadata.approval` / `approved_by` / `approved_at`),
+  stating that re-enabling RESTORES it — not a new schedule, no new sign-off
+  (`common-docs/policies/no-unapproved-schedules.md`);
+- the prior suspensions in `auto_suspended_history`, each saying whether a
+  restore was recorded and by whom;
+- the page's ONE enable control (the header's Enable/Pause handler, rendered a
+  second time beside the complaint — never a second write path). For a `tool`
+  task it dispatches `setSystemTaskEnabled` → the admin PATCH
+  `/scheduling/admin/system-tasks/{id}` the System jobs console already uses:
+  task and trigger flip together, enabling is refused verbatim when no handler
+  is registered for the `tool_name`, and aidream stamps the restore into
+  `auto_suspended_history` (`restored = {at, by, restored_approval}`) leaving
+  the approval fields untouched. The user PATCH is unchanged and still refuses
+  non-agent kinds and non-owners.
+
+Before flipping a suspended task on, the confirm states the consequence: that
+the trigger comes with it, that an overdue schedule fires on the scanner's next
+pass rather than at the next scheduled time (read from the trigger, since
+`sch_task.next_due_at` is null while the trigger is disabled), how many more
+matching failures re-suspend it, and which approval is being restored. A
+system job shows no Delete and its Edit mode opens the System jobs console.
 
 ## Realtime
 
