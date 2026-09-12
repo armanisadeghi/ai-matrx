@@ -1,0 +1,30 @@
+import { parseBitwardenExport, prepareBitwardenCommand } from "../bitwarden-json";
+
+const limits = { maxFileBytes: 100_000, maxRecords: 20, maxColumns: 20, maxCellBytes: 10_000, maxFields: 202, maxPlaintextFieldBytes: 1_048_576, maxRequestBodyBytes: 12_582_912, maxJsonDepth: 64 };
+const source = (items: string) => `{\"encrypted\":false,\"folders\":[{\"id\":\"11111111-1111-4111-8111-111111111111\",\"name\":\"Personal\"}],\"items\":[${items}]}`;
+const login = (extra = "") => `{\"id\":\"22222222-2222-4222-8222-222222222222\",\"name\":\"Example\",\"type\":1,\"folderId\":\"11111111-1111-4111-8111-111111111111\",\"login\":{\"username\":\"me\",\"password\":\" p@ss \",\"totp\":null,\"uris\":[{\"uri\":\"https://example.com/login\",\"match\":0}]}${extra ? `,${extra}` : ""}}`;
+
+describe("plain Bitwarden JSON", () => {
+  test("preserves source strings exactly and pairs browser-fill host mode with the opt-in", () => {
+    const [record] = parseBitwardenExport(source(login('"notes":"unicode ✓ and 900719925474099312345"')), limits);
+    if (!record) throw new Error("missing parsed record");
+    const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000001", browserFillEnabled: true, includeTrash: false, limits });
+    expect(prepared.command?.body).toMatchObject({ definition_key: "website_login", browser_fill_enabled: true, uri_match_mode: "host", login_urls: ["https://example.com"] });
+    expect(prepared.command?.body.fields).toEqual(expect.arrayContaining([expect.objectContaining({ field_key: "password", value: " p@ss " }), expect.objectContaining({ field_key: "import_source_record", editable: false, value: expect.stringContaining("900719925474099312345") })]));
+  });
+
+  test("refuses duplicate keys, protected components, and out-of-range enums", () => {
+    expect(() => parseBitwardenExport(source(login('"name":"duplicate"')), limits)).toThrow("duplicate keys");
+    const [passkey] = parseBitwardenExport(source(login().replace('"uris":[{"uri":"https://example.com/login","match":0}]', '"uris":[],"fido2Credentials":[{}]')), limits);
+    expect(passkey?.status).toBe("unsupported");
+    const [bad] = parseBitwardenExport(source(login().replace('"match":0', '"match":900719925474099312345')), limits);
+    expect(bad?.status).toBe("invalid");
+  });
+
+  test("maps an ordinary SSH key without sandbox injection and exposes only its public key metadata", () => {
+    const [record] = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"deploy","type":5,"sshKey":{"privateKey":"PRIVATE","publicKey":"PUBLIC","keyFingerprint":"SHA256:x"}}'), limits);
+    if (!record) throw new Error("missing SSH record");
+    const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000002", browserFillEnabled: false, includeTrash: false, limits });
+    expect(prepared.command?.body.fields).toEqual(expect.arrayContaining([expect.objectContaining({ field_key: "private_key", handling: "revealable", inject_into_sandbox: false }), expect.objectContaining({ field_key: "public_key", handling: "visible", inject_into_sandbox: false })]));
+  });
+});

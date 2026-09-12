@@ -41,3 +41,16 @@ export async function fetchCsvImportLimits(
     maxRequestBodyBytes: parsed[6],
   };
 }
+
+export async function fetchBitwardenJsonImportLimits(
+  organizationId: string,
+  userId: string,
+): Promise<CsvImportLimits & { maxJsonDepth: number; jsonParseTimeoutMs: number }> {
+  const base = await fetchCsvImportLimits(organizationId, userId);
+  const knobs = await fetchKnobIndex({ organizationId, userId, featurePrefix: "vault.import" });
+  const values = Object.fromEntries(knobs.map((knob) => [knob.key, knob.effective_value]));
+  const maxJsonDepth = Number(values.max_json_depth);
+  const jsonParseTimeoutMs = Number(values.json_parse_timeout_ms);
+  if (![maxJsonDepth, jsonParseTimeoutMs].every((value) => Number.isSafeInteger(value) && value > 0)) throw new Error("Bitwarden JSON import is not configured for this organization yet.");
+  return { ...base, maxJsonDepth, jsonParseTimeoutMs };
+}

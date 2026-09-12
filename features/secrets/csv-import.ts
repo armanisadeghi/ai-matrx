@@ -13,6 +13,8 @@ export type CsvImportLimits = {
   maxFields: number;
   maxPlaintextFieldBytes: number;
   maxRequestBodyBytes: number;
+  maxJsonDepth?: number;
+  jsonParseTimeoutMs?: number;
 };
 export type CsvColumnRole =
   "title" | "username" | "password" | "url" | "notes" | "otp" | "keep";
@@ -367,6 +369,10 @@ export function prepareCsvImportRow(input: {
       fields,
     },
   };
+  // The browser matcher treats `never` as an absolute refusal. Keep this pair
+  // coherent with the explicit, eligible bulk opt-in rather than advertising a
+  // fill capability the canonical matcher will always reject.
+  if (command.body.browser_fill_enabled) command.body.uri_match_mode = "host";
   if (
     utf8ByteLength(JSON.stringify(command.body)) >
     input.limits.maxRequestBodyBytes

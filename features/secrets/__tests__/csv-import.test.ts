@@ -295,7 +295,7 @@ describe("Vault CSV import", () => {
     });
     expect(
       toCsvImportCommand({ ...common, browserFillEnabled: true })?.body,
-    ).toMatchObject({ browser_fill_enabled: true });
+    ).toMatchObject({ browser_fill_enabled: true, uri_match_mode: "host" });
     const noPassword = parseCsvText(
       "name,username,password,url\nExample,user,,https://example.test",
       limits,
@@ -311,7 +311,7 @@ describe("Vault CSV import", () => {
         mapping: suggestedCsvMapping(noPassword.headers),
         browserFillEnabled: true,
       })?.body,
-    ).toMatchObject({ browser_fill_enabled: false });
+    ).toMatchObject({ browser_fill_enabled: false, uri_match_mode: "never" });
     const local = parseCsvText(
       "name,username,password,url\nLocal,user,secret,http://localhost:3000/login",
       limits,

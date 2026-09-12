@@ -24,6 +24,8 @@ import { createClient } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
+import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
+import { prepareBitwardenCommand, type BitwardenImportRecord } from "../bitwarden-json";
 import {
   hasAmbiguousCsvMapping,
   isPossibleDuplicateRow,
@@ -114,6 +116,9 @@ export function VaultCsvImportDialog({
   const clearAfterRun = useRef(false);
   const invalidated = useRef(false);
   const [source, setSource] = useState("generic");
+  const [jsonRecords, setJsonRecords] = useState<BitwardenImportRecord[]>([]);
+  const [includeTrash, setIncludeTrash] = useState(false);
+  const [metadataApproved, setMetadataApproved] = useState(false);
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
   const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
   const [unavailable, setUnavailable] = useState<string | null>(null);
@@ -136,6 +141,9 @@ export function VaultCsvImportDialog({
     previewActor.current = null;
     progressCursor.current = 0;
     setPreview(null);
+    setJsonRecords([]);
+    setIncludeTrash(false);
+    setMetadataApproved(false);
     setMapping([]);
     setUnavailable(null);
     setEnableBrowserFill(false);
@@ -213,13 +221,22 @@ export function VaultCsvImportDialog({
     setResult(null);
     try {
       const actor = await getVaultImportActor();
-      const limits = await fetchCsvImportLimits(
+      const limits = await (source === "bitwarden_json" ? fetchBitwardenJsonImportLimits : fetchCsvImportLimits)(
         actor.organizationId,
         actor.userId,
       );
       if (cancelled.current) return;
       previewActor.current = actor;
       limitsRef.current = limits;
+      if (source === "bitwarden_json") {
+        const text = new TextDecoder("utf-8", { fatal: true }).decode(await file.arrayBuffer());
+        const { createBitwardenJsonWorker } = await import("../bitwarden-json-worker-client");
+        const parser = createBitwardenJsonWorker();
+        const timeout = window.setTimeout(() => { parser.terminate(); if (!cancelled.current) setUnavailable("The JSON export took too long to parse. Choose a smaller export and try again."); }, limits.jsonParseTimeoutMs ?? 5_000);
+        parser.onmessage = (event: MessageEvent<{ ok: boolean; records?: BitwardenImportRecord[]; error?: string }>) => { window.clearTimeout(timeout); parser.terminate(); if (cancelled.current) return; if (!event.data.ok) { setUnavailable(event.data.error ?? "The JSON export could not be read."); return; } setJsonRecords(event.data.records ?? []); };
+        parser.postMessage({ text, limits: { maxFileBytes: limits.maxFileBytes, maxRecords: limits.maxRecords, maxCellBytes: limits.maxCellBytes, maxJsonDepth: limits.maxJsonDepth ?? 64 } });
+        return;
+      }
       const parsed = await parseCsvFile(file, limits);
       if (cancelled.current) return;
       setPreview(parsed);
@@ -270,7 +287,11 @@ export function VaultCsvImportDialog({
   )?.diagnostic;
   const importRows = async (retry = false) => {
     const limits = limitsRef.current;
-    if (!preview || !limits) return;
+    if ((!preview && !jsonRecords.length) || !limits) return;
+    if (source === "bitwarden_json" && !metadataApproved) {
+      setError("Confirm the visible destination and public-key metadata before importing.");
+      return;
+    }
     if (hasAmbiguousCsvMapping(mapping)) {
       setError(
         "Map each title, username, password, notes, and OTP column once before importing.",
@@ -299,10 +320,15 @@ export function VaultCsvImportDialog({
       }
       const commands = retry
         ? frozenCommands.current
-        : preview.rows.map((row) => {
+        : source === "bitwarden_json"
+          ? jsonRecords.map((record) => {
+              const prepared = prepareBitwardenCommand({ record, principal, expectedActor: actor, rowId: crypto.randomUUID(), browserFillEnabled: enableBrowserFill, includeTrash, limits });
+              return prepared.command ?? null;
+            })
+          : preview!.rows.map((row) => {
             const prepared = prepareCsvImportRow({
               source,
-              preview,
+              preview: preview!,
               row,
               mapping,
               principal,
@@ -403,14 +429,14 @@ export function VaultCsvImportDialog({
     <Credenza open={open} onOpenChange={close}>
       <CredenzaContent className="md:max-w-3xl">
         <CredenzaHeader>
-          <CredenzaTitle>Import passwords from CSV</CredenzaTitle>
+      <CredenzaTitle>Import passwords</CredenzaTitle>
         </CredenzaHeader>
         <CredenzaBody className="space-y-4 pb-6">
           <p className="text-sm text-muted-foreground">
             This import stays in this browser until you confirm each encrypted
             credential. Passwords and notes are never shown in the preview.
           </p>
-          {!preview && (
+          {!preview && !jsonRecords.length && (
             <div className="space-y-3">
               <Label>Export source</Label>
               <Select value={source} onValueChange={setSource}>
@@ -419,10 +445,11 @@ export function VaultCsvImportDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {SOURCES.map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
+                <SelectItem key={value} value={value}>
                       {label}
-                    </SelectItem>
-                  ))}
+                </SelectItem>
+              ))}
+                    <SelectItem value="bitwarden_json">Bitwarden JSON</SelectItem>
                 </SelectContent>
               </Select>
               {SOURCE_URLS[source] && (
@@ -441,13 +468,13 @@ export function VaultCsvImportDialog({
                 onClick={() => fileInput.current?.click()}
               >
                 <FileUp className="mr-2 h-4 w-4" />
-                Choose CSV file
+                Choose import file
               </Button>
               <input
                 ref={fileInput}
                 className="hidden"
                 type="file"
-                accept=".csv,text/csv"
+                accept={source === "bitwarden_json" ? "application/json,.json" : ".csv,text/csv"}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) void load(file);
@@ -599,6 +626,16 @@ export function VaultCsvImportDialog({
               </label>
             </div>
           )}
+          {jsonRecords.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm">{jsonRecords.filter((record) => record.status === "supported").length} supported; {jsonRecords.filter((record) => record.status === "skipped").length} deleted; {jsonRecords.filter((record) => record.status === "invalid").length} invalid; {jsonRecords.filter((record) => record.status === "unsupported").length} unsupported. Unsupported records stay local and are never sent.</p>
+              <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">{jsonRecords.map((record) => <div key={record.ordinal}>#{record.ordinal + 1}: {record.title} · {record.kind.replace("_", " ")} · {record.status}{record.reason ? ` — ${record.reason}` : ""}</div>)}</div>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={includeTrash} onCheckedChange={setIncludeTrash}/><span>Include deleted source items. They are skipped by default.</span></label>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={enableBrowserFill} onCheckedChange={setEnableBrowserFill}/><span>Enable browser fill only for eligible logins with a username, password, and HTTPS or loopback destination. Matching destinations become visible credential metadata.</span></label>
+              {jsonRecords.some((record) => record.hasVisiblePublicKey) && <p className="text-xs text-muted-foreground">SSH public keys are visible metadata. Private keys and source records are revealable only, and none are injected into a sandbox.</p>}
+              <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={metadataApproved} onCheckedChange={setMetadataApproved}/><span>I approve disclosure of the listed destination and public-key metadata.</span></label>
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {result && (
             <div className="space-y-2 text-sm">
@@ -639,7 +676,7 @@ export function VaultCsvImportDialog({
                 Stop after current row
               </Button>
             )}
-            {preview && (!result || result.failed > 0) && (
+            {(preview || jsonRecords.length > 0) && (!result || result.failed > 0) && (
               <Button
                 type="button"
                 disabled={running}

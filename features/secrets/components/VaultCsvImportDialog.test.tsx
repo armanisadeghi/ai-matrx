@@ -2,6 +2,12 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { TextDecoder } from "util";
 
+jest.mock("lossless-json", () => ({
+  LosslessNumber: class LosslessNumber {},
+  parse: JSON.parse,
+  stringify: JSON.stringify,
+}));
+
 import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultWorkspace } from "./VaultWorkspace";
 import { fetchCsvImportLimits } from "../csv-import-limits";
@@ -270,7 +276,7 @@ describe("VaultCsvImportDialog", () => {
     if (!(button instanceof HTMLButtonElement))
       throw new Error("full import trigger missing");
     await act(async () => button.click());
-    expect(document.body.textContent).toContain("Import passwords from CSV");
-    expect(document.body.textContent).toContain("Choose CSV file");
+    expect(document.body.textContent).toContain("Import passwords");
+    expect(document.body.textContent).toContain("Choose import file");
   });
 });
