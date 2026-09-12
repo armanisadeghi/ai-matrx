@@ -1,7 +1,7 @@
 {
   "note": "Record-naming toasts not yet routed through recordToast (lib/toast.ts). This list may only SHRINK — see scripts/check-record-toasts.ts.",
   "updated": "2026-09-12",
-  "count": 390,
+  "count": 391,
   "ids": [
     "app/(admin)/administration/agents/system-agents/apps/page.tsx::`${label} updated.`",
     "app/(admin)/administration/automation/scheduling/system-jobs/page.tsx::`${name} ${updated.active ? \"enabled\" : \"disabled\"}`",
@@ -176,6 +176,7 @@
     "features/education/creators/components/EnrollButton.tsx::`You're already in \"${title}\"`",
     "features/education/creators/components/EnrollButton.tsx::`You're enrolled in \"${title}\"`",
     "features/education/family/components/StudentAgeBandControl.tsx::`${studentLabel}'s age is now set to ${ BANDS.find((b) => b.value === band)?.label ?? band }.`",
+    "features/entitlements/guardrails/SpendBudgetCard.tsx::`${label} removed`",
     "features/flashcards/components/create/CreateFromSource.tsx::`Created \"${set.name}\" with ${savedCards.length} ${savedCards.length === 1 ? \"card\" : \"cards\"}`",
     "features/flashcards/components/create/CreateFromTopic.tsx::`Created \"${set.name}\" with ${cards.length} ${cards.length === 1 ? \"card\" : \"cards\"}`",
     "features/flashcards/components/flashcard-menu.tsx::`${label} copied`",
