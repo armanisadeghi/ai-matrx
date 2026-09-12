@@ -18,10 +18,10 @@
 -- changed. Refresh and independently review a new draft rather than weakening a
 -- failed precondition.
 --
--- Required source proof before activation:
+-- Required source proof before activation (no broad sync is authorized):
 --   pnpm test:sync-feature-docs
---   pnpm sync:feature-docs -- --organization-id 39c38960-d30c-4840-b0c1-c9960de95582
---   --push  (only after a review confirms its intended repository delta)
+--   pnpm exec tsx scripts/sync-feature-docs.ts --organization-id <UUID>
+--   (missing/malformed/duplicate input refuses before the client factory)
 --
 -- Required live DML canary, after source acceptance and before promotion:
 -- 1. Read a real markdown file from this repository and derive its normal

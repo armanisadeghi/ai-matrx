@@ -2,15 +2,14 @@
 /**
  * sync-feature-docs.ts — repo ↔ admin.feature_docs two-way sync.
  *
- *   pnpm sync:feature-docs -- --organization-id <UUID>              # bidirectional (conflicts reported)
- *   pnpm sync:feature-docs -- --organization-id <UUID> --push       # repo → DB
- *   pnpm sync:feature-docs -- --organization-id <UUID> --pull       # DB → repo
- *   pnpm sync:feature-docs -- --organization-id <UUID> --push --confirm-delete
+ *   pnpm sync:feature-docs                              # system catalog, bidirectional
+ *   pnpm sync:feature-docs -- --push                    # system catalog, repo → DB
+ *   pnpm sync:feature-docs -- --pull                    # system catalog, DB → repo
+ *   tsx scripts/sync-feature-docs.ts --organization-id <UUID> --push
  *     # soft-delete DB rows with no file
  *
- * The documented catalog is currently initiated against the Matrx System
- * organization (39c38960-d30c-4840-b0c1-c9960de95582). That is an explicit
- * initiating value, never a fallback: callers must always supply it themselves.
+ * The package command explicitly supplies the Matrx System organization. Other
+ * callers invoke this lower script with exactly one explicit organization ID.
  *
  * Env (.env.local): NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY (sb_secret_*).
  */
@@ -235,6 +234,57 @@ function writeRepoFile(path: string, content: string): void {
   writeFileSync(abs, content, "utf8");
 }
 
+export function buildFeatureDocInsert(
+  operation: SyncOperation,
+  path: string,
+  content: string,
+): FeatureDocInsert {
+  const parsed = parseFeatureDocFile(path, content);
+  return {
+    organization_id: operation.organizationId,
+    path,
+    slug: parsed.slug,
+    title: parsed.title,
+    area: parsed.area,
+    content,
+    sync_base_hash: md5(content),
+    sync_base_commit: operation.gitHead,
+    synced_at: new Date().toISOString(),
+    deleted_at: null,
+    metadata: parsed.metadata,
+  };
+}
+
+/** Production one-record path used by the canary and the bulk sync. */
+export async function syncOneFeatureDoc(
+  store: FeatureDocsStore,
+  operation: SyncOperation,
+  path: string,
+  content: string,
+  existing?: FeatureDocRow,
+): Promise<FeatureDocRow> {
+  const insert = buildFeatureDocInsert(operation, path, content);
+  if (!existing) {
+    const row = await store.insert(insert);
+    if (row.organization_id !== operation.organizationId || row.path !== path)
+      throw new Error("feature-doc insert returned a different row");
+    return row;
+  }
+  if (existing.organization_id !== operation.organizationId)
+    throw new Error(
+      `feature-doc update refused: ${path} belongs to a different organization`,
+    );
+  const { organization_id: _organizationId, ...update } = insert;
+  const row = await store.update(existing.id, operation.organizationId, update);
+  if (
+    row.organization_id !== operation.organizationId ||
+    row.id !== existing.id ||
+    row.path !== path
+  )
+    throw new Error("feature-doc update returned a different row");
+  return row;
+}
+
 async function batchUpsertDocs(
   store: FeatureDocsStore,
   operation: SyncOperation,
@@ -244,24 +294,6 @@ async function batchUpsertDocs(
 ): Promise<number> {
   if (items.length === 0) return 0;
 
-  const buildRow = (path: string, content: string) => {
-    const parsed = parseFeatureDocFile(path, content);
-    const fileHash = md5(content);
-    return {
-      organization_id: operation.organizationId,
-      path,
-      slug: parsed.slug,
-      title: parsed.title,
-      area: parsed.area,
-      content,
-      sync_base_hash: fileHash,
-      sync_base_commit: gitHead,
-      synced_at: new Date().toISOString(),
-      deleted_at: null,
-      metadata: parsed.metadata,
-    };
-  };
-
   const toInsert = items.filter((i) => !dbRows.has(i.path));
   const toUpdate = items.filter((i) => dbRows.has(i.path));
 
@@ -270,14 +302,8 @@ async function batchUpsertDocs(
 
   for (let i = 0; i < toInsert.length; i += INSERT_CHUNK) {
     const chunk = toInsert.slice(i, i + INSERT_CHUNK);
-    const rows = chunk.map(({ path, content }) => buildRow(path, content));
-    for (const row of rows) {
-      const inserted = await store.insert(row);
-      if (inserted.organization_id !== operation.organizationId)
-        throw new Error(
-          "feature-doc insert returned a mismatched organization",
-        );
-    }
+    for (const item of chunk)
+      await syncOneFeatureDoc(store, operation, item.path, item.content);
     done += chunk.length;
     process.stdout.write(`\r[INFO] Inserted ${done}/${items.length}…`);
   }
@@ -288,15 +314,7 @@ async function batchUpsertDocs(
     const results = await Promise.all(
       chunk.map(({ path, content }) => {
         const existing = dbRows.get(path)!;
-        if (existing.organization_id !== operation.organizationId)
-          throw new Error(
-            `feature-doc update refused: ${path} belongs to a different organization`,
-          );
-        const { organization_id: _organizationId, ...update } = buildRow(
-          path,
-          content,
-        );
-        return store.update(existing.id, operation.organizationId, update);
+        return syncOneFeatureDoc(store, operation, path, content, existing);
       }),
     );
     for (const updated of results) {
