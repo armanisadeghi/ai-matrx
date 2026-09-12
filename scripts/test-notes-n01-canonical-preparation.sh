@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 CAPTURE="$ROOT/scripts/notes-n01-canonical-preflight-capture.sql"
-DRAFT="$ROOT/scripts/migration-drafts/notes_n01_note_folders_org_identity_indexes.sql"
+DRAFT="$ROOT/migrations/notes_n01_note_folders_org_identity_indexes.sql"
 AIDREAM_PY="$ROOT/../aidream/.venv/bin/python"
 CID="notes-n01-pg17-${RANDOM}-${RANDOM}"
 TMP=$(mktemp -d /tmp/n01-canonical.XXXXXX)

@@ -1,11 +1,11 @@
--- PREPARED ONLY — AWAITING FINAL OWNER ACTIVATION. DO NOT MOVE TO migrations/ OR APPLY.
--- N01 adds only two concurrent supporting unique indexes. It changes no rows,
--- FK, trigger, policy, ACL, old unique index, or table shape. A stop after one
--- CREATE is PARTIAL/PREPARED, not success; rerun accepts only exact valid-ready
--- named indexes. Use only the sanctioned aidream autocommit runner.
--- The accepted canonical runner owns autocommit execution. These SET statements
--- are not relied on as proof of either concurrent CREATE's timeout behavior;
--- runner activation remains a prerequisite for any apply.
+-- N01: additive organization-qualified Notes folder identity indexes.
+-- Independently accepted preparation e508a0e637; canonical runner acceptance
+-- d0a3aacf2973703889a50d8c5b24bb872883d8ff + cd4cfb9f590464a2f985ba0b6a02d18089c109e8.
+-- Apply only with aidream/db/apply_migrations.py --source matrx-frontend --only
+-- notes_n01_note_folders_org_identity_indexes.sql. The file-scoped session
+-- preserves the timeouts below and verifies a positive bounded lock timeout.
+-- Changes no rows, FK, trigger, policy, ACL, old unique index, or table shape.
+-- Partial execution is not success: rerun accepts only exact valid-ready indexes.
 SET lock_timeout = '2s';
 SET statement_timeout = '10min';
 
