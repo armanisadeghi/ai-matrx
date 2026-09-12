@@ -2119,7 +2119,7 @@ export default function FeedbackDetailDialog({
                               <CopyButtons
                                 size="xs"
                                 label="Comment"
-                                className="opacity-0 group-hover/cmt:opacity-100 focus-within:opacity-100"
+                                className="opacity-0 group-hover/cmt:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                                 human={() =>
                                   `${comment.author_name || config.label} (${comment.author_type}):\n${comment.content}`
                                 }
@@ -2725,7 +2725,7 @@ export default function FeedbackDetailDialog({
                               <CopyButtons
                                 size="xs"
                                 label="User message"
-                                className="opacity-0 group-hover/umsg:opacity-100 focus-within:opacity-100"
+                                className="opacity-0 group-hover/umsg:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                                 human={() =>
                                   `${msg.sender_name ?? msg.sender_type}:\n${msg.content}`
                                 }

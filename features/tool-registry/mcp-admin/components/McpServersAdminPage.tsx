@@ -931,7 +931,7 @@ function ToolsTab({
                   <CopyButtons
                     size="xs"
                     label={`Tool ${t.name}`}
-                    className="opacity-0 group-hover/tool:opacity-100 focus-within:opacity-100"
+                    className="opacity-0 group-hover/tool:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                     human={() => serverToolSummary(t)}
                     json={() => t}
                     agent={() => ({

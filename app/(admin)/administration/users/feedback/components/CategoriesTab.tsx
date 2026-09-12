@@ -440,7 +440,7 @@ export default function CategoriesTab() {
                                     <CopyButtons
                                         size="xs"
                                         label={`Category ${category?.name ?? 'Uncategorized'}`}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/cat:opacity-100 focus-within:opacity-100"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/cat:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                                         human={() =>
                                             [
                                                 `${category?.name ?? 'Uncategorized'} (${items.length})`,
@@ -510,7 +510,7 @@ export default function CategoriesTab() {
                                                             <CopyButtons
                                                                 size="xs"
                                                                 label={`Feedback ${item.id.slice(0, 8)}`}
-                                                                className="absolute right-3 top-2 opacity-0 group-hover/fbitem:opacity-100 focus-within:opacity-100"
+                                                                className="absolute right-3 top-2 opacity-0 group-hover/fbitem:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                                                                 human={() => feedbackRowSummary(item)}
                                                                 json={() => item}
                                                                 agent={() => ({

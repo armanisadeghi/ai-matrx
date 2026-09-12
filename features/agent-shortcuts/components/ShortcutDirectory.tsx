@@ -424,7 +424,13 @@ export function ShortcutDirectory({
       className="group/x cursor-pointer bg-card sm:bg-transparent sm:hover:bg-muted/50"
       onClick={() => navigateToShortcut(row)}
     >
-      <TableCell onClick={(e) => e.stopPropagation()} data-phone="hidden">
+      {/* Stays in the phone card: this cell owns the copy-ID control and the
+          Copy / Copy-for-AI pair, so hiding it would hide those actions. */}
+      <TableCell
+        onClick={(e) => e.stopPropagation()}
+        data-label="ID"
+        data-phone="inline"
+      >
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -447,7 +453,7 @@ export function ShortcutDirectory({
           <CopyButtons
             size="xs"
             label={row.label}
-            className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 shrink-0"
+            className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 max-md:opacity-100 shrink-0"
             human={() => shortcutDirectoryRowSummary(row)}
             json={() => row}
             agent={() => ({
