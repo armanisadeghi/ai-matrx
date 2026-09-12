@@ -18,7 +18,9 @@ import type { TaskDetailResponse } from "./schedulerApi.types";
 import type {
   AgendaTask,
   AgendaTrigger,
+  AutoSuspendedBlock,
   SchAgentTaskRow,
+  SchTaskMetadata,
   SchRunRow,
   SchTaskRow,
   SchTriggerRow,
@@ -63,6 +65,61 @@ interface JoinedAgentTaskRow extends SchTaskRow {
 
 // ── Row → AgendaTask reshape (Supabase joined-read path) ───────────────────
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseAutoSuspended(value: unknown): AutoSuspendedBlock | undefined {
+  if (!isRecord(value)) return undefined;
+  const restored = isRecord(value.restored) ? value.restored : undefined;
+  return {
+    source: typeof value.source === "string" ? value.source : undefined,
+    at: typeof value.at === "string" ? value.at : undefined,
+    run_id: typeof value.run_id === "string" ? value.run_id : undefined,
+    failure_signature:
+      typeof value.failure_signature === "string" ? value.failure_signature : undefined,
+    consecutive_failures:
+      typeof value.consecutive_failures === "number" ? value.consecutive_failures : undefined,
+    reason: typeof value.reason === "string" ? value.reason : undefined,
+    overriding_approval:
+      typeof value.overriding_approval === "string" ? value.overriding_approval : undefined,
+    override_notice:
+      typeof value.override_notice === "string" ? value.override_notice : undefined,
+    restored: restored
+      ? {
+          at: typeof restored.at === "string" ? restored.at : undefined,
+          by: typeof restored.by === "string" ? restored.by : null,
+          restored_approval:
+            typeof restored.restored_approval === "string" ? restored.restored_approval : null,
+        }
+      : undefined,
+  };
+}
+
+/**
+ * The typed view of `sch_task.metadata`. Unknown keys are dropped, malformed
+ * known keys read as absent — a missing suspension record renders as "not
+ * suspended", which is the honest reading of a row that carries no record.
+ */
+export function parseTaskMetadata(raw: unknown): SchTaskMetadata {
+  if (!isRecord(raw)) return {};
+  const history = Array.isArray(raw.auto_suspended_history)
+    ? raw.auto_suspended_history
+        .map(parseAutoSuspended)
+        .filter((b): b is AutoSuspendedBlock => b !== undefined)
+    : undefined;
+  return {
+    auto_suspended: parseAutoSuspended(raw.auto_suspended),
+    auto_suspended_history: history && history.length > 0 ? history : undefined,
+    approval: typeof raw.approval === "string" ? raw.approval : undefined,
+    approved_by: typeof raw.approved_by === "string" ? raw.approved_by : undefined,
+    approved_at: typeof raw.approved_at === "string" ? raw.approved_at : undefined,
+    approved_interval:
+      typeof raw.approved_interval === "string" ? raw.approved_interval : undefined,
+    handler_gate_pending: raw.handler_gate_pending,
+  };
+}
+
 export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
   const triggers: AgendaTrigger[] = (row.triggers ?? []).map((t) => ({
     id: t.id,
@@ -78,6 +135,7 @@ export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
     id: row.id,
     userId: row.user_id,
     kind: row.kind,
+    metadata: parseTaskMetadata(row.metadata),
     title: row.title,
     description: row.description,
     queue: row.queue,
@@ -120,7 +178,11 @@ export function taskDetailToAgendaTask(detail: TaskDetailResponse): AgendaTask {
   return {
     id: t.id,
     userId: t.user_id,
-    kind: t.kind as "agent",
+    kind: t.kind === "tool" ? "tool" : "agent",
+    // The HTTP TaskResponse carries no metadata column. This reshape is used
+    // for a freshly CREATED task only (createScheduledTask); every update path
+    // re-reads the row through getAgentTask, which carries the real metadata.
+    metadata: {},
     title: t.title,
     description: t.description,
     queue: t.queue,
@@ -176,10 +238,19 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
   // Returns null on soft-deleted rows so the edit/detail pages render
   // their "not found" branch instead of letting users re-edit a row
   // they've already deleted.
+  //
+  // THE DOOR LAW (2026-09-11): this read answers `/schedules/<id>` for BOTH
+  // kinds that carry a sch_agent_task row — a user's `agent` schedule and a
+  // platform `tool` system job. It used to filter `kind = 'agent'`, so every
+  // system schedule the alarm banner and scanner-health page named came back
+  // as zero rows and the page said "you don't have access" — a lie: RLS
+  // (`platform_admin_all`) had admitted the admin; the client threw the row
+  // away. RLS stays the ceiling; nobody gains a row here they could not
+  // already SELECT.
   const { data, error } = await schedulerDb(supabase)
     .schema("scheduler").from("sch_task")
     .select(SELECT_AGENT_TASK)
-    .eq("kind", "agent")
+    .in("kind", ["agent", "tool"])
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle()
