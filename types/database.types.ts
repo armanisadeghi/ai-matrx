@@ -18465,8 +18465,15 @@ export type Database = {
       }
       kind_instance: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
+          confirmation: Database["platform"]["Enums"]["confirmation"]
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string
           created_by: string | null
+          created_by_system: string | null
+          created_by_tier: string | null
           data: Json
           deleted_at: string | null
           id: string
@@ -18477,14 +18484,23 @@ export type Database = {
           title: string | null
           updated_at: string
           updated_by: string | null
+          updated_by_system: string | null
+          updated_by_tier: string | null
           validated_at: string | null
           validation_status: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          confirmation: Database["platform"]["Enums"]["confirmation"]
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           data: Json
           deleted_at?: string | null
           id?: string
@@ -18495,14 +18511,23 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           validated_at?: string | null
           validation_status?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          confirmation?: Database["platform"]["Enums"]["confirmation"]
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           data?: Json
           deleted_at?: string | null
           id?: string
@@ -18513,6 +18538,8 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           validated_at?: string | null
           validation_status?: string
           version?: number
@@ -18812,6 +18839,13 @@ export type Database = {
         Returns: Json
       }
       admission_enforced: { Args: never; Returns: boolean }
+      archive_kind_instances: {
+        Args: { p_archived?: boolean; p_ids: string[] }
+        Returns: {
+          archived_at: string
+          id: string
+        }[]
+      }
       assert_kind_admission: {
         Args: {
           p_context?: string
@@ -18829,6 +18863,15 @@ export type Database = {
         Args: { p_data: Json; p_schema: Json }
         Returns: string
       }
+      confirm_kind_instances: {
+        Args: { p_ids: string[] }
+        Returns: {
+          confirmation: string
+          confirmed_at: string
+          confirmed_by: string
+          id: string
+        }[]
+      }
       declare_kind_marker: {
         Args: { p_schema: Json; p_slug: string }
         Returns: Json
@@ -18836,6 +18879,17 @@ export type Database = {
       declare_kind_markers_deep: {
         Args: { p_schema: Json; p_slug: string }
         Returns: Json
+      }
+      edit_kind_instance_value: {
+        Args: { p_id: string; p_key: string; p_value: Json }
+        Returns: {
+          confirmation: string
+          confirmed_at: string
+          confirmed_by: string
+          confirmed_by_this_edit: boolean
+          data: Json
+          id: string
+        }[]
       }
       evaluate_kind_activation: {
         Args: { p_kind_definition_id: string }
@@ -18901,6 +18955,15 @@ export type Database = {
         Returns: Json
       }
       strip_kind_deep: { Args: { p: Json }; Returns: Json }
+      unconfirm_kind_instances: {
+        Args: { p_ids: string[]; p_reason: string }
+        Returns: {
+          confirmation: string
+          confirmed_at: string
+          confirmed_by: string
+          id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -50641,6 +50704,7 @@ export type Database = {
           denial_reason: string | null
           grant_expires_at: string | null
           granted: boolean
+          granted_to_user_id: string | null
           id: string
           is_emergency_door: boolean
           justification: string | null
@@ -50671,6 +50735,7 @@ export type Database = {
           denial_reason?: string | null
           grant_expires_at?: string | null
           granted: boolean
+          granted_to_user_id?: string | null
           id?: string
           is_emergency_door?: boolean
           justification?: string | null
@@ -50701,6 +50766,7 @@ export type Database = {
           denial_reason?: string | null
           grant_expires_at?: string | null
           granted?: boolean
+          granted_to_user_id?: string | null
           id?: string
           is_emergency_door?: boolean
           justification?: string | null
@@ -50729,6 +50795,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      access_delta_probe: {
+        Row: {
+          error_text: string | null
+          id_hash: string | null
+          ids: string[] | null
+          principal_id: string
+          principal_label: string
+          probed_at: string
+          readable_count: number | null
+          run_id: string
+          sampled: boolean
+          schema_name: string
+          table_name: string
+          token: string
+        }
+        Insert: {
+          error_text?: string | null
+          id_hash?: string | null
+          ids?: string[] | null
+          principal_id: string
+          principal_label: string
+          probed_at?: string
+          readable_count?: number | null
+          run_id: string
+          sampled?: boolean
+          schema_name: string
+          table_name: string
+          token: string
+        }
+        Update: {
+          error_text?: string | null
+          id_hash?: string | null
+          ids?: string[] | null
+          principal_id?: string
+          principal_label?: string
+          probed_at?: string
+          readable_count?: number | null
+          run_id?: string
+          sampled?: boolean
+          schema_name?: string
+          table_name?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_delta_probe_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "access_delta_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      access_delta_run: {
+        Row: {
+          finished_at: string | null
+          id: string
+          label: string
+          note: string | null
+          started_at: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          label: string
+          note?: string | null
+          started_at?: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          label?: string
+          note?: string | null
+          started_at?: string
+        }
+        Relationships: []
       }
       access_requests: {
         Row: {
@@ -51789,6 +51932,7 @@ export type Database = {
           p_denial_reason?: string
           p_grant_expires_at?: string
           p_granted: boolean
+          p_granted_to_user_id?: string
           p_is_emergency_door?: boolean
           p_justification?: string
           p_organization_id: string
@@ -51804,6 +51948,36 @@ export type Database = {
       }
       _resolve_owner_column: {
         Args: { p_pref: string; p_schema: string; p_table: string }
+        Returns: string
+      }
+      access_delta_assert_no_widening: {
+        Args: { p_after: string; p_before: string }
+        Returns: string
+      }
+      access_delta_compare: {
+        Args: { p_after: string; p_before: string }
+        Returns: {
+          count_after: number
+          count_before: number
+          gained_sample: string[]
+          lost_sample: string[]
+          principal_id: string
+          principal_label: string
+          rows_gained: number
+          rows_lost: number
+          token: string
+          verdict: string
+        }[]
+      }
+      access_delta_snapshot: {
+        Args: {
+          p_as_of?: string
+          p_id_cap?: number
+          p_label: string
+          p_note?: string
+          p_principals: string[]
+          p_tokens: string[]
+        }
         Returns: string
       }
       access_level: {
@@ -51920,6 +52094,16 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: boolean
       }
+      class_lanes: {
+        Args: { p_token: string }
+        Returns: Database["platform"]["CompositeTypes"]["lane_set"]
+        SetofOptions: {
+          from: "*"
+          to: "lane_set"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       client_role_can_read: {
         Args: { p_rel: unknown; p_role?: string }
         Returns: boolean
@@ -51963,6 +52147,10 @@ export type Database = {
       emergency_door_class: { Args: { p_token: string }; Returns: string }
       emergency_door_deny: {
         Args: { p_note?: string; p_request_id: string }
+        Returns: Json
+      }
+      emergency_door_eligibility: {
+        Args: { p_id: string; p_token: string }
         Returns: Json
       }
       emergency_door_open: {
@@ -58606,7 +58794,10 @@ export type Database = {
           component_anon_read_via_public_parent: boolean
           confirmation_enabled: boolean
           content_role: string | null
+          data_class: Database["platform"]["Enums"]["data_class"] | null
+          data_class_reason: string | null
           default_auto_ingest: boolean
+          default_list_scope: Database["platform"]["Enums"]["list_scope"] | null
           default_members_can_add: boolean
           default_needs_approval: boolean
           default_scopeable: boolean
@@ -58653,7 +58844,12 @@ export type Database = {
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
+          data_class?: Database["platform"]["Enums"]["data_class"] | null
+          data_class_reason?: string | null
           default_auto_ingest?: boolean
+          default_list_scope?:
+            | Database["platform"]["Enums"]["list_scope"]
+            | null
           default_members_can_add?: boolean
           default_needs_approval?: boolean
           default_scopeable?: boolean
@@ -58702,7 +58898,12 @@ export type Database = {
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
+          data_class?: Database["platform"]["Enums"]["data_class"] | null
+          data_class_reason?: string | null
           default_auto_ingest?: boolean
+          default_list_scope?:
+            | Database["platform"]["Enums"]["list_scope"]
+            | null
           default_members_can_add?: boolean
           default_needs_approval?: boolean
           default_scopeable?: boolean
@@ -60118,11 +60319,16 @@ export type Database = {
           auto_ingest: boolean | null
           created_at: string
           custom_values: Json
+          data_class: Database["platform"]["Enums"]["data_class"] | null
+          default_list_scope: Database["platform"]["Enums"]["list_scope"] | null
           default_permission:
             | Database["public"]["Enums"]["permission_level"]
             | null
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
           is_enabled: boolean
+          member_default_level:
+            | Database["public"]["Enums"]["permission_level"]
+            | null
           members_can_add: boolean | null
           members_can_add_custom_values: boolean
           module_token: string
@@ -60136,6 +60342,10 @@ export type Database = {
           auto_ingest?: boolean | null
           created_at?: string
           custom_values?: Json
+          data_class?: Database["platform"]["Enums"]["data_class"] | null
+          default_list_scope?:
+            | Database["platform"]["Enums"]["list_scope"]
+            | null
           default_permission?:
             | Database["public"]["Enums"]["permission_level"]
             | null
@@ -60143,6 +60353,9 @@ export type Database = {
             | Database["platform"]["Enums"]["visibility"]
             | null
           is_enabled?: boolean
+          member_default_level?:
+            | Database["public"]["Enums"]["permission_level"]
+            | null
           members_can_add?: boolean | null
           members_can_add_custom_values?: boolean
           module_token: string
@@ -60156,6 +60369,10 @@ export type Database = {
           auto_ingest?: boolean | null
           created_at?: string
           custom_values?: Json
+          data_class?: Database["platform"]["Enums"]["data_class"] | null
+          default_list_scope?:
+            | Database["platform"]["Enums"]["list_scope"]
+            | null
           default_permission?:
             | Database["public"]["Enums"]["permission_level"]
             | null
@@ -60163,6 +60380,9 @@ export type Database = {
             | Database["platform"]["Enums"]["visibility"]
             | null
           is_enabled?: boolean
+          member_default_level?:
+            | Database["public"]["Enums"]["permission_level"]
+            | null
           members_can_add?: boolean | null
           members_can_add_custom_values?: boolean
           module_token?: string
@@ -62083,6 +62303,7 @@ export type Database = {
       _cf_str_array: { Args: { p_value: Json }; Returns: string[] }
       _cf_valid_date: { Args: { p_value: string }; Returns: boolean }
       _cf_valid_datetime: { Args: { p_value: string }; Returns: boolean }
+      _confirmation_admission: { Args: { p_relid: unknown }; Returns: string }
       _drop_custom_field_index: {
         Args: { p_definition_id: string }
         Returns: boolean
@@ -62119,6 +62340,10 @@ export type Database = {
         }
         Returns: number
       }
+      _report_undeclared_confirmation_write: {
+        Args: { p_org: string; p_relid: unknown; p_user: string }
+        Returns: undefined
+      }
       access_request_recipient_report: {
         Args: { p_sample?: number }
         Returns: {
@@ -62131,6 +62356,15 @@ export type Database = {
           rows_sampled: number
           rows_with_recipients: number
           token: string
+        }[]
+      }
+      actor_declaration_report: {
+        Args: never
+        Returns: {
+          actor_system: string
+          channel: string
+          declared_tier: string
+          source: string
         }[]
       }
       actor_system: { Args: never; Returns: string }
@@ -62267,7 +62501,7 @@ export type Database = {
         Args: never
         Returns: {
           admitted: boolean
-          has_stamp: boolean
+          has_carrier: boolean
           rls_variant: string
           schema_name: string
           status: string
@@ -62444,6 +62678,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      declared_actor_tier: { Args: never; Returns: string }
       definer_guard_revoke_notice: {
         Args: {
           p_identity_args: string
@@ -62466,6 +62701,17 @@ export type Database = {
         }
         Returns: string
       }
+      derive_data_class: {
+        Args: { p_variant: string; p_visibility: string }
+        Returns: Database["platform"]["Enums"]["data_class"]
+      }
+      derive_list_scope: {
+        Args: {
+          p_class: Database["platform"]["Enums"]["data_class"]
+          p_variant: string
+        }
+        Returns: Database["platform"]["Enums"]["list_scope"]
+      }
       derive_reachability: {
         Args: { p_container_id: string; p_container_type: string }
         Returns: {
@@ -62479,6 +62725,7 @@ export type Database = {
         Args: { p_grant: boolean; p_objids: unknown[]; p_tag: string }
         Returns: undefined
       }
+      entity_default_list_scope: { Args: { p_token: string }; Returns: string }
       entity_default_visibility: {
         Args: { p_token: string }
         Returns: Database["platform"]["Enums"]["visibility"]
@@ -62828,8 +63075,11 @@ export type Database = {
         Args: { p_org: string; p_token: string }
         Returns: {
           auto_ingest: boolean
+          data_class: Database["platform"]["Enums"]["data_class"]
+          default_list_scope: Database["platform"]["Enums"]["list_scope"]
           default_visibility: Database["platform"]["Enums"]["visibility"]
           is_enabled: boolean
+          member_default_level: Database["public"]["Enums"]["permission_level"]
           members_can_add: boolean
           needs_approval: boolean
           scopeable: boolean
@@ -62845,6 +63095,7 @@ export type Database = {
         }[]
       }
       normalize_identity_args: { Args: { p_args: string }; Returns: string }
+      orgs_tightening: { Args: { p_token: string }; Returns: string[] }
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
         Returns: Json
@@ -63186,10 +63437,24 @@ export type Database = {
       }
     }
     Enums: {
+      confirmation: "unconfirmed" | "confirmed"
+      data_class: "private" | "confidential" | "organization" | "public"
+      list_scope: "mine" | "organization"
       visibility: "personal" | "internal" | "link" | "public"
     }
     CompositeTypes: {
-      [_ in never]: never
+      lane_set: {
+        resolved_class: Database["platform"]["Enums"]["data_class"] | null
+        owner_lane: boolean | null
+        owner_grant_lane: boolean | null
+        org_member_lane: boolean | null
+        org_role_lane: boolean | null
+        platform_admin_lane: boolean | null
+        anon_lane: boolean | null
+        share_link_lane: boolean | null
+        owner_rewrite_lane: boolean | null
+        emergency_door: string | null
+      }
     }
   }
   podcast: {
@@ -65061,7 +65326,10 @@ export type Database = {
           base_tier: number
           category: string
           content_role: string
+          data_class: string
+          data_class_reason: string
           default_auto_ingest: boolean
+          default_list_scope: string
           default_members_can_add: boolean
           default_needs_approval: boolean
           default_scopeable: boolean
@@ -65078,6 +65346,7 @@ export type Database = {
           reference_pickable: boolean
           rls_variant: string
           schema_name: string
+          suppress_platform_admin_lane: boolean
           table_name: string
           table_ref: string
           title_column: string
@@ -100478,6 +100747,9 @@ export const Constants = {
   },
   platform: {
     Enums: {
+      confirmation: ["unconfirmed", "confirmed"],
+      data_class: ["private", "confidential", "organization", "public"],
+      list_scope: ["mine", "organization"],
       visibility: ["personal", "internal", "link", "public"],
     },
   },
