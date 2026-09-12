@@ -8,7 +8,7 @@
  * separately — covered by `userPreferencesWindow`.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Check, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
@@ -17,8 +17,8 @@ import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SettingsTree } from "@/components/official/settings/tree/SettingsTree";
 import { SettingsDrawerNav } from "@/components/official/settings/tree/SettingsDrawerNav";
-import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
-import { getTabTreeNodes, findTab } from "../registry";
+import { UniversalSettingsProvider } from "../universal/UniversalSettingsContext";
+import { useSettingsTree } from "../universal/useSettingsTree";
 import { SettingsTabHost } from "./SettingsTabHost";
 import { SettingsPresentationProvider } from "./SettingsPresentationContext";
 
@@ -44,11 +44,31 @@ export type SettingsShellProps = {
  *
  * Mobile → mounts inside SettingsDrawerNav (iOS-style bottom-sheet push-nav).
  *
- * Tabs come from `features/settings/registry.ts`. State for which tab is
- * active lives inside the shell (Phase 4 scope); Phase 8 will lift it into
- * the window session so deep-links and tab restoration work.
+ * Tabs come from `features/settings/registry.ts` PLUS the taxonomy-driven
+ * Configuration sections, joined by `useSettingsTree` — the same join the
+ * `/settings` route's rail makes. This shell used to call `getTabTreeNodes`
+ * on its own, so the window and the mobile drawer were a SECOND settings
+ * surface with no Configuration section in it: every registry-driven setting
+ * was unreachable from the drawer while the route showed it. One surface.
+ *
+ * State for which tab is active lives inside the shell (Phase 4 scope); Phase
+ * 8 will lift it into the window session so deep-links and tab restoration
+ * work.
  */
-export function SettingsShell({
+export function SettingsShell(props: SettingsShellProps) {
+  // The provider must sit ABOVE the tree and the tab body, exactly as
+  // SettingsRouteShell mounts it: they are separate component trees that must
+  // never disagree about which domains have settings. Mounted only while the
+  // shell is open, so a closed overlay never reads the registry.
+  if (!props.isOpen) return null;
+  return (
+    <UniversalSettingsProvider>
+      <SettingsShellBody {...props} />
+    </UniversalSettingsProvider>
+  );
+}
+
+function SettingsShellBody({
   isOpen,
   onClose,
   initialTabId,
@@ -60,10 +80,7 @@ export function SettingsShell({
     initialTabId ?? null,
   );
 
-  const treeNodes = useMemo<SettingsTreeNode[]>(
-    () => getTabTreeNodes(isAdmin),
-    [isAdmin],
-  );
+  const { nodes: treeNodes, resolveTab } = useSettingsTree(isAdmin);
 
   // Surface saved / saving status from the userPreferences slice meta.
   // Settings auto-save through the unified sync engine (debounced ~250ms +
@@ -85,7 +102,7 @@ export function SettingsShell({
 
   if (!isOpen) return null;
 
-  const activeTab = activeTabId ? (findTab(activeTabId) ?? null) : null;
+  const activeTab = resolveTab(activeTabId);
 
   const footerStatus = (
     <span className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -116,7 +133,7 @@ export function SettingsShell({
           activeId={activeTabId}
           onActivate={setActiveTabId}
           renderTab={(node) => {
-            const tab = findTab(node.id);
+            const tab = resolveTab(node.id);
             return (
               <SettingsTabHost
                 activeTab={tab ?? null}
