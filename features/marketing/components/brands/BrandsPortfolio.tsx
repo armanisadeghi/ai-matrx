@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -271,9 +271,11 @@ export function BrandsPortfolio({
             <p className="truncate text-sm font-medium text-foreground">
               {row.name}
             </p>
-            <p className="truncate text-[11px] text-muted-foreground">
-              {row.industry || row.description || "No description yet"}
-            </p>
+            {row.industry && (
+              <p className="truncate text-[11px] text-muted-foreground">
+                {row.industry}
+              </p>
+            )}
           </div>
         </div>
       ),
@@ -443,50 +445,7 @@ export function BrandsPortfolio({
             items={homeNavigationItems}
           />
         ) : null}
-        <section className="flex items-center justify-between gap-3 px-0.5">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-foreground">
-              Client portfolio
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Open a brand to work across identity, sites, SEO, content, and
-              planning.
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <Button
-              type="button"
-              variant={view === "cards" ? "secondary" : "ghost"}
-              size="icon"
-              className="h-11 w-11"
-              aria-label="Show brand cards"
-              title="Cards"
-              onClick={() => setView("cards")}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant={view === "table" ? "secondary" : "ghost"}
-              size="icon"
-              className="h-11 w-11"
-              aria-label="Show brand table"
-              title="Table"
-              onClick={() => setView("table")}
-            >
-              <TableIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              className="h-11 w-11 p-0 sm:w-auto sm:px-3"
-              aria-label="Add brand"
-              onClick={openCreate}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Add brand</span>
-            </Button>
-          </div>
-        </section>
+
         {brands.isError ? (
           <QueryError
             error={brands.error}
@@ -503,6 +462,41 @@ export function BrandsPortfolio({
               state={table.state}
               total={brands.data?.total}
               onStateChange={table.onStateChange}
+              actions={
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant={view === "cards" ? "secondary" : "ghost"}
+                    size="icon"
+                    className="h-11 w-11"
+                    aria-label="Show brand cards"
+                    title="Cards"
+                    onClick={() => setView("cards")}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={view === "table" ? "secondary" : "ghost"}
+                    size="icon"
+                    className="h-11 w-11"
+                    aria-label="Show brand table"
+                    title="Table"
+                    onClick={() => setView("table")}
+                  >
+                    <TableIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-11 w-11 p-0 sm:w-auto sm:px-3"
+                    aria-label="Add brand"
+                    onClick={openCreate}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Add brand</span>
+                  </Button>
+                </div>
+              }
             />
             <NonEditableContextMenu
               sourceFeature="marketing"
@@ -635,10 +629,12 @@ export function BrandsPortfolio({
 }
 
 function BrandCardQueryControls({
+  actions,
   state,
   total,
   onStateChange,
 }: {
+  actions: ReactNode;
   state: MatrxDataTableQueryState;
   total: number | undefined;
   onStateChange: (next: MatrxDataTableQueryState) => void;
@@ -663,6 +659,7 @@ function BrandCardQueryControls({
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5">
+      {actions}
       <Input
         value={state.search}
         onChange={(event) => update({ search: event.target.value, page: 1 })}
@@ -825,9 +822,11 @@ function BrandCards({
                 >
                   {row.name}
                 </Link>
-                <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                  {row.industry || row.description || "No description yet"}
-                </p>
+                {row.industry && (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {row.industry}
+                  </p>
+                )}
               </div>
               <StatusBadge value={row.status} />
             </div>

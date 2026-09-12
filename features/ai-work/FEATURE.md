@@ -245,3 +245,7 @@ Compose and Saved Requests shipped 2026-08-15 (TASK-005). Open work, in the plan
 - `2026-08-12` — Codex: replaced the provider-only 100-row product inbox with the canonical all-conversation history and real range pagination; added selected provider/account/fidelity/state facts, direct Project/Task/War Room organization through existing association primitives, `/work/connections`, and a typed managed-Claude capability check. Historical sync is explicitly unavailable until the real Matrx Local preview/import/status seam lands; technical `/agent-connections/plugins` remains intact.
 - `2026-08-11` — Codex: added `/work/conversations/[conversationId]` so agentless Claude Code mirrors open a real read-only transcript instead of redirecting through runnable chat; reused generated message validation, `RichDocument`, `AccessGate`, and task attachment.
 - `2026-08-11` — Codex: shipped `/work`, `/work/conversations`, the primary-navigation door, truthful live-capability directory, reused provider inbox, and conversation-to-task attachment.
+
+### 2026-09-11 — Compact workspace chrome
+
+Removed page introduction copy and redundant body titles. Workspace identity belongs in the shell header; Marketing view and create actions share the query toolbar. Brand descriptions remain editable record data but are not repeated as card/table subtitles.
