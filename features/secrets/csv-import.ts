@@ -14,7 +14,7 @@ export type CsvImportLimits = {
   maxPlaintextFieldBytes: number;
   maxRequestBodyBytes: number;
   maxJsonDepth?: number;
-  jsonParseTimeoutMs?: number;
+  jsonWorkerTimeoutMs?: number;
 };
 export type CsvColumnRole =
   "title" | "username" | "password" | "url" | "notes" | "otp" | "keep";
@@ -316,7 +316,7 @@ export function prepareCsvImportRow(input: {
     if (mapping[index] === "keep")
       add(fieldKey(index, used), row.cells[index] ?? "");
   }
-  // OTP stays solely in this sealed source representation until explicit enrollment.
+  // OTP stays only in the encrypted, revealable source representation until explicit enrollment.
   add(
     "import_source_record",
     JSON.stringify({

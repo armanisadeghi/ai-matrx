@@ -25,7 +25,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
-import { prepareBitwardenCommand, type BitwardenImportRecord } from "../bitwarden-json";
+import { isPossibleBitwardenDuplicate, prepareBitwardenCommand, type BitwardenImportRecord } from "../bitwarden-json";
 import {
   hasAmbiguousCsvMapping,
   isPossibleDuplicateRow,
@@ -107,6 +107,8 @@ export function VaultCsvImportDialog({
 }) {
   const fileInput = useRef<HTMLInputElement | null>(null);
   const cancelled = useRef(false);
+  const parseGeneration = useRef(0);
+  const jsonWorker = useRef<Worker | null>(null);
   const limitsRef = useRef<Awaited<
     ReturnType<typeof fetchCsvImportLimits>
   > | null>(null);
@@ -117,6 +119,7 @@ export function VaultCsvImportDialog({
   const invalidated = useRef(false);
   const [source, setSource] = useState("generic");
   const [jsonRecords, setJsonRecords] = useState<BitwardenImportRecord[]>([]);
+  const [jsonLoaded, setJsonLoaded] = useState(false);
   const [includeTrash, setIncludeTrash] = useState(false);
   const [metadataApproved, setMetadataApproved] = useState(false);
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
@@ -135,6 +138,9 @@ export function VaultCsvImportDialog({
   const [otpItems, setOtpItems] = useState<{ id: string; title: string }[]>([]);
 
   const clearSensitiveDraft = (preserveResult = false) => {
+    parseGeneration.current += 1;
+    jsonWorker.current?.terminate();
+    jsonWorker.current = null;
     cancelled.current = true;
     limitsRef.current = null;
     frozenCommands.current = [];
@@ -142,6 +148,7 @@ export function VaultCsvImportDialog({
     progressCursor.current = 0;
     setPreview(null);
     setJsonRecords([]);
+    setJsonLoaded(false);
     setIncludeTrash(false);
     setMetadataApproved(false);
     setMapping([]);
@@ -163,6 +170,9 @@ export function VaultCsvImportDialog({
   useEffect(
     () => () => {
       cancelled.current = true;
+      parseGeneration.current += 1;
+      jsonWorker.current?.terminate();
+      jsonWorker.current = null;
       limitsRef.current = null;
       frozenCommands.current = [];
       previewActor.current = null;
@@ -213,6 +223,7 @@ export function VaultCsvImportDialog({
   };
   const load = async (file: File) => {
     clearSensitiveDraft();
+    const generation = parseGeneration.current;
     cancelled.current = false;
     invalidated.current = false;
     clearAfterRun.current = false;
@@ -221,24 +232,34 @@ export function VaultCsvImportDialog({
     setResult(null);
     try {
       const actor = await getVaultImportActor();
+      if (generation !== parseGeneration.current) return;
       const limits = await (source === "bitwarden_json" ? fetchBitwardenJsonImportLimits : fetchCsvImportLimits)(
         actor.organizationId,
         actor.userId,
       );
-      if (cancelled.current) return;
+      if (generation !== parseGeneration.current || cancelled.current) return;
       previewActor.current = actor;
       limitsRef.current = limits;
       if (source === "bitwarden_json") {
-        const text = new TextDecoder("utf-8", { fatal: true }).decode(await file.arrayBuffer());
+        if (file.size > limits.maxFileBytes) throw new Error("The file exceeds this organization’s import size limit.");
+        const buffer = await file.arrayBuffer();
+        if (generation !== parseGeneration.current || cancelled.current) return;
+        const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+        if (generation !== parseGeneration.current || cancelled.current) return;
         const { createBitwardenJsonWorker } = await import("../bitwarden-json-worker-client");
+        if (generation !== parseGeneration.current || cancelled.current) return;
         const parser = createBitwardenJsonWorker();
-        const timeout = window.setTimeout(() => { parser.terminate(); if (!cancelled.current) setUnavailable("The JSON export took too long to parse. Choose a smaller export and try again."); }, limits.jsonParseTimeoutMs ?? 5_000);
-        parser.onmessage = (event: MessageEvent<{ ok: boolean; records?: BitwardenImportRecord[]; error?: string }>) => { window.clearTimeout(timeout); parser.terminate(); if (cancelled.current) return; if (!event.data.ok) { setUnavailable(event.data.error ?? "The JSON export could not be read."); return; } setJsonRecords(event.data.records ?? []); };
+        jsonWorker.current = parser;
+        const settle = (message?: string) => { window.clearTimeout(timeout); parser.terminate(); if (jsonWorker.current === parser) jsonWorker.current = null; if (generation !== parseGeneration.current || cancelled.current) return; if (message) setUnavailable(message); };
+        const timeout = window.setTimeout(() => settle("The JSON export took too long to parse. Choose a smaller export and try again."), limits.jsonWorkerTimeoutMs ?? 5_000);
+        parser.onerror = () => settle("The JSON export could not be read.");
+        parser.onmessageerror = () => settle("The JSON export could not be read.");
+        parser.onmessage = (event: MessageEvent<{ ok: boolean; records?: BitwardenImportRecord[]; error?: string }>) => { if (!event.data.ok) { settle(event.data.error ?? "The JSON export could not be read."); return; } settle(); if (generation === parseGeneration.current && !cancelled.current) { setJsonRecords(event.data.records ?? []); setJsonLoaded(true); } };
         parser.postMessage({ text, limits: { maxFileBytes: limits.maxFileBytes, maxRecords: limits.maxRecords, maxCellBytes: limits.maxCellBytes, maxJsonDepth: limits.maxJsonDepth ?? 64 } });
         return;
       }
       const parsed = await parseCsvFile(file, limits);
-      if (cancelled.current) return;
+      if (generation !== parseGeneration.current || cancelled.current) return;
       setPreview(parsed);
       setMapping(suggestedCsvMapping(parsed.headers));
     } catch (cause) {
@@ -276,6 +297,14 @@ export function VaultCsvImportDialog({
     principal,
     source,
   ]);
+  const preparedJsonRows = useMemo(() => {
+    if (source !== "bitwarden_json" || !limitsRef.current || !previewActor.current) return [];
+    return jsonRecords.map((record) => prepareBitwardenCommand({
+      record, principal, expectedActor: previewActor.current!, rowId: `preview-json-${record.ordinal}`,
+      browserFillEnabled: enableBrowserFill, includeTrash, limits: limitsRef.current!, existingItems,
+      skipPossibleDuplicate: !createDuplicateRows.has(record.ordinal),
+    }));
+  }, [createDuplicateRows, enableBrowserFill, existingItems, includeTrash, jsonRecords, principal, source]);
   const selectedInvalidRows = preparedRows.filter(
     (prepared, index) =>
       prepared.status === "invalid" &&
@@ -285,9 +314,12 @@ export function VaultCsvImportDialog({
     (prepared): prepared is Extract<typeof prepared, { status: "invalid" }> =>
       prepared.status === "invalid",
   )?.diagnostic;
+  const selectedInvalidJsonRows = preparedJsonRows.filter(
+    (prepared, index) => prepared.status === "invalid" && !skipInvalidRows.has(jsonRecords[index]?.ordinal ?? -1),
+  );
   const importRows = async (retry = false) => {
     const limits = limitsRef.current;
-    if ((!preview && !jsonRecords.length) || !limits) return;
+    if ((!preview && !jsonLoaded) || !limits) return;
     if (source === "bitwarden_json" && !metadataApproved) {
       setError("Confirm the visible destination and public-key metadata before importing.");
       return;
@@ -300,6 +332,10 @@ export function VaultCsvImportDialog({
     }
     if (!retry && selectedInvalidRows.length > 0) {
       setError(firstInvalidDiagnostic ?? "Review invalid rows.");
+      return;
+    }
+    if (!retry && selectedInvalidJsonRows.length > 0) {
+      setError("Review or skip invalid JSON records before importing.");
       return;
     }
     setRunning(true);
@@ -321,10 +357,7 @@ export function VaultCsvImportDialog({
       const commands = retry
         ? frozenCommands.current
         : source === "bitwarden_json"
-          ? jsonRecords.map((record) => {
-              const prepared = prepareBitwardenCommand({ record, principal, expectedActor: actor, rowId: crypto.randomUUID(), browserFillEnabled: enableBrowserFill, includeTrash, limits });
-              return prepared.command ?? null;
-            })
+          ? preparedJsonRows.map((prepared) => prepared.status === "ready" ? { ...prepared.command, rowId: crypto.randomUUID(), expectedActor: actor } : null)
           : preview!.rows.map((row) => {
             const prepared = prepareCsvImportRow({
               source,
@@ -436,10 +469,10 @@ export function VaultCsvImportDialog({
             This import stays in this browser until you confirm each encrypted
             credential. Passwords and notes are never shown in the preview.
           </p>
-          {!preview && !jsonRecords.length && (
+          {!preview && !jsonLoaded && (
             <div className="space-y-3">
               <Label>Export source</Label>
-              <Select value={source} onValueChange={setSource}>
+              <Select value={source} onValueChange={(next) => { clearSensitiveDraft(); setSource(next); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -485,8 +518,7 @@ export function VaultCsvImportDialog({
           )}
           {unavailable && (
             <div className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">
-              {unavailable} Ask an organization administrator to enable Vault
-              import settings, then try again.
+              {unavailable}{/not configured/.test(unavailable) ? " Ask an organization administrator to enable Vault import settings, then try again." : ""}
             </div>
           )}
           {preview && (
@@ -626,10 +658,11 @@ export function VaultCsvImportDialog({
               </label>
             </div>
           )}
-          {jsonRecords.length > 0 && (
+          {jsonLoaded && (
             <div className="space-y-3">
-              <p className="text-sm">{jsonRecords.filter((record) => record.status === "supported").length} supported; {jsonRecords.filter((record) => record.status === "skipped").length} deleted; {jsonRecords.filter((record) => record.status === "invalid").length} invalid; {jsonRecords.filter((record) => record.status === "unsupported").length} unsupported. Unsupported records stay local and are never sent.</p>
-              <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">{jsonRecords.map((record) => <div key={record.ordinal}>#{record.ordinal + 1}: {record.title} · {record.kind.replace("_", " ")} · {record.status}{record.reason ? ` — ${record.reason}` : ""}</div>)}</div>
+              <p className="text-sm">{preparedJsonRows.filter((row) => row.status === "ready").length} ready; {preparedJsonRows.filter((row) => row.status === "skipped").length} skipped; {preparedJsonRows.filter((row) => row.status === "invalid").length} invalid; {jsonRecords.filter((record) => record.status === "unsupported").length} unsupported. Unsupported records stay local and are never sent.</p>
+              {jsonRecords.length === 0 && <p className="text-sm text-muted-foreground">This valid export has no items to import.</p>}
+              <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">{jsonRecords.map((record, index) => { const prepared = preparedJsonRows[index]; const duplicate = isPossibleBitwardenDuplicate(record, existingItems); return <div key={record.ordinal} className="flex items-center justify-between gap-2"><span>#{record.ordinal + 1}: {record.title} · {record.kind === "custom" ? "encrypted-only custom record" : record.kind.replace("_", " ")} · {prepared?.status ?? record.status}{record.reason ? ` — ${record.reason}` : ""}{duplicate ? " · possible duplicate" : ""}</span>{duplicate && <label className="flex shrink-0 items-center gap-1"><Switch checked={createDuplicateRows.has(record.ordinal)} onCheckedChange={(checked) => setCreateDuplicateRows((current) => { const next = new Set(current); if (checked) next.add(record.ordinal); else next.delete(record.ordinal); return next; })}/><span>Create</span></label>}{prepared?.status === "invalid" && <Button type="button" variant="outline" size="sm" onClick={() => setSkipInvalidRows((current) => { const next = new Set(current); if (next.has(record.ordinal)) next.delete(record.ordinal); else next.add(record.ordinal); return next; })}>{skipInvalidRows.has(record.ordinal) ? "Review" : "Skip"}</Button>}</div>; })}</div>
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={includeTrash} onCheckedChange={setIncludeTrash}/><span>Include deleted source items. They are skipped by default.</span></label>
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={enableBrowserFill} onCheckedChange={setEnableBrowserFill}/><span>Enable browser fill only for eligible logins with a username, password, and HTTPS or loopback destination. Matching destinations become visible credential metadata.</span></label>
               {jsonRecords.some((record) => record.hasVisiblePublicKey) && <p className="text-xs text-muted-foreground">SSH public keys are visible metadata. Private keys and source records are revealable only, and none are injected into a sandbox.</p>}
@@ -676,7 +709,7 @@ export function VaultCsvImportDialog({
                 Stop after current row
               </Button>
             )}
-            {(preview || jsonRecords.length > 0) && (!result || result.failed > 0) && (
+            {(preview || jsonLoaded) && (!result || result.failed > 0) && (
               <Button
                 type="button"
                 disabled={running}

@@ -2,7 +2,7 @@
 import { LosslessNumber, parse, stringify } from "lossless-json";
 
 import { isLoopbackApiUrl } from "@/lib/api/service-routing";
-import { safeDestination, type CsvImportCommand, type CsvImportLimits } from "./csv-import";
+import { safeDestination, type CsvImportCommand, type CsvImportLimits, type CsvImportPreparation } from "./csv-import";
 import type { VaultExpectedActor } from "./vault-service";
 import type { VaultItemCreateRequest, VaultPrincipal } from "./types";
 
@@ -15,6 +15,7 @@ export type BitwardenImportRecord = {
   reason?: string;
   sourceRecord?: string;
   urls: string[];
+  hasOtp: boolean;
   username?: string | null;
   password?: string | null;
   privateKey?: string;
@@ -64,64 +65,73 @@ function depthOk(value: unknown, maxDepth: number): boolean {
   }
   return true;
 }
-function hasDuplicateKeys(text: string): boolean {
-  // A lexical stack is required because JSON.parse revivers run after duplicate keys are lost.
-  const stack: Array<Set<string>> = []; let index = 0;
-  const ws = () => { while (/\s/.test(text[index] ?? "")) index++; };
-  const token = (): string | null => { ws(); if (text[index] !== '"') return null; const start = index++; let escaped = false; while (index < text.length) { const char = text[index++]; if (!escaped && char === '"') return JSON.parse(text.slice(start, index)); escaped = !escaped && char === "\\"; if (char !== "\\") escaped = false; } return null; };
-  while (index < text.length) { ws(); if (text[index] === "{") { stack.push(new Set()); index++; continue; } if (text[index] === "}") { stack.pop(); index++; continue; } const key = token(); if (key !== null) { ws(); if (text[index] === ":") { const scope = stack.at(-1); if (scope?.has(key)) return true; scope?.add(key); index++; } continue; } index++; }
-  return false;
+function allStringsWithin(value: unknown, maxBytes: number): boolean {
+  if (typeof value === "string") return bytes(value) <= maxBytes;
+  if (Array.isArray(value)) return value.every((entry) => allStringsWithin(entry, maxBytes));
+  const record = object(value);
+  return !record || Object.values(record).every((entry) => allStringsWithin(entry, maxBytes));
 }
+function invalid(title: string, ordinal: number, reason: string): BitwardenImportRecord { return { ordinal, title, kind: "custom", status: "invalid", reason, urls: [], hasOtp: false, deleted: false, hasVisiblePublicKey: false }; }
+function unsupported(title: string, ordinal: number, reason: string): BitwardenImportRecord { return { ordinal, title, kind: "custom", status: "unsupported", reason, urls: [], hasOtp: false, deleted: false, hasVisiblePublicKey: false }; }
 
-function invalid(title: string, ordinal: number, reason: string): BitwardenImportRecord { return { ordinal, title, kind: "custom", status: "invalid", reason, urls: [], deleted: false, hasVisiblePublicKey: false }; }
-function unsupported(title: string, ordinal: number, reason: string): BitwardenImportRecord { return { ordinal, title, kind: "custom", status: "unsupported", reason, urls: [], deleted: false, hasVisiblePublicKey: false }; }
-
-function itemRecord(item: JsonObject, ordinal: number, maxCellBytes: number): BitwardenImportRecord {
+function itemRecord(item: JsonObject, ordinal: number, maxCellBytes: number, maxJsonDepth: number, folders: JsonObject[]): BitwardenImportRecord {
   const title = typeof item.name === "string" ? item.name : `Item ${ordinal + 1}`;
-  if (!only(item, itemKeys) || !uuid(item.id) || typeof item.name !== "string" || !exactInt(item.type, 1, 5)) return invalid(title, ordinal, "The item shape is not supported.");
+  if (!only(item, itemKeys)) return unsupported(title, ordinal, "The item has an unsupported field.");
+  if (!uuid(item.id) || typeof item.name !== "string" || !exactInt(item.type, 1, 5)) return exactInt(item.type, 0, Number.MAX_SAFE_INTEGER) ? unsupported(title, ordinal, "The item type is unsupported.") : invalid(title, ordinal, "The item shape is not supported.");
   if (!["folderId", "organizationId", "notes"].every((key) => item[key] === undefined || stringOrNull(item[key])) || ["revisionDate", "creationDate", "deletedDate"].some((key) => item[key] !== undefined && item[key] !== null && !timestamp(item[key])) || (item.folderId != null && !uuid(item.folderId)) || (item.organizationId != null && !uuid(item.organizationId)) || (item.collectionIds != null && (!Array.isArray(item.collectionIds) || !item.collectionIds.every(uuid))) || (item.favorite != null && typeof item.favorite !== "boolean") || (item.reprompt != null && !exactInt(item.reprompt, 0, 1))) return invalid(title, ordinal, "The item metadata is invalid.");
   if (item.fields != null && (!Array.isArray(item.fields) || !item.fields.every((field) => { const row = object(field); return !!row && only(row, fieldKeys) && exactInt(row.type, 0, 3) && (row.name === undefined || stringOrNull(row.name)) && (row.value === undefined || stringOrNull(row.value)) && (row.linkedId === undefined || row.linkedId === null || exactInt(row.linkedId, 0, 4294967295)); }))) return invalid(title, ordinal, "The custom fields are invalid.");
-  if (item.passwordHistory != null && (!Array.isArray(item.passwordHistory) || !item.passwordHistory.every((entry) => { const row = object(entry); return !!row && Object.keys(row).length === 2 && typeof row.password === "string" && typeof row.lastUsedDate === "string"; }))) return invalid(title, ordinal, "The password history is invalid.");
-  if (!depthOk(item, 64) || stringify(item).length > maxCellBytes * 8) return invalid(title, ordinal, "The item exceeds the import limits.");
+  if (item.passwordHistory != null && (!Array.isArray(item.passwordHistory) || !item.passwordHistory.every((entry) => { const row = object(entry); return !!row && Object.keys(row).length === 2 && typeof row.password === "string" && timestamp(row.lastUsedDate); }))) return invalid(title, ordinal, "The password history is invalid.");
+  if (item.attachments !== undefined && item.attachments !== null && !Array.isArray(item.attachments)) return invalid(title, ordinal, "The attachment fields are invalid.");
+  if (!depthOk(item, maxJsonDepth) || !allStringsWithin(item, maxCellBytes)) return invalid(title, ordinal, "The item exceeds the import limits.");
   const type = Number((item.type as LosslessNumber).value);
   const matching = type === 1 ? "login" : type === 2 ? "secureNote" : type === 3 ? "card" : type === 4 ? "identity" : "sshKey";
   for (const component of ["login", "secureNote", "card", "identity", "sshKey"] as const) if (component !== matching && item[component] != null) return unsupported(title, ordinal, "The item has an unclassified component.");
   if (Array.isArray(item.attachments) && item.attachments.length) return unsupported(title, ordinal, "Attachments require a later import path.");
+  const sourceRecord = stringify({ source_vendor: "bitwarden", format: "bitwarden-json-export-v1", item, folders: typeof item.folderId === "string" ? folders.filter((folder) => folder.id === item.folderId) : [] });
   if (type === 1) {
-    const login = object(item.login); if (!login || !only(login, loginKeys) || !stringOrNull(login.username) || !stringOrNull(login.password) || !stringOrNull(login.totp) || !Array.isArray(login.uris)) return invalid(title, ordinal, "The login fields are invalid.");
+    const login = object(item.login); if (!login) return invalid(title, ordinal, "The login fields are invalid."); if (!only(login, loginKeys)) return unsupported(title, ordinal, "The login has an unsupported field."); if (!["username", "password", "totp"].every((key) => login[key] === undefined || stringOrNull(login[key])) || (login.uris !== undefined && !Array.isArray(login.uris)) || (login.fido2Credentials !== undefined && !Array.isArray(login.fido2Credentials))) return invalid(title, ordinal, "The login fields are invalid.");
     if (Array.isArray(login.fido2Credentials) && login.fido2Credentials.length) return unsupported(title, ordinal, "Passkeys require a later import path.");
     const rawUrls: string[] = [];
-    for (const uri of login.uris) { const row = object(uri); if (!row || !only(row, uriKeys) || !stringOrNull(row.uri) || (row.match !== undefined && row.match !== null && !exactInt(row.match, 0, 5))) return invalid(title, ordinal, "The login URL fields are invalid."); if (typeof row.uri === "string") rawUrls.push(row.uri); }
-    return { ordinal, title, kind: "website_login", status: item.deletedDate ? "skipped" : "supported", reason: item.deletedDate ? "Deleted items are skipped until you include trash." : undefined, sourceRecord: stringify(item), urls: rawUrls.map(safeDestination).flatMap((x) => x.metadata ? [x.metadata] : []), username: login.username, password: login.password, deleted: Boolean(item.deletedDate), hasVisiblePublicKey: false };
+    for (const uri of login.uris ?? []) { const row = object(uri); if (!row || !only(row, uriKeys)) return unsupported(title, ordinal, "The login has an unsupported URL field."); if ((row.uri !== undefined && !stringOrNull(row.uri)) || (row.match !== undefined && row.match !== null && !exactInt(row.match, 0, 5))) return invalid(title, ordinal, "The login URL fields are invalid."); if (typeof row.uri === "string") rawUrls.push(row.uri); }
+    return { ordinal, title, kind: "website_login", status: item.deletedDate ? "skipped" : "supported", reason: item.deletedDate ? "Deleted items are skipped until you include trash." : undefined, sourceRecord, urls: rawUrls.map(safeDestination).flatMap((x) => x.metadata ? [x.metadata] : []), username: typeof login.username === "string" ? login.username : null, password: typeof login.password === "string" ? login.password : null, hasOtp: typeof login.totp === "string" && login.totp.length > 0, deleted: Boolean(item.deletedDate), hasVisiblePublicKey: false };
   }
-  if (type === 5) { const key = object(item.sshKey); if (!key || !only(key, sshKeys) || typeof key.privateKey !== "string" || !key.privateKey || typeof key.publicKey !== "string" || typeof key.keyFingerprint !== "string") return invalid(title, ordinal, "The SSH key fields are invalid."); return { ordinal, title, kind: "ssh_key", status: item.deletedDate ? "skipped" : "supported", reason: item.deletedDate ? "Deleted items are skipped until you include trash." : undefined, sourceRecord: stringify(item), urls: [], privateKey: key.privateKey, publicKey: key.publicKey, deleted: Boolean(item.deletedDate), hasVisiblePublicKey: true }; }
+  if (type === 5) { const key = object(item.sshKey); if (!key || !only(key, sshKeys) || typeof key.privateKey !== "string" || !key.privateKey || typeof key.publicKey !== "string" || typeof key.keyFingerprint !== "string") return invalid(title, ordinal, "The SSH key fields are invalid."); return { ordinal, title, kind: "ssh_key", status: item.deletedDate ? "skipped" : "supported", reason: item.deletedDate ? "Deleted items are skipped until you include trash." : undefined, sourceRecord, urls: [], hasOtp: false, privateKey: key.privateKey, publicKey: key.publicKey, deleted: Boolean(item.deletedDate), hasVisiblePublicKey: true }; }
   const component = object(item[matching]); const allowed = type === 2 ? noteKeys : type === 3 ? cardKeys : identityKeys;
-  if (!component || !only(component, allowed)) return invalid(title, ordinal, "The item fields are invalid.");
+  if (!component) return invalid(title, ordinal, "The item fields are invalid."); if (!only(component, allowed)) return unsupported(title, ordinal, "The item has an unsupported field.");
   if (type === 2 && !exactInt(component.type, 0, 0)) return invalid(title, ordinal, "The secure note type is invalid.");
-  if (Object.values(component).some((value) => !stringOrNull(value))) return invalid(title, ordinal, "The item fields are invalid.");
-  return { ordinal, title, kind: "custom", status: item.deletedDate ? "skipped" : "supported", reason: item.deletedDate ? "Deleted items are skipped until you include trash." : undefined, sourceRecord: stringify(item), urls: [], deleted: Boolean(item.deletedDate), hasVisiblePublicKey: false };
+  if (Object.entries(component).some(([key, value]) => key !== "type" && !stringOrNull(value))) return invalid(title, ordinal, "The item fields are invalid.");
+  return { ordinal, title, kind: "custom", status: item.deletedDate ? "skipped" : "supported", reason: item.deletedDate ? "Deleted items are skipped until you include trash." : undefined, sourceRecord, urls: [], hasOtp: false, deleted: Boolean(item.deletedDate), hasVisiblePublicKey: false };
 }
 
 export function parseBitwardenExport(text: string, limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords" | "maxCellBytes"> & { maxJsonDepth: number }): BitwardenImportRecord[] {
   if (bytes(text) > limits.maxFileBytes) throw new Error("The file exceeds this organization’s import size limit.");
-  if (hasDuplicateKeys(text)) throw new Error("The JSON export has duplicate keys and cannot be imported safely.");
-  let root: JsonObject; try { root = object(parse(text)) ?? {}; } catch { throw new Error("The JSON export could not be read."); }
+  // lossless-json rejects duplicate keys by default; keep its details out of UI.
+  let root: JsonObject; try { root = object(parse(text)) ?? {}; } catch { throw new Error("The JSON export has duplicate keys or could not be read safely."); }
   if (!depthOk(root, limits.maxJsonDepth) || !only(root, rootKeys) || root.encrypted !== false || !Array.isArray(root.folders) || !Array.isArray(root.items)) throw new Error(root.encrypted === true ? "Encrypted Bitwarden exports need local decryption support before they can be imported." : "This is not a supported plain Bitwarden JSON export.");
   if (root.items.length > limits.maxRecords) throw new Error("The export has more records than this organization allows.");
-  if (!root.folders.every((folder) => { const row = object(folder); return !!row && only(row, folderKeys) && uuid(row.id) && typeof row.name === "string"; })) throw new Error("The export folders are not supported.");
-  return root.items.map((item, ordinal) => object(item) ? itemRecord(item, ordinal, limits.maxCellBytes) : invalid(`Item ${ordinal + 1}`, ordinal, "The item is invalid."));
+  if (!root.folders.every((folder) => { const row = object(folder); return !!row && only(row, folderKeys) && uuid(row.id) && typeof row.name === "string" && allStringsWithin(row, limits.maxCellBytes); })) throw new Error("The export folders are not supported.");
+  return root.items.map((item, ordinal) => object(item) ? itemRecord(item, ordinal, limits.maxCellBytes, limits.maxJsonDepth, root.folders as JsonObject[]) : invalid(`Item ${ordinal + 1}`, ordinal, "The item is invalid."));
 }
 
-export function prepareBitwardenCommand(input: { record: BitwardenImportRecord; principal: VaultPrincipal; expectedActor: VaultExpectedActor; rowId: string; browserFillEnabled: boolean; includeTrash: boolean; limits: CsvImportLimits }): { command?: CsvImportCommand; reason?: string } {
+export function isPossibleBitwardenDuplicate(record: BitwardenImportRecord, existingItems: { displayName: string; loginUrls: string[] }[]): boolean {
+  const destination = record.urls[0];
+  return Boolean(destination) && existingItems.some((item) => item.displayName === record.title && item.loginUrls.map(safeDestination).some((url) => url.metadata === destination));
+}
+
+export function prepareBitwardenCommand(input: { record: BitwardenImportRecord; principal: VaultPrincipal; expectedActor: VaultExpectedActor; rowId: string; browserFillEnabled: boolean; includeTrash: boolean; limits: CsvImportLimits; existingItems?: { displayName: string; loginUrls: string[] }[]; skipPossibleDuplicate?: boolean }): CsvImportPreparation {
   const record = input.record;
-  if (record.status !== "supported" && !(input.includeTrash && record.deleted && record.sourceRecord)) return { reason: record.reason ?? record.status };
-  if (!record.sourceRecord) return { reason: "invalid" };
+  if (record.status === "invalid") return { status: "invalid", diagnostic: record.reason ?? "The record is invalid." };
+  if (record.status === "unsupported") return { status: "skipped", reason: "unsupported" };
+  if (record.status === "skipped" && !input.includeTrash) return { status: "skipped", reason: "invalid" };
+  if (!record.sourceRecord) return { status: "invalid", diagnostic: "The record has no source representation." };
+  if (input.skipPossibleDuplicate && isPossibleBitwardenDuplicate(record, input.existingItems ?? [])) return { status: "skipped", reason: "possible_duplicate" };
   const fields: NonNullable<VaultItemCreateRequest["fields"]> = [{ field_key: "import_source_record", value: record.sourceRecord, handling: "revealable", editable: false, inject_into_sandbox: false }];
   const add = (field_key: string, value: string, handling: "revealable" | "visible" = "revealable", editable = true) => fields.push({ field_key, value, handling, editable, inject_into_sandbox: false });
   let browserFillEnabled = false; let uriMatchMode: "host" | "never" = "never";
-  if (record.kind === "website_login") { if (record.username) add("username", record.username); if (record.password) add("password", record.password); browserFillEnabled = Boolean(input.browserFillEnabled && record.username && record.password && record.urls.length && record.urls.every((url) => new URL(url).protocol === "https:" || isLoopbackApiUrl(url))); uriMatchMode = browserFillEnabled ? "host" : "never"; }
+  const destination = record.urls[0];
+  if (record.kind === "website_login") { if (record.username) add("username", record.username); if (record.password) add("password", record.password); browserFillEnabled = Boolean(input.browserFillEnabled && record.username && record.password && destination && (new URL(destination).protocol === "https:" || isLoopbackApiUrl(destination))); uriMatchMode = browserFillEnabled ? "host" : "never"; }
   if (record.kind === "ssh_key") { add("private_key", record.privateKey ?? ""); add("public_key", record.publicKey ?? "", "visible"); }
-  const body: VaultItemCreateRequest = { principal: input.principal.type === "organization" ? { type: "organization", organization_id: input.principal.organizationId } : { type: "user" }, display_name: record.title, definition_key: record.kind, source: "system_import", login_urls: record.kind === "website_login" ? record.urls : [], uri_match_mode: uriMatchMode, browser_fill_enabled: browserFillEnabled, fields };
-  if (fields.length > input.limits.maxFields || fields.some((field) => bytes(field.value) > input.limits.maxPlaintextFieldBytes) || bytes(JSON.stringify(body)) > input.limits.maxRequestBodyBytes) return { reason: "limits" };
-  return { command: { rowId: input.rowId, expectedActor: input.expectedActor, hasOtp: false, body } };
+  const body: VaultItemCreateRequest = { principal: input.principal.type === "organization" ? { type: "organization", organization_id: input.principal.organizationId } : { type: "user" }, display_name: record.title, definition_key: record.kind, source: "system_import", login_urls: record.kind === "website_login" && destination ? [destination] : [], uri_match_mode: uriMatchMode, browser_fill_enabled: browserFillEnabled, fields };
+  if (fields.length > input.limits.maxFields || fields.some((field) => bytes(field.value) > input.limits.maxPlaintextFieldBytes) || bytes(JSON.stringify(body)) > input.limits.maxRequestBodyBytes) return { status: "invalid", diagnostic: "The record exceeds this organization’s encrypted field limit." };
+  return { status: "ready", command: { rowId: input.rowId, expectedActor: input.expectedActor, hasOtp: record.hasOtp, body } };
 }

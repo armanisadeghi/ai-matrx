@@ -9,8 +9,10 @@ describe("plain Bitwarden JSON", () => {
     const [record] = parseBitwardenExport(source(login('"notes":"unicode ✓ and 900719925474099312345"')), limits);
     if (!record) throw new Error("missing parsed record");
     const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000001", browserFillEnabled: true, includeTrash: false, limits });
-    expect(prepared.command?.body).toMatchObject({ definition_key: "website_login", browser_fill_enabled: true, uri_match_mode: "host", login_urls: ["https://example.com"] });
-    expect(prepared.command?.body.fields).toEqual(expect.arrayContaining([expect.objectContaining({ field_key: "password", value: " p@ss " }), expect.objectContaining({ field_key: "import_source_record", editable: false, value: expect.stringContaining("900719925474099312345") })]));
+    expect(prepared.status).toBe("ready");
+    if (prepared.status !== "ready") throw new Error("missing command");
+    expect(prepared.command.body).toMatchObject({ definition_key: "website_login", browser_fill_enabled: true, uri_match_mode: "host", login_urls: ["https://example.com"] });
+    expect(prepared.command.body.fields).toEqual(expect.arrayContaining([expect.objectContaining({ field_key: "password", value: " p@ss " }), expect.objectContaining({ field_key: "import_source_record", editable: false, value: expect.stringContaining("900719925474099312345") })]));
   });
 
   test("refuses duplicate keys, protected components, and out-of-range enums", () => {
@@ -25,6 +27,31 @@ describe("plain Bitwarden JSON", () => {
     const [record] = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"deploy","type":5,"sshKey":{"privateKey":"PRIVATE","publicKey":"PUBLIC","keyFingerprint":"SHA256:x"}}'), limits);
     if (!record) throw new Error("missing SSH record");
     const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000002", browserFillEnabled: false, includeTrash: false, limits });
-    expect(prepared.command?.body.fields).toEqual(expect.arrayContaining([expect.objectContaining({ field_key: "private_key", handling: "revealable", inject_into_sandbox: false }), expect.objectContaining({ field_key: "public_key", handling: "visible", inject_into_sandbox: false })]));
+    expect(prepared.status).toBe("ready");
+    if (prepared.status !== "ready") throw new Error("missing command");
+    expect(prepared.command.body.fields).toEqual(expect.arrayContaining([expect.objectContaining({ field_key: "private_key", handling: "revealable", inject_into_sandbox: false }), expect.objectContaining({ field_key: "public_key", handling: "visible", inject_into_sandbox: false })]));
+  });
+
+  test("accounts for optional login members, schema variants, UTF-8 limits, and referenced folders", () => {
+    const optional = parseBitwardenExport(source(login().replace('"username":"me","password":" p@ss ","totp":null,"uris":[{"uri":"https://example.com/login","match":0}]', "")), limits)[0];
+    expect(optional?.status).toBe("supported");
+    const secureNote = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"note","type":2,"secureNote":{"type":0}}'), limits)[0];
+    expect(secureNote?.status).toBe("supported");
+    const unknown = parseBitwardenExport(source(login('"unknown":"value"')), limits)[0];
+    expect(unknown?.status).toBe("unsupported");
+    const tiny = { ...limits, maxCellBytes: 100 };
+    expect(parseBitwardenExport(source(login('"notes":"' + "✓".repeat(100) + '"')), tiny)[0]?.status).toBe("invalid");
+    expect(optional?.sourceRecord).toContain('"folders"');
+    expect(optional?.sourceRecord).toContain('"Personal"');
+  });
+
+  test("prepares one destination and accounts for possible duplicates before confirmation", () => {
+    const [record] = parseBitwardenExport(source(login().replace('"https://example.com/login","match":0', '"https://example.com/login","match":0},{"uri":"https://second.example/login","match":0')), limits);
+    if (!record) throw new Error("missing record");
+    const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: true, includeTrash: false, limits, existingItems: [{ displayName: "Example", loginUrls: ["https://example.com"] }], skipPossibleDuplicate: true });
+    expect(prepared).toMatchObject({ status: "skipped", reason: "possible_duplicate" });
+    const create = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: true, includeTrash: false, limits, existingItems: [], skipPossibleDuplicate: false });
+    expect(create.status).toBe("ready");
+    if (create.status === "ready") expect(create.command.body.login_urls).toEqual(["https://example.com"]);
   });
 });
