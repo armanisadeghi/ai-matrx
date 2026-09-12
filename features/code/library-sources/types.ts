@@ -146,6 +146,8 @@ export interface LibrarySourceAdapter {
   sourceId: string;
   /** Display label for the Library tree root. */
   label: string;
+  /** Concise explanation of the row's source of truth and where Save writes. */
+  description?: string;
   /** Icon for the Library tree root. */
   icon: LucideIcon;
   /** Tab-id prefix, including trailing colon (e.g. "prompt-app:"). */

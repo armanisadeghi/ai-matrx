@@ -50,6 +50,7 @@ const COLUMNS =
 export const agaAppsAdapter: LibrarySourceAdapter = {
   sourceId: "aga_apps",
   label: "Agent Apps",
+  description: "Your Agent App source. Save updates that app.",
   icon: SquareStack,
   tabIdPrefix: PREFIX,
   multiField: false,

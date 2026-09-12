@@ -181,7 +181,7 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
             HOVER_ROW,
           )}
           style={{ paddingLeft: 8 + depth * 12 }}
-          title={adapter.label}
+          title={adapter.description ?? adapter.label}
         >
           <ChevronRight
             size={12}

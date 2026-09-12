@@ -121,6 +121,7 @@ const LOAD_COLUMNS =
 export const toolUiComponentsAdapter: LibrarySourceAdapter = {
   sourceId: "tool_ui_components",
   label: "Tool UIs",
+  description: "Shared Tool UI source. Save updates this component.",
   icon: Wrench,
   tabIdPrefix: PREFIX,
   multiField: true,

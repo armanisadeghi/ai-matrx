@@ -24,6 +24,8 @@ export type ExplorerSandboxMode = "hidden" | "collapsed" | "open";
 export interface CodeWorkspaceState {
   /** Reconnect live sessions after a container replacement without reloading editor buffers. */
   sandboxRuntimeRevisions: Record<string, number>;
+  /** Unsaved commit-message drafts, isolated by sandbox and selected repository root. */
+  gitCommitDrafts: Record<string, string>;
   /** Which activity-bar view is currently selected. */
   activeView: ActivityViewId;
   /** Whether the side panel (file tree / search / etc.) is visible. */
@@ -96,6 +98,7 @@ export interface CodeWorkspaceState {
 
 const initialState: CodeWorkspaceState = {
   sandboxRuntimeRevisions: {},
+  gitCommitDrafts: {},
   activeView: "library",
   sideOpen: true,
   rightOpen: true,
@@ -123,6 +126,22 @@ const slice = createSlice({
       state.sandboxRuntimeRevisions ??= {};
       state.sandboxRuntimeRevisions[action.payload] =
         (state.sandboxRuntimeRevisions[action.payload] ?? 0) + 1;
+    },
+    setGitCommitDraft(
+      state,
+      action: PayloadAction<{
+        sandboxId: string;
+        repositoryRoot: string;
+        draft: string;
+      }>,
+    ) {
+      const { sandboxId, repositoryRoot, draft } = action.payload;
+      const key = getGitCommitDraftKey(sandboxId, repositoryRoot);
+      if (draft) {
+        state.gitCommitDrafts[key] = draft;
+      } else {
+        delete state.gitCommitDrafts[key];
+      }
     },
     setActiveView(state, action: PayloadAction<ActivityViewId>) {
       // Toggle behavior: clicking the active icon collapses the side panel.
@@ -254,6 +273,7 @@ const slice = createSlice({
 
 export const {
   sandboxRuntimeReplaced,
+  setGitCommitDraft,
   setActiveView,
   revealView,
   focusLibraryFolder,
@@ -350,3 +370,26 @@ export const selectSandboxRuntimeRevision = (
   sandboxId
     ? (selectCodeWorkspace(state).sandboxRuntimeRevisions?.[sandboxId] ?? 0)
     : 0;
+
+/**
+ * Stable, collision-free key for a source-control draft. A sandbox can have
+ * multiple repositories, and the same repository path may exist in different
+ * sandboxes, so neither part alone identifies the draft.
+ */
+export function getGitCommitDraftKey(
+  sandboxId: string,
+  repositoryRoot: string,
+): string {
+  return JSON.stringify([sandboxId, repositoryRoot]);
+}
+
+export const selectGitCommitDraft = (
+  state: WithCodeWorkspace,
+  sandboxId: string | null,
+  repositoryRoot: string | null,
+): string =>
+  sandboxId && repositoryRoot
+    ? (selectCodeWorkspace(state).gitCommitDrafts[
+        getGitCommitDraftKey(sandboxId, repositoryRoot)
+      ] ?? "")
+    : "";

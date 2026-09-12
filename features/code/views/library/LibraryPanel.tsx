@@ -222,7 +222,8 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
     <>
       <div className={cn("flex h-full min-h-0 flex-col", className)}>
         <SidePanelHeader
-          title="Code"
+          title="Code Library"
+          subtitle="Saved files and app source code. These are separate from sandbox files."
           actions={
             <>
               <SidePanelAction

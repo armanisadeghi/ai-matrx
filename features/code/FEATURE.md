@@ -153,6 +153,7 @@ container.
 ## Change log
 
 - `2026-09-11` — **Library and sandbox files now state their save origin and offer explicit copies, never implicit synchronization.** Library/source tabs can copy the live buffer to a chosen absolute path in the connected writable sandbox, with a replacement confirmation. Sandbox tabs can save an independent copy in My Files. The original tab remains attached to its original source. The decommissioned Prompt Apps adapter is no longer registered in Library; Agent Apps, Tool UIs, and HTML Pages remain active sources.
+- `2026-09-11` — The Library header now states that saved files and app source code are separate from sandbox files; each source-root help label identifies its save target. Source Control keeps a typed, in-memory commit-message draft per sandbox and repository root, so switching views does not lose the current message or apply it to another repository.
 
 - `2026-09-11` — Git comparison tabs are read-only end to end: the editor, tab mutation reducer, toolbar Save control, and save router all reject them. Historic `git-diff:` and `auto-stash-diff:` identities receive the same protection even if opened before the explicit `readOnly` field existed.
 

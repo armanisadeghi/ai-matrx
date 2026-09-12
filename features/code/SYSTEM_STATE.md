@@ -204,6 +204,8 @@ Tab id conventions:
 
 The editor toolbar names the active tab's ordinary save target. Its copy action is deliberately one-way: a Library/source buffer can copy to a chosen absolute path in the connected writable sandbox after an overwrite check; a connected sandbox file can save an independent `code_files` copy in Library. Copies use the live editor buffer, including unsaved edits, and never alter the original tab's identity or create synchronization.
 
+The Library header explicitly distinguishes saved Library files and app-source rows from sandbox files. Adapter root help names the source of truth and Save destination. Source Control commit messages live in `codeWorkspace.gitCommitDrafts`, keyed by the active sandbox id and repository root; they are in-memory UI drafts, never Git state or URL state.
+
 ### 1.8 Optimistic concurrency for source‑backed tabs
 
 When `useOpenSourceEntry` opens a row it captures `updated_at` into `EditorFile.remoteUpdatedAt`. On save, the adapter does `UPDATE … WHERE updated_at = <captured>` and returns a fresh `updated_at`; if 0 rows match, it throws `RemoteConflictError` and `useSaveActiveTab` returns `{ ok: false, conflict: true }`. The UI surfaces a toast with "Reload" / "Overwrite" actions. After a clean save, we dispatch `setTabRemoteUpdatedAt` so subsequent saves don't false‑positive. Realtime push of `updated_at` is **not** wired — see §2.5.

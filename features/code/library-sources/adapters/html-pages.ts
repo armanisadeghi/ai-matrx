@@ -63,6 +63,7 @@ interface HtmlPageFullRow {
 export const htmlPagesAdapter: LibrarySourceAdapter = {
   sourceId: "html_pages",
   label: "HTML Pages",
+  description: "HTML Page source. Save updates that page.",
   icon: FileCode,
   tabIdPrefix: PREFIX,
   multiField: false,

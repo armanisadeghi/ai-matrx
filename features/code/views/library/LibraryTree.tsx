@@ -274,7 +274,7 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
             HOVER_ROW,
           )}
           style={{ paddingLeft: 8 + depth * 12 }}
-          title="Files you've saved or captured"
+          title="Saved Library files. Separate from sandbox files."
         >
           <ChevronRight
             size={12}
