@@ -105,3 +105,117 @@ export function limitToStored(
     ? Math.round(parsed * MICRO_USD_PER_USD)
     : Math.round(parsed);
 }
+
+/**
+ * `platform.points` — the AI budget. 20,000 points = $1 of model spend, so
+ * `personal-pro` at 320,000 points/month is ~$16 of AI. The admin still types
+ * POINTS (the stored unit never changes); this is only the dollar hint that
+ * sits beside the number so nobody has to divide by twenty thousand in their
+ * head.
+ *
+ * 🚨 The server mirror is `aidream/services/billing/ai_points.py` — the two
+ * MUST agree. A drift here would show an admin one dollar figure and bank the
+ * customer against another.
+ *
+ * Not a money dimension in the `MICRO_USD_CAPABILITIES` sense: points are the
+ * stored unit, dollars are commentary. `seo.provider_spend` is the reverse.
+ */
+export const POINTS_CAPABILITY = "platform.points";
+export const POINTS_PER_USD = 20_000;
+
+export function isPoints(capability: string): boolean {
+  return capability === POINTS_CAPABILITY;
+}
+
+/**
+ * "~$16.00 / month of AI" for a points figure, or `null` when there is nothing
+ * honest to say (blank, not a number, or not the points capability). A blank
+ * is unlimited and gets no dollar figure — "~$∞" is not a sentence.
+ */
+export function pointsToUsdLabel(
+  points: number | string | null | undefined,
+  period: string | null | undefined,
+): string | null {
+  if (points === null || points === undefined) return null;
+  const numeric = typeof points === "string" ? Number(points.trim()) : points;
+  if (typeof points === "string" && points.trim() === "") return null;
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  const usd = numeric / POINTS_PER_USD;
+  const money = usd.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const per = period && period !== "lifetime" ? ` / ${period}` : "";
+  return `~${money}${per} of AI`;
+}
+
+/** The human unit an admin types for a capability, as a short suffix label. */
+export function capabilityUnitLabel(capability: string): string {
+  if (isMicroUsd(capability)) return "US dollars";
+  if (isPoints(capability)) return "points";
+  return "units";
+}
+
+/**
+ * The saved number, in the human unit, with thousands separators — the
+ * READ rendering (the edit rendering is `limitToDisplay`, which stays a bare
+ * string so it can round-trip through an input). Blank is unlimited.
+ */
+export function limitToHuman(capability: string, stored: number | null): string {
+  if (stored === null || stored === undefined) return "unlimited";
+  if (isMicroUsd(capability)) {
+    return (stored / MICRO_USD_PER_USD).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+  }
+  return stored.toLocaleString("en-US");
+}
+
+/** One per-org grant that RAISES a plan's allowance. It never lowers one. */
+export interface AccountAddon {
+  id: string;
+  organization_id: string;
+  capability: string;
+  period: string | null;
+  /** `null` is UNLIMITED — the add-on lifts the ceiling entirely. */
+  limit_value: number | null;
+  source: string;
+  note: string | null;
+  granted_by: string | null;
+  effective_from: string;
+  expires_at: string | null;
+  created_at: string;
+}
+
+/** The org rows the picker needs — name and slug, never the whole record. */
+export interface OrganizationOption {
+  id: string;
+  name: string;
+  slug: string;
+  is_personal: boolean;
+}
+
+/** One org's current plan assignment (`billing.org_plan`, via `org_plan_list`). */
+export interface OrgPlanAssignment {
+  organization_id: string;
+  plan_id: string | null;
+  tier: string;
+}
+
+/**
+ * "In effect" is a fact about NOW, computed the same way the resolver does:
+ * started already, and not yet expired. An expired row still exists — it is
+ * shown as expired, never dropped.
+ */
+export function addonIsInEffect(
+  addon: Pick<AccountAddon, "effective_from" | "expires_at">,
+  now: Date = new Date(),
+): boolean {
+  const start = new Date(addon.effective_from).getTime();
+  if (start > now.getTime()) return false;
+  if (addon.expires_at === null) return true;
+  return new Date(addon.expires_at).getTime() > now.getTime();
+}
