@@ -11,6 +11,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
+import { UniversalSettingsProvider } from "@/features/settings/universal/UniversalSettingsContext";
 import { SettingsRouteSidebar } from "./SettingsRouteSidebar";
 import { SettingsHeaderControls } from "./SettingsHeaderControls";
 import { SETTINGS_BASE } from "./routing";
@@ -79,7 +80,12 @@ export function SettingsRouteShell({
     </ClientGroup>
   );
 
+  // ONE read of the configuration registry for this whole route family. The
+  // sidebar (a panel) and the active tab (the page's children) are separate
+  // component trees that both need the same answer to "which domains have
+  // settings"; the provider sits above both so they can never disagree.
   return (
+    <UniversalSettingsProvider>
     <PanelControlProvider initialLayouts={[defaultLayout]}>
       <PageHeader>
         <SettingsHeaderControls />
@@ -102,6 +108,7 @@ export function SettingsRouteShell({
         ]}
       />
     </PanelControlProvider>
+    </UniversalSettingsProvider>
   );
 }
 

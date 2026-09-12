@@ -4,8 +4,9 @@ import React, { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { findTab, getTabTreeNodes } from "@/features/settings/registry";
 import { SettingsTabHost } from "@/features/settings/components/SettingsTabHost";
+import { useSettingsTree } from "@/features/settings/universal/useSettingsTree";
+import { FIRST_SCREEN_TAB } from "@/features/settings/tabs/FirstScreenTab";
 import { flattenLeaves } from "@/components/official/settings/tree/types";
 import {
   SurfaceRuntimeProvider,
@@ -51,8 +52,10 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
   const isAdmin = useAppSelector(selectIsAdmin);
   const [isNavigationPending, startNavigation] = useTransition();
 
-  const treeNodes = getTabTreeNodes(isAdmin);
-  const activeTab = tabId ? (findTab(tabId) ?? null) : null;
+  const { nodes: treeNodes, resolveTab } = useSettingsTree(isAdmin);
+  // The route's index IS the first screen (USD-12) — the basics a person
+  // opens Settings for, not an empty "choose a category" panel.
+  const activeTab = tabId ? resolveTab(tabId) : FIRST_SCREEN_TAB;
 
   const navigate = (id: string | null) => {
     const href = id ? tabIdToHref(basePath, id) : basePath;
@@ -187,6 +190,7 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
             activeTab={activeTab}
             treeNodes={treeNodes}
             onNavigate={navigate}
+            showBreadcrumb={Boolean(tabId)}
             navigationPending={isNavigationPending}
           />
         </div>
