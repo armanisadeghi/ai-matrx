@@ -27554,7 +27554,12 @@ export interface paths {
          * Version
          * @description Confirm which build of matrx-legal is loaded in the running process.
          *
-         *     No auth required beyond authenticated session — this is a diagnostic.
+         *     ADMIN-ONLY, like its siblings (2026-09-12): it reports the platform's
+         *     loaded package internals, and an authenticated-only route under an
+         *     ``/…/admin`` prefix was the single reason this whole mount still had to
+         *     demand an ambient organization. A non-admin build probe is
+         *     ``/health/version``; nothing here is a public diagnostic.
+         *
          *     Hit /legal/admin/version after deploying to verify the new code is live.
          *     Mismatch with the latest commit on the branch ⇒ the API server didn't
          *     restart and is still serving stale Python imports.
@@ -38221,34 +38226,47 @@ export interface components {
             /** Keyword Id */
             keyword_id?: string | null;
         };
-        /** AdminOverview */
+        /**
+         * AdminOverview
+         * @description One screen's worth of RAG inventory.
+         *
+         *     Every count is ``int | None``: ``None`` means *this number could not be
+         *     computed*, and ``degraded`` says which section failed and why. A zero here
+         *     is therefore always a real zero — the screen never shows a lying 0 because
+         *     one query died, and one dead section never 500s the other ten (the whole
+         *     route was hard-500 until 2026-09-12 because a single probe query threw).
+         */
         AdminOverview: {
             /** Schema Ok */
             schema_ok: boolean;
             /** Total Chunks */
-            total_chunks: number;
+            total_chunks: number | null;
             /** Chunks By Source Kind */
             chunks_by_source_kind: {
                 [key: string]: number;
-            };
+            } | null;
             /** Chunks By Section Kind */
             chunks_by_section_kind: {
                 [key: string]: number;
-            };
+            } | null;
             /** Distinct Sources */
-            distinct_sources: number;
+            distinct_sources: number | null;
             /** Distinct Owners */
-            distinct_owners: number;
+            distinct_owners: number | null;
             /** Library Doc Count */
-            library_doc_count: number;
+            library_doc_count: number | null;
             /** Library Chunk Count */
-            library_chunk_count: number;
+            library_chunk_count: number | null;
             /** Embeddings Oai Count */
-            embeddings_oai_count: number;
+            embeddings_oai_count: number | null;
             /** Embeddings Voyage Count */
-            embeddings_voyage_count: number;
+            embeddings_voyage_count: number | null;
             /** Audit Rows 24H */
-            audit_rows_24h: number;
+            audit_rows_24h: number | null;
+            /** Degraded */
+            degraded?: {
+                [key: string]: string;
+            };
         };
         /** AdminSearchHit */
         AdminSearchHit: {
@@ -69714,6 +69732,13 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
+             * Standing
+             * @description The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.
+             * @default rule
+             * @enum {string}
+             */
+            standing?: "evidence" | "rule";
+            /**
              * Redistill
              * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
              * @default refuse
@@ -69848,6 +69873,13 @@ export interface components {
             source_ref_extra?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Standing
+             * @description The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.
+             * @default rule
+             * @enum {string}
+             */
+            standing?: "evidence" | "rule";
             /**
              * Redistill
              * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
@@ -77212,19 +77244,19 @@ export interface components {
             };
             /** Attendees */
             attendees: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Notes */
             notes: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Transcript */
             transcript: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Recordings */
             recordings: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /**
              * Recording Notice
@@ -83116,6 +83148,11 @@ export interface components {
             site_id?: string | null;
             /** Backlink Id */
             backlink_id?: string | null;
+            /**
+             * Full Page
+             * @default false
+             */
+            full_page?: boolean;
         };
         /** PageCaptureResult */
         PageCaptureResult: {
@@ -83165,6 +83202,12 @@ export interface components {
              * @default false
              */
             content_truncated?: boolean;
+            /**
+             * Content Scope
+             * @default full
+             * @enum {string}
+             */
+            content_scope?: "full" | "main";
             /** Links To Target */
             links_to_target?: components["schemas"]["CapturedLink"][];
             /** Screenshot File Id */

@@ -51975,6 +51975,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
       }
+      token_is_parented_component: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       unnest_uuids: { Args: { p_ids: string[] }; Returns: string[] }
       verify_canonical: {
         Args: {
@@ -65379,6 +65383,30 @@ export type Database = {
           p_url_path_template: string
         }
         Returns: undefined
+      }
+      agent_mandate_rungs: {
+        Args: {
+          p_agent_ids: string[]
+          p_as_user?: string
+          p_include_descendants?: boolean
+          p_max_depth?: number
+        }
+        Returns: {
+          holder_agent_id: string
+          holder_agent_name: string
+          holder_kind: string
+          holder_type: string
+          lineage_depth: number
+          lineage_path: Json
+          mandate_id: string
+          mandate_key: string
+          organization_id: string
+          pinned_version_id: string
+          principal_kind: string
+          root_agent_id: string
+          row_id: string
+          subject_user_id: string
+        }[]
       }
       agent_resource_add: {
         Args: {
@@ -81432,6 +81460,7 @@ export type Database = {
           claimed_at: string | null
           completed_at: string | null
           demand_as_of: string
+          demand_tier: number
           demand_window_days: number
           enqueued_at: string
           keyword_id: string
@@ -81451,6 +81480,7 @@ export type Database = {
           claimed_at?: string | null
           completed_at?: string | null
           demand_as_of: string
+          demand_tier?: number
           demand_window_days: number
           enqueued_at?: string
           keyword_id: string
@@ -81470,6 +81500,7 @@ export type Database = {
           claimed_at?: string | null
           completed_at?: string | null
           demand_as_of?: string
+          demand_tier?: number
           demand_window_days?: number
           enqueued_at?: string
           keyword_id?: string
@@ -85542,6 +85573,15 @@ export type Database = {
           value_id: string
           value_key: string
           value_label: string
+        }[]
+      }
+      fn_enqueue_keyword_click_tail: {
+        Args: { p_max: number; p_target_version: string }
+        Returns: {
+          candidates: number
+          enqueued: number
+          revived: number
+          tail_window_days: number
         }[]
       }
       fn_evaluate_condition_matchers: {
