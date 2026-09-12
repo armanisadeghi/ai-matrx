@@ -4,6 +4,7 @@ import {
   serializeParams,
 } from "../url-sync/UrlPanelManager";
 import { resolveAgentPanelDisplayMode } from "../url-sync/initUrlHydration";
+import { resolveWindowUrlSyncKey } from "../utils/urlSyncIdentity";
 
 describe("UrlPanelManager URL helpers", () => {
   const entries = {
@@ -61,6 +62,15 @@ describe("UrlPanelManager URL helpers", () => {
     );
     expect(resolveAgentPanelDisplayMode("not-a-display-mode")).toBe(
       "floating-chat",
+    );
+  });
+
+  it("uses the registry URL key when a stale WindowPanel prop disagrees", () => {
+    expect(
+      resolveWindowUrlSyncKey("user_preferences", "userPreferencesWindow"),
+    ).toBe("user_preferences");
+    expect(resolveWindowUrlSyncKey(undefined, "page-local-window")).toBe(
+      "page-local-window",
     );
   });
 });

@@ -71,6 +71,7 @@ import MobileDrawerSurface from "./mobile/MobileDrawerSurface";
 import MobileCardSurface from "./mobile/MobileCardSurface";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useUrlSync } from "./url-sync/useUrlSync";
+import { resolveWindowUrlSyncKey } from "./utils/urlSyncIdentity";
 import { useWindowPersistence } from "./WindowPersistenceManager";
 import { Save } from "lucide-react";
 import { DebugStrip } from "./WindowPanel/DebugStrip";
@@ -547,12 +548,15 @@ export function WindowPanel({
     "main",
   );
 
-  // URL sync: prefer explicit props (back-compat), else derive from registry.
-  // A window with `urlSync.key` in its registry entry auto-activates without
-  // any prop wiring — fixes the "urlSyncKey set but urlSyncId missing" silent
-  // no-op that previously left ~7 windows without deep-link support.
+  // URL sync: registry metadata is canonical for overlay-managed windows.
+  // Page-local windows without registry metadata may use explicit props.
+  // This prevents a stale caller prop from publishing a token that the
+  // registry hydrator cannot reopen.
   const urlSyncRegEntry = registryEntry;
-  const effectiveUrlSyncKey = urlSyncKey ?? urlSyncRegEntry?.urlSync?.key;
+  const effectiveUrlSyncKey = resolveWindowUrlSyncKey(
+    urlSyncRegEntry?.urlSync?.key,
+    urlSyncKey,
+  );
   const effectiveUrlSyncId =
     urlSyncId ?? (effectiveUrlSyncKey ? overlayId : undefined);
   useUrlSync(effectiveUrlSyncKey, effectiveUrlSyncId, urlSyncArgs);

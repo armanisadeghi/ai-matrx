@@ -18,7 +18,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 
 **Routes**
 
-- `app/(transitional)/settings/preferences/page.tsx` — legacy URL kept alive as a redirect. Dispatches `openOverlay({ overlayId: "userPreferencesWindow", data: { initialTabId, initialControlId } })` and forwards to `/dashboard`. Legacy `?tab=` values are aliased to new registry ids; `?control=` identifies the exact setting.
+- `app/(transitional)/settings/preferences/page.tsx` — legacy URL kept alive as a redirect. Opens `userPreferencesWindow` with `{ initialTabId, initialControlId }` and forwards to `/dashboard`. Legacy `?tab=` values are aliased to new registry ids; `?control=` identifies the exact setting.
 - `app/(authenticated)/settings-shell-demo/page.tsx` — dev demo page with Open Settings button + admin-view toggle.
 - `app/(authenticated)/settings-primitives/page.tsx` — primitive gallery (every control, every state).
 - `app/(authenticated)/settings-tree-demo/page.tsx` — tree + drawer-nav demo with a fake 20-node tree.
@@ -100,14 +100,13 @@ Trigger: `dispatch(openOverlay({ overlayId: "userPreferencesWindow", data?: { in
 
 Path:
 
-- `UnifiedOverlayController` iterates `ALL_WINDOW_REGISTRY_ENTRIES`, renders one `<OverlaySurface>` per entry.
-- `OverlaySurface` for `userPreferencesWindow` reads its `isOpen` from `overlaySlice`, lazy-loads `componentImport`, and mounts the resolved component with `{ isOpen: true, onClose, ...data }`.
+- The explicit `OverlayController` block for `userPreferencesWindow` reads its `isOpen` from `overlaySlice`, lazy-loads `SettingsShellOverlay`, and mounts it only while the overlay is open.
 - The resolved component is `SettingsShellOverlay` (Phase 8), which ignores the passed props and reads `overlaySlice` directly so it also catches the legacy `userPreferences` modal id.
 - The overlay adapter computes `initialTabId` (remapping legacy tab ids when needed) and renders `<SettingsShell isOpen initialTabId isAdmin onClose />`.
 - On desktop: `SettingsShell` renders a `WindowPanel` with `<SettingsTree>` in the sidebar and `<SettingsTabHost>` in the body.
 - On mobile (`useIsMobile()` → true): `SettingsShell` mounts `<SettingsDrawerNav>` instead — iOS-style push-nav.
 
-Exit: `SettingsShell.onClose` dispatches `closeOverlay` for both ids; `OverlaySurface` unmounts; lazy-loaded tabs stay in the React.lazy module cache for fast reopen.
+Exit: `SettingsShell.onClose` dispatches `closeOverlay` for both ids; the controller unmounts the closed shell; lazy-loaded tabs stay in the React.lazy module cache for fast reopen.
 
 ### 2. User toggles a preference
 
@@ -129,7 +128,7 @@ Trigger: browser navigates to any URL containing `?panels=user_preferences` on m
 Path:
 
 - `initUrlHydration` registers a `user_preferences` hydrator that dispatches `openOverlay({ overlayId: "userPreferencesWindow" })`.
-- The rest of the flow matches Flow 1.
+- `WindowPanel` publishes the registry's same `user_preferences` key; caller props cannot override a registered window's canonical key. The rest of the flow matches Flow 1.
 
 Exit: Window opens at the default tab. If additional query params (e.g. `&user_preferences_id=…`) are present, the registry's `urlSync.key` + `instanceId` wiring applies.
 
@@ -234,7 +233,7 @@ state (the platform retention floor is `never`).
 ## Related features
 
 - **Depends on:**
-  - `features/window-panels` — `WindowPanel`, `UnifiedOverlayController`, `OverlaySurface`, `windowRegistry`.
+  - `features/window-panels` — `WindowPanel`, `UrlPanelManager`, and static window metadata.
   - `lib/redux/slices/overlaySlice` — open/close dispatching.
   - `lib/redux/preferences/userPreferencesSlice` — primary write target.
   - `lib/sync/*` — warm-cache + boot-critical persistence engine.
@@ -264,6 +263,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- **2026-09-11 — Settings deep links round-trip through the canonical registry key.** The Settings window no longer publishes the unregistered `userPreferencesWindow` token over its `user_preferences` metadata key. `/?panels=user_preferences` now opens and remains shareable, and the exact Notifications review door is `/settings/preferences?tab=general.notifications`.
 
 - **2026-09-09 — MCP OAuth cards gained a secure manual alternative.** Integrations keeps OAuth as the primary action but now allows provider-issued tokens plus one or more custom HTTP headers and an optional same-host HTTPS endpoint override. Inputs flow through the existing `connectServerWithCredentials` thunk to aidream's canonical `/api/mcp-connections/{server_id}/credentials` Vault boundary; secret values remain component-local, are cleared after success, and are never rendered in copy/export payloads. Shared validation rejects cross-host/non-HTTPS overrides, incomplete/invalid/duplicate headers, and empty submissions before network activity.
 

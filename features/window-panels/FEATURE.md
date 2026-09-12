@@ -602,7 +602,7 @@ Decision tree:
 To give a window a deep link, set `urlSync: { key: "..." }` on its registry entry and register the matching hydrator. `WindowPanel` auto-activates `useUrlSync` when:
 
 1. The entry has `overlayId` defined (caller passes it).
-2. Either the caller passes `urlSyncKey`/`urlSyncId` props, or the registry has `urlSync.key`.
+2. The registry has `urlSync.key`, which is authoritative for an overlay-managed window. An explicit `urlSyncKey` is used only when no registry key exists; `urlSyncId` may still name a non-default instance.
 
 Instance id auto-falls-back to `overlayId` for singletons — URL reads like `?panels=notes:notesWindow`.
 
@@ -872,6 +872,8 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 ---
 
 ## Change log
+
+- **2026-09-11** — **Registry URL keys are authoritative.** `WindowPanel` now prefers metadata `urlSync.key` whenever an `overlayId` resolves to a registered window, so a stale caller prop cannot publish an unhydratable token or break a valid deep link. Removed the two mismatched overrides found by the census (`SettingsShell` and `AgentContentWindow`) and added a red/green resolver guard; page-local windows without registry metadata retain explicit keys.
 
 - **2026-09-11** — **A viewport shrink keeps full window controls reachable.** `clampRectToViewport` now positions a capped window entirely inside the live viewport instead of preserving only a title-bar strip; a persisted 920×680 Sandbox Management window therefore moves from y=156 to y≤112 when the viewport becomes 1280×800, keeping its footer actions usable. `WindowTraySync` also synchronizes once when its chunk mounts and is no longer gated behind the shell's idle island, so a resize that lands during shell startup cannot be missed. Guard: `rectClamp.test.ts` covers that exact geometry.
 

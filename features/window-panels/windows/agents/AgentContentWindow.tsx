@@ -780,7 +780,6 @@ export default function AgentContentWindow({
         height={760}
         minWidth={multiAgentMode ? 760 : 640}
         minHeight={520}
-        urlSyncKey="agent-advanced-editor"
         urlSyncId="agent-advanced-editor-window"
         urlSyncArgs={{ m: "ac" }}
         overlayId="agentAdvancedEditorWindow"
