@@ -2,9 +2,9 @@
  * parity-sweep — the DD-123 S5 rendering-parity proof over EVERY live
  * organization-authored component body.
  *
- *   pnpm sweep:kind-sandbox-parity          # all 162 live bodies, light + dark
+ *   pnpm sweep:kind-sandbox-parity          # all 139 live bodies, light + dark
  *   pnpm check:kind-sandbox-parity          # the fixed sample, fails on regression
- *   pnpm sweep:kind-sandbox-parity --keys a,b,c
+ *   pnpm sweep:kind-sandbox-parity --keys=a,b,c
  *
  * WHAT IT PROVES. For each body it renders the SAME live source twice in one
  * document, at the same moment, at the same width:
@@ -356,6 +356,35 @@ window.__SETTLED__ = function () {
   return true;
 };
 
+/**
+ * SNAP EVERY CASE TO A WHOLE PIXEL BEFORE ANYTHING IS SHOT.
+ *
+ * A component is 912.31 px tall, so the NEXT case in the page starts at a
+ * fractional y — and there the two columns stop being comparable: the unframed
+ * render is laid out AT that fraction (Chrome rounds its borders and text
+ * baselines against it), while the framed render is laid out at 0 inside its
+ * own document and then composited at the fraction. The pictures are then one
+ * sharp image and one half-pixel-shifted image of the SAME layout, which reads
+ * as 4-6 % of pixels differing on any text-heavy body — a difference the
+ * product does not have and the DOM does not have.
+ *
+ * It is also why a body's number used to move with the batch it was measured
+ * in (B-36 §5): a different neighbour above it meant a different fraction.
+ * Rounding each case's height puts every case back on a whole pixel.
+ */
+window.__SNAP__ = function () {
+  var sections = document.querySelectorAll(".case");
+  // Release any previous snap first: a theme change can make a body taller,
+  // and a case frozen at yesterday's height would clip it instead of measuring
+  // it — a parity number taken off a clipped render proves nothing.
+  for (var i = 0; i < sections.length; i++) sections[i].style.height = "";
+  void document.body.offsetHeight;
+  for (var j = 0; j < sections.length; j++) {
+    sections[j].style.height = Math.ceil(sections[j].getBoundingClientRect().height) + "px";
+  }
+  return sections.length;
+};
+
 window.__SET_THEME__ = function (dark) {
   document.documentElement.classList.toggle("dark", !!dark);
   var tokens = rootTokens();
@@ -465,6 +494,9 @@ async function runBatch(
         }
         // One more frame for the host to apply the last reported height.
         await new Promise((r) => setTimeout(r, 1200));
+        // …then put every case back on a whole pixel (see `__SNAP__`).
+        await page.evaluate("window.__SNAP__()").catch(() => undefined);
+        await new Promise((r) => setTimeout(r, 300));
 
         const perTheme: Record<
             "light" | "dark",
@@ -479,6 +511,10 @@ async function runBatch(
             // the sweep waits the transition out rather than reporting a
             // difference that does not exist a second later.
             await new Promise((r) => setTimeout(r, 3000));
+            // A theme change can change type metrics and therefore heights, so
+            // the whole-pixel snap is re-taken for this theme.
+            await page.evaluate("window.__SNAP__()").catch(() => undefined);
+            await new Promise((r) => setTimeout(r, 300));
             for (let i = 0; i < cases.length; i++) {
                 const rects = await page.evaluate<{ off: Rect; on: Rect }>(
                     `window.__RECTS__(${i})`,
