@@ -202,3 +202,37 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
+- 2026-09-12 — (trial 8, the unfolding case) A cloud session's environment can carry a STALE credential: the
+  Supabase publishable key in the container was not the project's live key (401 on every auth call). Read the
+  live publishable key through the Supabase MCP (it is public by design) and log the drift as a wall; never
+  spend an hour on "auth is broken".
+- 2026-09-12 — (trial 8) The honest headless path is THE SAME CALLS THE UI MAKES: a password grant for the
+  session, aidream `/api/...` with the bearer AND `X-Organization-Id` (the server never picks an org), PostgREST
+  for what the UI writes directly, a browser user agent (Cloudflare 1010 refuses the default Python one), and
+  the Rulebook rendered as the `rulebook_document` variable exactly as the client renders it. Log it as a cheat.
+- 2026-09-12 — (trial 8) Take every timestamp from the database clock (`select now()`), never from your own
+  sense of elapsed time: three register lines were 10–25 minutes ahead of the truth before the correction.
+- 2026-09-12 — (trial 8) The capability gate is the cheapest, sharpest evidence of the night: one real case
+  through the old lane, 74 seconds, $0.22, and the loss is visible in the rules themselves (every rule citing
+  `chunk: 1`, hindsight written as method). Do it first, quote the rules.
+- 2026-09-12 — (trial 8) Guidance texts distil into piles (336 drafts from 18k words; 83 from a back-pain
+  guideline) because the chunk distiller never sees the Rulebook's PURPOSE. Do not review a pile by hand and do
+  not "Approve all": the Expert says what the Rulebook is for, and the platform sorts the pile (the triage
+  primitive). Asking the Scout to "retire these classes" dies at its output ceiling with zero tool calls.
+- 2026-09-12 — (trial 8) When the AI Dream MCP refuses the account ("does not have full MCP access"), the
+  product's own agent service is the lawful route (`POST /api/agent-service/agents` is the same trained builder
+  the form calls; `PUT /api/mandates/{key}/binding` with `principal_type: global` binds the Holder). Declare the
+  mandate seedless in code; never insert an `agent.definition` row by hand. The builder picks its own model
+  (it chose Gemini Flash three times) — move judgment-heavy agents to the tier you meant; a model move is safe
+  by default.
+- 2026-09-12 — (trial 8) A cloud container reaches nothing but HTTPS: raw Postgres times out, so the "offline"
+  type emitter (which imports the app, which loads domain config from the database) cannot run, and any unit
+  test that touches the live pooler hangs forever. Expect both; log them as the generator's and the test's
+  defects, never hand-edit a generated file.
+- 2026-09-12 — (trial 8) Five parallel builders on one branch worked when each owned named files and the
+  cross-cutting names (the policy rule fields) were fixed in the briefs up front; the one collision was a
+  router hunk swept into a sibling's commit (shared-checkout normal) and one duplicated vocabulary, both caught
+  by guards the builders wrote. Add a census guard for every "each lane must declare X" rule the night creates.
+- 2026-09-12 — (trial 8) Review bots are free verifiers: Cursor Bugbot found five real defects in tonight's
+  frontend (state dropped on reopen, an effect loop, a hidden rejoined run) that no builder's tests caught.
+  Treat every bot finding as a bug report and fix the class before the morning report.
