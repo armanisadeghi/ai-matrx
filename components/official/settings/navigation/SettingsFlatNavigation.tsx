@@ -58,10 +58,10 @@ export function settingsNavigationSections(
   for (const root of nodes) {
     if (!root.children?.length) {
       const last = sections.at(-1);
-      if (last?.id === "unsectioned") {
+      if (last && !last.label) {
         last.items.push(asItem(root, "Settings"));
       } else {
-        sections.push({ id: "unsectioned", items: [asItem(root, "Settings")] });
+        sections.push({ id: `unsectioned:${root.id}`, items: [asItem(root, "Settings")] });
       }
       continue;
     }

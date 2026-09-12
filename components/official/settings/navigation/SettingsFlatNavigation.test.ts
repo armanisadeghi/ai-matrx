@@ -10,6 +10,7 @@ describe("settingsNavigationSections", () => {
         label: "General",
         children: [{ id: "general.profile", label: "Profile" }],
       },
+      { id: "video", label: "Video" },
       {
         id: "configuration",
         label: "Configuration",
@@ -29,8 +30,9 @@ describe("settingsNavigationSections", () => {
     ]);
 
     expect(sections).toMatchObject([
-      { id: "unsectioned", items: [{ id: "camera" }, { id: "email" }] },
+      { id: "unsectioned:camera", items: [{ id: "camera" }, { id: "email" }] },
       { id: "general", label: "General", items: [{ id: "general.profile" }] },
+      { id: "unsectioned:video", items: [{ id: "video" }] },
       {
         id: "configuration",
         label: "Configuration",
