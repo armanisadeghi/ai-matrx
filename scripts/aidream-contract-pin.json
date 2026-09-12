@@ -1,0 +1,6 @@
+{
+  "_why": "THE CONTRACT THIS REPO IS WRITTEN AGAINST. `pnpm sync-types` generates the API types from the aidream CHECKOUT, offline, so a deploy lag can never silently delete a field the client uses. When someone deliberately generates from a SERVER instead (`pnpm sync-types:live`), this pin is the floor: the server's git_sha (GET /health/version) must contain this commit, or the sync refuses and says the server is behind. Raise `minimum_aidream_sha` whenever this repo starts using a newly added server field.",
+  "minimum_aidream_sha": "d57c25e0c",
+  "recorded": "2026-09-12",
+  "reason": "aidream c64f53507 added DirectiveConfirmRequest.conversation_id (the approve path's idempotency namespace) and d57c25e0c added the ledger-backed receipt sentence. Regenerating from a server older than these is what deleted the idempotency key on 2026-09-12 (DD-128)."
+}
