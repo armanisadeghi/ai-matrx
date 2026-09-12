@@ -143,7 +143,7 @@ const lexicalEmitterProbes = [
   "PostgreSQL Unicode-escaped quoted identifiers are identifiers, not",
   "v_scan_decoded_identifier := v_scan_decoded_identifier || chr",
   "Comments and whitespace are interchangeable lexical separators",
-  "v_standard_conforming_strings := current_setting('standard_conforming_strings') = 'on'",
+  "FROM unnest(coalesce(p.proconfig, ARRAY[]::text[])) AS settings(v_setting)",
   "v_scan_next_codepoint NOT BETWEEN 56320 AND 57343",
 ];
 for (const probe of lexicalEmitterProbes) {
@@ -251,6 +251,10 @@ INSERT INTO expected_cases(label, expected) VALUES
   ('assignment after dollar string','REJECT'),
   ('assignment after escape string','REJECT'),
   ('assignment after standard string backslash','REJECT'),
+  ('function SET off assignment after escaped quote','REJECT'),
+  ('function SET off escaped-quote literal','ALLOW'),
+  ('function SET on assignment after standard backslash','REJECT'),
+  ('function SET on standard-backslash literal','ALLOW'),
   ('assignment after Unicode string literal','REJECT'),
   ('assignment after line comment','REJECT'),
   ('assignment to distinct quoted field','ALLOW'),
@@ -315,6 +319,12 @@ SELECT pg_temp.record_allow('nested-comment assignment text', 'CREATE FUNCTION p
 SELECT pg_temp.record_reject('assignment after dollar string', $case$CREATE FUNCTION public.dd154_after_dollar() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$ordinary text$q$; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after escape string', $case$CREATE FUNCTION public.dd154_after_escape() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM E'it\'s text'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after standard string backslash', $case$CREATE FUNCTION public.dd154_after_standard_backslash() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM '\'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_reject('function SET off assignment after escaped quote', $case$CREATE FUNCTION public.dd154_set_off_escape() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO off AS $b$ BEGIN PERFORM 'it\'s'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_allow('function SET off escaped-quote literal', $case$CREATE FUNCTION public.dd154_set_off_literal() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO off AS $b$ BEGIN PERFORM 'it\'s'; RETURN NEW; END $b$$case$);
+SET standard_conforming_strings = off;
+SELECT pg_temp.record_reject('function SET on assignment after standard backslash', $case$CREATE FUNCTION public.dd154_set_on_standard() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO on AS $b$ BEGIN PERFORM '\'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_allow('function SET on standard-backslash literal', $case$CREATE FUNCTION public.dd154_set_on_literal() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO on AS $b$ BEGIN PERFORM '\'; RETURN NEW; END $b$$case$);
+SET standard_conforming_strings = on;
 SELECT pg_temp.record_reject('assignment after Unicode string literal', $case$CREATE FUNCTION public.dd154_after_unicode_literal() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM U&'ordinary \0069 text'; NEW.U&"organizat\0069on_id" := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after line comment', $case$CREATE FUNCTION public.dd154_after_line_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN -- an ordinary comment
 NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);

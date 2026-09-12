@@ -28,12 +28,20 @@ DECLARE
     END IF;
 
     IF v_assignment_target_oid IS NOT NULL THEN
-      SELECT p.prosrc INTO v_function_source FROM pg_proc p WHERE p.oid = v_assignment_target_oid;
+      SELECT p.prosrc,
+             coalesce(
+               (SELECT split_part(v_setting, '=', 2)
+                FROM unnest(coalesce(p.proconfig, ARRAY[]::text[])) AS settings(v_setting)
+                WHERE split_part(v_setting, '=', 1) = 'standard_conforming_strings'
+                LIMIT 1),
+               current_setting('standard_conforming_strings')
+             ) = 'on'
+        INTO v_function_source, v_standard_conforming_strings
+      FROM pg_proc p WHERE p.oid = v_assignment_target_oid;
       v_direct_assignment := false;
       v_scan_tokens := ARRAY[]::text[];
       v_scan_pos := 1;
       v_scan_len := length(v_function_source);
-      v_standard_conforming_strings := current_setting('standard_conforming_strings') = 'on';
       WHILE v_scan_pos <= v_scan_len LOOP
         v_scan_token := substr(v_function_source, v_scan_pos, 1);
         IF v_scan_token ~ '[[:space:]]' THEN
