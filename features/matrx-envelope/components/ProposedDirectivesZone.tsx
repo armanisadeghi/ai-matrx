@@ -9,11 +9,31 @@
  * Mounted beside the chat input (next to `PendingAsksZone`). Mirrors the visual
  * language of the agent-action ApprovalCard without coupling to the tool-suspend
  * rail — a proposed directive is a terminal side effect, not a suspended call.
+ *
+ * 🚨 THE CARD DOES NOT VANISH WHEN YOU CLICK IT (V-19, 2026-09-12). It used to:
+ * Approve POSTed, the card was removed, and the only thing left was a four-second
+ * toast the client composed from counts — `Applied ${title}: ${result.applied}
+ * done` — which is the exact client-composed-from-counts line DD-118 exists to
+ * kill, standing on the one path a human actually takes (the org gate makes
+ * `ask` the normal outcome, so this card IS the flow). Verified on production:
+ * the project was written and the chat said nothing.
+ *
+ * Now the card that asked "shall I?" answers "here is what happened", in place,
+ * in the SERVER's words (`DirectiveConfirmResult.message`, composed by aidream's
+ * `receipt_words.py`). Nothing here is counted, pluralized or phrased.
  */
 
 import { useState } from "react";
 
-import { Check, ListChecks, Loader2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  ListChecks,
+  Loader2,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { directiveDisplay, isDirectiveClass } from "@ai-matrx/content-ir";
@@ -22,6 +42,7 @@ import { confirmDirective } from "@/features/directive-catalog/service";
 import type { DirectiveConfirmRequest } from "@/features/directive-catalog/types";
 import {
   removeProposal,
+  resolveProposal,
   selectProposedDirectives,
   type ProposedDirective,
 } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
@@ -81,18 +102,38 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       items: (proposal.shell.items ?? []) as Record<string, unknown>[],
       proposal_id: proposal.proposalId,
       force: false,
+      // THE IDEMPOTENCY NAMESPACE, not decoration. Without it the server keys
+      // the write on a per-request uuid, so a second Approve writes a second
+      // project and "Already applied" can never be reached on this path.
+      conversation_id: proposal.conversationId,
     };
     try {
       const result = await confirmDirective(baseUrl, body);
-      const failedSuffix = result.failed > 0 ? `, ${result.failed} failed` : "";
-      if (result.failed > 0 && result.applied === 0) {
-        toast.error(`Could not apply ${title}${failedSuffix}`);
-      } else {
-        toast.success(
-          `Applied ${title}: ${result.applied} done${failedSuffix}`,
-        );
-      }
-      dismiss();
+      // The SERVER's sentence, verbatim. Not `result.applied` counted into a
+      // line here — the client does not know whether the ledger replayed, what
+      // the write-tree touched, or what the handler called it.
+      const replayed = result.receipts.some(
+        (r) => "status" in r && r.status === "already_applied",
+      );
+      dispatch(
+        resolveProposal({
+          conversationId: proposal.conversationId,
+          proposalId: proposal.proposalId,
+          outcome:
+            result.failed > 0 && result.applied === 0
+              ? "failed"
+              : replayed
+                ? "already_applied"
+                : "applied",
+          // NOTHING SILENT: a server build from before DD-118 answers without a
+          // sentence. Say so, with the remedy — never render an empty receipt,
+          // and never invent the words here.
+          outcomeMessage:
+            result.message ||
+            "This was applied, but this server build did not send the receipt — " +
+              "update the backend to see what was created.",
+        }),
+      );
     } catch (err) {
       const message =
         err instanceof BackendApiError
@@ -104,6 +145,45 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       setBusy(false);
     }
   };
+
+  // THE RECEIPT STATE — the same card, answering instead of asking.
+  if (proposal.outcome) {
+    const done = proposal.outcome === "applied";
+    const replayed = proposal.outcome === "already_applied";
+    const OutcomeIcon = done
+      ? CheckCircle2
+      : replayed
+        ? RotateCcw
+        : AlertTriangle;
+    const tone = done
+      ? "text-primary"
+      : replayed
+        ? "text-muted-foreground"
+        : "text-destructive";
+    return (
+      <div
+        className="rounded-lg border border-border bg-card p-3 shadow-sm"
+        data-directive={proposal.directive}
+        data-outcome={proposal.outcome}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-2">
+            <OutcomeIcon className={`mt-0.5 size-4 shrink-0 ${tone}`} />
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-foreground">{title}</div>
+              {/* The server's sentence for what happened. Verbatim. */}
+              <div className="text-xs text-muted-foreground">
+                {proposal.outcomeMessage}
+              </div>
+            </div>
+          </div>
+          <Badge variant={done ? "default" : "secondary"} className="shrink-0">
+            {done ? "Done" : replayed ? "Already done" : "Failed"}
+          </Badge>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-border bg-card p-3 shadow-sm">

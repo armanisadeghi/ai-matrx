@@ -57756,6 +57756,11 @@ export interface components {
              * @default false
              */
             force?: boolean;
+            /**
+             * Conversation Id
+             * @description The conversation the proposal was made in. NOT decoration: it is the idempotency NAMESPACE, so without it a confirm keys on a per-request uuid and a second Approve writes a second project (V-19, 2026-09-12).
+             */
+            conversation_id?: string | null;
         };
         /** DirectiveConfirmResult */
         DirectiveConfirmResult: {
@@ -57769,6 +57774,11 @@ export interface components {
             failed: number;
             /** Receipts */
             receipts: (components["schemas"]["DirectiveItemApplied"] | components["schemas"]["DirectiveItemFailed"])[];
+            /**
+             * Message
+             * @description THE RECEIPT SENTENCE for the whole confirm (DD-118 / V-19). The confirm path is REST, not the stream, so nothing here streams a receipt. The words are the server's.
+             */
+            message: string;
         };
         /**
          * DirectiveExecuteRequest
