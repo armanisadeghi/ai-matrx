@@ -197,6 +197,22 @@ export function dismissRecordToastsOffRoute(pathname: string): number {
   return dismissed;
 }
 
+/**
+ * Drop every record toast at once. The Toaster's hidden-tab backlog sweep
+ * calls `toast.dismiss()`, which clears sonner but would otherwise leave this
+ * registry holding records whose toasts are already off screen — so the sweep
+ * calls this in the same breath.
+ */
+export function dismissAllRecordToasts(): number {
+  let dismissed = 0;
+  for (const entry of [...liveRecordToasts.values()]) {
+    forget(entry.toastId);
+    sonnerToast.dismiss(entry.toastId);
+    dismissed += 1;
+  }
+  return dismissed;
+}
+
 /** Test/debug seam: the records that currently have a live toast. */
 export function liveRecordToastRefs(): ToastRecordRef[] {
   return [...liveRecordToasts.values()].map((e) => e.record);

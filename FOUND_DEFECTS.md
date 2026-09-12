@@ -975,6 +975,34 @@ the token, so `iam.verify_canonical`'s composition-parent proof still passes —
 mirror change and carries the §6d re-proof discipline. Deliberately **not** folded into the
 2026-08-26 ownership-law repair, whose proof required entity/system output to be byte-identical.
 
+**2026-09-12 — NO LONGER LATENT: it took `files.files` down.** ~30 primary-key reads of
+`files.files` by one user died with 57014 in two seconds at 02:05 UTC (a PDF surface hydrating its
+file chips). Re-measured as that user: **Planning 1,288.8 ms / Execution 1.6 ms** for one row by PK.
+`files.files` is the ONE entity table carrying the trap — its `std_select` has the two
+parent-folder `unnest(...)` arms PLUS the four crawl arms in the `= ANY (iam.accessible_entity_ids(...))`
+form. Census: **306 policies / 306 tables** (305 component `std_select` + `files.files`).
+**Root cause of the recurrence:** both forms had already been fixed at the emitter on 2026-08-24
+(`iam_rls_stop_planner_evaluating_accessible_entity_ids.sql`,
+`iam_rls_close_scalararraysel_planner_evaluation.sql`); then
+`20260829083724_shared_knowledge_open_library_rls_alignment.sql` did a wholesale
+`CREATE OR REPLACE FUNCTION iam.entity_read_expr` from a stale file copy, carrying all eight trapped
+sites back in, and re-applied only `rag.data_stores` + `files.files`. **A generator is patched from the
+catalog, never replaced from a file.** The same rewrite also put a self-token
+`accessible_entity_ids(<child token>)` candidate lane on the component variant — the exact
+2026-08-13 12.9M-UUID class §6d forbids — live today on the 11 components created since.
+Fix written and rehearsed (rolled back) end-to-end:
+`migrations/iam_rls_read_lane_planner_trap_closed_d266.sql` — patches the generator in place from
+`pg_get_functiondef()`, guards the self-token lane on `p_variant <> 'component'`, adds ERROR lane
+(f) `rls_generator_planner_trap` to `platform._ddl_guard()` (proven RED on the old body, GREEN on
+the fixed one, inside the migration), regenerates all 306 tables, and refuses to commit unless every
+one of 1,832 policies is byte-identical modulo the planner-safe substitution and the 11 narrowed
+components prove 0 lost / 0 gained per real identity over their whole tables (rehearsal: 99 pairs,
+0/0). **Status: rehearsed green; live apply pending Arman's go-ahead** (the auto-mode classifier
+refused `pnpm db:apply` in the authoring session). Interim: matrx-frontend commit `7d9d1e64ad` routes
+`useEnsureCloudFile` metadata reads through the server's `/files/{id}` boundary, which sidesteps the
+browser RLS plan — a routing change, not the fix; the direct PostgREST read stays trapped until the
+migration lands.
+
 ### D262 — seven `organization_id NOT NULL` tables have NO org backstop: an org-forgetting write returns 500 (2026-08-26)
 
 Found by the docs-steward's daily `platform.ddl_guard_log` read (skill step 7c), triaged live
@@ -3598,3 +3626,6 @@ is not a check. CI still runs its four fast scopes on every PR; the ship path no
 
 Final run on this checkout: **1,257 suites passed / 1,257 total; 9,311 tests passed, 3 todo, 0
 failed; 220.6s**. Before: 32 suites / 56 tests red. `pnpm type-check` clean.
+
+### D310 — Four fixed-interval aidream pollers have no jitter, backoff, or Retry-After handling (2026-09-12)
+Same alignment class as the 2026-09-12 change-feed pool storms (43 sandbox pollers in one second exhausted aidream's 10-slot pool; server now sheds with 503 + Retry-After, sandbox SDK honours it). These client pollers still poll in lockstep: `features/cloud-browser/hooks/useScreenshotSession.ts:117` (2s/15s), `features/workflow-runtime/redux/adopt-workflow-run.thunk.ts:578` (3s, SSE-fallback only), `features/cms/hooks/useCmsAdminActivity.ts:41` (8s), `features/research/components/agents/GoogleBackgroundAgentCard.tsx:89` (5s). Fix: one shared poll helper (jitter ±20%, exponential backoff on 5xx, honour `Retry-After`) and adopt it in all four; per-tab fleets are small today, so this is preventive. Decides: nobody — do it.

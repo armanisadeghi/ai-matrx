@@ -1,4 +1,31 @@
-// lib/toast-service.ts
+/**
+ * lib/toast-service.ts — 🚨 LEGACY. THE CANONICAL TOAST MODULE IS `@/lib/toast`.
+ *
+ * Census taken 2026-09-11 (FIX-Q12), by importing file:
+ *   @/lib/toast              1281   ← canonical; every new call site uses this
+ *   @/components/ui/use-toast   97   ← the Radix renderer (components/ui/toaster)
+ *   @/lib/toast-service         38   ← THIS module
+ *   @/hooks/use-toast            1   ← deleted: byte-identical duplicate of the
+ *                                     Radix hook, folded into components/ui
+ *   bare "sonner"                2   ← both are the wiring itself, correct
+ *
+ * NO NEW CALL SITE MAY IMPORT THIS. It is a second toast stack: a singleton
+ * that renders through the Radix `ToastProvider` (`providers/toast-context.tsx`)
+ * instead of sonner, with its own defaults registry, its own 800ms duration and
+ * its own `MatrxVariant` vocabulary. Nothing here is record-aware, so a toast it
+ * raises that NAMES a record cannot be withdrawn when that record is renamed,
+ * deleted, or navigated away from — the FIX-R17/FIX-Q12 defect, which
+ * `@/lib/toast`'s `recordToast` fixes and this module structurally cannot.
+ *
+ * WHY IT IS STILL HERE, HONESTLY: folding its 38 call sites is a real migration,
+ * not a re-export — the signatures differ (`toast.success(msg, moduleKey,
+ * options)`, `toast.error(unknown, …)`, `toast.notify`, `toast.loading(promiseFn,
+ * …)`, `registerDefaults`), and 12 of those files also consume the defaults
+ * registry through `useToastManager`. That migration is its own task; it was out
+ * of scope for the lane that wrote this banner, and leaving a silent third copy
+ * would have been worse than saying so. When you touch one of the 38, move it to
+ * `@/lib/toast` (boy-scout rule) and delete this file when the count hits zero.
+ */
 import { MatrxVariant } from "@/components/ui/types";
 import type { ToastDefaults, ToastOptions } from "@/types/toast.types";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -19,6 +46,20 @@ const DEFAULT_DURATION = 800;
 const DEFAULT_TOAST_STYLE = {
     className: "max-w-xs" // This will make toasts smaller
 };
+
+/**
+ * The stand-in announces itself (law 4 — nothing fails silently, and a loud
+ * patch is the only acceptable kind). Once per session: a warning on every
+ * toast would be noise, and noise is how a screamer gets muted.
+ */
+let legacyStackAnnounced = false;
+function announceLegacyToastStack() {
+    if (legacyStackAnnounced) return;
+    legacyStackAnnounced = true;
+    console.warn(
+        '[toast-service] This toast came from the LEGACY toast stack (lib/toast-service.ts, 38 importers), not the canonical `@/lib/toast`. Toasts raised here are not record-aware: one that names a record cannot be withdrawn when that record is renamed, deleted, or navigated away from (FIX-R17/FIX-Q12). Remedy: move this call site to `toast` / `recordToast` from "@/lib/toast".',
+    );
+}
 
 /** Shape passed to the toast-library-backed function registered via setFunctions. */
 export interface ToastFnProps {
@@ -71,6 +112,8 @@ class ToastService {
             console.warn("Toast function not initialized. Make sure ToastProvider is mounted.");
             return "";
         }
+
+        announceLegacyToastStack();
 
         // Merge default style with provided options
         const mergedOptions = {

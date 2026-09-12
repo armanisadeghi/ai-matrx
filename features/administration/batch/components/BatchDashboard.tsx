@@ -105,7 +105,12 @@ function UndeliveredBand({
           ) : null}
         </p>
       </div>
-      <Button size="sm" variant="destructive" onClick={onShow}>
+      <Button
+        size="sm"
+        variant="destructive"
+        onClick={onShow}
+        className="basis-full sm:basis-auto"
+      >
         Show these items
       </Button>
     </div>

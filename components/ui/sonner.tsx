@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Toaster as Sonner } from "sonner"
 import {
   toast,
+  dismissAllRecordToasts,
   dismissRecordToastsOffRoute,
   sweepExpiredRecordToasts,
 } from "@/lib/toast"
@@ -104,6 +105,7 @@ function useStaleToastSweepOnReturn() {
         `[toaster] dismissed ${stacked} toast(s) that could not expire while this tab was hidden — sonner pauses their timers, and a stacked toast sits on top of the page and swallows clicks. The screen itself carries the record; a toast is only the courtesy.`,
       )
       toast.dismiss()
+      dismissAllRecordToasts()
     }
     document.addEventListener("visibilitychange", onVisibility)
     return () => document.removeEventListener("visibilitychange", onVisibility)

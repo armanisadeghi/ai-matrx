@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Section } from "../workspace/Section";
 import { TriadFlowMark } from "../workspace/TriadSections";
@@ -234,7 +234,10 @@ export function NewMandatePage() {
         outputConstraints,
         draftInputs,
       });
-      toast.success(`${created.mandateKey} created — now choose who fulfils it.`);
+      recordToast.success(
+        { type: "mandate", id: created.mandateId, title: created.mandateKey },
+        `${created.mandateKey} created — now choose who fulfils it.`,
+      );
       // The draft has served its purpose: the words are in the database now,
       // and a draft left behind would be put back on the next visit.
       clearDraft();
