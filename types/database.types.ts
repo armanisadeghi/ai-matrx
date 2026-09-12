@@ -59638,6 +59638,7 @@ export type Database = {
           item_index: number | null
           key: string
           kind: string
+          message: string | null
           receipt: Json
           type: string
           user_id: string
@@ -59648,6 +59649,7 @@ export type Database = {
           item_index?: number | null
           key: string
           kind?: string
+          message?: string | null
           receipt?: Json
           type: string
           user_id: string
@@ -59658,6 +59660,7 @@ export type Database = {
           item_index?: number | null
           key?: string
           kind?: string
+          message?: string | null
           receipt?: Json
           type?: string
           user_id?: string

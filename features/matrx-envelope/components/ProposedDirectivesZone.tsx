@@ -19,11 +19,12 @@
  * the project was written and the chat said nothing.
  *
  * Now the card that asked "shall I?" answers "here is what happened", in place,
- * in the SERVER's words (`DirectiveConfirmResult.message`, composed by aidream's
- * `receipt_words.py`). Nothing here is counted, pluralized or phrased.
+ * in the SERVER's words (the confirm result's per-item receipt `message` values,
+ * composed by aidream's `receipt_words.py`). Nothing here is counted, pluralized
+ * or phrased.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   AlertTriangle,
@@ -47,6 +48,11 @@ import {
   type ProposedDirective,
 } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
 import { BackendApiError } from "@/lib/api/errors";
+import {
+  fetchConversationReceipts,
+  type ConversationDirectiveReceipt,
+} from "@/features/matrx-envelope/conversationReceipts";
+import DirectiveReceiptBlock from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Badge } from "@/components/ui/badge";
@@ -60,14 +66,65 @@ export function ProposedDirectivesZone({
   conversationId,
 }: ProposedDirectivesZoneProps) {
   const proposals = useAppSelector(selectProposedDirectives(conversationId));
-  if (proposals.length === 0) return null;
+  const { receipts, loadError } = useConversationReceipts(conversationId);
+
+  if (proposals.length === 0 && receipts.length === 0 && !loadError) return null;
   return (
     <div className="flex flex-col gap-2">
+      {/* NOTHING SILENT: "no receipts" and "we could not look" must not render
+          the same. The sentence is the reader's, with the reason. */}
+      {loadError && (
+        <div className="rounded-lg border border-destructive/40 bg-card px-3 py-2 text-xs text-destructive">
+          {loadError}
+        </div>
+      )}
+      {receipts.map((r) => (
+        <DirectiveReceiptBlock
+          key={r.ledgerKey}
+          directive={r.directive}
+          outcome="applied"
+          message={r.message}
+        />
+      ))}
       {proposals.map((p) => (
         <ProposedDirectiveCard key={p.proposalId} proposal={p} />
       ))}
     </div>
   );
+}
+
+/**
+ * The conversation's already-applied directives, read ONCE per conversation from
+ * the ledger. Once, deliberately: a confirm made later in this session is shown
+ * by its own card, and re-reading would render the same apply twice.
+ */
+function useConversationReceipts(conversationId: string) {
+  const [receipts, setReceipts] = useState<ConversationDirectiveReceipt[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReceipts([]);
+    setLoadError(null);
+    if (!conversationId) return;
+    void fetchConversationReceipts(conversationId)
+      .then((rows) => {
+        if (!cancelled) setReceipts(rows);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(
+          err instanceof Error
+            ? err.message
+            : "Could not load what this conversation's actions did.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
+
+  return { receipts, loadError };
 }
 
 function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
@@ -102,10 +159,6 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       items: (proposal.shell.items ?? []) as Record<string, unknown>[],
       proposal_id: proposal.proposalId,
       force: false,
-      // THE IDEMPOTENCY NAMESPACE, not decoration. Without it the server keys
-      // the write on a per-request uuid, so a second Approve writes a second
-      // project and "Already applied" can never be reached on this path.
-      conversation_id: proposal.conversationId,
     };
     try {
       const result = await confirmDirective(baseUrl, body);
@@ -129,7 +182,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
           // sentence. Say so, with the remedy — never render an empty receipt,
           // and never invent the words here.
           outcomeMessage:
-            result.message ||
+            result.receipts.map((receipt) => receipt.message).join("\n") ||
             "This was applied, but this server build did not send the receipt — " +
               "update the backend to see what was created.",
         }),
@@ -172,7 +225,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
             <div className="min-w-0">
               <div className="text-sm font-medium text-foreground">{title}</div>
               {/* The server's sentence for what happened. Verbatim. */}
-              <div className="text-xs text-muted-foreground">
+              <div className="whitespace-pre-line text-xs text-muted-foreground">
                 {proposal.outcomeMessage}
               </div>
             </div>
