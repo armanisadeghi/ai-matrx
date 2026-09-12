@@ -272,7 +272,32 @@ $gencheck$;
 -- 3. REGENERATE THE TWO VICTIMS through `iam.apply_rls` — the ONE canonical
 --    path — restoring any bespoke policy the sweep deletes, verbatim, from a
 --    pre-sweep snapshot (DD-136 step 7b's shape, scoped to two tables).
+--
+--    Live preflight also found `platform.rulebook` missing its canonical
+--    actor-stamping trigger. The RLS repair does not depend on that trigger,
+--    but the acceptance below correctly refuses to certify a partially
+--    canonical entity. Restore the standard trigger before regeneration so
+--    the migration can leave the table fully certified rather than weakening
+--    the acceptance check. The function-identity guard avoids adding a second
+--    actor trigger if a differently named canonical trigger already exists.
 -- ─────────────────────────────────────────────────────────────────────────────
+DO $actor_trigger$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_trigger g
+    WHERE g.tgrelid = 'platform.rulebook'::regclass
+      AND NOT g.tgisinternal
+      AND g.tgfoid = 'platform._stamp_actor'::regproc
+  ) THEN
+    CREATE TRIGGER _stamp_actor
+      BEFORE INSERT OR UPDATE ON platform.rulebook
+      FOR EACH ROW EXECUTE FUNCTION platform._stamp_actor();
+    RAISE NOTICE 'restored canonical actor-stamping trigger on platform.rulebook';
+  END IF;
+END
+$actor_trigger$;
+
 CREATE TEMP TABLE _pre_sweep_policies ON COMMIT DROP AS
 SELECT n.nspname                                          AS schema_name,
        c.relname                                          AS table_name,
