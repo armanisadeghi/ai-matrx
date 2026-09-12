@@ -4,7 +4,7 @@ import {
   setPreference,
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
-import { setMode, toggleMode } from "@/styles/themes/themeSlice";
+import { setMode } from "@/styles/themes/themeSlice";
 import {
   setServerOverride,
   setCustomServerUrl,
@@ -78,12 +78,17 @@ export const sliceBindings: Record<string, SliceBinding> = {
     read: (state, key) => readDotted(state.theme, key),
     write: (key, value) => {
       if (key === "mode") {
-        if (value !== "light" && value !== "dark") {
-          throw new Error(`theme.mode must be "light" | "dark", got ${value}`);
+        if (value !== "light" && value !== "dark" && value !== "system") {
+          throw new Error(`theme.mode must be "light" | "dark" | "system", got ${value}`);
         }
-        return setMode(value as "light" | "dark");
+        return setMode(value as "light" | "dark" | "system");
       }
-      if (key === "toggle") return toggleMode();
+      if (key === "toggle") {
+        const resolved = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+        return setMode(resolved === "dark" ? "light" : "dark");
+      }
       throw new Error(`theme has no writable key "${key}"`);
     },
     persistence: "synced",

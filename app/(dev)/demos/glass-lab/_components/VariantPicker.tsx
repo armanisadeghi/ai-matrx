@@ -2,7 +2,7 @@
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { toggleMode } from "@/styles/themes/themeSlice";
+import { setMode } from "@/styles/themes/themeSlice";
 import { Moon, Sun } from "lucide-react";
 
 export interface GlassVariant {
@@ -111,7 +111,7 @@ export function VariantPicker({ activeId, onSelect }: Props) {
           type="button"
           data-active={!isDark}
           onClick={() => {
-            if (isDark) dispatch(toggleMode());
+            if (isDark) dispatch(setMode("light"));
           }}
         >
           <Sun className="inline-block w-3.5 h-3.5 -mt-0.5 mr-1" />
@@ -121,7 +121,7 @@ export function VariantPicker({ activeId, onSelect }: Props) {
           type="button"
           data-active={isDark}
           onClick={() => {
-            if (!isDark) dispatch(toggleMode());
+            if (!isDark) dispatch(setMode("dark"));
           }}
         >
           <Moon className="inline-block w-3.5 h-3.5 -mt-0.5 mr-1" />

@@ -5,6 +5,11 @@ describe("matrx-user/settings write-target handlers", () => {
   const accepted = [
     {
       target: "theme_mode",
+      value: "system",
+      writes: [{ path: "theme.mode", value: "system" }],
+    },
+    {
+      target: "theme_mode",
       value: "dark",
       writes: [{ path: "theme.mode", value: "dark" }],
     },
@@ -57,7 +62,7 @@ describe("matrx-user/settings write-target handlers", () => {
   ] as const;
 
   const refused = [
-    { target: "theme_mode", value: "system" },
+    { target: "theme_mode", value: "violet" },
     { target: "accent_theme", value: "violet" },
     { target: "display_layout", value: { unsupported: "compact" } },
     { target: "text_generation_style", value: { tone: "wobbly" } },

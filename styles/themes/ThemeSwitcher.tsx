@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
-import { toggleMode as toggleModeAction } from '@/styles/themes/themeSlice';
+import { useAppDispatch } from '@/lib/redux/hooks';
+import { setMode } from '@/styles/themes/themeSlice';
+import { useThemeMode } from '@/styles/themes/useThemeMode';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
 import { Sun, Moon } from 'lucide-react';
@@ -20,14 +21,9 @@ export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({
     darkModeText = 'Switch to light mode',
     lightModeText = 'Switch to dark mode'
 }) => {
-    const mode = useAppSelector((s) => s.theme.mode);
+    const mode = useThemeMode();
     const dispatch = useAppDispatch();
-    const toggleMode = () => dispatch(toggleModeAction());
-
-    React.useEffect(() => {
-        document.cookie = `theme=${mode};path=/`;
-        document.documentElement.setAttribute('data-theme', mode);
-    }, [mode]);
+    const toggleMode = () => dispatch(setMode(mode === 'dark' ? 'light' : 'dark'));
 
     const icon = mode === 'dark' ? (
         <Sun className={cn(
@@ -77,14 +73,9 @@ interface ThemeSwitcherIconProps {
   }
   
   export const ThemeSwitcherIcon: React.FC<ThemeSwitcherIconProps> = ({ className }) => {
-    const mode = useAppSelector((s) => s.theme.mode);
+    const mode = useThemeMode();
     const dispatch = useAppDispatch();
-    const toggleMode = () => dispatch(toggleModeAction());
-  
-    React.useEffect(() => {
-      document.cookie = `theme=${mode};path=/`;
-      document.documentElement.setAttribute('data-theme', mode);
-    }, [mode]);
+    const toggleMode = () => dispatch(setMode(mode === 'dark' ? 'light' : 'dark'));
   
     return (
       <button
@@ -113,14 +104,9 @@ export const ThemeSwitcherMinimal: React.FC<ThemeSwitcherMinimalProps> = ({
   className,
   text
 }) => {
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const dispatch = useAppDispatch();
-  const toggleMode = () => dispatch(toggleModeAction());
-  
-  React.useEffect(() => {
-    document.cookie = `theme=${mode};path=/`;
-    document.documentElement.setAttribute('data-theme', mode);
-  }, [mode]);
+  const toggleMode = () => dispatch(setMode(mode === 'dark' ? 'light' : 'dark'));
   
   const displayText = text || (mode === 'dark' ? 'Light mode' : 'Dark mode');
   
@@ -141,4 +127,3 @@ export const ThemeSwitcherMinimal: React.FC<ThemeSwitcherMinimalProps> = ({
     </button>
   );
 };
-  
