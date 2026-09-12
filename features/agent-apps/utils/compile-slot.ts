@@ -22,11 +22,29 @@ import {
   type SandboxImportBinding,
 } from "./allowed-imports";
 import { collectTopLevelBindingsPlugin } from "./patch-scope-identifiers";
+import {
+  COMPONENT_BANNED_CALLABLES,
+  COMPONENT_BANNED_GLOBALS,
+} from "./component-source-gate";
 import type { Json } from "@/types/database.types";
 
 export interface CompileSlotArgs {
   /** Raw TSX/JSX source authored by the app builder. */
   code: string;
+  /**
+   * Shadow the dangerous browser globals inside the compiled body's scope with
+   * throwing stubs (Q82 / B-17, 2026-09-11). ON for organization-authored kind
+   * components, which are arbitrary TSX running in the signed-in page's own
+   * origin; platform components ship in the bundle and never reach this
+   * compiler at all.
+   *
+   * 🚨 This is a BACKSTOP, not a sandbox. It shadows BARE identifiers only —
+   * `window.fetch` still resolves, because `window` itself is used legitimately
+   * by 38 live component bodies and cannot be taken away without breaking
+   * them. Real isolation needs an iframe/worker boundary; the write-time gate
+   * (`component-source-gate.ts`) is what actually refuses `window.fetch`.
+   */
+  sandboxDangerousGlobals?: boolean;
   /** Allowed imports from the app row (or a tier default). */
   allowedImports?: string[] | Json | null;
   /**
@@ -104,10 +122,36 @@ function collectAndStripImportDeclarationsPlugin(
   };
 }
 
+/**
+ * Throwing stubs for the globals an organization-authored component may not
+ * use. Named error, never silence: the reader's error boundary shows which
+ * global the component reached for, so "it renders nothing" can never be the
+ * whole story (Law 4 — nothing fails silently).
+ */
+function buildDangerousGlobalStubs(): Record<string, unknown> {
+  const stubs: Record<string, unknown> = {};
+  for (const name of [
+    ...COMPONENT_BANNED_GLOBALS,
+    ...COMPONENT_BANNED_CALLABLES,
+  ]) {
+    stubs[name] = function bannedGlobal(): never {
+      throw new Error(
+        `This component tried to use "${name}". Components stored in the ` +
+          "database run inside the signed-in page and may not reach the " +
+          "network, browser storage, or the JavaScript evaluator. Render what " +
+          "the Shape hands you in props.data, and use a Shape action for " +
+          "anything you need from the server.",
+      );
+    };
+  }
+  return stubs;
+}
+
 export function compileSlotComponent({
   code,
   allowedImports,
   scopeOverrides,
+  sandboxDangerousGlobals,
 }: CompileSlotArgs): CompileSlotResult {
   if (!code || !code.trim()) {
     return { Component: null, error: null };
@@ -154,6 +198,13 @@ export function compileSlotComponent({
     // replacement (e.g. the runtime-aware MarkdownStream) still wins.
     bindImportedIdentifiers(importBindings, scope, declaredTopLevel);
     Object.assign(scope, scopeOverrides);
+    // The stubs land LAST so nothing — not an author alias, not a host
+    // override — can hand the body a live `fetch`. An author's own top-level
+    // declaration of the same name still wins, because `getScopeFunctionParameters`
+    // drops every excluded name from the parameter list (that is a name the
+    // author defined, not the global).
+    if (sandboxDangerousGlobals)
+      Object.assign(scope, buildDangerousGlobalStubs());
     if (transformed)
       patchScopeForMissingIdentifiers(transformed, scope, declaredTopLevel);
 
