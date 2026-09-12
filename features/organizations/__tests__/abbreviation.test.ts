@@ -4,16 +4,20 @@ import {
 } from "@/features/organizations/types";
 
 describe("organization abbreviations", () => {
-  it.each([
-    ["All Green Recycling", false, "AGR"],
-    ["Pearlman Brown, and Wax, LLP", false, "PBW"],
-    ["Castellano & Reyes, LLP", false, "CR"],
-    ["AI Matrx", false, "AIM"],
-    ["Titanium", false, "TIT"],
-    ["X", false, "XX"],
-    ["Anything", true, "ME"],
-  ])("derives %s (personal=%s) as %s", (name, isPersonal, expected) => {
-    expect(generateOrganizationAbbreviation(name, isPersonal)).toBe(expected);
+  it.each<[string, string]>([
+    ["All Green Recycling", "AGR"],
+    ["Pearlman Brown, and Wax, LLP", "PBW"],
+    ["Castellano & Reyes, LLP", "CR"],
+    ["AI Matrx", "AIM"],
+    ["Titanium", "TIT"],
+    ["X", "XX"],
+    // A personal organization is not special. It used to return the constant
+    // "ME" for any `is_personal` row, so two of them were indistinguishable
+    // (Arman, 2026-09-11). Every organization abbreviates from its own name.
+    ["Arman's Org", "ASO"],
+    ["admin's Workspace", "ASW"],
+  ])("derives %s as %s", (name, expected) => {
+    expect(generateOrganizationAbbreviation(name)).toBe(expected);
   });
 
   it.each(["ME", "CR", "AGR"])("accepts %s", (value) => {

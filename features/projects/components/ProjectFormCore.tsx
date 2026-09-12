@@ -32,7 +32,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -139,10 +138,13 @@ export function OrgSelector({
   locked: boolean;
   isMobile: boolean;
 }) {
-  const personalOrg = orgs.find((org) => org.is_personal);
-  const teamOrgs = orgs.filter((org) => !org.is_personal);
-  const label = selectedOrg?.isPersonal ? "Personal" : selectedOrg?.name ?? "Personal";
-  const Icon = selectedOrg?.isPersonal || !selectedOrg ? User : Building2;
+  // Every organization is listed under its own name, in one list, with the
+  // viewer's real role. There is no synthesised "Personal" entry: it printed the
+  // word "Personal" in place of the real name and was resolved with
+  // `find(is_personal)`, so a user who belonged to two personal organizations
+  // got one unnameable row and no way to choose the other (Arman, 2026-09-11).
+  const label = selectedOrg?.name ?? "Select an organization";
+  const Icon = selectedOrg ? Building2 : User;
 
   if (locked) {
     return (
@@ -181,35 +183,7 @@ export function OrgSelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[280px]">
-        {/* Personal option */}
-        <DropdownMenuItem
-          onClick={() =>
-            onSelect(
-              personalOrg
-                ? {
-                    id: personalOrg.id,
-                    name: personalOrg.name,
-                    slug: personalOrg.slug,
-                    isPersonal: true,
-                  }
-                : null,
-            )
-          }
-          className={cn(
-            "gap-2",
-            (!selectedOrg || selectedOrg.isPersonal) && "bg-accent",
-          )}
-        >
-          <User className="h-4 w-4 shrink-0" />
-          <span>Personal</span>
-          <span className="text-[10px] text-muted-foreground ml-auto">
-            Personal org
-          </span>
-        </DropdownMenuItem>
-
-        {teamOrgs.length > 0 && <DropdownMenuSeparator />}
-
-        {teamOrgs.map((org) => (
+        {orgs.map((org) => (
           <DropdownMenuItem
             key={org.id}
             onClick={() =>
@@ -217,7 +191,7 @@ export function OrgSelector({
                 id: org.id,
                 name: org.name,
                 slug: org.slug,
-                isPersonal: false,
+                isPersonal: org.is_personal,
               })
             }
             className={cn("gap-2", selectedOrg?.id === org.id && "bg-accent")}

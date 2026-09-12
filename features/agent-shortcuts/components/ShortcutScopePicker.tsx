@@ -107,8 +107,8 @@ export function ShortcutScopePicker({
       organizations.map((org) => ({
         id: org.id,
         name: org.name,
-        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-        subtitle: org.is_personal ? "Personal" : undefined,
+        // No subtitle: an organization is identified by its own name. Tagging
+        // `is_personal` rows "Personal" made two of them indistinguishable.
       })),
     [organizations],
   );
