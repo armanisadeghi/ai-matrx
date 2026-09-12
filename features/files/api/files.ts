@@ -165,6 +165,22 @@ export async function getFile(
   return apiGet(buildPath("/files/{file_id}", { file_id: fileId }), opts);
 }
 
+/**
+ * Read the canonical durable file row without asking the server to resolve
+ * render URLs or thumbnail variants.  Exact-id metadata hydration uses this
+ * backend authorization boundary instead of compiling the browser RLS policy
+ * once per file row.
+ */
+export async function getFileMetadata(
+  fileId: string,
+  opts: RequestOptions = {},
+): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
+  return apiGet(buildPath("/files/{file_id}", { file_id: fileId }), {
+    ...opts,
+    query: { include_urls: false },
+  });
+}
+
 export async function getFileByPath(
   filePath: string,
   opts: RequestOptions = {},

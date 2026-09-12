@@ -25,7 +25,6 @@ type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import { supabase } from "@/utils/supabase/client";
 import {
   filesDb,
-  FILES_TABLE_COLUMNS,
   FILE_VERSIONS_TABLE_COLUMNS,
 } from "@/features/files/filesDb";
 import { pgErrorToError } from "@ai-matrx/data";
@@ -51,7 +50,6 @@ import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   apiFileRecordToCloudFile,
-  dbRowToCloudFile,
   dbRowToCloudFilePermission,
   dbRowToCloudFileVersion,
   dbRowToCloudFolder,
@@ -62,10 +60,8 @@ import {
 import {
   areCloudFileFieldsLoaded,
   FILE_DB_RECORD_FIELDS,
-  FILE_RENDER_TABLE_COLUMNS,
   fileHintToCloudFilePartial,
   needsOnlyRenderFields,
-  renderRowToCloudFilePartial,
   type CloudFileHydrationField,
 } from "./file-hydration";
 import {
@@ -171,25 +167,27 @@ async function fetchCloudFileFields(
   if (existing) return existing;
 
   const request = (async () => {
-    if (needsOnlyRenderFields(fields)) {
-      const { data, error } = await filesDb(supabase)
-        .from("files")
-        .select(FILE_RENDER_TABLE_COLUMNS)
-        .eq("id", fileId)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (error) throw pgErrorToError(error);
-      return data ? renderRowToCloudFilePartial(data) : null;
-    }
+    // A direct PostgREST exact-id read still compiles the entire files.files
+    // RLS access expression.  On a PDF surface many file chips hydrate at
+    // once, so planning alone can cross its statement deadline before the
+    // primary-key lookup begins.  The server's `/files/{id}` boundary checks
+    // the same canonical access rule once and reads by primary key without
+    // browser RLS planning.  Keep its URL/thumbnail work off this metadata
+    // path; consumers that need it use the regular getFile endpoint.
+    const { data } = await Files.getFileMetadata(fileId);
+    const record = apiFileRecordToCloudFile(data);
+    if (record.deletedAt) return null;
 
-    const { data, error } = await filesDb(supabase)
-      .from("files")
-      .select(FILES_TABLE_COLUMNS)
-      .eq("id", fileId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (error) throw pgErrorToError(error);
-    return data ? dbRowToCloudFile(data) : null;
+    if (needsOnlyRenderFields(fields)) {
+      return {
+        id: record.id,
+        fileName: record.fileName,
+        mimeType: record.mimeType,
+        fileSize: record.fileSize,
+        visibility: record.visibility,
+      };
+    }
+    return record;
   })().finally(() => fileFieldHydrationInFlight.delete(key));
 
   fileFieldHydrationInFlight.set(key, request);
