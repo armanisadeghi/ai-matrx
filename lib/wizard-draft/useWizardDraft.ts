@@ -28,7 +28,7 @@
 //
 // Pair it with `resolveWizardStep` (same directory) for the step decision.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   clearWizardDraft,
@@ -54,7 +54,12 @@ export interface WizardDraftRestore<T> {
 
 export interface UseWizardDraftResult<T> {
   status: WizardDraftStatus;
-  /** Restored values — settles exactly once, when `status` leaves "loading". */
+  /**
+   * What the saved draft says right now — `null` only while `status` is
+   * "loading". It is a DERIVATION, not a snapshot: apply it exactly once (a
+   * ref guard in one effect), and let anything the person has already typed
+   * win. `restore` must therefore be pure and cheap.
+   */
   restored: WizardDraftRestore<T> | null;
   /** Shallow-merge fields into the draft. Safe to call on every keystroke. */
   patch: (fields: Record<string, unknown>) => void;
@@ -64,9 +69,9 @@ export interface UseWizardDraftResult<T> {
 
 export interface UseWizardDraftOptions<T> {
   /**
-   * Map the stored bag to this wizard's values. Push every key you accept into
-   * `accept`; anything you do not accept is reported as rejected. Called at
-   * most once per mount, when the read settles.
+   * Map the stored bag to this wizard's values — PURE, and called on render.
+   * Report anything you cannot put back in `rejectedKeys`; the hook screams
+   * about it so a saved answer can never vanish in silence.
    */
   restore: (data: Record<string, unknown>) => {
     values: T;
@@ -86,38 +91,29 @@ export function useWizardDraft<T>(
   const entry = useAppSelector(selectWizardDraft(wizardId));
   const hydrated = useSyncHydrated();
 
-  const [restored, setRestored] = useState<WizardDraftRestore<T> | null>(null);
-  const settledRef = useRef(false);
-  // `restore` is a fresh closure every render; keep the latest without making
-  // it a dependency (it would re-run the one-shot restore forever).
-  const restoreRef = useRef(options.restore);
-  restoreRef.current = options.restore;
-
   // A draft that arrives BEFORE hydration settles is just as good — the read
-  // came back early. Either way this runs exactly once.
-  const hasEntry = Boolean(entry);
-  useEffect(() => {
-    if (settledRef.current) return;
-    if (!hydrated && !hasEntry) return;
-    settledRef.current = true;
-    if (!entry) {
-      setRestored({ values: null, rejectedKeys: [] });
-      return;
-    }
-    const result = restoreRef.current(entry.data);
-    const rejectedKeys = result.rejectedKeys ?? [];
-    if (rejectedKeys.length > 0) {
-      // LOUD: a saved answer we could not put back is lost work.
-      console.error(
-        `[wizard-draft] "${wizardId}" could not restore saved answer(s): ${rejectedKeys.join(", ")}. ` +
-          "The person will see a default where they made a choice.",
-      );
-    }
-    setRestored({ values: result.values, rejectedKeys });
-  }, [entry, hasEntry, hydrated, wizardId]);
+  // came back early. Only "no draft AND not read yet" is genuinely unknown.
+  let restored: WizardDraftRestore<T> | null = null;
+  if (entry) {
+    const result = options.restore(entry.data);
+    restored = { values: result.values, rejectedKeys: result.rejectedKeys ?? [] };
+  } else if (hydrated) {
+    restored = { values: null, rejectedKeys: [] };
+  }
 
   const status: WizardDraftStatus =
     restored === null ? "loading" : restored.values === null ? "absent" : "found";
+
+  // LOUD: a saved answer we could not put back is lost work. Announced from an
+  // effect (once per distinct set of keys), never from render.
+  const rejected = restored?.rejectedKeys.join(",") ?? "";
+  useEffect(() => {
+    if (!rejected) return;
+    console.error(
+      `[wizard-draft] "${wizardId}" could not restore saved answer(s): ${rejected}. ` +
+        "The person will see a default where they made a choice.",
+    );
+  }, [rejected, wizardId]);
 
   return {
     status,

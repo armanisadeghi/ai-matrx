@@ -19,7 +19,7 @@
 // screams and reports settled, because a surface stuck on a spinner forever is
 // a worse failure than an honest "we could not find your saved answers".
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useAppStore } from "@/lib/redux/hooks";
 
 /** How long a surface waits for persisted hydration before giving up, loudly. */
@@ -43,6 +43,56 @@ function readSyncSource(store: unknown): SyncSettledSource | null {
 }
 
 /**
+ * A tiny external store over the engine's settled signal, plus the backstop.
+ * External-store shape on purpose: `useSyncExternalStore` is how React reads a
+ * value that lives outside it, and it keeps this hook free of the
+ * setState-in-an-effect cascade.
+ */
+interface SettledTracker {
+  subscribe: (onChange: () => void) => () => void;
+  getSnapshot: () => boolean;
+  /** SSR has no engine and nothing persisted — settled by definition. */
+  getServerSnapshot: () => boolean;
+}
+
+function createSettledTracker(store: unknown): SettledTracker {
+  const source = readSyncSource(store);
+  // No engine (a test store, a non-app context): nothing to wait for.
+  if (!source) {
+    return {
+      subscribe: () => () => {},
+      getSnapshot: () => true,
+      getServerSnapshot: () => true,
+    };
+  }
+  let backstopFired = false;
+  return {
+    getSnapshot: () => backstopFired || source.hydrationSettled(),
+    getServerSnapshot: () => true,
+    subscribe: (onChange: () => void) => {
+      const unsubscribe = source.onHydrationSettledChange(onChange);
+      const backstop = globalThis.setTimeout(() => {
+        if (source.hydrationSettled()) return;
+        // LOUD: reaching here means the engine never finished reading
+        // persisted state. Consumers stop waiting and show their honest empty
+        // state rather than a spinner that never ends.
+        console.error(
+          `[sync] persisted hydration did not settle within ${HYDRATION_BACKSTOP_MS}ms — ` +
+            "surfaces waiting on restored state will now show their empty state. " +
+            "This is a defect in the sync engine's boot path, not a normal path.",
+        );
+        backstopFired = true;
+        onChange();
+      }, HYDRATION_BACKSTOP_MS);
+      return () => {
+        unsubscribe();
+        globalThis.clearTimeout(backstop);
+      };
+    },
+  };
+}
+
+/**
  * `true` once the sync engine has finished reading persisted state for the
  * CURRENT identity (or the backstop fired). A store without the engine — a
  * test store, a non-app context — is settled immediately: there is nothing
@@ -50,49 +100,10 @@ function readSyncSource(store: unknown): SyncSettledSource | null {
  */
 export function useSyncHydrated(): boolean {
   const store = useAppStore();
-  const [settled, setSettled] = useState(() => {
-    const source = readSyncSource(store);
-    return source ? source.hydrationSettled() : true;
-  });
-
-  useEffect(() => {
-    const source = readSyncSource(store);
-    if (!source) {
-      setSettled(true);
-      return;
-    }
-    if (source.hydrationSettled()) {
-      setSettled(true);
-      return;
-    }
-    setSettled(false);
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      setSettled(true);
-    };
-    const unsubscribe = source.onHydrationSettledChange(() => {
-      if (source.hydrationSettled()) finish();
-    });
-    const backstop = globalThis.setTimeout(() => {
-      if (done) return;
-      // LOUD: reaching here means the engine never finished reading persisted
-      // state. Consumers stop waiting and show their honest empty state.
-      console.error(
-        `[sync] persisted hydration did not settle within ${HYDRATION_BACKSTOP_MS}ms — ` +
-          "surfaces waiting on restored state will now show their empty state. " +
-          "This is a defect in the sync engine's boot path, not a normal path.",
-      );
-      finish();
-    }, HYDRATION_BACKSTOP_MS);
-
-    return () => {
-      done = true;
-      unsubscribe();
-      globalThis.clearTimeout(backstop);
-    };
-  }, [store]);
-
-  return settled;
+  const [tracker] = useState(() => createSettledTracker(store));
+  return useSyncExternalStore(
+    tracker.subscribe,
+    tracker.getSnapshot,
+    tracker.getServerSnapshot,
+  );
 }
