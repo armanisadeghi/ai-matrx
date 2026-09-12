@@ -35,6 +35,17 @@
  * fails in BOTH directions — an unexpected token open is a finding, and an expected one CLOSING is a
  * finding too, so the list shrinks deliberately in a commit instead of rotting into folklore.
  *
+ * THE CONTAINMENT AXIS (DD-171, 2026-09-12). The three assertions above read the STAFF arms. They
+ * were green on `files.files` while a PLAIN MEMBER — no admin.admins row, no org-admin role — read
+ * 8,815 other people's `personal` files, because the parent-folder arm in the same std_select
+ * admitted any non-public file once the FOLDER was viewer-accessible and never looked at the file's
+ * own visibility. Chair, 2026-09-12: containment carries the container's reach to rows at `internal`
+ * and above, never to `personal`. So for every token that carries a typed visibility column AND a
+ * composition/containment parent whose FK column exists on the table, this guard also asserts:
+ *   D. the emitted parent-FK arm reads `(<fk> IS NOT NULL) AND (visibility >= 'internal'…) AND
+ *      (visibility <> 'public'…)`, and NOT the old `(visibility IS NOT NULL)` form — which is every
+ *      enum value except public, `personal` included.
+ *
  * UNMEASURED IS A FAILURE, NEVER A PASS.
  *
  *   pnpm check:row-visibility             # loud, non-blocking (exit 0)
@@ -112,10 +123,13 @@ const W_ADMIN = "(visibility >= 'internal'::platform.visibility) AND ( SELECT is
 const W_SUPER = "(visibility >= 'internal'::platform.visibility) AND is_super_admin()";
 
 export interface PolicyRow { polname: string; qual: string }
+/** A composition/containment parent whose FK column really exists on the child table. */
+export interface ParentRow { parent_type: string; fk_column: string }
 export interface RowVisibilityRow {
   token: string;
   variant: string;
   policies: PolicyRow[];
+  parents?: ParentRow[];
 }
 
 /** The pure rule, so --self-test can feed it rows it made up as well as rows it built for real. */
@@ -136,6 +150,29 @@ export function unwalledArms(row: RowVisibilityRow): string[] {
   return bad;
 }
 
+/**
+ * THE CONTAINMENT AXIS (DD-171). The two shapes, as `pg_get_expr` renders them, for one FK column.
+ * `wallOld` is the arm as it was emitted before DD-171 — it admits `personal`; `wallNew` is the
+ * walled form. A component is exempt: it has no visibility column at all, which is exactly WHY its
+ * access is its parent's (db-rules §6d-1).
+ */
+export function unwalledContainmentArms(row: RowVisibilityRow): string[] {
+  if (row.variant === "component" || row.variant === "personal") return [];
+  const parents = row.parents ?? [];
+  if (parents.length === 0) return [];
+  const sel = row.policies.find((p) => p.polname === "std_select");
+  if (!sel) return [];
+  const q = (sel.qual ?? "").replace(/\s+/g, " ");
+  const bad: string[] = [];
+  for (const { fk_column } of parents) {
+    const oldArm = `(${fk_column} IS NOT NULL) AND (visibility IS NOT NULL) AND (visibility <> 'public'`;
+    const newArm = `(${fk_column} IS NOT NULL) AND (visibility >= 'internal'::platform.visibility) AND (visibility <> 'public'`;
+    if (q.includes(oldArm)) bad.push(`std_select: ${fk_column} carries the UNWALLED containment arm (admits visibility='personal')`);
+    else if (!q.includes(newArm)) bad.push(`std_select: ${fk_column} has no walled containment arm at all`);
+  }
+  return bad;
+}
+
 const FINDINGS_SQL = `
 select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
   select json_build_object(
@@ -147,7 +184,15 @@ select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
                         order by p.polname)
          from pg_policy p
         where p.polrelid = to_regclass(format('%I.%I', et.schema_name, et.table_name))
-          and p.polpermissive), '[]'::json)
+          and p.polpermissive), '[]'::json),
+    'parents', coalesce((
+       select json_agg(json_build_object('parent_type', er.parent_type, 'fk_column', er.fk_column)
+                        order by er.parent_type, er.fk_column)
+         from platform.entity_relationships er
+        where er.child_type = et.token and er.kind in ('composition','containment')
+          and exists (select 1 from information_schema.columns c2
+                       where c2.table_schema = et.schema_name and c2.table_name = et.table_name
+                         and c2.column_name = er.fk_column)), '[]'::json)
   ) as x
   from platform.entity_types et
   join information_schema.columns c
@@ -175,8 +220,31 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
     ["the system-org super-admin arm, which is mirrored from the kernel and named residue",
       { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR ((organization_id IS NOT NULL) AND ( SELECT is_super_admin() AS is_super_admin) AND (organization_id IN ( SELECT so.organization_id FROM iam.system_orgs so WHERE so.global_readable))))` }] }, false],
   ];
+  const OLD_ARM = "(parent_folder_id IS NOT NULL) AND (visibility IS NOT NULL) AND (visibility <> 'public'::platform.visibility)";
+  const NEW_ARM = "(parent_folder_id IS NOT NULL) AND (visibility >= 'internal'::platform.visibility) AND (visibility <> 'public'::platform.visibility)";
+  const parents = [{ parent_type: "folder", fk_column: "parent_folder_id" }];
+  // THE DD-171 AXIS. The first case is the real `files.files` arm as it stood while a plain member
+  // read 8,815 other people's personal files; the guard must go RED on it.
+  cases.push(
+    ["a containment arm that admits any non-public child (the files.files leak)",
+      { token: "x", variant: "entity", parents,
+        policies: [{ polname: "platform_admin_all", qual: `(${W_ADMIN})` },
+                   { polname: "std_select", qual: `((${W_ADMIN}) OR (created_by = ( SELECT auth.uid() AS uid)) OR (${OLD_ARM} AND (parent_folder_id IN ( SELECT x))))` }] }, true],
+    ["a containment arm walled at internal",
+      { token: "x", variant: "entity", parents,
+        policies: [{ polname: "platform_admin_all", qual: `(${W_ADMIN})` },
+                   { polname: "std_select", qual: `((${W_ADMIN}) OR (created_by = ( SELECT auth.uid() AS uid)) OR (${NEW_ARM} AND (parent_folder_id IN ( SELECT x))))` }] }, false],
+    ["a registered containment parent with NO arm emitted at all",
+      { token: "x", variant: "entity", parents,
+        policies: [{ polname: "platform_admin_all", qual: `(${W_ADMIN})` },
+                   { polname: "std_select", qual: `((${W_ADMIN}) OR (created_by = ( SELECT auth.uid() AS uid)))` }] }, true],
+    ["a COMPONENT, whose access IS its parent's and which has no visibility column by contract",
+      { token: "x", variant: "component", parents,
+        policies: [{ polname: "std_select", qual: `(${OLD_ARM} AND (parent_folder_id IN ( SELECT x)))` }] }, false],
+  );
+
   for (const [name, row, expected] of cases) {
-    const got = unwalledArms(row).length > 0;
+    const got = unwalledArms(row).length + unwalledContainmentArms(row).length > 0;
     if (got !== expected) {
       console.log(`  ${C.r}✗${C.x} ${expected ? "RED " : "GREEN"} — ${name}: expected ${expected}, got ${got}`); bad++;
     } else {
@@ -214,6 +282,33 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} RED  — the live query flags a real bare platform_admin_all on a visibility table`);
     }
 
+    // …and the CONTAINMENT axis for real: a registered containment edge to `folder`, an arm that
+    // admits any non-public child (RED), then the same arm walled at internal (GREEN).
+    await door(env, `alter table ${schema}.probe add column parent_folder_id uuid`);
+    await door(env, `insert into platform.entity_relationships (child_type, parent_type, fk_column, kind)
+                     values ('${token}', 'folder', 'parent_folder_id', 'containment')`);
+    await door(env, `create policy std_select on ${schema}.probe for select to authenticated
+                     using (((visibility >= 'internal'::platform.visibility) and (select public.is_platform_admin()))
+                            or (parent_folder_id is not null and visibility is not null and visibility <> 'public'::platform.visibility
+                                and parent_folder_id in (select iam.unnest_uuids(iam.accessible_entity_ids('folder', 'viewer'::permission_level, 0, false)))))`);
+    const redContainment = await pull();
+    if (!redContainment || unwalledContainmentArms(redContainment).length === 0) {
+      console.log(`  ${C.r}✗${C.x} RED  — the live query did not flag a real containment arm that admits a personal child`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} RED  — the live query flags a real containment arm that admits a personal child`);
+    }
+    await door(env, `drop policy std_select on ${schema}.probe`);
+    await door(env, `create policy std_select on ${schema}.probe for select to authenticated
+                     using (((visibility >= 'internal'::platform.visibility) and (select public.is_platform_admin()))
+                            or (parent_folder_id is not null and visibility >= 'internal'::platform.visibility and visibility <> 'public'::platform.visibility
+                                and parent_folder_id in (select iam.unnest_uuids(iam.accessible_entity_ids('folder', 'viewer'::permission_level, 0, false)))))`);
+    const greenContainment = await pull();
+    if (!greenContainment || unwalledContainmentArms(greenContainment).length > 0) {
+      console.log(`  ${C.r}✗${C.x} GREEN — the live query still flags the containment arm once it is walled: ${greenContainment ? unwalledContainmentArms(greenContainment).join("; ") : "no row"}`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} GREEN — the live query stops flagging the containment arm the moment it is walled`);
+    }
+
     await door(env, `drop policy platform_admin_all on ${schema}.probe`);
     await door(env, `create policy platform_admin_all on ${schema}.probe for all to authenticated
                      using ((visibility >= 'internal'::platform.visibility) and (select public.is_platform_admin()))
@@ -226,9 +321,11 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
     }
   } finally {
     // The teardown is not optional: a leftover registered token would break every other guard.
+    try { await door(env, `delete from platform.entity_relationships where child_type = '${token}'`); } catch { /* reported below */ }
     try { await door(env, `delete from platform.entity_types where token = '${token}'`); } catch { /* reported below */ }
     try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* reported below */ }
-    const left = await door(env, `select count(*)::int as n from platform.entity_types where token = '${token}'`);
+    const left = await door(env, `select (select count(*) from platform.entity_types where token = '${token}')
+                                       + (select count(*) from platform.entity_relationships where child_type = '${token}') as n`);
     if (Number((left[0] as { n?: number })?.n ?? 0) !== 0) {
       console.log(`  ${C.r}✗${C.x} the self-test left its scratch token behind — remove '${token}' by hand`); bad++;
     }
@@ -264,7 +361,12 @@ async function main(): Promise<number> {
 
   console.log(`  ${C.d}${rows.length} active tokens are unsuppressed AND carry a typed platform.visibility column${C.x}`);
 
-  const open = rows.map((r) => ({ row: r, bad: unwalledArms(r) })).filter((x) => x.bad.length > 0);
+  const withParents = rows.filter((r) => (r.parents ?? []).length > 0).length;
+  console.log(`  ${C.d}${withParents} of them also carry a composition/containment parent (the DD-171 axis)${C.x}`);
+
+  const open = rows
+    .map((r) => ({ row: r, bad: [...unwalledArms(r), ...unwalledContainmentArms(r)] }))
+    .filter((x) => x.bad.length > 0);
   const unexpected = open.filter((x) => !RESIDUE_TOKENS.has(x.row.token));
   const closed = [...RESIDUE_TOKENS].filter((t) => !open.some((x) => x.row.token === t));
 
@@ -287,7 +389,7 @@ async function main(): Promise<number> {
   }
 
   if (findings === 0) {
-    console.log(`${C.g}✓${C.x} ${C.b}a personal row stays personal${C.x}`);
+    console.log(`${C.g}✓${C.x} ${C.b}a personal row stays personal — no staff arm and no containment arm carries one${C.x}`);
     return 0;
   }
   console.log(`${C.r}✗${C.x} ${C.b}${findings} finding(s)${C.x}`);
