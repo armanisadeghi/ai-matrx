@@ -62,12 +62,14 @@ function formatSetDate(iso: string | null | undefined): string {
 }
 
 export function FastFireSetPicker({
+  id,
   sets,
   value,
   onChange,
   disabled,
   placeholder = "Select a flashcard set…",
 }: {
+  id?: string;
   sets: FcSetRow[];
   value: string | null;
   onChange: (setId: string) => void;
@@ -96,6 +98,7 @@ export function FastFireSetPicker({
     >
       <PopoverTrigger asChild>
         <Button
+          id={id}
           type="button"
           variant="outline"
           role="combobox"

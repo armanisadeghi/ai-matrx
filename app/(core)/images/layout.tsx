@@ -7,7 +7,6 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { BrowseImageProvider } from "@/features/image-manager/browse/BrowseImageProvider";
 import { findImagesRoute, IMAGES_ROOT_PATH } from "./_components/imagesRoutes";
 import { ImagesListHeader } from "./_components/ImagesListHeader";
-import { ImagesSidebar } from "./_components/ImagesSidebar";
 
 export const metadata = createRouteMetadata("/images", {
   title: "Images",
@@ -60,7 +59,6 @@ export default async function ImagesLayout({
         <ImagesListHeader />
       </PageHeader>
       <div className="flex h-full min-h-0 overflow-hidden bg-textured">
-        <ImagesSidebar />
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)] max-md:pb-24">
           {children}
         </main>

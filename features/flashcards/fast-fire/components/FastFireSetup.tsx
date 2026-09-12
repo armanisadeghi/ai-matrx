@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Flame,
-  Layers,
   Clock,
   Bell,
   Hash,
@@ -230,10 +229,9 @@ export function FastFireSetup() {
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
         {/* Set picker */}
         <section className="mb-5 rounded-xl border border-border bg-card p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">
-            <Layers className="h-4 w-4 text-muted-foreground" />
-            Choose a set
-          </div>
+          <label htmlFor="fastfire-set-picker" className="sr-only">
+            Flashcard set
+          </label>
           {sets === null ? (
             <div className="flex items-center justify-center py-8">
               <SuspenseLoader
@@ -252,6 +250,7 @@ export function FastFireSetup() {
             </div>
           ) : (
             <FastFireSetPicker
+              id="fastfire-set-picker"
               sets={sets}
               value={config.setId}
               onChange={(setId) => dispatch(updateConfig({ setId }))}
@@ -347,64 +346,56 @@ export function FastFireSetup() {
         </section>
 
         {/* Live score toggle */}
-        <section className="mb-6 flex items-center justify-between rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2">
+        <section className="mb-6 rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Gauge className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <div className="text-sm font-medium text-foreground">
-                Live scoreboard
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Show grades as they catch up, or only at the end.
-              </div>
-            </div>
+            <span>Live scoreboard</span>
           </div>
-          <Switch
-            checked={config.liveScore}
-            onCheckedChange={(checked) =>
-              dispatch(updateConfig({ liveScore: checked }))
-            }
-          />
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+              Show grades as they catch up, or only at the end.
+            </p>
+            <Switch
+              checked={config.liveScore}
+              onCheckedChange={(checked) =>
+                dispatch(updateConfig({ liveScore: checked }))
+              }
+            />
+          </div>
         </section>
 
         {/* VISION §3 — live session adaptation: the unseen queue tilts toward
             struggling topics as grades resolve, in THIS session. */}
-        <section className="mb-5 flex items-center justify-between rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2">
+        <section className="mb-5 rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Zap className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <div className="text-sm font-medium text-foreground">
-                Adapt to how you&apos;re doing
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Upcoming cards reorder toward the topics you&apos;re missing —
-                during the drill, not the next one.
-              </div>
-            </div>
+            <span>Adapt to how you&apos;re doing</span>
           </div>
-          <Switch
-            checked={config.adaptive}
-            onCheckedChange={(checked) =>
-              dispatch(updateConfig({ adaptive: checked }))
-            }
-          />
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+              Upcoming cards reorder toward the topics you&apos;re missing —
+              during the drill, not the next one.
+            </p>
+            <Switch
+              checked={config.adaptive}
+              onCheckedChange={(checked) =>
+                dispatch(updateConfig({ adaptive: checked }))
+              }
+            />
+          </div>
         </section>
 
         {/* Hear the questions (optional TTS) — generated on-demand + cached. */}
         <section className="mb-5 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Volume2 className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-sm font-medium text-foreground">
-                  Hear the questions
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  A fast-paced host reads each question aloud. Generated once,
-                  then cached for instant playback.
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Volume2 className="h-4 w-4 text-muted-foreground" />
+            <span>Hear the questions</span>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+              A fast-paced host reads each question aloud. Generated once,
+              then cached for instant playback.
+            </p>
             <Switch
               checked={config.spokenFronts}
               onCheckedChange={(checked) =>

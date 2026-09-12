@@ -29,7 +29,7 @@
 - `/images/ai-generate` → `<AIGenerateHero>`
 - `/images/profile-photo` → `<ProfilePhotoTab>`
 
-Layout/sidebar shell: `app/(core)/images/layout.tsx` + `app/(core)/images/_components/ImagesSidebar.tsx`. Active route is detected via `usePathname()` — no fake routes, no client-state tab switching.
+Layout/sidebar shell: `app/(core)/images/layout.tsx` plus the shared shell route-menu registry and `ImagesSidebarMenu`. Active route is detected via `usePathname()` — no secondary page sidebar, no fake routes, no client-state tab switching.
 
 **Modal**
 

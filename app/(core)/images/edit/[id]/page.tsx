@@ -7,7 +7,8 @@ import EditByIdClient from "./EditByIdClient";
  * truth — refresh-safe, share-safe, version-history-safe. Any path that
  * lands here without an id renders the landing page at /images/edit.
  *
- * Header + outer chrome are owned by `app/(a)/images/layout.tsx`.
+ * Header + outer chrome are owned by `app/(core)/images/layout.tsx` and the
+ * shared shell route menu.
  */
 
 interface PageProps {

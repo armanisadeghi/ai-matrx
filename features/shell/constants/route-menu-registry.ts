@@ -11,6 +11,9 @@
 //
 // Menu component receives:  { expanded: boolean }
 // Header component receives: { expanded: boolean }
+// Large route families own one menu here. Route pages must not recreate a
+// competing page-local sidebar; sub-view choices belong in one shared header
+// RouteModeNav.
 
 import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent-run-route";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
@@ -60,5 +63,12 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     label: "Marketing",
     importFn: () =>
       import("@/features/marketing/components/shell/MarketingSidebarMenu"),
+  },
+  {
+    pathPattern: /^\/images(?:\/|$)/,
+    iconName: "Images",
+    label: "Images",
+    importFn: () =>
+      import("@/app/(core)/images/_components/ImagesSidebarMenu"),
   },
 ];

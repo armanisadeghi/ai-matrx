@@ -11,8 +11,8 @@ import { ALL_PRESETS, PRESET_CATEGORIES } from "@/features/image-studio/presets"
  * this page apart from the Next.js link runtime.
  *
  * Route chrome (title, back-to-Studio, cross-links) lives in the shared
- * `/images` shell (`ImagesListHeader` in the header, `ImagesSidebar` for
- * navigation) — no in-body header bar here.
+ * `/images` shell (`ImagesListHeader` in the header and the shared shell route
+ * menu for navigation) — no in-body header bar here.
  */
 export default function PresetsPage() {
     const totalPresets = ALL_PRESETS.length;

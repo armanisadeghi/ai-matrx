@@ -577,7 +577,7 @@ function TaskRow({
       onClick={onSelect}
       data-task-row-id={task.id}
       className={cn(
-        "group flex items-start gap-2.5 px-3 py-2 cursor-pointer transition-colors relative",
+        "group flex items-start gap-1.5 px-3 py-2 cursor-pointer transition-colors relative",
         isSelected ? "bg-primary/[0.08]" : "hover:bg-accent/40",
       )}
     >
@@ -605,7 +605,7 @@ function TaskRow({
           e.stopPropagation();
           onToggle();
         }}
-        className="mt-0.5 h-7 w-7 text-muted-foreground/70 hover:text-primary shrink-0"
+        className="mt-0.5 h-6 w-6 text-muted-foreground/70 hover:text-primary shrink-0"
         title={task.completed ? "Mark incomplete" : "Mark complete"}
         aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
       >

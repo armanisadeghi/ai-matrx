@@ -22,8 +22,8 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
  * Pure Server Component. No client JS ships from this route.
  *
  * Route chrome (title, back-to-Studio, cross-links) lives in the shared
- * `/images` shell (`ImagesListHeader` in the header, `ImagesSidebar` for
- * navigation) — no in-body header bar here.
+ * `/images` shell (`ImagesListHeader` in the header and the shared shell route
+ * menu for navigation) — no in-body header bar here.
  */
 export default function LibraryPage() {
   const libraryPath = CloudFolders.IMAGES_GENERATED;

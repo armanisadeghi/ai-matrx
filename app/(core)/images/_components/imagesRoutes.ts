@@ -20,7 +20,7 @@ import {
  * Single source of truth for every `/images/*` route.
  *
  * Consumed by:
- *   - <ImagesSidebar/> (active-route detection, nav rendering)
+ *   - the shell <ImagesSidebarMenu/> (active-route detection, nav rendering)
  *   - Group landings (manager / studio) that render their own children
  *
  * Group order is render order. Within a group, the landing entry comes first.

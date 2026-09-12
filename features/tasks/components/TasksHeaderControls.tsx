@@ -29,7 +29,7 @@ export function TasksHeaderControls() {
   const listCollapsed = isCollapsed("list");
 
   return (
-    <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
+    <div className="flex items-center w-full min-w-0 gap-2 p-0 space-x-0 space-y-0">
       {/* Toggles only apply when the resizable panels are mounted (>= md).
           Below md the route renders <MobileTasksView/>, so the toggles are
           hidden — they would otherwise be no-ops in the shell header. */}
@@ -49,12 +49,12 @@ export function TasksHeaderControls() {
           />
         ) : null}
       </div>
-      <h1 className="ml-0 md:ml-2 text-sm font-medium text-foreground truncate">
+      <h1 className="ml-0 md:ml-2 shrink-0 text-sm font-medium text-foreground truncate">
         Tasks
       </h1>
       {/* Page-layer assist chips (overdue pileup) — renders nothing when
           there are none, so the header stays exactly as before. */}
-      <TasksAssistStrip className="ml-3 min-w-0 flex-nowrap overflow-hidden" />
+      <TasksAssistStrip className="ml-1 min-w-0 flex-nowrap overflow-hidden" />
       {/* THE DOOR LAW — the agent that triages tasks is a Mandate
           (`tasks.triage`) the user may swap for their own, with no deploy.
           Deep-linked to the `tasks` domain: the bare list is 264 mandates
@@ -63,7 +63,9 @@ export function TasksHeaderControls() {
           is a DOOR to /hr/tasks. HR does NOT build a second task store, so
           nothing is injected into the list; it renders nothing at all when
           there is no HR standing or nothing waiting. */}
-      <HrTasksDoor />
+      <span className="ml-1 shrink-0">
+        <HrTasksDoor />
+      </span>
       <MandateDoorLink feature="tasks" label="Task agents" className="ml-auto" />
     </div>
   );

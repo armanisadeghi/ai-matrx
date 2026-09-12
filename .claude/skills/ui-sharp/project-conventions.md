@@ -11,6 +11,12 @@ This skill extends the **official Next.js best practices guide**. Read that firs
 2. What needs migration to best practices
 3. Project-specific conventions
 
+> **Shared UI surface rules:** The platform-wide rules for one coherent control, icon/title
+> rows, shared route navigation, intentional spacing, tap targets, and live responsive
+> certification live in [common-docs/policies/ui-surface-rules.md](/policies/ui-surface-rules.md).
+> Read and apply that policy before changing any page or shared UI primitive; this file
+> supplies the frontend-specific mechanics and migration notes.
+
 > **📱 For mobile-specific guidelines:** See `.claude/skills/ios-mobile-first/SKILL.md`
 > 
 > The ios-mobile-first skill covers viewport units, safe areas, touch targets, responsive patterns, and iOS-native UX. Use that skill for all mobile layout and interaction work.

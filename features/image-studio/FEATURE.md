@@ -6,7 +6,7 @@ Four modes, one feature: **Convert** (resize to platform presets), **Edit** (ful
 
 ## Routes
 
-> **Migration note (2026-05-06):** Routes moved from `/image-studio/*` to flat siblings under `/images/*`. The `(tools)` route group and the in-route `<ImageStudioHeader>` are gone — chrome is now a single shared sidebar at `app/(a)/images/_components/ImagesSidebar.tsx` driven by `usePathname()`. Tool internals (`page.tsx` + `<Tool>ShellClient.tsx` + dynamic mode shell) are unchanged.
+> **Migration note (2026-05-06):** Routes moved from `/image-studio/*` to flat siblings under `/images/*`. The `(tools)` route group and the in-route `<ImageStudioHeader>` are gone — chrome is now the shared shell route menu (`ImagesSidebarMenu`) driven by `usePathname()`. Tool internals (`page.tsx` + `<Tool>ShellClient.tsx` + dynamic mode shell) are unchanged.
 
 | Route                 | Type                            | Purpose                                                                                                                                                                                                    |
 | --------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,7 +40,7 @@ app/(core)/images/                 (route shell — see image-manager FEATURE.md
 ├── layout.tsx                     CloudFilesRealtimeProvider + BrowseImageProvider + sidebar
 ├── _components/
 │   ├── imagesRoutes.ts            registry — { path, label, Icon, group }
-│   ├── ImagesSidebar.tsx          shared sidebar, active item via usePathname()
+│   ├── ImagesSidebarMenu.tsx      shared shell menu, active item via usePathname()
 │   ├── ImagesLandingHero.tsx
 │   └── ManagerLandingHero.tsx
 ├── studio/page.tsx                renders <StudioLandingHero/>

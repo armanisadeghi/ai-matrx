@@ -295,7 +295,7 @@ function CompactTaskItemCard({
   onToggleComplete: () => void;
 }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-1.5">
       <TaskCheckbox
         checked={task.completed}
         onToggleComplete={onToggleComplete}
