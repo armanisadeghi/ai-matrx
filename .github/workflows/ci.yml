@@ -145,6 +145,20 @@ jobs:
         # that runs. `pnpm check:parse --fix` repairs the injected-import
         # class; `pnpm check:parse:self-test` proves it can still fail.
         run: pnpm check:parse
+      - name: THE SHARED-CHECKOUT INSTALL GATE — it must run before pnpm links
+        # 2026-09-12, three times: a `pnpm install` in the shared checkout
+        # relinked @ai-matrx/design-system under the live :3001 preview, which
+        # died with `RangeError: Invalid string length` and took every agent's
+        # session with it. The first guard was a root "preinstall" script and it
+        # NEVER held: pnpm runs the root project's lifecycle scripts AFTER
+        # linking, and not at all for `pnpm add` / `pnpm remove` /
+        # `--ignore-scripts`. The gate now loads from `.pnpmfile.cjs`. This
+        # self-test runs REAL pnpm in a throwaway checkout and proves both
+        # halves: the retired wiring leaving node_modules fully linked despite
+        # refusing, and the shipped wiring refusing with nothing linked. It also
+        # proves two concurrent installs serialise and that the preview
+        # announces a node_modules change instead of dying silently.
+        run: pnpm check:install-gate:self-test
       - name: the parse guard can still fail (self-test)
         # A guard you cannot demonstrate failing is not a guard. This plants
         # the exact 2026-09-07 shape and asserts the detector reports it, that

@@ -69,6 +69,46 @@ mtime() {
   stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
 }
 
+# node_modules fingerprint. The 2026-09-12 preview deaths all had the same
+# invisible cause: an install relinked node_modules under the running server
+# and the server died minutes later with a stack that said nothing about it.
+# The server must name its own killer, so we stamp a fingerprint at start and
+# re-read it when the process dies. Cheap on purpose — three stat calls, not a
+# tree walk: `.modules.yaml` is rewritten by every pnpm install, and the native
+# swc binary is the file whose disappearance produced the module-not-found
+# storm in the first place.
+nm_fingerprint() {
+  local nm="$REPO_ROOT/node_modules"
+  local parts=""
+  local target
+  for target in "$nm/.modules.yaml" "$nm/@next/swc-darwin-arm64" "$nm/.pnpm"; do
+    parts+="$(stat -f '%i:%m:%z' "$target" 2>/dev/null || stat -c '%i:%Y:%s' "$target" 2>/dev/null || echo 'missing')|"
+  done
+  printf '%s\n' "$parts"
+}
+
+# Called when the server process is gone. If node_modules moved underneath it,
+# say so in the log, in the lease file, and in `pnpm preview:status` — one line,
+# in plain words, naming the cause instead of leaving a RangeError stack.
+announce_node_modules_change() {
+  local expected_pid="$1" recorded current when
+  # A deliberate `pnpm preview:stop` removes the lease first; only an
+  # unexplained death still has one.
+  [[ -f "$META" ]] || return 0
+  [[ "$(meta_value PID)" == "$expected_pid" ]] || return 0
+  recorded="$(meta_value NM_FINGERPRINT)"
+  [[ -n "$recorded" ]] || return 0
+  current="$(nm_fingerprint)"
+  [[ "$current" != "$recorded" ]] || return 0
+
+  when="$(date '+%Y-%m-%d %H:%M:%S')"
+  local line="node_modules changed under the running server at $when — an install ran while the preview was live"
+  printf '[preview] %s\n' "$line" >>"$LOG"
+  printf '[preview] That is what killed this server. Whoever installs next: pnpm preview:stop first.\n' >>"$LOG"
+  printf 'NODE_MODULES_CHANGED=%s\n' "$line" >>"$META"
+  printf '%s\n' "$line" >"$FAILED"
+}
+
 report_previous_failure() {
   [[ -f "$FAILED" ]] || return 0
   printf '\n' >&2
@@ -242,6 +282,7 @@ PY
     echo "LOG=$LOG"
     echo "ROOT=$REPO_ROOT"
     echo "MAX_RSS_GB=$MAX_RSS_GB"
+    echo "NM_FINGERPRINT=$(nm_fingerprint)"
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
 
@@ -372,6 +413,9 @@ cmd_monitor() {
     fi
     sleep 2
   done
+
+  # The loop only ends when the process is gone and no watchdog limit fired.
+  announce_node_modules_change "$expected_pid"
 }
 
 cmd_status() {
@@ -382,6 +426,9 @@ cmd_status() {
     rss_kb="$(group_rss_kb "$pid")"
     log "RUNNING pid=$pid port=$port rss=$(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }')GB owner=$owner"
     [[ "$owner" == "$REPO_ROOT" ]] || log "LEASE OCCUPIED — this checkout does not own that preview"
+    local changed
+    changed="$(meta_value NODE_MODULES_CHANGED)"
+    [[ -z "$changed" ]] || log "$changed"
     return 0
   fi
   local running pid port owner
