@@ -18,7 +18,7 @@ import {
     type QrEcLevel,
 } from "@ai-matrx/print/qr";
 import { Button } from "@/components/ui/button";
-import { Field, SectionShell, StatusChip, byteLength, controlClass, svgToImgSrc } from "./shared";
+import { Field, SectionShell, StatusChip, byteLength, controlClass, svgToImgSrc } from "@/features/print/components/shared";
 import { SAMPLE_CODE, SAMPLE_GTIN, SAMPLE_ORIGIN } from "./sample-data";
 
 const EC_LEVELS: QrEcLevel[] = ["L", "M", "Q", "H"];

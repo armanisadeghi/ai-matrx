@@ -7,7 +7,7 @@
  *
  * Entry: `@ai-matrx/print/education` (+ the real `PrintOptionsDialog`, so the
  * variant picker and every declared setting are the package's own, not a
- * studio re-implementation).
+ * re-implementation here).
  *
  * ONE content source → MANY layouts chosen at print time: switching the
  * sub-pick below changes the printer, never the data.
@@ -21,7 +21,7 @@ import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
-import { SectionShell, StatusChip, announcePrintOutcome } from "./shared";
+import { SectionShell, StatusChip, announcePrintOutcome } from "@/features/print/components/shared";
 import { SAMPLE_CHEAT_SHEET, SAMPLE_GLOSSARY, SAMPLE_STUDY_CALENDAR } from "./sample-data";
 
 type ArtifactId = "cheat-sheet" | "glossary" | "study-calendar";

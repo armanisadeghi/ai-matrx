@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Print Studio — shared presentational primitives.
+ * Print hub — shared presentational primitives.
  *
- * Deliberately tiny: every section on the studio page needs the same shell
+ * Deliberately tiny: every print section page needs the same shell
  * (title + the npm entry it exercises + a dense body), the same status chip
  * vocabulary, and the same field wrapper. Nothing here knows anything about
  * printing.
@@ -15,15 +15,15 @@ import type { PrintOutcome } from "@ai-matrx/print/core";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 
-export type StudioTone = "ok" | "warn" | "info";
+export type SectionTone = "ok" | "warn" | "info";
 
-const TONE_CLASS: Record<StudioTone, string> = {
+const TONE_CLASS: Record<SectionTone, string> = {
     ok: "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-400",
     warn: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
     info: "border-border bg-muted text-muted-foreground",
 };
 
-const TONE_ICON: Record<StudioTone, typeof Info> = {
+const TONE_ICON: Record<SectionTone, typeof Info> = {
     ok: CheckCircle2,
     warn: AlertTriangle,
     info: Info,
@@ -34,7 +34,7 @@ export function StatusChip({
     children,
     className,
 }: {
-    tone: StudioTone;
+    tone: SectionTone;
     children: ReactNode;
     className?: string;
 }) {
@@ -107,7 +107,7 @@ export const controlClass =
     "h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 /**
- * The studio's ONE print-outcome announcement.
+ * The print hub's ONE print-outcome announcement.
  *
  * Every printer in the package may resolve to a `PrintOutcome`: `"opened"` when
  * a print window went up, `"downloaded"` when the popup was blocked and the

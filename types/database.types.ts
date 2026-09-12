@@ -62191,9 +62191,11 @@ export type Database = {
       heal_reachability_drift: { Args: never; Returns: Json }
       knob_index: {
         Args: {
+          p_device_id?: string
           p_feature_prefix?: string
           p_organization_id: string
           p_overridden_only?: boolean
+          p_scopes?: Json
           p_user_id?: string
         }
         Returns: Json
@@ -62438,6 +62440,15 @@ export type Database = {
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
         Returns: Json
+      }
+      protect_from_client_hard_delete: {
+        Args: {
+          p_noun: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: undefined
       }
       purpose_for_unit: {
         Args: { p_position?: number; p_unit_id: string; p_unit_type: string }
@@ -64169,6 +64180,15 @@ export type Database = {
       }
     }
     Functions: {
+      __client_hard_delete_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       __ddl_guard_unacked: {
         Args: never
         Returns: {

@@ -7,7 +7,7 @@
  *
  * The four variants each print on their own button rather than through one
  * dialog, because THE ANSWER-SEPARATION LAW is the point of this entry — the
- * units are deliberately separate documents, and a studio that hid them behind
+ * units are deliberately separate documents, and a surface that hid them behind
  * a single picker would misrepresent the capability.
  */
 
@@ -17,7 +17,7 @@ import type { PrintSettings } from "@ai-matrx/print/core";
 import { BUBBLE_SHEET_GEOMETRY, practiceTestPrinter, type PracticeTestVariant } from "@ai-matrx/print/exam";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { Field, SectionShell, StatusChip, announcePrintOutcome, controlClass } from "./shared";
+import { Field, SectionShell, StatusChip, announcePrintOutcome, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_PRACTICE_TEST } from "./sample-data";
 
 const VARIANT_ICON: Record<PracticeTestVariant, typeof Printer> = {

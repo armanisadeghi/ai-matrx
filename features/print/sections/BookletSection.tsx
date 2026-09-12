@@ -10,18 +10,18 @@ import { BookOpen } from "lucide-react";
 import { bookletSizeWarning, imposeBooklet, printBooklet } from "@ai-matrx/print/booklet";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { Field, SectionShell, StatusChip, controlClass } from "./shared";
+import { Field, SectionShell, StatusChip, controlClass } from "@/features/print/components/shared";
 
 const PAGE_STYLES = `
-  .studio-page { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; font-family: Georgia, "Times New Roman", serif; }
-  .studio-page h1 { font-size: 40pt; margin: 0 0 12pt; }
-  .studio-page p { font-size: 11pt; color: #444; margin: 0; }
+  .booklet-page { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; font-family: Georgia, "Times New Roman", serif; }
+  .booklet-page h1 { font-size: 40pt; margin: 0 0 12pt; }
+  .booklet-page p { font-size: 11pt; color: #444; margin: 0; }
 `;
 
 function samplePages(count: number): string[] {
     return Array.from({ length: count }, (_, i) => {
         const n = i + 1;
-        return `<div class="studio-page"><h1>${n}</h1><p>Sample booklet page ${n} of ${count}</p></div>`;
+        return `<div class="booklet-page"><h1>${n}</h1><p>Sample booklet page ${n} of ${count}</p></div>`;
     });
 }
 

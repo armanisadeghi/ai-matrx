@@ -13,7 +13,7 @@ import {
     normalizeBarcodeValue,
     type BarcodeSymbology,
 } from "@ai-matrx/print/barcode";
-import { Field, SectionShell, StatusChip, controlClass, svgToImgSrc } from "./shared";
+import { Field, SectionShell, StatusChip, controlClass, svgToImgSrc } from "@/features/print/components/shared";
 
 const SYMBOLOGIES: { id: BarcodeSymbology; label: string; hint: string; sample: string }[] = [
     {

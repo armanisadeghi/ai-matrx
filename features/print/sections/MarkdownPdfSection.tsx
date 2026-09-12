@@ -10,7 +10,7 @@ import { useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { SectionShell, StatusChip } from "./shared";
+import { SectionShell, StatusChip } from "@/features/print/components/shared";
 import { SAMPLE_MARKDOWN } from "./sample-data";
 
 export function MarkdownPdfSection() {
@@ -33,7 +33,7 @@ export function MarkdownPdfSection() {
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement("a");
             anchor.href = url;
-            anchor.download = "print-studio-report.pdf";
+            anchor.download = "document.pdf";
             document.body.appendChild(anchor);
             anchor.click();
             anchor.remove();

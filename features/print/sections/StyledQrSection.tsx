@@ -16,7 +16,7 @@ import {
     type StyledQrEcLevel,
 } from "@ai-matrx/print/qr-styled";
 import { Button } from "@/components/ui/button";
-import { Field, SectionShell, StatusChip, controlClass, svgToImgSrc } from "./shared";
+import { Field, SectionShell, StatusChip, controlClass, svgToImgSrc } from "@/features/print/components/shared";
 import { SAMPLE_CODE, SAMPLE_ORIGIN } from "./sample-data";
 
 const DOT_STYLES: StyledQrDotStyle[] = ["square", "dots", "rounded", "classy", "extra-rounded"];
