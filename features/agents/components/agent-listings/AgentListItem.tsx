@@ -167,12 +167,15 @@ export function AgentListItem({
     }
   };
 
-  const handleDelete = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (onDelete) {
-      onDelete(id, name);
-    }
-  };
+  // A control is absent or honest, never dead (law 4). When no `onDelete` is
+  // wired this stays `undefined`, so both the menu entry below and
+  // `AgentActionModal` drop Delete instead of showing a click that does nothing.
+  const handleDelete = onDelete
+    ? (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        onDelete(id, name);
+      }
+    : undefined;
 
   const handleConvertToTemplate = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -323,20 +326,24 @@ export function AgentListItem({
                 Edit Details
               </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
+              {handleDelete && (
+                <>
+                  <DropdownMenuSeparator />
 
-              <DropdownMenuItem
-                onClick={handleDelete}
-                disabled={isDeleting || isDisabled}
-                className="text-destructive focus:text-destructive"
-              >
-                {isDeleting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-2 h-4 w-4" />
-                )}
-                {isDeleting ? "Deleting..." : "Delete"}
-              </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDelete}
+                    disabled={isDeleting || isDisabled}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </DropdownMenuItem>
+                </>
+              )}
 
               {isSystemAdmin && (
                 <>

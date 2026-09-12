@@ -25,6 +25,7 @@ import {
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { buildAgentMenu } from "./agentActionRegistry";
@@ -218,13 +219,8 @@ export function useAgentRowActions({
 
   const remove = useCallback(
     async (agent: AgentBrowseRow) => {
-      const ok = await confirm({
-        title: `Delete "${agent.name}"?`,
-        description:
-          "This permanently removes the agent and its versions. This cannot be undone.",
-        variant: "destructive",
-        confirmLabel: "Delete",
-      });
+      // Honest copy for a SOFT delete, built once for every agent surface.
+      const ok = await confirm(buildAgentDeleteConfirm(agent.name));
       if (!ok) return;
       setIsDeleting(true);
       try {

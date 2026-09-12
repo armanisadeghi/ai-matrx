@@ -26,16 +26,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -126,11 +118,6 @@ export function AgentsGrid() {
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [agentToDelete, setAgentToDelete] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const catalog = useAgentCatalog();
@@ -292,20 +279,16 @@ export function AgentsGrid() {
   }, [isMobile, hasMoreShared, loadMoreShared, sharedSentinel]);
 
   // Handlers
-  const handleDeleteClick = (id: string, name: string) => {
-    setAgentToDelete({ id, name });
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!agentToDelete) return;
-    const { id } = agentToDelete;
+  // ONE confirm path for the gallery: the shared honest copy for a soft delete,
+  // shown through the global `confirm()` host rather than a second hand-rolled
+  // AlertDialog that has to be kept in sync by hand.
+  const handleDeleteClick = async (id: string, name: string) => {
+    const ok = await confirm(buildAgentDeleteConfirm(name));
+    if (!ok) return;
     setDeletingIds((prev) => new Set(prev).add(id));
-    setDeleteDialogOpen(false);
-    setAgentToDelete(null);
     try {
       await dispatch(deleteAgent(id)).unwrap();
-      toast.success("Agent deleted.");
+      toast.success(`Deleted "${name}" — nothing runs it now.`);
     } catch {
       toast.error("Failed to delete agent.");
     } finally {
@@ -1450,36 +1433,6 @@ export function AgentsGrid() {
         </BottomSheetBody>
       </BottomSheet>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">
-              Delete Agent
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{agentToDelete?.name}
-              &rdquo;? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setDeleteDialogOpen(false);
-                setAgentToDelete(null);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Delete Agent
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </SurfaceRuntimeProvider>
   );
 }

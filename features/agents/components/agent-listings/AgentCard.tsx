@@ -121,11 +121,15 @@ export function AgentCard({
     }
   };
 
-  const handleDelete = () => {
-    if (onDelete) {
-      onDelete(id, name);
-    }
-  };
+  // A control is absent or honest, never dead (law 4). `AgentActionModal` only
+  // renders Delete when it is handed a handler, so this must be `undefined`
+  // when no `onDelete` was wired — handing it an always-defined wrapper that
+  // silently does nothing is the dead control we are forbidding.
+  const handleDelete = onDelete
+    ? () => {
+        onDelete(id, name);
+      }
+    : undefined;
 
   const handleShareClick = () => {
     setIsActionModalOpen(false);
@@ -452,23 +456,27 @@ export function AgentCard({
                 })}
               />
             )}
-            <IconButton
-              icon={isDeleting ? Loader2 : Trash2}
-              tooltip={
-                isDeleting
-                  ? "Deleting..."
-                  : isDisabled
-                    ? "Please wait..."
-                    : "Delete"
-              }
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              onClick={handleDelete}
-              disabled={isDeleting || isDisabled}
-              iconClassName={isDeleting ? "animate-spin" : ""}
-            />
+            {/* Absent, never dead: a host that wires no `onDelete` gets no
+                Delete button at all rather than one that swallows the click. */}
+            {handleDelete && (
+              <IconButton
+                icon={isDeleting ? Loader2 : Trash2}
+                tooltip={
+                  isDeleting
+                    ? "Deleting..."
+                    : isDisabled
+                      ? "Please wait..."
+                      : "Delete"
+                }
+                size="sm"
+                variant="ghost"
+                tooltipSide="top"
+                tooltipAlign="center"
+                onClick={handleDelete}
+                disabled={isDeleting || isDisabled}
+                iconClassName={isDeleting ? "animate-spin" : ""}
+              />
+            )}
           </div>
         </div>
       </div>
