@@ -492,7 +492,16 @@ async function runBatch(
                 note: `the parity page for this batch never finished loading at ${ORIGIN}`,
             }));
         }
-        let settled = await settle(page, 25000);
+        // THE SETTLE BUDGET, and why it is this big (S5b). Each frame is now
+        // as wide as the READER'S window (THE READER'S VIEWPORT in
+        // sandbox/protocol.ts), so a batch of four lays out four
+        // viewport-wide documents before any of them reports a height. At the
+        // old 25 s + 15 s, two or three batches a run came back "did not
+        // settle" with the iframe still at its initial 200 px — and a
+        // different two or three each time, which is how a flake looks. Those
+        // are non-renders, not parity failures, and a sweep that reports them
+        // as differences is lying about the product.
+        let settled = await settle(page, 60000);
         if (!settled) {
             // Last resort for a very tall batch: put each silent frame at the
             // top of the viewport so its rAF runs, then wait again.
@@ -501,7 +510,7 @@ async function runBatch(
                     "Object.values(window.__PARITY__ || {}).filter(r => !r.heights.length).forEach(r => { var f = document.querySelector('#on-' + r.index + ' iframe'); if (f) f.scrollIntoView(); })",
                 )
                 .catch(() => undefined);
-            settled = await settle(page, 15000);
+            settled = await settle(page, 40000);
             await page.evaluate("window.scrollTo(0, 0)").catch(() => undefined);
         }
         // One more frame for the host to apply the last reported height.
