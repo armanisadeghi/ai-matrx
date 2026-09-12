@@ -402,6 +402,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 
 ## Change Log
 
+- `2026-09-12` — **Opening a context menu cannot run its first hovered command.** `ContextMenuV3` consumes only secondary-button `pointerup` in the shared desktop content before Radix can synthesize an item click from an opener release that lands on the newly portalized menu. `ContextMenuV3.secondary-release.test.tsx` proves that release does not select while the normal primary click sequence still selects once.
+
 - 2026-09-11 — **Reference picks survive transient menus and controlled fields.** The overlay, not the opening menu, now owns the picker callback lifetime, so closing the mobile sheet cannot unregister the still-visible picker; `openers/referencePicker.test.tsx` reproduces that lifecycle. Reference fences and content blocks also send the complete next value through `onTextReplace` when a React-controlled field supplies it, while direct DOM insertion remains the fallback for uncontrolled fields (`utils/text-insertion.test.ts`). Together these close the live `/notes` no-op where choosing a reference dismissed the picker but left the note unchanged.
 
 - 2026-09-11 — **Mobile core verbs are parity-guarded after the reference omission.** `MobileMenuContent` now carries Insert/Copy reference, Speak, Listen, and the canonical `chat` id. `components/MobileMenuContent.core-verbs.test.ts` fails whenever a core verb in `menu-model.ts` is absent from the separately arranged mobile root list. The broader model/rendering consolidation remains future work; the doc no longer claims the hand-built mobile arrangement cannot drift.
