@@ -870,7 +870,7 @@ export default function FeedbackTable() {
           )}
           {/* Pipeline Stage Selector */}
           <div className="mb-4">
-            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg overflow-x-auto overscroll-x-contain [scrollbar-width:none]">
               {pipelineStages.map((stage, index) => {
                 // Every number on this bar is derived from `feedback`, so after
                 // a failed read they are claims about a cache, not the queue —
@@ -908,7 +908,7 @@ export default function FeedbackTable() {
                         }
                       }}
                       className={cn(
-                        "relative flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all flex-1 justify-center",
+                        "relative flex shrink-0 items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all sm:flex-1 justify-center",
                         isActive
                           ? stage.activeColor
                           : "hover:bg-muted text-muted-foreground hover:text-foreground",
@@ -955,7 +955,7 @@ export default function FeedbackTable() {
                   setSortDirection("desc");
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all",
+                  "flex shrink-0 items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all",
                   activeStage === "all"
                     ? "bg-foreground text-background"
                     : "hover:bg-muted text-muted-foreground hover:text-foreground",
@@ -978,8 +978,8 @@ export default function FeedbackTable() {
           </div>
 
           {/* Search + Filter Toggle */}
-          <div className="flex gap-3 mb-3">
-            <div className="flex-1 relative">
+          <div className="flex flex-wrap gap-2 sm:gap-3 mb-3">
+            <div className="relative min-w-0 flex-1 basis-full sm:basis-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search description, user, or route..."
@@ -1366,7 +1366,10 @@ export default function FeedbackTable() {
 
           {/* Table */}
           <div className="border rounded-lg">
-            <Table>
+            {/* Below 768px this table reflows into a card list (THE PHONE-STACK
+                TABLE, app/globals.css): the description leads, the chips sit
+                inline, the actions sit last. Desktop is untouched. */}
+            <Table wrapperClassName="phone-stack">
               <TableHeader>
                 <TableRow className="bg-muted/30">
                   <TableHead className="w-[90px]">
@@ -1545,7 +1548,7 @@ export default function FeedbackTable() {
                         )}
                         onClick={() => handleViewDetails(item)}
                       >
-                        <TableCell>
+                        <TableCell data-phone="inline">
                           <div
                             className={cn(
                               "flex flex-col gap-0.5",
@@ -1590,7 +1593,7 @@ export default function FeedbackTable() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-label="Priority" data-phone="inline">
                           <div className="text-sm font-medium">
                             {item.work_priority !== null ? (
                               <span className="text-foreground/80">
@@ -1601,7 +1604,7 @@ export default function FeedbackTable() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-phone="inline">
                           <div className="flex items-center gap-1.5">
                             {feedbackTypeIcons[item.feedback_type]}
                             <span className="text-xs font-medium capitalize">
@@ -1609,7 +1612,7 @@ export default function FeedbackTable() {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-phone="inline">
                           <div className="flex items-center gap-1.5">
                             <Select
                               value={item.status}
@@ -1681,7 +1684,10 @@ export default function FeedbackTable() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell
+                          data-phone="inline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {item.category_id ? (
                             (() => {
                               const categoryId = item.category_id;
@@ -1731,7 +1737,7 @@ export default function FeedbackTable() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-phone="lead">
                           <div className="flex items-start gap-2">
                             <div className="flex-1 min-w-0">
                               <p className="line-clamp-2 text-sm">
@@ -1764,7 +1770,7 @@ export default function FeedbackTable() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-label="Decision" data-phone="inline">
                           <div className="flex items-center gap-2">
                             <Badge
                               className={`${decisionColors.bg} ${decisionColors.text} border-0 text-xs`}
@@ -1789,6 +1795,8 @@ export default function FeedbackTable() {
                         </TableCell>
                         <TableCell
                           className="text-xs"
+                          data-label="User"
+                          data-phone="inline"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* The reporter is a real user — reach their admin
@@ -1799,7 +1807,11 @@ export default function FeedbackTable() {
                             hideEmail
                           />
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell
+                          data-label="Assignee"
+                          data-phone="inline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {item.assigned_to ? (
                             (() => {
                               const assignedTo = item.assigned_to;
@@ -1838,12 +1850,16 @@ export default function FeedbackTable() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell
+                          className="text-xs text-muted-foreground"
+                          data-label="Created"
+                          data-phone="inline"
+                        >
                           {formatDistanceToNow(new Date(item.created_at), {
                             addSuffix: true,
                           })}
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-phone="actions">
                           <div className="flex items-center gap-0.5">
                             <CopyButtons
                               size="xs"

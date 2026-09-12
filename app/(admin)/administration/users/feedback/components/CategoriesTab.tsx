@@ -291,7 +291,7 @@ export default function CategoriesTab() {
     return (
         <div className="space-y-4">
             <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'grouped' | 'manage')}>
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
                     <TabsList>
                         <TabsTrigger value="grouped" className="gap-1.5 text-xs">
                             <LayoutGrid className="w-3.5 h-3.5" />

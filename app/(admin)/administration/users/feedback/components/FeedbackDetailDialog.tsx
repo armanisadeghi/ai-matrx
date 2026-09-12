@@ -892,12 +892,17 @@ export default function FeedbackDetailDialog({
         onInteractOutside={(event) => event.preventDefault()}
       >
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+        {/* Phone: the title, its badges and the meta line WRAP; the copy
+            cluster drops to its own row under them (`basis-full`) instead of
+            squeezing the title into ~120px beside a 200px button group; and
+            the title row keeps clear of the sheet's absolute close control
+            (`pr-10`). Desktop geometry is unchanged from `sm:` up. */}
+        <div className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b flex-shrink-0">
           <DialogHeader>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-start gap-3 pr-10 sm:pr-0">
               {feedbackTypeIcons[item.feedback_type]}
-              <div className="flex-1">
-                <DialogTitle className="flex items-center gap-2">
+              <div className="min-w-0 flex-1 basis-0">
+                <DialogTitle className="flex flex-wrap items-center gap-2">
                   {feedbackTypeLabels[item.feedback_type]}
                   <Badge
                     className={`${statusColors.bg} ${statusColors.text} border-0 text-xs ml-2`}
@@ -919,7 +924,7 @@ export default function FeedbackDetailDialog({
                   )}
                 </DialogTitle>
                 <DialogDescription className="mt-1">
-                  <span className="flex items-center gap-4 text-xs">
+                  <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                     {/* Short id + copy + a real new-tab link to this record. */}
                     <MatrxUuidCell
                       value={item.id}
@@ -1002,7 +1007,7 @@ export default function FeedbackDetailDialog({
                   </span>
                 </DialogDescription>
               </div>
-              <div className="flex flex-shrink-0 items-center gap-1 self-start mr-6">
+              <div className="flex basis-full flex-shrink-0 items-center gap-1 self-start sm:basis-auto sm:mr-6">
                 <Button
                   variant="outline"
                   size="sm"
@@ -1092,8 +1097,10 @@ export default function FeedbackDetailDialog({
           onValueChange={setActiveTab}
           className="flex-1 flex flex-col min-h-0 overflow-hidden"
         >
-          <div className="px-6 pt-2 flex-shrink-0">
-            <TabsList className="w-full justify-start overflow-x-auto">
+          <div className="px-4 sm:px-6 pt-2 flex-shrink-0">
+            {/* Six triggers do not fit a phone: the strip scrolls sideways and
+                no trigger may shrink into an unreadable sliver. */}
+            <TabsList className="w-full justify-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&>*]:shrink-0">
               <TabsTrigger value="submission" className="gap-1.5 text-xs">
                 <MessageSquare className="w-3.5 h-3.5" />
                 Submission
@@ -1139,7 +1146,7 @@ export default function FeedbackDetailDialog({
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="px-6 py-4">
+            <div className="px-4 py-3 sm:px-6 sm:py-4">
               {/* SECTION 1: User Submission */}
               <TabsContent value="submission" className="mt-0 space-y-4">
                 {/* A Hindsight repo-file change proposal (D8) renders as a real
@@ -1160,8 +1167,9 @@ export default function FeedbackDetailDialog({
                   </div>
                 </div>
 
-                {/* Metadata Grid */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Metadata Grid — one column on a phone: the route is a
+                    monospace path that does not fit half of 390px. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg bg-muted/50 border">
                     <div className="text-xs text-muted-foreground mb-1">
                       Type
