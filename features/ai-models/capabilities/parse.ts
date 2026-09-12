@@ -166,6 +166,71 @@ export function parseCapabilities(
   };
 }
 
+/**
+ * The persistence/API boundary for `ai.model_definition.capabilities`.
+ *
+ * Unlike `parseCapabilities`, which is intentionally a resilient display
+ * reader, this refuses a corrupt or provider-shaped value. A Supabase JSONB
+ * column has no application vocabulary enforcement: accepting aliases here
+ * would make them durable and leak them back out through another reader.
+ */
+export function requireCanonicalCapabilities(
+  raw: unknown,
+  context?: CapabilitiesParseContext,
+): ModelCapabilities {
+  const location = context?.modelId
+    ? `ai.model_definition.${context.modelId}.capabilities`
+    : "ai.model_definition.capabilities";
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    throw new Error(`Invalid ${location}: expected a canonical capabilities object.`);
+  }
+
+  const value = raw as Record<string, unknown>;
+  for (const key of Object.keys(value)) {
+    if (!CANONICAL_CAPABILITY_KEYS.has(key)) {
+      throw new Error(`Invalid ${location}.${key}: unknown canonical capability key.`);
+    }
+  }
+
+  const requireMembers = <T extends string>(
+    field: "input" | "output" | "features",
+    guard: (entry: unknown) => entry is T,
+  ): T[] => {
+    const members = value[field];
+    if (!Array.isArray(members)) {
+      throw new Error(`Invalid ${location}.${field}: expected an array.`);
+    }
+    const canonical: T[] = [];
+    for (const member of members) {
+      if (!guard(member)) {
+        throw new Error(
+          `Invalid ${location}.${field}: unknown capability value ${JSON.stringify(member)}.`,
+        );
+      }
+      if (!canonical.includes(member)) canonical.push(member);
+    }
+    return canonical;
+  };
+
+  const input = requireMembers("input", isContentType);
+  const output = requireMembers("output", isContentType);
+  const features = requireMembers("features", isFeatureKey);
+  if (!isInteractionMode(value.interaction)) {
+    throw new Error(`Invalid ${location}.interaction: unknown interaction mode.`);
+  }
+  if (value.multilingual !== undefined && typeof value.multilingual !== "boolean") {
+    throw new Error(`Invalid ${location}.multilingual: expected a boolean.`);
+  }
+
+  return {
+    input: input.length > 0 ? input : ["text"],
+    output: output.length > 0 ? output : ["text"],
+    features,
+    interaction: value.interaction,
+    multilingual: value.multilingual ?? false,
+  };
+}
+
 // ─── Audit-system bridge: derive the flat boolean view ────────────────────
 
 /**
@@ -322,3 +387,58 @@ export type {
   InteractionMode,
   ModelCapabilities,
 } from "./types";
+
+// ─── Write-side guard for the raw-JSON capabilities editor ────────────────
+
+/**
+ * Every value in `raw` that is outside the canonical vocabulary, as
+ * human-readable lines. Empty array = the object is canonical.
+ *
+ * The admin detail panel writes `capabilities` straight to Supabase, so it
+ * does NOT pass the server's write guard
+ * (`matrx_ai/providers/capability_vocabulary.py`, which the agent `sql`/`db_*`
+ * tools and `scripts/set_model_capabilities.py` go through). This is that
+ * door's lock. It REFUSES rather than normalizes on purpose: the alias table
+ * lives server-side and forking it into the browser is how the vocabulary
+ * came apart in the first place. A hand-edit that means a real new capability
+ * belongs in BOTH vocabulary lists first.
+ */
+export function findNonCanonicalCapabilityValues(raw: unknown): string[] {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return [
+      "capabilities must be the canonical { input, output, features, interaction, multilingual } object",
+    ];
+  }
+  const obj = raw as Record<string, unknown>;
+  const problems: string[] = [];
+
+  for (const key of Object.keys(obj)) {
+    if (!CANONICAL_CAPABILITY_KEYS.has(key)) problems.push(`unknown key "${key}"`);
+  }
+
+  const scan = (
+    field: "input" | "output" | "features",
+    guard: (value: unknown) => boolean,
+  ) => {
+    const value = obj[field];
+    if (value === undefined) return;
+    if (!Array.isArray(value)) {
+      problems.push(`${field} must be an array of strings`);
+      return;
+    }
+    for (const member of value) {
+      if (!guard(member)) problems.push(`${field} value ${JSON.stringify(member)}`);
+    }
+  };
+  scan("input", isContentType);
+  scan("output", isContentType);
+  scan("features", isFeatureKey);
+
+  if (obj.interaction !== undefined && !isInteractionMode(obj.interaction)) {
+    problems.push(`interaction ${JSON.stringify(obj.interaction)}`);
+  }
+  if (obj.multilingual !== undefined && typeof obj.multilingual !== "boolean") {
+    problems.push("multilingual must be a boolean");
+  }
+  return problems;
+}

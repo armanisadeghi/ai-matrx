@@ -48,7 +48,7 @@ import type {
   ContentType,
   InteractionMode,
 } from "@/features/ai-models/capabilities/types";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
 import type { Database, Json } from "@/types/database.types";
 
 type ModelPublicRow = Database["ai"]["Views"]["model_public"]["Row"];
@@ -219,10 +219,8 @@ function asModalities(raw: unknown, allowed: Modality[]): Modality[] {
 }
 
 /**
- * Parse the raw `capabilities` JSON, preserving everything (no data loss).
- * Validation + unknown-value screaming is delegated to the canonical
- * `parseCapabilities`; the catalog additionally keeps the RAW feature strings
- * (grouped) for the detail card so nothing is ever hidden.
+ * Parse the raw `capabilities` JSON at the catalog's Supabase/RPC boundary.
+ * Provider-shaped aliases must never become picker data or cached UI state.
  */
 function parseCaps(
   raw: unknown,
@@ -234,20 +232,13 @@ function parseCaps(
   interaction: Interaction;
   multilingual: boolean;
 } {
-  const canonical = parseCapabilities(raw, context);
-  const obj =
-    typeof raw === "object" && raw !== null && !Array.isArray(raw)
-      ? (raw as Record<string, unknown>)
-      : {};
-  const rawFeatures = Array.isArray(obj.features)
-    ? obj.features.filter((f): f is string => typeof f === "string")
-    : [];
+  const canonical = requireCanonicalCapabilities(raw, context);
   return {
     // The picker filters on its deliberate UI subsets; membership is checked
     // against the canonical, already-validated modality lists.
     input: asModalities(canonical.input, INPUT_MODALITIES),
     output: asModalities(canonical.output, OUTPUT_MODALITIES),
-    features: groupFeatures(rawFeatures),
+    features: groupFeatures(canonical.features),
     interaction: canonical.interaction,
     multilingual: canonical.multilingual,
   };

@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import { extractErrorMessage } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
+import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
 // Minimal local state type — avoids importing RootState from store.ts (which
 // transitively imports this slice via reduxTypes → modelRegistrySlice),
 // breaking the type-level circular dependency.
@@ -207,7 +208,10 @@ export const fetchModelOptions = createAsyncThunk(
           cost_rating: r.cost_rating,
           speed_rating: r.speed_rating,
           is_primary: r.is_primary,
-          capabilities: r.capabilities,
+          capabilities: requireCanonicalCapabilities(r.capabilities, {
+            modelId: r.id,
+            modelName: r.name,
+          }),
           is_deprecated: r.is_deprecated,
           retired_at: r.retired_at,
           successor_id: r.successor_id,
@@ -346,7 +350,10 @@ export const fetchModelById = createAsyncThunk(
         is_primary: data.is_primary,
         context_window: data.context_window,
         max_tokens: data.max_tokens,
-        capabilities: data.capabilities,
+        capabilities: requireCanonicalCapabilities(data.capabilities, {
+          modelId: data.id,
+          modelName: data.name,
+        }),
         controls: data.controls,
         constraints: data.constraints,
         is_deprecated: data.is_deprecated,

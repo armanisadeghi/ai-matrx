@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database.types";
+import type { ModelCapabilities } from "./capabilities/types";
 
 // =============================================================================
 // Raw DB types — source of truth, never hand-edit
@@ -260,7 +261,7 @@ export type DocSource = {
 // live on ai.offering → ai.api; resolved controls/constraints come from the
 // `ai.model_config` view (registry slice full records), never the model row.
 export type AiModel = Omit<AiModelRow, "capabilities"> & {
-  capabilities: Record<string, unknown> | string[] | null;
+  capabilities: ModelCapabilities;
   /** Resolved brand/maker display name (`ai.provider.name` via the
    *  `provider_id` FK). NOT a stored column on the model row — the service /
    *  fetch layer attaches it. This replaced the dropped free-text `provider`
