@@ -217,6 +217,10 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-12** — The record read now admits every RLS-visible schedule kind.
+  `getAgentTask` selects by id plus the soft-delete boundary only and uses a
+  nullable agent extension, so `kind='ping'` rows no longer become false access
+  failures when no `sch_agent_task` row exists.
 - **2026-09-11** — **The door the alarm points at now opens, and acts.**
   `/schedules/<id>` refused every `kind='tool'` system schedule with the
   AccessGate ("You don't have access to this scheduled task"), so the banner and
