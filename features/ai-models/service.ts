@@ -1036,14 +1036,19 @@ export const aiModelService = {
   // ── Setting CRUD (ai.setting — canonical settings vocabulary) ──
 
   async fetchSettings(): Promise<AiSetting[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("setting")
-      .select("*")
-      .is("deleted_at", null)
-      .order("key", { ascending: true });
-    if (error) throw error;
-    return data.map(parseSetting);
+    const rows = await readAllRows<AiSettingRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("setting")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("key", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.setting" },
+    );
+    return rows.map(parseSetting);
   },
 
   async createSetting(payload: AiSettingInsert): Promise<AiSetting> {
