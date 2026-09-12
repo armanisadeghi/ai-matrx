@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const migration = resolve(process.cwd(), "scripts/migration-drafts/dd154_org_assignment_ddl_prevention.sql");
+const migration = resolve(process.cwd(), "migrations/dd154_org_assignment_ddl_prevention.sql");
 const required = [
   "CREATE TRIGGER",
   "p_org_default=true is forbidden",

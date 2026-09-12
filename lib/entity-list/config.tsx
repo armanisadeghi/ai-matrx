@@ -249,6 +249,18 @@ export interface EntityListConfig<TRow> {
   getRowEntity?: (row: TRow) => ContextMenuEntityRef | undefined;
   /** Surface-specific style defaults beyond version/hiddenColumns. */
   prefsDefaults?: Partial<ListViewPrefs>;
+  /**
+   * THE REGISTRY TOKEN whose `default_list_scope` decides where this list OPENS
+   * (DD-137c / VISIBILITY-BY-CLASS §3.3, the second axis).
+   *
+   * Declared here, once per surface, so the shell can read
+   * `platform.entity_types.default_list_scope` instead of every list starting
+   * on the literal `{ kind: "mine" }`. That literal is what four people in one
+   * organization met when each of them saw only their own SEO research — rows
+   * every one of them could read. The page's own `defaultScope` still wins, and
+   * the scope tabs still switch away from whatever this lands on.
+   */
+  registryToken?: string;
 
   /**
    * The surface's HONEST default narrowing — where an untouched page starts and

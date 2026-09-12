@@ -76,6 +76,14 @@ import { tryReadAllRowsRest } from "@ai-matrx/data/db";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
 const MIGRATIONS_DIR = resolve(ROOT, "migrations");
+const DD137B13_HISTORICAL_GATE = resolve(
+  MIGRATIONS_DIR,
+  "iam_component_regeneration_dd137b13_gate.sql",
+);
+const DD137B13_SOURCE_REPAIR = resolve(
+  ROOT,
+  "docs/db_changes/dd137b13_access_delta_gate_source_repair.sql",
+);
 const C = {
   reset: "\x1b[0m",
   bold: "\x1b[1m",
@@ -107,6 +115,136 @@ function skipReason(sql: string): string | null {
 
 function sha256(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
+}
+
+/** Remove non-executable SQL comments before validating proof structure. */
+function stripSqlComments(sql: string): string {
+  return sql
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/--[^\n\r]*/g, " ");
+}
+
+/**
+ * DD-137b13 was already ledgered before its unpinnable-baseline branch was found
+ * unsound. The historical file must stay byte-for-byte intact; this guard holds
+ * the corrected, non-runnable source record to the safety property instead.
+ *
+ * A policy-name/end-state check cannot establish an access delta, and deleting
+ * probes before the common gate turns an unmeasured pair into an absent pair.
+ * The only valid response to an unpinnable BEFORE run is to refuse and re-baseline
+ * before an authorized regeneration. Keep this source-only so a correction cannot
+ * quietly be mistaken for a live migration.
+ */
+function dd137b13SourceRepairErrorsFromText(repairSource: string): string[] {
+  const errors: string[] = [];
+  const rawRepair = repairSource.toLowerCase();
+  const repair = stripSqlComments(repairSource).toLowerCase();
+  const required = [
+    "where pr.run_id = v_before",
+    "access_delta_assert_no_widening(v_before, v_after)",
+  ];
+  if (!rawRepair.includes("do not apply this file as a migration")) {
+    errors.push(
+      "source repair is missing required proof clause: do not apply this file as a migration",
+    );
+  }
+  for (const text of required) {
+    if (!repair.includes(text)) errors.push(`source repair is missing required proof clause: ${text}`);
+  }
+  if (repair.includes("delete from iam.access_delta_probe")) {
+    errors.push("source repair deletes access-delta probes before the common gate");
+  }
+  if (repair.includes("from pg_policy") || repair.includes("polname = 'platform_admin_all'")) {
+    errors.push("source repair substitutes a platform_admin_all policy-name check for a per-principal delta");
+  }
+
+  const refusal = /if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then([\s\S]*?)end\s+if\s*;/i.exec(
+    repair,
+  );
+  if (!refusal) {
+    errors.push("source repair is missing the structural unpinnable-BEFORE refusal block");
+  } else {
+    if (!/raise\s+exception\b/i.test(refusal[1])) {
+      errors.push("unpinnable-BEFORE block does not raise an exception");
+    }
+    const assertionIndex = repair.indexOf("access_delta_assert_no_widening(v_before, v_after)");
+    if (assertionIndex < refusal.index + refusal[0].length) {
+      errors.push("full per-principal assertion must run only after the unpinnable-BEFORE refusal");
+    }
+  }
+
+  const unpinnedQuery = /from\s+iam\.access_delta_probe\s+pr[\s\S]*?where\s+pr\.run_id\s*=\s*v_before[\s\S]*?pr\.error_text\s+like\s+'note:\s*no\s+created_at%'/i;
+  if (!unpinnedQuery.test(repair)) {
+    errors.push("source repair does not derive unpinnable tokens from the exact BEFORE snapshot");
+  }
+  return errors;
+}
+
+function dd137b13SourceRepairErrors(): string[] {
+  const errors: string[] = [];
+  if (!existsSync(DD137B13_HISTORICAL_GATE)) {
+    errors.push("the applied DD-137b13 historical gate is missing");
+  }
+  if (!existsSync(DD137B13_SOURCE_REPAIR)) {
+    errors.push("the DD-137b13 source-record repair SQL is missing");
+    return errors;
+  }
+  return errors.concat(
+    dd137b13SourceRepairErrorsFromText(readFileSync(DD137B13_SOURCE_REPAIR, "utf8")),
+  );
+}
+
+function runDd137b13SelfTest(): number {
+  const source = readFileSync(DD137B13_SOURCE_REPAIR, "utf8");
+  const cases = [
+    {
+      name: "missing refusal block",
+      sql: source.replace(
+        /if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then[\s\S]*?end\s+if\s*;/i,
+        "",
+      ),
+      finding: "structural unpinnable-BEFORE refusal block",
+    },
+    {
+      name: "refusal block commented out",
+      sql: source.replace(
+        /if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then[\s\S]*?end\s+if\s*;/i,
+        (block) => block.split("\n").map((line) => `-- ${line}`).join("\n"),
+      ),
+      finding: "structural unpinnable-BEFORE refusal block",
+    },
+    {
+      name: "refusal downgraded to notice",
+      sql: source.replace(
+        /(if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then[\s\S]*?)raise\s+exception/i,
+        "$1raise notice",
+      ),
+      finding: "does not raise an exception",
+    },
+    {
+      name: "probe deletion injected",
+      sql: source.replace(
+        "v_msg := iam.access_delta_assert_no_widening(v_before, v_after);",
+        "delete from iam.access_delta_probe where run_id = v_before;\n  v_msg := iam.access_delta_assert_no_widening(v_before, v_after);",
+      ),
+      finding: "deletes access-delta probes",
+    },
+  ];
+
+  const baseline = dd137b13SourceRepairErrorsFromText(source);
+  if (baseline.length) {
+    console.error(`DD-137b13 self-test baseline failed: ${baseline.join("; ")}`);
+    return 1;
+  }
+  for (const testCase of cases) {
+    const errors = dd137b13SourceRepairErrorsFromText(testCase.sql);
+    if (!errors.some((error) => error.includes(testCase.finding))) {
+      console.error(`DD-137b13 self-test missed ${testCase.name}: ${errors.join("; ")}`);
+      return 1;
+    }
+  }
+  console.log(`DD-137b13 source-repair self-test passed (${cases.length} planted violations).`);
+  return 0;
 }
 
 /** Resolve Supabase URL + a key. There is exactly ONE name for the URL —
@@ -315,8 +453,22 @@ function loadDriftOkSet(): Set<string> {
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
 
+  if (process.argv.includes("--self-test-dd137b13")) return runDd137b13SelfTest();
+
+  const dd137b13Errors = dd137b13SourceRepairErrors();
+  if (dd137b13Errors.length) {
+    console.log();
+    console.log(
+      `${TAG.fail}DD-137b13 SOURCE-RECORD REPAIR — ${dd137b13Errors.length} safety property failure(s). ` +
+        `${strict ? "(--strict: blocking)" : "(non-blocking)"}`,
+    );
+    for (const error of dd137b13Errors) console.log(`  ${C.white}- ${error}${C.reset}`);
+  } else {
+    console.log(`${TAG.info}DD-137b13 source-record repair preserves the complete per-principal gate.`);
+  }
+
   const files = listSql(MIGRATIONS_DIR);
-  if (files.length === 0) return 0; // nothing to check — stay quiet
+  if (files.length === 0) return dd137b13Errors.length && strict ? 1 : 0;
 
   // Classify local files: skip-marked vs trackable, with checksums.
   const skipped: string[] = [];
@@ -353,7 +505,7 @@ async function main(): Promise<number> {
     console.log(
       `${TAG.warn}Migrations: Supabase creds absent — ledger check skipped`,
     );
-    return 0; // never block on missing local creds
+    return dd137b13Errors.length && strict ? 1 : 0;
   }
 
   const ledgerRows = await fetchLedger(env.url, env.key);
@@ -443,7 +595,7 @@ async function main(): Promise<number> {
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
-    return (actionable.length || selfLedgering.length) && strict ? 1 : 0;
+    return (actionable.length || selfLedgering.length || dd137b13Errors.length) && strict ? 1 : 0;
 
   // ONE fix for BOTH states below. White, not dim — it's an instruction the user
   // acts on, not a footnote. Never suggest hand-applying and self-ledgering: that
@@ -514,7 +666,7 @@ async function main(): Promise<number> {
     );
   }
 
-  return (pending.length || actionable.length || selfLedgering.length) && strict
+  return (pending.length || actionable.length || selfLedgering.length || dd137b13Errors.length) && strict
     ? 1
     : 0;
 }

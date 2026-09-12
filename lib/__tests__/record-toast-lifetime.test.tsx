@@ -49,7 +49,22 @@ const RECORD_A = { type: "mandate", id: "AAAA-1111", title: "ZZZ Alpha" };
 let root: Root;
 let container: HTMLDivElement;
 
-/** Put the document in the state that freezes every sonner timer. */
+const realRaf = window.requestAnimationFrame;
+const realCaf = window.cancelAnimationFrame;
+/** Frames queued while hidden — a real browser never runs these. */
+let frozenFrames = new Map<number, FrameRequestCallback>();
+let nextFrameId = 1;
+
+/**
+ * Put the document in the state a real browser puts a background tab or an
+ * agent browser pane in: `document.hidden` is true (which freezes every
+ * sonner timer) AND `requestAnimationFrame` never fires. jsdom runs animation
+ * frames on a timer regardless of visibility, which is a false double: sonner
+ * 2.0.8 defers every `toast.dismiss()` through TWO animation frames, so in a
+ * real hidden document a dismissal is queued and never lands (measured live
+ * 2026-09-12: a toast survived a client-side navigation by minutes). A test
+ * that lets frames run while "hidden" proves nothing about that.
+ */
 function hideDocument() {
   Object.defineProperty(document, "hidden", {
     configurable: true,
@@ -59,7 +74,29 @@ function hideDocument() {
     configurable: true,
     get: () => "hidden",
   });
+  window.requestAnimationFrame = (cb: FrameRequestCallback) => {
+    const id = nextFrameId++;
+    frozenFrames.set(id, cb);
+    return id;
+  };
+  window.cancelAnimationFrame = (id: number) => {
+    frozenFrames.delete(id);
+  };
   document.dispatchEvent(new Event("visibilitychange"));
+}
+
+function showDocument() {
+  Object.defineProperty(document, "hidden", {
+    configurable: true,
+    get: () => false,
+  });
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    get: () => "visible",
+  });
+  window.requestAnimationFrame = realRaf;
+  window.cancelAnimationFrame = realCaf;
+  frozenFrames = new Map();
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -88,6 +125,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  showDocument();
   dismissAllTrackedToasts();
   toast.dismiss();
   await act(async () => {

@@ -29,9 +29,24 @@
 // this file used to hand-write. The doors are light shells (EntityRef's peek
 // machinery is already behind its own lazy front door) and stay static.
 //
-// The demanded-schema dev probe is ALSO the package's job now (it runs inside
-// AssociationsProvider in a development build) — the ~30-line boot effect
-// that used to live here is gone.
+// D311 — THE BOOT PROBE IS OFF (`probeSchema={false}`, 2026-09-12).
+//
+// `AssociationsProvider` defaults to running the package's
+// `assertDemandedSchema` on mount, which INVOKES all 26 demanded RPCs with
+// sentinel arguments (`__not_a_uuid__`) to see whether each function exists.
+// Fourteen of those are WRITES (`assoc_add`, `assoc_set_targets`,
+// `cat_delete`, `cmt_add`, `ues_set`, …). Measured on
+// `/administration/billing/spend`: 25 POSTs to `/rest/v1/rpc/<name>`
+// answered 400 on EVERY page load, before the page's own reads — and the
+// package's `isDevelopmentBuild()` is `typeof process !== "undefined"`,
+// which is true in the browser bundle, so it fired in production too.
+//
+// THE CLASS RULE: a write RPC is never invoked to ask whether it exists.
+// Existence is not probed here at all, because it does not need to be — the
+// package's own `mapPgError` turns PostgREST's PGRST202 (function not found)
+// into the same `demanded_schema_violation` scream, with the same remedy, at
+// every REAL call site. A wrong database still announces itself loudly, at
+// the moment it matters, and costs nothing on the loads where it is right.
 
 "use client";
 
@@ -58,7 +73,10 @@ import { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { createDocument } from "@/features/data-tables/document-service";
 import type { Visibility } from "@/features/files/types";
-import { getAssociationsStore } from "./associationsStore";
+import {
+  getAssociationsStore,
+  PROBE_SCHEMA_AT_BOOT,
+} from "./associationsStore";
 
 const VISIBILITIES: readonly Visibility[] = [
   "personal",
@@ -145,6 +163,7 @@ export function AssociationsHost({ children }: { children: ReactNode }) {
   return (
     <AssociationsProvider
       store={getAssociationsStore()}
+      probeSchema={PROBE_SCHEMA_AT_BOOT}
       {...UI_PORTS}
       authorDisplay={authorDisplay}
     >

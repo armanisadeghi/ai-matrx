@@ -70,6 +70,7 @@ import {
 import { VaultContextMenu } from "./VaultContextMenu";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
+import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
 
 export interface VaultWorkspaceProps {
@@ -144,6 +145,7 @@ export function VaultWorkspace({
   const [family, setFamily] = useState<"all" | CredentialFamily>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [uncontrolledSelectedId, setUncontrolledSelectedId] = useState<
     string | null
   >(null);
@@ -675,6 +677,18 @@ export function VaultWorkspace({
           busy={vault.busy}
           onImport={vault.actions.importEnv}
         />
+        {canCreate && (
+          <VaultCsvImportDialog
+            open={csvImportOpen}
+            onOpenChange={setCsvImportOpen}
+            principal={viewedPrincipal}
+            existingItems={vault.items.map((item) => ({
+              displayName: item.display_name,
+              loginUrls: item.login_urls,
+            }))}
+            onCommitted={vault.refresh}
+          />
+        )}
       </div>,
     );
   }
@@ -829,6 +843,16 @@ export function VaultWorkspace({
               Import .env
             </Button>
             <Button
+              variant="outline"
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => setCsvImportOpen(true)}
+              disabled={vault.busy}
+            >
+              <Upload className="mr-1.5 h-4 w-4" />
+              Import passwords
+            </Button>
+            <Button
               size="sm"
               className="h-9 shrink-0"
               onClick={() => setCreateOpen(true)}
@@ -949,6 +973,18 @@ export function VaultWorkspace({
         busy={vault.busy}
         onImport={vault.actions.importEnv}
       />
+      {canCreate && (
+        <VaultCsvImportDialog
+          open={csvImportOpen}
+          onOpenChange={setCsvImportOpen}
+          principal={viewedPrincipal}
+          existingItems={vault.items.map((item) => ({
+            displayName: item.display_name,
+            loginUrls: item.login_urls,
+          }))}
+          onCommitted={vault.refresh}
+        />
+      )}
     </div>,
   );
 }

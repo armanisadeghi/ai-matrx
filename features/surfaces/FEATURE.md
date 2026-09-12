@@ -6,6 +6,13 @@
 **Owner**: tool-registry
 **Routes**: `/administration/ui/surfaces` (admin) · `/surfaces` (user hub) · `/agents/[id]/surfaces` (per-agent bindings)
 
+Alchemy's code-side value declarations include `exportable`, `classification`,
+and `includedByDefault`. These control content transfer independently of
+`autoContext`: disabling ambient agent context does not classify a value as
+secret. Package projection removes secret, credential, and non-exportable
+values before serializers or custom callbacks. Runtime integration is tracked
+in [Matrx Alchemy](../../../common-docs/projects/matrx-alchemy/REGISTER.md).
+
 ## What this is
 
 The dedicated admin UI for the `ui_surface` table. Built to scale to the
@@ -1991,6 +1998,8 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- 2026-09-12 — Added code-side Alchemy export classification and initial section selection fields; runtime adoption remains tracked in the Alchemy register.
 
 - **2026-09-12 — The GLOBAL stale-row sweep got the same recency guard the per-row delete already had, and every `app/api/admin/surfaces/*` route is now on the shared `errorResponse` (WP5 close-out).** `applyManifestSync({deleteStale:true})` used to delete every `db_only` row across all four mirror tables (`ui_surface_value`, `ui_surface_agent_role`, `ui_surface_write_target`, `ui_surface_client_tool`) with no age check — only the single-row `deleteMirrorRow` lever refused a row touched inside `RECENT_ROW_WINDOW_HOURS`. Each of the sweep's four delete blocks now runs its stale candidates through a shared `partitionStaleByRecency` split: a row updated inside the window is left alone by default and reported on the result's new `skippedRecentRows` (table + surface + name + age), so a caller/toast can say "N recent rows skipped — likely another lane's in-flight work" instead of silently deleting it. `includeRecent: true` on `ApplyManifestSyncOptions` bypasses the split; threaded through the `sync-manifests` route body only — no admin UI control exists for it yet, and none was added (the existing "Delete stale rows" checkbox is a separate knob). Proof: `features/surfaces/services/__tests__/manifest-sync-recency-sweep.test.ts` against a `zz_fixture/probe` fixture surface — a row updated a minute ago survives a default sweep and a 48-hour-old row is deleted; `includeRecent: true` deletes both. Separately, the three remaining `app/api/admin/surfaces/*` routes (`drift-report`, `remediate-mapping`, `delete-mirror-row`) still carried their own copied `errorResponse`; all three now import the one in `error-response.ts`. `delete-mirror-row`'s local copy only ever mapped 401/403/500, so this also fixes its `NO_SUCH_MIRROR_ROW_PREFIX` / `STILL_DECLARED_REFUSAL_PREFIX` / `RECENT_ROW_REFUSAL_PREFIX` refusals — previously bare 500s — to the intended 404/409.
 

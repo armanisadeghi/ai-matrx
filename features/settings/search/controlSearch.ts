@@ -1,6 +1,8 @@
 export type SettingsControlSearchHit = {
   id: string;
   label: string;
+  /** Human-readable destination shown below the matching setting name. */
+  location: string;
   description?: string;
   tabId: string;
   controlId?: string;

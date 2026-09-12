@@ -28,6 +28,11 @@ import {
 
 export const inboxListConfig: EntityListConfig<InboxRow> = {
   surfaceKey: "crm-inbox",
+  // DD-137c / §3.3: NO registryToken on purpose. `crm.interaction` is a registered COMPONENT, and
+  // db-rules §6d-1 says a component's access IS its parent's — so it carries no
+  // `default_list_scope` of its own (F-20 leaves it NULL deliberately). Naming it here would make
+  // `resolveListScope` announce a missing registration on every page load and land on `mine`
+  // anyway. The inbox keeps its own default until the parent it belongs to is the thing declared.
   entityLabel: { singular: "reply", plural: "replies" },
   sourceFeature: "crm",
   scopes: INBOX_LIST_SCOPES,
