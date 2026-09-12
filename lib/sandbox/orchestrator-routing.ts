@@ -87,9 +87,9 @@ export type PersistedTierResolution =
 
 /**
  * Resolve a persisted sandbox row without an unsafe default. A row written
- * before the dedicated tier column may use `config.tier`; once a dedicated
- * value exists, it is authoritative and a disagreement is operationally
- * unsafe, not a reason to route a destructive call to either host.
+ * must carry a valid dedicated tier. `config.tier` is only a consistency
+ * witness; it is never a routing fallback, because a missing durable tier is
+ * unsafe for lifecycle calls and must be repaired explicitly.
  */
 export function resolvePersistedOrchestrator(
   tier: unknown,
@@ -102,19 +102,13 @@ export function resolvePersistedOrchestrator(
   const isTier = (value: unknown): value is SandboxTier =>
     value === "ec2" || value === "hosted";
 
-  if (tier != null) {
-    if (!isTier(tier)) {
-      return { ok: false, error: "Sandbox has an invalid persisted tier" };
-    }
-    if (configTier != null && (!isTier(configTier) || configTier !== tier)) {
-      return { ok: false, error: "Sandbox tier sources conflict" };
-    }
-    return { ok: true, orchestrator: resolveOrchestratorByTier(tier) };
+  if (!isTier(tier)) {
+    return { ok: false, error: "Sandbox has no valid dedicated persisted tier" };
   }
-  if (!isTier(configTier)) {
-    return { ok: false, error: "Sandbox has no valid persisted tier" };
+  if (configTier != null && (!isTier(configTier) || configTier !== tier)) {
+    return { ok: false, error: "Sandbox tier sources conflict" };
   }
-  return { ok: true, orchestrator: resolveOrchestratorByTier(configTier) };
+  return { ok: true, orchestrator: resolveOrchestratorByTier(tier) };
 }
 
 /**

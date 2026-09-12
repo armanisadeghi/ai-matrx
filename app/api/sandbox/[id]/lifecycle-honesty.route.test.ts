@@ -10,6 +10,7 @@ import {
   PUT as userPut,
 } from "@/app/api/sandbox/[id]/route";
 import { POST as extend } from "@/app/api/sandbox/[id]/extend/route";
+import { createClient } from "@/utils/supabase/server";
 
 const rows: Array<{ data: any; error: any }> = [];
 const update = jest.fn();
@@ -241,13 +242,11 @@ test("extend accepts semantically equal ISO timestamps with different wire forma
     { data: { expires_at: "2030-01-01T00:00:00Z" }, error: null },
     { data: row({ expires_at: "2030-01-01T01:00:00.000+00:00" }), error: null },
   );
-  jest
-    .spyOn(global, "fetch")
-    .mockResolvedValue(
-      new Response(JSON.stringify({ new_expires_at: "2030-01-01T01:00:00Z" }), {
-        status: 200,
-      }),
-    );
+  jest.spyOn(global, "fetch").mockResolvedValue(
+    new Response(JSON.stringify({ new_expires_at: "2030-01-01T01:00:00Z" }), {
+      status: 200,
+    }),
+  );
   const response = await extend(request({ ttl_seconds: 3600 }) as any, params);
   expect(response.status).toBe(200);
 });
@@ -261,6 +260,66 @@ test("admin GET maps database transport errors to sanitized 500", async () => {
   expect(response.status).toBe(500);
   expect(await response.json()).toEqual({
     error: "Failed to read sandbox instance",
+  });
+  expect(update).not.toHaveBeenCalled();
+});
+
+test("admin GET contains a thrown session-client failure", async () => {
+  jest.mocked(createClient).mockRejectedValueOnce(new Error("credential leak"));
+
+  const response = await adminGet(
+    new Request("https://app.example.test") as any,
+    params,
+  );
+
+  expect(response.status).toBe(500);
+  expect(await response.json()).toEqual({
+    error: "Unable to verify admin access",
+  });
+  expect(update).not.toHaveBeenCalled();
+});
+
+test("admin GET contains a thrown database query failure", async () => {
+  query.single.mockRejectedValueOnce(new Error("database connection reset"));
+
+  const response = await adminGet(
+    new Request("https://app.example.test") as any,
+    params,
+  );
+
+  expect(response.status).toBe(500);
+  expect(await response.json()).toEqual({
+    error: "Failed to read sandbox instance",
+  });
+  expect(update).not.toHaveBeenCalled();
+});
+
+test("extend maps a non-absence database failure to a sanitized 500", async () => {
+  rows.push({ data: null, error: { message: "database unavailable" } });
+
+  const response = await extend(request({ ttl_seconds: 3600 }) as any, params);
+
+  expect(response.status).toBe(500);
+  expect(await response.json()).toEqual({
+    error: "Failed to read sandbox instance",
+  });
+  expect(fetch).not.toHaveBeenCalled();
+  expect(update).not.toHaveBeenCalled();
+});
+
+test("extend rejects malformed upstream expiry payload without a local write", async () => {
+  rows.push({ data: { expires_at: "2030-01-01T00:00:00.000Z" }, error: null });
+  jest
+    .spyOn(global, "fetch")
+    .mockResolvedValue(
+      new Response(JSON.stringify({ new_expires_at: 123 }), { status: 200 }),
+    );
+
+  const response = await extend(request({ ttl_seconds: 3600 }) as any, params);
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toEqual({
+    error: "Sandbox orchestrator returned no expiry",
   });
   expect(update).not.toHaveBeenCalled();
 });

@@ -213,10 +213,25 @@ async function main(): Promise<void> {
                 `${p.key}: the row disappeared between the plan and the write. Re-run the dry run.`,
             );
         }
-        const saved = await saveKindComponentCode(writer as any, {
-            component: record,
-            componentSource: p.next,
-        });
+        let saved;
+        try {
+            saved = await saveKindComponentCode(writer as any, {
+                component: record,
+                componentSource: p.next,
+            });
+        } catch (error) {
+            // `operationFailed` wraps the database's own words. A migration
+            // that stops on row 38 of 45 must say WHY, not "we couldn't save
+            // it" — the remaining rows are a half-migrated corpus until
+            // someone can read the real refusal.
+            const cause = (error as { cause?: unknown }).cause ?? error;
+            throw new Error(
+                `${p.key}: ${error instanceof Error ? error.message : String(error)} — underlying: ${JSON.stringify(
+                    cause,
+                    Object.getOwnPropertyNames(cause ?? {}),
+                )}`,
+            );
+        }
         written.push({ key: p.key, version: saved.version });
         // eslint-disable-next-line no-console
         console.log(

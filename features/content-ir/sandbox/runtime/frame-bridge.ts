@@ -95,13 +95,27 @@ export function installFrameBridge(mount: FrameMountApi): void {
         // THE FRAME-SIDE ORIGIN CHECK: only the origin this document was
         // SERVED from may hand the frame its port.
         //
-        // 🚨 IT CANNOT USE `location.origin`. The frame is sandboxed without
-        // `allow-same-origin`, so its execution origin is opaque and
-        // `location.origin` is the string "null" — comparing against it
-        // refuses the real host every single time (observed in the browser
-        // 2026-09-12: the host posted init and the frame never answered).
-        // `location.href` still carries the URL the document was served from,
-        // so the scheme+host parsed out of it is the honest expectation.
+        // WHICH ORIGIN, and the correction that belongs here. The frame is
+        // sandboxed without `allow-same-origin`, so it RUNS on an opaque
+        // origin — but only some of the ways to ask about it say so. Measured
+        // inside a real `/kind-sandbox` frame (Chrome 153, 2026-09-12, V-30,
+        // and asserted every run by `browser/kind-sandbox.spec.ts`):
+        //
+        //     self.origin / window.origin   →  "null"      (the opaque one)
+        //     location.origin               →  "http://localhost:3000"
+        //     new URL(location.href).origin →  "http://localhost:3000"
+        //
+        // An earlier version of this comment said `location.origin` is the
+        // string "null" here and that comparing against it "refuses the real
+        // host every single time". That is NOT what Chrome does, and no such
+        // bug existed — the false sentence is corrected rather than repeated
+        // (S6). `Location.origin` follows the document URL; it is
+        // `Window.origin` that serializes an opaque origin to "null".
+        //
+        // The code still parses `location.href`, deliberately: it is the one
+        // spelling that is correct in every engine, including any that follows
+        // the spec's latitude and reports an opaque `location.origin`. Same
+        // answer, no reliance on which of the two an engine picked.
         if (event.origin !== servedOrigin()) {
             refuse(
                 `Ignored a message from "${event.origin}". This frame only accepts its host page at ${servedOrigin()}.`,
@@ -124,6 +138,7 @@ export function installFrameBridge(mount: FrameMountApi): void {
             );
             return;
         }
+        window.removeEventListener("message", onWindowMessage);
         startInstance(data as unknown as SandboxInitMessage, port, mount);
     };
 

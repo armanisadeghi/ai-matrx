@@ -36,6 +36,7 @@ export const ISOLATION_PROBE_NAMES = [
     "parent.document",
     "document.cookie",
     "localStorage",
+    "sessionStorage",
 ] as const;
 
 /**
@@ -129,6 +130,14 @@ export const ISOLATION_SOURCE = String.raw`() => {
   probe("parent.document", () => { void window.parent.document.title; });
   probe("document.cookie", () => { void document.cookie; });
   probe("localStorage", () => { window.localStorage.setItem("matrx-probe", "1"); });
+  probe("sessionStorage", () => { window.sessionStorage.setItem("matrx-probe", "1"); });
   out["isSubFrame"] = String(window.parent !== window.self);
+  // THE TWO ORIGINS, measured rather than assumed. They are NOT the same
+  // thing inside a sandboxed frame and the difference is load-bearing: the
+  // frame-side origin check compares the SERVED origin, and a code comment
+  // that named the wrong one stood in this repo until S6.
+  out["location.origin"] = String(location.origin);
+  out["self.origin"] = String(self.origin);
+  out["url.origin"] = String(new URL(location.href).origin);
   return out;
 }`;

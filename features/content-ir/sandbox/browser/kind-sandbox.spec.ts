@@ -201,10 +201,33 @@ test.describe("the Shape sandbox boundary, in a real browser", () => {
         expect(framed["parent.document"]).toMatch(/SecurityError/);
         expect(framed["document.cookie"]).toMatch(/SecurityError/);
         expect(framed.localStorage).toMatch(/SecurityError/);
+        expect(framed.sessionStorage).toMatch(/SecurityError/);
+
+        /**
+         * THE TWO ORIGINS (the S6 correction). `frame-bridge.ts` compares
+         * `event.origin` against the origin the document was SERVED from,
+         * parsed out of `location.href`. Until S6 the comment beside it said
+         * `location.origin` is the string "null" inside a sandboxed frame and
+         * that the old code "refused the real host every single time". V-30
+         * measured otherwise and this asserts it, so the sentence can never
+         * drift back: `self.origin` is the opaque one; `Location.origin`
+         * follows the document URL.
+         */
+        expect(
+            framed["self.origin"],
+            "self.origin is not opaque — this frame is not sandboxed the way it must be",
+        ).toBe("null");
+        expect(
+            framed["location.origin"],
+            'location.origin inside the frame IS "null" after all — the S6 comment correction is wrong and frame-bridge.ts must be re-read',
+        ).not.toBe("null");
+        expect(framed["url.origin"]).toBe(framed["location.origin"]);
+        expect(framed["location.origin"]).toBe(new URL(page.url()).origin);
 
         // THE RED CONTROL: the page reaches all four without complaint.
         expect(inPage["window.top"]).toBe("allowed");
         expect(inPage["document.cookie"]).toBe("allowed");
         expect(inPage.localStorage).toBe("allowed");
+        expect(inPage.sessionStorage).toBe("allowed");
     });
 });

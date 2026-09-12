@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * The Images route-family menu rendered by the shared shell sidebar.
- *
- * Images used to own a second, page-local sidebar. That created two competing
- * navigation systems and made the route feel unlike Chat, Marketing, and
- * Agent Runs. This menu deliberately uses the shell route-menu primitives so
- * the icons, spacing, collapse behaviour, active state, and mobile switch are
- * all owned in one place.
- */
-
 import Link from "next/link";
 import { ImageIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -29,10 +19,15 @@ import {
 interface ImagesSidebarMenuProps {
   expanded: boolean;
 }
-
 const GROUP_ORDER: ImagesGroup[] = ["manager", "studio"];
 
-function GroupHeading({ label, expanded }: { label: string; expanded: boolean }) {
+function GroupHeading({
+  label,
+  expanded,
+}: {
+  label: string;
+  expanded: boolean;
+}) {
   if (!expanded) return <div className="mx-2 my-1 border-t border-border/70" />;
   return (
     <div className="px-1.5 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -41,9 +36,10 @@ function GroupHeading({ label, expanded }: { label: string; expanded: boolean })
   );
 }
 
-export default function ImagesSidebarMenu({ expanded }: ImagesSidebarMenuProps) {
+export default function ImagesSidebarMenu({
+  expanded,
+}: ImagesSidebarMenuProps) {
   const pathname = usePathname();
-
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-0.5">
       <Link
@@ -64,7 +60,6 @@ export default function ImagesSidebarMenu({ expanded }: ImagesSidebarMenuProps) 
         </span>
         <span className="shell-nav-label truncate">Images Hub</span>
       </Link>
-
       {GROUP_ORDER.map((group, index) => {
         const routes = IMAGES_ROUTES.filter((route) => route.group === group);
         return (

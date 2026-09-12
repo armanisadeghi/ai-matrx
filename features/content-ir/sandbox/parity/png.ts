@@ -114,15 +114,15 @@ export interface DiffResult {
  * `tol` is a per-channel tolerance in 0–255. 8 is the S3 noise floor: subpixel
  * antialiasing along a rounded edge lands under it, a different colour does not.
  */
-export function diff(a: Bitmap, b: Bitmap, tol = 8): DiffResult {
+export function diff(a: Bitmap, b: Bitmap, tol = 8, shiftY = 0): DiffResult {
     const w = Math.min(a.w, b.w);
-    const h = Math.min(a.h, b.h);
+    const h = Math.min(a.h, b.h) - Math.abs(shiftY);
     let differing = 0;
     let maxDelta = 0;
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
-            const ia = (y * a.w + x) * a.bpp;
-            const ib = (y * b.w + x) * b.bpp;
+            const ia = ((y + (shiftY < 0 ? -shiftY : 0)) * a.w + x) * a.bpp;
+            const ib = ((y + (shiftY > 0 ? shiftY : 0)) * b.w + x) * b.bpp;
             let d = 0;
             for (let k = 0; k < 3; k++) {
                 d = Math.max(d, Math.abs(a.data[ia + k] - b.data[ib + k]));
@@ -131,7 +131,7 @@ export function diff(a: Bitmap, b: Bitmap, tol = 8): DiffResult {
             if (d > tol) differing++;
         }
     }
-    const pixels = w * h;
+    const pixels = Math.max(w * h, 1);
     return {
         w,
         h,
@@ -143,4 +143,31 @@ export function diff(a: Bitmap, b: Bitmap, tol = 8): DiffResult {
         a: [a.w, a.h],
         b: [b.w, b.h],
     };
+}
+
+/**
+ * The smallest difference over a small vertical search.
+ *
+ * WHY THE SEARCH. A screenshot is not deterministic to the pixel: the same
+ * body, rendered twice with nothing changed, can sit ONE pixel lower. For a
+ * text-heavy card that single row of displacement lights up every glyph edge
+ * and reads as a 4 % difference — measured on `keyword_set_card`, which the
+ * full sweep scored at 0.000 % and a later run at 4.188 %. A one-pixel
+ * placement difference is not a rendering difference, so the sweep reports the
+ * best alignment within a few pixels and names the offset it used. Anything
+ * larger stays visible: the search is ±4, not ±40.
+ */
+export function bestAlignedDiff(
+    a: Bitmap,
+    b: Bitmap,
+    tol = 8,
+    maxShift = 4,
+): DiffResult & { shiftY: number } {
+    let best = { ...diff(a, b, tol, 0), shiftY: 0 };
+    for (let s = -maxShift; s <= maxShift; s++) {
+        if (s === 0) continue;
+        const d = diff(a, b, tol, s);
+        if (d.pct < best.pct) best = { ...d, shiftY: s };
+    }
+    return best;
 }

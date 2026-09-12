@@ -1,0 +1,24 @@
+{
+  "recordedAt": "2026-09-12T16:54:40.782Z",
+  "note": "Worst-of-light-and-dark pixel difference between the framed and unframed render of each body in the parity sample. Regenerate with: pnpm sweep:kind-sandbox-parity --keys=<the sample> --write-baseline",
+  "sample": [
+    "agent_definition_card",
+    "keyword_set_card",
+    "meta_tag_option_board",
+    "qc_verdict_card",
+    "research_report_card",
+    "schema_fix_card",
+    "serp_analysis_dashboard",
+    "status_ping_card"
+  ],
+  "results": {
+    "agent_definition_card": 0,
+    "keyword_set_card": 4.188,
+    "meta_tag_option_board": 0,
+    "qc_verdict_card": 0.646,
+    "research_report_card": 3.937,
+    "schema_fix_card": 1.799,
+    "serp_analysis_dashboard": 1.624,
+    "status_ping_card": 2.013
+  }
+}

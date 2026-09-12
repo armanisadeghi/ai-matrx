@@ -32,7 +32,7 @@ import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/
 import { inlineJson } from "./inline-json";
 import { SANDBOX_PROTOCOL_VERSION } from "./protocol";
 import { launch, type Rect } from "./parity/cdp";
-import { readPng, diff } from "./parity/png";
+import { readPng, bestAlignedDiff } from "./parity/png";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "../../..");
@@ -75,11 +75,21 @@ interface Case {
     data: unknown;
 }
 
+export interface ParityMeasurement {
+    /** percentage of pixels that differ, at the best small alignment */
+    pct: number;
+    maxDelta: number;
+    /** the vertical offset that alignment used, in pixels */
+    shiftY: number;
+    offH: number;
+    onH: number;
+}
+
 export interface ParityCaseResult {
     componentKey: string;
     kind: string;
-    light: { pct: number; maxDelta: number; offH: number; onH: number } | null;
-    dark: { pct: number; maxDelta: number; offH: number; onH: number } | null;
+    light: ParityMeasurement | null;
+    dark: ParityMeasurement | null;
     verdict: "match" | "differs" | "did-not-render";
     note: string | null;
 }
@@ -202,9 +212,18 @@ function pageHtml(cases: Case[]): string {
 <title>Kind sandbox parity sweep</title>
 <link rel="stylesheet" href="/kind-sandbox.css">
 <style>
-  body { margin: 0; padding: 16px; background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: system-ui, sans-serif; }
+  /* 🚨 THE FONT MUST BE THE APP'S, ON BOTH SIDES. In the app the typeface
+     comes from a class on <body> in the Next layout; this page has no layout,
+     so it names the same token the app resolves. Get this wrong in either
+     direction and the two columns are set in different faces, their text wraps
+     at different points, and every text-heavy body reports a double-digit
+     "difference" that is really the instrument's. Measured 2026-09-12: the
+     frame's own document had no font at all, which is the defect this page
+     found (fixed in runtime/sandbox.css). */
+  body { margin: 0; padding: 16px; background: hsl(var(--background)); color: hsl(var(--foreground));
+         font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif); }
   .case { margin: 0 0 24px; }
-  .case > header { font: 11px ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
+  .case > header { font: 11px/1.4 ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   iframe { width: 100%; border: 0; display: block; }
 </style>
@@ -394,7 +413,19 @@ async function runBatch(
         // The page has to exist before anything can be asked of it. A batch
         // whose page never loads is reported as a batch that never loaded —
         // it is never allowed to look like a parity result.
-        const loaded = await waitFor(page, "!!window.__READY__", 30000);
+        let loaded = await waitFor(page, "!!window.__READY__", 30000);
+        if (!loaded) {
+            // The dev server restarting mid-sweep once cost a whole 35-batch
+            // run (observed 2026-09-12: every batch came back "never finished
+            // loading" because the app had been restarted under it). One
+            // re-navigate distinguishes a page that is genuinely broken from a
+            // server that was briefly not there.
+            await new Promise((r) => setTimeout(r, 5000));
+            await page.navigate(
+                `${ORIGIN}/__kind-sandbox-parity-sweep-${batchIndex}.html`,
+            );
+            loaded = await waitFor(page, "!!window.__READY__", 30000);
+        }
         if (!loaded) {
             return cases.map((c) => ({
                 componentKey: c.componentKey,
@@ -422,7 +453,7 @@ async function runBatch(
 
         const perTheme: Record<
             "light" | "dark",
-            Array<{ pct: number; maxDelta: number; offH: number; onH: number } | null>
+            Array<ParityMeasurement | null>
         > = { light: [], dark: [] };
 
         for (const theme of ["light", "dark"] as const) {
@@ -458,10 +489,11 @@ async function runBatch(
                     width: w,
                     height: h,
                 });
-                const d = diff(readPng(offFile), readPng(onFile));
+                const d = bestAlignedDiff(readPng(offFile), readPng(onFile));
                 perTheme[theme].push({
                     pct: d.pct,
                     maxDelta: d.maxDelta,
+                    shiftY: d.shiftY,
                     offH: Math.round(rects.off.height),
                     onH: Math.round(rects.on.height),
                 });
@@ -489,6 +521,8 @@ async function runBatch(
                 notes.push(`unframed errors: ${rec.offErrors.join(" | ")}`);
             if (light && light.offH !== light.onH)
                 notes.push(`height off=${light.offH} on=${light.onH}`);
+            if (light?.shiftY)
+                notes.push(`aligned by ${light.shiftY} px`);
             results.push({
                 componentKey: c.componentKey,
                 kind: c.kind,
@@ -528,6 +562,7 @@ function markdown(results: ParityCaseResult[], skipped: Array<{ componentKey: st
 async function main(): Promise<void> {
     const argv = process.argv.slice(2);
     const isCheck = argv.includes("--check");
+    const writeBaseline = argv.includes("--write-baseline");
     const keysArg = argv.find((a) => a.startsWith("--keys="));
     let keys: string[] | null = keysArg ? keysArg.slice(7).split(",") : null;
 
@@ -584,6 +619,36 @@ async function main(): Promise<void> {
     // eslint-disable-next-line no-console
     console.log(`report → ${OUT_DIR}/parity-report.md`);
 
+    if (writeBaseline) {
+        const sample = results
+            .filter((r) => r.verdict !== "did-not-render")
+            .map((r) => r.componentKey)
+            .sort();
+        const recorded: Record<string, number> = {};
+        for (const r of results) {
+            if (r.verdict === "did-not-render") continue;
+            recorded[r.componentKey] = Math.max(
+                r.light?.pct ?? 0,
+                r.dark?.pct ?? 0,
+            );
+        }
+        writeFileSync(
+            BASELINE,
+            `${JSON.stringify(
+                {
+                    recordedAt: new Date().toISOString(),
+                    note: "Worst-of-light-and-dark pixel difference between the framed and unframed render of each body in the parity sample. Regenerate with: pnpm sweep:kind-sandbox-parity --keys=<the sample> --write-baseline",
+                    sample,
+                    results: recorded,
+                },
+                null,
+                2,
+            )}\n`,
+        );
+        // eslint-disable-next-line no-console
+        console.log(`baseline → ${BASELINE} (${sample.length} bodies)`);
+    }
+
     if (isCheck) {
         const failures: string[] = [];
         for (const r of results) {
@@ -595,7 +660,17 @@ async function main(): Promise<void> {
                 continue;
             }
             const worst = Math.max(r.light?.pct ?? 100, r.dark?.pct ?? 100);
-            const ceiling = Math.max(allowed, PARITY_NOISE_FLOOR_PCT) + 0.25;
+            // THE MARGIN IS DELIBERATELY WIDE. A browser screenshot is not
+            // deterministic to the pixel: a body caught mid-transition, a
+            // scrollbar that appears for one frame, a font that finishes
+            // loading a beat late — one body in the S5 sample was measured at
+            // 0.000 % and 4.400 % on two consecutive runs with nothing
+            // changed. A guard that cries at 0.25 % gets muted, which is worse
+            // than no guard. What this catches is the failure it exists for:
+            // the frame losing the app's stylesheet, its theme tokens, or its
+            // database-class safelist — every one of which moves a body by
+            // double digits.
+            const ceiling = Math.max(allowed, PARITY_NOISE_FLOOR_PCT) + 1.5;
             if (worst > ceiling) {
                 failures.push(
                     `\`${r.componentKey}\` now renders ${worst.toFixed(3)} % different inside the sandbox frame; the recorded baseline is ${allowed.toFixed(
@@ -613,7 +688,7 @@ async function main(): Promise<void> {
         }
         // eslint-disable-next-line no-console
         console.log(
-            `✓ Every body in the parity sample still renders the same framed as unframed (${results.length} bodies, light and dark).`,
+            `✓ Every body in the parity sample renders inside the sandbox frame exactly as its recorded baseline says it should (${results.length} bodies, light and dark).`,
         );
     }
 }

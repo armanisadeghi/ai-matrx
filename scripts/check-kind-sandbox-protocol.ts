@@ -74,7 +74,13 @@ export function readTypeArray(source: string, name: string): string[] {
     if (open === -1 || close === -1) {
         throw new Error(`Could not read the ${name} array out of ${PROTOCOL}.`);
     }
-    const body = source.slice(open + 1, close);
+    // Comments inside the array carry prose in quotes — a doc block explaining
+    // why `blocked_resource` exists quotes two sentences, and a naive scan read
+    // both as message types. Strip comments before reading the literals.
+    const body = source
+        .slice(open + 1, close)
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/[^\n]*/g, "");
     return [...body.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 }
 

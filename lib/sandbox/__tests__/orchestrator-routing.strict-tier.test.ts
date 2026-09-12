@@ -6,7 +6,6 @@ describe("resolvePersistedOrchestrator", () => {
   test.each([
     ["hosted", { tier: "hosted" }, "hosted"],
     ["ec2", { tier: "ec2" }, "ec2"],
-    [null, { tier: "hosted" }, "hosted"],
   ])(
     "uses the only valid persisted tier combination %p",
     (tier, config, expected) => {
@@ -22,6 +21,7 @@ describe("resolvePersistedOrchestrator", () => {
     ["unknown", { tier: "hosted" }],
     ["hosted", { tier: "ec2" }],
     ["ec2", { tier: "unknown" }],
+    [null, { tier: "hosted" }],
     [null, { tier: "unknown" }],
     [null, null],
   ])(
