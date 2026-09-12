@@ -1638,19 +1638,27 @@
     margin-top: max(0.75rem, env(safe-area-inset-top, 0px));
   }
 
-  /* Page height utilities — subtract header height.
+  /* Page height utilities — subtract header height AND the global alarm
+     banner's clearance. `.shell-main` reserves the banner's height as
+     padding-top (styles/shell.css, GLOBAL ALARM BANNER CLEARANCE), which
+     shrinks an `h-full` child but NOT a fixed `100dvh - header` one — so with a
+     banner up every `.h-page` route overflowed `.shell-main` by exactly the
+     banner's height and the page scrolled twice (the outer shell by 166px,
+     the inner main by the rest; measured on /administration/billing/spend,
+     2026-09-12). The variable is absent without a banner, so `0px` is what
+     every page resolves to then.
      Use ONLY on /administration/* and (transitional)/(legacy) ResponsiveLayout.
      (core) AppShell routes: use h-full — .shell-main is already full viewport. */
   .h-page {
-    height: calc(100dvh - var(--header-height));
+    height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
   }
 
   .min-h-page {
-    min-height: calc(100dvh - var(--header-height));
+    min-height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
   }
 
   .max-h-page {
-    max-height: calc(100dvh - var(--header-height));
+    max-height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
   }
 
   .bg-textured {

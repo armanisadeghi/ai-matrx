@@ -65078,6 +65078,16 @@ export type Database = {
           url_path_template: string
         }[]
       }
+      admin_spend_breakdown: {
+        Args: {
+          p_filters?: Json
+          p_from: string
+          p_thresholds?: Json
+          p_to: string
+          p_tz?: string
+        }
+        Returns: Json
+      }
       admin_spend_headline: { Args: { p_tz?: string }; Returns: Json }
       admin_spend_overview: { Args: { p_tz?: string }; Returns: Json }
       admin_taxonomy_delete: { Args: { p_id: string }; Returns: undefined }
