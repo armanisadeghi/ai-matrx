@@ -46,11 +46,15 @@ DECLARE
   v_expected_default_hash constant text := '74188ac5336e8d3bf1a14eee28fc6297';
   v_expected_acl_hash constant text := 'c1e488b30589fa3c45d7d80fe02ddcad';
   v_expected_trigger_hash constant text := 'b7dfbcbb53565d6e7de0ddf1d48169dc';
+  v_expected_policy_hash constant text := '029553c0cd49fc5e45320e1830a31c23';
+  v_expected_trigger_function_hash constant text := '16d33f9b643103800b24e0f596133cef';
   v_expected_rows constant bigint := 6049;
   v_system_organization constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
   v_actual_rows bigint;
   v_non_system_rows bigint;
   v_trigger_hash text;
+  v_policy_hash text;
+  v_trigger_function_hash text;
 BEGIN
   PERFORM set_config('lock_timeout', '5s', true);
   -- Hold the catalog steady from its proof through DROP DEFAULT. This is a
@@ -65,8 +69,10 @@ BEGIN
     RAISE EXCEPTION 'FD-T01 precondition failed: RLS enablement/force state changed';
   END IF;
 
-  IF (SELECT count(*) FROM pg_policy WHERE polrelid = v_relation_oid) <> 7 THEN
-    RAISE EXCEPTION 'FD-T01 precondition failed: RLS policy set changed';
+  SELECT md5(string_agg(oid::text || ':' || polname || ':' || polcmd::text || ':' || polpermissive::text || ':' || array_to_string(polroles, ',') || ':' || coalesce(pg_get_expr(polqual, polrelid), '') || ':' || coalesce(pg_get_expr(polwithcheck, polrelid), ''), ',' ORDER BY oid))
+  INTO v_policy_hash FROM pg_policy WHERE polrelid = v_relation_oid;
+  IF v_policy_hash IS DISTINCT FROM v_expected_policy_hash THEN
+    RAISE EXCEPTION 'FD-T01 precondition failed: exact RLS policy definitions changed';
   END IF;
 
   IF NOT EXISTS (
@@ -90,11 +96,20 @@ BEGIN
       AND a.attname = 'organization_id'
       AND NOT a.attisdropped
       AND a.attnotnull
+      AND a.atttypid = 'uuid'::regtype
       AND d.oid = v_default_oid
       AND md5(pg_get_expr(d.adbin, d.adrelid)) = v_expected_default_hash
       AND pg_get_expr(d.adbin, d.adrelid) = quote_literal(v_system_organization::text) || '::uuid'
   ) THEN
     RAISE EXCEPTION 'FD-T01 precondition failed: organization_id NOT NULL/default identity changed';
+  END IF;
+
+  SELECT md5(string_agg(p.oid::text || ':' || md5(pg_get_functiondef(p.oid)) || ':' || p.proowner::regrole::text || ':' || coalesce(p.proacl::text, '') || ':' || coalesce(array_to_string(p.proconfig, ','), ''), ',' ORDER BY p.oid))
+  INTO v_trigger_function_hash
+  FROM pg_trigger t JOIN pg_proc p ON p.oid = t.tgfoid
+  WHERE t.tgrelid = v_relation_oid AND NOT t.tgisinternal;
+  IF v_trigger_function_hash IS DISTINCT FROM v_expected_trigger_function_hash THEN
+    RAISE EXCEPTION 'FD-T01 precondition failed: trigger function definition, owner, grant, or configuration changed';
   END IF;
 
   SELECT md5(string_agg(t.oid::text || ':' || t.tgenabled::text || ':' || md5(pg_get_triggerdef(t.oid)), ',' ORDER BY t.oid))

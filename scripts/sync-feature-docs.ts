@@ -263,21 +263,32 @@ export async function syncOneFeatureDoc(
   content: string,
   existing?: FeatureDocRow,
 ): Promise<FeatureDocRow> {
-  const insert = buildFeatureDocInsert(operation, path, content);
+  const admittedOperation: SyncOperation = {
+    organizationId: requireOrganizationContext(operation.organizationId),
+    gitHead: operation.gitHead,
+  };
+  const insert = buildFeatureDocInsert(admittedOperation, path, content);
   if (!existing) {
     const row = await store.insert(insert);
-    if (row.organization_id !== operation.organizationId || row.path !== path)
+    if (
+      row.organization_id !== admittedOperation.organizationId ||
+      row.path !== path
+    )
       throw new Error("feature-doc insert returned a different row");
     return row;
   }
-  if (existing.organization_id !== operation.organizationId)
+  if (existing.organization_id !== admittedOperation.organizationId)
     throw new Error(
       `feature-doc update refused: ${path} belongs to a different organization`,
     );
   const { organization_id: _organizationId, ...update } = insert;
-  const row = await store.update(existing.id, operation.organizationId, update);
+  const row = await store.update(
+    existing.id,
+    admittedOperation.organizationId,
+    update,
+  );
   if (
-    row.organization_id !== operation.organizationId ||
+    row.organization_id !== admittedOperation.organizationId ||
     row.id !== existing.id ||
     row.path !== path
   )
