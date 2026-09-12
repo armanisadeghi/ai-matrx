@@ -139,4 +139,3 @@ types/database.types.ts.staging
 # They are transient inputs and must never be captured by a ship-mode release.
 /tmp*.ts
 .dev-login-nonce
-node_modules
