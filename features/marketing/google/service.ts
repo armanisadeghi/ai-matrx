@@ -186,7 +186,7 @@ export async function listGoogleConnectionInventory(
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session) return { connections: [], resources: [] };
+  if (!session?.access_token) return { connections: [], resources: [] };
 
   const connections = await supabase
     .schema("users")

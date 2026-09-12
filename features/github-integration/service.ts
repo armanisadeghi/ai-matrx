@@ -65,6 +65,14 @@ export function githubRepositoryFromRow(
 
 export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionInventory> {
   const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  // `users.integration_connections` grants no access to `anon`. This direct
+  // service can also be called outside its hook, so make the last auth check
+  // immediately before constructing the PostgREST query.
+  if (!session?.access_token) return { connection: null, repositories: [] };
+
   const connectionResult = await supabase
     .schema("users")
     .from("integration_connections")

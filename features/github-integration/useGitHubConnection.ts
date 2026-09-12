@@ -10,6 +10,7 @@ import {
 import type { GitHubConnectionInventory } from "./types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 
 const EMPTY: GitHubConnectionInventory = {
   connection: null,
@@ -18,6 +19,7 @@ const EMPTY: GitHubConnectionInventory = {
 
 export function useGitHubConnection() {
   const organizationId = useAppSelector(selectOrganizationId);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [inventory, setInventory] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -38,6 +40,8 @@ export function useGitHubConnection() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     let active = true;
     void loadGitHubConnectionInventory()
       .then((loaded) => {
@@ -56,7 +60,7 @@ export function useGitHubConnection() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const connect = async (returnUrl = window.location.pathname) => {
     if (!organizationId) {
@@ -104,5 +108,14 @@ export function useGitHubConnection() {
     }
   };
 
-  return { inventory, loading, busy, error, reload, connect, sync, disconnect };
+  return {
+    inventory: isAuthenticated ? inventory : EMPTY,
+    loading: isAuthenticated && loading,
+    busy,
+    error,
+    reload,
+    connect,
+    sync,
+    disconnect,
+  };
 }

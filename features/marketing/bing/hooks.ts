@@ -1,6 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import {
   bindBingSite,
   completeBingOAuth,
@@ -17,9 +19,14 @@ export const bingConnectionKeys = {
 };
 
 export function useBingConnectionInventory() {
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   return useQuery({
     queryKey: bingConnectionKeys.inventory,
     queryFn: ({ signal }) => listBingConnectionInventory(signal),
+    // Do not schedule an RLS-protected connection read while Redux is still
+    // hydrating. The service repeats this check against Supabase immediately
+    // before transport, covering a sign-out between render and queryFn.
+    enabled: isAuthenticated,
     staleTime: 30_000,
   });
 }

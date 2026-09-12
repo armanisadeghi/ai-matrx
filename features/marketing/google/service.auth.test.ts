@@ -24,4 +24,23 @@ describe("listGoogleConnectionInventory auth boundary", () => {
     });
     expect(from).not.toHaveBeenCalled();
   });
+
+  it("does not issue the table read for a session missing its bearer token", async () => {
+    const from = jest.fn();
+    jest.mocked(createClient).mockReturnValue({
+      auth: {
+        getSession: jest.fn().mockResolvedValue({
+          data: { session: {} },
+          error: null,
+        }),
+      },
+      schema: jest.fn(() => ({ from })),
+    } as never);
+
+    await expect(listGoogleConnectionInventory()).resolves.toEqual({
+      connections: [],
+      resources: [],
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
 });

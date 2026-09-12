@@ -1,5 +1,10 @@
-import { githubRepositoryFromRow } from "./service";
+import { createClient } from "@/utils/supabase/client";
+import { githubRepositoryFromRow, loadGitHubConnectionInventory } from "./service";
 import type { GitHubResourceRow } from "./types";
+
+jest.mock("@/utils/supabase/client", () => ({
+  createClient: jest.fn(),
+}));
 
 const ROW: GitHubResourceRow = {
   id: "resource-id",
@@ -22,6 +27,25 @@ const ROW: GitHubResourceRow = {
 };
 
 describe("GitHub repository inventory", () => {
+  test("does not construct an authenticated-only table read without a live session", async () => {
+    const from = jest.fn();
+    jest.mocked(createClient).mockReturnValue({
+      auth: {
+        getSession: jest.fn().mockResolvedValue({
+          data: { session: null },
+          error: null,
+        }),
+      },
+      schema: jest.fn(() => ({ from })),
+    } as never);
+
+    await expect(loadGitHubConnectionInventory()).resolves.toEqual({
+      connection: null,
+      repositories: [],
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
   test("projects safe database metadata into a cloneable repository", () => {
     expect(githubRepositoryFromRow(ROW)).toEqual({
       id: "octo/private-repo",
