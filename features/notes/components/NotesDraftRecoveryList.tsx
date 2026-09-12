@@ -26,7 +26,7 @@ import {
 import { createNewNote, fetchNoteContent } from "../redux/thunks";
 import { selectInstanceTabs, selectNotesMap } from "../redux/selectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { isOrganizationSelectionCancelled, requestOrganizationContextChoice } from "@/lib/organization/organization-gate";
 import { discardNoteDraft, listNoteDrafts } from "../utils/notesDrafts";
 import {
   getDraftsVersion,
@@ -75,7 +75,7 @@ export function NotesDraftRecoveryList({
   const handleRecoverAsNew = async (draft: LocalDraft) => {
     setBusyKey(draft.key);
     try {
-      const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
+      const capturedOrganizationId = await requestOrganizationContextChoice();
       const created = await dispatch(
         createNewNote({
           label: draft.label || "Recovered note",

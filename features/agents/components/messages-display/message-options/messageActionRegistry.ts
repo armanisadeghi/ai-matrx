@@ -87,6 +87,7 @@ import { hasConvertibleContent } from "./convertibleContent";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
 import { selectEffectiveOrganizationId, selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 import type { OpenQuickMessageTemplateSaveWindowOptions } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
 
@@ -990,7 +991,7 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
           return;
         // Identical to Save as Note, minus the questions: folder is Scratch,
         // title auto-derived, saved immediately.
-        const organizationId = requireOrganizationContext(selectOrganizationId(ctx.getState()));
+        const organizationId = await ensureOrganizationContext({ organizationId: selectOrganizationId(ctx.getState()) });
         await NotesAPI.create({
           label: deriveMessageTitle(ctx) ?? "New Note",
           content,
