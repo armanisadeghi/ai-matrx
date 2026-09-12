@@ -10,12 +10,15 @@ jest.mock("react-dom", () => ({
 
 const mockedUseFormStatus = jest.mocked(useFormStatus);
 
-function renderPendingButton(label: string, pendingText: string): HTMLElement {
+function renderPendingButton(
+  label: string,
+  pendingText: string,
+): HTMLButtonElement {
   mockedUseFormStatus.mockReturnValue({
     pending: true,
-    data: null,
-    method: null,
-    action: null,
+    data: new FormData(),
+    method: "post",
+    action: "",
   });
 
   const host = document.createElement("div");
@@ -26,7 +29,7 @@ function renderPendingButton(label: string, pendingText: string): HTMLElement {
     </SubmitButton>,
   );
 
-  const button = host.querySelector("button");
+  const button = host.querySelector<HTMLButtonElement>("button");
   if (!button) {
     throw new Error("SubmitButton did not render a button");
   }
@@ -71,7 +74,7 @@ describe("SubmitButton pending state", () => {
       <SubmitButton pendingText="Signing in…">Sign in</SubmitButton>,
     );
 
-    const button = host.querySelector("button");
+    const button = host.querySelector<HTMLButtonElement>("button");
     const content = button?.querySelector('[data-slot="submit-button-content"]');
 
     expect(button?.disabled).toBe(false);
