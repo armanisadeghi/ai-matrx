@@ -482,7 +482,7 @@ export async function buildHeaders(
   // never guessed — while the fingerprint-guest lane carries NONE (a guest
   // has no membership to verify; the middleware admits that lane without an
   // organization, and demanding one here made every public/guest surface
-  // refuse client-side — live: /demos/lulu-pricing, 2026-08-31). An explicit
+  // refuse client-side — live: /print/order, then /demos/lulu-pricing, 2026-08-31). An explicit
   // caller-resolved `opts.organizationId` still binds on either lane.
   if (token) {
     headers = applyOrganizationContextHeader(

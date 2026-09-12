@@ -12,6 +12,7 @@
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Play,
@@ -453,6 +454,7 @@ export function SetDetailView({ setId }: { setId: string }) {
     | "sessions"
     | "practice-oral"
     | "audio-review"
+    | "print-hub"
     | null
   >(null);
 
@@ -647,8 +649,7 @@ export function SetDetailView({ setId }: { setId: string }) {
       | "edit"
       | "sessions"
       | "practice-oral"
-      | "audio-review"
-      | "print-hub",
+      | "audio-review",
     path: string,
   ) => {
     if (isPending) return;
@@ -1358,14 +1359,14 @@ export function SetDetailView({ setId }: { setId: string }) {
                           the rest (cheat sheets, practice tests, certificates,
                           labels, codes, booklets, printed copies). */}
                       <Button
+                        asChild
                         variant="ghost"
                         className="h-11 justify-start"
-                        onClick={() => {
-                          setDeckToolsOpen(false);
-                          navigate("print-hub", "/print");
-                        }}
+                        onClick={() => setDeckToolsOpen(false)}
                       >
-                        <Printer className="mr-2 h-4 w-4" /> More printing
+                        <Link href="/print">
+                          <Printer className="mr-2 h-4 w-4" /> More printing
+                        </Link>
                       </Button>
                     </div>
                   </section>

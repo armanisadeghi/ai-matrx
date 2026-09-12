@@ -2,7 +2,7 @@
 
 /**
  * OrganizationRequiredNotice — the ONE "no organization selected yet" surface
- * for a mount-time fetch, everywhere except lulu-pricing (which predates
+ * for a mount-time fetch, everywhere except the print-order surface (which predates
  * this and carries its own local copy — consolidate onto this the next time
  * that file is touched).
  *
@@ -19,7 +19,7 @@
  * fell through to generic error-card handling, which shows the raw
  * `OrganizationContextError` message with a "Retry" button that fails
  * identically forever, since retrying without an organization can't
- * succeed. Found and fixed first on `app/(dev)/demos/lulu-pricing`.
+ * succeed. Found and fixed first on the Lulu order surface, now `/print/order`.
  *
  * THE FIX
  * -------

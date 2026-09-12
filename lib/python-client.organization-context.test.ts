@@ -138,7 +138,7 @@ describe("python-client organization admission (sender-side, fail-closed)", () =
 
   it("GUEST LANE: a fingerprint-only request sends WITHOUT an organization (the server admits that lane org-less)", async () => {
     // No JWT, guest fingerprint present — the lane a public demo or
-    // marketing surface uses. Demanding an org here made /demos/lulu-pricing
+    // marketing surface uses. Demanding an org here made the print-order surface
     // refuse for every anonymous visitor (live, 2026-08-31).
     const { supabase } = jest.requireMock("@/utils/supabase/client") as {
       supabase: { auth: { getSession: jest.Mock } };

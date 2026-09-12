@@ -677,12 +677,12 @@ export default function LuluPricingDemoPage() {
     selection.pageCount > pageWindow.max;
 
   return (
-    <div className="mx-auto w-full max-w-[80rem] px-4 py-8 lg:px-8 lg:py-12">
-      <header className="mb-10 max-w-3xl space-y-3">
-        <h1 className="text-4xl font-semibold tracking-tight text-foreground">
-          Print pricing calculator
-        </h1>
-        <p className="text-base leading-relaxed text-muted-foreground">
+    // No title block: the route header owns this page's identity
+    // (core-route-headers, failure class 3), and PrintSectionFrame owns the
+    // max width and the top offset under the glass header.
+    <div className="w-full">
+      <header className="mb-8 max-w-3xl space-y-2">
+        <p className="text-sm leading-relaxed text-muted-foreground">
           Build your book and see exactly what it costs to print and ship —
           priced live, the moment every option is set. Combinations that
           can&apos;t be printed switch themselves off as you go.

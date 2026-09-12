@@ -10,7 +10,7 @@
  *
  *  1. Binding fail-closed on the GUEST lane — a public demo or marketing
  *     surface throwing "Select an organization" at an anonymous visitor who
- *     can never satisfy it (live: /demos/lulu-pricing, 2026-08-31).
+ *     can never satisfy it (live: /print/order, then /demos/lulu-pricing, 2026-08-31).
  *  2. Binding at BOOT, before the app-context organization hydrates — burning
  *     refused requests against the gate (~511 [AUTH][REJECT] POST
  *     /files/session in ~35 minutes from one user, 2026-08-31).

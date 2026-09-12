@@ -1,4 +1,4 @@
-# Lulu print calculator + paid order flow (`/demos/lulu-pricing`)
+# Lulu print calculator + paid order flow (`/print/order`)
 
 Configure a book, get a live Lulu quote, and buy the print through Stripe Checkout —
 but only when the backend confirms which payment mode it is in. The server re-quotes
@@ -9,7 +9,7 @@ Review row: `agent.review_queue` `d6a2d36d-f2e4-4005-9ec8-c3499e1fcda9`.
 
 ## 🚨 THE LIVE-MONEY GATE — do not remove
 
-This demo can open a REAL Stripe checkout. On 2026-09-07 an independent reviewer
+This surface can open a REAL Stripe checkout. On 2026-09-07 an independent reviewer
 driving it from `localhost:3001` was handed an actual `cs_live_` session, under a
 screen that asserted "test mode when pointed at localhost". A page can never know
 that: the base-URL resolver follows the admin server toggle, so a local page may be
@@ -79,12 +79,12 @@ disabled; `createOrder` never called on a click while the gate is shut; and
 `paymentModeAllowsOrdering` from `formComplete` turns 4 of the 5 red.
 
 ```bash
-npx jest "lulu-pricing/__tests__/order-gate" --no-coverage
+npx jest "features/print/order/__tests__/order-gate" --no-coverage
 ```
 
 ## Files
 
-- `page.dev.tsx` — the route; configuration + quote.
+- `PrintOrderWorkspace.tsx` — the configurator + quote (route: `app/(core)/print/order/page.tsx`).
 - `OrderFlow.tsx` — order form, `PaymentModeBadge`, the gate, the orders list.
 - `ordering-gate.ts` — the backend's payment-mode answer and THE GATE.
 - `order-api.ts` / `lulu-api.ts` — typed-client transport for the contract-bound routes.
