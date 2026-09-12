@@ -12,6 +12,8 @@ describe("AI Work overview destinations", () => {
       expect.arrayContaining([
         "/work/conversations",
         "/work/connections",
+        "/work/new",
+        "/work/requests",
         "/chat/new",
         "/projects",
         "/tasks",
@@ -23,14 +25,9 @@ describe("AI Work overview destinations", () => {
     );
   });
 
-  it("does not advertise unbuilt compose, request, import, or automation routes", () => {
+  it("does not advertise unbuilt import or automation routes", () => {
     expect(hrefs).not.toEqual(
-      expect.arrayContaining([
-        "/work/new",
-        "/work/requests",
-        "/work/import",
-        "/work/automations",
-      ]),
+      expect.arrayContaining(["/work/import", "/work/automations"]),
     );
   });
 
@@ -44,6 +41,8 @@ describe("AI Work overview destinations", () => {
     expect(items.map((item) => item.href)).toEqual(
       expect.arrayContaining([
         "/work",
+        "/work/new",
+        "/work/requests",
         "/work/conversations",
         "/work/connections",
         "/agent-connections/plugins",
@@ -56,5 +55,14 @@ describe("AI Work overview destinations", () => {
     expect(items.filter((item) => item.value !== undefined)).toEqual([
       expect.objectContaining({ href: "/work/conversations", value: 17 }),
     ]);
+    expect(items.find((item) => item.href === "/work/conversations")).toEqual(
+      expect.objectContaining({ label: "Conversations" }),
+    );
+    expect(
+      items.find((item) => item.href === "/agent-connections/plugins"),
+    ).toEqual(expect.objectContaining({ label: "Connection setup" }));
+    expect(items.find((item) => item.href === "/work/connections")).toEqual(
+      expect.objectContaining({ label: "Sync status" }),
+    );
   });
 });

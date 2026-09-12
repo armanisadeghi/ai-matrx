@@ -31,7 +31,7 @@ export function ConversationsBrowse({
             stale list here is indistinguishable from a quiet day unless the
             surface says so. Renders nothing while capture is healthy.
           */}
-          <CaptureGapAlertConnected />
+          {!embedded && <CaptureGapAlertConnected />}
           <SyncStateIndicator />
           <ConversationAudienceFilter list={list} />
         </div>

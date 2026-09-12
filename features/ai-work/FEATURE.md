@@ -36,7 +36,7 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 - `compose/components/SavedRequestsList.tsx` — mine-scoped Saved Requests with open/delete doors.
 - `components/AiWorkOverview.tsx` — compact signed-in home that embeds the canonical conversation workspace without a second scroll owner or a duplicate header.
 - `components/AiWorkDestinationNavigation.tsx` — merges `AI_WORK_DOOR_GROUPS` with the canonical AI Work shell children, preserving destination availability/external metadata and attaching the conversation count only from `EntityListController`.
-- `conversations/components/ConversationsBrowse.tsx` — `/work/conversations`: `<EntityListPage config={conversationListConfig}/>` plus the two things this surface owes above the table (the audience door and the sync indicator).
+- `conversations/components/ConversationsBrowse.tsx` — `/work/conversations`: `<EntityListPage config={conversationListConfig}/>` plus audience controls, compact sync state, and the capture-gap alert only on the standalone inbox. The embedded home keeps the compact status door so an alarm does not displace the first useful rows.
 - `conversations/components/ConversationAudienceFilter.tsx` — **AI chats / External app runs / Internal Matrx runs** (+ All), each with a TRUE count from the facets query, then the second cut inside the chosen bucket (which app for chats and external runs; which run type for internal runs) with bucket-scoped counts. Writes the ordinary `audience` filter, then `source_app` / `conversation_type`, so it can never disagree with the column header or the Filters panel.
 - `conversations/components/ConversationProvenancePanel.tsx` — every displayed field grouped by the system that produced it (coding provider / AI Matrx / sync layer), with `title_source` stated beside the title. Rendered by BOTH the provider transcript and the AI Matrx detail view.
 - `conversations/components/MatrxConversationDetail.tsx` — the non-provider half of the detail route.
@@ -215,6 +215,8 @@ Compose and Saved Requests shipped 2026-08-15 (TASK-005). Open work, in the plan
 ---
 
 ## Change log
+
+- `2026-09-11` — Tightened the embedded `/work` workspace after live layout review: complete Start work and Saved requests doors join the compact strip; connection setup and sync status are named separately; the home holds only compact sync state; and 44px audience controls scroll horizontally on narrow screens instead of squeezing their labels.
 
 - `2026-09-11` — Rebuilt `/work` around the substantive canonical conversation workspace. The compact destination strip derives every AI Work door from `AI_WORK_DOOR_GROUPS` and the shell children; only the controller's real filtered conversation total appears, while destinations without complete data intentionally remain unnumbered.
 

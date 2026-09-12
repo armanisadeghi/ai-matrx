@@ -80,7 +80,7 @@ function secondCut(bucket: ConversationAudienceId): {
 
 function chipClass(selected: boolean): string {
   return cn(
-    "inline-flex h-8 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors",
+    "inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-2.5 text-xs font-medium transition-colors",
     selected
       ? "bg-primary text-primary-foreground"
       : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -105,7 +105,9 @@ export function ConversationAudienceFilter({
   // The second cut is only offered inside ONE bucket; with "All" or a custom
   // bag there is no bucket to cut.
   const bucket =
-    active === "all" || active === "custom" ? null : (active as ConversationAudienceId);
+    active === "all" || active === "custom"
+      ? null
+      : (active as ConversationAudienceId);
   const cut = bucket ? secondCut(bucket) : null;
   const cutOptions = cut
     ? facetValues(list.facets, cut.facet)
@@ -117,51 +119,59 @@ export function ConversationAudienceFilter({
     : [];
   const cutFilter = cut ? list.query.filters[cut.filterId] : undefined;
   const cutSelected =
-    cutFilter && cutFilter.kind === "select" ? new Set(cutFilter.values) : new Set<string>();
+    cutFilter && cutFilter.kind === "select"
+      ? new Set(cutFilter.values)
+      : new Set<string>();
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <div
-          className="inline-flex items-center rounded-md border border-border bg-card p-0.5"
-          role="group"
-          aria-label="Which conversations to show"
-        >
-          {CONVERSATION_AUDIENCES.map((id) => {
-            const Icon = BUCKET_ICONS[id];
-            const selected = active === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                title={BUCKET_HINTS[id]}
-                aria-pressed={selected}
-                onClick={() => list.setFilters(applyAudience(list.query.filters, id))}
-                className={chipClass(selected)}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{audienceLabel(id)}</span>
-                {/* A count IS a door: the number is how the user knows what a
-                    bucket holds, and clicking it is how they reach it. */}
-                <span className="tabular-nums opacity-70">
-                  {bucketTotal(list.facets, id).toLocaleString()}
-                </span>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            title="Every conversation in every bucket."
-            aria-pressed={active === "all"}
-            onClick={() => list.setFilters(applyAudience(list.query.filters, "all"))}
-            className={chipClass(active === "all")}
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="w-full overflow-x-auto pb-1 sm:w-auto">
+          <div
+            className="inline-flex min-w-max items-center rounded-md border border-border bg-card p-0.5"
+            role="group"
+            aria-label="Which conversations to show"
           >
-            <Layers className="h-3.5 w-3.5" />
-            <span>All</span>
-            <span className="tabular-nums opacity-70">
-              {everything.toLocaleString()}
-            </span>
-          </button>
+            {CONVERSATION_AUDIENCES.map((id) => {
+              const Icon = BUCKET_ICONS[id];
+              const selected = active === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  title={BUCKET_HINTS[id]}
+                  aria-pressed={selected}
+                  onClick={() =>
+                    list.setFilters(applyAudience(list.query.filters, id))
+                  }
+                  className={chipClass(selected)}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{audienceLabel(id)}</span>
+                  {/* A count IS a door: the number is how the user knows what a
+                    bucket holds, and clicking it is how they reach it. */}
+                  <span className="tabular-nums opacity-70">
+                    {bucketTotal(list.facets, id).toLocaleString()}
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              title="Every conversation in every bucket."
+              aria-pressed={active === "all"}
+              onClick={() =>
+                list.setFilters(applyAudience(list.query.filters, "all"))
+              }
+              className={chipClass(active === "all")}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>All</span>
+              <span className="tabular-nums opacity-70">
+                {everything.toLocaleString()}
+              </span>
+            </button>
+          </div>
         </div>
         {active === "custom" && (
           <span className="text-xs text-muted-foreground">
@@ -174,14 +184,14 @@ export function ConversationAudienceFilter({
         <div
           className="flex flex-wrap items-center gap-1"
           role="group"
-          aria-label={
-            bucket === "internal" ? "Which kind of run" : "Which app"
-          }
+          aria-label={bucket === "internal" ? "Which kind of run" : "Which app"}
         >
           {cutOptions.map((option) => {
             const selected = cutSelected.has(option.value);
             const label =
-              option.value === "__none__" ? cut.noneLabel : cut.format(option.value);
+              option.value === "__none__"
+                ? cut.noneLabel
+                : cut.format(option.value);
             return (
               <button
                 key={option.value}
@@ -194,7 +204,10 @@ export function ConversationAudienceFilter({
                   if (selected && cutSelected.size === 1) {
                     delete next[cut.filterId];
                   } else {
-                    next[cut.filterId] = { kind: "select", values: [option.value] };
+                    next[cut.filterId] = {
+                      kind: "select",
+                      values: [option.value],
+                    };
                   }
                   list.setFilters(next);
                 }}

@@ -20,6 +20,19 @@ export interface WorkDoor {
 
 const CONTINUE_DOORS: readonly WorkDoor[] = [
   {
+    title: "Start work",
+    description:
+      "Compose and launch a new AI Matrx request with the available destinations.",
+    href: "/work/new",
+    iconName: "BrainCircuit",
+  },
+  {
+    title: "Saved requests",
+    description: "Reuse and manage the requests you have saved.",
+    href: "/work/requests",
+    iconName: "BookmarkCheck",
+  },
+  {
     title: "All conversations",
     description:
       "Browse AI Matrx chats and provider mirrors in one organized inbox.",
@@ -67,7 +80,7 @@ const CONFIGURE_DOORS: readonly WorkDoor[] = [
     iconName: "BookOpen",
   },
   {
-    title: "Coding connections",
+    title: "Sync status",
     description:
       "See exact delivery, account, and runtime state, plus Claude history sync via Matrx Local.",
     href: "/work/connections",
@@ -98,11 +111,21 @@ function workNavChildren(): readonly MetricNavigationItem[] {
   const work = primaryNavItems.find((item) => item.label === "AI Work");
   return (work?.children ?? []).map((item) => ({
     key: item.href,
-    label: item.label,
+    label:
+      item.href === "/work/conversations"
+        ? "Conversations"
+        : item.href === "/agent-connections/plugins"
+          ? "Connection setup"
+          : item.label,
     href: item.href,
     iconName: item.iconName,
     color: item.color ?? work?.color,
-    description: item.description,
+    description:
+      item.href === "/work/conversations"
+        ? "The current conversation inbox view"
+        : item.href === "/agent-connections/plugins"
+          ? "Install and configure coding-provider connections"
+          : item.description,
     external: item.external,
   }));
 }
