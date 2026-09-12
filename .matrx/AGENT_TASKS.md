@@ -55,6 +55,24 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 
+### TASK-015: Regenerate database types after the keyword-placement migration applies
+- **Status:** ready
+- **Created:** 2026-09-12
+- **Source:** PR #217 (keyword placement reads through the ONE ladder) merged with its migration unapplied — the cloud session that built it had no working Supabase key.
+
+**Goal**
+`pnpm type-check` is green on main again and the inherited-placement markers on the five keyword surfaces show the governing rung, because `types/database.types.ts` carries the two columns `seo.gsc_keyword_topics_for` now returns.
+
+**Subtasks**
+- [ ] Confirm `migrations/seo_keyword_placement_one_resolver.sql` is applied (`pnpm check:migrations`; the release script applies pending files itself on the next release, or run `pnpm db:apply migrations/seo_keyword_placement_one_resolver.sql` from a checkout whose `.env` the project accepts).
+- [ ] `pnpm check:keyword-placement-tenancy:strict` — nine checks, all ok (it plants a two-organization case and rolls it back).
+- [ ] `pnpm db-types`, then `pnpm type-check` — the three `TS2339` errors in `features/marketing/seo/keyword-workbench/data.ts` (`scope_tier`, `scope_organization_id`) must be gone; commit the regenerated types.
+- [ ] In the in-app browser on All Green Recycling and Data Destruction, walk the keyword workbench, keyword table, Search Console dimension table, value workbench and keyword dossier: Offering cells present, inherited-rung markers present, no cross-organization topic.
+
+**Notes**
+Until the types are regenerated the reader sees `scope_tier` as undefined and every inherited-placement marker is absent — degraded, not broken. Sibling tier-blind readers are `FOUND_DEFECTS.md` D314; the 1,000-row RPC cap class is D315. Common-docs SEO handoff task 11 carries the same step.
+
+
 ### TASK-014: Verify cloud-files realtime ownership repair
 - **Status:** ready
 - **Created:** 2026-09-09
