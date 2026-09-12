@@ -82,6 +82,9 @@ import {
   definedOnly,
   useAdminSchedulingScopeSlice,
 } from "@/features/scheduling/lib/admin-scheduling-scope";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 // The trigger types humanizeTrigger knows. A system trigger's `type` arrives
 // as a plain string on this wire (defensive contract), so an unknown value
@@ -124,6 +127,8 @@ function lastRunTone(
 }
 
 export default function SystemJobsPage() {
+  const { organizationId, canLoad, organizationRequired } =
+    useOrganizationRequired();
   const [rows, setRows] = useState<SystemTaskResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
@@ -151,7 +156,11 @@ export default function SystemJobsPage() {
       system_job_enabled_count: loading
         ? undefined
         : rows.filter((r) => r.enabled).length,
-      system_jobs_load_error: loadError ?? undefined,
+      system_jobs_load_error:
+        loadError ??
+        (organizationRequired
+          ? "No organization is selected — every scheduling request is refused before the wire."
+          : undefined),
       db_job_count: dbLoading ? undefined : dbRows.length,
       db_job_active_count: dbLoading
         ? undefined
@@ -169,7 +178,11 @@ export default function SystemJobsPage() {
       setRows(Array.isArray(res?.tasks) ? res.tasks : []);
       setLoadError(null);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : String(err));
+      if (isOrganizationRequiredError(err)) {
+        setLoadError(null);
+      } else {
+        setLoadError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
       setLoading(false);
       setFetching(false);
@@ -183,7 +196,11 @@ export default function SystemJobsPage() {
       setDbRows(Array.isArray(res?.jobs) ? res.jobs : []);
       setDbLoadError(null);
     } catch (err) {
-      setDbLoadError(err instanceof Error ? err.message : String(err));
+      if (isOrganizationRequiredError(err)) {
+        setDbLoadError(null);
+      } else {
+        setDbLoadError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
       setDbLoading(false);
       setDbFetching(false);
@@ -191,9 +208,15 @@ export default function SystemJobsPage() {
   }, []);
 
   useEffect(() => {
+    // Redux organization context hydrates after the first client render. Both
+    // transports correctly refuse an organization-less request before the
+    // wire, so wait for admission and rerun whenever the selected org changes.
+    if (!canLoad) return;
+    setLoading(true);
+    setDbLoading(true);
     void load();
     void loadDb();
-  }, [load, loadDb]);
+  }, [canLoad, load, loadDb, organizationId]);
 
   const markBusy = (id: string, on: boolean) =>
     setBusy((prev) => {
@@ -741,6 +764,25 @@ export default function SystemJobsPage() {
       onSelect: () => clickedDbJob && setEditingDbJob(clickedDbJob),
     },
   ];
+
+  // Nothing here can load without an organization, and the refusal happens
+  // before the wire — so the screen says exactly that, with the picker, rather
+  // than printing the transport's sentence into an empty-table caption.
+  if (organizationRequired) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
+        <OrganizationRequiredNotice
+          what="System jobs"
+          onRetry={() => {
+            setLoading(true);
+            setDbLoading(true);
+            void load();
+            void loadDb();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">

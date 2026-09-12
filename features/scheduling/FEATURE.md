@@ -217,6 +217,12 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-12** — System Jobs now waits for explicit organization admission
+  before calling either admin registry and reloads both registries when the
+  selected organization arrives or changes. This closes the cold-boot race
+  that left both tables permanently showing the transport's pre-wire refusal
+  after the header had finished selecting an organization; a two-phase React
+  guard pins both "never fire during boot" and "do fire after admission."
 - **2026-09-12** — The record read now admits every RLS-visible schedule kind.
   `getAgentTask` selects by id plus the soft-delete boundary only and uses a
   nullable agent extension, so `kind='ping'` rows no longer become false access

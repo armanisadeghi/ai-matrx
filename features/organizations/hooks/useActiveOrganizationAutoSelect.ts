@@ -1,18 +1,34 @@
-// features/organizations/hooks/useDefaultOrganizationAutoSelect.ts
+// features/organizations/hooks/useActiveOrganizationAutoSelect.ts
 //
-// THE STATED DEFAULT IS HONORED, ALWAYS. If the user has told us which
-// organization they work in, no boot may end with "you have no organization
-// selected — pick one" while that org sits in their list with a star on it.
+// BOOT ENDS WITH A SELECTION. If the user belongs to any organization at all,
+// no boot may end with "you have no organization selected" while every
+// transport refuses to send a request. The primary path is
+// `resolveActiveOrgContext` inside the appContextPolicy sync fetch; this hook
+// is the second, independent layer — it needs no network and no sync engine:
+// the moment Redux holds enough to name an org, an unset active org is filled
+// in, applying the SAME canonical rung order as the resolver.
 //
-// The primary path is `resolveActiveOrgContext` inside the appContextPolicy
-// sync fetch (it reads the same preference straight from `user_preferences`).
-// This hook is the second, independent layer: it needs no network and no sync
-// engine — the moment Redux holds BOTH a default-org preference and a
-// membership list containing it, an unset active org is filled in.
+// Rungs applied here (the resolver's a → c; its rung 0, the shared apex
+// cookie, is already folded into appContextPolicy.deserialize):
+//   a. the stated default-org preference, if it is one of the memberships;
+//   b. the user's OWN personal org, if it is one of the memberships — an
+//      explicit, visible, changeable choice made ONCE at bootstrap. This is
+//      not the forbidden personal-org fallback: transports still refuse an
+//      unselected org (`requireSelectedOrgId`), and nothing per-request
+//      substitutes anything;
+//   c. exactly one membership → that one.
+// No memberships at all → nothing is selected and the UI says so honestly
+// (`OrganizationRequiredNotice`).
 //
 // It warns loudly when it fires, because reaching this layer means the primary
 // path did not do its job — a recovery that fires silently is a bug that never
 // gets fixed.
+//
+// History (2026-09-12): this layer used to require a stated default-org
+// preference, exactly like the primary path — so a user with nine memberships
+// and a null `defaultOrganizationId` had BOTH layers decline, and the app sat
+// forever with no selection while the header rendered the personal org and
+// every request threw "Select an organization before sending this request."
 
 "use client";
 
@@ -20,6 +36,7 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
+  selectPersonalOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
@@ -33,18 +50,40 @@ import type { OrgNode } from "@/features/scopes/types";
  * hollow cached record whose `cacheSatisfies` miss has just kicked off the
  * cold-boot fetch. Firing the instant that flag flips would race the resolver
  * and print a "resolve failed" warning that is simply early. A short grace
- * makes the warning mean what it says: after this long with a stated default
- * and no active org, the primary path really did not deliver.
+ * makes the warning mean what it says: after this long with memberships and no
+ * active org, the primary path really did not deliver.
  */
 const PRIMARY_RESOLVE_GRACE_MS = 2000;
 
 /**
- * Auto-select the user's default organization when nothing is active yet.
+ * Pick the org this boot should end with, applying the canonical rung order to
+ * what Redux already holds. Returns null only when nothing can be named.
+ */
+export function pickActiveOrganization(
+  organizations: readonly OrgNode[],
+  defaultOrganizationId: string | null | undefined,
+  personalOrganizationId: string | null | undefined,
+): OrgNode | null {
+  if (organizations.length === 0) return null;
+  if (defaultOrganizationId) {
+    const stated = organizations.find((o) => o.id === defaultOrganizationId);
+    if (stated) return stated;
+  }
+  if (personalOrganizationId) {
+    const personal = organizations.find((o) => o.id === personalOrganizationId);
+    if (personal) return personal;
+  }
+  if (organizations.length === 1) return organizations[0];
+  return null;
+}
+
+/**
+ * Auto-select the active organization when nothing is active yet.
  *
  * @param organizations the user's memberships (scope tree). An empty list means
  *   "not loaded / no memberships" — nothing is selected from it.
  */
-export function useDefaultOrganizationAutoSelect(
+export function useActiveOrganizationAutoSelect(
   organizations: readonly OrgNode[],
 ): void {
   const dispatch = useAppDispatch();
@@ -52,14 +91,18 @@ export function useDefaultOrganizationAutoSelect(
   const activeOrgId = useAppSelector(selectOrganizationId);
   const bootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const defaultOrganizationId = useAppSelector(selectDefaultOrganizationId);
+  const personalOrganizationId = useAppSelector(selectPersonalOrganizationId);
 
   useEffect(() => {
     if (activeOrgId) return;
-    if (!defaultOrganizationId) return;
     // Before bootstrap resolves, the sync engine may still be about to deliver
     // the org — let the primary path win rather than racing it.
     if (!bootstrapResolved) return;
-    const match = organizations.find((o) => o.id === defaultOrganizationId);
+    const match = pickActiveOrganization(
+      organizations,
+      defaultOrganizationId,
+      personalOrganizationId,
+    );
     if (!match) return;
 
     // Give the primary resolve its grace period, then re-check the LIVE store
@@ -72,9 +115,14 @@ export function useDefaultOrganizationAutoSelect(
       const live = store.getState().appContext;
       if (live.organization_id) return;
       console.warn(
-        "[organizations] Active org was empty while a default organization is set — selecting it. " +
+        "[organizations] Boot ended with no active organization while one could be named — selecting it. " +
           "The appContextPolicy resolve should have done this; if you are seeing this line, that path failed.",
-        { defaultOrganizationId },
+        {
+          selected: match.id,
+          defaultOrganizationId,
+          personalOrganizationId,
+          membershipCount: organizations.length,
+        },
       );
       dispatch(chooseActiveOrganization({ id: match.id, name: match.name }));
     }, PRIMARY_RESOLVE_GRACE_MS);
@@ -85,6 +133,7 @@ export function useDefaultOrganizationAutoSelect(
     activeOrgId,
     bootstrapResolved,
     defaultOrganizationId,
+    personalOrganizationId,
     organizations,
   ]);
 }

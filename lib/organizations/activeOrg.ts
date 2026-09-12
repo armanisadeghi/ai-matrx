@@ -20,6 +20,13 @@
 // `appContext` shape is declared inline for the same reason.
 
 import { getStoreSingleton as getStore } from "@/lib/redux/store-singleton";
+// The ONE error type for "no organization is selected" — the same class the
+// transport kernel throws (`@ai-matrx/agents/matrx`, re-exported by
+// `lib/api/organization-context`). Two different error shapes for one fact
+// meant every surface had to string-match one of them, so the screens showed a
+// raw transport sentence instead of an honest state; there is now one type and
+// one recogniser (`isOrganizationRequiredError`).
+import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 
 interface AppContextOrgShape {
   organization_id: string | null;
@@ -76,7 +83,10 @@ export function requireActiveOrgId(): string {
 export function requireSelectedOrgId(): string {
   const id = getSelectedOrgId();
   if (typeof id !== "string" || id.trim().length === 0) {
-    throw new Error("Select an organization before sending this request.");
+    throw new OrganizationContextError(
+      "organization_context_required",
+      "Select an organization before sending this request.",
+    );
   }
   return id.trim();
 }
