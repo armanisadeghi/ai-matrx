@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { getSharedAudioContext } from "@ai-matrx/browser-audio/core";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface WavePlayerProps {
   blob: Blob;
@@ -55,7 +56,7 @@ export function WavePlayer({ blob, label, expectedSec }: WavePlayerProps) {
     };
   }, [blob]);
 
-  const sizeKb = (blob.size / 1024).toFixed(0);
+  const sizeLabel = formatFileSize(blob.size);
 
   return (
     <div className="rounded-md border border-border bg-card p-3">
@@ -99,7 +100,7 @@ export function WavePlayer({ blob, label, expectedSec }: WavePlayerProps) {
             <span className="ml-1 text-destructive">(silent!)</span>
           )}
         </span>
-        <span>{sizeKb} KB</span>
+        <span>{sizeLabel}</span>
       </div>
 
       {error && <p className="mt-1 text-xs text-destructive">Decode error: {error}</p>}

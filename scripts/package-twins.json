@@ -673,7 +673,13 @@
       "shapeAllow": [
         {
           "file": "features/organizations/admin/utils.ts",
-          "reason": "NOT a display formatter: gbToBytes/bytesToGb convert between a storage-quota NUMBER and the bare number an admin types into a GB form field. There is no unit label and no rounding decision \u2014 the string is parsed back into a number on submit, so kit's '1.5 GB' would break the field. The same file's display door on line 27 IS the package (export const formatBytes = formatFileSize)."
+          "reason": "NOT a display formatter: gbToBytes/bytesToGb convert between a storage-quota NUMBER and the bare number an admin types into a GB form field. There is no unit label and no rounding decision \u2014 the string is parsed back into a number on submit, so kit's '1.5 GB' would break the field. The same file's display door on line 27 IS the package (export const formatBytes = formatFileSize).",
+          "why": "bytesToGb/gbToBytes are FORM round-trip converters, not formatters: they turn a byte column into the bare number a GB input field edits and back again. There is no unit label and no rendered string \u2014 formatFileSize returns \"2.0 GB\", which cannot go in a number input."
+        },
+        {
+          "file": "utils/stream-profiler.ts",
+          "reason": "NOT a display formatter: memoryGrowthMB is a NUMBER written into a machine-readable profiler report whose unit lives in the COLUMN NAME (MemoryGrowthMB), consumed by console.table and by whoever reads the dump - there is no unit label and no human rounding decision. It is also signed: memory that SHRANK is a negative growth, and formatFileSize deliberately returns an em-dash for a negative size.",
+          "why": "memoryGrowthMB is a diagnostic REPORT FIELD whose unit lives in the key name (MemoryGrowthMB), pinned to MB on purpose so two runs are comparable. It is a number in a console table, never a unit string on a screen."
         }
       ],
       "allow": []

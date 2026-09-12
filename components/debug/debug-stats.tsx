@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 // Add type for Chrome's non-standard memory API
 interface MemoryInfo {
@@ -37,10 +38,12 @@ export function DebugStats() {
 
             // Update memory metrics if available
             if (extendedPerf.memory) {
+                // Raw bytes in state: the unit is formatFileSize's decision,
+                // and the gauge ratio below is unit-free either way.
                 setMemoryInfo({
-                    used: Math.round(extendedPerf.memory.usedJSHeapSize / 1024 / 1024),
-                    total: Math.round(extendedPerf.memory.totalJSHeapSize / 1024 / 1024),
-                    limit: Math.round(extendedPerf.memory.jsHeapSizeLimit / 1024 / 1024)
+                    used: extendedPerf.memory.usedJSHeapSize,
+                    total: extendedPerf.memory.totalJSHeapSize,
+                    limit: extendedPerf.memory.jsHeapSizeLimit
                 });
             }
 
@@ -83,7 +86,7 @@ export function DebugStats() {
                             <div>
                                 <div className="flex justify-between text-sm mb-2">
                                     <span>Heap Usage</span>
-                                    <span>{memoryInfo.used}MB / {memoryInfo.limit}MB</span>
+                                    <span>{formatFileSize(memoryInfo.used)} / {formatFileSize(memoryInfo.limit)}</span>
                                 </div>
                                 <Progress
                                     value={(memoryInfo.used / memoryInfo.limit) * 100}
@@ -93,11 +96,11 @@ export function DebugStats() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium">Total Allocated</p>
-                                    <p className="text-2xl font-bold">{memoryInfo.total}MB</p>
+                                    <p className="text-2xl font-bold">{formatFileSize(memoryInfo.total)}</p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium">Heap Limit</p>
-                                    <p className="text-2xl font-bold">{memoryInfo.limit}MB</p>
+                                    <p className="text-2xl font-bold">{formatFileSize(memoryInfo.limit)}</p>
                                 </div>
                             </div>
                         </div>
