@@ -177,7 +177,7 @@ export function AttachedDocumentChip({
           side="top"
           align="start"
           sideOffset={6}
-          className="max-h-[min(32rem,70dvh)] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto p-3"
+          className="max-h-[min(32rem,var(--radix-popover-content-available-height))] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto p-3"
           onClick={stopBubble}
         >
           <ResourceFamilyPolicyEditor

@@ -167,7 +167,7 @@ export function SharedCanvasView({
           <PopoverContent
             align="end"
             sideOffset={4}
-            className="max-h-[min(34rem,calc(100dvh-1rem))] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto p-0"
+            className="max-h-[min(34rem,var(--radix-popover-content-available-height))] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto p-0"
           >
             <div className="flex items-center gap-3 border-b border-border p-4">
               <Avatar className="h-10 w-10 border border-border">

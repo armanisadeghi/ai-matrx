@@ -61,6 +61,8 @@ export function KnobOverrideRow(props: {
   organizationId: string;
   /** What a save reaches — said before saving, per settings-ladder rule 9. */
   blastRadius: string;
+  /** Hide the implementation key on curated, user-facing sections. */
+  hideKey?: boolean;
   /**
    * Org screen only: render the per-key "personal overrides" switch (the
    * scfg_50 rung lock — the org turning off user-level control of this one
@@ -75,6 +77,7 @@ export function KnobOverrideRow(props: {
     scopeId,
     organizationId,
     blastRadius,
+    hideKey = false,
     showUserLockControl,
     onChanged,
   } = props;
@@ -198,7 +201,9 @@ export function KnobOverrideRow(props: {
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">{knob.label}</span>
-          <code className="text-xs text-muted-foreground">{knob.key}</code>
+          {!hideKey && (
+            <code className="text-xs text-muted-foreground">{knob.key}</code>
+          )}
           {isSetHere ? (
             <Badge variant="default" className="text-xs">
               Set here

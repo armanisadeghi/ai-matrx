@@ -20,10 +20,17 @@ import type {
   ScopedKnob,
 } from "./types";
 
+export type KnobScopeRef = {
+  kind: KnobScopeKindName;
+  id: string;
+};
+
 export async function fetchKnobIndex(options: {
   organizationId: string;
   featurePrefix?: string;
   userId?: string;
+  deviceId?: string;
+  scopes?: KnobScopeRef[];
   overriddenOnly?: boolean;
 }): Promise<ScopedKnob[]> {
   const supabase = createClient();
@@ -31,6 +38,8 @@ export async function fetchKnobIndex(options: {
     p_organization_id: options.organizationId,
     p_feature_prefix: options.featurePrefix,
     p_user_id: options.userId,
+    p_device_id: options.deviceId,
+    p_scopes: options.scopes,
     p_overridden_only: options.overriddenOnly ?? false,
   });
   if (error) throw new Error(`knob_index failed: ${error.message}`);

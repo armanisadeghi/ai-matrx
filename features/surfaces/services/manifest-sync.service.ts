@@ -1247,6 +1247,10 @@ export const RECENT_ROW_WINDOW_HOURS = 24;
  */
 export const RECENT_ROW_REFUSAL_PREFIX = "Recently updated:";
 
+/** Stable prefixes used by the shared API error-to-status mapper. */
+export const NO_SUCH_MIRROR_ROW_PREFIX = "No such mirror row:";
+export const STILL_DECLARED_REFUSAL_PREFIX = "Still declared:";
+
 export interface DeleteMirrorRowArgs {
   table: MirrorTable;
   surfaceName: string;
@@ -1316,7 +1320,7 @@ export async function deleteMirrorRow(
   if (read.error) throw read.error;
   if (!read.data) {
     throw new Error(
-      `No ${table} row for ${surfaceName} · ${name}. It may already be gone — re-run the drift report.`,
+      `${NO_SUCH_MIRROR_ROW_PREFIX} no ${table} row for ${surfaceName} · ${name}. It may already be gone — re-run the drift report.`,
     );
   }
 
@@ -1325,7 +1329,7 @@ export async function deleteMirrorRow(
   //    drift the next sync re-fixes, and this button is not the tool for it.
   if (manifestKeysForTable(table).has(`${surfaceName}::${name}`)) {
     throw new Error(
-      `${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only removes rows the drift report lists as DB-only.`,
+      `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only removes rows the drift report lists as DB-only.`,
     );
   }
 

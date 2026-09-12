@@ -99,17 +99,24 @@ export function UniversalSettingsRows({
     <>
       {[...groups.entries()].map(([group, rows]) => (
         <SettingsSection key={group} title={group}>
-          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId }, index) => (
+          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId }) => (
             <KnobOverrideRow
               key={knob.full_key}
               knob={knob}
               scopeKind={scopeKind}
               scopeId={scopeId}
               organizationId={organizationId}
-              reach={{ organizationName, members: memberCount }}
-              canManageOrganization={canManageOrganization}
+              blastRadius={
+                scopeKind === "user"
+                  ? "Applies only to you, in this organization."
+                  : memberCount === null
+                    ? `Applies across ${organizationName ?? "this organization"}.`
+                    : `Applies across ${organizationName ?? "this organization"} for ${memberCount} member${memberCount === 1 ? "" : "s"}.`
+              }
+              showUserLockControl={
+                scopeKind === "organization" && canManageOrganization
+              }
               hideKey={hideKey}
-              last={index === rows.length - 1}
               onChanged={settings.refresh}
             />
           ))}

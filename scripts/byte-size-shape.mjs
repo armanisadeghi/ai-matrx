@@ -21,6 +21,53 @@
  * detector requires `/ 1024`, `< 1024`, `>= 1024` etc. That asymmetry is the
  * whole reason the rule is usable — the repo has ~60 legitimate byte ceilings.
  *
+ * THE SINGLE-UNIT FORM (added 2026-09-11 after an independent review). The
+ * window above assumes the unit label sits near the arithmetic. One whole
+ * idiom does not: the conversion is hoisted into a NAMED value at the top of a
+ * component and the label is typed into JSX far below it. In
+ * `features/flashcards/fast-fire/capture-test/WavePlayer.tsx` the division is
+ * on line 58 and the ` KB` is on line 102 — forty-four lines away, invisible to
+ * any window a byte-size rule could afford. What IS on line 58 is the unit: the
+ * name. `const sizeKb = (blob.size / 1024).toFixed(0)` declares its unit in the
+ * identifier, so an identifier ending in a byte unit (`…Kb`, `…KB`, `…MB`,
+ * `…GiB`) taking a byte division is a formatter on its own evidence, with no
+ * window at all.
+ *
+ * THE NAMED-BINDING ARM (added 2026-09-11, same review). The unit is not always
+ * in the name either. `components/debug/debug-stats.tsx` wrote
+ * `setMemoryInfo({ used: Math.round(heap.usedJSHeapSize / 1024 / 1024), … })`
+ * on line 41 and rendered `{memoryInfo.used}MB` on line 86 — the key is `used`,
+ * which says nothing, and the label is forty-five lines away. So the lane also
+ * follows the BINDING: any name a byte division is bound to on that line — a
+ * declaration, an assignment, or an object PROPERTY KEY — and then asks whether
+ * that name is interpolated anywhere in the same file immediately before a unit
+ * label. That is a whole-file question, not a windowed one, which is exactly
+ * why the two hoisted idioms were invisible.
+ *
+ * THE CALL-ARGUMENT ARM (added 2026-09-11, third form of the same review). The
+ * label can also be hidden behind a HELPER, in another module entirely:
+ * `matrx-local`'s LoraManager wrote `${formatGb(lora.size_bytes / 1024 ** 3)}`
+ * — no adjacent unit literal, no unit-named binding, and the " GB" lives
+ * inside `formatGb` two files away. But the CALLEE's name carries the unit, on
+ * the same line as the division, which is all the evidence needed: a byte
+ * division handed to `formatGb` / `toMb` / `asKB` / `humanGb` is a byte-size
+ * formatter with an extra hop. Collapsing it means deleting both halves — the
+ * conversion AND the helper — because `formatFileSize` takes bytes and returns
+ * the unit.
+ *
+ * THE IDENTIFIER-DIVISOR ARM (added 2026-09-11, fourth form). Every arm above
+ * still starts from `BYTE_DIVISOR_RE`, which matches LITERALS. A body that
+ * binds the base first — `const k = 1024; … return `${(bytes / k).toFixed(1)}
+ * KB`` — divides by a name, so the lane skipped it entirely; matrx-frontend's
+ * `InlineUploadArea` carried exactly that, printing "NaN undefined" for a NaN
+ * size, and it escaped the NAME register too because it was spelled
+ * `formatBytes`. So the detector first reads the file for identifiers bound to
+ * a byte base (1024, 1048576, 1073741824, or `1024 ** n`) and then treats a
+ * division by one of those names as a byte division. The EVIDENCE requirement
+ * is unchanged — a unit label nearby, a unit-carrying name, or a unit-named
+ * callee — so `const k = 1024; const chunks = size / k` with no unit anywhere
+ * stays silent.
+ *
  * THE ONE HOME is `formatFileSize` from `@ai-matrx/kit/format`, which owns the
  * display decisions (binary units, one decimal below ten in a unit, whole bytes
  * below 1 KB, em-dash for unknown — never a confident "0 B").
@@ -35,6 +82,82 @@ const UNIT_LABEL_RE = /(?:^|[^A-Za-z])(?:[KMGT]i?B|B)(?:[^A-Za-z]|$)/;
 /** A byte DIVISION or THRESHOLD COMPARISON. Multiplication never matches. */
 const BYTE_DIVISOR_RE =
   /(?:\/\s*\(?\s*(?:1024|1048576|1073741824)|[<>]=?\s*\(?\s*(?:1024|1048576|1073741824))/;
+
+/**
+ * A callee whose NAME carries the unit — `formatGb(bytes / 1024 ** 3)`. The
+ * exponent spellings (`1024 ** 2/3/4`) need no separate divisor pattern: they
+ * are written with the literal 1024 and a division in front of it, so
+ * BYTE_DIVISOR_RE already matches them. A self-test pins that.
+ */
+const UNIT_NAMED_CALLEE_RE =
+  /\b[A-Za-z_$][\w$]*(?:[KkMmGgTt]i?[Bb])\s*\(/;
+
+/**
+ * A value whose NAME carries the unit — `sizeKb`, `totalMB`, `ramGiB`. Paired
+ * with a byte division on the same line this needs no window: the identifier
+ * IS the unit label, which is exactly why the hoisted single-unit idiom slipped
+ * past the windowed rule. Requires an assignment or property position so a
+ * mere mention (`props.sizeKb`) is not a definition.
+ */
+const UNIT_NAMED_VALUE_RE =
+  /\b[\w$]*(?:[KkMmGgTt]i?[Bb])\s*(?::[^=]*)?=(?!=)/;
+
+/**
+ * The name a byte division is bound to on its own line: `const x =`, `x =`, or
+ * the object property `x:`. Captures the name so the file can be asked whether
+ * that name is later rendered beside a unit label.
+ */
+const BINDING_NAME_RES = [
+  /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/,
+  /^\s*([A-Za-z_$][\w$]*)\s*:/,
+  /([A-Za-z_$][\w$]*)\s*=(?!=)/,
+];
+
+/** Names that are far too common to follow across a whole file. */
+const UNFOLLOWABLE_NAMES = new Set(["i", "n", "x", "y", "v", "value", "result"]);
+
+/**
+ * Is `name` interpolated somewhere in this file immediately before a unit
+ * label — `{memoryInfo.used}MB`, `{sizeKb} KB`? The interpolation may be a
+ * bare name or a property access ending in it.
+ */
+function renderedBesideUnit(source, name) {
+  if (UNFOLLOWABLE_NAMES.has(name)) return false;
+  const re = new RegExp(
+    String.raw`\{[^{}]*\b${name}\b[^{}]*\}\s*(?:[KMGT]i?B|B)\b`,
+  );
+  return re.test(source);
+}
+
+/**
+ * Identifiers bound to a byte base in this file: `const k = 1024`,
+ * `const MB = 1024 ** 2`, `let base = 1048576`. Returns the names, so a
+ * division by one of them counts as a byte division.
+ */
+function byteBaseNames(source) {
+  const re =
+    /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::\s*number\s*)?=\s*(?:1024\s*\*\*\s*[234]|1024|1048576|1073741824)\s*(?:;|$)/gm;
+  const names = new Set();
+  let m;
+  while ((m = re.exec(source)) !== null) names.add(m[1]);
+  return names;
+}
+
+/**
+ * A division BY one of this file's byte-base identifiers — directly (`/ k`),
+ * parenthesised (`/ (k * k)`), or through the call the real twin used:
+ * `bytes / Math.pow(k, i)`. Matching only `/ k` would have missed the live
+ * instance this arm exists for.
+ */
+function identifierDivisorRe(names) {
+  if (names.size === 0) return null;
+  const alternation = [...names]
+    .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  return new RegExp(
+    String.raw`\/\s*(?:[A-Za-z_$][\w$.]*\s*\(\s*)?\(?\s*(?:${alternation})\b`,
+  );
+}
 
 /**
  * How many lines on EITHER side of a hit may supply the unit label. The window
@@ -52,10 +175,34 @@ const WINDOW = 6;
  */
 export function byteShapeIn(source) {
   const lines = source.split("\n");
+  const identifierDivisor = identifierDivisorRe(byteBaseNames(source));
   const out = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!BYTE_DIVISOR_RE.test(line)) continue;
+    const divides =
+      BYTE_DIVISOR_RE.test(line) ||
+      (identifierDivisor !== null && identifierDivisor.test(line));
+    if (!divides) continue;
+    // The single-unit form: the identifier carries the unit, so the label may
+    // be anywhere — or nowhere at all, until it is typed into JSX far below.
+    if (UNIT_NAMED_VALUE_RE.test(line) || UNIT_NAMED_CALLEE_RE.test(line)) {
+      out.push({ line: i + 1, text: line.trim() });
+      continue;
+    }
+    // The named-binding arm: follow what this division is bound to, and ask
+    // the WHOLE FILE whether that name is rendered beside a unit label.
+    let bound = false;
+    for (const re of BINDING_NAME_RES) {
+      const m = re.exec(line);
+      if (m && renderedBesideUnit(source, m[1])) {
+        bound = true;
+        break;
+      }
+    }
+    if (bound) {
+      out.push({ line: i + 1, text: line.trim() });
+      continue;
+    }
     const window = lines
       .slice(Math.max(0, i - WINDOW), i + WINDOW + 1)
       .join("\n");
@@ -91,6 +238,111 @@ export function selfTestByteShape() {
   ].join("\n");
   if (byteShapeIn(adopted).length !== 0) {
     return { ok: false, why: "an adopted call site was reported" };
+  }
+  // THE SINGLE-UNIT FORM: the unit is in the NAME and the label is forty-four
+  // lines away in JSX. Nothing but the identifier can catch this.
+  // Deliberately NO unit label anywhere in this fixture: in the real file it
+  // was forty-four lines below, so a fixture that puts one nearby would be
+  // caught by the windowed arm and would prove nothing about this one.
+  const hoisted = ["  const sizeKb = (blob.size / 1024).toFixed(0);"].join("\n");
+  if (byteShapeIn(hoisted).length === 0) {
+    return {
+      ok: false,
+      why: "the hoisted single-unit form (`const sizeKb = blob.size / 1024`) was NOT reported",
+    };
+  }
+  // …and a unit-named CONSTANT still escapes, because it multiplies.
+  const namedCeiling = ["const maxUploadMb = 80 * 1024 * 1024;"].join("\n");
+  if (byteShapeIn(namedCeiling).length !== 0) {
+    return { ok: false, why: "a unit-named capacity CONSTANT was reported" };
+  }
+  // THE NAMED-BINDING ARM: the key says nothing (`used`) and the label is
+  // forty-five lines away in JSX. Only following the binding sees this.
+  const boundProperty = [
+    "        setMemoryInfo({",
+    "          used: Math.round(extendedPerf.memory.usedJSHeapSize / 1024 / 1024),",
+    "        });",
+    "  // …forty-five lines later, in the render:",
+    "  // <span>{memoryInfo.used}MB / {memoryInfo.limit}MB</span>",
+  ].join("\n");
+  if (byteShapeIn(boundProperty).length === 0) {
+    return {
+      ok: false,
+      why: "a byte division bound to an object property and rendered beside `MB` was NOT reported",
+    };
+  }
+  // THE CALL-ARGUMENT ARM: no adjacent label, no unit-named binding — the
+  // unit is in the CALLEE's name and the " GB" is in another module.
+  const callArgument = [
+    "              ? ` · ${formatGb(lora.size_bytes / 1024 ** 3)}`",
+  ].join("\n");
+  if (byteShapeIn(callArgument).length === 0) {
+    return {
+      ok: false,
+      why: "a byte division handed to a unit-named callee (`formatGb(bytes / 1024 ** 3)`) was NOT reported",
+    };
+  }
+  // …and the exponent spellings are covered by the divisor pattern itself.
+  for (const exponent of ["1024 ** 2", "1024 ** 3", "1024 ** 4"]) {
+    const line = `const label = \`\${(bytes / ${exponent}).toFixed(1)} GB\`;`;
+    if (byteShapeIn(line).length === 0) {
+      return { ok: false, why: `the \`${exponent}\` spelling was NOT reported` };
+    }
+  }
+  // A call whose name has no unit is not a formatter by this arm.
+  const plainCallee = ["scheduleUpload(file.size / 1024);"].join("\n");
+  if (byteShapeIn(plainCallee).length !== 0) {
+    return { ok: false, why: "a call with no unit in its name was reported" };
+  }
+  // THE IDENTIFIER-DIVISOR ARM: the base is bound to a name first, so the
+  // literal-only divisor pattern never sees the division at all.
+  // Verbatim shape of the live twin this arm exists for (matrx-frontend's
+  // InlineUploadArea, 2026-09-11): the base is bound to `k` AND the division
+  // goes through `Math.pow(k, i)`, so a rule matching only `/ k` sees nothing.
+  const identifierDivisorBody = [
+    "function formatBytes(bytes: number): string {",
+    '  if (bytes === 0) return "0 B";',
+    "  const k = 1024;",
+    '  const sizes = ["B", "KB", "MB", "GB"];',
+    "  const i = Math.floor(Math.log(bytes) / Math.log(k));",
+    "  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;",
+    "}",
+  ].join("\n");
+  if (byteShapeIn(identifierDivisorBody).length === 0) {
+    return {
+      ok: false,
+      why: "a body dividing by an identifier bound to 1024 was NOT reported",
+    };
+  }
+  // …and the same bound base with no unit anywhere is chunking, not display.
+  const identifierDivisorChunking = [
+    "const k = 1024;",
+    "const chunks = Math.ceil(file.size / k);",
+    "for (let i = 0; i < chunks; i += 1) upload(i);",
+  ].join("\n");
+  if (byteShapeIn(identifierDivisorChunking).length !== 0) {
+    return {
+      ok: false,
+      why: "an identifier divisor with no unit evidence anywhere was reported",
+    };
+  }
+  // …and an identifier bound to something that is NOT a byte base is not a
+  // divisor at all.
+  const unrelatedDivisor = [
+    "const perMinute = 60;",
+    "const rate = `${(events / perMinute).toFixed(1)} B`;",
+  ].join("\n");
+  if (byteShapeIn(unrelatedDivisor).length !== 0) {
+    return { ok: false, why: "a non-byte identifier divisor was reported" };
+  }
+  // A bound name that is NEVER rendered beside a unit is arithmetic, not a
+  // formatter, and must stay silent.
+  const boundButUnlabelled = [
+    "const chunks = Math.ceil(file.size / 1024);",
+    "for (let i = 0; i < chunks; i += 1) upload(i);",
+  ].join("\n");
+  if (byteShapeIn(boundButUnlabelled).length !== 0) {
+    return { ok: false, why: "a bound name never rendered beside a unit was reported" };
   }
   return { ok: true };
 }

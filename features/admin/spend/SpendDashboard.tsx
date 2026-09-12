@@ -138,28 +138,54 @@ export function SpendDashboard() {
   const knobsState = useSpendPopoverKnobs();
   const scareThresholdUsd = knobsState.knobs?.scareThresholdUsd ?? null;
 
+  const applyResult = useCallback(
+    (next: SpendOverview | null, cause: unknown) => {
+      if (next) {
+        setData(next);
+        setError(null);
+        setRefreshedAt(new Date());
+      } else {
+        setData(null);
+        setError(
+          cause instanceof Error
+            ? cause
+            : new Error("The spend read failed for an unknown reason."),
+        );
+      }
+      setLoading(false);
+    },
+    [],
+  );
+
+  // The Refresh button's path. It may set state synchronously because a click
+  // is not an effect.
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const next = await fetchSpendOverview(timezone);
-      setData(next);
-      setRefreshedAt(new Date());
+      applyResult(await fetchSpendOverview(timezone), null);
     } catch (cause) {
-      setData(null);
-      setError(
-        cause instanceof Error
-          ? cause
-          : new Error("The spend read failed for an unknown reason."),
-      );
-    } finally {
-      setLoading(false);
+      applyResult(null, cause);
     }
-  }, [timezone]);
+  }, [timezone, applyResult]);
 
+  // The first read. `loading` already starts true, so nothing is set
+  // synchronously here — every setState lands after the await
+  // (react-hooks/set-state-in-effect).
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const next = await fetchSpendOverview(timezone);
+        if (!cancelled) applyResult(next, null);
+      } catch (cause) {
+        if (!cancelled) applyResult(null, cause);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [timezone, applyResult]);
 
   const ledgerColumns: MatrxColumnDef<SpendLedger>[] = [
     {
