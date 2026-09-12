@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export function EduNoteNew() {
   const router = useRouter();
@@ -22,14 +22,15 @@ export function EduNoteNew() {
 
   useEffect(() => {
     if (started.current) return;
-    if (!organizationId) return;
-    const capturedOrganizationId = requireOrganizationContext(organizationId);
-    started.current = true;
     void (async () => {
       try {
+        const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
+        if (started.current) return;
+        started.current = true;
         const note = await NotesAPI.create({ label: "Untitled note", content: "", organization_id: capturedOrganizationId });
         router.replace(`/education/notes/${note.id}`);
       } catch (e) {
+        if (isOrganizationSelectionCancelled(e)) return;
         setError(e instanceof Error ? e.message : "Could not create the note");
       }
     })();
