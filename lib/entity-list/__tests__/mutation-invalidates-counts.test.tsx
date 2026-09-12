@@ -76,10 +76,16 @@ function makeServer(ids: string[]) {
 }
 
 type List = ReturnType<typeof useEntityList<Row>>;
-let list: List | null = null;
+// A mutable holder, not a reassigned module binding: the hook's own lint rule
+// forbids writing to an outer `let` from a component body.
+const probe: { list: List | null } = { list: null };
 
 function Probe({ service }: { service: ReturnType<typeof makeServer>["service"] }) {
-  list = useEntityList<Row>({
+  // The React Compiler lint forbids a component body writing outside itself.
+  // A probe that reports the hook's live value to the test is exactly that, and
+  // it is the pattern the sibling `service-key-refetch.test.tsx` already uses.
+  // eslint-disable-next-line react-hooks/immutability
+  probe.list = useEntityList<Row>({
     service,
     serviceKey: "fixed",
     getRowId: (row) => row.id,
@@ -100,7 +106,7 @@ describe("a row mutation invalidates every derived read", () => {
   let store: ReturnType<typeof makeStore>;
 
   beforeEach(() => {
-    list = null;
+    probe.list = null;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -126,19 +132,19 @@ describe("a row mutation invalidates every derived read", () => {
     const server = makeServer(["a", "b", "c"]);
     await mount(server);
 
-    expect(list?.counts.byKind.system).toBe(3);
+    expect(probe.list?.counts.byKind.system).toBe(3);
     const countsReadsBefore = server.countsReads;
 
     // The delete a surface performs: the server soft-deletes, the shell drops
     // the row optimistically.
     server.softDelete("b");
     await act(async () => {
-      list?.removeRow("b");
+      probe.list?.removeRow("b");
     });
 
     expect(server.countsReads).toBeGreaterThan(countsReadsBefore);
     // 🚨 The production symptom, in one line: this read 3 before the fix.
-    expect(list?.counts.byKind.system).toBe(2);
+    expect(probe.list?.counts.byKind.system).toBe(2);
   });
 
   it("re-asks the facet options after a delete", async () => {
@@ -148,7 +154,7 @@ describe("a row mutation invalidates every derived read", () => {
 
     server.softDelete("a");
     await act(async () => {
-      list?.removeRow("a");
+      probe.list?.removeRow("a");
     });
 
     expect(server.facetReads).toBeGreaterThan(facetReadsBefore);
@@ -160,7 +166,7 @@ describe("a row mutation invalidates every derived read", () => {
     const countsReadsBefore = server.countsReads;
 
     await act(async () => {
-      list?.patchRow("a", { is_archived: true });
+      probe.list?.patchRow("a", { is_archived: true });
     });
 
     expect(server.countsReads).toBeGreaterThan(countsReadsBefore);
