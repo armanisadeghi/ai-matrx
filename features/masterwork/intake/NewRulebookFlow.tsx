@@ -39,6 +39,7 @@ import {
   Brain,
   Building2,
   Check,
+  ChevronDown,
   FileText,
   Frown,
   Globe,
@@ -398,6 +399,8 @@ export function NewRulebookFlow() {
     searchParams.get("approach"),
   );
   const [saving, setSaving] = useState(false);
+  /** The "On the way" cards are one collapsed line until the Expert opens it. */
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   // The step lives in the URL; the answers live in a draft that is READ BACK
   // ASYNCHRONOUSLY. Until that read settles we know nothing, so we render the
@@ -419,6 +422,23 @@ export function NewRulebookFlow() {
   // card there; it never skips the questions, because the questions also
   // configure the Rulebook itself (sharing, strictness, the Audition baseline).
   const preChosenKey = searchParams.get("approach");
+
+  // THE PARAM WINS (census defect D3, fixed 2026-09-12). `selectedKey` was
+  // seeded from `?approach=` at MOUNT only. This page is one route, so
+  // arriving from the catalog a second time — "From examples of your best
+  // work", then back, then "Everything you've published" — is a client-side
+  // navigation that does NOT remount: the new param was read into nothing and
+  // the PREVIOUS card stayed highlighted. An Expert who trusts the highlight
+  // and presses Start begins the wrong lane, having chosen the right one.
+  // So every CHANGE of the param re-selects; an in-page click still wins
+  // afterwards, because the param has not changed again.
+  const appliedApproachParam = useRef<string | null>(preChosenKey);
+  useEffect(() => {
+    if (!preChosenKey) return;
+    if (appliedApproachParam.current === preChosenKey) return;
+    appliedApproachParam.current = preChosenKey;
+    setSelectedKey(preChosenKey);
+  }, [preChosenKey]);
 
   // One-time draft recovery — fill only what the Expert hasn't typed here.
   // `restored` settles exactly once, when the persisted read comes back.
@@ -467,8 +487,7 @@ export function NewRulebookFlow() {
   // wants every named Approach on screen). Only the STARTABLE ones may begin a
   // Rulebook; the rest are shown below as cards that say what they are.
   const startable = approaches === null ? null : startableApproaches(approaches);
-  const notStartable =
-    approaches === null ? [] : approaches.filter((a) => !a.enabled);
+  const startableKeys = new Set((startable ?? []).map((a) => a.key));
 
   // TWO TIERS, NEVER A GATE (Arman, 2026-08-21): what they told us decides
   // what sits ON TOP; every other Approach stays on the same screen below.
@@ -480,10 +499,42 @@ export function NewRulebookFlow() {
       ? []
       : relevantKeys
           .map((k) => approaches.find((a) => a.key === k))
-          .filter((a): a is DistillationApproach => Boolean(a));
+          .filter((a): a is DistillationApproach => Boolean(a))
+          // An unbuilt Approach that FITS is still unbuilt, and five of them
+          // led this row on 2026-09-12 — the Expert scrolled past five things
+          // she could not use before reaching one she could. They move to the
+          // "On the way" disclosure below, which counts them and says they
+          // fit, so "seeing it wanted is what gets it built" (Arman,
+          // 2026-08-21) survives without blocking the way forward.
+          .filter((a) => a.availability !== "coming_soon");
   const bestKeySet = new Set(bestForYou.map((a) => a.key));
   const everythingElse =
-    approaches === null ? [] : approaches.filter((a) => !bestKeySet.has(a.key));
+    approaches === null
+      ? []
+      : approaches.filter(
+          (a) => !bestKeySet.has(a.key) && a.availability !== "coming_soon",
+        );
+  // ON THE WAY (census defect D1, fixed 2026-09-12). The named-but-unbuilt
+  // Approaches stay on this screen — Arman, 2026-08-21: "I wanna see cards for
+  // them" — but they no longer sit BETWEEN the Expert and the only actionable
+  // control. They were eight inert cards, roughly two screens of dead scroll,
+  // above a Start button that read as "there is no way to proceed". Now they
+  // are one line that opens.
+  const relevantKeySet = new Set(relevantKeys);
+  const comingSoon =
+    approaches === null
+      ? []
+      : approaches
+          .filter((a) => a.availability === "coming_soon")
+          // The ones that fit what she said lead the list when it opens.
+          .sort(
+            (a, b) =>
+              Number(relevantKeySet.has(b.key)) -
+              Number(relevantKeySet.has(a.key)),
+          );
+  const comingSoonThatFit = comingSoon.filter((a) =>
+    relevantKeySet.has(a.key),
+  ).length;
   const effectiveKey =
     (selectedKey && startable?.some((a) => a.key === selectedKey)
       ? selectedKey
@@ -491,6 +542,11 @@ export function NewRulebookFlow() {
     (startable?.some((a) => a.key === suggested)
       ? suggested
       : (startable?.[0]?.key ?? null));
+
+  /** The card the sticky bar will start — named there so Start is never a
+   *  guess about which lane the Expert is about to begin. */
+  const selectedApproach =
+    startable?.find((a) => a.key === effectiveKey) ?? null;
 
   const toStep = (next: 1 | 2) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -753,11 +809,11 @@ export function NewRulebookFlow() {
                         selected={approach.key === effectiveKey}
                         suggested={approach.key === suggested}
                         onSelect={
-                          approach.enabled
+                          startableKeys.has(approach.key)
                             ? () => setSelectedKey(approach.key)
                             : undefined
                         }
-                        inert={!approach.enabled}
+                        inert={!startableKeys.has(approach.key)}
                       />
                     ))}
                   </div>
@@ -777,21 +833,75 @@ export function NewRulebookFlow() {
                         approach={approach}
                         selected={approach.key === effectiveKey}
                         onSelect={
-                          approach.enabled
+                          startableKeys.has(approach.key)
                             ? () => setSelectedKey(approach.key)
                             : undefined
                         }
-                        inert={!approach.enabled}
+                        inert={!startableKeys.has(approach.key)}
                       />
                     ))}
                   </div>
                 </div>
               ) : null}
 
+              {/* ON THE WAY — named, approved, not built. Collapsed by
+                  default so nothing unbuilt stands between the Expert and
+                  Start (D1); one click still shows every card. */}
+              {comingSoon.length > 0 ? (
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowComingSoon((v) => !v)}
+                    aria-expanded={showComingSoon}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-3 text-left transition-colors hover:border-muted-foreground/40"
+                  >
+                    <span>
+                      <span className="block text-sm font-semibold text-foreground">
+                        On the way — {comingSoon.length} more{" "}
+                        {comingSoon.length === 1 ? "way" : "ways"} we&apos;re
+                        building
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Named and approved, not built yet — nothing here can
+                        start a Rulebook today.
+                        {comingSoonThatFit > 0
+                          ? ` ${comingSoonThatFit} of ${comingSoonThatFit === 1 ? "them fits" : "them fit"} what you described.`
+                          : ""}
+                      </span>
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                        showComingSoon && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {showComingSoon ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {comingSoon.map((approach) => (
+                        <ApproachCard
+                          key={approach.key}
+                          approach={approach}
+                          selected={false}
+                          inert
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-border pt-6">
+          {/* THE ACTION IS ALWAYS ON SCREEN (census defect D1, fixed
+              2026-09-12). Start used to be the LAST element on the page,
+              below every card including the eight unbuilt ones — about two
+              screens of dead scroll before the only control that does
+              anything, which reads as "there is no way to proceed". It is now
+              a sticky bar that also NAMES the card it will start, so the
+              Expert can see what pressing it does without scrolling back. */}
+          <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
             <Button
               variant="ghost"
               onClick={() => toStep(1)}
@@ -801,16 +911,30 @@ export function NewRulebookFlow() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <Button
-              onClick={() => void create()}
-              disabled={saving || !effectiveKey}
-              className="min-h-[44px] gap-2 px-7"
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : null}
-              {saving ? "Starting…" : "Start"}
-            </Button>
+            <div className="flex min-w-0 items-center gap-3">
+              <p className="min-w-0 truncate text-right text-xs text-muted-foreground sm:text-sm">
+                {selectedApproach ? (
+                  <>
+                    Starting with{" "}
+                    <span className="font-medium text-foreground">
+                      {selectedApproach.label}
+                    </span>
+                  </>
+                ) : (
+                  "Pick how you'd like to do this"
+                )}
+              </p>
+              <Button
+                onClick={() => void create()}
+                disabled={saving || !effectiveKey}
+                className="min-h-[44px] shrink-0 gap-2 px-7"
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                {saving ? "Starting…" : "Start"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

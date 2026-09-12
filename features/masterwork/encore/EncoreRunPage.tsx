@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock3, ExternalLink, Wrench } from "lucide-react";
+import { Clock3, SquareArrowOutUpRight, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -22,7 +22,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
-import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import { runHref } from "@/features/workflow-runtime/run-doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
@@ -237,11 +237,12 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             </h3>
             <div className="mt-2">
               {runs.map((run) => (
-                <a
+                // THE DOOR IS IN THIS APP (wall W36): an Operator's finished
+                // run is read at its own permalink here, never in the author's
+                // Studio on another host.
+                <Link
                   key={run.id}
-                  href={`${WORKFLOWS_APP_URL}/runs/${run.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={runHref(run.id)}
                   className="group flex items-center gap-2 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 >
                   <span
@@ -252,8 +253,8 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
                   />
                   <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
                   <span>· {runWhen(run)}</span>
-                  <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                </a>
+                  <SquareArrowOutUpRight className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                </Link>
               ))}
             </div>
           </div>

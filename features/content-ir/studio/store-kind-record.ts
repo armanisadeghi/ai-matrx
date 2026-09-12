@@ -48,6 +48,7 @@
  * show (THE NOTHING-FAILS-SILENTLY LAW) and is captured to the error store.
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { Json } from "@/types/database.types";
@@ -93,6 +94,43 @@ export interface StoreKindRecordResult extends SaveKindInstanceResult {
 }
 
 /**
+ * 🚨 A SAVE THAT CANNOT FINISH MUST SAY SO (V-45 §3.3, Law 4).
+ *
+ * Observed live: the DB/gateway intermittently returned 504s during a save,
+ * and the button sat on "Saving…" for 11+ seconds with no error, no toast,
+ * and no row written — a person would walk away believing it saved. Every
+ * caller of `storeKindRecord` already has a catch block that shows a named
+ * refusal (`ShapeTestTab.saveInstance`, `KindRecordChrome.onSave`,
+ * `saveKindInstancesFromMessage`) — the one thing missing was ever REACHING
+ * that catch when the network call itself never settles. `SAVE_TIMEOUT_MS` is
+ * generous enough for a normal write under load and short enough that nobody
+ * is left staring at a lie.
+ */
+export const SAVE_TIMEOUT_MS = 20_000;
+
+function withSaveTimeout<T>(promise: Promise<T>, what: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(
+        new Error(
+          `${what} did not finish within ${formatDurationMs(SAVE_TIMEOUT_MS, { style: "long" })} — the database or network is not responding. Nothing was confirmed saved; check your connection and try again.`,
+        ),
+      );
+    }, SAVE_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+/**
  * The metadata a record born from a block carries — the server's shape.
  * Exported so a test can assert the two paths agree without a database.
  */
@@ -123,23 +161,31 @@ export async function storeKindRecord(
   args: StoreKindRecordArgs,
 ): Promise<StoreKindRecordResult> {
   const metadata = buildRecordMetadata(args.provenance);
-  const saved = await saveKindInstance({
-    kindDefinitionId: args.kindDefinitionId,
-    kindVersion: args.kindVersion,
-    value: args.value,
-    organizationId: args.organizationId,
-    title: args.title,
-    titleKey: args.titleKey,
-    metadata,
-  });
+  const saved = await withSaveTimeout(
+    saveKindInstance({
+      kindDefinitionId: args.kindDefinitionId,
+      kindVersion: args.kindVersion,
+      value: args.value,
+      organizationId: args.organizationId,
+      title: args.title,
+      titleKey: args.titleKey,
+      metadata,
+    }),
+    "Saving the record",
+  );
 
   const messageId = args.provenance?.messageId;
   const warning = messageId
-    ? await writeProducedByEdge({
-        messageId,
-        recordId: saved.id,
-        organizationId: args.organizationId,
-      })
+    ? await withSaveTimeout(
+        writeProducedByEdge({
+          messageId,
+          recordId: saved.id,
+          organizationId: args.organizationId,
+        }),
+        "Linking the record back to its message",
+      ).catch((error: unknown) =>
+        error instanceof Error ? error.message : String(error),
+      )
     : null;
 
   // Announced LAST, with the row and its edge both settled, so a listener that

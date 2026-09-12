@@ -83,6 +83,32 @@ describe("shared vault UI contract", () => {
     expect(valueSource).toContain("Hides in {secondsLeft}s");
   });
 
+  test("keeps protected private passkey material out of generic controls", () => {
+    const typesSource = readFileSync(
+      join(process.cwd(), "features/secrets/types.ts"),
+      "utf8",
+    );
+    const detailSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),
+      "utf8",
+    );
+    const valueSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/SecretValue.tsx"),
+      "utf8",
+    );
+
+    expect(typesSource).toContain('"execution_purpose"');
+    expect(typesSource).toContain("VAULT_FIELD_COLUMNS");
+    expect(typesSource).toContain("wire.execution_purpose");
+    expect(typesSource).toContain('=== "passkey_private"');
+    expect(valueSource).toContain("Native provider only");
+    expect(valueSource).toContain("if (isProtectedExecutionField(field)) return false");
+    expect(valueSource).toContain("if (isProtectedExecutionField(field)) return null");
+    expect(detailSource).toContain("!protectedExecution");
+    expect(detailSource).toContain("!hasProtectedExecutionField");
+    expect(detailSource).toContain("Moving, giving ownership, and copying are");
+  });
+
   test("displays Standard values without a reveal interaction", () => {
     const valueSource = readFileSync(
       join(process.cwd(), "features/secrets/components/SecretValue.tsx"),

@@ -7,7 +7,7 @@ import {
   noteSaveErrorMessage,
   toastNoteWriteBlocked,
 } from "../utils/writeErrors";
-import type { UpdateNoteInput } from "../types";
+import type { NoteContentUpdate } from "../types";
 
 interface UseAutoSaveOptions {
   noteId: string | null;
@@ -34,7 +34,7 @@ export function useAutoSave({
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingUpdatesRef = useRef<UpdateNoteInput>({});
+  const pendingUpdatesRef = useRef<NoteContentUpdate>({});
   const isSavingRef = useRef(false);
   const saveNowRef = useRef<() => Promise<void>>(async () => {});
 
@@ -64,7 +64,7 @@ export function useAutoSave({
    * Queue an update to be saved
    */
   const queueUpdate = useCallback(
-    (updates: UpdateNoteInput) => {
+    (updates: NoteContentUpdate) => {
       pendingUpdatesRef.current = {
         ...pendingUpdatesRef.current,
         ...updates,
@@ -149,7 +149,7 @@ export function useAutoSave({
    * Queue an update and schedule a debounced save
    */
   const updateWithAutoSave = useCallback(
-    (updates: UpdateNoteInput) => {
+    (updates: NoteContentUpdate) => {
       queueUpdate(updates);
       scheduleSave();
     },

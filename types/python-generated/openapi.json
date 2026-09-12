@@ -8985,17 +8985,35 @@
           "Meet"
         ],
         "summary": "Intelligence Ask",
-        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\njoin decision exactly, including the org's `meet.guest_join_enabled` knob.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nExpected refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n409 for an empty transcript, 422 for a blank question, and 503 naming the\nMandate admin when nothing is bound to answer.",
+        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\nadmission decision, including a verified room pass and the org's\n`meet.guest_join_enabled` knob. The pass rides `x-meet-room-token`, never a URL.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nExpected refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n409 for an empty transcript, 422 for a blank question, and 503 naming the\nMandate admin when nothing is bound to answer.",
         "operationId": "intelligence_ask_v1_meet_intelligence_ask_post",
+        "parameters": [
+          {
+            "name": "x-meet-room-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Meet-Room-Token"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MeetQuestionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -64674,7 +64692,7 @@
           "Mandates Admin"
         ],
         "summary": "Agent Impact",
-        "description": "One verdict per mandate rung the named agents hold, directly or through a\nduplicate of them. Read-only. Optionally graded against a proposed change\nthat has not been written yet (``delta``), so a batch can be judged BEFORE\nit runs.",
+        "description": "One verdict per mandate rung the named agents hold, directly or through a\nduplicate of them. Read-only. Optionally graded against a proposed change\nthat has not been written yet (``delta``), so a batch can be judged BEFORE\nit runs.\n\nThe envelope also carries ``withheld``: how many rungs exist on these agents\nthat this caller may not read, by principal kind and with the reason (R31).\nA short list is never shown as if it were the whole answer.",
         "operationId": "agent_impact_mandates_impact_post",
         "requestBody": {
           "content": {
@@ -64692,11 +64710,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ImpactVerdict"
-                  },
-                  "type": "array",
-                  "title": "Response Agent Impact Mandates Impact Post"
+                  "$ref": "#/components/schemas/ImpactReport"
                 }
               }
             }
@@ -64738,11 +64752,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ImpactVerdict"
-                  },
-                  "type": "array",
-                  "title": "Response Agent Impact Mine Mandates Impact Mine Post"
+                  "$ref": "#/components/schemas/ImpactReport"
                 }
               }
             }
@@ -124413,6 +124423,22 @@
             "description": "Model preference/guidance, e.g. cost vs speed vs intelligence.",
             "default": ""
           },
+          "model_profile": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "balanced",
+                  "strongest"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Profile",
+            "description": "Optional database-owned model class. 'balanced' selects a primary, non-premium mid-cost text model; 'strongest' selects a primary premium text model."
+          },
           "tools": {
             "items": {
               "type": "string"
@@ -156538,6 +156564,41 @@
         ],
         "title": "ImpactPrincipal"
       },
+      "ImpactReport": {
+        "properties": {
+          "verdicts": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactVerdict"
+            },
+            "type": "array",
+            "title": "Verdicts"
+          },
+          "withheld": {
+            "$ref": "#/components/schemas/ImpactWithheld"
+          },
+          "agents_examined": {
+            "type": "integer",
+            "title": "Agents Examined",
+            "default": 0
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "computed_at": {
+            "type": "string",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "computed_at"
+        ],
+        "title": "ImpactReport",
+        "description": "The envelope. ``verdicts`` is the frozen contract; the rest is what the\nread must SAY about its own completeness rather than leave a screen to\nguess."
+      },
       "ImpactRequest": {
         "properties": {
           "agent_ids": {
@@ -156728,6 +156789,61 @@
           "apply_token"
         ],
         "title": "ImpactVerdict"
+      },
+      "ImpactWithheld": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "by_principal_kind": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactWithheldGroup"
+            },
+            "type": "array",
+            "title": "By Principal Kind"
+          },
+          "sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ImpactWithheld",
+        "description": "Rungs that EXIST on these agents and this caller may not read (R31).\n\n🚨 COUNTS ONLY, grouped by principal kind — never an id, a mandate key, an\norganization or a person. R26 forbids leaking WHICH mandates exist; R31\nforbids a silent short list that lets a screen imply it showed everything.\nA count with a reason is the one shape that satisfies both, and it is why\nthese numbers are computed here rather than by widening ``iam.has_access``,\nwhich is not an agent's call."
+      },
+      "ImpactWithheldGroup": {
+        "properties": {
+          "principal_kind": {
+            "type": "string",
+            "title": "Principal Kind"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "principal_kind",
+          "count",
+          "explanation"
+        ],
+        "title": "ImpactWithheldGroup"
       },
       "ImpairmentAvailableAttributes": {
         "properties": {
@@ -185623,6 +185739,36 @@
               }
             ],
             "title": "Default Organization Id"
+          },
+          "default_preference_status": {
+            "type": "string",
+            "enum": [
+              "malformed",
+              "stale",
+              "unavailable",
+              "unset",
+              "valid"
+            ],
+            "title": "Default Preference Status",
+            "default": "unset"
+          },
+          "warnings": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "membership_organization_missing",
+                "organization_preference_unavailable"
+              ]
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          },
+          "missing_organization_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Missing Organization Count",
+            "default": 0
           }
         },
         "type": "object",
@@ -247043,6 +247189,15 @@
           "field_key": {
             "type": "string",
             "title": "Field Key"
+          },
+          "execution_purpose": {
+            "type": "string",
+            "enum": [
+              "general",
+              "passkey_private"
+            ],
+            "title": "Execution Purpose",
+            "default": "general"
           },
           "env_key": {
             "anyOf": [

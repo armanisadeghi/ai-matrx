@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   sessionData,
@@ -146,13 +145,12 @@ export function CleanupSessionList({
                   // session RLS allows. A payload without it cannot be read.
                   attributes: { rows: sessions.length, scope },
                 })}
-              />
-              <ExportMenu
-                label="Cleanup sessions"
-                items={[
-                  jsonExportItem(() => sessions.map(sessionData)),
-                  csvExportItem(() => sessionsCsvRows(sessions)),
-                ]}
+                export={{
+                  items: [
+                    jsonExportItem(() => sessions.map(sessionData)),
+                    csvExportItem(() => sessionsCsvRows(sessions)),
+                  ],
+                }}
               />
             </>
           )}

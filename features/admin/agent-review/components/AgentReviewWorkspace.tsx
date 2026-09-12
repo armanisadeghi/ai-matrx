@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -151,7 +152,7 @@ export default function AgentReviewWorkspace({
       }
     : null;
 
-  useSurfaceRuntimeRegistration(
+  const surfaceHandle = useSurfaceRuntimeRegistration(
     row && getReviewScope
       ? {
           surfaceName: ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME,
@@ -229,7 +230,7 @@ export default function AgentReviewWorkspace({
     }
   }
 
-  return (
+  const content = (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <header className="shrink-0 border-b bg-card px-4 py-3 lg:px-6">
         <div className="flex min-w-0 items-center gap-3">
@@ -429,5 +430,13 @@ export default function AgentReviewWorkspace({
         </aside>
       </div>
     </div>
+  );
+
+  return surfaceHandle ? (
+    <ContentTransferSurfaceProvider handle={surfaceHandle}>
+      {content}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    content
   );
 }

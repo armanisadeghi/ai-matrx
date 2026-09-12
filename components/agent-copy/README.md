@@ -1,13 +1,20 @@
-# agent-copy — copy data (human + AI) anywhere
+# agent-copy — frontend adapters for Matrx Alchemy
 
-A reusable primitive for putting **Copy** and **Copy for AI** actions on any
-row, card, or page that shows data. It centralizes clipboard writes (with a
-legacy `execCommand` fallback), success toasts, and the AI payload envelope so
-no page reimplements them.
+Matrx Alchemy is the shared content-transfer toolkit; **Alchemy Menu** is its
+reusable control. This directory supplies the frontend's thin adapters for
+identity, Sheet delivery, and existing payload builders. Cross-repo
+system-of-record: `/Users/armanisadeghi/code/common-docs/projects/matrx-alchemy/SPEC.md`
+— read it before changing transfer behavior in any repo.
+
+Kit `0.13.1`, design-system `0.18.0`, agents `0.11.0`, and
+`@ai-matrx/alchemy@0.1.0` are public; the full registry consumer canary passed.
+Trusted-publishing receipt, final host-identity publication, and deployed
+frontend verification remain pending.
 
 **Pieces:**
 
-- `CopyButtons` — **the shared compact two-icon pair.** Pass `human`, `agent`, and `export`;
+- `CopyButtons` — the frontend adapter around the package-owned **Alchemy Menu**.
+  Pass `human`, `agent`, and `export`;
   hide any segment with `hide={["copy"|"ai"|"export"]}` (cards omit Download
   by not passing `export`, or `hide={["export"]}` when sharing a builder).
   human Copy is the first icon; every other action appears behind the
@@ -22,15 +29,12 @@ no page reimplements them.
   `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
   (header). Stops click propagation by default. **Pass `json`** for
   structured data; it is the first AI-menu item, never another button.
-- `CopyForAiIcon` — the shared text-free AI-copy mark: overlapping copy
-  sheets containing a connected intelligence node. Keep this semantic shape
-  across surfaces; do not substitute a bot, face, star, or sparkle.
+- `CopyForAiIcon` — compatibility export of the package-owned Alchemy glyph.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
   JSON dump).
-- `CopyActionGroup` — the shared compact grouped chrome used by `CopyButtons`
-  and intentionally standalone export-only controls.
 - `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
-  `textExportItem`, `rowsToCsv`) — the **Download** dropdown. Prefer
+  `textExportItem`, `rowsToCsv`) — compatibility adapters for standalone
+  exports. Prefer
   `CopyButtons export={{ items, sheetRows }}` so it sits in the AI menu.
   Standalone `ExportMenu` stays valid for surfaces that export without copy.
   **Every data surface offers export, not just clipboard copy** — a list/table
@@ -46,12 +50,8 @@ no page reimplements them.
   CSV / JSON — and copies exactly the visible+selected subset; the origin is
   never touched. `MatrxDataTable` toolbars get it free via `copy`. Contract:
   [`copy-subset/FEATURE.md`](./copy-subset/FEATURE.md).
-- `AgentCopyGroomerWindow` + `groomer-types.ts` — the page-level custom
-  workspace opened from the **Copy-for-AI menu**. It grooms the
-  whole-page payload before copying; its footer also exports payload `.md` /
-  data `.json`. Pass `groomer={() => config}` to `CopyButtons`; **never place
-  `AgentCopyGroomerLauncher` beside it.**
-  See "Whole-page copy" below.
+- `groomer-types.ts` — compatibility exports for the package-owned Alchemy
+  Menu groomer contract. Pass `groomer={() => config}` to `CopyButtons`.
 
 **Truncated lists must offer the rest.** A "top 8" list with no way to see all
 N is a defect — add a `show all N / top 8` toggle (scrollable when expanded);
@@ -150,7 +150,7 @@ survives.
 - **Consolidate; never remove capability.** Move an existing JSON copy or
   Groomer action into the correct dropdown instead of deleting it.
 
-## Sized-to-data AI variants — `AiCopyMenu`
+## Sized-to-data AI variants — Alchemy Menu
 
 A "Copy for AI" control is an **AI context source**, not a copy button — and it
 must scale to its data. There is no one-size-fits-all; for every surface ask
@@ -162,13 +162,9 @@ _"what would someone actually hand an AI here?"_:
 | **Medium** (a focused list, a digestible page)           | Copy icon + AI menu                                | Copy + JSON + faithful AI + focused variants      |
 | **Massive / unbounded** (giant payloads, full histories) | Copy icon + AI menu + custom workspace             | Copy + JSON + AI variants + export + custom       |
 
-- **`AiCopyMenu`** (`AiCopyMenu.tsx`) is the chrome: pass `variants`
-  (pure `build()` → envelope-or-string, may be async) and optionally `custom`
-  (an options schema — toggle/preset/slider/number — plus pure `build(opts)` +
-  `wrap`) or `groomer` (`() => AgentCopyGroomerConfig`). One variant with no
-  custom/Groomer renders a single icon button; anything more renders the
-  dropdown. Shortening logic NEVER lives in the chrome — write a pure
-  per-data builder.
+- **Alchemy Menu** owns the chrome: pass `aiVariants`, `aiCustom`, or
+  `groomer` through `CopyButtons`. `AiCopyMenu.tsx` is a compatibility adapter
+  for existing callers. Shortening logic stays in caller-owned pure builders.
 - **`CopyButtons` upgrades in place**: pass `aiVariants` / `aiCustom` and its
   AI menu gains those choices, with `json`, the existing `agent` payload as the
   never-lossy **Everything** escape hatch, and the page Groomer/custom
@@ -185,9 +181,6 @@ _"what would someone actually hand an AI here?"_:
   never maintain a parallel list. Preset payloads carry the same envelope
   `context` as the full one — a shortened variant is lossy in DATA, never in
   ambient context.
-- Everything-variant parity with the aidream dashboard implementation
-  (`apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`) is deliberate —
-  change one, mirror the other.
 
 ## Built-in integrations (don't rewire by hand)
 
@@ -203,12 +196,11 @@ _"what would someone actually hand an AI here?"_:
   render the shared compact pair whose AI menu contains Copy JSON and agent
   variants.
 
-## Whole-page copy — the Groomer inside the AI menu
+## Whole-page copy — the groomer inside Alchemy Menu
 
-The page header still renders only the `CopyButtons` pair. Its AI menu opens
-`AgentCopyGroomerWindow` when `groomer={() => config}` is supplied (WindowPanel;
-the shared `AgentCopyGroomerHost` owns the one client-only loading boundary).
-The user grooms the payload before copying:
+The page header renders one `CopyButtons` control. Its Alchemy Menu opens the
+package-owned groomer when `groomer={() => config}` is supplied. The user
+grooms the payload before copying:
 
 - **Sections** (`AgentCopyGroomerSection[]`): each page area declares
   `build(level)` for `full | compact | brief`, optional per-level labels, and

@@ -20,7 +20,14 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Compass, ListOrdered, Percent, RefreshCw, Search, Table2 } from "lucide-react";
+import {
+  Compass,
+  ListOrdered,
+  Percent,
+  RefreshCw,
+  Search,
+  Table2,
+} from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system";
 
@@ -50,20 +57,20 @@ const DATABASE_WINDOW_DAY_CAP = 92;
 function Section({
   icon: Icon,
   title,
-  subtitle,
   children,
 }: {
   icon: typeof Compass;
   title: string;
-  subtitle: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex min-w-0 flex-col gap-2">
-      <header className="flex min-w-0 items-baseline gap-2">
-        <Icon className="h-4 w-4 shrink-0 self-center text-muted-foreground" aria-hidden />
+      <header className="flex min-w-0 items-center gap-2">
+        <Icon
+          className="h-4 w-4 shrink-0 self-center text-muted-foreground"
+          aria-hidden
+        />
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <p className="min-w-0 truncate text-[11px] text-muted-foreground">{subtitle}</p>
       </header>
       {children}
     </section>
@@ -77,8 +84,15 @@ export function SpendExplorer() {
   const [timezone] = useState(() => viewerTimezone());
   const knobs = useSpendExplorerKnobs();
 
-  const urlState = readExplorerUrlState(new URLSearchParams(searchParams.toString()));
-  const window = resolveWindow(urlState.preset, new Date(), urlState.fromDay, urlState.toDay);
+  const urlState = readExplorerUrlState(
+    new URLSearchParams(searchParams.toString()),
+  );
+  const window = resolveWindow(
+    urlState.preset,
+    new Date(),
+    urlState.fromDay,
+    urlState.toDay,
+  );
   const filters = urlState.filters;
   // The database caps a window at 92 days; say so here in words rather than
   // surfacing its refusal as a raw error after a round trip.
@@ -126,7 +140,11 @@ export function SpendExplorer() {
         if (cancelled) return;
         setData(null);
         setError(
-          cause instanceof Error ? cause : new Error("The spend breakdown read failed for an unknown reason."),
+          cause instanceof Error
+            ? cause
+            : new Error(
+                "The spend breakdown read failed for an unknown reason.",
+              ),
         );
       } finally {
         if (!cancelled) setLoading(false);
@@ -138,7 +156,10 @@ export function SpendExplorer() {
   }, [readKey, knobs.thresholds, timezone, windowTooWide]);
 
   const pushState = (next: ExplorerUrlState) => {
-    const params = writeExplorerUrlState(new URLSearchParams(searchParams.toString()), next);
+    const params = writeExplorerUrlState(
+      new URLSearchParams(searchParams.toString()),
+      next,
+    );
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
@@ -155,8 +176,10 @@ export function SpendExplorer() {
   const clearFilters = () => pushState({ ...urlState, filters: {} });
 
   const hourly = data?.series.hour;
-  const seriesPoints = hourly && hourly.length > 0 ? hourly : (data?.series.day ?? []);
-  const granularity: "hour" | "day" = hourly && hourly.length > 0 ? "hour" : "day";
+  const seriesPoints =
+    hourly && hourly.length > 0 ? hourly : (data?.series.day ?? []);
+  const granularity: "hour" | "day" =
+    hourly && hourly.length > 0 ? "hour" : "day";
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -167,15 +190,19 @@ export function SpendExplorer() {
           toDay={urlState.toDay}
           onChange={(next) => pushState({ ...urlState, ...next })}
         />
-        <span className="text-[11px] text-muted-foreground">
-          {describeWindow(window)} · days cut at local midnight in {zoneLabel(timezone)}
-          {data && data.timezone !== timezone
-            ? ` (the database did not recognise that zone and used ${zoneLabel(data.timezone)})`
-            : ""}
+        <span
+          className="text-xs tabular-nums text-muted-foreground"
+          title={`Day boundaries use ${zoneLabel(data?.timezone ?? timezone)}.`}
+        >
+          {describeWindow(window)}
         </span>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground">
-            {data ? `Read ${new Date(data.generatedAt).toLocaleTimeString()}` : loading ? "Reading…" : "Not read"}
+            {data
+              ? `Updated ${new Date(data.generatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+              : loading
+                ? "Loading"
+                : "Not loaded"}
           </span>
           <Button
             variant="outline"
@@ -184,18 +211,27 @@ export function SpendExplorer() {
             onClick={() => setReloadTick((t) => t + 1)}
             disabled={loading}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden />
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              aria-hidden
+            />
             {loading ? "Reading…" : "Refresh"}
           </Button>
         </div>
       </div>
 
-      <FilterChips filters={filters} data={data} onRemove={removeFilter} onClear={clearFilters} />
+      <FilterChips
+        filters={filters}
+        data={data}
+        onRemove={removeFilter}
+        onClear={clearFilters}
+      />
 
       {knobs.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          The explorer's "dig here" lines could not be read ({knobs.error.message}), so nothing
-          below is computed — the breakdown refuses to guess where a line sits. Seed the five
+          The explorer's "dig here" lines could not be read (
+          {knobs.error.message}), so nothing below is computed — the breakdown
+          refuses to guess where a line sits. Seed the five
           <span className="font-mono"> platform.spend_explorer.* </span>
           knobs to restore it.
         </div>
@@ -203,25 +239,31 @@ export function SpendExplorer() {
 
       {windowTooWide ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          That range is {Math.round(windowDays)} days; the explorer reads at most {DATABASE_WINDOW_DAY_CAP} days
-          at a time. Pick a shorter range — the numbers below are from the previous window until you do.
+          Max {DATABASE_WINDOW_DAY_CAP} days — this range is {Math.round(windowDays)}.
         </div>
       ) : null}
 
       {error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <div className="font-medium">The breakdown read failed — no numbers are shown.</div>
+          <div className="font-medium">
+            The breakdown read failed — no numbers are shown.
+          </div>
           <div className="mt-1 text-xs">
             {error.message}
             {" · "}
-            This needs a Super Admin account; the read is refused at the database, not hidden in
-            the UI. Use Refresh to try again.
+            This needs a Super Admin account; the read is refused at the
+            database, not hidden in the UI. Use Refresh to try again.
           </div>
         </div>
       ) : null}
 
       {data ? (
-        <div className={loading ? "opacity-60 transition-opacity" : "transition-opacity"} aria-busy={loading}>
+        <div
+          className={
+            loading ? "opacity-60 transition-opacity" : "transition-opacity"
+          }
+          aria-busy={loading}
+        >
           <div className="flex flex-col gap-4">
             <TotalsStrip data={data} />
 
@@ -231,43 +273,33 @@ export function SpendExplorer() {
               onPickDay={(day) => drill("day", day)}
             />
 
-            <Section
-              icon={Search}
-              title="Dig here"
-              subtitle="Where the bigger problems hide — ordered by money, each with the line it crossed"
-            >
+            <Section icon={Search} title="Dig here">
               <DigHerePanel data={data} onDrill={drill} />
             </Section>
 
-            <Section
-              icon={Percent}
-              title="Where 80% of the money went"
-              subtitle="The fewest rows that add up to 80% of this window, then everything else · click a row to look only at it"
-            >
+            <Section icon={Percent} title="80% of spend">
               <ParetoPanel data={data} onDrill={drill} />
             </Section>
 
-            <Section
-              icon={Table2}
-              title="Every dimension"
-              subtitle="The whole window, one tab per dimension · every column sorts and filters · click a name to drill"
-            >
+            <Section icon={Table2} title="Every dimension">
               <DimensionTables data={data} onDrill={drill} />
             </Section>
 
-            <Section
-              icon={ListOrdered}
-              title="The most expensive requests"
-              subtitle="The 40 costliest individual requests in this slice, with every dimension on the row"
-            >
+            <Section icon={ListOrdered} title="Costliest requests">
               <TopRequestsTable rows={data.topRequests} onDrill={drill} />
             </Section>
           </div>
         </div>
       ) : loading && !error && !knobs.error ? (
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" aria-busy>
+        <div
+          className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+          aria-busy
+        >
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-md border border-border bg-muted/40" />
+            <div
+              key={i}
+              className="h-16 animate-pulse rounded-md border border-border bg-muted/40"
+            />
           ))}
         </div>
       ) : null}

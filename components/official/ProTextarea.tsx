@@ -161,6 +161,10 @@ import {
   ProTextFieldStatsPanel,
 } from "./ProTextFieldStats";
 import { ProTextAgentActionPopoverBody } from "./ProTextAgentActionPopoverBody";
+import {
+  composerKeyIntent,
+  intentTakesTheKey,
+} from "@/components/official/composer/composerSubmit";
 
 const FILL_HEIGHT_REGEX =
   /(?:^|\s)(h-full|h-dvh|flex-1|grow|inset-0|min-h-0)(?:\s|$)/;
@@ -817,16 +821,27 @@ export const ProTextarea = React.forwardRef<
 
         if (!onSubmit) return;
 
+        // THE ONE COMPOSER RULE — `components/official/composer/composerSubmit.ts`.
+        // ⌘/Ctrl+Enter stays a send here even when Enter already sends, which
+        // is this component's own long-standing affordance for form fields.
         if (cmdEnterEnabled && withCmd) {
           e.preventDefault();
           triggerSubmit();
           return;
         }
-
-        if (submitOnEnter && !e.shiftKey && !withCmd) {
-          e.preventDefault();
-          triggerSubmit();
-        }
+        const intent = composerKeyIntent(
+          {
+            key: e.key,
+            shiftKey: e.shiftKey,
+            metaKey: e.metaKey,
+            ctrlKey: e.ctrlKey,
+            isComposing: e.nativeEvent.isComposing,
+          },
+          { submitOnEnter },
+        );
+        if (!intentTakesTheKey(intent)) return;
+        e.preventDefault();
+        triggerSubmit();
       },
       [
         isHovered,

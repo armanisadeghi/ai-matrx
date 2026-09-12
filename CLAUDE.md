@@ -19,6 +19,8 @@
 **The Data Doctrine binds data work.** Custom data, table types, organizations, and access words are ruled by the AI Matrx Data Doctrine (Arman, 2026-09-10) — a doctrine document, presumed right against the code and any other doc, amended only by him (`common-docs/policies/doctrine-documents.md`). Its data rules live once at `common-docs/systems/platform/db-rules/DECISIONS.md`; the gap between them and the code is tracked in `common-docs/projects/data-doctrine-adoption/REGISTER.md`. Live names (scope, component, machinery, graveyard, is_personal…) stay until their convergence campaign runs — never rename on sight.
 <!-- nine-laws:end -->
 
+**Already shipped partial work now fixed and pushed? Request one expedited release from its existing owner AFTER completion; never seek preemptive author consent.** Ship-first pre-production and fatal-risk boundaries: [release policy](../common-docs/policies/deployment-is-the-deploy-agents-job.md).
+
 
 **Why you're reading this: you are doing FRONTEND/UI work.** This file carries what a frontend agent needs to not make this repo's common mistakes: the stack, the conventions, the release process, the platform laws (one line + link each), and how to FIND a feature's docs. What does NOT belong here: feature details (each feature's `FEATURE.md` beside its code is its single source of truth), rule bodies that live in canonical docs, stories, or incident narratives. Charter + size budget (≤200 lines): `../common-docs/policies/claude-md-charter.md` (`common-docs` is a sibling repo; every `../common-docs/` pointer below is relative to this repo root). Before editing this file or any `FEATURE.md`: **invoke the `context-docs` skill**.
 

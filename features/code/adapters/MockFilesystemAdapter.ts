@@ -68,7 +68,8 @@ export class MockFilesystemAdapter implements FilesystemAdapter {
         path: p,
         name: basename(p),
         kind: node.kind,
-        size: node.content ? node.content.length : undefined,
+        // A stat size is UTF-8 bytes, not UTF-16 code units.
+        size: node.content ? new TextEncoder().encode(node.content).length : undefined,
       });
     }
     nodes.sort((a, b) => {

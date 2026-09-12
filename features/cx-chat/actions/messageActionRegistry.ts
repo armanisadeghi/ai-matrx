@@ -41,6 +41,7 @@ import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContent
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -59,6 +60,7 @@ export interface MessageActionContext {
   metadata: Record<string, unknown> | null;
   hasUnsavedChanges: boolean;
   dispatch: AppDispatch;
+  organizationId: string | null;
   onClose: () => void;
 
   showFullPrint: boolean;
@@ -512,12 +514,13 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
           )
         )
           return;
-        await NotesAPI.create({
-          label: "New Note",
-          content,
-          folder_name: "Scratch",
-          tags: [],
-        });
+        try {
+          const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
+          await NotesAPI.create({ label: "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) throw error;
+          throw error;
+        }
       },
       category: "Actions",
       successMessage: "Saved to Scratch!",
@@ -668,14 +671,7 @@ export function resumePendingAuthAction(
     };
     if (savedContent !== content) return;
     if (action === "save-scratch") {
-      NotesAPI.create({
-        label: "New Note",
-        content: savedContent,
-        folder_name: "Scratch",
-        tags: [],
-      })
-        .then(() => toast.success("Saved to Scratch!"))
-        .catch(() => toast.error("Failed to save to Scratch"));
+      dispatch(openOverlay({ overlayId: "saveToNotes", instanceId: `save-scratch-resume-${Date.now()}`, data: { initialContent: savedContent, defaultFolder: "Scratch", initialEditorMode: undefined } }));
     } else if (action === "save-notes") {
       dispatch(
         openOverlay({

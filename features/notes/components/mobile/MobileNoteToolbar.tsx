@@ -5,12 +5,13 @@ import { FolderOpen, FolderPlus, Tag as TagIcon, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
+import type { FolderReference } from "../../types";
 
 interface MobileNoteToolbarProps {
   folder: string;
   tags: string[];
-  availableFolders: string[];
-  onFolderChange: (folder: string) => void;
+  availableFolders: FolderReference[];
+  onFolderChange: (folder: FolderReference) => void;
   onTagsChange: (tags: string[]) => void;
   onCreateFolder: () => void;
   onClose: () => void;
@@ -84,15 +85,15 @@ export default function MobileNoteToolbar({
               <FolderPlus size={18} />
               <span className="flex-1 text-left font-medium">New folder…</span>
             </button>
-            {availableFolders.map((folderName) => (
+            {availableFolders.map((candidate) => (
               <button
-                key={folderName}
+                key={`${candidate.organizationId}:${candidate.id}`}
                 onClick={() => {
-                  onFolderChange(folderName);
+                  onFolderChange(candidate);
                   onClose();
                 }}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                  folder === folderName
+                  folder === candidate.name
                     ? "bg-primary/10 border-primary/30"
                     : "bg-card border-border hover:border-border/80"
                 }`}
@@ -100,15 +101,15 @@ export default function MobileNoteToolbar({
                 <FolderOpen
                   size={18}
                   className={
-                    folder === folderName
+                    folder === candidate.name
                       ? "text-primary"
                       : "text-muted-foreground"
                   }
                 />
                 <span className="flex-1 text-left font-medium">
-                  {folderName}
+                  {candidate.name}
                 </span>
-                {folder === folderName && (
+                {folder === candidate.name && (
                   <div className="w-2 h-2 bg-primary rounded-full" />
                 )}
               </button>

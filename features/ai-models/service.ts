@@ -796,14 +796,19 @@ export const aiModelService = {
   // ── Endpoint CRUD (ai.endpoint — one row per serving vendor) ──
 
   async fetchEndpoints(): Promise<AiEndpoint[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("endpoint")
-      .select("*")
-      .is("deleted_at", null)
-      .order("display_name", { ascending: true });
-    if (error) throw error;
-    return data.map(parseEndpoint);
+    const rows = await readAllRows<AiEndpointRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("endpoint")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("display_name", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.endpoint" },
+    );
+    return rows.map(parseEndpoint);
   },
 
   async createEndpoint(payload: AiEndpointInsert): Promise<AiEndpoint> {
@@ -844,14 +849,19 @@ export const aiModelService = {
   // ── API CRUD (ai.api — one row per wire contract / translator) ──
 
   async fetchApis(): Promise<AiApi[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("api")
-      .select("*")
-      .is("deleted_at", null)
-      .order("display_name", { ascending: true });
-    if (error) throw error;
-    return data.map(parseApi);
+    const rows = await readAllRows<AiApiRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("api")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("display_name", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.api" },
+    );
+    return rows.map(parseApi);
   },
 
   async createApi(payload: AiApiInsert): Promise<AiApi> {
@@ -987,15 +997,42 @@ export const aiModelService = {
 
   // ── Model alias CRUD (ai.model_alias — alternate names → model row) ──
 
+  /** Complete local source for the aliases table. A partial list would hide an
+   * alias while local paging/search claims to cover the complete catalog. */
   async fetchAliases(): Promise<AiModelAliasRow[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("model_alias")
-      .select("*")
-      .is("deleted_at", null)
-      .order("alias", { ascending: true });
-    if (error) throw error;
-    return data;
+    return readAllRows<AiModelAliasRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("model_alias")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("alias", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.model_alias" },
+    );
+  },
+
+  /** Minimal complete identity source for alias targets. This deliberately
+   * excludes provider and pricing enrichment: aliases only need the model door
+   * label and whether the model remains selectable. */
+  async fetchAllAliasTargetModels(): Promise<
+    Pick<AiModelRow, "id" | "name" | "common_name" | "is_deprecated">[]
+  > {
+    return readAllRows<
+      Pick<AiModelRow, "id" | "name" | "common_name" | "is_deprecated">
+    >(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("model_definition")
+          .select("id,name,common_name,is_deprecated", { count: "exact" })
+          .order("common_name", { ascending: true, nullsFirst: false })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.model_definition.alias_targets" },
+    );
   },
 
   async createAlias(payload: AiModelAliasInsert): Promise<AiModelAliasRow> {

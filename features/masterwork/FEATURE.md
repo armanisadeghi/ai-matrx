@@ -164,6 +164,13 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   translation: `build/useBuildRun.ts`; page callbacks: `build/callbacks.ts`.
 - `components/detail/IngestSourceDialog.tsx` — "From a source" (paste →
   `POST /masterworks/ingest`; upload → `POST /masterworks/ingest-file`).
+- `sourceTypes.ts` — 🚨 THE ONE LIST. Every Masterwork upload picker takes its
+  `accept` from `MASTERWORK_UPLOAD_ACCEPT` and nowhere else, and that string is
+  the server's own readable-type list (`aidream/aidream/services/distillation/
+  source_types.py`), diffed by a guard in aidream that fails on any drift. Born
+  2026-09-12: the picker advertised `.txt,.md,.rtf,.epub,.doc` and the server
+  read none of them, so a person's own 599-byte `.txt` was invited by the file
+  dialog and refused by the backend. Never hand-type an accept string here.
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).
 - `components/masterworks/MasterworksPage.tsx` — Masterworks list, run links into
   workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors. Its

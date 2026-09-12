@@ -42,7 +42,14 @@ import { knobNumber } from "@/lib/knobs/featureKnobs";
 
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
-import { count, staleness, timestamp, usd, usdPrecise, zoneLabel } from "./format";
+import {
+  count,
+  staleness,
+  timestamp,
+  usd,
+  usdPrecise,
+  zoneLabel,
+} from "./format";
 import type { SpendLedger, SpendLedgerRole, SpendOverview } from "./types";
 
 const ROLE_LABEL: Record<SpendLedgerRole, string> = {
@@ -63,7 +70,9 @@ const ROLE_CLASS: Record<SpendLedgerRole, string> = {
 
 function RoleBadge({ role }: { role: SpendLedgerRole }) {
   return (
-    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${ROLE_CLASS[role]}`}>
+    <span
+      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${ROLE_CLASS[role]}`}
+    >
       {ROLE_LABEL[role]}
     </span>
   );
@@ -72,20 +81,20 @@ function RoleBadge({ role }: { role: SpendLedgerRole }) {
 function Section({
   icon: Icon,
   title,
-  subtitle,
   children,
 }: {
   icon: typeof DollarSign;
   title: string;
-  subtitle: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex min-w-0 flex-col gap-2">
-      <header className="flex min-w-0 items-baseline gap-2">
-        <Icon className="h-4 w-4 shrink-0 self-center text-muted-foreground" aria-hidden />
+      <header className="flex min-w-0 items-center gap-2">
+        <Icon
+          className="h-4 w-4 shrink-0 self-center text-muted-foreground"
+          aria-hidden
+        />
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <p className="min-w-0 truncate text-[11px] text-muted-foreground">{subtitle}</p>
       </header>
       {children}
     </section>
@@ -96,12 +105,12 @@ function Section({
 function Folded({
   icon: Icon,
   title,
-  subtitle,
+  summary,
   children,
 }: {
   icon: typeof DollarSign;
   title: string;
-  subtitle: string;
+  summary: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -110,17 +119,28 @@ function Folded({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex min-w-0 items-baseline gap-2 text-left"
+        className="flex min-h-10 min-w-0 items-center gap-2 text-left"
         aria-expanded={open}
       >
         {open ? (
-          <ChevronDown className="h-4 w-4 shrink-0 self-center text-muted-foreground" aria-hidden />
+          <ChevronDown
+            className="h-4 w-4 shrink-0 self-center text-muted-foreground"
+            aria-hidden
+          />
         ) : (
-          <ChevronRight className="h-4 w-4 shrink-0 self-center text-muted-foreground" aria-hidden />
+          <ChevronRight
+            className="h-4 w-4 shrink-0 self-center text-muted-foreground"
+            aria-hidden
+          />
         )}
-        <Icon className="h-4 w-4 shrink-0 self-center text-muted-foreground" aria-hidden />
+        <Icon
+          className="h-4 w-4 shrink-0 self-center text-muted-foreground"
+          aria-hidden
+        />
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <p className="min-w-0 truncate text-[11px] text-muted-foreground">{subtitle}</p>
+        <span className="min-w-0 truncate text-xs tabular-nums text-muted-foreground">
+          {summary}
+        </span>
       </button>
       {open ? children : null}
     </section>
@@ -141,7 +161,9 @@ export function SpendDashboard() {
   // services, entered by the person who pays them (knob
   // platform.spend.fixed_monthly_usd). Shown beside the measured spend, never
   // added into it; 0 reads as "not entered yet", never as $0.00.
-  const [fixedMonthly, setFixedMonthly] = useState<number | null | "missing">(null);
+  const [fixedMonthly, setFixedMonthly] = useState<number | null | "missing">(
+    null,
+  );
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -169,7 +191,11 @@ export function SpendDashboard() {
       } catch (cause) {
         if (cancelled) return;
         setData(null);
-        setError(cause instanceof Error ? cause : new Error("The spend read failed for an unknown reason."));
+        setError(
+          cause instanceof Error
+            ? cause
+            : new Error("The spend read failed for an unknown reason."),
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -188,7 +214,9 @@ export function SpendDashboard() {
       cell: (r) => (
         <div className="min-w-0">
           <div className="truncate font-medium text-foreground">{r.label}</div>
-          <div className="truncate text-[11px] text-muted-foreground">{r.tableRef ?? "no table anywhere"}</div>
+          <div className="truncate text-[11px] text-muted-foreground">
+            {r.tableRef ?? "no table anywhere"}
+          </div>
         </div>
       ),
     },
@@ -206,7 +234,9 @@ export function SpendDashboard() {
       accessorFn: (r) => r.totalToday ?? -1,
       width: 100,
       align: "right",
-      cell: (r) => <span className="tabular-nums">{usdPrecise(r.totalToday)}</span>,
+      cell: (r) => (
+        <span className="tabular-nums">{usdPrecise(r.totalToday)}</span>
+      ),
     },
     {
       id: "total_30d",
@@ -214,7 +244,9 @@ export function SpendDashboard() {
       accessorFn: (r) => r.total30d ?? -1,
       width: 110,
       align: "right",
-      cell: (r) => <span className="tabular-nums">{usdPrecise(r.total30d)}</span>,
+      cell: (r) => (
+        <span className="tabular-nums">{usdPrecise(r.total30d)}</span>
+      ),
     },
     {
       id: "total_all",
@@ -222,7 +254,9 @@ export function SpendDashboard() {
       accessorFn: (r) => r.totalAll ?? -1,
       width: 110,
       align: "right",
-      cell: (r) => <span className="tabular-nums">{usdPrecise(r.totalAll)}</span>,
+      cell: (r) => (
+        <span className="tabular-nums">{usdPrecise(r.totalAll)}</span>
+      ),
     },
     {
       id: "rows",
@@ -231,7 +265,9 @@ export function SpendDashboard() {
       width: 90,
       align: "right",
       cell: (r) => (
-        <span className="tabular-nums text-muted-foreground">{r.rows === null ? "—" : count(r.rows)}</span>
+        <span className="tabular-nums text-muted-foreground">
+          {r.rows === null ? "—" : count(r.rows)}
+        </span>
       ),
     },
     {
@@ -241,7 +277,13 @@ export function SpendDashboard() {
       filter: "select",
       width: 120,
       cell: (r) => (
-        <span className={r.role === "gap" || r.role === "unmeasured" ? "text-destructive" : "text-muted-foreground"}>
+        <span
+          className={
+            r.role === "gap" || r.role === "unmeasured"
+              ? "text-destructive"
+              : "text-muted-foreground"
+          }
+        >
           {staleness(r.lastWrite)}
         </span>
       ),
@@ -255,58 +297,55 @@ export function SpendDashboard() {
     },
   ];
 
-  const gaps = data?.ledgers.filter((l) => l.role === "gap" || l.role === "unmeasured") ?? [];
+  const gaps =
+    data?.ledgers.filter((l) => l.role === "gap" || l.role === "unmeasured") ??
+    [];
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5 p-4">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <DollarSign className="h-4 w-4 text-muted-foreground" aria-hidden />
-            Platform spend
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Where the money went, across every organization. Day boundaries are local midnight in{" "}
-            {zoneLabel(timezone)}
-            {data && data.timezone !== timezone
-              ? ` — the database did not recognise that zone and used ${zoneLabel(data.timezone)} instead`
-              : ""}
-            .
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">
-            {data ? `Headline read ${new Date(data.generatedAt).toLocaleTimeString()}` : "Not loaded yet"}
-          </span>
-          <button
-            type="button"
-            onClick={() => setReloadTick((t) => t + 1)}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden />
-            {loading ? "Reading…" : "Refresh headline"}
-          </button>
-        </div>
-      </header>
+    <div className="flex w-full min-w-0 flex-col gap-4 p-4">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {data
+            ? `Updated ${new Date(data.generatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+            : "Loading"}
+        </span>
+        <button
+          type="button"
+          onClick={() => setReloadTick((t) => t + 1)}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60"
+        >
+          <RefreshCw
+            className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            aria-hidden
+          />
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
 
       {error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <div className="font-medium">The spend read failed — no numbers are shown.</div>
+          <div className="font-medium">
+            The spend read failed — no numbers are shown.
+          </div>
           <div className="mt-1 text-xs">
             {error.message}
             {" · "}
-            This page needs a Super Admin account; the read is refused at the database, not hidden in the UI.
-            Use Refresh to try again.
+            This page needs a Super Admin account; the read is refused at the
+            database, not hidden in the UI. Use Refresh to try again.
           </div>
         </div>
       ) : null}
 
       {knobsState.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          The alarm threshold setting could not be read ({knobsState.error.message}), so the headline below
-          will not change colour no matter how high today runs. Seed
-          <span className="font-mono"> platform.spend_popover.scare_threshold_usd </span>
+          The alarm threshold setting could not be read (
+          {knobsState.error.message}), so the headline below will not change
+          colour no matter how high today runs. Seed
+          <span className="font-mono">
+            {" "}
+            platform.spend_popover.scare_threshold_usd{" "}
+          </span>
           to restore it.
         </div>
       ) : null}
@@ -327,15 +366,22 @@ export function SpendDashboard() {
       ) : null}
 
       {data ? (
-        <p className="-mt-3 text-[11px] text-muted-foreground">
-          {fixedMonthly === "missing"
-            ? "Fixed costs (hosting, plan-billed services): the setting platform.spend.fixed_monthly_usd is missing, so none are shown."
-            : fixedMonthly === null
-              ? "Fixed costs (hosting, plan-billed services): reading…"
-              : fixedMonthly > 0
-                ? `Plus fixed costs of about ${usd(fixedMonthly / data.headline.daysInMonth)} per day (${usd(fixedMonthly)} a month for hosting and plan-billed services, entered by hand; not part of any number above).`
-                : "Fixed costs (hosting, plan-billed services) are not entered yet — set the monthly figure under Administration → Users → Limits (platform.spend.fixed_monthly_usd) and it will show here per day."}
-        </p>
+        <div className="-mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground">
+          <span title="Headline values include AI and provider executions; unmetered sources are excluded.">
+            AI + providers · lower bound
+          </span>
+          <span title={`Day boundaries use ${zoneLabel(data.timezone)}.`}>
+            {zoneLabel(data.timezone)}
+          </span>
+          <span title="Hosting and plan-billed services are tracked separately from measured execution spend.">
+            Fixed:{" "}
+            {fixedMonthly === null
+              ? "loading"
+              : fixedMonthly === "missing" || fixedMonthly <= 0
+                ? "not set"
+                : `${usd(fixedMonthly)}/mo · ${usd(fixedMonthly / data.headline.daysInMonth)}/day`}
+          </span>
+        </div>
       ) : null}
 
       <SpendExplorer />
@@ -345,24 +391,23 @@ export function SpendDashboard() {
           <Folded
             icon={DollarSign}
             title="Every cost source"
-            subtitle={`${data.ledgers.length} ledgers · ${gaps.length} measure nothing, so every number above is a lower bound`}
+            summary={`${data.ledgers.length} sources · ${gaps.length} unmeasured`}
           >
             <div className="flex flex-col gap-3">
-              <Section
-                icon={AlertTriangle}
-                title="Known gaps"
-                subtitle="Money we know we spend with no row to prove it"
-              >
+              <Section icon={AlertTriangle} title="Known gaps">
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {gaps.map((gap) => (
-                    <div key={gap.ledgerKey} className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-sm font-medium text-foreground">{gap.label}</span>
-                        <span className="shrink-0 text-[11px] text-destructive">
-                          {gap.tableRef ? staleness(gap.lastWrite) : "no ledger"}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">{gap.note}</p>
+                    <div
+                      key={gap.ledgerKey}
+                      className="flex items-baseline justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-1.5"
+                      title={gap.note}
+                    >
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {gap.label}
+                      </span>
+                      <span className="shrink-0 text-[11px] text-destructive">
+                        {gap.tableRef ? staleness(gap.lastWrite) : "no ledger"}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -374,7 +419,10 @@ export function SpendDashboard() {
                 getRowId={(r) => r.ledgerKey}
                 pageSize={25}
                 emptyState={{ title: "No cost sources registered." }}
-                toolbar={{ search: true, searchPlaceholder: "Search cost sources…" }}
+                toolbar={{
+                  search: true,
+                  searchPlaceholder: "Search cost sources…",
+                }}
               />
             </div>
           </Folded>
@@ -382,55 +430,82 @@ export function SpendDashboard() {
           <Folded
             icon={Package}
             title="Print orders"
-            subtitle="Revenue customers paid us, against what Lulu charged us — not part of the spend headline"
+            summary={`${usd(data.printOrders.revenueUsd)} revenue · ${usd(data.printOrders.marginUsd)} margin`}
           >
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-md border border-border bg-card px-3 py-2">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Revenue (paid)</div>
-                <div className="text-lg font-semibold tabular-nums text-foreground">{usd(data.printOrders.revenueUsd)}</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Revenue (paid)
+                </div>
+                <div className="text-lg font-semibold tabular-nums text-foreground">
+                  {usd(data.printOrders.revenueUsd)}
+                </div>
                 <div className="text-[11px] text-muted-foreground">
-                  {count(data.printOrders.paidOrders)} of {count(data.printOrders.orders)} orders
+                  {count(data.printOrders.paidOrders)} of{" "}
+                  {count(data.printOrders.orders)} orders
                 </div>
               </div>
               <div className="rounded-md border border-border bg-card px-3 py-2">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Refunded</div>
-                <div className="text-lg font-semibold tabular-nums text-foreground">{usd(data.printOrders.refundedUsd)}</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Refunded
+                </div>
+                <div className="text-lg font-semibold tabular-nums text-foreground">
+                  {usd(data.printOrders.refundedUsd)}
+                </div>
               </div>
               <div className="rounded-md border border-border bg-card px-3 py-2">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Our Lulu cost</div>
-                <div className="text-lg font-semibold tabular-nums text-foreground">{usd(data.printOrders.luluCostUsd)}</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Our Lulu cost
+                </div>
+                <div className="text-lg font-semibold tabular-nums text-foreground">
+                  {usd(data.printOrders.luluCostUsd)}
+                </div>
               </div>
               <div
                 className={`rounded-md border px-3 py-2 ${
-                  data.printOrders.marginUsd < 0 ? "border-destructive/50 bg-destructive/10" : "border-border bg-card"
+                  data.printOrders.marginUsd < 0
+                    ? "border-destructive/50 bg-destructive/10"
+                    : "border-border bg-card"
                 }`}
               >
                 <div
                   className={`text-[11px] uppercase tracking-wide ${
-                    data.printOrders.marginUsd < 0 ? "text-destructive" : "text-muted-foreground"
+                    data.printOrders.marginUsd < 0
+                      ? "text-destructive"
+                      : "text-muted-foreground"
                   }`}
                 >
                   Margin
                 </div>
                 <div
                   className={`text-lg font-semibold tabular-nums ${
-                    data.printOrders.marginUsd < 0 ? "text-destructive" : "text-foreground"
+                    data.printOrders.marginUsd < 0
+                      ? "text-destructive"
+                      : "text-foreground"
                   }`}
                 >
                   {usd(data.printOrders.marginUsd)}
                 </div>
                 <div
                   className={`text-[11px] ${
-                    data.printOrders.marginUsd < 0 ? "text-destructive/80" : "text-muted-foreground"
+                    data.printOrders.marginUsd < 0
+                      ? "text-destructive/80"
+                      : "text-muted-foreground"
                   }`}
                 >
                   revenue − refunds − Lulu cost
                 </div>
               </div>
               <div className="rounded-md border border-border bg-card px-3 py-2">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Last order</div>
-                <div className="text-sm font-medium text-foreground">{timestamp(data.printOrders.lastOrderAt)}</div>
-                <div className="text-[11px] text-muted-foreground">Lulu cost is captured per order at quote time</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Last order
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {timestamp(data.printOrders.lastOrderAt)}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  Lulu cost is captured per order at quote time
+                </div>
               </div>
             </div>
           </Folded>

@@ -7,6 +7,11 @@ vision: [.claude/skills/agent-copy/SKILL.md, components/agent-copy/README.md]
 
 # Agent-copy everywhere — copy / JSON / Copy-for-AI / export on every data surface
 
+**Migration note (2026-09-12):** Matrx Alchemy is the shared toolkit and
+Alchemy Menu is the reusable package control. All four package artifacts are
+public and the full registry consumer canary passed; trusted-publishing receipt,
+final host-identity publication, and deployed frontend/dashboard proof remain pending.
+
 ## Vision — Arman's words
 
 > "Our entire application is highly AI driven. And so having copy icons everywhere and copy for AI icons everywhere is an absolute must."
@@ -30,15 +35,15 @@ Refinements he added along the way — each is now doctrine, with the why:
 
 ## Resources
 
-- **Doctrine + how-to (read first):** `.claude/skills/agent-copy/SKILL.md` (MISSION section, then the module-audit protocol), `components/agent-copy/README.md`.
-- **Primitives:** `components/agent-copy/` — `CopyButtons.tsx` (sizes xs/icon/sm, `json`, `aiVariants`, `aiCustom`), `AiCopyMenu.tsx` (graded variants dropdown + custom-preview dialog; kept in step with aidream `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`), `buildAgentPayload.ts`, `ExportMenu.tsx` + `export.ts`, `AgentCopyGroomerWindow/Launcher` + `groomer-types.ts` (incl. `groomerPresetVariants` / `buildGroomerPresetPayload`), shared `clipboard.ts`.
-- **Built-in integrations:** `MatrxDataTable` `copy` config → row/view/window/field copy + toolbar ExportMenu + `copy.aiVariants/aiCustom`; `JsonInspector` `agentCopy`; marketing `MetricCell` `copy`; marketing payload helpers `features/marketing/lib/copy-payloads.ts` (`webCopy`, `keyFieldsAiVariant` — extend, don't fork).
+- **Doctrine + how-to (read first):** `/Users/armanisadeghi/code/common-docs/projects/matrx-alchemy/SPEC.md`, `.claude/skills/agent-copy/SKILL.md` (MISSION section, then the module-audit protocol), `components/agent-copy/README.md`.
+- **Primitives:** `@ai-matrx/design-system/content-transfer` owns Alchemy Menu and its groomer, variants, exports, and glyph. `components/agent-copy/CopyButtons.tsx` is the frontend adapter; `AiCopyMenu.tsx`, `ExportMenu.tsx`, `groomer-types.ts`, and payload helpers preserve existing caller contracts without duplicating package behavior.
+- **Built-in integrations:** `MatrxDataTable` `copy` config → row/view/window/field copy + toolbar Alchemy Menu actions + `copy.aiVariants/aiCustom`; `JsonInspector` `agentCopy`; marketing `MetricCell` `copy`; marketing payload helpers `features/marketing/lib/copy-payloads.ts` (`webCopy`, `keyFieldsAiVariant` — extend, don't fork).
 - **Reference pages:** `features/marketing/components/backlinks/BacklinksWorkspace.tsx` + `format.ts` — every pattern in one file (granularities, groomer sections, graded variants, the `copy.showToolbar:false` rule). `features/marketing/components/audit/AuditWorkspace.tsx` — the **show-all + full-data export + page-KPI** reference (`ShowAllToggle`, render-only preview constants, `auditPageKpis` threaded into every payload).
 - **Testing:** dev server → nonce handshake (`openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/…`). Real data route: `/marketing/brands/1c71e366-143c-4692-8e9a-1b59bdfe114a/sites/7853b973-be56-47cd-bdf3-a55fad9dd0e4/backlinks` (aimatrx.com, `admin@admin.com`).
 
 **Known traps:**
 - `pnpm type-check` covers the whole repo and often carries OTHER sessions' in-flight errors — gate on zero errors *in files you touched*. (It was fully green repo-wide on 2026-08-15.)
-- Adding a `copy` config to `MatrxDataTable` makes its toolbar render; on pages with their own header row set `copy.showToolbar:false` and host view-copy + ExportMenu in that row, or you recreate the orphan-toolbar-row mess Arman flagged.
+- Adding a `copy` config to `MatrxDataTable` makes its toolbar render; on pages with their own header row set `copy.showToolbar:false` and host one `CopyButtons` control with `export` in that row, or you recreate the orphan-toolbar-row mess Arman flagged.
 - **Shared checkout is the designed workflow** (CLAUDE.md § Shared checkout): stage your own files, commit early and often, never tree-wide destructive git, never ask for your own branch/worktree. The old "prefer worktree isolation for fleets" advice here is superseded — it is now ruled against.
 - A payload name must match the surface manifest's vocabulary. The audit page shipped `gone_pages` for a COUNT while the manifest uses `gone_pages` for the LIST and `pages_gone` for the count; an agent reading both then disagrees with itself. Fixed 2026-08-15 — check your names against the manifest.
 - **`grep features/<name>` is a PROXY for coverage, not proof — it produced two false negatives on 2026-08-15.** A feature's copy wiring often lands where the surface actually renders, not in its own folder: the CMS site list lives in `app/(core)/cms/page.tsx` (helpers in `features/cms/copy.ts`) and the MCP integrations surface in `features/settings/pages/IntegrationsSettingsPage.tsx` (helpers in `features/agents/mcp-copy.ts`) — both read as "0 files" under a folder grep while being fully wired. Grep the route tree and the shared surface too before declaring a gap, and never re-chip on a folder count alone.
@@ -72,14 +77,14 @@ Plus 4 chips covering the **user-facing feature clusters** — a category the ro
 ### Not yet chipped
 
 1. **Marketing tab partials** — real gaps, but each is small enough to be boy-scout work for whoever next touches the file:
-   - `components/site/SiteOverview.tsx` — has 4 card pairs; **no ExportMenu, no groomer, no variants**; no per-item copy on the attention list (`:1023`), workspace entries (`:1232`), connection chips (`:1299`). Multi-section page → doctrine wants a groomer.
+   - `components/site/SiteOverview.tsx` — has 4 card pairs; no Alchemy Menu export, groomer, or variants; no per-item copy on the attention list (`:1023`), workspace entries (`:1232`), connection chips (`:1299`). Multi-section page → doctrine wants a groomer.
    - `components/integrations/SiteIntegrationsWorkspace.tsx` — header + per-provider pairs only; no export/groomer/variants; Google connections & resources rows have no per-row copy.
    - `components/settings/SiteStrategyCard.tsx` — **zero copy** despite rendering interview results + open questions (`:130`). (The rest of the settings tab is wired, and its identity card correctly builds from live form state.)
 2. **The what-I-see payload debt** — everything wired before 2026-08-12 carries raw-dump payloads (the skill's own "Known debt"). The form-heavy slice is chipped above; the remainder is step 4 of the module-audit protocol and is best paid down opportunistically: upgrade the payload of any surface you touch.
 3. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
 4. **Release:** this work sits on `main` unreleased — ships via `./scripts/release.sh` on the next scheduled frontend release.
 
-Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair is the right size), builders/composers (`LiveBuilder`, `AutoCreateAgentAppForm`, `[id]/code`), and `PageLinksCard` (truncates, but already states "+N more … in the copied and exported data" and ships a real ExportMenu).
+Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair is the right size), builders/composers (`LiveBuilder`, `AutoCreateAgentAppForm`, `[id]/code`), and `PageLinksCard` (truncates, but already states "+N more … in the copied and exported data" and keeps its existing export action).
 
 ## Done
 

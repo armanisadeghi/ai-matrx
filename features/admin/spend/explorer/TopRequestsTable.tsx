@@ -55,8 +55,12 @@ export function TopRequestsTable({
       id: "at",
       header: "When",
       accessorFn: (r) => r.at,
-      width: 150,
-      cell: (r) => <span className="text-muted-foreground">{timestamp(r.at)}</span>,
+      width: 160,
+      cell: (r) => (
+        <span className="whitespace-nowrap tabular-nums text-muted-foreground">
+          {timestamp(r.at)}
+        </span>
+      ),
     },
     {
       id: "cost",
@@ -68,7 +72,9 @@ export function TopRequestsTable({
       cell: (r) => (
         <span className="tabular-nums font-medium">
           {usd(r.cost)}
-          <span className="ml-1 text-[10px] text-muted-foreground">{percent(r.share)}</span>
+          <span className="ml-1 text-[10px] text-muted-foreground">
+            {percent(r.share)}
+          </span>
         </span>
       ),
     },
@@ -80,7 +86,10 @@ export function TopRequestsTable({
       cell: (r) => (
         <div className="flex min-w-0 items-center gap-1.5">
           <Drill
-            label={r.conversation ?? (r.conversationId ? "Untitled conversation" : `(${r.source})`)}
+            label={
+              r.conversation ??
+              (r.conversationId ? "Untitled conversation" : `(${r.source})`)
+            }
             dim="conversation"
             value={r.conversationId}
             onDrill={onDrill}
@@ -103,14 +112,23 @@ export function TopRequestsTable({
       header: "Person",
       accessorFn: (r) => r.user ?? "",
       width: 180,
-      cell: (r) => <Drill label={r.user} dim="user" value={r.userId} onDrill={onDrill} />,
+      cell: (r) => (
+        <Drill label={r.user} dim="user" value={r.userId} onDrill={onDrill} />
+      ),
     },
     {
       id: "agent",
       header: "Agent",
       accessorFn: (r) => r.agent ?? "",
       width: 170,
-      cell: (r) => <Drill label={r.agent} dim="agent" value={r.agentId} onDrill={onDrill} />,
+      cell: (r) => (
+        <Drill
+          label={r.agent}
+          dim="agent"
+          value={r.agentId}
+          onDrill={onDrill}
+        />
+      ),
     },
     {
       id: "feature",
@@ -118,7 +136,14 @@ export function TopRequestsTable({
       accessorFn: (r) => r.feature,
       filter: "select",
       width: 150,
-      cell: (r) => <Drill label={r.feature} dim="feature" value={r.feature} onDrill={onDrill} />,
+      cell: (r) => (
+        <Drill
+          label={r.feature}
+          dim="feature"
+          value={r.feature}
+          onDrill={onDrill}
+        />
+      ),
     },
     {
       id: "model",
@@ -126,7 +151,9 @@ export function TopRequestsTable({
       accessorFn: (r) => r.model ?? "",
       filter: "select",
       width: 150,
-      cell: (r) => <Drill label={r.model} dim="model" value={r.model} onDrill={onDrill} />,
+      cell: (r) => (
+        <Drill label={r.model} dim="model" value={r.model} onDrill={onDrill} />
+      ),
     },
     {
       id: "trigger",
@@ -135,16 +162,23 @@ export function TopRequestsTable({
       filter: "select",
       width: 100,
       cell: (r) => (
-        <span className={r.trigger === "manual" ? "text-foreground" : "text-muted-foreground"}>
+        <span
+          className={
+            r.trigger === "manual" ? "text-foreground" : "text-muted-foreground"
+          }
+        >
           {r.trigger === "manual" ? "manual" : "automated"}
-          <span className="ml-1 text-[10px] text-muted-foreground">{r.origin}</span>
+          <span className="ml-1 text-[10px] text-muted-foreground">
+            {r.origin}
+          </span>
         </span>
       ),
     },
     {
       id: "status",
       header: "Outcome",
-      accessorFn: (r) => `${r.status ?? ""}${r.finishReason ? ` ${r.finishReason}` : ""}`,
+      accessorFn: (r) =>
+        `${r.status ?? ""}${r.finishReason ? ` ${r.finishReason}` : ""}`,
       filter: "select",
       width: 130,
       cell: (r) =>
@@ -155,7 +189,9 @@ export function TopRequestsTable({
         ) : (
           <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-medium text-destructive">
             {r.status}
-            {r.finishReason && r.finishReason !== "stop" ? ` · ${r.finishReason}` : ""}
+            {r.finishReason && r.finishReason !== "stop"
+              ? ` · ${r.finishReason}`
+              : ""}
           </span>
         ),
     },
@@ -178,7 +214,8 @@ export function TopRequestsTable({
       width: 170,
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {compactNumber(r.tokensIn)} / {compactNumber(r.tokensCached)} / {compactNumber(r.tokensOut)}
+          {compactNumber(r.tokensIn)} / {compactNumber(r.tokensCached)} /{" "}
+          {compactNumber(r.tokensOut)}
         </span>
       ),
     },
@@ -189,7 +226,12 @@ export function TopRequestsTable({
       filter: "select",
       width: 160,
       cell: (r) => (
-        <Drill label={r.organization} dim="organization" value={r.organizationId} onDrill={onDrill} />
+        <Drill
+          label={r.organization}
+          dim="organization"
+          value={r.organizationId}
+          onDrill={onDrill}
+        />
       ),
     },
     {
@@ -198,7 +240,9 @@ export function TopRequestsTable({
       accessorFn: (r) => r.app,
       filter: "select",
       width: 130,
-      cell: (r) => <Drill label={r.app} dim="app" value={r.app} onDrill={onDrill} />,
+      cell: (r) => (
+        <Drill label={r.app} dim="app" value={r.app} onDrill={onDrill} />
+      ),
     },
   ];
 

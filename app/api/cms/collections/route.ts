@@ -1601,7 +1601,8 @@ export async function POST(request: NextRequest) {
           }
           const batch = chunk ?? [];
           for (const row of batch) {
-            const size = JSON.stringify(row).length;
+            // UTF-8 bytes against a BYTE budget; `.length` is UTF-16 code units.
+            const size = new TextEncoder().encode(JSON.stringify(row)).length;
             if (bytes + size > EXPORT_BYTE_BUDGET) {
               truncated = true;
               reason = "size";

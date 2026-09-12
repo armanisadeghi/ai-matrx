@@ -395,7 +395,8 @@ export default function AgentDemoClient() {
       for await (const evt of events) {
         eventCount++;
         const line = JSON.stringify(evt, null, 2) + "\n\n";
-        byteCount += line.length;
+        // UTF-8 bytes — `line.length` is UTF-16 code units.
+        byteCount += new TextEncoder().encode(line).length;
         setRawEvents((prev) => prev + line);
         setEventsLog((prev) => [...prev, evt]);
         setStats((s) => ({

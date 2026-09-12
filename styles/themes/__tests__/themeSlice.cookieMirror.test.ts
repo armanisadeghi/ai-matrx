@@ -188,10 +188,10 @@ describe("StoreProvider theme-cookie subscription", () => {
     const store = await mountStoreProvider();
 
     await act(async () => {
-      store.dispatch(toggleMode());
+      store.dispatch(toggleMode("dark"));
     });
     await act(async () => {
-      store.dispatch(toggleMode());
+      store.dispatch(toggleMode("light"));
     });
 
     expect(themeCookieWrites(fetchMock)).toEqual([
@@ -295,7 +295,7 @@ describe("StoreProvider theme-cookie subscription", () => {
     await act(async () => {
       store.dispatch(setMode("light"));
       store.dispatch(setMode("light"));
-      store.dispatch(toggleMode());
+      store.dispatch(toggleMode("light"));
       store.dispatch(setMode("dark"));
     });
 

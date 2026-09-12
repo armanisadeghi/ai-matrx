@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { Note, CreateNoteInput, UpdateNoteInput } from "../types";
+import type { Note, CreateNoteInput, FolderReference, UpdateNoteInput } from "../types";
 import {
   setActiveNote as setActiveNoteAction,
   addTab,
@@ -32,6 +32,7 @@ import {
   findOrCreateEmptyNote as findOrCreateEmptyNoteThunk,
   saveNoteField,
   moveNoteToFolder,
+  moveNoteToNewFolder as moveNoteToNewFolderThunk,
 } from "../redux/thunks";
 
 /**
@@ -136,25 +137,12 @@ export function useNotesRedux() {
         dispatch(setNoteField({ id, field: "tags", value: updates.tags }));
       }
 
-      // Moving a note must update both folder_name and folder_id. The move
-      // thunk resolves/materializes the folder and saves every field edited
-      // above in the same write; ordinary updates use the standard save.
-      if (updates.folder_name !== undefined) {
-        const folder = updates.folder_name?.trim();
-        if (folder) {
-          await dispatch(moveNoteToFolder({ noteId: id, folder })).unwrap();
-        } else {
-          dispatch(setNoteField({ id, field: "folder_name", value: null }));
-          dispatch(setNoteField({ id, field: "folder_id", value: null }));
-          await dispatch(saveNote(id)).unwrap();
-        }
-      } else {
-        await dispatch(saveNote(id)).unwrap();
-      }
+      await dispatch(saveNote(id)).unwrap();
 
       // Return current note state (approximate — the real note is in Redux)
       const note = notes.find((n) => n.id === id);
-      return note ? { ...note, ...updates } : ({ id, ...updates } as Note);
+      if (!note) throw new Error("Note not found after save");
+      return note;
     },
     [dispatch, notes],
   );
@@ -182,6 +170,26 @@ export function useNotesRedux() {
       return await dispatch(
         findOrCreateEmptyNoteThunk(folderName ?? "Draft"),
       ).unwrap();
+    },
+    [dispatch],
+  );
+
+  const moveNote = useCallback(
+    async (noteId: string, folder: FolderReference): Promise<void> => {
+      await dispatch(
+        moveNoteToFolder({
+          noteId,
+          folder,
+        }),
+      ).unwrap();
+    },
+    [dispatch],
+  );
+
+  /** A name is accepted only while creating a folder that is not persisted yet. */
+  const moveNoteToNewFolder = useCallback(
+    async (noteId: string, folderName: string): Promise<void> => {
+      await dispatch(moveNoteToNewFolderThunk({ noteId, folderName })).unwrap();
     },
     [dispatch],
   );
@@ -225,6 +233,8 @@ export function useNotesRedux() {
     copyNote: copyNoteFn,
     refreshNotes,
     findOrCreateEmptyNote,
+    moveNote,
+    moveNoteToNewFolder,
     openTabs,
     openNoteInTab,
     closeTab,

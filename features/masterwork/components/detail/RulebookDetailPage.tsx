@@ -89,12 +89,16 @@ import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
-import { IngestTimelineDialog } from "./IngestTimelineDialog";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
 import {
   fetchDistillationApproaches,
   type DistillationApproach,
 } from "@/features/masterwork/browse/approaches";
+import {
+  resolveApproachLane,
+  toIngestLane,
+  type IngestLane,
+} from "@/features/masterwork/browse/approachLane";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { RulebookVersionHistory } from "./RulebookVersionHistory";
@@ -595,35 +599,21 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // param existed (2026-08-19) those three enabled Approaches dead-ended on a
   // bare detail page — the mechanical cause of exemplar's zero rules.
   const ingestParam = searchParams.get("ingest");
-  const ingestLane =
-    ingestParam === "source" ||
-    ingestParam === "exemplar" ||
-    ingestParam === "file"
-      ? ingestParam
-      : null;
+  // The lane names come from ONE list (`browse/approachLane.ts`) so a registry
+  // row, a deep link, and the dialog can never disagree about what lanes
+  // exist — the drift that left `timeline` with a live card and no capture UI.
+  const ingestLane = toIngestLane(ingestParam);
   useEffect(() => {
     if (ingestLane) setIngestOpen(true);
   }, [ingestLane]);
-  // The `timeline` Approach ("A case that unfolds in time") is its OWN lane and
-  // its own dialog — a case is chunked by step, not by word count — so
-  // ?ingest=timeline opens that dialog rather than the single-source one.
-  const timelineParam = searchParams.get("ingest") === "timeline";
-  const [timelineOpen, setTimelineOpen] = useState(timelineParam);
-  // Watched, not read once: the sibling lanes above open when the param
-  // APPEARS, and a client navigation to the advertised timeline link on an
-  // already-mounted page must do the same (Bugbot, 1d692d66).
-  useEffect(() => {
-    if (timelineParam) setTimelineOpen(true);
-  }, [timelineParam]);
   // THE APPROACH PICKER (2026-08-20). Every lane below is opened by a query
   // param read ONCE at mount, so the in-page picker cannot reach them by
   // changing the URL. Each param therefore gets a state twin the picker sets;
   // the param stays the deep-link entry and the twin is the in-page one, and
   // `launchApproach` is the ONE place that maps a registry row to a lane.
   const [approachPickerOpen, setApproachPickerOpen] = useState(false);
-  const [requestedIngestLane, setRequestedIngestLane] = useState<
-    "source" | "exemplar" | "file" | null
-  >(null);
+  const [requestedIngestLane, setRequestedIngestLane] =
+    useState<IngestLane | null>(null);
   const [dumpRequested, setDumpRequested] = useState(false);
   const [chatImportTab, setChatImportTab] = useState<"upload" | "matrx">(
     searchParams.get("tab") === "matrx" ? "matrx" : "upload",
@@ -650,55 +640,55 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
    * the picker and a pasted URL can never drift apart; `launch_href` covers an
    * Approach whose lane is its own page (the Vision Interview, the Oracle tap).
    *
-   * NO DEAD ENDS: an Approach the picker cannot map still goes somewhere — its
-   * own canonical deep link on this Rulebook — rather than doing nothing.
+   * NO DEAD ENDS, AND NOTHING FAILS SILENTLY: the mapping itself lives in the
+   * pure `resolveApproachLane` (so one list of lanes serves the registry, the
+   * deep links and the dialog), and a row it cannot map is SAID OUT LOUD.
+   * Until 2026-09-12 an unmapped row was pushed at its own query string
+   * instead — a URL nothing read, which is how the live `timeline` card landed
+   * Experts on a bare, empty Rulebook with no error and no capture UI.
    */
   const launchApproach = useCallback(
     (approach: DistillationApproach) => {
-      if (approach.launchHref) {
-        router.push(approach.launchHref);
+      const lane = resolveApproachLane(approach);
+      if (!lane) {
+        console.error(
+          `[masterwork] the Approach "${approach.key}" has no lane in the product: ` +
+            `intake_query=${JSON.stringify(approach.intakeQuery)} launch_href=${approach.launchHref}`,
+        );
+        toast.error(
+          `“${approach.label}” has no way in yet — nothing on this page can take it. ` +
+            "Pick another way to add rules; this has been logged as a defect.",
+        );
         return;
       }
-      const q = approach.intakeQuery;
-      if (q.interview === "1") {
-        setInterviewTarget({ newNonce: Date.now() });
-        setInterviewOpen(true);
-        return;
+      switch (lane.kind) {
+        case "href":
+          router.push(lane.href);
+          return;
+        case "interview":
+          setInterviewTarget({ newNonce: Date.now() });
+          setInterviewOpen(true);
+          return;
+        case "ingest":
+          setRequestedIngestLane(lane.lane);
+          setIngestOpen(true);
+          return;
+        case "body_of_work":
+          setCorpusOpen(true);
+          return;
+        case "chatImport":
+          setChatImportTab(lane.tab);
+          setChatImportOpen(true);
+          return;
+        case "dump":
+          setDumpRequested(true);
+          return;
+        case "conduct":
+          setConductorOpen(true);
+          return;
       }
-      if (q.ingest === "timeline") {
-        setTimelineOpen(true);
-        return;
-      }
-      if (
-        q.ingest === "source" ||
-        q.ingest === "exemplar" ||
-        q.ingest === "file"
-      ) {
-        setRequestedIngestLane(q.ingest);
-        setIngestOpen(true);
-        return;
-      }
-      if (q.body_of_work === "1") {
-        setCorpusOpen(true);
-        return;
-      }
-      if (q.chatImport === "1") {
-        setChatImportTab(q.tab === "matrx" ? "matrx" : "upload");
-        setChatImportOpen(true);
-        return;
-      }
-      if (q.dump === "1") {
-        setDumpRequested(true);
-        return;
-      }
-      if (q.conduct === "1") {
-        setConductorOpen(true);
-        return;
-      }
-      const params = new URLSearchParams(q).toString();
-      router.push(`/masterwork/${rulebookId}${params ? `?${params}` : ""}`);
     },
-    [router, rulebookId],
+    [router],
   );
 
   // Composer seed for the Scout panel — set when a recording distillation
@@ -1005,7 +995,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         editor_open: editorOpen,
         interview_open: interviewOpen,
         ingest_open: ingestOpen,
-        timeline_open: timelineOpen,
+        // The timeline lane is a mode of the source dialog (main folded it in);
+        // it is live exactly when that dialog is open on the timeline lane.
+        timeline_open: ingestOpen && (requestedIngestLane ?? ingestLane) === "timeline",
         triage_open: triageOpen,
         corpus_open: corpusOpen,
         chat_import_open: chatImportOpen,
@@ -1037,7 +1029,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     search,
     visibleRules,
     wizardOpen,
-      timelineOpen,
+      requestedIngestLane,
+      ingestLane,
     triageOpen,
 ]);
 
@@ -2257,12 +2250,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewSeed(seed);
               setInterviewOpen(true);
             }}
-          />
-          <IngestTimelineDialog
-            open={timelineOpen}
-            onOpenChange={setTimelineOpen}
-            rulebook={rulebook}
-            onIngested={() => void reloadRulebook()}
           />
           <ApproachPickerDialog
             open={approachPickerOpen}

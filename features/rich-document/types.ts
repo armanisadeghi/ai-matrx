@@ -196,6 +196,8 @@ export interface RichDocumentActionContext {
   source: ContentSource;
   metadata: Record<string, unknown> | null;
   dispatch: AppDispatch;
+  /** Active organization supplied by the action host for note writes. */
+  organizationId: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isCreator: boolean;
@@ -233,9 +235,7 @@ export interface RichDocumentAction {
   /** Optional visibility predicate. Default: true. */
   visible?: (ctx: RichDocumentActionContext) => boolean;
   /** Optional disabled predicate. Returns boolean OR a reason for tooltips. */
-  disabled?: (
-    ctx: RichDocumentActionContext,
-  ) => boolean | { reason: string };
+  disabled?: (ctx: RichDocumentActionContext) => boolean | { reason: string };
   /** The handler. May be async. */
   run: (ctx: RichDocumentActionContext) => void | Promise<void>;
   /**
@@ -336,6 +336,8 @@ export interface RichDocumentSurfaceRegistration {
   /** Pure metadata; no functions. Registration order is encoded by the
    * provider stack's array order, so no timestamp is needed. */
   computedActionSpecs: RichDocumentActionSpec[];
+  /** Render-safe canonical identity for transfer workspace cache ownership. */
+  contentSourceId: string;
   /** The source type — useful for the renderer to label the surface. */
   sourceType: ContentSourceType;
 }

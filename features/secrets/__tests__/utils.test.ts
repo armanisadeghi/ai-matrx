@@ -6,6 +6,9 @@ import {
 } from "@/features/secrets/utils";
 import { recommendedHandlingForFieldKey } from "@/features/secrets/credential-identity";
 import {
+  isProtectedExecutionField,
+  normalizeExecutionPurpose,
+  normalizeWireField,
   normalizeVaultHandling,
   parseVaultScopeKey,
   vaultScopeKey,
@@ -22,6 +25,34 @@ describe("normalizeVaultHandling", () => {
   test("rejects invalid stored protection data loudly", () => {
     expect(() => normalizeVaultHandling("encrypted-ish")).toThrow(
       "Invalid Vault protection value",
+    );
+  });
+});
+
+describe("protected execution purpose", () => {
+  test("preserves explicit protected metadata without making missing metadata general", () => {
+    const protectedField = normalizeWireField({
+      id: "field-1",
+      credential_item_id: "item-1",
+      field_key: "passkey_private",
+      execution_purpose: "passkey_private",
+      created_at: "2026-09-12T00:00:00Z",
+      updated_at: "2026-09-12T00:00:00Z",
+    });
+    const legacyField = normalizeWireField({
+      id: "field-2",
+      credential_item_id: "item-1",
+      field_key: "password",
+      created_at: "2026-09-12T00:00:00Z",
+      updated_at: "2026-09-12T00:00:00Z",
+    });
+
+    expect(isProtectedExecutionField(protectedField)).toBe(true);
+    expect(protectedField.execution_purpose).toBe("passkey_private");
+    expect(legacyField.execution_purpose).toBeUndefined();
+    expect(isProtectedExecutionField(legacyField)).toBe(false);
+    expect(() => normalizeExecutionPurpose("unrecognized")).toThrow(
+      "Invalid Vault execution purpose",
     );
   });
 });

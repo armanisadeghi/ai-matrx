@@ -19,12 +19,16 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
+import type { IngestLane } from "../../browse/approachLane";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { useRunOutcome } from "../../durable-run/useRunOutcome";
+import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
+import { recordPastedSource } from "../../record/pastedSource";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -51,9 +55,30 @@ import { useRunOutcome } from "../../durable-run/useRunOutcome";
 
 const INGEST_PATH = "/masterworks/ingest" satisfies keyof paths;
 const INGEST_FILE_PATH = "/masterworks/ingest-file" satisfies keyof paths;
+/**
+ * THE TIMELINE LANE (census row 3, wired 2026-09-12). The `timeline` Approach
+ * has been live and selectable since its registry row landed, with a real
+ * server lane behind it (`aidream/services/distillation/timeline_ingest.py`) —
+ * and no capture UI anywhere in the product, so choosing it created a bare,
+ * empty Rulebook. It is a PASTE lane like `source`, with two differences that
+ * are the whole point of it: a mandate segments the case into its own ordered
+ * moments, and the ENDING is kept back from the distiller so the rules it
+ * writes are forward-looking ("given what you know now, do X") instead of
+ * hindsight. The ending is still stored, for the Audition to score against.
+ */
+const INGEST_TIMELINE_PATH =
+  "/masterworks/ingest-timeline" satisfies keyof paths;
+
+/** The server's own floor (`IngestTimelineRequest.text`, min_length=200). */
+const MIN_SOURCE_CHARS = 200;
+
+/** The published declaration shared with the server. */
+const TIMELINE_MANDATE_KEY = MANDATE_KEYS.masterwork__timeline_distiller;
 
 /** Documents come back with page anchors; audio/video is transcribed first. */
-const FILE_ACCEPT = ".pdf,.doc,.docx,.txt,.md,.rtf,.epub,.pptx,audio/*,video/*";
+// THE ONE LIST (features/masterwork/sourceTypes.ts): the picker offers
+// exactly what the server reads — never a hand-typed second copy.
+const FILE_ACCEPT = MASTERWORK_UPLOAD_ACCEPT;
 
 type IngestMode = "instructional" | "exemplar";
 type SourceShape = "text" | "file";
@@ -189,15 +214,21 @@ export function IngestSourceDialog({
    * Deep-link entry (the Approach picker's `?ingest=` param): pre-select the
    * lane so choosing an Approach lands ON that Approach, never on a default.
    * "source" = instructional text · "exemplar" = examples of best work ·
-   * "file" = upload a file/recording.
+   * "file" = upload a file/recording · "timeline" = a case that unfolds in time.
    */
-  initialLane?: "source" | "exemplar" | "file" | null;
+  initialLane?: IngestLane | null;
 }) {
   const { upload } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // The timeline lane is its OWN dialog shape, not a mode of the source lane:
+  // a case has no "is it the finished work?" question and no upload half, and
+  // it carries one choice the others do not (whether to keep the ending back).
+  const timeline = initialLane === "timeline";
   const [shape, setShape] = useState<SourceShape>(
     initialLane === "file" ? "file" : "text",
   );
+  /** Timeline only: keep the ending out of the distiller (server default). */
+  const [hideResolution, setHideResolution] = useState(true);
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<IngestMode>(
@@ -216,7 +247,11 @@ export function IngestSourceDialog({
   const run = useMasterworkRun<IngestSummary>({
     surface: "ingest",
     rulebookId: rulebook.id,
-    path: shape === "file" ? INGEST_FILE_PATH : INGEST_PATH,
+    path: timeline
+      ? INGEST_TIMELINE_PATH
+      : shape === "file"
+        ? INGEST_FILE_PATH
+        : INGEST_PATH,
     parseResult: parseIngestSummary,
   });
   const running = run.running || uploading;
@@ -224,7 +259,6 @@ export function IngestSourceDialog({
   const progress = uploading
     ? [`Uploading “${file?.name ?? "your file"}”…`, ...run.stages]
     : run.stages;
-  const rejoining = run.status === "rejoining";
 
   const reset = () => {
     run.reset();
@@ -253,16 +287,31 @@ export function IngestSourceDialog({
   }, [open, run.running, onOpenChange]);
 
   const ingest = async () => {
+    if (timeline) {
+      await ingestTimeline();
+      return;
+    }
     if (shape === "file") {
       await ingestFile();
       return;
     }
-    if (text.trim().length < 200) {
+    if (text.trim().length < MIN_SOURCE_CHARS) {
       toast.error(
         "Paste a real chunk of source material first (at least a few paragraphs).",
       );
       return;
     }
+    // WHAT YOU PASTE IS A SOURCE (census D5) — kept BEFORE the run, so it is
+    // listed in Sources whether the distillation succeeds, fails, or is
+    // rejoined after a reload that took `text` with it.
+    await recordPastedSource({
+      rulebookId: rulebook.id,
+      orgId: rulebook.organization_id,
+      text,
+      sourceNote,
+      // `instructional` is this dialog's word for the `source` Approach.
+      approach: mode === "exemplar" ? "exemplar" : "source",
+    });
     await run.launch(
       {
         rulebook_id: rulebook.id,
@@ -271,6 +320,32 @@ export function IngestSourceDialog({
         source_note: sourceNote.trim() || undefined,
       },
       sourceNote.trim() || "your pasted source",
+    );
+  };
+
+  const ingestTimeline = async () => {
+    if (text.trim().length < MIN_SOURCE_CHARS) {
+      toast.error(
+        "Paste the case as it happened — at least a few paragraphs, in order.",
+      );
+      return;
+    }
+    // The timeline lane is a paste lane too — same law (census D5).
+    await recordPastedSource({
+      rulebookId: rulebook.id,
+      orgId: rulebook.organization_id,
+      text,
+      sourceNote,
+      approach: "timeline",
+    });
+    await run.launch(
+      {
+        rulebook_id: rulebook.id,
+        text,
+        source_note: sourceNote.trim() || undefined,
+        hide_resolution: hideResolution,
+      },
+      sourceNote.trim() || "your case",
     );
   };
 
@@ -328,19 +403,40 @@ export function IngestSourceDialog({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Add rules from a source
-            <AgentCredit
-              mandate={MANDATE_KEYS.masterwork__source_distiller}
-              agent="masterwork_source_distiller"
-            />
+            {timeline ? "Add rules from a case" : "Add rules from a source"}
+            {timeline ? (
+              <AgentCredit
+                mandate={TIMELINE_MANDATE_KEY}
+              />
+            ) : (
+              <AgentCredit
+                mandate={MANDATE_KEYS.masterwork__source_distiller}
+                agent="masterwork_source_distiller"
+              />
+            )}
           </DialogTitle>
           <DialogDescription>
-            Bring in source material — paste a chapter or a playbook, or upload
-            a document or a recording of you explaining your method out loud.
-            The system distills candidate rules and adds them as drafts for you
-            to approve one by one. Nothing goes live without you.
+            {timeline
+              ? "Paste a case the way it actually happened — what you knew at each " +
+                "moment, what you did next, and how it turned out. It gets read " +
+                "step by step, and each step is judged knowing only what you knew " +
+                "at the time, so the rules come back as \u201cgiven what you know now, " +
+                "do X\u201d. They arrive as drafts for you to approve one by one."
+              : "Bring in source material — paste a chapter or a playbook, or upload " +
+                "a document or a recording of you explaining your method out loud. " +
+                "The system distills candidate rules and adds them as drafts for you " +
+                "to approve one by one. Nothing goes live without you."}
           </DialogDescription>
         </DialogHeader>
+
+        {/* A failure STAYS on screen with its reason and a way out. It used to
+            be a toast that removed itself, over a dialog that then showed the
+            empty form again (census D4). */}
+        <DurableRunFailure
+          error={run.error}
+          retry={run.retry}
+          running={run.running}
+        />
 
         {summary ? (
           <div className="space-y-3">
@@ -390,15 +486,14 @@ export function IngestSourceDialog({
               <div className="flex items-start gap-2">
                 <LoadingSpinner size="sm" />
                 <p className="text-xs text-muted-foreground">
-                  {rejoining
-                    ? "Picking this back up — it kept reading while you were away."
-                    : "Working — this takes a minute."}
+                  {run.waitMessage ?? "Uploading your file…"}
                 </p>
               </div>
             ) : null}
           </div>
         ) : (
           <div className="space-y-3">
+            {timeline ? null : (
             <div className="space-y-1.5">
               <Label>What kind of source is it?</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -424,6 +519,8 @@ export function IngestSourceDialog({
                 ))}
               </div>
             </div>
+            )}
+            {timeline ? null : (
             <div className="space-y-1.5">
               <Label>How do you want to bring it in?</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -449,8 +546,9 @@ export function IngestSourceDialog({
                 ))}
               </div>
             </div>
+            )}
 
-            {shape === "file" ? (
+            {!timeline && shape === "file" ? (
               <div className="space-y-1.5">
                 <Label>The file</Label>
                 <input
@@ -506,21 +604,46 @@ export function IngestSourceDialog({
               </div>
             ) : (
             <div className="space-y-1.5">
-              <Label htmlFor="ingest-text">The source material</Label>
+              <Label htmlFor="ingest-text">
+                {timeline ? "The case, in the order it happened" : "The source material"}
+              </Label>
               <ProTextarea
                 id="ingest-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={
-                  mode === "exemplar"
-                    ? "Paste the finished work — one or several examples; separate them with blank lines."
-                    : "Paste the text here — long is fine; it gets split automatically."
+                  timeline
+                    ? "Paste the case in order — what was known at the start, what happened next, what you did about it, and how it ended."
+                    : mode === "exemplar"
+                      ? "Paste the finished work — one or several examples; separate them with blank lines."
+                      : "Paste the text here — long is fine; it gets split automatically."
                 }
                 rows={10}
                 enableTextStats
               />
             </div>
             )}
+            {timeline ? (
+              <label className="flex items-start gap-2.5 rounded-md border border-border bg-card p-2.5">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 accent-primary"
+                  checked={hideResolution}
+                  onChange={(e) => setHideResolution(e.target.checked)}
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">
+                    Keep the ending back while the rules are written
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Recommended. A rule written by something that already knows
+                    how it turned out is hindsight, not judgment. The ending is
+                    still saved on this Rulebook, so a Masterwork can be scored
+                    against what actually happened.
+                  </span>
+                </span>
+              </label>
+            ) : null}
             <div className="space-y-1.5">
               <Label htmlFor="ingest-note">
                 Where is this from? (optional)
@@ -529,7 +652,11 @@ export function IngestSourceDialog({
                 id="ingest-note"
                 value={sourceNote}
                 onChange={(e) => setSourceNote(e.target.value)}
-                placeholder="e.g. Chapter 3, or 'recorded call, Aug 10'"
+                placeholder={
+                  timeline
+                    ? "e.g. 'ED case 3, March 2026'"
+                    : "e.g. Chapter 3, or 'recorded call, Aug 10'"
+                }
               />
             </div>
           </div>
@@ -549,9 +676,13 @@ export function IngestSourceDialog({
             </Button>
             <Button
               onClick={() => void ingest()}
-              disabled={running || (shape === "file" && !file)}
+              disabled={running || (!timeline && shape === "file" && !file)}
             >
-              {running ? "Distilling…" : "Distill rules"}
+              {running
+                ? "Distilling…"
+                : timeline
+                  ? "Distill this case"
+                  : "Distill rules"}
             </Button>
           </DialogFooter>
         ) : null}

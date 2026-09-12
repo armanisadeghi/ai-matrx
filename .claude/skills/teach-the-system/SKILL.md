@@ -4,7 +4,7 @@ type: Skill
 title: "teach-the-system — teach the platform one body of expertise until it breaks, fix it, continue"
 description: "Trial protocol for teaching AI Matrx a real expert's knowledge as a non-technical user, running it until the platform breaks, fixing the platform, and reporting what improved. Use when asked to distil a book, guide, or expert into a Masterwork, test whether the system can capture a human skill, or run an expertise trial. NOT for building a feature you already know is missing (use build-sub-feature)."
 tags: [masterwork, distillation, expertise, trial, platform-testing, doctrine]
-timestamp: 2026-09-12T16:20:00Z
+timestamp: 2026-09-12T17:40:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -20,6 +20,12 @@ expertise, teach it to AI Matrx exactly the way a non-technical Expert would, ru
 until the platform stops or breaks, fix the platform (never the trial), and continue — and who
 report **what improved in the system**, not what happened to the run. The why, in his words, is
 `common-docs/projects/expert-book-challenge/PROGRAM.md` — read it once before your first trial.
+**The architecture mandate every trial serves is his brief
+`common-docs/projects/expert-book-challenge/OVERVIEW.md` (authority: owner, 2026-09-12):** capture the
+tacit and the controversial across modalities, atomize with provenance, keep schools of thought and
+dissent navigable, treat "weirdness" as the asset. The measured gap between that brief and the live
+platform is `OVERVIEW-GAP-CENSUS.md` beside it — read its ranked table so you know which walls are
+already owned.
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
 a subject so you inherit the fixes instead of re-hitting them.
 
@@ -66,14 +72,20 @@ three answers below. A subject that fails any of them is rejected.
    a result they would recognise as theirs (Arman's examples: his own keyword-research order; an
    agent equipped with Tony Robbins' systems — PROGRAM.md ruling 7).
 
-5. **Is it tacit, intuitive or non-consensus (Arman's mandate, 2026-09-12 —
+5. **Does the subject hold more than one school, and will you keep both?** Two sources that
+   disagree are two schools of one body of knowledge, not one Rulebook to reconcile. Name the
+   schools in the register before distilling; a rule that one source holds and the other rejects
+   is the trial's most valuable output, never a "coherence tension" to settle. Trial 3 planned the
+   pair and attached both to one Rulebook — 139 drafts, one desk, every disagreement resolved to a
+   side: that is the consensus trap, and it is now a wall (§4).
+6. **Is it tacit, intuitive or non-consensus (Arman's mandate, 2026-09-12 —
    `projects/expert-book-challenge/MANDATE.md`)?** The principal source of value is the "gut feeling",
    the experiential rubric, the heuristic the field does not agree on, the "magic" that never made
    it into procedure. A trial on a consensus handbook (trial 8's two WHO guides) exercises the
    operationalization and validation halves only; say so in the register. Prefer a source that is
    a PERSON or an opinionated practitioner, captured the way the expertise lives — voice, an
    interview, a scenario walk-through, a "day in the life", annotated cases — over a text.
-6. **Will the pipeline keep the dissent?** Two schools stay two Rulebooks and two desks; a divergent
+7. **Will the pipeline keep the dissent?** Two schools stay two Rulebooks and two desks; a divergent
    or "odd" rule is kept and tagged with its provenance, never averaged away or retired as noise.
    **Consensus collapse is a wall class**: a triage, a distiller, an improver or a judge that pulls a
    minority approach toward the majority is a platform defect to fix, not a cleaner result.
@@ -119,6 +131,13 @@ couple of little books".** Most expertise in a company never made it into a book
   distils, the Conductor authors, you answer questions the way the author would.
 - **Real cases from the world this week.** Never self-authored easy examples. Find them the way the
   job would (a viral post, a real family scenario from a forum, a real blog post).
+- **Never collapse consensus (Arman's brief, 2026-09-12).** The platform's principal value is the
+  tacit, the idiosyncratic and the disputed. A rule seen once is a rule; recurrence is a signal on
+  it, not a gate to existence. You never Approve-all a corpus, never answer a contradiction by
+  picking a side when both could be true (say so — "both are right" with the condition that
+  separates them), never let the Conductor fold two schools into one desk, and never let an
+  interviewer rewrite the earlier position out of existence. Record every place the product pushed
+  you toward one of these as a wall.
 - **Cheat honestly.** A browser instead of an email tool, a pasted chapter instead of the whole
   PDF — allowed, logged as a cheat in the register with what the honest version would need.
 - **Sign in without typing a password.** Production browser pane signed out? Use the local preview
@@ -153,6 +172,7 @@ Every stop is one of these; do the matching thing and keep the trial moving:
 | Platform defect (silent drop, dead default, wrong error, stale cache, engine gap) | Root cause → census of siblings → shared-layer fix → guard proven failing-then-passing → push → wait for the deploy train (never run a release; >60 min = bug against the deploy agent) → rerun on the live build. Never patch the instance. |
 | Missing primitive the method needs | Build it as a platform node/tool in the shared layer (lane named, subagent if it is bounded), wire it through the Conductor by conversation, never by hand. |
 | Third-party switch (enable an API, approve an app, a console toggle) | Fix it yourself if you can (you have Arman's machine and logins), else write a ten-minute prompt for a Codex agent, hand it to Arman, start a watcher that wakes you when it is done, and **continue on the parts that do not need it**. It never stops the trial. |
+| **Consensus collapse** — the product merged, deduped, synthesized-by-recurrence, excluded a once-seen rule from a build, framed two positions as a problem to settle, or offered Approve-all as the only way through a large review | A wall of the shared layer, not a review step. Keep BOTH positions verbatim in the register, log the wall with the mechanism (`OVERVIEW-GAP-CENSUS.md` names the live ones: the evidence standing and its 3-piece knob, statement-key dedupe, cross-piece-only synthesis, the tension card's recommendation, in-place `update_rule`), fix the class on the rule atom (retained dissent, school, history), continue with both schools alive. |
 | The agent (Conductor) is wrong or stuck | Talk to it the way the Expert would; when it repeats a defect class, that is a platform wall (its instructions or tools), not a prompt to fix. |
 | A stream detaches / a turn hangs | Read the server-side truth (request rows, `system_errors`) before re-sending; a hung turn with no message to the person is itself a wall. |
 
@@ -170,7 +190,9 @@ morning report exists (§6). "I got tired" is not a stopping point; a blocked de
 
 Written for Arman: plain sentences, no paths, no codes, no doc pointers (law:
 `common-docs/policies/talk-to-arman-like-a-person.md`). Lead with the capability ledger — the count
-of "could not → can now" and each row as a capability the next user inherits — then the trial's honest state, then the cost,
+of "could not → can now" and each row as a capability the next user inherits — and the **tacit
+ledger**: how many rules the trial kept that a frontier model would not have produced unprompted,
+how many disagreements it kept alive as two positions, and how many the product tried to collapse — then the trial's honest state, then the cost,
 then the pending list — items only he can do, each with the prompt already written. Never ask
 him to decide something you can find out or do yourself; never send him a question without your
 recommendation.
@@ -358,6 +380,18 @@ lines by relocating trial-specific detail into the trial's register.
   Treat every bot finding as a bug report and fix the class before the morning report.
 
 - **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.
+
+- **2026-09-12 — Arman's architecture brief (`OVERVIEW.md`) and the gap census.** The mandate is tacit,
+  multi-modal, provenance-tagged, dissent-preserving expertise. The census found the platform had
+  built the opposite the same week and three trials had walked into it: trial 9 turned 416
+  observations into 4 rules and shipped "evidence standing" as the fix; trial 3 collapsed its planned
+  two-school pair into one Rulebook and settled every tension to a side; the interview lane rewrote a
+  contradicted rule in place and the register called it the best moment. Trial 2 met the mandate only
+  by duplicating the whole machine (two Rulebooks, 11 runs, 13 fixes). New rule in §1 (test 5), §2
+  (never collapse consensus), §4 (the wall row), §6 (the tacit ledger). Fixes dispatched the same
+  night: retained dissent on the rule atom, the invisible policy rules, the voice-first and YouTube
+  doors, the blind pairwise Audition arm; the `school` dimension is under design and attack
+  (`DESIGN-schools-on-the-rule-atom.md`).
 - 2026-09-12 — (trial 8) The Conductor does not read the catalog's worked example unless told; eight turns
   went on invented step types, fields under config, and "platform bug" claims that the `definition_shape`
   action answers in one call. Open every build conversation with: "call definition_shape and get_node_type

@@ -20,6 +20,7 @@
 // carry the trust envelope through unchanged.
 
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { NOTES_MANDATES } from "./mandates";
@@ -150,7 +151,7 @@ async function run(
     label: finalTitle,
     content,
     folder_name: STUDY_NOTES_FOLDER,
-    organization_id: ctx.orgId ?? null,
+    organization_id: requireOrganizationContext(ctx.orgId),
   });
 
   const result: ConvertResult = {

@@ -535,3 +535,109 @@ export async function archiveKindRecords(
     return fail("archiveKindRecords", error);
   }
 }
+
+// ---------------------------------------------------------------------------
+// THE REVERSE VIEW, GENERALISED: everything produced ABOUT an anchor entity
+// ---------------------------------------------------------------------------
+
+/**
+ * The entity a set of records is attached to.
+ *
+ * A conversation is not special — it is simply the first anchor this reverse
+ * view ever had. A web site, a plan node, a party: every one of them is
+ * "a thing records were produced about", and the question a person asks in
+ * front of it is the same question ("what did this produce?"). So the anchor
+ * is a token + an id, and there is ONE reader (DD-131 slice 2, item 4).
+ */
+export interface RecordAnchor {
+  /** The canonical entity token (`conversation`, `web_site`, …). */
+  type: string;
+  id: string;
+}
+
+/** The conversation anchor's token, named once so no caller spells it twice. */
+export const CONVERSATION_ANCHOR_TYPE = "conversation";
+
+/**
+ * Every record produced about `anchor`, newest first, archived rows INCLUDED
+ * and flagged (the caller filters — the archive control needs the true hidden
+ * count to obey THE ARCHIVED-ITEMS LAW).
+ *
+ * Two readers behind one door, because a conversation genuinely answers the
+ * question differently from every other anchor:
+ *
+ *  - `conversation` → the two-route union above (`metadata.home` + the
+ *    `produced_by` edges of its messages). A chat's records are frequently
+ *    homed without an edge and edged without a home.
+ *  - anything else → the `content_ir_kind_instance → <anchor>` association
+ *    edge, read through the registered associations chokepoint. This is the
+ *    edge aidream's keyword-research pipeline already writes for a site
+ *    (`metadata.reason = 'keyword_relationship_research'`), and the shape any
+ *    future pipeline writes for any other anchor.
+ *
+ * No branch on WHICH site, WHICH kind, or WHICH pipeline exists anywhere here:
+ * an anchor is an anchor.
+ */
+export async function fetchRecordsForAnchor(
+  anchor: RecordAnchor,
+): Promise<RecordResult<KindRecord[]>> {
+  if (anchor.type === CONVERSATION_ANCHOR_TYPE) {
+    return fetchRecordsForConversation(anchor.id);
+  }
+  try {
+    const { associationsService } = await import(
+      "@/features/scopes/service/associationsService"
+    );
+    const edges = await associationsService.listForTargets(anchor.type, [
+      anchor.id,
+    ]);
+    if (!edges.ok) {
+      // A failed READ is never an empty list. The panel says so in words.
+      return {
+        ok: false,
+        message: `The records attached to this ${anchor.type.replace(/_/g, " ")} could not be read: ${edges.error.message}`,
+      };
+    }
+    const ids = [
+      ...new Set(
+        edges.data.edges
+          .filter((edge) => edge.sourceType === KIND_INSTANCE_TARGET_TYPE)
+          .map((edge) => edge.sourceId)
+          .filter(Boolean),
+      ),
+    ];
+    if (ids.length === 0) return { ok: true, value: [] };
+
+    const { data, error } = await supabase
+      .schema("content_ir")
+      .from("kind_instance")
+      .select(INSTANCE_COLUMNS)
+      .in("id", ids)
+      .is("deleted_at", null);
+    if (error) return fail(`fetchRecordsForAnchor(${anchor.type})`, error);
+
+    const rows = (data ?? []) as RawInstanceRow[];
+    if (rows.length === 0) return { ok: true, value: [] };
+
+    const slugs = await resolveKindSlugs([
+      ...new Set(rows.map((r) => r.kind_definition_id)),
+    ]);
+    if (!slugs.ok) return slugs;
+
+    return {
+      ok: true,
+      value: rows
+        .map((row) => ({
+          id: row.id,
+          title: row.title,
+          kind: slugs.value.get(row.kind_definition_id) ?? "",
+          confirmation: normalizeConfirmation(row.confirmation),
+          archivedAt: row.archived_at,
+          createdAt: row.created_at,
+        }))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    };
+  } catch (error) {
+    return fail(`fetchRecordsForAnchor(${anchor.type})`, error);
+  }
+}

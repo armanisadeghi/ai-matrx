@@ -35,7 +35,8 @@ import {
     DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
-import type { Note, NoteFilters, NoteSortConfig } from '../types';
+import type { FolderReference, Note, NoteFilters, NoteSortConfig } from '../types';
+import { noteFolderReference } from '../types';
 import { filterNotes, sortNotes, groupNotesByFolder } from '../utils/noteUtils';
 import { getFolderIconAndColor } from '../utils/folderUtils';
 import { cn } from '@/lib/utils';
@@ -49,7 +50,8 @@ interface NotesSidebarProps {
     onCreateNote: (folderName?: string) => void;
     onDeleteNote: (noteId: string) => void;
     onCreateFolder?: () => void;
-    onMoveNote?: (noteId: string, newFolder: string) => void;
+    onMoveNote?: (noteId: string, folder: FolderReference) => void | Promise<void>;
+    onMoveNoteToNewFolder?: (noteId: string, folderName: string) => void | Promise<void>;
     onRenameFolder?: (oldName: string, newName: string) => void;
     onDeleteFolderNotes?: (folderName: string) => void;
     onCopyNote?: (noteId: string) => void;
@@ -64,6 +66,7 @@ export function NotesSidebar({
     onDeleteNote,
     onCreateFolder,
     onMoveNote,
+    onMoveNoteToNewFolder,
     onRenameFolder,
     onDeleteFolderNotes,
     onCopyNote,
@@ -108,6 +111,14 @@ export function NotesSidebar({
     const allFolders = useMemo(() => {
         return Array.from(new Set(notes.map(n => n.folder_name || 'Draft'))).sort();
     }, [notes]);
+    const folderReferences = useMemo(() => Array.from(
+        new Map(
+            notes.flatMap((note) => {
+                const folder = noteFolderReference(note);
+                return folder ? [[`${folder.organizationId}:${folder.id}`, folder] as const] : [];
+            }),
+        ).values(),
+    ), [notes]);
 
     // Initialize all folders as collapsed on first render
     useEffect(() => {
@@ -204,7 +215,12 @@ export function NotesSidebar({
         setDropTargetFolder(null);
 
         if (draggedNote && draggedNote.folder_name !== folderName) {
-            onMoveNote?.(draggedNote.id, folderName);
+            const targetFolder = folderReferences.find(
+                (folder) =>
+                    folder.organizationId === draggedNote.organization_id &&
+                    folder.name === folderName,
+            );
+            if (targetFolder) void onMoveNote?.(draggedNote.id, targetFolder);
         }
 
         setDraggedNote(null);
@@ -557,11 +573,16 @@ export function NotesSidebar({
                     onOpenChange={setMoveNoteOpen}
                     noteId={moveNoteData.id}
                     noteName={moveNoteData.label}
-                    currentFolder={moveNoteData.folder_name ?? 'Draft'}
-                    availableFolders={allFolders}
+                    currentFolder={noteFolderReference(moveNoteData)}
+                    availableFolders={folderReferences.filter(
+                        (folder) => folder.organizationId === moveNoteData.organization_id,
+                    )}
                     onConfirm={(targetFolder) => {
-                        onMoveNote?.(moveNoteData.id, targetFolder);
+                        return onMoveNote?.(moveNoteData.id, targetFolder);
                     }}
+                    onCreateFolder={(folderName) =>
+                        onMoveNoteToNewFolder?.(moveNoteData.id, folderName)
+                    }
                 />
             )}
 
@@ -570,4 +591,3 @@ export function NotesSidebar({
         </div>
     );
 }
-

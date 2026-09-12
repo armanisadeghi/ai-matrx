@@ -122,9 +122,67 @@ export async function fetchDistillationApproaches(): Promise<
   });
 }
 
-/** The Approaches that may START a new Rulebook — the intake funnel's set. */
+/**
+ * Where a card sits and where it goes — ONE predicate, every surface.
+ *
+ * Census defect (masterwork-methods-census, row 10): the catalog sectioned
+ * cards on `availability` while a separate rule decided the href, so
+ * `vision_interview` (`enabled=false`, `availability="available"`) rendered
+ * under "Ready now", and any row with an availability but no door rendered as
+ * a `<button>` with nothing behind it. A card described by two rules is a card
+ * that can lie about itself. From here every consumer asks this one function.
+ */
+export type ApproachStatus = "ready" | "partial" | "coming_soon";
+
+export interface ApproachState {
+  /** Which section the card belongs in — the ONLY source for that heading. */
+  status: ApproachStatus;
+  /** The one door this Approach opens, or null when it has none. */
+  href: string | null;
+  /** May the card be clicked? Exactly when it has a door. NO DEAD ENDS. */
+  reachable: boolean;
+}
+
+/**
+ * Can the GUIDED FUNNEL run this Approach? It builds its next URL out of
+ * `intake_query`, so a row whose only door is its own page (`launch_href`) is
+ * live and reachable from the catalog but cannot be begun by Start. A row with
+ * no lane at all dumps the Expert on a bare Rulebook page — the `timeline`
+ * class, census row 3.
+ *
+ * This asks only WHETHER the funnel has a query to hand on. WHICH lane that
+ * query opens is a separate, total mapping the Rulebook page owns, and it is
+ * the thing that must say so out loud when a row maps to nothing.
+ */
+export function hasIntakeLane(a: DistillationApproach): boolean {
+  return Object.keys(a.intakeQuery).length > 0;
+}
+
+export function approachState(a: DistillationApproach): ApproachState {
+  if (a.availability === "coming_soon") {
+    return { status: "coming_soon", href: null, reachable: false };
+  }
+  const href = a.launchHref
+    ? a.launchHref
+    : a.enabled && hasIntakeLane(a)
+      ? `/masterwork/new?approach=${encodeURIComponent(a.key)}`
+      : null;
+  // "Ready now" means all three agree: the registry enabled it, it declares
+  // itself available, and it actually has somewhere to go.
+  const ready = a.enabled && a.availability === "available" && href !== null;
+  return { status: ready ? "ready" : "partial", href, reachable: href !== null };
+}
+
+/**
+ * The Approaches that may START a new Rulebook inside the guided funnel.
+ *
+ * A LANE, not a flag: `enabled` says the Approach is live, `intake_query` says
+ * the funnel knows how to run it. An Approach whose door is its own page
+ * (`launch_href`) is live and reachable from the catalog, but Start cannot
+ * begin it — its lane is the page, not a query param.
+ */
 export function startableApproaches(
   approaches: DistillationApproach[],
 ): DistillationApproach[] {
-  return approaches.filter((a) => a.enabled);
+  return approaches.filter((a) => a.enabled && hasIntakeLane(a));
 }

@@ -52,7 +52,6 @@ import {
   type UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import {
   AgentAppRef,
@@ -273,17 +272,16 @@ export default function AdminSystemAppsListPage() {
                     attributes: { count: filtered.length },
                     context: { search: search || undefined, total: apps.length },
                   })}
-                />
-                <ExportMenu
-                  label="system-agent-apps"
-                  items={[
-                    jsonExportItem(() => filtered),
-                    csvExportItem(
-                      () =>
-                        filtered as unknown as Array<Record<string, unknown>>,
-                      "CSV",
-                    ),
-                  ]}
+                  export={{
+                    items: [
+                      jsonExportItem(() => filtered),
+                      csvExportItem(
+                        () =>
+                          filtered as unknown as Array<Record<string, unknown>>,
+                        "CSV",
+                      ),
+                    ],
+                  }}
                 />
               </>
             )}

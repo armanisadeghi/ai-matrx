@@ -22,6 +22,8 @@ import {
 } from "@/components/content-refine/useRefinableContent";
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 // Vocabulary lives in a pure module so the surface manifest can import the
 // same constants this hook validates against (see quickNoteSaveVocabulary).
@@ -75,6 +77,7 @@ export function useQuickNoteSave({
     return [defaultFolder, ...foldersFromRedux];
   }, [foldersFromRedux, defaultFolder]);
   const listStatus = useAppSelector(selectNotesListStatus);
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
     if (listStatus === "idle" || listStatus === "error") {
@@ -135,6 +138,25 @@ export function useQuickNoteSave({
     const requestId = `note_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     const trimmedContent = workingContent.trim();
     const isCreate = mode === "create";
+    // Existing notes keep their authorized stored organization; an unrelated
+    // active selection must never block an update or open a destination picker.
+    let organizationId: string;
+    if (isCreate) {
+      try {
+        organizationId = await ensureOrganizationContext({ organizationId: selectedOrganizationId });
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return null;
+        throw error;
+      }
+    } else {
+      if (!selectedNoteForUpdate?.organization_id) {
+        toast.error(
+          "This note is missing its organization. Reload or reopen it before updating.",
+        );
+        return null;
+      }
+      organizationId = selectedNoteForUpdate.organization_id;
+    }
     const label = isCreate
       ? `Note: ${noteName.trim() || "Quick Note"}`
       : `Note update: ${selectedNote?.label || "note"}`;
@@ -147,6 +169,7 @@ export function useQuickNoteSave({
           label: noteName.trim() || "Quick Note",
           content: trimmedContent,
           folder_name: folder,
+          organization_id: organizationId ?? "",
         }
       : {
           op: "update" as const,
@@ -180,6 +203,7 @@ export function useQuickNoteSave({
                 label: noteName.trim() || "Quick Note",
                 content: trimmedContent,
                 folder_name: folder,
+                organization_id: organizationId,
                 tags: [],
               }),
             ).unwrap();
@@ -197,7 +221,7 @@ export function useQuickNoteSave({
 
           await dispatch(
             saveNoteField({
-              noteId: selectedNoteId,
+              noteId: selectedNoteForUpdate.id,
               field: "content",
               value: finalContent,
             }),
@@ -222,6 +246,7 @@ export function useQuickNoteSave({
       setSavedNote(result);
       return result;
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return null;
       console.error("QuickNoteSave: save failed", err);
       toast.error("Failed to save — saved to Recovery");
       return null;

@@ -34,16 +34,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { createClient } from "@/utils/supabase/client";
 
 import { useTransientSecret } from "../vault-hooks";
 import { resolveVaultFields, revealVaultField } from "../vault-service";
-import type { VaultField, VaultItem } from "../types";
+import {
+  isProtectedExecutionField,
+  type VaultField,
+  type VaultItem,
+} from "../types";
 
 /**
  * Whether a human may see this field's value at all. `sealed` is false for
  * everyone, at every capability level, forever.
  */
 export function canShowField(item: VaultItem, field: VaultField): boolean {
+  if (isProtectedExecutionField(field)) return false;
   if (!field.is_active) return false;
   if (field.handling === "visible") return item.capabilities.can_use === true;
   if (field.handling === "revealable")
@@ -64,9 +72,82 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
   );
   const [working, setWorking] = useState(false);
   const [copied, setCopied] = useState(false);
-
+  const organizationId = useAppSelector(selectOrganizationId);
+  const [authGeneration, setAuthGeneration] = useState(0);
   const allowed = canShowField(item, field);
   const sealed = field.handling === "sealed";
+  // A value operation belongs to this exact authorization snapshot, rather
+  // than to the hook position React happened to preserve across a rerender.
+  // Keep the identity synchronous in render: an effect would leave one paint
+  // where an old plaintext or pending operation still belonged to a new row.
+  const identity = JSON.stringify([
+    item.id,
+    item.user_id,
+    item.organization_id,
+    item.access_mode,
+    item.status,
+    item.definition_version,
+    item.updated_at,
+    field.id,
+    field.field_key,
+    field.value_version,
+    field.handling,
+    field.execution_purpose,
+    field.is_active,
+    field.updated_at,
+    item.capabilities.can_use,
+    item.capabilities.can_reveal,
+    item.capabilities.can_edit,
+    item.capabilities.can_manage,
+    organizationId,
+    authGeneration,
+  ]);
+  const identityRef = useRef<string | null>(null);
+  const operationGeneration = useRef(0);
+  const mounted = useRef(true);
+  const heldIdentity = useRef<string | null>(null);
+  const workingIdentity = useRef<string | null>(null);
+  const copiedIdentity = useRef<string | null>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const invalidateOperations = () => {
+    operationGeneration.current += 1;
+    heldIdentity.current = null;
+    workingIdentity.current = null;
+    copiedIdentity.current = null;
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = null;
+  };
+
+  if (identityRef.current !== identity) {
+    identityRef.current = identity;
+    invalidateOperations();
+  }
+
+  type Operation = { generation: number; identity: string };
+  const isCurrent = (operation: Operation) =>
+    mounted.current &&
+    operationGeneration.current === operation.generation &&
+    identityRef.current === operation.identity;
+  const beginOperation = (): Operation => {
+    const operation = { generation: ++operationGeneration.current, identity };
+    workingIdentity.current = identity;
+    setWorking(true);
+    return operation;
+  };
+  const finishOperation = (operation: Operation) => {
+    if (!isCurrent(operation)) return;
+    workingIdentity.current = null;
+    setWorking(false);
+  };
+  const clear = () => {
+    invalidateOperations();
+    held.clear();
+    setWorking(false);
+    setCopied(false);
+  };
+  const exposedValue = heldIdentity.current === identity ? held.value : null;
+  const exposedWorking = workingIdentity.current === identity && working;
+  const exposedCopied = copiedIdentity.current === identity && copied;
 
   // If the field stops being showable while a value is on screen — sealing it,
   // a capability being revoked, the item being re-fetched with less access —
@@ -84,7 +165,31 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
     [field.handling, field.id, field.value_version, holdClear, item.id],
   );
 
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      invalidateOperations();
+    };
+  }, []);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = createClient().auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        // Auth events revoke authority before React has a chance to schedule
+        // the rerender that clears this component's old props.
+        invalidateOperations();
+        held.clear();
+        setAuthGeneration((generation) => generation + 1);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const fetchValue = async (): Promise<string | null> => {
+    if (isProtectedExecutionField(field)) return null;
     // `visible` resolves under can_use; `revealable` uses the audited reveal
     // endpoint under can_reveal. `sealed` never reaches here.
     const value =
@@ -100,56 +205,71 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
 
   const reveal = async (): Promise<boolean> => {
     if (!allowed) return false;
-    setWorking(true);
+    const operation = beginOperation();
     try {
       const value = await fetchValue();
+      if (!isCurrent(operation)) return false;
       if (value === null) throw new Error("No value returned");
+      if (!isCurrent(operation)) return false;
+      heldIdentity.current = identity;
       held.hold(value);
       return true;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
+      if (isCurrent(operation)) {
+        toast.error(e instanceof Error ? e.message : String(e));
+      }
       return false;
     } finally {
-      setWorking(false);
+      finishOperation(operation);
     }
   };
 
   const copy = async () => {
     if (!allowed) return;
-    let value = held.value;
+    const operation = beginOperation();
+    let value = exposedValue;
     if (value === null) {
-      setWorking(true);
       try {
         value = await fetchValue();
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : String(e));
+        if (isCurrent(operation)) {
+          toast.error(e instanceof Error ? e.message : String(e));
+        }
         return;
       } finally {
-        setWorking(false);
+        finishOperation(operation);
       }
     }
-    if (value === null) return;
+    if (!isCurrent(operation) || value === null) return;
     try {
+      if (!isCurrent(operation)) return;
       await navigator.clipboard.writeText(value);
     } catch {
-      toast.error("Your browser blocked clipboard access");
+      if (isCurrent(operation)) toast.error("Your browser blocked clipboard access");
       return;
     }
+    if (!isCurrent(operation)) return;
+    copiedIdentity.current = identity;
     setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
+    copiedTimer.current = setTimeout(() => {
+      if (!isCurrent(operation)) return;
+      copiedIdentity.current = null;
+      setCopied(false);
+    }, 1600);
   };
 
   return {
-    value: held.value,
-    expiresAt: held.expiresAt,
-    clear: held.clear,
-    working,
-    copied,
+    value: exposedValue,
+    expiresAt: heldIdentity.current === identity ? held.expiresAt : null,
+    clear,
+    working: exposedWorking,
+    copied: exposedCopied,
     allowed,
     sealed,
+    identity,
     reveal,
     copy,
-    toggle: () => (held.value !== null ? held.clear() : void reveal()),
+    toggle: () => (exposedValue !== null ? clear() : void reveal()),
   };
 }
 
@@ -212,15 +332,27 @@ export function SecretValue({
   // render before that effect runs, a value the user may no longer see is
   // never painted.
   const revealed = secret.allowed && secret.value !== null;
+  const protectedExecution = isProtectedExecutionField(field);
   const visibleRequest = useRef<string | null>(null);
   const visibleRequestKey = `${item.id}/${field.id}/${field.value_version}`;
+  const visibleIdentity = secret.identity;
+  const visibleIdentityRef = useRef<string | null>(null);
+  const visibleFailureIdentity = useRef<string | null>(null);
   const [visibleLoadFailed, setVisibleLoadFailed] = useState(false);
+  if (visibleIdentityRef.current !== visibleIdentity) {
+    visibleIdentityRef.current = visibleIdentity;
+    visibleRequest.current = null;
+    visibleFailureIdentity.current = null;
+  }
+  const visibleLoadFailedForField =
+    visibleFailureIdentity.current === visibleIdentity && visibleLoadFailed;
 
   // "Standard" is a display rule, not merely a weaker reveal permission.
   // Resolve it as the row mounts so non-secrets never masquerade as secrets.
   useEffect(() => {
     if (
       field.handling !== "visible" ||
+      protectedExecution ||
       !secret.allowed ||
       revealed ||
       secret.working ||
@@ -229,20 +361,34 @@ export function SecretValue({
       return;
     }
     visibleRequest.current = visibleRequestKey;
+    visibleFailureIdentity.current = null;
     setVisibleLoadFailed(false);
     void secret.reveal().then((loaded) => {
-      if (!loaded) setVisibleLoadFailed(true);
+      if (!loaded && visibleIdentityRef.current === visibleIdentity) {
+        visibleFailureIdentity.current = visibleIdentity;
+        setVisibleLoadFailed(true);
+      }
     });
   }, [
     field.handling,
+    protectedExecution,
     revealed,
     secret.allowed,
     secret.reveal,
     secret.working,
+    visibleIdentity,
     visibleRequestKey,
   ]);
 
-  const controls = secret.sealed ? (
+  const controls = protectedExecution ? (
+    <span
+      className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground"
+      title="Native provider use only — this private passkey material cannot be revealed, copied, or used as a runtime value."
+    >
+      <LockKeyhole className="h-3.5 w-3.5" />
+      Native provider only
+    </span>
+  ) : secret.sealed ? (
     // Sealed: a lock and nothing else. There is no unseal control to hide.
     <span
       className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground"
@@ -274,7 +420,7 @@ export function SecretValue({
           )}
         </Button>
       )}
-      {field.handling === "visible" && visibleLoadFailed && (
+      {field.handling === "visible" && visibleLoadFailedForField && (
         <Button
           size="sm"
           variant="ghost"
@@ -282,9 +428,13 @@ export function SecretValue({
           disabled={secret.working}
           onClick={() => {
             visibleRequest.current = visibleRequestKey;
+            visibleFailureIdentity.current = null;
             setVisibleLoadFailed(false);
             void secret.reveal().then((loaded) => {
-              if (!loaded) setVisibleLoadFailed(true);
+              if (!loaded && visibleIdentityRef.current === visibleIdentity) {
+                visibleFailureIdentity.current = visibleIdentity;
+                setVisibleLoadFailed(true);
+              }
             });
           }}
           aria-label={`Retry loading ${field.field_key}`}
@@ -336,9 +486,14 @@ export function SecretValue({
           revealed ? "text-foreground" : "text-muted-foreground",
         )}
       >
-        {revealed ? (
+        {protectedExecution ? (
+          <span className="font-sans text-xs text-muted-foreground">
+            Native provider use only. This private passkey material cannot be
+            revealed, copied, or used as a runtime value.
+          </span>
+        ) : revealed ? (
           secret.value
-        ) : field.handling === "visible" && visibleLoadFailed ? (
+        ) : field.handling === "visible" && visibleLoadFailedForField ? (
           <span className="font-sans text-xs text-destructive">
             Value unavailable
           </span>

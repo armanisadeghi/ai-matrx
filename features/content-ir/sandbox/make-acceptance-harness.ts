@@ -131,7 +131,7 @@ async function main(): Promise<void> {
             id: c.id as string,
             componentKey: c.component_key as string,
             kind: (kd?.kind as string) ?? "unknown",
-            sourceBytes: (c.component_source as string).length,
+            sourceBytes: new TextEncoder().encode((c.component_source as string)).length,
             dataSource,
             payload,
             data,

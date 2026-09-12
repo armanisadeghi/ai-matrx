@@ -4,7 +4,8 @@ import {
   setPreference,
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
-import { setMode } from "@/styles/themes/themeSlice";
+import { setMode, toggleMode } from "@/styles/themes/themeSlice";
+import { readThemeModeFromDOM } from "@/styles/themes/useThemeMode";
 import {
   setServerOverride,
   setCustomServerUrl,
@@ -84,10 +85,9 @@ export const sliceBindings: Record<string, SliceBinding> = {
         return setMode(value as "light" | "dark" | "system");
       }
       if (key === "toggle") {
-        const resolved = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
-        return setMode(resolved === "dark" ? "light" : "dark");
+        // The painted DOM is the canonical effective mode. It preserves an
+        // explicit preference even when it differs from the OS preference.
+        return toggleMode(readThemeModeFromDOM());
       }
       throw new Error(`theme has no writable key "${key}"`);
     },

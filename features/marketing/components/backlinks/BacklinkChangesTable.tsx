@@ -28,7 +28,6 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,10 @@ import {
   clearTableUrlParams,
   useMarketingTableState,
 } from "@/features/marketing/data/query-state";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
@@ -593,25 +595,24 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
                 total_rows: total,
               },
             })}
-          />
-          <ExportMenu
-            label={`backlink-changes-${site.domain}`}
-            items={[
-              jsonExportItem(viewData, "Changes on screen (.json)"),
-              {
-                id: "csv",
-                label: "CSV (changes on screen)",
-                build: () => ({
-                  content: rowsToCsv(
-                    rows.map(projectChangeRow) as unknown as Array<
-                      Record<string, unknown>
-                    >,
-                  ),
-                  extension: "csv",
-                  mime: "text/csv",
-                }),
-              },
-            ]}
+            export={{
+              items: [
+                jsonExportItem(viewData, "Changes on screen (.json)"),
+                {
+                  id: "csv",
+                  label: "CSV (changes on screen)",
+                  build: () => ({
+                    content: rowsToCsv(
+                      rows.map(projectChangeRow) as unknown as Array<
+                        Record<string, unknown>
+                      >,
+                    ),
+                    extension: "csv",
+                    mime: "text/csv",
+                  }),
+                },
+              ],
+            }}
           />
         </div>
       </div>
@@ -653,98 +654,105 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
           },
         ]}
       >
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col">
-        {changes.isError ? (
-          <InlineQueryError
-            what="your link changes"
-            error={changes.error}
-            onRetry={() => void changes.refetch()}
-          />
-        ) : (
-          <MatrxDataTable<BacklinkChangeEventRow>
-            data={rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            isLoading={changes.isLoading}
-            isFetching={changes.isFetching}
-            selectedId={highlightId}
-            query={{
-              mode: "controlled",
-              totalItems: total,
-              state: table.state,
-              onStateChange: table.onStateChange,
-            }}
-            toolbar={{
-              searchPlaceholder: "Search by linking site, page, or your page…",
-            }}
-            copy={{
-              label: "Link change",
-              listLabel: activeLensLabel
-                ? `Link changes — ${activeLensLabel}`
-                : "Link changes",
-              location,
-              rowKind: "web-backlink-change",
-              listKind: "web-backlink-change-table",
-              rowDescription:
-                "One recorded change to a link pointing at this site: what the publisher did, what it means, how urgent it is, and the before/after we compared.",
-              listDescription:
-                "The changes currently on screen (respecting the search, sort, filters, view, and page you are on).",
-              humanRow: humanChangeRow,
-              agentRow: projectChangeRow,
-              rowAttributes: (row) => ({
-                site_id: siteId,
-                id: row.id,
-                change_kind: row.change_kind,
-                severity: row.severity,
-                source_domain: row.source_domain,
-                backlink_id: row.backlink_id,
-              }),
-              listAttributes: (visible) => ({
-                site_id: siteId,
-                lens: activeLensLabel ?? undefined,
-                page: table.state.page,
-                visible_rows: visible.length,
-                total_rows: total,
-                search: table.state.search || undefined,
-              }),
-            }}
-            detail={{
-              title: (row) => changeVerdict(row).headline,
-              description: (row) => changeVerdict(row).detail,
-              render: (row) => (
-                <ChangeDetail row={row} linkRecordHref={linkRecordHref(row)} />
-              ),
-            }}
-            window={{
-              title: (row) => changeVerdict(row).headline,
-              renderView: (row) => (
-                <ChangeDetail row={row} linkRecordHref={linkRecordHref(row)} />
-              ),
-              renderEdit: false,
-              defaultTab: "view",
-            }}
-            pageSize={50}
-            pageSizeOptions={[25, 50, 100, 250]}
-            emptyState={{
-              icon: <Activity className="h-8 w-8 text-muted-foreground" />,
-              title: activeLensLabel
-                ? `${activeLensLabel}: nothing found`
-                : "Nothing has changed",
-              description:
-                changes.isSuccess &&
-                (activeLensLabel || table.queryState.search)
-                  ? "Nothing here — which for this list is good news."
-                  : // NOT `backlinkEmptyHint`: that line tells the user to hit
-                    // Refresh, and Refresh cannot produce a change row. We
-                    // compare each night's links against the night before, so
-                    // an empty list means nothing moved — never "you have not
-                    // run anything yet".
-                    "We check every night for links that appear, disappear, or change, and list what we find here. Nothing has moved yet.",
-            }}
-            className="min-h-0 flex-1"
-          />
-        )}
-      </div>
+        <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col">
+          {changes.isError ? (
+            <InlineQueryError
+              what="your link changes"
+              error={changes.error}
+              onRetry={() => void changes.refetch()}
+            />
+          ) : (
+            <MatrxDataTable<BacklinkChangeEventRow>
+              data={rows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              isLoading={changes.isLoading}
+              isFetching={changes.isFetching}
+              selectedId={highlightId}
+              query={{
+                mode: "controlled",
+                totalItems: total,
+                state: table.state,
+                onStateChange: table.onStateChange,
+              }}
+              toolbar={{
+                searchPlaceholder:
+                  "Search by linking site, page, or your page…",
+              }}
+              copy={{
+                label: "Link change",
+                listLabel: activeLensLabel
+                  ? `Link changes — ${activeLensLabel}`
+                  : "Link changes",
+                location,
+                rowKind: "web-backlink-change",
+                listKind: "web-backlink-change-table",
+                rowDescription:
+                  "One recorded change to a link pointing at this site: what the publisher did, what it means, how urgent it is, and the before/after we compared.",
+                listDescription:
+                  "The changes currently on screen (respecting the search, sort, filters, view, and page you are on).",
+                humanRow: humanChangeRow,
+                agentRow: projectChangeRow,
+                rowAttributes: (row) => ({
+                  site_id: siteId,
+                  id: row.id,
+                  change_kind: row.change_kind,
+                  severity: row.severity,
+                  source_domain: row.source_domain,
+                  backlink_id: row.backlink_id,
+                }),
+                listAttributes: (visible) => ({
+                  site_id: siteId,
+                  lens: activeLensLabel ?? undefined,
+                  page: table.state.page,
+                  visible_rows: visible.length,
+                  total_rows: total,
+                  search: table.state.search || undefined,
+                }),
+              }}
+              detail={{
+                title: (row) => changeVerdict(row).headline,
+                description: (row) => changeVerdict(row).detail,
+                render: (row) => (
+                  <ChangeDetail
+                    row={row}
+                    linkRecordHref={linkRecordHref(row)}
+                  />
+                ),
+              }}
+              window={{
+                title: (row) => changeVerdict(row).headline,
+                renderView: (row) => (
+                  <ChangeDetail
+                    row={row}
+                    linkRecordHref={linkRecordHref(row)}
+                  />
+                ),
+                renderEdit: false,
+                defaultTab: "view",
+              }}
+              pageSize={50}
+              pageSizeOptions={[25, 50, 100, 250]}
+              emptyState={{
+                icon: <Activity className="h-8 w-8 text-muted-foreground" />,
+                title: activeLensLabel
+                  ? `${activeLensLabel}: nothing found`
+                  : "Nothing has changed",
+                description:
+                  changes.isSuccess &&
+                  (activeLensLabel || table.queryState.search)
+                    ? "Nothing here — which for this list is good news."
+                    : // NOT `backlinkEmptyHint`: that line tells the user to hit
+                      // Refresh, and Refresh cannot produce a change row. We
+                      // compare each night's links against the night before, so
+                      // an empty list means nothing moved — never "you have not
+                      // run anything yet".
+                      "We check every night for links that appear, disappear, or change, and list what we find here. Nothing has moved yet.",
+              }}
+              className="min-h-0 flex-1"
+            />
+          )}
+        </div>
       </NonEditableContextMenu>
     </div>
   );

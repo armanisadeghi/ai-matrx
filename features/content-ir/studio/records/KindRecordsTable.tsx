@@ -82,6 +82,10 @@ import type {
   RecordSortKey,
   WriterFilter,
 } from "./types";
+import {
+  RelatedRecordsPanel,
+  useChildKindEdges,
+} from "./RelatedRecordsPanel";
 
 interface Props {
   kind: string;
@@ -132,6 +136,10 @@ export default function KindRecordsTable({
   emittedJsonSchema,
 }: Props) {
   const { prefs, setPrefs } = useListViewPrefs(SURFACE_KEY, SURFACE_DEFAULTS);
+
+  // The shape graph, read once for this kind: which child kinds (if any) a
+  // record of this kind owns. Drives the detail panel's related-list tabs.
+  const childEdges = useChildKindEdges(kindDefinitionId);
 
   const [fields] = useState<SchemaField[]>(() => schemaFields(emittedJsonSchema));
   const [scope, setScope] = useState<ListScope>(() => makeScope("orgs"));
@@ -615,7 +623,27 @@ export default function KindRecordsTable({
             },
           ],
         }}
-        detail={{ enabled: false }}
+        /* THE RELATED LIST (DD-131 slice 2, item 5). Opening a row opens the
+           record AND one tab per child kind the shape's `content_ir.kind_edge`
+           graph declares — generic, so no kind is named anywhere in the path.
+           A shape with no child edges gets exactly the inspector it had. */
+        detail={{
+          enabled: true,
+          title: (row) => row.title?.trim() || "Untitled record",
+          defaultWidth: 620,
+          render: (row) => (
+            <RelatedRecordsPanel
+              row={row}
+              kind={kind}
+              label={label}
+              childEdges={childEdges.edges}
+              edgesLoading={childEdges.status === "loading"}
+              edgesError={
+                childEdges.status === "error" ? childEdges.message : null
+              }
+            />
+          ),
+        }}
         window={{ enabled: false }}
         edit={{ enabled: true, autoSave: true, onSave: saveEdits }}
         selection={{

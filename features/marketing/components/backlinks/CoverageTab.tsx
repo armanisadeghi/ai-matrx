@@ -27,7 +27,6 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,10 @@ import {
   clearTableUrlParams,
   useMarketingTableState,
 } from "@/features/marketing/data/query-state";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { cn } from "@/lib/utils";
 
@@ -169,9 +171,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
   const searchParams = useSearchParams();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrolledTo = useRef<string | null>(null);
-  const [clickedRow, setClickedRow] = useState<CoverageMentionRow | null>(
-    null,
-  );
+  const [clickedRow, setClickedRow] = useState<CoverageMentionRow | null>(null);
 
   const highlightId = searchParams.get(MENTION_PARAM);
   const linkedOnly = searchParams.get(LINKED_PARAM) === "1";
@@ -295,7 +295,11 @@ export function CoverageTab({ siteId }: { siteId: string }) {
     site_id: siteId,
     brand_key: brandKey,
     window_days: COVERAGE_WINDOW_DAYS,
-    lens: linkedOnly ? "links_to_you" : includeCompetitors ? "with_rivals" : null,
+    lens: linkedOnly
+      ? "links_to_you"
+      : includeCompetitors
+        ? "with_rivals"
+        : null,
     summary: summary ?? null,
     share_of_voice: share ?? null,
     total_rows: total,
@@ -485,8 +489,8 @@ export function CoverageTab({ siteId }: { siteId: string }) {
   // were refused, so stories may be missing). The server records the sentence
   // on `last_error` either way; showing only the failures would let a partial
   // answer read as a complete one.
-  const incomplete = (trackers.data ?? []).filter(
-    (tracker) => Boolean(tracker.last_error),
+  const incomplete = (trackers.data ?? []).filter((tracker) =>
+    Boolean(tracker.last_error),
   );
   const anyFailed = incomplete.some(
     (tracker) => tracker.last_run_status === "failed",
@@ -585,7 +589,9 @@ export function CoverageTab({ siteId }: { siteId: string }) {
             <span className="text-xs text-muted-foreground">
               Showing:{" "}
               <b className="text-foreground">
-                {linkedOnly ? "coverage that links to you" : "you and your rivals"}
+                {linkedOnly
+                  ? "coverage that links to you"
+                  : "you and your rivals"}
               </b>
             </span>
             <Button asChild size="sm" variant="outline" className="h-7">
@@ -616,25 +622,24 @@ export function CoverageTab({ siteId }: { siteId: string }) {
                 brand_share_pct: share?.brandSharePct,
               },
             })}
-          />
-          <ExportMenu
-            label={`coverage-${site.domain}`}
-            items={[
-              jsonExportItem(viewData, "Coverage on screen (.json)"),
-              {
-                id: "csv",
-                label: "CSV (coverage on screen)",
-                build: () => ({
-                  content: rowsToCsv(
-                    rows.map(projectMention) as unknown as Array<
-                      Record<string, unknown>
-                    >,
-                  ),
-                  extension: "csv",
-                  mime: "text/csv",
-                }),
-              },
-            ]}
+            export={{
+              items: [
+                jsonExportItem(viewData, "Coverage on screen (.json)"),
+                {
+                  id: "csv",
+                  label: "CSV (coverage on screen)",
+                  build: () => ({
+                    content: rowsToCsv(
+                      rows.map(projectMention) as unknown as Array<
+                        Record<string, unknown>
+                      >,
+                    ),
+                    extension: "csv",
+                    mime: "text/csv",
+                  }),
+                },
+              ],
+            }}
           />
         </div>
       </div>
@@ -677,76 +682,76 @@ export function CoverageTab({ siteId }: { siteId: string }) {
           },
         ]}
       >
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col">
-        {mentions.isError ? (
-          <InlineQueryError
-            what="your coverage"
-            error={mentions.error}
-            onRetry={() => void mentions.refetch()}
-          />
-        ) : (
-          <MatrxDataTable<CoverageMentionRow>
-            data={rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            isLoading={mentions.isLoading}
-            isFetching={mentions.isFetching}
-            selectedId={highlightId}
-            query={{
-              mode: "controlled",
-              totalItems: total,
-              state: table.state,
-              onStateChange: table.onStateChange,
-            }}
-            toolbar={{
-              searchPlaceholder: "Search by outlet, headline, or journalist…",
-            }}
-            copy={{
-              label: "Coverage",
-              listLabel: "Coverage",
-              location,
-              rowKind: "web-coverage-mention",
-              listKind: "web-coverage-table",
-              rowDescription:
-                "One article that named this brand: what it says about them, how prominently, whether it links to their site, and how we came to know that.",
-              listDescription:
-                "The coverage currently on screen (respecting the search, sort, filters, lens, and page you are on).",
-              humanRow: humanMentionRow,
-              agentRow: projectMention,
-              rowAttributes: (row) => ({
-                site_id: siteId,
-                id: row.id,
-                domain: row.domain,
-                hit_score: row.hit_score,
-                links_to_site: row.links_to_site,
-                capture_status: row.capture_status,
-                is_competitor: row.is_competitor,
-              }),
-              listAttributes: (visible) => ({
-                site_id: siteId,
-                brand_key: brandKey,
-                page: table.state.page,
-                visible_rows: visible.length,
-                total_rows: total,
-                search: table.state.search || undefined,
-              }),
-            }}
-            detail={{
-              title: (row) => coverageVerdict(row).headline,
-              description: (row) => coverageVerdict(row).detail,
-              render: (row) => <MentionDetail row={row} />,
-            }}
-            window={{
-              title: (row) => coverageVerdict(row).headline,
-              renderView: (row) => <MentionDetail row={row} />,
-              renderEdit: false,
-              defaultTab: "view",
-            }}
-            pageSize={50}
-            pageSizeOptions={[25, 50, 100, 250]}
-          />
-        )}
-      </div>
+        <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col">
+          {mentions.isError ? (
+            <InlineQueryError
+              what="your coverage"
+              error={mentions.error}
+              onRetry={() => void mentions.refetch()}
+            />
+          ) : (
+            <MatrxDataTable<CoverageMentionRow>
+              data={rows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              isLoading={mentions.isLoading}
+              isFetching={mentions.isFetching}
+              selectedId={highlightId}
+              query={{
+                mode: "controlled",
+                totalItems: total,
+                state: table.state,
+                onStateChange: table.onStateChange,
+              }}
+              toolbar={{
+                searchPlaceholder: "Search by outlet, headline, or journalist…",
+              }}
+              copy={{
+                label: "Coverage",
+                listLabel: "Coverage",
+                location,
+                rowKind: "web-coverage-mention",
+                listKind: "web-coverage-table",
+                rowDescription:
+                  "One article that named this brand: what it says about them, how prominently, whether it links to their site, and how we came to know that.",
+                listDescription:
+                  "The coverage currently on screen (respecting the search, sort, filters, lens, and page you are on).",
+                humanRow: humanMentionRow,
+                agentRow: projectMention,
+                rowAttributes: (row) => ({
+                  site_id: siteId,
+                  id: row.id,
+                  domain: row.domain,
+                  hit_score: row.hit_score,
+                  links_to_site: row.links_to_site,
+                  capture_status: row.capture_status,
+                  is_competitor: row.is_competitor,
+                }),
+                listAttributes: (visible) => ({
+                  site_id: siteId,
+                  brand_key: brandKey,
+                  page: table.state.page,
+                  visible_rows: visible.length,
+                  total_rows: total,
+                  search: table.state.search || undefined,
+                }),
+              }}
+              detail={{
+                title: (row) => coverageVerdict(row).headline,
+                description: (row) => coverageVerdict(row).detail,
+                render: (row) => <MentionDetail row={row} />,
+              }}
+              window={{
+                title: (row) => coverageVerdict(row).headline,
+                renderView: (row) => <MentionDetail row={row} />,
+                renderEdit: false,
+                defaultTab: "view",
+              }}
+              pageSize={50}
+              pageSizeOptions={[25, 50, 100, 250]}
+            />
+          )}
+        </div>
       </NonEditableContextMenu>
     </div>
   );

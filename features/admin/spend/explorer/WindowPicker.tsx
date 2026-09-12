@@ -10,20 +10,35 @@
 
 import { Input, SegmentedControl } from "@ai-matrx/design-system";
 
-import { localDateString, parseLocalDate, WINDOW_PRESETS, type SpendWindowPreset } from "../windows";
+import {
+  localDateString,
+  parseLocalDate,
+  WINDOW_PRESETS,
+  type SpendWindowPreset,
+} from "../windows";
 
 export interface WindowPickerProps {
   preset: SpendWindowPreset;
   fromDay: Date | null;
   toDay: Date | null;
-  onChange: (next: { preset: SpendWindowPreset; fromDay: Date | null; toDay: Date | null }) => void;
+  onChange: (next: {
+    preset: SpendWindowPreset;
+    fromDay: Date | null;
+    toDay: Date | null;
+  }) => void;
 }
 
-export function WindowPicker({ preset, fromDay, toDay, onChange }: WindowPickerProps) {
+export function WindowPicker({
+  preset,
+  fromDay,
+  toDay,
+  onChange,
+}: WindowPickerProps) {
   const today = localDateString(new Date());
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
       <SegmentedControl
+        className="max-w-full overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap"
         size="sm"
         value={preset}
         onValueChange={(value) =>
@@ -42,7 +57,11 @@ export function WindowPicker({ preset, fromDay, toDay, onChange }: WindowPickerP
               max={today}
               value={fromDay ? localDateString(fromDay) : ""}
               onChange={(e) =>
-                onChange({ preset, fromDay: parseLocalDate(e.target.value), toDay })
+                onChange({
+                  preset,
+                  fromDay: parseLocalDate(e.target.value),
+                  toDay,
+                })
               }
             />
           </label>
@@ -55,7 +74,11 @@ export function WindowPicker({ preset, fromDay, toDay, onChange }: WindowPickerP
               max={today}
               value={toDay ? localDateString(toDay) : ""}
               onChange={(e) =>
-                onChange({ preset, fromDay, toDay: parseLocalDate(e.target.value) })
+                onChange({
+                  preset,
+                  fromDay,
+                  toDay: parseLocalDate(e.target.value),
+                })
               }
             />
           </label>

@@ -30,11 +30,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import {
-  getAllFolders,
-  getFolderIconAndColor,
-} from "@/features/notes/utils/folderUtils";
-import type { NoteListItem } from "@/features/notes/types";
+import { getFolderIconAndColor } from "@/features/notes/utils/folderUtils";
+import { noteFolderIdentityKey, type NoteListItem } from "@/features/notes/types";
 
 // ── Shared list cache (names only — invalidated after creates/deletes) ───────
 
@@ -128,7 +125,7 @@ function NotePickerBody({
   const notesByFolder = useMemo(() => {
     const grouped: Record<string, NoteListItem[]> = {};
     for (const note of scopedItems) {
-      const folder = note.folder_name || "Draft";
+      const folder = noteFolderIdentityKey(note);
       (grouped[folder] ??= []).push(note);
     }
     for (const folder of Object.keys(grouped)) {
@@ -140,10 +137,7 @@ function NotePickerBody({
   }, [scopedItems]);
 
   const treeFolders = useMemo(() => {
-    const withNotes = getAllFolders(
-      scopedItems as Parameters<typeof getAllFolders>[0],
-    ).filter((folder) => (notesByFolder[folder]?.length ?? 0) > 0);
-    return withNotes;
+    return Object.keys(notesByFolder);
   }, [scopedItems, notesByFolder]);
 
   const filteredFoldersForSearch = useMemo(() => {
@@ -151,7 +145,7 @@ function NotePickerBody({
     if (!q) return [];
     return treeFolders.filter(
       (folder) =>
-        folder.toLowerCase().includes(q) ||
+        (notesByFolder[folder]?.[0]?.folder_name ?? "").toLowerCase().includes(q) ||
         (notesByFolder[folder] ?? []).some(
           (n) =>
             n.label.toLowerCase().includes(q) ||
@@ -235,8 +229,8 @@ function NotePickerBody({
                       Folders
                     </div>
                     {filteredFoldersForSearch.map((folder) => {
-                      const { icon: FolderIcon, color: folderColor } =
-                        getFolderIconAndColor(folder);
+                      const folderLabel = notesByFolder[folder]?.[0]?.folder_name ?? "Draft";
+                      const { icon: FolderIcon, color: folderColor } = getFolderIconAndColor(folderLabel);
                       const folderNotes = notesByFolder[folder] ?? [];
 
                       return (
@@ -253,7 +247,7 @@ function NotePickerBody({
                             className={cn("h-3.5 w-3.5 shrink-0", folderColor)}
                           />
                           <span className="min-w-0 flex-1 truncate font-medium">
-                            {folder}
+                            {folderLabel}
                           </span>
                           <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground/50">
                             {folderNotes.length}
@@ -304,8 +298,8 @@ function NotePickerBody({
               treeFolders.map((folder) => {
                 const isExpanded = expandedFolder === folder;
                 const folderNotes = notesByFolder[folder] ?? [];
-                const { icon: FolderIcon, color: folderColor } =
-                  getFolderIconAndColor(folder);
+                const folderLabel = folderNotes[0]?.folder_name ?? "Draft";
+                const { icon: FolderIcon, color: folderColor } = getFolderIconAndColor(folderLabel);
 
                 return (
                   <div key={folder}>
@@ -326,7 +320,7 @@ function NotePickerBody({
                       <FolderIcon
                         className={cn("h-3 w-3 shrink-0", folderColor)}
                       />
-                      <span className="truncate font-medium">{folder}</span>
+                      <span className="truncate font-medium">{folderLabel}</span>
                       <span className="ml-auto pr-0.5 text-[9px] tabular-nums text-muted-foreground/50">
                         {folderNotes.length}
                       </span>

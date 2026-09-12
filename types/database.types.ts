@@ -197,7 +197,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string
+          organization_id: string
           path: string
           slug?: string | null
           sync_base_commit?: string | null
@@ -18905,6 +18905,14 @@ export type Database = {
           last_seen: string
           node_outcome_declared: number
           node_outcome_payload: number
+        }[]
+      }
+      owned_child_instances: {
+        Args: { p_ids: string[] }
+        Returns: {
+          depth: number
+          id: string
+          parent_id: string
         }[]
       }
       resolve_kind_version: {
@@ -51027,6 +51035,63 @@ export type Database = {
           },
         ]
       }
+      dd171_containment_baseline: {
+        Row: {
+          axis: string
+          measured_at: string
+          phase: string
+          principal: string
+          reads_others_personal: number
+          token: string
+        }
+        Insert: {
+          axis: string
+          measured_at?: string
+          phase: string
+          principal: string
+          reads_others_personal: number
+          token: string
+        }
+        Update: {
+          axis?: string
+          measured_at?: string
+          phase?: string
+          principal?: string
+          reads_others_personal?: number
+          token?: string
+        }
+        Relationships: []
+      }
+      definer_class_exemption: {
+        Row: {
+          declared_at: string
+          declared_by: string
+          function_name: string
+          id: string
+          identity_args: string
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          declared_at?: string
+          declared_by: string
+          function_name: string
+          id?: string
+          identity_args?: string
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          declared_at?: string
+          declared_by?: string
+          function_name?: string
+          id?: string
+          identity_args?: string
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
       emergency_door_request: {
         Row: {
           created_at: string
@@ -51678,6 +51743,36 @@ export type Database = {
           },
         ]
       }
+      superseded_policy: {
+        Row: {
+          id: string
+          policy_name: string
+          reason: string
+          schema_name: string
+          superseded_at: string
+          superseded_by: string
+          table_name: string
+        }
+        Insert: {
+          id?: string
+          policy_name: string
+          reason: string
+          schema_name: string
+          superseded_at?: string
+          superseded_by?: string
+          table_name: string
+        }
+        Update: {
+          id?: string
+          policy_name?: string
+          reason?: string
+          schema_name?: string
+          superseded_at?: string
+          superseded_by?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       system_orgs: {
         Row: {
           created_at: string
@@ -51759,11 +51854,16 @@ export type Database = {
     Views: {
       definer_class_census: {
         Row: {
+          asks_an_admin: boolean | null
           asks_the_gate: boolean | null
           classed_tokens: string | null
           declared: boolean | null
+          exempt_reason: string | null
           function_name: unknown
           identity_args: string | null
+          is_trigger: boolean | null
+          narrows_to_caller: boolean | null
+          org_scoped: boolean | null
           reachable_by: string | null
           reads_classed: boolean | null
           schema_name: unknown
@@ -51846,6 +51946,10 @@ export type Database = {
           resource_is_personal: boolean
           resource_org_id: string
         }[]
+      }
+      _dd171_containment_filter: {
+        Args: { p_alias: string; p_has_vis: boolean; p_joiner: string }
+        Returns: string
       }
       _door_min_chars: { Args: { p_org: string }; Returns: number }
       _door_target: {
@@ -52085,6 +52189,21 @@ export type Database = {
         Args: { p_action: string; p_row_org?: string; p_token: string }
         Returns: undefined
       }
+      assert_class_read: {
+        Args: { p_row_org?: string; p_token: string }
+        Returns: undefined
+      }
+      assert_may_transfer: {
+        Args: {
+          p_container_id?: string
+          p_container_type?: string
+          p_row_org?: string
+          p_row_owner: string
+          p_target_owner: string
+          p_token: string
+        }
+        Returns: undefined
+      }
       auto_organization_name: {
         Args: { p_email: string; p_meta: Json }
         Returns: string
@@ -52267,6 +52386,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      generated_policy_names: { Args: never; Returns: string[] }
       governance_columns: { Args: { p_token: string }; Returns: string[] }
       has_access: {
         Args: {
@@ -52449,6 +52569,15 @@ export type Database = {
       starter_pack_ids_curated_by: {
         Args: { p_uid: string }
         Returns: string[]
+      }
+      supersede_bespoke_policies: {
+        Args: {
+          p_policy_names: string[]
+          p_reason: string
+          p_schema: string
+          p_table: string
+        }
+        Returns: undefined
       }
       table_has_visibility: {
         Args: { p_schema: string; p_table: string }
@@ -63275,6 +63404,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      declared_actor_system: { Args: never; Returns: string }
       declared_actor_tier: { Args: never; Returns: string }
       definer_guard_revoke_notice: {
         Args: {
@@ -66426,6 +66556,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_unprotected_relation_report: {
+        Args: never
+        Returns: {
+          client_grants: string
+          relation: string
+          write_open: boolean
+        }[]
       }
       admin_unregistered_pairs: {
         Args: never
@@ -93451,6 +93589,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           editable: boolean
+          execution_purpose: string
           field_key: string | null
           handling: string
           id: string
@@ -93477,6 +93616,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           editable?: boolean
+          execution_purpose?: string
           field_key?: string | null
           handling?: string
           id?: string
@@ -93503,6 +93643,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           editable?: boolean
+          execution_purpose?: string
           field_key?: string | null
           handling?: string
           id?: string

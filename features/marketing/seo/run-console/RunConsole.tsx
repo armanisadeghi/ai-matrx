@@ -46,6 +46,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
@@ -702,7 +703,7 @@ function TopicPlacementConsole({
    * `getScope` is called at TRIGGER time and reads these closures fresh — the
    * hook holds the value in a ref, so an inline arrow is correct here.
    */
-  useSurfaceRuntimeRegistration({
+  const surfaceHandle = useSurfaceRuntimeRegistration({
     surfaceName: runConsoleSurfaceName(scope),
     getScope: () =>
       buildRunConsoleScope({
@@ -740,7 +741,7 @@ function TopicPlacementConsole({
     onRunOne: (siteId) => startRun([siteId]),
   });
 
-  return (
+  const content = (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
       {/* ── Control bar ──────────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5">
@@ -1164,6 +1165,14 @@ function TopicPlacementConsole({
         </section>
       </div>
     </div>
+  );
+
+  return surfaceHandle ? (
+    <ContentTransferSurfaceProvider handle={surfaceHandle}>
+      {content}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    content
   );
 }
 

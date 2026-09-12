@@ -36,6 +36,10 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
+import {
+  composerKeyIntent,
+  intentTakesTheKey,
+} from "@/components/official/composer/composerSubmit";
 import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
@@ -201,30 +205,27 @@ export function AgentTextarea({
   );
 
   // ── Key down ────────────────────────────────────────────────────────────────
+  // THE ONE COMPOSER RULE lives in `components/official/composer` — this
+  // composer asks it and does what it says. It used to own its own copy, and
+  // three sibling composers owned three different ones (census defect D2).
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key !== "Enter") return;
-      const withCmd = e.metaKey || e.ctrlKey;
-      // ⌘/Ctrl+Shift+Enter during a run → INTERRUPT: stop, then send.
-      if (withCmd && e.shiftKey && isExecuting) {
-        e.preventDefault();
-        if (!disableSend) handleInterruptSend();
-        return;
-      }
-      // ⌘/Ctrl+Enter during a run (submitOnEnter ON — the combo is otherwise
-      // unused there) → STEER: deliver at the agent's next pause.
-      if (withCmd && !e.shiftKey && isExecuting && submitOnEnter) {
-        e.preventDefault();
-        if (!disableSend) handleSteerSend();
-        return;
-      }
-      // submitOnEnter ON  → Enter sends, Shift+Enter is a newline.
-      // submitOnEnter OFF → Enter is a newline, ⌘/Ctrl+Enter sends.
-      const shouldSend = submitOnEnter ? !e.shiftKey && !withCmd : withCmd;
-      if (!shouldSend) return;
+      const intent = composerKeyIntent(
+        {
+          key: e.key,
+          shiftKey: e.shiftKey,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+          isComposing: e.nativeEvent.isComposing,
+        },
+        { submitOnEnter, isRunning: isExecuting, supportsRunModes: true },
+      );
+      if (!intentTakesTheKey(intent)) return;
       e.preventDefault();
       if (disableSend) return;
-      handleSend();
+      if (intent === "interrupt") handleInterruptSend();
+      else if (intent === "steer") handleSteerSend();
+      else handleSend();
     },
     [
       submitOnEnter,

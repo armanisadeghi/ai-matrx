@@ -1,0 +1,342 @@
+{
+  "emissions": {
+    "cef6ae07-4562-4dbd-a8e4-403309cace08": [
+      {
+        "ts": "2026-09-12T17:12:55.019387Z",
+        "kind": null,
+        "mode": "full",
+        "step": 8,
+        "event": "node_emitted",
+        "title": "Watson's answer",
+        "run_id": "cef6ae07-4562-4dbd-a8e4-403309cace08",
+        "attempt": 1,
+        "kind_ok": null,
+        "node_id": "deliver",
+        "payload": {
+          "the_regimen": {
+            "stop_doing": [
+              {
+                "rule_id": "no-petting-the-raging-child",
+                "rule_name": "No Petting the Raging Child",
+                "instruction": "Stop finishing the shoes for him once he screams and throws them. Withdraw attention entirely and let the rage burn itself out unattended."
+              },
+              {
+                "rule_id": "love-is-built-by-stroking",
+                "rule_name": "Love is Built by Stroking",
+                "instruction": "Stop picking him up and cuddling him each time he cries in the morning; this stroking is building an over-conditioned dependence on being soothed by contact."
+              },
+              {
+                "rule_id": "no-petting-to-soothe",
+                "rule_name": "No Petting to Soothe",
+                "instruction": "Stop answering crying, whether at the counter or at bedtime, with holding and cuddling. Handle him objectively instead."
+              },
+              {
+                "rule_id": "no-eating-at-all-hours",
+                "rule_name": "No Eating at All Hours",
+                "instruction": "Stop offering the biscuit as a bribe during the shoe struggle. Food is given at fixed mealtimes only, never as a device to secure cooperation."
+              },
+              {
+                "rule_id": "all-attendants-must-be-objective",
+                "rule_name": "All Attendants Must be Objective",
+                "instruction": "Stop permitting the grandmother's Wednesday indulgence. Instruct her plainly that she is to give him whatever he wants no longer, and hold her to the same objective handling as the parents."
+              }
+            ],
+            "not_covered": [
+              "Whether the child rages when moved from the counter or shows a separate, quieter behaviour there",
+              "Whether there is any fixed toilet routine at all"
+            ],
+            "instructions": [
+              {
+                "order": 1,
+                "timing": "every morning, from to-morrow",
+                "rule_id": "let-child-conquer-difficulties",
+                "rule_name": "Let the Child Conquer Difficulties",
+                "instruction": "Set out his shoes ten minutes before he need leave and let him work at putting them on unaided, wrong feet or no. Do not touch the shoes or his hands while he works."
+              },
+              {
+                "order": 2,
+                "timing": "the moment a hand is laid on the shoes or on him",
+                "rule_id": "rage-stimulus-is-hampering",
+                "rule_name": "Rage Stimulus is Hampering",
+                "instruction": "Recognise that any hand laid on the shoes while he is working is what triggers the scream and the throw. Withdraw the hand and do not lay it on him again during the task."
+              },
+              {
+                "order": 3,
+                "timing": "immediately, and every morning after",
+                "rule_id": "only-restraint-calls-out-rage",
+                "rule_name": "Only Restraint Calls Out Rage",
+                "instruction": "Do not restrain his hands or the shoes at any point in the struggle. If he cannot finish in time, he goes to nursery with the shoes as they are, or barefoot in slippers, rather than be restrained."
+              },
+              {
+                "order": 4,
+                "timing": "at once, permanently",
+                "rule_id": "avoid-restraining-practices",
+                "rule_name": "Avoid Restraining Practices",
+                "instruction": "Give up the practice of taking over the shoe task or moving him bodily from the counter. Substitute standing him at a low shelf of his own pans and spoons instead of pulling him away by hand."
+              },
+              {
+                "order": 5,
+                "timing": "whenever dressing him at all",
+                "rule_id": "handle-smoothly-when-dressing",
+                "rule_name": "Handle Smoothly When Dressing",
+                "instruction": "On the rare occasion you must dress him yourself, do it with smooth, unhurried movements and no gripping or jerking of the limbs."
+              },
+              {
+                "order": 6,
+                "timing": "7.30 fixed, daily",
+                "rule_id": "carry-out-the-plan-consistently",
+                "rule_name": "Carry Out the Plan Consistently",
+                "instruction": "Serve breakfast at 7.30 sharp every day, whether or not he has come downstairs on his own. Wake him in time to be at the table, rather than letting the meal wait on him."
+              },
+              {
+                "order": 7,
+                "timing": "1 hour, after lunch, daily",
+                "rule_id": "afternoon-nap-or-rest",
+                "rule_name": "Afternoon Nap or Rest",
+                "instruction": "Put him down for a full hour's nap after lunch every day without exception, not on roughly half the days as at present."
+              },
+              {
+                "order": 8,
+                "timing": "5.30 p.m., daily",
+                "rule_id": "bedtime-and-bath-schedule",
+                "rule_name": "Bedtime and Bath Schedule",
+                "instruction": "Move the tepid bath from 7.15 back to 5.30 p.m. sharp, held to every evening."
+              },
+              {
+                "order": 9,
+                "timing": "7 p.m., daily",
+                "rule_id": "bedtime-and-bath-schedule",
+                "rule_name": "Bedtime and Bath Schedule",
+                "instruction": "Move bedtime from about 8 p.m. back to 7 p.m. sharp, held firmly regardless of resistance."
+              },
+              {
+                "order": 10,
+                "timing": "in the bath-to-bed window, daily",
+                "rule_id": "quiet-play-before-bed",
+                "rule_name": "Quiet Play Before Bed",
+                "instruction": "Replace the father's rough play before bed with quiet occupation only - pencil, paper, or being read to - in the period between bath and bed."
+              },
+              {
+                "order": 11,
+                "timing": "nightly, from to-morrow",
+                "rule_id": "no-sitting-until-asleep",
+                "rule_name": "No Sitting Until Asleep",
+                "instruction": "Put him down awake at 7 p.m. and leave the room. Do not sit with him until he settles; let him fall asleep unassisted."
+              },
+              {
+                "order": 12,
+                "timing": "ad hoc, to be eliminated at once",
+                "rule_id": "no-eating-at-all-hours",
+                "rule_name": "No Eating at All Hours",
+                "instruction": "Withdraw the biscuit bribe entirely; offer no food outside the fixed mealtimes, whatever the morning struggle."
+              }
+            ],
+            "physician_note": null,
+            "expected_course": "Expect the shoe-and-counter rages to worsen for two or three mornings once the household stops giving in, then to fall away sharply once no hampering or reward follows them; the over-conditioned dependence on cuddling will take longer, easing over some weeks of consistently objective handling. Establishing the orderly bedtime and the rest of the fixed schedule takes about a week of unremitting consistency before it holds of its own accord.",
+            "physician_first": false,
+            "headline_finding": "The morning shoe battle and the kitchen chase are not stubbornness but rage called out by daily restraint, kept alive by a household that both rewards the rage by finishing the task and answers all his crying with cuddling, inside a schedule that is nowhere fixed.",
+            "all_cited_rule_ids": [
+              "let-child-conquer-difficulties",
+              "rage-stimulus-is-hampering",
+              "only-restraint-calls-out-rage",
+              "avoid-restraining-practices",
+              "handle-smoothly-when-dressing",
+              "carry-out-the-plan-consistently",
+              "afternoon-nap-or-rest",
+              "bedtime-and-bath-schedule",
+              "quiet-play-before-bed",
+              "no-sitting-until-asleep",
+              "no-eating-at-all-hours",
+              "no-petting-the-raging-child",
+              "love-is-built-by-stroking",
+              "no-petting-to-soothe",
+              "all-attendants-must-be-objective"
+            ],
+            "methods_that_will_not_work": [
+              {
+                "method": "Explaining to him that you are late and reasoning with him about the shoes",
+                "rule_id": "reasoning-does-not-cure-fear",
+                "rule_name": "Reasoning Does Not Cure Fear"
+              },
+              {
+                "method": "Bribing him with a biscuit to secure cooperation",
+                "rule_id": "no-eating-at-all-hours",
+                "rule_name": "No Eating at All Hours"
+              },
+              {
+                "method": "Putting the shoes on him while he is still half-asleep to avoid the struggle",
+                "rule_id": "avoid-restraining-practices",
+                "rule_name": "Avoid Restraining Practices"
+              }
+            ]
+          },
+          "watsons_words": "Your boy of two and a half is not stubborn, nor was he born with a vicious temper. The morning shoe battle and the kitchen chase are nothing other than rage called out by daily restraint, kept alive by a household that rewards that rage by stepping in to finish his task, and answers all his crying with cuddling inside a schedule that is nowhere fixed. You and the other adults in your house have built this condition piece by piece, and the blame rests upon your shoulders, not upon the child.\n\nLook at what you have actually done. When the child sets about putting on his shoes, he is engaged in an unpractised, clumsy motor habit. The moment you lay hands upon his shoes or his person to hurry him along, you hamper his movements. Hampering an infant’s bodily freedom is the native stimulus that calls out rage. When he screams and throws the shoes, your household yields, takes up the task, and fastens them for him while he shrieks. You have attached a response to a stimulus and then rewarded the outburst with the very victory he sought. At the kitchen counter you repeat the blunder by seizing him bodily instead of directing him to an occupation of his own. By picking him up and soothing him whenever he cries, and sitting beside his bed until he sleeps, you have built an over-conditioned dependence upon bodily contact, made worse by meals that wander, a nap kept only half the time, and evening roughhousing that undoes whatever calm the day had left.\n\nYou will tell me, no doubt, that you do this out of kindness—that you want your boy happy and that you wish him to know he is loved. I ask you to examine your own heart more severely. Is it truly the boy’s welfare you are serving, or is it your own emotional nature crying out for expression? When you pet him, carry him about, and hush his screams with your embrace, you are gratifying yourself, not building a man. Anything beyond a kiss on the forehead at good night, a handshake in the morning, and an occasional pat on the head for an extraordinarily good job serves you and damages the child. Mother love is a dangerous instrument. Unless you are willing to stifle a few sentimental pangs now, you will rear a boy unfitted for the world, forever demanding that others smooth his path and carry his burdens.\n\nThere are matters here on which my book does not speak, and I will not pretend to knowledge we do not possess. I cannot tell you whether the boy’s conduct when moved from the counter is a separate, quieter habit or another display of rage, for your account does not make the facts plain; nor can I speak to his toilet routine, of which you have said nothing. Where the facts have not been gathered, behaviourism has nothing to offer, and I shall not guess.\n\nIn carrying out the regime I have set down for you, you must understand that it must run unbroken. Every adult in the household—father, mother, and grandmother alike—must be bound by the very same rule; a single lapse sets the training back days. You must expect the morning rages and the counter struggles to grow distinctly worse for two or three mornings once you cease your interference and your bribes. When the child finds that screaming no longer commands your hands, the display will drop away sharply. The appetite for perpetual cuddling will take longer, easing only over some weeks of cool, objective handling, while the fixed hours of sleep and rest will require a full week of unremitting regularity before they hold of their own accord.\n\nHold to the hours I have given you without flinching. If you do your part faithfully, you will have a child who never cries unless he is actually stuck by a pin; who loses himself completely in his own work and play; who overcomes his small difficulties without running to mother, father, or nurse for rescue; and who eats what is set before him and sleeps the moment he is laid in his bed."
+        },
+        "surface": "matrx-user/workflow",
+        "metadata": null,
+        "item_index": 0,
+        "dispatch_id": "",
+        "presentation": "showcase",
+        "component_ref": null
+      }
+    ],
+    "10af94fd-bf7f-41c1-88ff-1098afff8351": [
+      {
+        "ts": "2026-09-12T19:14:34.240445Z",
+        "kind": null,
+        "mode": "full",
+        "step": 12,
+        "event": "node_emitted",
+        "title": "What to do — and the rule each instruction comes from",
+        "run_id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+        "attempt": 1,
+        "kind_ok": null,
+        "node_id": "show_advice",
+        "payload": {
+          "safety_note": "My books do not say what the adult does at the moment a child is about to be hurt. I wrote of a house where the apparatus the children handle is made so it cannot hurt them or go wrong in inexpert hands (apparatus-safe-and-inviting), and where the tools are real — china, glass, knives at the children's own table (real-crockery-and-knives) — but real at the child's own scale and at his own table, never a small child pressed against an adult's hot pan. Safety, in my method, is prepared into the room beforehand: his own things at floor level and at a distance from the stove, the handles turned in, the peeler and the knife kept on a surface his arm cannot reach while you are using them, his work set out before you begin to cook so his hands already have their object. For the instant when his hand is going towards the hot pan, I have no rule and I will not invent one. You act on your own judgement in that moment, and no word of mine governs it.",
+          "instructions": [
+            {
+              "do_this": "Before he wakes, put a small sturdy stool or low chair beside the shoe basket in the hall, low enough that his feet rest flat on the floor when he sits on it. Tomorrow, say nothing about it; simply let it be there.",
+              "rule_id": "equipment-adapted-to-children",
+              "rule_name": "equipment-adapted-to-children",
+              "how_it_follows": "He dresses standing up, or on the floor with you above him; a good part of those ten minutes is a fight for balance, not a fight with the shoe. A child cannot command his feet while his whole body is occupied in holding itself up.",
+              "home_substitution": "In the Children's House this is the dressing-room fitted at child height, with each child's own shelf and hooks very low (dressing-room-at-child-height) and little chairs at his scale (low-tables-varied-shapes). In a flat the honest equivalent is one small chair and the shoe basket he already reaches — the principle is that the place where the work happens must be built for his body, not yours."
+            },
+            {
+              "do_this": "Tomorrow, sit down on the hall floor beside him — at his side, not above him — and once, slowly, with the shoe in your own hands, do the act broken into its parts: hold the shoe, open the tongue, point the toes, push, pull the heel. Say nothing at all while you do it. Then put the shoe down, take your hands away, and stand back.",
+              "rule_id": "teach-movements-wordlessly-with-precise-actions",
+              "rule_name": "teach-movements-wordlessly-with-precise-actions",
+              "how_it_follows": "For larger movements of everyday life the adult intervenes at the beginning with very precise actions and few or no words; your 'other foot, that one, no' divides a child whose hands are already busy. Show him the movement he cannot see for himself, once, and then be silent.",
+              "home_substitution": null
+            },
+            {
+              "do_this": "After that one demonstration, do not put your hand in again. Sit where he can see you with your hands in your lap, or leave the hall altogether and let him work alone. If he screams, take your hand away rather than finishing the shoe.",
+              "rule_id": "do-not-help-the-child-who-works-alone",
+              "rule_name": "do-not-help-the-child-who-works-alone",
+              "how_it_follows": "You have told me the scream falls at your hand and almost never at the shoe — this is not a child defeated by difficulty but a child whose work is being taken from him mid-act. When a child wants to dress alone, he is left to it, even to the point of letting him work in private.",
+              "home_substitution": null
+            },
+            {
+              "do_this": "When the shoes go on the wrong feet, let them stay on the wrong feet. Do not swap them, do not point at them, do not name the mistake. Let him walk to the door in them.",
+              "rule_id": "aim-is-inner-not-external",
+              "rule_name": "aim-is-inner-not-external",
+              "how_it_follows": "The aim of this exercise is not two shoes correctly placed; it is that he observes, compares, judges and decides for himself. He is two and a half, below the three-to-seven period my technique was framed for (three-to-seven-scope), so I do not give him frames or graded material — but the law of non-interference holds in full: swapping them over removes the very thing that could teach him.",
+              "home_substitution": null
+            },
+            {
+              "do_this": "Tonight empty the lowest kitchen drawer or the lowest shelf of a cupboard and make it his: a small real wooden spoon, a small real bowl, a jug, a cloth. Put a card with his name on the front. Tomorrow morning, while you cook, take out one piece of real work — wiping the table with the cloth, stirring something cold in his bowl, carrying his jug — do it yourself slowly in his sight, then set it down within his reach and go back to your own work. Do not ask him to do it. Wait.",
+              "rule_id": "children-do-everything",
+              "rule_name": "children-do-everything",
+              "how_it_follows": "He grabs the spoon, the bowl, the peeler because the real work of the house is precisely what his nature is asking to enter, and nothing in that kitchen is his — so every reach must be a theft from your hands. Give him the living scene in reality rather than moving him aside (reality-not-toys); if he does not come forward, the fault is in the demonstration or the arrangement, never in him.",
+              "home_substitution": "In my house this is the low common cupboard and the chest of little named drawers, each child with his own (low-common-cupboard, personal-named-drawer), and the children sweeping, laying the table and washing up as a matter of course. In a flat the honest equivalent is one drawer at floor level with a name card and real small tools in it — the principle is that he must own something real he may take without asking."
+            },
+            {
+              "do_this": "Give the Tupperware a low shelf of its own where he can reach it, and when he sits putting the lids on and off twenty times, do not speak to him, do not praise him and do not call him away. Let it run until his own interest ends.",
+              "rule_id": "allow-indefinite-repetition",
+              "rule_name": "allow-indefinite-repetition",
+              "how_it_follows": "The lids on and off past all usefulness, and the two back-door steps up and down, are the same thing: the real development lies in the repetition, and it ended in a child who hummed and a child who came to you pleased. That serenity is the proof. He should not have to empty a cupboard onto the floor to find it — prepare the place, and let him repeat undisturbed (environment-gives-motor-education, no-forced-immobility).",
+              "home_substitution": "The long low cupboard in the working-room, whose contents are common property and within a small child's reach (low-common-cupboard), becomes here one low shelf he may open himself — the principle is that his occupation is provided for and ordered, not foraged for."
+            }
+          ],
+          "first_thing_to_change": "Take your hand out of the shoes — put the small chair there tomorrow, show the movement once without a word, and then do not touch them again however they go on.",
+          "where_her_books_do_not_speak": [
+            {
+              "why_she_is_silent": "My school was a house governed by the children's own tempo; I never wrote a line reconciling a two-year-old's ten minutes with an adult's appointment, and I will not pretend a rule of mine dissolves that collision.",
+              "the_parents_concern": "He takes ten minutes and you are late for nursery every morning.",
+              "what_you_must_judge_yourself": "Whether you begin the morning earlier so his ten minutes fit inside it, whether you carry the shoes and let him put them on when you arrive, or whether you accept arriving late — that is your judgement to make, and mine only insists that whatever you choose, the shoes are not finished by your hands while he screams."
+            },
+            {
+              "why_she_is_silent": "Food as inducement, offered in exchange for compliance, lies entirely outside what I wrote. My rules order feeding as one of the child's ordinary functions given a guiding law (order-acts-rationally); they say nothing of a biscuit used as a bargain.",
+              "the_parents_concern": "You have tried bribing him with a biscuit and it worked for a day.",
+              "what_you_must_judge_yourself": "I can tell you only that it is not rational aid to his adaptation and that it did not last. What you do about biscuits at that hour is yours to decide."
+            },
+            {
+              "why_she_is_silent": "There was no television and no remote in my rooms. I have nothing to say about it that would be honest.",
+              "the_parents_concern": "After the lids he wandered off to the TV remote.",
+              "what_you_must_judge_yourself": "I read the drift to the remote as simply the end of that interest with nothing else in the room prepared to receive him. Whether the remote itself should be in his reach, I cannot tell you."
+            },
+            {
+              "why_she_is_silent": "The shape of a small child's waking, his morning sleep, and dressing him while he is half asleep are outside my books.",
+              "the_parents_concern": "You have tried putting the shoes on before he is fully awake.",
+              "what_you_must_judge_yourself": "I will say only that dressing a sleeping child is an act done around him rather than with him, and does the work in his place. When and how he wakes, you must judge."
+            },
+            {
+              "why_she_is_silent": "My equipment rules speak of real knives and real china at the children's own table, not of a small child at an adult's stove. At the instant of danger I am silent.",
+              "the_parents_concern": "He reaches for the peeler and whatever you are using while you cook.",
+              "what_you_must_judge_yourself": "What you do with your hands in the second his reaches the hot pan. Prepare the room beforehand; act on your own judgement in the moment."
+            }
+          ]
+        },
+        "surface": "matrx-user/workflow",
+        "metadata": null,
+        "item_index": 0,
+        "dispatch_id": "",
+        "empty_notice": null,
+        "empty_values": [],
+        "presentation": "showcase",
+        "component_ref": null
+      },
+      {
+        "ts": "2026-09-12T19:15:04.031442Z",
+        "kind": null,
+        "mode": "full",
+        "step": 16,
+        "event": "node_emitted",
+        "title": "Montessori speaks",
+        "run_id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+        "attempt": 1,
+        "kind_ok": null,
+        "node_id": "show_voice",
+        "payload": {
+          "value": "Let me tell you first what you have already seen, because you saw it yourself on Saturday and did not know what you were looking at.\n\nA child sat down on your kitchen floor and put lids on boxes twenty times. Twenty times is not play and it is not mess. Twenty times is far past any use, and that is exactly what makes it precious: he was not trying to get a lid onto a box, he was perfecting the movement of his own hands, and the aim of that work lay inside him, where you cannot see it. Then he sat and hummed. Then, on another day, he went up and down two steps again and again and came to you pleased. The humming and the pleasure are the proof. A child who has been allowed to finish his own work comes out of it calm. You have already met, in your own house, the thing I spent my life describing.\n\nNow look at the mornings with that in your eyes. The shoes are the same work. He is not trying to be shod; he is trying to make his hands obey him, to be the author of an act of his own care and not the object of yours. Ten minutes is not slowness. Ten minutes is the length of the work.\n\nAnd you have told me something very exact, which decides the whole question: the scream comes when your hand comes near, almost never at the shoe. A child crying at his own failure and a child crying at an interruption are two different children, and yours is the second. He is not defeated. He is being stopped mid-act, five mornings out of seven, always at the same hour, and then what is left of his effort goes across the room in the form of a thrown shoe. The throwing follows the interruption; it does not come before it. That is not his character. That is the residue of a broken act.\n\nI do not say this to lay a fault at your door. The fault is never in the child, and in this case it is not in your love either — it is in the room. He dresses standing up, or on the floor with an adult above him. A great part of those ten minutes may be balance and not shoe at all; no one can command his feet while his whole body is busy holding itself upright. So put a small chair there, low enough that his soles rest flat, and say nothing about it. And when you must show him something, sit down at his side, not over him, do the movement once, slowly, in its parts, with no words — for your words, *other foot, that one, no*, do not reach his hands; they only divide a child whose hands are already occupied. Show him once, take your hands away, and be still.\n\nAnd when the shoes go on the wrong feet, let them stay on the wrong feet. I know how that sounds. But the aim here is not two shoes correctly placed on the correct feet at half past eight; it is that he looks, compares, judges, and one day corrects himself. If your hand swaps them, you have taken away the only thing in the whole morning that could have taught him.\n\nThe kitchen is the same story told again. He follows you and reaches for the spoon, the bowl, the peeler — that is, for the real work, for the living scene of the house — because the household is at this age the true school of his movement, and because nothing in that room is his. Not one bowl, not one spoon he may take without asking. So every reach must be a theft from your hands, and every answer must be to move him aside. Give him a low drawer of his own with real things in it, small and real, and set one true piece of work out in his sight before you begin your own — then go back to your cooking and do not ask him to come. Wait. And give the boxes and lids a shelf he can reach, so that he does not have to empty a cupboard onto the floor to find the one sustained work of his week.\n\nThere are things I cannot tell you, and I will not pretend otherwise. My house was governed by the children's own tempo; I never wrote a line that reconciles his ten minutes with your appointment at nursery. That collision is real, and you must decide it — earlier waking, or shoes carried and put on at the door, or simply arriving late. I ask only one thing of whatever you choose: that the shoes are not finished by your hands while he screams. The biscuit, the television, the dressing of a half-sleeping child — of these I have nothing honest to say, except that all three are done around him rather than with him, and none of them lasted. And in the second his hand goes towards the hot pan, no rule of mine governs you. Prepare the room beforehand so that moment comes rarely; when it comes, act.\n\nWhat you will see, if you take your hand out, will not be instant. Expect some hard mornings while he learns that the work is truly his. Then you will begin to see the thing you have already seen with the lids: the whole child gathered into one small act, his face grave, his breathing slow, quite deaf to you. He will do it again and again, longer than seems necessary, because the repetition is the growth itself. And when he has finished — not when you have finished — he will get up calm, perhaps humming, and come to show you. That serenity is not good behaviour won by a biscuit. It is what a child looks like when no one has stood between him and his own work."
+        },
+        "surface": "matrx-user/workflow",
+        "metadata": null,
+        "item_index": 0,
+        "dispatch_id": "",
+        "empty_notice": null,
+        "empty_values": [],
+        "presentation": "showcase",
+        "component_ref": null
+      }
+    ]
+  },
+  "runs": {
+    "10af94fd-bf7f-41c1-88ff-1098afff8351": {
+      "id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+      "definition_id": "129a4ec1-c4b3-4fdb-bdbe-0ae3b6162147",
+      "status": "completed",
+      "created_at": "2026-09-12T19:10:13.453328+00:00",
+      "started_at": "2026-09-12T19:10:13.456537+00:00",
+      "completed_at": "2026-09-12T19:15:04.374274+00:00",
+      "steps_executed": 12,
+      "error": null
+    },
+    "cef6ae07-4562-4dbd-a8e4-403309cace08": {
+      "id": "cef6ae07-4562-4dbd-a8e4-403309cace08",
+      "definition_id": "828e7078-7375-4915-9754-b735c64a5f4e",
+      "status": "completed",
+      "created_at": "2026-09-12T17:08:04.580617+00:00",
+      "started_at": "2026-09-12T17:08:04.579363+00:00",
+      "completed_at": "2026-09-12T17:12:55.335341+00:00",
+      "steps_executed": 9,
+      "error": null
+    },
+    "94d48d9c-a571-42b4-9926-fe9c248513b2": {
+      "id": "94d48d9c-a571-42b4-9926-fe9c248513b2",
+      "definition_id": "5e634894-ae4c-458f-b88b-dc80125cc406",
+      "status": "errored",
+      "created_at": "2026-09-12T20:56:38.249397+00:00",
+      "started_at": "2026-09-12T20:56:38.24871+00:00",
+      "completed_at": null,
+      "steps_executed": 0,
+      "error": {
+        "cause": "wiring_broken",
+        "message": "This step never received what the step before it was meant to hand over.",
+        "step_id": "review",
+        "technical": "EdgeRoutingError: edge 'e4' mapping 'user_input' <- 'answer.note' could not resolve against the output of node 'review'. Available keys: ['__kind', 'answer', 'extras', 'matrx_decision']",
+        "error_type": "EdgeRoutingError"
+      }
+    }
+  }
+}

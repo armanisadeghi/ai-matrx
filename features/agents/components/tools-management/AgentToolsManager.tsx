@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DynamicIcon } from "@ai-matrx/icons";
 import {
   Wrench,
@@ -92,6 +93,7 @@ import type {
 import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
+import { githubConnectUrl } from "@/features/github-integration/service";
 import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
 import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
@@ -108,6 +110,7 @@ import {
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supportsTools } from "@/features/agents/hooks/useModelControls";
 import { AgentBundlesPanel } from "./AgentBundlesPanel";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
@@ -374,7 +377,10 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
 
   const [fetchedMetadata, setFetchedMetadata] = useState<any>(null);
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(!externalTools);
-  const [activeTab, setActiveTab] = useState<ToolsTab>("server");
+  // External services are the action users reach for first. Open their
+  // catalogue directly so a connected GitHub/Notion/etc. server is never
+  // hidden behind the unrelated registry-tool search.
+  const [activeTab, setActiveTab] = useState<ToolsTab>("mcp");
 
   // Derive metadata from externalTools if available, otherwise use the fetched RPC metadata
   const metadata = useMemo(() => {
@@ -2412,10 +2418,12 @@ function McpToolsTab({
   modelSupportsTools?: boolean;
 }) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const catalog = useAppSelector(selectMcpCatalog);
   const catalogStatus = useAppSelector(selectMcpCatalogStatus);
   const catalogError = useAppSelector(selectMcpCatalogError);
   const connectingServerId = useAppSelector(selectMcpConnectingServerId);
+  const organizationId = useAppSelector(selectOrganizationId);
   const agentMcpServersRaw = useAppSelector((state) =>
     selectAgentMcpServers(state, agentId),
   );
@@ -2465,6 +2473,35 @@ function McpToolsTab({
     [dispatch],
   );
 
+  const connectServer = useCallback(
+    (entry: McpCatalogEntry) => {
+      const route = mcpConnectionRouteFor(entry);
+      if (route === "github") {
+        if (!organizationId) {
+          setOauthFeedback({
+            type: "error",
+            message: "Select an organization before connecting GitHub.",
+          });
+          return;
+        }
+        window.location.assign(
+          githubConnectUrl(window.location.href, organizationId),
+        );
+        return;
+      }
+      if (route === "configure") {
+        router.push(
+          `/user-settings/integrations?provider=${encodeURIComponent(entry.slug)}`,
+        );
+        return;
+      }
+      if (route === "oauth") {
+        void connectViaOAuth(entry.serverId);
+      }
+    },
+    [connectViaOAuth, organizationId, router],
+  );
+
   const addToAgent = useCallback(
     (serverId: string) => {
       // The model can't use tools — block adding MCP servers (removal still
@@ -2510,13 +2547,7 @@ function McpToolsTab({
             return;
           }
           if (entry.authStrategy === "oauth_discovery") {
-            if (mcpConnectionRouteFor(entry) === "configure") {
-              window.location.assign(
-                `/user-settings/integrations?provider=${encodeURIComponent(entry.slug)}`,
-              );
-              return;
-            }
-            void connectViaOAuth(entry.serverId);
+            connectServer(entry);
             return;
           }
           setShowCatalog(false);
@@ -2637,17 +2668,7 @@ function McpToolsTab({
               )
             }
             onRemove={() => removeFromAgent(entry.serverId)}
-            onConnect={(entry) => {
-              if (entry.authStrategy === "oauth_discovery") {
-                if (mcpConnectionRouteFor(entry) === "configure") {
-                  window.location.assign(
-                    `/user-settings/integrations?provider=${encodeURIComponent(entry.slug)}`,
-                  );
-                  return;
-                }
-                void connectViaOAuth(entry.serverId);
-              }
-            }}
+            onConnect={connectServer}
             onDisconnect={(serverId) => dispatch(disconnectServer(serverId))}
           />
         ))}

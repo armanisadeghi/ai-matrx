@@ -21,6 +21,7 @@ import { Loader2, Play, RotateCcw } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { Button } from "@/components/ui/button";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SmartAgentVariables } from "@/features/agents/components/inputs/variable-input-variations/SmartAgentVariables";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
@@ -89,9 +90,11 @@ export function AgentAppFormToResultShell({
 
   if (!ctx.conversationId) {
     return (
-      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
+      <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+        <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+          Loading…
+        </div>
+      </AgentAppTransferBoundary>
     );
   }
 
@@ -108,140 +111,160 @@ export function AgentAppFormToResultShell({
     ] === "custom";
   if (gateOverridden && !gateDismissed) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-[800px] mx-auto px-4 py-6">
-          <SlotRenderer
-            slot="preExecutionGate"
-            overrides={overrides}
-            code={slotCode}
-            allowedImports={allowedImports}
-            appName={app.name}
-            fallback={
-              DefaultPreGate as unknown as React.ComponentType<
-                Record<string, unknown>
-              >
-            }
-            props={
-              {
-                ...ctx,
-                app,
-                onContinue: () => setGateDismissed(true),
-              } as unknown as Record<string, unknown>
-            }
-          />
+      <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+        <div className="h-full overflow-y-auto">
+          <div className="max-w-[800px] mx-auto px-4 py-6">
+            <SlotRenderer
+              slot="preExecutionGate"
+              overrides={overrides}
+              code={slotCode}
+              allowedImports={allowedImports}
+              appName={app.name}
+              fallback={
+                DefaultPreGate as unknown as React.ComponentType<
+                  Record<string, unknown>
+                >
+              }
+              props={
+                {
+                  ...ctx,
+                  app,
+                  onContinue: () => setGateDismissed(true),
+                } as unknown as Record<string, unknown>
+              }
+            />
+          </div>
         </div>
-      </div>
+      </AgentAppTransferBoundary>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-[800px] mx-auto px-4 py-6 space-y-6">
-        {/* Header (Tier-2 override slot) */}
-        <SlotRenderer
-          slot="header"
-          overrides={overrides}
-          code={slotCode}
-          allowedImports={allowedImports}
-          appName={app.name}
-          fallback={
-            DefaultHeader as unknown as React.ComponentType<
-              Record<string, unknown>
-            >
-          }
-          props={{ ...ctx, app } as unknown as Record<string, unknown>}
-        />
-
-        {/* Variables (Tier-2 override slot) */}
-        <div className="rounded-lg border border-border bg-card p-4">
+    <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+      <div className="h-full overflow-y-auto">
+        <div className="max-w-[800px] mx-auto px-4 py-6 space-y-6">
+          {/* Header (Tier-2 override slot) */}
           <SlotRenderer
-            slot="variableInput"
+            slot="header"
             overrides={overrides}
             code={slotCode}
             allowedImports={allowedImports}
             appName={app.name}
             fallback={
-              DefaultVariableInput as unknown as React.ComponentType<
+              DefaultHeader as unknown as React.ComponentType<
                 Record<string, unknown>
               >
             }
-            props={
-              {
-                ...ctx,
-                app,
-                config,
-                onSubmit: handleSubmit,
-              } as unknown as Record<string, unknown>
-            }
+            props={{ ...ctx, app } as unknown as Record<string, unknown>}
           />
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60 mt-4">
-            {hasResponse && (
+
+          {/* Variables (Tier-2 override slot) */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <SlotRenderer
+              slot="variableInput"
+              overrides={overrides}
+              code={slotCode}
+              allowedImports={allowedImports}
+              appName={app.name}
+              fallback={
+                DefaultVariableInput as unknown as React.ComponentType<
+                  Record<string, unknown>
+                >
+              }
+              props={
+                {
+                  ...ctx,
+                  app,
+                  config,
+                  onSubmit: handleSubmit,
+                } as unknown as Record<string, unknown>
+              }
+            />
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60 mt-4">
+              {hasResponse && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  disabled={ctx.isExecuting}
+                  className="gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset
+                </Button>
+              )}
               <Button
                 type="button"
-                variant="ghost"
                 size="sm"
-                onClick={handleReset}
+                onClick={handleSubmit}
                 disabled={ctx.isExecuting}
                 className="gap-1.5"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Reset
+                {ctx.isExecuting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Play className="w-3.5 h-3.5" />
+                )}
+                {hasResponse ? "Run again" : (app.name ?? "Run")}
               </Button>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSubmit}
-              disabled={ctx.isExecuting}
-              className="gap-1.5"
-            >
-              {ctx.isExecuting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          {/* Response (Tier-2 override slot) */}
+          {(ctx.isStreaming || hasResponse || ctx.error) && (
+            <div className="rounded-lg border border-border bg-card p-4 min-h-[120px]">
+              {ctx.error && (
+                <div className="text-sm text-destructive mb-2">{ctx.error}</div>
               )}
-              {hasResponse ? "Run again" : (app.name ?? "Run")}
-            </Button>
-          </div>
-        </div>
+              {(ctx.isStreaming || hasResponse) && (
+                <SlotRenderer
+                  slot="resultRenderer"
+                  overrides={overrides}
+                  code={slotCode}
+                  allowedImports={allowedImports}
+                  appName={app.name}
+                  fallback={
+                    DefaultResultRenderer as unknown as React.ComponentType<
+                      Record<string, unknown>
+                    >
+                  }
+                  props={{ ...ctx, app } as unknown as Record<string, unknown>}
+                />
+              )}
+            </div>
+          )}
 
-        {/* Response (Tier-2 override slot) */}
-        {(ctx.isStreaming || hasResponse || ctx.error) && (
-          <div className="rounded-lg border border-border bg-card p-4 min-h-[120px]">
-            {ctx.error && (
-              <div className="text-sm text-destructive mb-2">{ctx.error}</div>
-            )}
-            {(ctx.isStreaming || hasResponse) && (
-              <SlotRenderer
-                slot="resultRenderer"
-                overrides={overrides}
-                code={slotCode}
-                allowedImports={allowedImports}
-                appName={app.name}
-                fallback={
-                  DefaultResultRenderer as unknown as React.ComponentType<
-                    Record<string, unknown>
-                  >
-                }
-                props={{ ...ctx, app } as unknown as Record<string, unknown>}
+          {/* Follow-up input */}
+          {allowChat && (hasResponse || ctx.isStreaming) && (
+            <div className="rounded-lg border border-border bg-card">
+              <SmartAgentInput
+                conversationId={ctx.conversationId}
+                compact
+                singleRowTextarea
+                surfaceKey={ctx.surfaceKey}
               />
-            )}
-          </div>
-        )}
-
-        {/* Follow-up input */}
-        {allowChat && (hasResponse || ctx.isStreaming) && (
-          <div className="rounded-lg border border-border bg-card">
-            <SmartAgentInput
-              conversationId={ctx.conversationId}
-              compact
-              singleRowTextarea
-              surfaceKey={ctx.surfaceKey}
-            />
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AgentAppTransferBoundary>
+  );
+}
+
+function AgentAppTransferBoundary({
+  handle,
+  children,
+}: {
+  handle: UseAgentAppReturn["surfaceHandle"];
+  children: React.ReactNode;
+}) {
+  return handle ? (
+    <ContentTransferSurfaceProvider handle={handle}>
+      {children}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    children
   );
 }
 

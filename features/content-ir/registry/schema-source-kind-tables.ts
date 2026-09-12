@@ -667,3 +667,108 @@ export async function getKindInputContractBySlug(
     emittedJsonSchema: def.emitted_json_schema,
   };
 }
+
+// ---------------------------------------------------------------------------
+// The CHILD side of the edge graph (DD-131 slice 2, item 5)
+// ---------------------------------------------------------------------------
+
+/**
+ * One `content_ir.kind_edge` row, resolved to what a related-list needs: the
+ * parent FIELD the children live under, and the child kind's identity.
+ */
+export interface KindChildEdge {
+  /** The parent field the children are the items of (`keyword_lists`). */
+  fieldName: string;
+  childDefinitionId: string;
+  /** The child kind's slug (`keyword_list`). */
+  childKind: string;
+  /** The child kind's human label. */
+  childLabel: string;
+  /** The child kind's contract — the column registry for the related list. */
+  childEmittedJsonSchema: Json | null;
+  /** The edge's own declared position among the parent's edges. */
+  position: number | null;
+}
+
+/**
+ * Every child kind one parent kind declares, through the EDGE GRAPH.
+ *
+ * This is the generic answer to "what records hang off a record of this
+ * kind?". A related-list surface asks the graph and renders whatever comes
+ * back — it never asks "is this kind keyword_relationship_research?", because
+ * the next parent kind with children would then need its own branch, and the
+ * one after that another.
+ *
+ * Lives here because this module is the ONLY place `content_ir` schema reads
+ * may live (the lint-enforced chokepoint); the edges are exactly the schema
+ * relationship this file already reconstructs `object.kind` / `array.itemKinds`
+ * from.
+ *
+ * Ordered by the edge's declared position, then by field name, so the tabs a
+ * person sees are in the order the kind declares rather than heap order.
+ */
+export async function listChildKindEdgesFromTables(
+  parentDefinitionId: string,
+): Promise<KindChildEdge[]> {
+  const supabase = await getSupabase();
+
+  const { data: edgeRows, error: edgeErr } = await supabase
+    .schema("content_ir")
+    .from("kind_edge")
+    .select("child_definition_id, field_name, position")
+    .eq("parent_definition_id", parentDefinitionId)
+    .is("deleted_at", null);
+  if (edgeErr) {
+    throw new KindTablesError(
+      `Failed to read the child shapes of this Shape: ${edgeErr.message}`,
+    );
+  }
+  const edges = edgeRows ?? [];
+  if (edges.length === 0) return [];
+
+  const childIds = [...new Set(edges.map((e) => e.child_definition_id))];
+  const { data: children, error: childErr } = await supabase
+    .schema("content_ir")
+    .from("kind_definition")
+    .select("id, kind, label, emitted_json_schema")
+    .in("id", childIds)
+    .is("deleted_at", null);
+  if (childErr) {
+    throw new KindTablesError(
+      `Failed to resolve the child shapes of this Shape: ${childErr.message}`,
+    );
+  }
+  const byId = new Map(
+    (children ?? []).map((c) => [c.id, c] as const),
+  );
+
+  return edges
+    .flatMap((edge) => {
+      const child = byId.get(edge.child_definition_id);
+      // A dangling child is a DATA defect, not a reason to render half a tab
+      // strip with no name on it. Skipped and screamed about, exactly as the
+      // registry reconstruction above does.
+      if (!child) {
+        console.error(
+          `[content_ir] kind_edge "${edge.field_name}" points at missing child definition ${edge.child_definition_id}.`,
+        );
+        return [];
+      }
+      return [
+        {
+          fieldName: edge.field_name,
+          childDefinitionId: child.id,
+          childKind: child.kind,
+          childLabel: child.label,
+          childEmittedJsonSchema: (child.emitted_json_schema ?? null) as Json | null,
+          position: edge.position,
+        },
+      ];
+    })
+    .sort(
+      (a, b) =>
+        (a.position ?? Number.MAX_SAFE_INTEGER) -
+          (b.position ?? Number.MAX_SAFE_INTEGER) ||
+        a.fieldName.localeCompare(b.fieldName),
+    );
+}

@@ -22,6 +22,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
 import { Button } from "@/components/ui/button";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SmartAgentVariables } from "@/features/agents/components/inputs/variable-input-variations/SmartAgentVariables";
 import {
@@ -84,23 +85,27 @@ export function AgentAppWidgetShell({
 
   if (!ctx.conversationId) {
     return (
-      <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-        Loading…
-      </div>
+      <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+        <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+          Loading…
+        </div>
+      </AgentAppTransferBoundary>
     );
   }
 
   // No overrides → drop straight into AgentRunner (richest default UX).
   if (!hasOverride) {
     return (
-      <div className="h-full bg-background">
-        <AgentRunner
-          conversationId={ctx.conversationId}
-          surfaceKey={ctx.surfaceKey}
-          compact
-          showTitle={!config.hideTitle}
-        />
-      </div>
+      <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+        <div className="h-full bg-background">
+          <AgentRunner
+            conversationId={ctx.conversationId}
+            surfaceKey={ctx.surfaceKey}
+            compact
+            showTitle={!config.hideTitle}
+          />
+        </div>
+      </AgentAppTransferBoundary>
     );
   }
 
@@ -110,72 +115,90 @@ export function AgentAppWidgetShell({
   const hasResponse = ctx.response.length > 0;
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
-      <div className="max-w-2xl mx-auto px-3 py-4 space-y-3">
-        {!config.hideTitle && app.name && (
-          <h1 className="text-sm font-semibold">{app.name}</h1>
-        )}
-        <div className="rounded-md border border-border bg-card p-3">
-          <SlotRenderer
-            slot="variableInput"
-            overrides={app.slot_overrides}
-            code={app.slot_code}
-            allowedImports={app.allowed_imports}
-            appName={app.name}
-            fallback={
-              WidgetDefaultVariableInput as unknown as React.ComponentType<
-                Record<string, unknown>
+    <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+      <div className="h-full overflow-y-auto bg-background">
+        <div className="max-w-2xl mx-auto px-3 py-4 space-y-3">
+          {!config.hideTitle && app.name && (
+            <h1 className="text-sm font-semibold">{app.name}</h1>
+          )}
+          <div className="rounded-md border border-border bg-card p-3">
+            <SlotRenderer
+              slot="variableInput"
+              overrides={app.slot_overrides}
+              code={app.slot_code}
+              allowedImports={app.allowed_imports}
+              appName={app.name}
+              fallback={
+                WidgetDefaultVariableInput as unknown as React.ComponentType<
+                  Record<string, unknown>
+                >
+              }
+              props={
+                {
+                  ...ctx,
+                  app,
+                  config,
+                  onSubmit: handleSubmit,
+                } as unknown as Record<string, unknown>
+              }
+            />
+            <div className="flex justify-end pt-2">
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={ctx.isExecuting}
+                className="gap-1.5"
               >
-            }
-            props={
-              {
-                ...ctx,
-                app,
-                config,
-                onSubmit: handleSubmit,
-              } as unknown as Record<string, unknown>
-            }
-          />
-          <div className="flex justify-end pt-2">
-            <Button
-              size="sm"
-              onClick={handleSubmit}
-              disabled={ctx.isExecuting}
-              className="gap-1.5"
-            >
-              {ctx.isExecuting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5" />
+                {ctx.isExecuting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Play className="w-3.5 h-3.5" />
+                )}
+                Run
+              </Button>
+            </div>
+          </div>
+          {(ctx.isStreaming || hasResponse || ctx.error) && (
+            <div className="rounded-md border border-border bg-card p-3 min-h-[80px]">
+              {ctx.error && (
+                <div className="text-xs text-destructive mb-2">{ctx.error}</div>
               )}
-              Run
-            </Button>
-          </div>
+              {(ctx.isStreaming || hasResponse) && (
+                <SlotRenderer
+                  slot="resultRenderer"
+                  overrides={app.slot_overrides}
+                  code={app.slot_code}
+                  allowedImports={app.allowed_imports}
+                  appName={app.name}
+                  fallback={
+                    WidgetDefaultResultRenderer as unknown as React.ComponentType<
+                      Record<string, unknown>
+                    >
+                  }
+                  props={{ ...ctx, app } as unknown as Record<string, unknown>}
+                />
+              )}
+            </div>
+          )}
         </div>
-        {(ctx.isStreaming || hasResponse || ctx.error) && (
-          <div className="rounded-md border border-border bg-card p-3 min-h-[80px]">
-            {ctx.error && (
-              <div className="text-xs text-destructive mb-2">{ctx.error}</div>
-            )}
-            {(ctx.isStreaming || hasResponse) && (
-              <SlotRenderer
-                slot="resultRenderer"
-                overrides={app.slot_overrides}
-                code={app.slot_code}
-                allowedImports={app.allowed_imports}
-                appName={app.name}
-                fallback={
-                  WidgetDefaultResultRenderer as unknown as React.ComponentType<
-                    Record<string, unknown>
-                  >
-                }
-                props={{ ...ctx, app } as unknown as Record<string, unknown>}
-              />
-            )}
-          </div>
-        )}
       </div>
-    </div>
+    </AgentAppTransferBoundary>
+  );
+}
+
+function AgentAppTransferBoundary({
+  handle,
+  children,
+}: {
+  handle: UseAgentAppReturn["surfaceHandle"];
+  children: React.ReactNode;
+}) {
+  return handle ? (
+    <ContentTransferSurfaceProvider handle={handle}>
+      {children}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    children
   );
 }
 

@@ -32,7 +32,7 @@
  * there, it says THAT — it does not draw a Confirm button that would do nothing.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Archive,
@@ -59,6 +59,7 @@ import {
   confirmKindRecords,
   countKindRecords,
   fetchRecordsProducedByMessage,
+  notifyKindRecordsChanged,
   saveRecordFromBlock,
   subscribeToKindRecordChanges,
   type KindRecord,
@@ -122,6 +123,17 @@ export function KindRecordChrome({
   const [state, setState] = useState<LoadState>(INITIAL);
   const [busy, setBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  /**
+   * A record this STRIP itself just saved, kept alongside (not instead of)
+   * `state.records` — see the onSave save-state fix below.
+   */
+  const [savedRecord, setSavedRecord] = useState<KindRecord | null>(null);
+  /**
+   * Record ids this strip has already announced on the bus, so a repeated
+   * reload of the SAME record never re-announces (that would be an infinite
+   * reload loop across every strip of the kind).
+   */
+  const announcedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!disposition) return;
@@ -152,6 +164,26 @@ export function KindRecordChrome({
         records: recordsResult.ok ? recordsResult.value : [],
         message,
       });
+      /**
+       * 🚨 AN EMISSION ANNOUNCES ITSELF TOO, NOT ONLY A CLIENT SAVE.
+       *
+       * The server's own chat store (`chat_kind_emission`) writes the row
+       * directly — no client `storeKindRecord()` call happens, so the record
+       * bus never heard about it, and an EARLIER block already on screen kept
+       * printing a stale org-wide count until a full reload (V-45 §3.1, the
+       * emission half of V-42 §3.1). This strip's own per-message read is the
+       * one place a NEW server-written record is ever discovered client-side,
+       * so it is also the one place that discovery must be announced — once
+       * per record id, never on a re-read of the same id.
+       */
+      if (recordsResult.ok) {
+        for (const rec of recordsResult.value) {
+          if (!announcedRef.current.has(rec.id)) {
+            announcedRef.current.add(rec.id);
+            notifyKindRecordsChanged(kind);
+          }
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -184,7 +216,17 @@ export function KindRecordChrome({
   const allLabel = (count: number) =>
     `All ${count} ${count === 1 ? disposition.label : disposition.labelPlural}`;
   // A single produced record is the case the chrome is FOR: one block, one row.
-  const record = state.records.length === 1 ? state.records[0] : null;
+  // `savedRecord` covers the strip that has NO `messageId` to re-query by (the
+  // Shape Studio's live-preview chrome, e.g. the Test tab's "Fill with AI"
+  // run) — its own save is the only way it will ever learn the record exists,
+  // so a successful save must flip THIS branch directly (V-45 §3.4), not wait
+  // on a re-fetch that has nothing to key on.
+  const record =
+    state.records.length === 1
+      ? state.records[0]
+      : state.records.length === 0
+        ? savedRecord
+        : null;
 
   const onConfirm = async () => {
     if (!record) return;
@@ -197,6 +239,8 @@ export function KindRecordChrome({
       });
       return;
     }
+    // Keep the no-`messageId` fallback honest too — see `savedRecord` above.
+    setSavedRecord({ ...record, confirmation: "confirmed" });
     toast.success(`${disposition.label} confirmed`);
   };
 
@@ -221,6 +265,11 @@ export function KindRecordChrome({
       );
       return;
     }
+    // Keep the no-`messageId` fallback honest too — see `savedRecord` above.
+    setSavedRecord({
+      ...record,
+      archivedAt: archiving ? new Date().toISOString() : null,
+    });
     toast.success(
       archiving
         ? `${disposition.label} archived`
@@ -246,6 +295,13 @@ export function KindRecordChrome({
       });
       return;
     }
+    // Flip the affordance NOW, from the row this call just wrote — never wait
+    // on a re-query, which for a strip with no `messageId` would never find
+    // it (V-45 §3.4). `storeKindRecord` already announced the write on the
+    // bus, so every SIBLING strip re-reads too.
+    const { provenanceWarning: _provenanceWarning, ...savedAsRecord } =
+      result.value;
+    setSavedRecord(savedAsRecord);
     const standing =
       result.value.confirmation === "confirmed"
         ? "You saved it yourself, so it is already confirmed."

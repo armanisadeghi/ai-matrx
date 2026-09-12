@@ -44,9 +44,7 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   groomerPresetVariants,
   type AgentCopyGroomerConfig,
@@ -626,9 +624,17 @@ export function RanksWorkspace() {
   // `RankPortfolioItem` already carries `keyword_id` — no text resolution
   // hop needed here (unlike the query-text surfaces). Hook must sit above
   // every early return below so hook order never changes across renders.
-  const sortedKeywordIds = [...new Set(rows.map((item) => item.keyword_id))].sort();
+  const sortedKeywordIds = [
+    ...new Set(rows.map((item) => item.keyword_id)),
+  ].sort();
   const keywordValues = useQuery({
-    queryKey: ["marketing", "gsc", "keyword-value-for", site.id, sortedKeywordIds],
+    queryKey: [
+      "marketing",
+      "gsc",
+      "keyword-value-for",
+      site.id,
+      sortedKeywordIds,
+    ],
     queryFn: ({ signal }) =>
       getGscKeywordValueFor(site.id, sortedKeywordIds, signal),
     enabled: sortedKeywordIds.length > 0,
@@ -935,27 +941,26 @@ export function RanksWorkspace() {
               json={() => rows}
               agent={pageAgentPayload}
               aiVariants={groomerPresetVariants(groomerConfig)}
+              groomer={groomerConfig}
+              export={{
+                items: [
+                  jsonExportItem(() => rows, "JSON (all rows, raw)"),
+                  {
+                    id: "csv",
+                    label: "CSV (all rows)",
+                    build: () => ({
+                      content: rowsToCsv(
+                        rows.map(projectRankPortfolioItem) as unknown as Array<
+                          Record<string, unknown>
+                        >,
+                      ),
+                      extension: "csv",
+                      mime: "text/csv",
+                    }),
+                  },
+                ],
+              }}
             />
-            <ExportMenu
-              label={`rank-portfolio-${site.domain}`}
-              items={[
-                jsonExportItem(() => rows, "JSON (all rows, raw)"),
-                {
-                  id: "csv",
-                  label: "CSV (all rows)",
-                  build: () => ({
-                    content: rowsToCsv(
-                      rows.map(projectRankPortfolioItem) as unknown as Array<
-                        Record<string, unknown>
-                      >,
-                    ),
-                    extension: "csv",
-                    mime: "text/csv",
-                  }),
-                },
-              ]}
-            />
-            <AgentCopyGroomerLauncher config={groomerConfig} />
             <button
               type="button"
               onClick={() => void reload()}
@@ -999,109 +1004,109 @@ export function RanksWorkspace() {
           }}
           extraSections={[keywordSection]}
         >
-        <div className="mt-3" data-surface-value="rank_portfolio">
-          <MatrxDataTable
-            urlState={{ id: "rank-portfolio" }}
-            data={rows}
-            columns={portfolioColumns}
-            getRowId={(item) => item.target_id}
-            pageSize={25}
-            pageSizeOptions={[10, 25, 50, 100]}
-            emptyState={{
-              title: "No tracked keywords",
-              description: "Add a keyword above to start rank tracking.",
-            }}
-            rowActions={(item) => {
-              const state = checking[item.target_id];
-              return (
-                <div className="flex max-w-72 flex-col items-end gap-1">
-                  <div className="flex justify-end gap-1">
-                    <CopyButtons
-                      size="icon"
-                      label={item.keyword}
-                      human={() => humanRankPortfolioItem(item)}
-                      json={() => item}
-                      agent={() => ({
-                        kind: "rank-portfolio-item",
-                        location: pageLocation,
-                        description: `One tracked rank target for ${site.domain}.`,
-                        data: item,
-                        summary: humanRankPortfolioItem(item),
-                        attributes: {
-                          keyword: item.keyword,
-                          is_active: item.is_active,
-                        },
-                      })}
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1 px-2 text-xs"
-                      disabled={state?.status === "running"}
-                      onClick={() => void run(item.target_id)}
-                      title={state?.error ?? state?.stage}
-                    >
-                      {state?.status === "running" ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : state?.status === "done" ? (
-                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                      ) : state?.status === "error" ? (
-                        <AlertTriangle className="h-3 w-3 text-destructive" />
-                      ) : (
-                        <RefreshCw className="h-3 w-3" />
-                      )}
-                      {state?.status === "running"
-                        ? "Checking…"
-                        : state?.status === "error"
-                          ? "Retry"
-                          : "Check now"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                      aria-label={`Remove ${item.keyword}`}
-                      onClick={async () => {
-                        try {
-                          await removeTarget(item.target_id);
-                          toast.success(`Removed "${item.keyword}"`);
-                        } catch (err) {
-                          toast.error("Could not remove rank target", {
-                            description: extractErrorMessage(err),
-                          });
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+          <div className="mt-3" data-surface-value="rank_portfolio">
+            <MatrxDataTable
+              urlState={{ id: "rank-portfolio" }}
+              data={rows}
+              columns={portfolioColumns}
+              getRowId={(item) => item.target_id}
+              pageSize={25}
+              pageSizeOptions={[10, 25, 50, 100]}
+              emptyState={{
+                title: "No tracked keywords",
+                description: "Add a keyword above to start rank tracking.",
+              }}
+              rowActions={(item) => {
+                const state = checking[item.target_id];
+                return (
+                  <div className="flex max-w-72 flex-col items-end gap-1">
+                    <div className="flex justify-end gap-1">
+                      <CopyButtons
+                        size="icon"
+                        label={item.keyword}
+                        human={() => humanRankPortfolioItem(item)}
+                        json={() => item}
+                        agent={() => ({
+                          kind: "rank-portfolio-item",
+                          location: pageLocation,
+                          description: `One tracked rank target for ${site.domain}.`,
+                          data: item,
+                          summary: humanRankPortfolioItem(item),
+                          attributes: {
+                            keyword: item.keyword,
+                            is_active: item.is_active,
+                          },
+                        })}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 px-2 text-xs"
+                        disabled={state?.status === "running"}
+                        onClick={() => void run(item.target_id)}
+                        title={state?.error ?? state?.stage}
+                      >
+                        {state?.status === "running" ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : state?.status === "done" ? (
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                        ) : state?.status === "error" ? (
+                          <AlertTriangle className="h-3 w-3 text-destructive" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                        {state?.status === "running"
+                          ? "Checking…"
+                          : state?.status === "error"
+                            ? "Retry"
+                            : "Check now"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                        aria-label={`Remove ${item.keyword}`}
+                        onClick={async () => {
+                          try {
+                            await removeTarget(item.target_id);
+                            toast.success(`Removed "${item.keyword}"`);
+                          } catch (err) {
+                            toast.error("Could not remove rank target", {
+                              description: extractErrorMessage(err),
+                            });
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {state?.status === "running" ? (
+                      <p
+                        className="text-right text-[11px] text-muted-foreground"
+                        role="status"
+                      >
+                        {state.stage ?? "Checking live rank…"}
+                      </p>
+                    ) : state?.status === "error" ? (
+                      <p
+                        className="text-right text-[11px] text-destructive"
+                        role="alert"
+                      >
+                        {state.error ?? "The rank check failed. Try again."}
+                      </p>
+                    ) : state?.status === "done" ? (
+                      <p
+                        className="text-right text-[11px] text-emerald-700 dark:text-emerald-400"
+                        role="status"
+                      >
+                        Check complete
+                      </p>
+                    ) : null}
                   </div>
-                  {state?.status === "running" ? (
-                    <p
-                      className="text-right text-[11px] text-muted-foreground"
-                      role="status"
-                    >
-                      {state.stage ?? "Checking live rank…"}
-                    </p>
-                  ) : state?.status === "error" ? (
-                    <p
-                      className="text-right text-[11px] text-destructive"
-                      role="alert"
-                    >
-                      {state.error ?? "The rank check failed. Try again."}
-                    </p>
-                  ) : state?.status === "done" ? (
-                    <p
-                      className="text-right text-[11px] text-emerald-700 dark:text-emerald-400"
-                      role="status"
-                    >
-                      Check complete
-                    </p>
-                  ) : null}
-                </div>
-              );
-            }}
-          />
-        </div>
+                );
+              }}
+            />
+          </div>
         </NonEditableContextMenu>
       </SectionCard>
       {keywordSurfaces.isOpen ? keywordSurfaces.node : null}

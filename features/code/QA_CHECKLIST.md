@@ -103,6 +103,16 @@ fails, file an issue with the step number and the captured logs.
 
 *Pass when the command succeeds — the orchestrator's idle-shutdown sweep should not have reaped the sandbox because `useSandboxHeartbeat` was pinging in the background.*
 
+## 11 — Confirmed image update from an attached workspace
+
+1. Keep the Explorer file watcher and an idle PTY open on a hosted sandbox whose image is outdated.
+2. Create a persistent sentinel file under `/home/agent` and note the sandbox ID.
+3. Choose **Update image**, read the interruption warning, and confirm.
+4. After completion, re-read the sentinel and run a harmless command in the recreated PTY.
+5. Repeat while a sandbox tool call is executing.
+
+*Pass when the idle attached workspace migrates under the same sandbox ID, preserves the sentinel, and reconnects. The executing-tool case must return a specific informational `busy_deferred` result with no container change and no red Error Inspector entry. Any genuine failure must produce one structured API error containing HTTP status, machine status/reason, and the upstream payload.*
+
 ---
 
 ## Final type / lint pass

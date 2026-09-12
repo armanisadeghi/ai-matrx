@@ -59,6 +59,7 @@ export function RichDocumentActionSurface(
         <ActionBar
           actions={bridge.resolvedActions}
           getCtx={bridge.getCtx}
+          sourceId={provider.contentSourceId}
           className={className}
         />
       );
@@ -67,6 +68,7 @@ export function RichDocumentActionSurface(
         <MiniActionBar
           actions={bridge.resolvedActions}
           getCtx={bridge.getCtx}
+          sourceId={provider.contentSourceId}
           className={className}
         />
       );

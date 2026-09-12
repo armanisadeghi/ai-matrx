@@ -52,6 +52,15 @@ export interface RuleSourceRef {
   approach?: string;
   /** Ingestion run id (docproc / extraction run) for full traceability. */
   run_id?: string;
+  /**
+   * THE SOURCE IDENTITY every lane stamps (aidream
+   * `services/distillation/source_identity.py`, W40) — `text:<hash>` for a
+   * paste, `file:<id>`, `entity:<token>:<id>`, `conversation:<key>`, a URL.
+   * It is the join between a rule and the source row it came from: the
+   * Rulebook's Resources list counts the rules a pasted source produced by
+   * matching this against the edge's `source_key`.
+   */
+  source?: string;
   /** Free-form pointer ("Chapter 6", timestamp for audio, etc.). */
   note?: string;
   /** True when the source was reverse-engineered exemplar work. */
@@ -61,6 +70,18 @@ export interface RuleSourceRef {
   /** Set by the Scout interview Approach. */
   interview?: boolean;
   conversation_id?: string;
+  /**
+   * THE ORACLE TAP's provenance: the exact chat message this draft was saved
+   * from. A draft sitting in "Waiting on you" must be able to point back at the
+   * turn it came from, not just the conversation.
+   */
+  message_id?: string;
+  /**
+   * The question the saved answer answered, when the message was a reply to a
+   * user turn — the Oracle tap's whole point is that the QUESTION maps which
+   * judgment is scarce.
+   */
+  question?: string;
   /**
    * The dump Approach's provenance for a rule distilled from an ATTACHED
    * entity (`platform.associations` role `distillation_source`): the canonical

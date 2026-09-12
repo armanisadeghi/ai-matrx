@@ -117,7 +117,7 @@ function buildDriftReportXml(
       row.server.status !== "match";
     out.push(`    <row index="${row.index}" drift="${drift}">`);
     const cellLine = (name: string, cell: DiffCell) =>
-      `      <${name} type="${xmlAttr(cell.block?.type ?? "—")}" status="${cell.status}" bytes="${cell.block?.content.length ?? 0}"${cell.firstDiffAt >= 0 ? ` first-diff-byte="${cell.firstDiffAt}"` : ""} />`;
+      `      <${name} type="${xmlAttr(cell.block?.type ?? "—")}" status="${cell.status}" chars="${cell.block?.content.length ?? 0}"${cell.firstDiffAt >= 0 ? ` first-diff-char="${cell.firstDiffAt}"` : ""} />`;
     out.push(cellLine("v2", row.v2));
     out.push(cellLine("redux", row.redux));
     out.push(cellLine("server", row.server));

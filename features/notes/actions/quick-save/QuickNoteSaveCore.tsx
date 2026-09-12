@@ -39,7 +39,6 @@ import { useQuickNoteSave } from "./useQuickNoteSave";
 import { NOTE_DRAFT_FIELDS } from "./quickNoteSaveVocabulary";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CreateFolderDialog } from "@/features/notes/components/CreateFolderDialog";
-import { createFolder } from "@/features/notes/service/notesService";
 
 export type PostSaveAction = "newTab" | "navigate" | "openWindow" | "none";
 
@@ -129,7 +128,6 @@ export function QuickNoteSaveCore({
 
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      await createFolder(folderName);
       setFolder(folderName);
     },
     [setFolder],

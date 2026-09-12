@@ -93,6 +93,7 @@ import {
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
 import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
 import {
   buildAgentAppSurfaceScope,
   type AgentAppSurfaceBinding,
@@ -256,6 +257,8 @@ export interface UseAgentAppReturn {
 
   // ── Configuration mirrors (so shells can read state-of-app) ────────────
   allowChat: boolean;
+  /** Exact local Alchemy capability for the shell that renders this hook. */
+  surfaceHandle: SurfaceHandle | null;
 }
 
 export interface SubmitArgs {
@@ -551,7 +554,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
           : undefined,
     response_text: response || undefined,
   };
-  useSurfaceRuntimeRegistration(
+  const surfaceHandle = useSurfaceRuntimeRegistration(
     surface
       ? {
           surfaceName: surface.surfaceName,
@@ -739,6 +742,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       loadConversation: loadConversationCb,
       resetConversation,
       allowChat,
+      surfaceHandle,
     }),
     [
       appId,
@@ -772,6 +776,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       loadConversationCb,
       resetConversation,
       allowChat,
+      surfaceHandle,
     ],
   );
 }

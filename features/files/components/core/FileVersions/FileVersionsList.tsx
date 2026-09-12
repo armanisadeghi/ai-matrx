@@ -15,12 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
-import {
-  AlertCircle,
-  History,
-  Loader2,
-  RotateCcw,
-} from "lucide-react";
+import { AlertCircle, History, Loader2, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +38,6 @@ import {
 } from "@/features/files/redux/thunks";
 import { formatFileSize } from "@/features/files/utils/format";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   versionAgentData,
@@ -98,9 +92,7 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
     async (versionNumber: number) => {
       setRestoring(versionNumber);
       try {
-        await dispatch(
-          restoreVersionThunk({ fileId, versionNumber }),
-        ).unwrap();
+        await dispatch(restoreVersionThunk({ fileId, versionNumber })).unwrap();
       } finally {
         setRestoring(null);
         setConfirmTarget(null);
@@ -122,8 +114,8 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
       >
         <p className="max-w-sm text-sm text-muted-foreground">
           Version history isn't available for this source yet. Each backing
-          system (Notes, Code Snippets, Agent Apps, …) tracks its own
-          versions; we'll wire those into this tab soon.
+          system (Notes, Code Snippets, Agent Apps, …) tracks its own versions;
+          we'll wire those into this tab soon.
         </p>
       </div>
     );
@@ -199,26 +191,25 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
     return bv - av;
   });
   const latest = sorted[0]?.versionNumber ?? null;
-  const currentVersion = (file as { version?: number } | null)?.version ?? latest;
+  const currentVersion =
+    (file as { version?: number } | null)?.version ?? latest;
   const fileName =
     (file as { fileName?: string } | null)?.fileName ?? "this file";
 
   return (
-    <div className={cn("flex h-full w-full flex-col overflow-hidden", className)}>
+    <div
+      className={cn("flex h-full w-full flex-col overflow-hidden", className)}
+    >
       <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-2 shrink-0">
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium">
-            Versions ({versions.length})
-          </h3>
+          <h3 className="text-sm font-medium">Versions ({versions.length})</h3>
         </div>
         <div className="flex items-center gap-1">
           <CopyButtons
             size="icon"
             label={`Versions — ${fileName}`}
-            human={() =>
-              versionsHumanSummary(fileName, sorted, currentVersion)
-            }
+            human={() => versionsHumanSummary(fileName, sorted, currentVersion)}
             json={() =>
               versionsAgentData({
                 fileId,
@@ -245,22 +236,19 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
                 "current-version": currentVersion ?? "",
               },
             })}
-          />
-          <ExportMenu
-            label={`versions-${fileName}`}
-            items={[
-              jsonExportItem(() =>
-                versionsAgentData({
-                  fileId,
-                  fileName,
-                  versions: sorted,
-                  currentVersion,
-                }),
-              ),
-              csvExportItem(() =>
-                versionsExportRows(sorted, currentVersion),
-              ),
-            ]}
+            export={{
+              items: [
+                jsonExportItem(() =>
+                  versionsAgentData({
+                    fileId,
+                    fileName,
+                    versions: sorted,
+                    currentVersion,
+                  }),
+                ),
+                csvExportItem(() => versionsExportRows(sorted, currentVersion)),
+              ],
+            }}
           />
           <button
             type="button"
@@ -368,9 +356,9 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
               Restore version {confirmTarget}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This creates a new version at the top of history with the
-              contents of v{confirmTarget}. The current version stays in
-              history — nothing is lost.
+              This creates a new version at the top of history with the contents
+              of v{confirmTarget}. The current version stays in history —
+              nothing is lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

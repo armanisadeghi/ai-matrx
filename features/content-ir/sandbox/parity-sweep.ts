@@ -193,7 +193,7 @@ async function buildCases(keys: string[] | null): Promise<{
         cases.push({
             componentKey: row.component_key,
             kind: def?.kind ?? "unknown",
-            sourceBytes: row.component_source.length,
+            sourceBytes: new TextEncoder().encode(row.component_source).length,
             dataSource: live
                 ? `live content_ir.kind_instance ${live.id}`
                 : "the kind's example payload (content_ir.kind_definition.sample_data)",

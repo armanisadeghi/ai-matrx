@@ -189,8 +189,8 @@ Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** the l
 - 2026-08-18 — **THE USER-INPUT LAW fix: `message_thread` fresh-mode delegation no longer rides on `user_input`.** `message-thread.handler.ts`'s FRESH branch dispatched the master's tool-call `args.message` via `setUserInputText` — machine-authored content, not human-typed. Fixed by declaring `thread_message` on the live `war_room.thread` agent definition (`variable_definitions` + a `{{thread_message}}` seed "user" turn) and switching the handler to `setUserVariableValues`; safe because a fresh delegation always creates a brand-new instance, where template substitution runs once. **The FORK branch (continuation of an existing conversation) could NOT be moved the same way** — verified live in aidream that a continuation run has no per-turn variable/context channel that surfaces as a new visible message (`request.variables` on a continuation only stages picklist tokens; template substitution runs only on first-turn/new-conversation requests). Moving fork's message to `variables` would silently drop it. Ledgered as `FOUND_DEFECTS.md` D215 pending a platform-level decision; the fork branch keeps `user_input` with a loud in-code explanation. **CORRECTED 2026-08-22 above: the context half of that claim was false — see the entry above.**
 
 - 2026-08-15 — claude: **Provider-aware conversation rosters + the `conversations` tool in the access legend.** Attaching an existing conversation now stamps its `source_app` into the edge metadata (Chat-tab picker via `attachExistingConversationToThread`; resources-list picker via the new optional `opts.metadata` on the `ContainerResourcesAdapter.attach` contract), and all three roster builders render it as a `<res source_app="…">` attr so agents distinguish mirrored coding-agent sessions (e.g. `claude-code`) from normal chats. The `conversation` access-legend hint additionally teaches the server `conversations` tool (`search`/`get_summary`/`get_messages`, `list provider=` for coding sessions) armed on the three War Room mandate agents.
-- 2026-08-15 — claude: **The War Room has full copy coverage — tile pair, rooms
-  gallery, and a page-level Groomer (agent-copy rollout).** The only prior
+- 2026-08-15 — claude: **War Room copy controls use the shared contract — tile
+  pair, rooms gallery, and a page-level groomer.** The only prior
   affordance was `ThreadCopyForAiButton`, which exports a tile's ANCHORED
   project or task and renders `null` when the tile has neither — so a canvas
   tile full of notes, files and recordings had no copy path at all, and no
@@ -200,18 +200,19 @@ Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** the l
   TILE as rendered (identity, anchor, active tab, every attached resource) and
   whose variant is the anchored project/task full tree — same
   `aiExportService` bundle and serializer, preserved rather than deleted. The
-  room page gained `RoomCopyControls`: a quick pair, an `ExportMenu`, and an
-  `AgentCopyGroomerLauncher`. A room is threads × attached resources, which
+  room page gained `RoomCopyControls`: one `CopyButtons` control with export
+  and Alchemy Menu `groomer`. A room is threads × attached resources, which
   reaches the massive size class fast, so a single button here would be a
   defect; `roomGroomerConfig` declares the section list ONCE (room · thread
   tiles · room resources · parked threads) and the Groomer window, the quick
   Everything payload and the Balanced/Minimal variants all derive from it
   through the shared `groomerPresetVariants` / `buildGroomerPresetPayload`
-  helpers — never a second section list. Section levels are shaped by what
+  helpers — never a second section list. Alchemy Menu owns groomer UI; the
+  frontend owns the room's data builders. Section levels are shaped by what
   actually costs tokens here: full carries every attached row, compact carries
   per-type counts, brief carries tile titles.
   `RoomProjectCopyForAiButton` still renders beside it, unchanged.
-  `/war-room/all` gained a view pair + `ExportMenu` in the search row and an
+  `/war-room/all` gained a view pair with Alchemy Menu export in the search row and an
   `xs` hover pair on each `SessionCard`, backed by a new memoized
   `selectAllRoomCardStats` so the list payload covers ALL rooms without
   calling the per-id stats selector in a loop. `WarRoomThreadsTable` was

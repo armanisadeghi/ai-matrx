@@ -853,6 +853,16 @@ jobs:
         if: always() && steps.content_ir.outcome != 'cancelled'
         run: pnpm test:admin-nav
 
+      - name: Every live Distillation Approach leads somewhere
+        # Census defect (masterwork-methods-census, rows 3 and D3): the
+        # `timeline` Approach shipped enabled and `available` with no lane
+        # behind it in the frontend, and `?approach=` did not overrule a stale
+        # in-page selection, so Start began the wrong lane. Both are now
+        # guarded. The lane guard's LIVE half needs SUPABASE_SECRET_KEY and
+        # announces itself when it cannot run; the snapshot half always runs.
+        if: always() && steps.content_ir.outcome != 'cancelled'
+        run: pnpm test:masterwork-approaches
+
       - name: Administration route registry matches the filesystem
         if: always() && steps.content_ir.outcome != 'cancelled'
         run: pnpm check:admin-catalog:strict

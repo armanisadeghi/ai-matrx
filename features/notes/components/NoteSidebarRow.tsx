@@ -28,13 +28,14 @@ import {
   displayLabel,
 } from "./note-actions/noteMenuRegistry";
 import type { NoteRecord } from "../redux/notes.types";
+import { noteFolderReference, type FolderReference } from "../types";
 
 interface NoteSidebarRowProps {
   note: NoteRecord;
   instanceId: string;
   isActive: boolean;
   isOpenTab: boolean;
-  allFolders: string[];
+  allFolders: FolderReference[];
   openKnowledge: (opts: { noteId: string; title?: string }) => void;
   formatTime: (dateStr: string | null | undefined) => string;
   /** Shows the note's folder name/"Draft" as a secondary label (recent/default modes). */
@@ -77,7 +78,7 @@ export function NoteSidebarRow({
     noteId: note.id,
     label: note.label,
     content: note.content,
-    folder: note.folder_name || "Uncategorized",
+    folder: noteFolderReference(note),
     allFolders,
     openKnowledge,
     onCreateFolder: () => onCreateFolder(note.id),

@@ -108,12 +108,14 @@ export function ChatRunHeader({
         />
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        {/* "Inside a shared room — members can see this" (DD-137b, V-33 §9.1).
-            A `personal` conversation dropped into a war room or a thread is
-            readable by that room's members — Rule 9's union, and correct — but
-            until now nothing on this screen said so while the chat still called
-            itself private. The chip renders for the OWNER and only when the
-            conversation really is inside a room someone else can reach. */}
+        {/* "Personal — only you can see this, even inside a shared room"
+            (DD-171, 2026-09-12; it read the opposite until that day). A
+            `personal` conversation dropped into a war room or a thread USED to
+            be readable by that room's members; the chair overturned that —
+            containment carries a container's reach to rows at `internal` and
+            above, never to `personal` — and the kernel moved before this
+            sentence did. The chip renders for the OWNER and only when the
+            conversation really does sit inside a room other people can reach. */}
         <ConversationRoomNotice conversationId={conversationId} />
         {/* What this chat PRODUCED — the reverse view of the record chrome
             drawn under a kind block. Only an existing conversation can have

@@ -200,6 +200,17 @@ const isActiveViewOption = (
     ? prefs.view === "rows"
     : prefs.view !== "rows" && prefs.density === option.density;
 
+/**
+ * The gallery body, not the full-height route wrapper, owns terminal scrolling.
+ * Keep space here only while the fixed bulk toolbar is visible so the final
+ * image can scroll completely above it at every breakpoint.
+ */
+export const cloudImagesTerminalOwnerClass = (hasBulkSelection: boolean) =>
+  cn(
+    "flex-1 overflow-auto p-3 md:p-4 space-y-4 md:space-y-6 overscroll-contain",
+    hasBulkSelection && "pb-40 md:pb-24",
+  );
+
 export interface CloudImagesTabProps {
   /**
    * Optional legacy URLs passed by callers that still use the
@@ -595,7 +606,11 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-3 md:p-4 space-y-4 md:space-y-6 overscroll-contain">
+            <div
+              className={cloudImagesTerminalOwnerClass(
+                visibleBulkSelectedIds.length > 0,
+              )}
+            >
               {providedUrls && providedUrls.length > 0 ? (
                 <section>
                   <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">

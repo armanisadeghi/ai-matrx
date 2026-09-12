@@ -10,8 +10,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -32,25 +35,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
-import {
-  AlertTriangle,
-  Lock,
-  Plug,
-  Plus,
-  Save,
-  Trash2,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Lock, Plug, Plus, Save, Trash2, X } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { reloadAiCatalog } from "../../catalogReload";
 import { aiModelService } from "../../service";
 import type { AiApi, AiEndpoint } from "../../types";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
@@ -262,7 +253,10 @@ function EndpointFormFields({
         <VisibilitySelect
           value={data.visibility}
           onChange={(v) =>
-            onChange({ ...data, visibility: v as EndpointFormData["visibility"] })
+            onChange({
+              ...data,
+              visibility: v as EndpointFormData["visibility"],
+            })
           }
         />
       </FormField>
@@ -378,7 +372,10 @@ function ApiFormFields({
           }
         />
       </FormField>
-      <FormField label="Request Defaults" description="Default request body overrides">
+      <FormField
+        label="Request Defaults"
+        description="Default request body overrides"
+      >
         <EnhancedEditableJsonViewer
           data={data.request_defaults}
           title="Request Defaults"
@@ -412,140 +409,41 @@ function ApiFormFields({
   );
 }
 
-// ─── Generic list + panel scaffolding ────────────────────────────────────────
+// ─── Shared table + panel scaffolding ───────────────────────────────────────
 
-type Column<T> = {
-  label: string;
-  render: (row: T) => React.ReactNode;
-};
+type EndpointApiRow = { id: string; is_system: boolean };
 
-function SimpleTable<T extends { id: string; is_system: boolean }>({
-  title,
-  rows,
-  columns,
-  loading,
-  selectedId,
-  onSelect,
-  onCreate,
+function RowActions<T extends EndpointApiRow>({
+  row,
   onDelete,
   deleteNoun,
 }: {
-  title: string;
-  rows: T[];
-  columns: Column<T>[];
-  loading: boolean;
-  selectedId: string | null;
-  onSelect: (row: T) => void;
-  onCreate: () => void;
+  row: T;
   onDelete: (row: T) => void;
   deleteNoun: string;
 }) {
-  const [pendingDelete, setPendingDelete] = useState<T | null>(null);
+  const [pendingDelete, setPendingDelete] = useState(false);
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center justify-between shrink-0 px-3 py-2 border-b bg-card">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          <Badge variant="outline" className="text-xs">
-            {rows.length}
-          </Badge>
-        </div>
-        <Button size="sm" className="h-7 px-2 text-xs gap-1.5" onClick={onCreate}>
-          <Plus className="h-3.5 w-3.5" />
-          New
-        </Button>
-      </div>
-      <div className="flex-1 overflow-auto min-h-0">
-        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
-          <thead className="sticky top-0 z-10 bg-card border-b border-border">
-            <tr className="h-8">
-              {columns.map((c) => (
-                <th
-                  key={c.label}
-                  className="px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground"
-                >
-                  {c.label}
-                </th>
-              ))}
-              <th className="w-[60px] px-2 py-1.5 text-right text-xs font-semibold text-muted-foreground">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="h-9 border-b border-border">
-                  {Array.from({ length: columns.length + 1 }).map((__, j) => (
-                    <td key={j} className="px-2 py-1.5">
-                      <Skeleton className="h-4 w-full" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + 1} className="h-32 text-center p-2">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Plug className="h-10 w-10 opacity-30" />
-                    <p className="text-sm">Nothing here yet</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              rows.map((row, idx) => (
-                <tr
-                  key={row.id}
-                  className={`group h-9 border-b border-border cursor-pointer transition-colors ${
-                    selectedId === row.id
-                      ? "bg-primary/10 hover:bg-primary/15"
-                      : idx % 2 === 0
-                        ? "hover:bg-muted/50"
-                        : "bg-muted/20 hover:bg-muted/50"
-                  }`}
-                  onClick={() => onSelect(row)}
-                >
-                  {columns.map((c) => (
-                    <td key={c.label} className="py-1 px-2 align-middle">
-                      {c.render(row)}
-                    </td>
-                  ))}
-                  <td className="py-1 px-2 align-middle text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 disabled:pointer-events-none"
-                      title={
-                        row.is_system
-                          ? "System rows cannot be deleted"
-                          : "Delete"
-                      }
-                      disabled={row.is_system}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPendingDelete(row);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <AlertDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 sm:h-7 sm:w-7"
+        title={row.is_system ? "System rows cannot be deleted" : "Delete"}
+        disabled={row.is_system}
+        onClick={(event) => {
+          event.stopPropagation();
+          setPendingDelete(true);
+        }}
       >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+      <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this {deleteNoun}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Any offerings referencing this {deleteNoun} will lose their
-              reference. This cannot be undone.
+              This removes the {deleteNoun} from the active list.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -553,8 +451,8 @@ function SimpleTable<T extends { id: string; is_system: boolean }>({
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                if (pendingDelete) onDelete(pendingDelete);
-                setPendingDelete(null);
+                setPendingDelete(false);
+                onDelete(row);
               }}
             >
               Delete
@@ -562,6 +460,127 @@ function SimpleTable<T extends { id: string; is_system: boolean }>({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+}
+
+function EndpointApiTable<T extends EndpointApiRow>({
+  title,
+  rows,
+  columns,
+  loading,
+  loadError,
+  actionError,
+  selectedId,
+  onSelect,
+  onCreate,
+  onDelete,
+  onRetry,
+  deleteNoun,
+  mobileTitle,
+  mobileDetails,
+}: {
+  title: string;
+  rows: T[];
+  columns: MatrxColumnDef<T>[];
+  loading: boolean;
+  loadError: string | null;
+  actionError: string | null;
+  selectedId: string | null;
+  onSelect: (row: T) => void;
+  onCreate: () => void;
+  onDelete: (row: T) => void;
+  onRetry: () => void;
+  deleteNoun: string;
+  mobileTitle: (row: T) => string;
+  mobileDetails: (row: T) => React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      {actionError && (
+        <div className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+      <MatrxDataTable<T>
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        isLoading={loading}
+        pageSize={25}
+        pageSizeOptions={[10, 25, 50, 100]}
+        defaultSort={null}
+        onRowOpen={onSelect}
+        detail={{ enabled: false }}
+        rowClassName={(row) =>
+          row.id === selectedId
+            ? "bg-primary/10 hover:bg-primary/15"
+            : undefined
+        }
+        emptyState={
+          loadError
+            ? {
+                title: `Could not load ${title.toLowerCase()}`,
+                description: loadError,
+                icon: <Plug className="h-8 w-8" />,
+                action: (
+                  <Button size="sm" variant="outline" onClick={onRetry}>
+                    Retry
+                  </Button>
+                ),
+              }
+            : {
+                title: "Nothing here yet",
+                icon: <Plug className="h-8 w-8" />,
+              }
+        }
+        toolbar={{
+          search: false,
+          leading: (
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">{title}</h2>
+              <Badge variant="outline" className="text-xs">
+                {rows.length}
+              </Badge>
+            </div>
+          ),
+          actions: (
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 px-2 text-xs"
+              onClick={onCreate}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New
+            </Button>
+          ),
+        }}
+        rowActions={(row) => (
+          <RowActions row={row} onDelete={onDelete} deleteNoun={deleteNoun} />
+        )}
+        mobileCards={(row, _index, controls) => (
+          <article
+            className={
+              row.id === selectedId
+                ? "space-y-2 rounded-md border border-primary/40 bg-primary/10 p-3"
+                : "space-y-2 rounded-md border border-border p-3"
+            }
+          >
+            <button
+              type="button"
+              className="block max-w-full truncate text-left font-medium hover:underline"
+              onClick={() => onSelect(row)}
+            >
+              {mobileTitle(row)}
+            </button>
+            <div className="text-xs text-muted-foreground">
+              {mobileDetails(row)}
+            </div>
+            <div className="flex justify-end">{controls.actions}</div>
+          </article>
+        )}
+      />
     </div>
   );
 }
@@ -649,6 +668,8 @@ export default function EndpointsApisContainer() {
   const [endpoints, setEndpoints] = useState<AiEndpoint[]>([]);
   const [apis, setApis] = useState<AiApi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [selectedEndpoint, setSelectedEndpoint] = useState<AiEndpoint | null>(
     null,
@@ -668,6 +689,7 @@ export default function EndpointsApisContainer() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [fetchedEndpoints, fetchedApis] = await Promise.all([
         aiModelService.fetchEndpoints(),
@@ -676,10 +698,7 @@ export default function EndpointsApisContainer() {
       setEndpoints(fetchedEndpoints);
       setApis(fetchedApis);
     } catch (err) {
-      console.error(
-        "Failed to load endpoints/apis",
-        extractErrorMessage(err),
-      );
+      setLoadError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -744,12 +763,13 @@ export default function EndpointsApisContainer() {
   };
 
   const deleteEndpoint = async (row: AiEndpoint) => {
+    setActionError(null);
     try {
       await aiModelService.deleteEndpoint(row.id);
       setEndpoints((prev) => prev.filter((e) => e.id !== row.id));
       if (selectedEndpoint?.id === row.id) setEndpointPanelOpen(false);
     } catch (err) {
-      console.error("Failed to delete endpoint", extractErrorMessage(err));
+      setActionError(extractErrorMessage(err));
     }
   };
 
@@ -802,41 +822,54 @@ export default function EndpointsApisContainer() {
   };
 
   const deleteApi = async (row: AiApi) => {
+    setActionError(null);
     try {
       await aiModelService.deleteApi(row.id);
       setApis((prev) => prev.filter((a) => a.id !== row.id));
       if (selectedApi?.id === row.id) setApiPanelOpen(false);
     } catch (err) {
-      console.error("Failed to delete api", extractErrorMessage(err));
+      setActionError(extractErrorMessage(err));
     }
   };
 
   // ── Columns ──
 
-  const endpointColumns: Column<AiEndpoint>[] = [
+  const endpointColumns: MatrxColumnDef<AiEndpoint>[] = [
     {
-      label: "Display Name",
-      render: (e) => <span className="font-medium">{e.display_name}</span>,
+      accessorKey: "display_name",
+      header: "Display Name",
+      sortable: false,
+      filter: false,
+      cell: (e) => <span className="font-medium">{e.display_name}</span>,
     },
     {
-      label: "Vendor",
-      render: (e) => (
+      accessorKey: "vendor",
+      header: "Vendor",
+      sortable: false,
+      filter: false,
+      cell: (e) => (
         <Badge variant="outline" className="text-xs font-mono">
           {e.vendor}
         </Badge>
       ),
     },
     {
-      label: "Internal Name",
-      render: (e) => (
+      accessorKey: "internal_name",
+      header: "Internal Name",
+      sortable: false,
+      filter: false,
+      cell: (e) => (
         <span className="font-mono text-muted-foreground">
           {e.internal_name}
         </span>
       ),
     },
     {
-      label: "Base URL",
-      render: (e) =>
+      accessorKey: "base_url",
+      header: "Base URL",
+      sortable: false,
+      filter: false,
+      cell: (e) =>
         e.base_url ? (
           <span className="font-mono text-muted-foreground truncate block max-w-[220px]">
             {e.base_url}
@@ -846,12 +879,18 @@ export default function EndpointsApisContainer() {
         ),
     },
     {
-      label: "Priority",
-      render: (e) => <span className="tabular-nums">{e.priority}</span>,
+      accessorKey: "priority",
+      header: "Priority",
+      sortable: false,
+      filter: false,
+      cell: (e) => <span className="tabular-nums">{e.priority}</span>,
     },
     {
-      label: "Active",
-      render: (e) =>
+      accessorKey: "is_active",
+      header: "Active",
+      sortable: false,
+      filter: false,
+      cell: (e) =>
         e.is_active ? (
           <Badge
             variant="outline"
@@ -860,35 +899,50 @@ export default function EndpointsApisContainer() {
             Active
           </Badge>
         ) : (
-          <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
+          <Badge
+            variant="outline"
+            className="text-xs bg-muted text-muted-foreground"
+          >
             Inactive
           </Badge>
         ),
     },
   ];
 
-  const apiColumns: Column<AiApi>[] = [
+  const apiColumns: MatrxColumnDef<AiApi>[] = [
     {
-      label: "Display Name",
-      render: (a) => <span className="font-medium">{a.display_name}</span>,
+      accessorKey: "display_name",
+      header: "Display Name",
+      sortable: false,
+      filter: false,
+      cell: (a) => <span className="font-medium">{a.display_name}</span>,
     },
     {
-      label: "Name",
-      render: (a) => (
+      accessorKey: "name",
+      header: "Name",
+      sortable: false,
+      filter: false,
+      cell: (a) => (
         <span className="font-mono text-muted-foreground">{a.name}</span>
       ),
     },
     {
-      label: "Translator Key",
-      render: (a) => (
+      accessorKey: "translator_key",
+      header: "Translator Key",
+      sortable: false,
+      filter: false,
+      cell: (a) => (
         <Badge variant="outline" className="text-xs font-mono">
           {a.translator_key}
         </Badge>
       ),
     },
     {
-      label: "Transport",
-      render: (a) => (
+      accessorKey: "transport",
+      header: "Transport",
+      sortable: false,
+      filter: false,
+      cell: (a) => (
         <span className="font-mono text-muted-foreground">{a.transport}</span>
       ),
     },
@@ -930,16 +984,21 @@ export default function EndpointsApisContainer() {
         </TabsList>
       </div>
 
-      <TabsContent value="endpoints" className="flex-1 m-0 overflow-hidden min-h-0">
+      <TabsContent
+        value="endpoints"
+        className="flex-1 m-0 overflow-hidden min-h-0"
+      >
         <div className="flex h-full min-h-0">
           <div
             className={`${endpointPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-all duration-200`}
           >
-            <SimpleTable
+            <EndpointApiTable
               title="AI Endpoints (serving vendors)"
               rows={endpoints}
               columns={endpointColumns}
               loading={loading}
+              loadError={loadError}
+              actionError={actionError}
               selectedId={selectedEndpoint?.id ?? null}
               onSelect={(row) => {
                 setSelectedEndpoint(row);
@@ -956,7 +1015,17 @@ export default function EndpointsApisContainer() {
                 setSaveError(null);
               }}
               onDelete={deleteEndpoint}
+              onRetry={() => void loadData()}
               deleteNoun="endpoint"
+              mobileTitle={(row) => row.display_name}
+              mobileDetails={(row) => (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-mono">{row.vendor}</span>
+                  <span>{row.internal_name}</span>
+                  <span>Priority {row.priority}</span>
+                  <span>{row.is_active ? "Active" : "Inactive"}</span>
+                </div>
+              )}
             />
           </div>
           {endpointPanelOpen && (
@@ -989,11 +1058,13 @@ export default function EndpointsApisContainer() {
           <div
             className={`${apiPanelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col overflow-hidden transition-all duration-200`}
           >
-            <SimpleTable
+            <EndpointApiTable
               title="AI APIs (wire contracts)"
               rows={apis}
               columns={apiColumns}
               loading={loading}
+              loadError={loadError}
+              actionError={actionError}
               selectedId={selectedApi?.id ?? null}
               onSelect={(row) => {
                 setSelectedApi(row);
@@ -1010,13 +1081,24 @@ export default function EndpointsApisContainer() {
                 setSaveError(null);
               }}
               onDelete={deleteApi}
+              onRetry={() => void loadData()}
               deleteNoun="API"
+              mobileTitle={(row) => row.display_name}
+              mobileDetails={(row) => (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-mono">{row.name}</span>
+                  <span>{row.translator_key}</span>
+                  <span>{row.transport}</span>
+                </div>
+              )}
             />
           </div>
           {apiPanelOpen && (
             <div className="w-1/2 border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
               <DetailPanel
-                title={apiIsNew ? "New API" : selectedApi?.display_name || "API"}
+                title={
+                  apiIsNew ? "New API" : selectedApi?.display_name || "API"
+                }
                 isSystem={!apiIsNew && !!selectedApi?.is_system}
                 saving={saving}
                 saveError={saveError}

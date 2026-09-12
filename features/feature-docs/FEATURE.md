@@ -38,6 +38,7 @@ Super-admin documentation routes browse the active feature-document registry wit
 
 ## Change log
 
+- 2026-09-12: Retired the live `organization_id` default through ledgered FD-T01. Generated inserts now require the organization; raw missing-organization writes fail with `23502`, while an explicit sync canary remains visible in the authenticated viewer.
 - 2026-09-12: Restored the canonical 25-row rendering default after the live .claude view exposed 5,215 records; local search and filters still cover the complete source.
 - 2026-09-12: Made the documentation sync command admit only an explicit organization and use the captured value for every database operation, preparing the catalog for retirement of its database organization default.
 - 2026-09-12: Replaced the bespoke Feature Docs renderer with `MatrxDataTable`, preserving full-list local filtering, sorting, refresh/error behavior, mobile presentation, and document navigation.

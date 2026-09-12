@@ -46,7 +46,6 @@ import {
   type WidgetLaunchState,
 } from "./build-widget-launch";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   agentWidgetTesterKpis,
@@ -474,33 +473,32 @@ export function AgentWidgetsPage({
                 }),
               },
             ]}
-          />
-          <ExportMenu
-            label={`agent-widget-tester-${initialAgentName}`}
-            items={[
-              jsonExportItem(testerView, "JSON (page state)"),
-              jsonExportItem(launchPreview, "JSON (launch options)"),
-              csvExportItem(
-                () =>
-                  variableRows().map((row) => ({
-                    name: row.name,
-                    required: row.required,
-                    input_kind: row.input_kind,
-                    filled: row.filled,
-                    current_value:
-                      row.current_value === undefined
-                        ? ""
-                        : JSON.stringify(row.current_value),
-                    default_value:
-                      row.default_value === undefined
-                        ? ""
-                        : JSON.stringify(row.default_value),
-                    help_text: row.help_text ?? "",
-                    bound_to_context_item: row.bound_to_context_item ?? "",
-                  })),
-                "CSV (all variables)",
-              ),
-            ]}
+            export={{
+              items: [
+                jsonExportItem(testerView, "JSON (page state)"),
+                jsonExportItem(launchPreview, "JSON (launch options)"),
+                csvExportItem(
+                  () =>
+                    variableRows().map((row) => ({
+                      name: row.name,
+                      required: row.required,
+                      input_kind: row.input_kind,
+                      filled: row.filled,
+                      current_value:
+                        row.current_value === undefined
+                          ? ""
+                          : JSON.stringify(row.current_value),
+                      default_value:
+                        row.default_value === undefined
+                          ? ""
+                          : JSON.stringify(row.default_value),
+                      help_text: row.help_text ?? "",
+                      bound_to_context_item: row.bound_to_context_item ?? "",
+                    })),
+                  "CSV (all variables)",
+                ),
+              ],
+            }}
           />
           <AgentSaveStatus agentId={agentId} />
           <AgentOptionsMenu agentId={agentId} basePath={basePath} />

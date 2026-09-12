@@ -16,7 +16,7 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
 import { PHANTOM_NOTE_ID, createPhantomNote } from "../utils/phantomNote";
-import type { Note } from "../types";
+import type { FolderReference, Note } from "../types";
 import { cn } from "@/lib/utils";
 import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -53,6 +53,8 @@ export function NotesLayout({
     copyNote,
     refreshNotes,
     findOrCreateEmptyNote,
+    moveNote,
+    moveNoteToNewFolder,
     openNoteInTab,
     openTabs,
     closeTab,
@@ -221,7 +223,6 @@ export function NotesLayout({
         await updateNote(activeNote.id, {
           label: activeNote.label,
           content: activeNote.content,
-          folder_name: activeNote.folder_name,
           tags: activeNote.tags,
           metadata: activeNote.metadata,
         });
@@ -250,9 +251,18 @@ export function NotesLayout({
             updates.folder_name || "Draft",
           );
           // Apply any content/label updates from the first edit
-          const { folder_name: _f, ...restUpdates } = updates;
-          const hasPayload = Object.keys(restUpdates).some(
-            (k) => restUpdates[k as keyof typeof restUpdates] !== undefined,
+          const restUpdates = {
+            content: updates.content,
+            label: updates.label,
+            tags: updates.tags,
+            metadata: updates.metadata,
+            position: updates.position,
+            visibility: updates.visibility,
+            project_id: updates.project_id,
+            task_id: updates.task_id,
+          };
+          const hasPayload = Object.values(restUpdates).some(
+            (value) => value !== undefined,
           );
           if (hasPayload) {
             await updateNote(realNote.id, restUpdates);
@@ -267,33 +277,60 @@ export function NotesLayout({
         return;
       }
       // Context handles optimistic updates automatically
-      updateNote(noteId, updates);
+      const persistedUpdates = {
+        content: updates.content,
+        label: updates.label,
+        tags: updates.tags,
+        metadata: updates.metadata,
+        position: updates.position,
+        visibility: updates.visibility,
+        project_id: updates.project_id,
+        task_id: updates.task_id,
+      };
+      void updateNote(noteId, persistedUpdates);
     },
     [updateNote, findOrCreateEmptyNote, openNoteInTab, toast],
   );
 
   const handleMoveNote = useCallback(
-    async (noteId: string, newFolder: string) => {
+    async (noteId: string, targetFolder: FolderReference) => {
       try {
         const note = notes.find((n) => n.id === noteId);
         if (!note) return;
 
-        await updateNote(noteId, { folder_name: newFolder });
+        await moveNote(noteId, targetFolder);
 
-        toast.success(`Moved "${note.label}" to "${newFolder}"`);
+        toast.success(`Moved "${note.label}" to "${targetFolder.name}"`);
       } catch (error) {
         console.error("Error moving note:", error);
         toast.error(error);
       }
     },
-    [notes, updateNote, toast],
+    [moveNote, notes, toast],
+  );
+
+  const handleMoveNoteToNewFolder = useCallback(
+    async (noteId: string, folderName: string) => {
+      const note = notes.find((candidate) => candidate.id === noteId);
+      if (!note) return;
+      await moveNoteToNewFolder(noteId, folderName);
+      toast.success(`Moved "${note.label}" to "${folderName}"`);
+    },
+    [moveNoteToNewFolder, notes, toast],
   );
 
   const handleRenameFolder = useCallback(
     async (oldName: string, newName: string) => {
       try {
+        const matches = notes.filter(
+          (note) => note.folder_name === oldName && note.folder_id,
+        );
+        const folder = matches[0];
+        if (!folder?.folder_id || matches.some((note) => note.folder_id !== folder.folder_id || note.organization_id !== folder.organization_id)) {
+          throw new Error("This folder name exists in more than one organization. Open the folder from its organization before renaming it.");
+        }
         const { renameFolder } = await import("../service/notesService");
-        await renameFolder(oldName, newName);
+        await renameFolder({ id: folder.folder_id, organizationId: folder.organization_id, name: oldName }, newName);
         await refreshNotes();
 
         toast.success(`Renamed folder "${oldName}" to "${newName}"`);
@@ -302,14 +339,21 @@ export function NotesLayout({
         toast.error(error);
       }
     },
-    [refreshNotes, toast],
+    [notes, refreshNotes, toast],
   );
 
   const handleDeleteFolderNotes = useCallback(
     async (folderName: string) => {
       try {
+        const matches = notes.filter(
+          (note) => note.folder_name === folderName && note.folder_id,
+        );
+        const folder = matches[0];
+        if (!folder?.folder_id || matches.some((note) => note.folder_id !== folder.folder_id || note.organization_id !== folder.organization_id)) {
+          throw new Error("This folder name exists in more than one organization. Open the folder from its organization before deleting it.");
+        }
         const { deleteFolderNotes } = await import("../service/notesService");
-        const count = await deleteFolderNotes(folderName);
+        const count = await deleteFolderNotes({ id: folder.folder_id, organizationId: folder.organization_id, name: folderName });
         await refreshNotes();
 
         toast.success(
@@ -320,7 +364,7 @@ export function NotesLayout({
         toast.error(error);
       }
     },
-    [refreshNotes, toast],
+    [notes, refreshNotes, toast],
   );
 
   const handleSelectNote = useCallback(
@@ -372,6 +416,7 @@ export function NotesLayout({
             onDeleteNote={handleDeleteNote}
             onCreateFolder={handleCreateFolder}
             onMoveNote={handleMoveNote}
+            onMoveNoteToNewFolder={handleMoveNoteToNewFolder}
             onRenameFolder={handleRenameFolder}
             onDeleteFolderNotes={handleDeleteFolderNotes}
             onCopyNote={handleCopyNote}
@@ -409,6 +454,7 @@ export function NotesLayout({
                 onDeleteNote={handleDeleteNote}
                 onCreateFolder={handleCreateFolder}
                 onMoveNote={handleMoveNote}
+                onMoveNoteToNewFolder={handleMoveNoteToNewFolder}
                 onRenameFolder={handleRenameFolder}
                 onDeleteFolderNotes={handleDeleteFolderNotes}
                 onCopyNote={handleCopyNote}
@@ -430,6 +476,7 @@ export function NotesLayout({
             onCopyNote={handleCopyNote}
             onShareNote={handleShareNote}
             onMoveNote={handleMoveNote}
+            onMoveNoteToNewFolder={handleMoveNoteToNewFolder}
             onUpdateNote={handleUpdateNote}
             onSaveNote={handleSaveNote}
             isDirty={isDirty}

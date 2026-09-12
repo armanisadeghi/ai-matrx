@@ -34,6 +34,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -42,7 +43,11 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { siteEntityRef, buildSiteMenuSection, type SiteMenuRow } from "./site-menu";
+import {
+  siteEntityRef,
+  buildSiteMenuSection,
+  type SiteMenuRow,
+} from "./site-menu";
 import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { getSituationalRefreshStatus, runSituationalRefresh } from "./data";
@@ -129,7 +134,7 @@ export function SituationalRefreshConsole({
 
   // THE EMITTER for this engine's tab. `getScope` runs at trigger time and
   // reads these closures fresh (the hook holds it in a ref).
-  useSurfaceRuntimeRegistration({
+  const surfaceHandle = useSurfaceRuntimeRegistration({
     surfaceName,
     getScope: () =>
       buildScope({
@@ -155,7 +160,9 @@ export function SituationalRefreshConsole({
     setQueue(siteIds);
     toast.success(
       `Refreshing situational segments on ${siteIds.length} brand${siteIds.length === 1 ? "" : "s"}`,
-      { description: "Re-working out every segment against the current window." },
+      {
+        description: "Re-working out every segment against the current window.",
+      },
     );
     for (const siteId of siteIds) {
       const site = byId.get(siteId);
@@ -196,7 +203,9 @@ export function SituationalRefreshConsole({
       accessorFn: (r) => r.status?.matchers ?? -1,
       cell: (r) => {
         if (r.isLoading)
-          return <span className="text-[10px] text-muted-foreground">reading…</span>;
+          return (
+            <span className="text-[10px] text-muted-foreground">reading…</span>
+          );
         if (r.isError)
           return (
             <span className="inline-flex items-center gap-1 text-[10px] text-warning">
@@ -265,7 +274,8 @@ export function SituationalRefreshConsole({
       accessorFn: (r) => r.status?.autonomy?.mode ?? "",
       cell: (r) => {
         const verdict = r.status?.autonomy;
-        if (!verdict) return <span className="text-[10px] text-muted-foreground">—</span>;
+        if (!verdict)
+          return <span className="text-[10px] text-muted-foreground">—</span>;
         if (verdict.decision === "apply")
           return (
             <span className="inline-flex items-center gap-1 text-[10px] text-success">
@@ -310,7 +320,7 @@ export function SituationalRefreshConsole({
     },
   ];
 
-  return (
+  const content = (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 lg:grid-cols-12">
       <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-7">
         <Tabs defaultValue="brands" className="flex min-h-0 flex-1 flex-col">
@@ -323,114 +333,132 @@ export function SituationalRefreshConsole({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="schedule" className="m-0 flex min-h-0 flex-1 flex-col">
+          <TabsContent
+            value="schedule"
+            className="m-0 flex min-h-0 flex-1 flex-col"
+          >
             {schedulePanel}
           </TabsContent>
 
-          <TabsContent value="brands" className="m-0 flex min-h-0 flex-1 flex-col">
-        <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-[10px]"
-            onClick={() =>
-              onSelectedChange(
-                selected.length === sites.length ? [] : sites.map((s) => s.id),
-              )
-            }
+          <TabsContent
+            value="brands"
+            className="m-0 flex min-h-0 flex-1 flex-col"
           >
-            {selected.length === sites.length && sites.length > 0 ? "None" : "All"}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-1.5"
-            title="Re-read how stale each brand is"
-            onClick={() =>
-              void queryClient.invalidateQueries({
-                queryKey: ["seo", "situational", "refresh-status"],
-              })
-            }
-          >
-            <RefreshCw className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            className="ml-auto h-7 gap-1 text-xs"
-            disabled={running || selected.length === 0}
-            onClick={() => void startRun(selected)}
-          >
-            {running ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Play className="h-3 w-3" />
-            )}
-            {running
-              ? queue.length > 0
-                ? `Refreshing… ${queue.length} left`
-                : "Refreshing…"
-              : `Run now (${selected.length})`}
-          </Button>
-        </div>
+            <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-[10px]"
+                onClick={() =>
+                  onSelectedChange(
+                    selected.length === sites.length
+                      ? []
+                      : sites.map((s) => s.id),
+                  )
+                }
+              >
+                {selected.length === sites.length && sites.length > 0
+                  ? "None"
+                  : "All"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-1.5"
+                title="Re-read how stale each brand is"
+                onClick={() =>
+                  void queryClient.invalidateQueries({
+                    queryKey: ["seo", "situational", "refresh-status"],
+                  })
+                }
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+              <Button
+                size="sm"
+                className="ml-auto h-7 gap-1 text-xs"
+                disabled={running || selected.length === 0}
+                onClick={() => void startRun(selected)}
+              >
+                {running ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Play className="h-3 w-3" />
+                )}
+                {running
+                  ? queue.length > 0
+                    ? `Refreshing… ${queue.length} left`
+                    : "Refreshing…"
+                  : `Run now (${selected.length})`}
+              </Button>
+            </div>
 
-        <div className="flex min-h-0 flex-1 flex-col">
-          {sitesError ? (
-            <p className="p-3 text-xs text-destructive">
-              Could not read the brand list.
-            </p>
-          ) : (
-            <NonEditableContextMenu
-              sourceFeature="marketing"
-              contentSource={{ type: "raw" }}
-              contextData={{ content: "" }}
-              resolveContextOnOpen={(target) => {
-                const id = target
-                  ?.closest("[data-row-id]")
-                  ?.getAttribute("data-row-id");
-                const row = (id && rows.find((r) => r.site.id === id)) || null;
-                const siteRow: SiteMenuRow | null = row
-                  ? {
-                      id: row.site.id,
-                      name: row.site.name,
-                      brandId: row.site.brand_id,
-                    }
-                  : null;
-                setContextBrandRow(siteRow);
-                if (!siteRow) return null;
-                return {
-                  content: `${siteRow.name}`,
-                  [CONTEXT_MENU_ENTITY_KEY]: siteEntityRef(siteRow),
-                };
-              }}
-              extraSections={
-                contextBrandRow ? [buildSiteMenuSection(contextBrandRow)] : []
-              }
-            >
-              <MatrxDataTable<SituationalRow>
-                data={rows}
-                columns={columns}
-                getRowId={(r) => r.site.id}
-                isLoading={sitesLoading}
-                toolbar={{ search: true, searchPlaceholder: "Find a brand" }}
-                selection={{
-                  selectedIds: selected,
-                  onSelectedIdsChange: onSelectedChange,
-                  noun: "brand",
-                }}
-                pageSize={0}
-                zebra
-                emptyState={{ title: "No brands match your search." }}
-                className="h-full"
-              />
-            </NonEditableContextMenu>
-          )}
-        </div>
+            <div className="flex min-h-0 flex-1 flex-col">
+              {sitesError ? (
+                <p className="p-3 text-xs text-destructive">
+                  Could not read the brand list.
+                </p>
+              ) : (
+                <NonEditableContextMenu
+                  sourceFeature="marketing"
+                  contentSource={{ type: "raw" }}
+                  contextData={{ content: "" }}
+                  resolveContextOnOpen={(target) => {
+                    const id = target
+                      ?.closest("[data-row-id]")
+                      ?.getAttribute("data-row-id");
+                    const row =
+                      (id && rows.find((r) => r.site.id === id)) || null;
+                    const siteRow: SiteMenuRow | null = row
+                      ? {
+                          id: row.site.id,
+                          name: row.site.name,
+                          brandId: row.site.brand_id,
+                        }
+                      : null;
+                    setContextBrandRow(siteRow);
+                    if (!siteRow) return null;
+                    return {
+                      content: `${siteRow.name}`,
+                      [CONTEXT_MENU_ENTITY_KEY]: siteEntityRef(siteRow),
+                    };
+                  }}
+                  extraSections={
+                    contextBrandRow
+                      ? [buildSiteMenuSection(contextBrandRow)]
+                      : []
+                  }
+                >
+                  <MatrxDataTable<SituationalRow>
+                    data={rows}
+                    columns={columns}
+                    getRowId={(r) => r.site.id}
+                    isLoading={sitesLoading}
+                    toolbar={{
+                      search: true,
+                      searchPlaceholder: "Find a brand",
+                    }}
+                    selection={{
+                      selectedIds: selected,
+                      onSelectedIdsChange: onSelectedChange,
+                      noun: "brand",
+                    }}
+                    pageSize={0}
+                    zebra
+                    emptyState={{ title: "No brands match your search." }}
+                    className="h-full"
+                  />
+                </NonEditableContextMenu>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </section>
 
       <section className="flex min-h-0 flex-col overflow-y-auto rounded-lg border border-border bg-card p-2 lg:col-span-5">
-        <h2 className="mb-1.5 text-xs font-semibold text-foreground">This run</h2>
+        <h2 className="mb-1.5 text-xs font-semibold text-foreground">
+          This run
+        </h2>
         {outcomes.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             Pick one or more brands and press Run now. Each pass re-works out
@@ -486,7 +514,8 @@ export function SituationalRefreshConsole({
                   ) : null}
                   {outcome.timeoutApplied > 0 ? (
                     <span className="rounded border border-border px-1 py-px text-[10px] tabular-nums text-muted-foreground">
-                      {formatCount(outcome.timeoutApplied)} applied after the wait
+                      {formatCount(outcome.timeoutApplied)} applied after the
+                      wait
                     </span>
                   ) : null}
                   {outcome.remaining > 0 ? (
@@ -538,5 +567,13 @@ export function SituationalRefreshConsole({
         )}
       </section>
     </div>
+  );
+
+  return surfaceHandle ? (
+    <ContentTransferSurfaceProvider handle={surfaceHandle}>
+      {content}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    content
   );
 }

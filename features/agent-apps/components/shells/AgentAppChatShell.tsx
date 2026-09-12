@@ -11,12 +11,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ChevronLeft,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
-} from "lucide-react";
+import { ChevronLeft, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
@@ -30,6 +25,7 @@ import {
   setDisplayIconNameOverride,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Button } from "@/components/ui/button";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,
@@ -121,9 +117,11 @@ export function AgentAppChatShell({ app, surface }: AgentAppChatShellProps) {
 
   if (!agentAppCtx.conversationId) {
     return (
-      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
+      <AgentAppTransferBoundary handle={agentAppCtx.surfaceHandle}>
+        <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+          Loading…
+        </div>
+      </AgentAppTransferBoundary>
     );
   }
 
@@ -131,47 +129,69 @@ export function AgentAppChatShell({ app, surface }: AgentAppChatShellProps) {
   const gateOverridden = overrides["preExecutionGate"] === "custom";
   if (gateOverridden && !gateDismissed) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-6">
-          <SlotRenderer
-            slot="preExecutionGate"
-            overrides={app.slot_overrides}
-            code={app.slot_code}
-            allowedImports={app.allowed_imports}
-            appName={app.name}
-            fallback={
-              ChatDefaultPreGate as unknown as React.ComponentType<
-                Record<string, unknown>
-              >
-            }
-            props={{
-              ...agentAppCtx,
-              app,
-              onContinue: () => setGateDismissed(true),
-            } as unknown as Record<string, unknown>}
-          />
+      <AgentAppTransferBoundary handle={agentAppCtx.surfaceHandle}>
+        <div className="h-full overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-6">
+            <SlotRenderer
+              slot="preExecutionGate"
+              overrides={app.slot_overrides}
+              code={app.slot_code}
+              allowedImports={app.allowed_imports}
+              appName={app.name}
+              fallback={
+                ChatDefaultPreGate as unknown as React.ComponentType<
+                  Record<string, unknown>
+                >
+              }
+              props={
+                {
+                  ...agentAppCtx,
+                  app,
+                  onContinue: () => setGateDismissed(true),
+                } as unknown as Record<string, unknown>
+              }
+            />
+          </div>
         </div>
-      </div>
+      </AgentAppTransferBoundary>
     );
   }
 
   return (
-    <ChatShellLayout
-      historyView={config.historyView}
-      agentId={app.agent_id}
-      appId={app.id}
-      appName={app.name}
-      surfaceKey={agentAppCtx.surfaceKey}
-      activeConversationId={agentAppCtx.conversationId}
-      onNewConversation={() => setRunSeed((s) => s + 1)}
-    >
-      <AgentRunner
-        conversationId={agentAppCtx.conversationId}
+    <AgentAppTransferBoundary handle={agentAppCtx.surfaceHandle}>
+      <ChatShellLayout
+        historyView={config.historyView}
+        agentId={app.agent_id}
+        appId={app.id}
+        appName={app.name}
         surfaceKey={agentAppCtx.surfaceKey}
-        compact={config.compact}
-        showTitle={false}
-      />
-    </ChatShellLayout>
+        activeConversationId={agentAppCtx.conversationId}
+        onNewConversation={() => setRunSeed((s) => s + 1)}
+      >
+        <AgentRunner
+          conversationId={agentAppCtx.conversationId}
+          surfaceKey={agentAppCtx.surfaceKey}
+          compact={config.compact}
+          showTitle={false}
+        />
+      </ChatShellLayout>
+    </AgentAppTransferBoundary>
+  );
+}
+
+function AgentAppTransferBoundary({
+  handle,
+  children,
+}: {
+  handle: UseAgentAppReturn["surfaceHandle"];
+  children: React.ReactNode;
+}) {
+  return handle ? (
+    <ContentTransferSurfaceProvider handle={handle}>
+      {children}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    children
   );
 }
 

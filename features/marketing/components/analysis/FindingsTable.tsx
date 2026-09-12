@@ -20,7 +20,6 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   groomerPresetVariants,
   type AgentCopyGroomerConfig,
@@ -387,8 +386,8 @@ export function FindingsTable() {
                 json={pageFullData}
                 agent={pageAgentPayload}
                 aiVariants={groomerPresetVariants(groomerConfig)}
+                groomer={groomerConfig}
               />
-              <AgentCopyGroomerLauncher config={groomerConfig} />
               <Button
                 variant="outline"
                 size="sm"

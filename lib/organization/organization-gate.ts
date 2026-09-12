@@ -215,3 +215,13 @@ export async function ensureOrganizationContext(
     return requireOrganizationContext(readSelectedOrganizationId(), chosen);
   }
 }
+
+/** Ask for an explicit destination; never reuse the active organization. */
+export async function requestOrganizationContextChoice(): Promise<string> {
+  if (typeof window === "undefined" || !isOrganizationPickerAvailable()) {
+    return requireOrganizationContext(undefined);
+  }
+  const chosen = await requestOrganizationSelection();
+  if (!chosen) throw new OrganizationSelectionCancelled();
+  return requireOrganizationContext(undefined, chosen);
+}

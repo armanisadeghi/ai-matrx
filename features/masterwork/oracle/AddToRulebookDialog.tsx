@@ -37,6 +37,10 @@ export interface AddToRulebookDialogProps {
   initialContent?: string | null;
   /** The conversation the message came from — lands in `source_ref`. */
   initialConversationId?: string | null;
+  /** The message the draft came from — its id lands in `source_ref`. */
+  initialMessageId?: string | null;
+  /** The question this message answered, when there was one. */
+  initialQuestion?: string | null;
 }
 
 export function AddToRulebookDialog({
@@ -44,6 +48,8 @@ export function AddToRulebookDialog({
   onClose,
   initialContent,
   initialConversationId,
+  initialMessageId,
+  initialQuestion,
 }: AddToRulebookDialogProps) {
   const [rulebooks, setRulebooks] = useState<OracleRulebookOption[] | null>(
     null,
@@ -53,9 +59,10 @@ export function AddToRulebookDialog({
   const [isSaving, setIsSaving] = useState(false);
 
   const content = initialContent ?? "";
+  const question = (initialQuestion ?? "").trim() || null;
   const derivedName = useMemo(
-    () => deriveRuleNameFromContent(content),
-    [content],
+    () => deriveRuleNameFromContent(question ?? content),
+    [question, content],
   );
 
   useEffect(() => {
@@ -94,6 +101,8 @@ export function AddToRulebookDialog({
         rulebookId: selectedId,
         content,
         conversationId: initialConversationId ?? null,
+        messageId: initialMessageId ?? null,
+        question,
       });
       invalidateHasRulebookCache();
       toast.success(`Saved to ${target?.name ?? "your Rulebook"} for review`, {
@@ -131,6 +140,11 @@ export function AddToRulebookDialog({
 
         <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
           <p className="text-xs font-medium text-foreground">{derivedName}</p>
+          {question ? (
+            <p className="mt-0.5 text-[11px] italic text-muted-foreground">
+              Saved with the question you asked.
+            </p>
+          ) : null}
           <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
             {content.trim() || "Nothing to save — the message was empty."}
           </p>

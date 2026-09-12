@@ -17,6 +17,7 @@ import {
 import type {
   CreateNoteInput,
   UpdateNoteInput,
+  UpdateNoteOptions,
   Note,
   NoteListItem,
 } from "../types";
@@ -29,7 +30,8 @@ import type {
  *   label: "My Note",
  *   content: "Some content",
  *   folder_name: "Personal",
- *   tags: ["important"]
+ *   tags: ["important"],
+ *   organization_id: capturedOrganizationId,
  * });
  * ```
  */
@@ -49,8 +51,9 @@ export async function create(input: CreateNoteInput): Promise<Note> {
 export async function update(
   noteId: string,
   updates: UpdateNoteInput,
+  options?: UpdateNoteOptions,
 ): Promise<Note> {
-  return updateNoteService(noteId, updates);
+  return updateNoteService(noteId, updates, options);
 }
 
 /**
@@ -103,11 +106,14 @@ export async function getById(noteId: string): Promise<Note | null> {
 export async function quickCreate(
   content: string,
   label?: string,
+  organizationId?: string,
 ): Promise<Note> {
+  if (!organizationId) throw new Error("Choose an organization before creating a note.");
   return createNoteService({
     label: label || "Quick Note",
     content,
     folder_name: "Draft",
+    organization_id: organizationId,
   });
 }
 
@@ -128,8 +134,9 @@ export async function copy(noteId: string): Promise<Note> {
  */
 export async function ensureFolderMaterialized(
   folderName: string,
+  organizationId: string,
 ): Promise<void> {
-  return ensureFolderMaterializedService(folderName);
+  return ensureFolderMaterializedService(folderName, organizationId);
 }
 
 // Default export as namespace

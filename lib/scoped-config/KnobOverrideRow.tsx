@@ -34,6 +34,13 @@ import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
 import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 
 function valueText(value: unknown): string {
@@ -236,6 +243,7 @@ export function KnobOverrideRow(props: {
       : ladder
     : null;
   const canWrite = system ? system.canWrite : ladder?.canWrite ?? !lockedForMe;
+  const reviewOverdue = knob.set_by === "agent" && knob.review_due !== null && new Date(knob.review_due) < new Date();
 
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"
@@ -291,23 +299,27 @@ export function KnobOverrideRow(props: {
       ) : (
       <div className="flex items-start gap-2">
         {enumOptions ? (
-          <select
-            className="h-9 w-40 rounded-md border border-border bg-background px-2 text-sm"
-            id={knob.full_key}
-            aria-label={knob.label}
-            value={draft}
+          <Select
+            value={draft || undefined}
             disabled={busy || !canWrite}
-            onChange={(event) => setDraft(event.target.value)}
+            onValueChange={setDraft}
           >
-            <option value="" disabled>
-              {formatKnobValue(knob.effective_value, knob.unit)}
-            </option>
+            <SelectTrigger
+              id={knob.full_key}
+              aria-label={knob.label}
+              size="default"
+              className="w-40"
+            >
+              <SelectValue placeholder={formatKnobValue(knob.effective_value, knob.unit)} />
+            </SelectTrigger>
+            <SelectContent>
             {enumOptions.map((option) => (
-              <option key={option} value={option}>
+              <SelectItem key={option} value={option}>
                 {option}
-              </option>
+              </SelectItem>
             ))}
-          </select>
+            </SelectContent>
+          </Select>
         ) : (
           <Input
             className="w-40"
@@ -345,10 +357,13 @@ export function KnobOverrideRow(props: {
             : isSetHere
               ? "Set here"
               : `Inherited from ${inheritedFrom}`}</span>
+        {system && <span className={reviewOverdue ? "font-medium text-amber-600" : undefined}>
+          {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}{knob.review_due ? ` · review ${knob.review_due}` : ""}
+        </span>}
         <details className="relative">
           <summary aria-label={`Details for ${knob.label}`} className="cursor-pointer">Details</summary>
           <div className="absolute right-0 z-20 mt-1 w-72 rounded-md border border-border bg-popover p-3 text-left text-xs leading-snug text-popover-foreground shadow-md">
-            {!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
+            {!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ${knob.set_by === "agent" ? "Agent-set." : "Reviewed."} ${knob.review_due ? `Review due: ${knob.review_due}. ` : ""}` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
           </div>
         </details>
       </div>

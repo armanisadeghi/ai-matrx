@@ -149,20 +149,19 @@ async function main(): Promise<void> {
   const installedTokens = new Set<string>(ENTITY_TYPE_TOKENS);
   const missing = [...liveTokens].filter((t) => !installedTokens.has(t));
   const extra = [...installedTokens].filter((t) => !liveTokens.has(t));
-  if (missing.length > 0 || extra.length > 0) {
-    console.error(
-      `\n  ✗ Installed @ai-matrx/associations vocabulary (${installedTokens.size} tokens) ` +
-        `is OUT OF SYNC with platform.entity_types (${liveTokens.size} live tokens).` +
-        (missing.length ? `\n    Live but not installed: ${missing.join(", ")}` : "") +
-        (extra.length ? `\n    Installed but not live: ${extra.join(", ")}` : "") +
-        FIX,
-    );
+  // Additive registry growth does not invalidate any installed consumer token.
+  if (missing.length > 0) {
+    console.log(`  Info: ${missing.length} new entity tokens are available (${installedTokens.size} installed → ${liveTokens.size} live).`);
+  }
+  if (extra.length > 0) {
+    console.error(`  ✗ Installed tokens were removed from the live contract: ${extra.join(", ")}` + FIX);
     process.exit(1);
   }
 
   // 2. Per-token field parity.
   for (const row of rows) {
     const meta = ENTITY_TYPE_METADATA[row.token as keyof typeof ENTITY_TYPE_METADATA];
+    if (!meta) continue; // New token; existing-token contracts are still checked.
     const want = rowToMeta(row);
     for (const [field, value] of Object.entries(want)) {
       const got = (meta as unknown as Record<string, unknown>)[field];
@@ -255,7 +254,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `  ✓ Installed @ai-matrx/associations vocabulary matches the live registry ` +
+    `  ✓ Installed @ai-matrx/associations existing vocabulary contracts match the live registry ` +
       `(${rows.length} tokens).`,
   );
   console.log("  ✓ ENTITY_OVERLAY contains no database-owned metadata.");

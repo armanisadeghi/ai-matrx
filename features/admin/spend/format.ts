@@ -52,18 +52,19 @@ export function formatDelta(percent: number | null): string {
   return `${rounded > 0 ? "+" : "−"}${Math.abs(rounded)}% vs yesterday`;
 }
 
-/** `2026-09-11 21:45` in the viewer's zone, or the honest absence. */
+/** Compact table time: `09/11/26 · 9:45 PM`, or the honest absence. */
 export function timestamp(value: string | null | undefined): string {
   if (!value) return "never";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "never";
-  return date.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
+  const formatted = date.toLocaleString("en-US", {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
   });
+  return formatted.replace(", ", " · ").replaceAll(" ", "\u00a0");
 }
 
 /** `3 days ago` — how stale a ledger's last write is. */

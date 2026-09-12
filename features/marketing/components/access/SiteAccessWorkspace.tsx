@@ -14,7 +14,6 @@ import {
 } from "@/features/sharing/components/AccessSummaryPanel";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   accessKpis,
@@ -273,16 +272,15 @@ export function SiteAccessWorkspace({
                   build: blockersVariant,
                 },
               ]}
-            />
-            <ExportMenu
-              label={`site-access-${site.domain}`}
-              items={[
-                jsonExportItem(panelView, "Page data (.json)"),
-                csvExportItem(
-                  () => grantCsvRows(allGrants()),
-                  "CSV (all grants)",
-                ),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(panelView, "Page data (.json)"),
+                  csvExportItem(
+                    () => grantCsvRows(allGrants()),
+                    "CSV (all grants)",
+                  ),
+                ],
+              }}
             />
           </div>
         </div>

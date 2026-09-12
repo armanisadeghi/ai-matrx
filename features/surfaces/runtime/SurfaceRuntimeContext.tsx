@@ -33,6 +33,11 @@ import {
 import { useSyncExternalStore } from "react";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import {
+  AlchemySurfaceBridge,
+  useAlchemySurfaceHandle,
+} from "@/components/agent-copy/AlchemySurfaceBridge";
+import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
 
 /**
  * One write handler per declared `SurfaceWriteTarget.name`. A handler applies
@@ -476,7 +481,9 @@ export function SurfaceRuntimeProvider({
 
   return (
     <SurfaceRuntimeDepthContext.Provider value={depth}>
-      {children}
+      <AlchemySurfaceBridge surfaceName={surfaceName} getScope={getScope}>
+        {children}
+      </AlchemySurfaceBridge>
     </SurfaceRuntimeDepthContext.Provider>
   );
 }
@@ -501,7 +508,7 @@ export function SurfaceRuntimeProvider({
  */
 export function useSurfaceRuntimeRegistration(
   value: SurfaceRuntimeValue | null,
-): void {
+): SurfaceHandle | null {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const valueRef = useRef(value);
   useEffect(() => {
@@ -509,6 +516,18 @@ export function useSurfaceRuntimeRegistration(
   });
 
   const surfaceName = value?.surfaceName ?? null;
+  const transferHandle = useAlchemySurfaceHandle(
+    surfaceName ?? "__unbound_surface_runtime__",
+    () => {
+      const current = valueRef.current;
+      if (!current) {
+        throw new Error(
+          "Alchemy transfer was requested after its hook-only surface unmounted.",
+        );
+      }
+      return current.getScope();
+    },
+  );
   const isEditable = value?.isEditable;
   useEffect(() => {
     if (!surfaceName) return;
@@ -534,4 +553,5 @@ export function useSurfaceRuntimeRegistration(
       depth,
     );
   }, [surfaceName, isEditable, depth]);
+  return surfaceName ? transferHandle : null;
 }

@@ -38,6 +38,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { formatCount } from "@/features/marketing/search-console/types";
@@ -84,13 +85,19 @@ export function GazetteerPlaceDetectionConsole({
   const [tab, setTab] = useState<"status" | "schedule">("status");
 
   const status = useQuery({
-    queryKey: ["seo", "run-console", "place-detection", "global-status", minImpressions],
+    queryKey: [
+      "seo",
+      "run-console",
+      "place-detection",
+      "global-status",
+      minImpressions,
+    ],
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       getPlaceDetectionStatus(null, minImpressions, signal),
     staleTime: 30 * 1000,
   });
 
-  useSurfaceRuntimeRegistration({
+  const surfaceHandle = useSurfaceRuntimeRegistration({
     surfaceName,
     getScope: () =>
       buildScope({
@@ -164,9 +171,11 @@ export function GazetteerPlaceDetectionConsole({
   };
 
   const row = status.data;
-  const pendingAboveFloor = row ? Math.max(row.queue_pending - row.queue_deferred, 0) : 0;
+  const pendingAboveFloor = row
+    ? Math.max(row.queue_pending - row.queue_deferred, 0)
+    : 0;
 
-  return (
+  const content = (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 lg:grid-cols-12">
       <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-7">
         <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border px-1">
@@ -175,7 +184,9 @@ export function GazetteerPlaceDetectionConsole({
             onClick={() => setTab("status")}
             className={cn(
               "h-6 rounded px-2 text-xs",
-              tab === "status" ? "bg-muted font-medium text-foreground" : "text-muted-foreground",
+              tab === "status"
+                ? "bg-muted font-medium text-foreground"
+                : "text-muted-foreground",
             )}
           >
             Corpus
@@ -185,7 +196,9 @@ export function GazetteerPlaceDetectionConsole({
             onClick={() => setTab("schedule")}
             className={cn(
               "h-6 rounded px-2 text-xs",
-              tab === "schedule" ? "bg-muted font-medium text-foreground" : "text-muted-foreground",
+              tab === "schedule"
+                ? "bg-muted font-medium text-foreground"
+                : "text-muted-foreground",
             )}
           >
             Schedule
@@ -219,7 +232,9 @@ export function GazetteerPlaceDetectionConsole({
                 {extractErrorMessage(status.error)}
               </p>
             ) : status.isLoading || !row ? (
-              <p className="text-xs text-muted-foreground">Reading the corpus…</p>
+              <p className="text-xs text-muted-foreground">
+                Reading the corpus…
+              </p>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
@@ -228,15 +243,23 @@ export function GazetteerPlaceDetectionConsole({
                   { label: "Pending", value: row.queue_pending },
                   { label: "Above demand floor", value: pendingAboveFloor },
                   { label: "Name a place", value: row.keywords_with_places },
-                  { label: "Explicit local", value: row.keywords_explicit_local },
+                  {
+                    label: "Explicit local",
+                    value: row.keywords_explicit_local,
+                  },
                   { label: "Pending clicks", value: row.pending_clicks },
-                  { label: "Pending impressions", value: row.pending_impressions },
+                  {
+                    label: "Pending impressions",
+                    value: row.pending_impressions,
+                  },
                 ].map((tile) => (
                   <div
                     key={tile.label}
                     className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
                   >
-                    <div className="text-[10px] text-muted-foreground">{tile.label}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {tile.label}
+                    </div>
                     <div className="tabular-nums text-sm font-semibold text-foreground">
                       {formatCount(tile.value)}
                     </div>
@@ -274,19 +297,23 @@ export function GazetteerPlaceDetectionConsole({
               ) : (
                 <Play className="h-3 w-3" />
               )}
-              {running ? "Reading…" : `Run now (up to ${formatCount(batchKeywords)})`}
+              {running
+                ? "Reading…"
+                : `Run now (up to ${formatCount(batchKeywords)})`}
             </Button>
           </div>
         )}
       </section>
 
       <section className="flex min-h-0 flex-col overflow-y-auto rounded-lg border border-border bg-card p-2 lg:col-span-5">
-        <h2 className="mb-1.5 text-xs font-semibold text-foreground">This run</h2>
+        <h2 className="mb-1.5 text-xs font-semibold text-foreground">
+          This run
+        </h2>
         {outcomes.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Press Run now. One pass reads the highest-demand unscanned
-            keywords, stamps the places and local intent it finds, and leaves
-            anything a person already ruled on alone.
+            Press Run now. One pass reads the highest-demand unscanned keywords,
+            stamps the places and local intent it finds, and leaves anything a
+            person already ruled on alone.
           </p>
         ) : (
           <ul className="flex flex-col gap-1.5">
@@ -333,7 +360,9 @@ export function GazetteerPlaceDetectionConsole({
                   )}
                 </div>
                 {outcome.error ? (
-                  <p className="mt-0.5 text-[10px] text-destructive">{outcome.error}</p>
+                  <p className="mt-0.5 text-[10px] text-destructive">
+                    {outcome.error}
+                  </p>
                 ) : null}
               </li>
             ))}
@@ -342,5 +371,12 @@ export function GazetteerPlaceDetectionConsole({
       </section>
     </div>
   );
-}
 
+  return surfaceHandle ? (
+    <ContentTransferSurfaceProvider handle={surfaceHandle}>
+      {content}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    content
+  );
+}

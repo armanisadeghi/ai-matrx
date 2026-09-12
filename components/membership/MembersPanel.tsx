@@ -66,7 +66,6 @@ import { asUserId } from "@ai-matrx/messaging";
 import { EmailComposeSheet } from "@/components/admin/EmailComposeSheet";
 import { UserIdentity, type UserLike } from "@/components/user/UserIdentity";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildMemberListPayload,
@@ -328,16 +327,15 @@ export function MembersPanel({
                   searchQuery: searchTerm,
                 })
               }
-            />
-            <ExportMenu
-              label={`${container.name ?? container.noun} ${memberNoun}s`}
-              items={[
-                jsonExportItem(() => members.map(memberRow)),
-                csvExportItem(
-                  () => memberCsvRows(members),
-                  `CSV (all ${memberNoun}s)`,
-                ),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(() => members.map(memberRow)),
+                  csvExportItem(
+                    () => memberCsvRows(members),
+                    `CSV (all ${memberNoun}s)`,
+                  ),
+                ],
+              }}
             />
           </div>
         )}

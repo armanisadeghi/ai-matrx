@@ -11,7 +11,6 @@ import { listOrgAdminAudit } from "../service";
 import type { OrgAdminAuditEntry } from "../types";
 import { formatRelativeTime } from "../utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   auditCsvRows,
@@ -95,13 +94,12 @@ export function OrgAdminAuditTable({ orgId }: { orgId: string }) {
             human={() => auditListHuman(entries, labelFor)}
             json={() => entries.map(auditRow)}
             agent={() => buildAuditListPayload({ entries, orgId, labelFor })}
-          />
-          <ExportMenu
-            label="Org governance audit"
-            items={[
-              jsonExportItem(() => entries.map(auditRow)),
-              csvExportItem(() => auditCsvRows(entries), "CSV (all actions)"),
-            ]}
+            export={{
+              items: [
+                jsonExportItem(() => entries.map(auditRow)),
+                csvExportItem(() => auditCsvRows(entries), "CSV (all actions)"),
+              ],
+            }}
           />
         </div>
       </div>

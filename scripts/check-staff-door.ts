@@ -72,13 +72,23 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  *  - `wc_impairment_definition`, a registered COMPONENT with no composition parent. db-rules §6d-1
  *    requires one, so `iam.apply_rls` refuses the table outright and it keeps `auth_read` +
  *    `platform_admin_all`. It resolves `private` only because a parentless component has nothing to
- *    inherit; it is a legal reference catalogue, and the REGISTRY defect is what wants fixing.
+ *    inherit; it is a legal reference catalogue, and the REGISTRY defect is what wants fixing;
+ *  - `billing_stripe_event` — ADDED 2026-09-12 by DD-163 (lane B-57), and it is the one entry here
+ *    that is a DECISION rather than a defect waiting for a lane. B-46 censused five tables carrying
+ *    a RESTRICTIVE `FOR ALL platform_admin_only` wall over live permissive lanes; four of them were
+ *    walls killing a real lane and came down. This one is the wall BEING the design: the table holds
+ *    the raw webhook bodies Stripe posted, its own permissive policy is literally named
+ *    `stripe_event_no_access`, and nobody but AI Matrx staff and the service role reads it. B-57
+ *    registered it precisely so that position is DECLARED with a reason on the registry row instead
+ *    of living in an unregistered table no guard could see. `audit_class` is machinery, so
+ *    `iam.apply_rls` refuses it by construction.
  */
 const RESIDUE_TOKENS: ReadonlySet<string> = new Set([
   "access_request", "agent_surface_binding", "industry_curator", "invitation", "membership",
   "system_personal_org_failure",
   "user_analysis_preference", "user_form_profile", "user_preference", "wbx_guidance",
   "wc_impairment_definition",
+  "billing_stripe_event",
 ]);
 
 function loadEnv(): { url: string; key: string } | null {

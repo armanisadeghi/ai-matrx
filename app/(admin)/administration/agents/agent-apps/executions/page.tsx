@@ -95,7 +95,6 @@ function SurfaceScopeWhenActive({
   );
 }
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 
 function humanExecution(r: AgentAppExecutionRow): string {
@@ -359,16 +358,15 @@ function ExecutionsTable({ active }: { active: boolean }) {
                     data: filtered,
                     attributes: { count: filtered.length },
                   })}
-                />
-                <ExportMenu
-                  label="agent-app-executions"
-                  items={[
-                    jsonExportItem(() => filtered, "JSON (this view)"),
-                    csvExportItem(
-                      () => filtered as unknown as Array<Record<string, unknown>>,
-                      "CSV (this view)",
-                    ),
-                  ]}
+                  export={{
+                    items: [
+                      jsonExportItem(() => filtered, "JSON (this view)"),
+                      csvExportItem(
+                        () => filtered as unknown as Array<Record<string, unknown>>,
+                        "CSV (this view)",
+                      ),
+                    ],
+                  }}
                 />
               </>
             )}
@@ -770,16 +768,15 @@ function ErrorsTable({ active }: { active: boolean }) {
                     data: filtered,
                     attributes: { count: filtered.length },
                   })}
-                />
-                <ExportMenu
-                  label="agent-app-errors"
-                  items={[
-                    jsonExportItem(() => filtered, "JSON (this view)"),
-                    csvExportItem(
-                      () => filtered as unknown as Array<Record<string, unknown>>,
-                      "CSV (this view)",
-                    ),
-                  ]}
+                  export={{
+                    items: [
+                      jsonExportItem(() => filtered, "JSON (this view)"),
+                      csvExportItem(
+                        () => filtered as unknown as Array<Record<string, unknown>>,
+                        "CSV (this view)",
+                      ),
+                    ],
+                  }}
                 />
               </>
             )}

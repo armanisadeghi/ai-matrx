@@ -72,8 +72,11 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import {
   extractFlatText,
+  selectMessageById,
   selectMessagePosition,
+  selectOrderedMessageIds,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { precedingQuestion } from "@/features/masterwork/oracle/service";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
@@ -82,7 +85,9 @@ import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
 import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 import { hasConvertibleContent } from "./convertibleContent";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectEffectiveOrganizationId, selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 import type { OpenQuickMessageTemplateSaveWindowOptions } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
 
@@ -361,6 +366,33 @@ function copyItems(ctx: MessageActionContext): MenuItem[] {
   ];
 }
 
+/**
+ * THE ORACLE TAP's question half: for an ASSISTANT message, the user turn it
+ * answered. A saved answer with no question is half a rule — "what do I do if
+ * a customer wants a refund past 30 days" is the shape the Expert recognises in
+ * their review queue, not the first line of the reply.
+ *
+ * Null for a user message (the message IS the question), for an opening turn,
+ * and whenever the thread is not in the store.
+ */
+function resolveAnsweredQuestion(ctx: MessageActionContext): string | null {
+  const { conversationId, messageId } = ctx;
+  if (!conversationId || !messageId) return null;
+  const state = ctx.getState();
+  const self = selectMessageById(conversationId, messageId)(state);
+  if (!self || self.role === "user") return null;
+  const thread = selectOrderedMessageIds(conversationId)(state).map((id) => {
+    const record = selectMessageById(conversationId, id)(state);
+    const content = record?.content;
+    return {
+      id,
+      role: String(record?.role ?? ""),
+      content: typeof content === "string" ? content : extractFlatText(record),
+    };
+  });
+  return precedingQuestion(thread, messageId);
+}
+
 function actionsItems(ctx: MessageActionContext): MenuItem[] {
   const {
     content,
@@ -468,6 +500,12 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
             data: {
               initialContent: turnText,
               initialConversationId: conversationId ?? null,
+              // Provenance: the exact turn the draft came from, so a rule
+              // waiting in review can point back at what was actually said.
+              initialMessageId: messageId ?? null,
+              // And the QUESTION it answered — the Oracle tap's whole premise
+              // is that the question maps which judgment is scarce.
+              initialQuestion: resolveAnsweredQuestion(ctx),
             },
           }),
         );
@@ -953,12 +991,13 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
           return;
         // Identical to Save as Note, minus the questions: folder is Scratch,
         // title auto-derived, saved immediately.
-        await NotesAPI.create({
-          label: deriveMessageTitle(ctx) ?? "New Note",
-          content,
-          folder_name: "Scratch",
-          tags: [],
-        });
+        try {
+          const organizationId = await ensureOrganizationContext({ organizationId: selectOrganizationId(ctx.getState()) });
+          await NotesAPI.create({ label: deriveMessageTitle(ctx) ?? "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) throw error;
+          throw error;
+        }
       },
       category: "Save as",
       successMessage: "Saved to Scratch!",
@@ -2013,73 +2052,196 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
 // ============================================================================
 
 /**
- * Menu items for an assistant-authored message. Shape:
- *   Edit → Edit content, Fork at this message, Delete
- *   Save as → Note (window panel)
- *   Copy → plain / Docs / Word / with thinking
- *   Export → HTML preview, Copy HTML page, Email, Print, (Full print)
- *   Actions → Summarize for listening / Summarize & listen (Listen panel),
- *             Save to Scratch/File, Add to Tasks, Convert to broker, Add to docs
- *   App → Feedback, Announcements, Preferences
+ * A submenu row: ONE visible row that drills into its family of variants.
+ * Nine "Save as" formats and five "Copy" formats used to be fourteen rows
+ * that pushed the Actions group — and "Add to Rulebook" with it — roughly
+ * twenty rows below the fold, where a reader concluded the door didn't exist
+ * (defect D6). Hidden when every child is hidden.
+ */
+function submenuItem(opts: {
+  key: string;
+  icon: MenuItem["icon"];
+  iconColor?: string;
+  label: string;
+  category: string;
+  children: MenuItem[];
+}): MenuItem {
+  const visible = opts.children.filter((child) => !child.hidden);
+  return {
+    key: opts.key,
+    icon: opts.icon,
+    iconColor: opts.iconColor,
+    label: opts.label,
+    action: () => {},
+    category: opts.category,
+    children: opts.children,
+    hidden: visible.length === 0,
+    showToast: false,
+  };
+}
+
+/** Keys of `actionsItems` that belong in the "Share & export" submenu. */
+const EXPORT_KEYS = [
+  "html-preview",
+  "share-webpage",
+  "send-google-doc",
+  "email-to-me",
+  "print",
+  "full-print",
+] as const;
+
+/** Keys of `actionsItems` that are really copy variants. */
+const COPY_KEYS_FROM_ACTIONS = ["copy-html"] as const;
+
+/** The two primary doors, first and always visible. */
+const PRIMARY_KEYS = ["add-to-rulebook", "add-to-tasks"] as const;
+
+/**
+ * Shared assembly for both message menus.
  *
- * Plain read-aloud playback lives on the inline AssistantActionBar
+ * Top level (what a reader sees without scrolling or guessing):
+ *   Add to Rulebook · Create Task · Save as… › · Copy… › · Share & export… ›
+ *   · the remaining one-off actions · Edit group · Creator · Server API… ›
+ *   · App… ›
+ *
+ * Everything with many near-identical variants is ONE row with a visible "›"
+ * and a count. Nothing lands more than ~16 rows down, which is what fits the
+ * 600px panel on a 768px-tall viewport.
+ */
+function buildMessageMenu(
+  ctx: MessageActionContext,
+  opts: {
+    editItems: MenuItem[];
+    extraActionItems?: MenuItem[];
+    saveAsExtras?: MenuItem[];
+    copyExtras?: MenuItem[];
+  },
+): MenuItem[] {
+  const actions = actionsItems(ctx);
+  const used = new Set<string>();
+  const pick = (keys: readonly string[]): MenuItem[] => {
+    const picked: MenuItem[] = [];
+    for (const key of keys) {
+      const item = actions.find((candidate) => candidate.key === key);
+      if (item) {
+        used.add(key);
+        picked.push(item);
+      }
+    }
+    return picked;
+  };
+
+  const primary = pick(PRIMARY_KEYS);
+  const exportItems = pick(EXPORT_KEYS);
+  const copyFromActions = pick(COPY_KEYS_FROM_ACTIONS);
+  const leftoverActions = actions.filter((item) => !used.has(item.key));
+
+  const saveAs = [
+    saveAsMessageTemplateItem(ctx),
+    ...saveAsItems(ctx),
+    ...(opts.saveAsExtras ?? []),
+  ];
+  const copy = [
+    ...copyItems(ctx),
+    ...(opts.copyExtras ?? []),
+    ...copyFromActions,
+  ];
+
+  return [
+    ...primary,
+    submenuItem({
+      key: "save-as-group",
+      icon: FileText,
+      iconColor: "text-blue-500 dark:text-blue-400",
+      label: "Save as",
+      category: "Actions",
+      children: saveAs,
+    }),
+    submenuItem({
+      key: "copy-group",
+      icon: Copy,
+      label: "Copy",
+      category: "Actions",
+      children: copy,
+    }),
+    submenuItem({
+      key: "export-group",
+      icon: Globe,
+      iconColor: "text-indigo-500 dark:text-indigo-400",
+      label: "Share & export",
+      category: "Actions",
+      children: exportItems,
+    }),
+    ...(opts.extraActionItems ?? []),
+    ...leftoverActions,
+    ...opts.editItems,
+    ...creatorItems(ctx),
+    submenuItem({
+      key: "server-api-group",
+      icon: Settings,
+      label: "Server API (test)",
+      category: "Server API (test)",
+      children: serverApiTestItems(ctx),
+    }),
+    submenuItem({
+      key: "app-group",
+      icon: Settings,
+      label: "App",
+      category: "App",
+      children: appItems(ctx),
+    }),
+  ];
+}
+
+/**
+ * Menu items for an assistant-authored message.
+ *
+ * Assembled by `buildMessageMenu` — see its doc comment for the visible
+ * shape. Plain read-aloud playback lives on the inline AssistantActionBar
  * (StreamingSpeakerButton); this menu carries the summarize-for-listening
  * family, which opens the floating Listen panel.
  */
 export function getAssistantMessageActions(
   ctx: MessageActionContext,
 ): MenuItem[] {
-  return [
-    editContentItem(ctx),
-    editHistoryItem(ctx),
-    forkAtMessageItem(ctx),
-    deleteMessageItem(ctx),
-    saveAsMessageTemplateItem(ctx),
-    ...saveAsItems(ctx),
-    ...creatorItems(ctx),
-    ...copyItems(ctx),
-    ...assistantOnlyItems(ctx),
-    convertMessageItem(ctx),
-    saveShapeInstanceItem(ctx),
-    ...listeningItems(ctx),
-    ...actionsItems(ctx),
-    ...serverApiTestItems(ctx),
-    ...appItems(ctx),
-  ];
+  return buildMessageMenu(ctx, {
+    editItems: [
+      editContentItem(ctx),
+      editHistoryItem(ctx),
+      forkAtMessageItem(ctx),
+      deleteMessageItem(ctx),
+    ],
+    extraActionItems: [
+      convertMessageItem(ctx),
+      saveShapeInstanceItem(ctx),
+      ...listeningItems(ctx),
+    ],
+    copyExtras: assistantOnlyItems(ctx),
+  });
 }
 
 /**
- * Menu items for a user-authored message. Shape:
- *   Edit → Edit & resubmit, Edit history, Fork & regenerate, Delete
- *   Save as → Note / Document / Markdown / Code / File / Scratch Code /
- *             Scratch Note / PDF Document
- *   Copy → plain / Docs / Word / HTML page
- *   Actions → Create Task, Publish HTML, Share as webpage, Email, Print,
- *             (Full print)
- *   App → Feedback, Announcements, Preferences
+ * Menu items for a user-authored message.
+ *
+ * "Edit & resubmit" opens the SAME three-outcome editor as the inline
+ * pencil / paper-plane buttons (shared `USER_EDIT_ACTIONS`). We deliberately
+ * DON'T also expose the old plain "Edit content" here — for a user message
+ * that path saved silently with no resubmit choice, which read as a bug.
+ * "Fork & regenerate" replaces the old "Fork at this message", which on a
+ * user message dead-ended on an unanswered question.
  *
  * Audio playback lives on the inline UserActionBar (SpeakerButton —
  * play/pause toggle, with markdown cleanup), not in this menu.
  */
 export function getUserMessageActions(ctx: MessageActionContext): MenuItem[] {
-  // "Edit & resubmit" opens the SAME three-outcome editor as the inline
-  // pencil / paper-plane buttons (shared `USER_EDIT_ACTIONS`). We deliberately
-  // DON'T also expose the old plain "Edit content" here — for a user message
-  // that path saved silently with no resubmit choice, which read as a bug.
-  // "Fork & regenerate" replaces the old "Fork at this message", which on a
-  // user message dead-ended on an unanswered question.
-  return [
-    editAndResubmitUserItem(ctx),
-    editHistoryItem(ctx),
-    forkUserMessageItem(ctx),
-    deleteMessageItem(ctx),
-    ...saveAsItems(ctx),
-    ...creatorItems(ctx),
-    ...copyItems(ctx),
-    ...actionsItems(ctx),
-    ...serverApiTestItems(ctx),
-    ...appItems(ctx),
-  ];
+  return buildMessageMenu(ctx, {
+    editItems: [
+      editAndResubmitUserItem(ctx),
+      editHistoryItem(ctx),
+      forkUserMessageItem(ctx),
+      deleteMessageItem(ctx),
+    ],
+  });
 }
 
 // ============================================================================
@@ -2096,6 +2258,7 @@ export function resumePendingAuthAction(
   content: string,
   dispatch: AppDispatch,
   openMessageTemplateSave: MessageActionContext["openMessageTemplateSave"],
+  getState: MessageActionContext["getState"],
 ) {
   if (!isAuthenticated) return;
   try {
@@ -2108,11 +2271,13 @@ export function resumePendingAuthAction(
     };
     if (savedContent !== content) return;
     if (action === "save-scratch") {
+      const organizationId = requireOrganizationContext(selectOrganizationId(getState()));
       NotesAPI.create({
         label: "New Note",
         content: savedContent,
         folder_name: "Scratch",
         tags: [],
+        organization_id: organizationId,
       })
         .then(() => toast.success("Saved to Scratch!"))
         .catch(() => toast.error("Failed to save to Scratch"));

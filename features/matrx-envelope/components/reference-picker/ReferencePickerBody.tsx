@@ -29,7 +29,7 @@ import {
   Search,
 } from "lucide-react";
 import type { DirectiveClass } from "@ai-matrx/content-ir";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -54,12 +54,12 @@ import type {
   NounDirectives,
 } from "@/features/directive-catalog/types";
 import {
-  COMMON_REFERENCE_TYPES,
   FRIENDLY_REFERENCE_TYPE_LABELS,
   INLINE_CREATE_REFERENCE_TYPES,
   type ReferenceDelivery,
   type ReferencePick,
 } from "./referencePickerTypes";
+import { useCommonReferenceTypes } from "./useCommonReferenceTypes";
 
 // THE one canonical file picker — lazy, WindowPanel never enters a boot bundle.
 const FilePickerWindow = dynamic(
@@ -109,11 +109,16 @@ function allTypeOptions(): TypeOption[] {
   return tokens.map(typeOption);
 }
 
-function commonTypeOptions(all: TypeOption[]): TypeOption[] {
+/**
+ * The curated tier, resolved against what is actually pickable. A token the
+ * registry cannot list is SKIPPED rather than drawn broken, so pruning an
+ * entity type can never leave a dead tile in the picker.
+ */
+function commonTypeOptions(all: TypeOption[], tokens: string[]): TypeOption[] {
   const byToken = new Map(all.map((o) => [o.token, o]));
-  return COMMON_REFERENCE_TYPES.map((t) => byToken.get(t)).filter(
-    (o): o is TypeOption => Boolean(o),
-  );
+  return tokens
+    .map((t) => byToken.get(t))
+    .filter((o): o is TypeOption => Boolean(o));
 }
 
 // ── Catalog (only loaded when the user asks for other actions) ──────────────
@@ -182,7 +187,15 @@ export function ReferencePickerBody({
   onCancel,
 }: ReferencePickerBodyProps) {
   const all = useMemo(allTypeOptions, []);
-  const common = useMemo(() => commonTypeOptions(all), [all]);
+  const {
+    tokens: commonTokens,
+    loading: commonLoading,
+    error: commonError,
+  } = useCommonReferenceTypes();
+  const common = useMemo(
+    () => commonTypeOptions(all, commonTokens),
+    [all, commonTokens],
+  );
 
   const [activeType, setActiveType] = useState<TypeOption | null>(null);
   const [delivery, setDelivery] = useState<ReferenceDelivery>(mode);
@@ -213,6 +226,8 @@ export function ReferencePickerBody({
       <TypeStep
         all={all}
         common={common}
+        commonLoading={commonLoading}
+        commonUnavailable={Boolean(commonError)}
         onChoose={(option) => {
           setDirectiveClass("reference");
           setActiveType(option);
@@ -262,16 +277,24 @@ export function ReferencePickerBody({
 function TypeStep({
   all,
   common,
+  commonLoading,
+  commonUnavailable,
   onChoose,
   onCancel,
 }: {
   all: TypeOption[];
   common: TypeOption[];
+  /** The curated tier is still being read from the knob. */
+  commonLoading: boolean;
+  /** The knob is missing/malformed: run uncurated, with everything expanded. */
+  commonUnavailable: boolean;
   onChoose: (option: TypeOption) => void;
   onCancel: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  // Uncurated (no knob) means there is no shortcut to collapse BEHIND, so the
+  // full grouped list opens by default instead of hiding behind "All types".
+  const [showAll, setShowAll] = useState(commonUnavailable);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -327,7 +350,11 @@ function TypeStep({
           )
         ) : (
           <>
-            <TypeGrid options={common} onChoose={onChoose} />
+            {commonLoading ? (
+              <CommonTierSkeleton />
+            ) : (
+              <TypeGrid options={common} onChoose={onChoose} />
+            )}
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
@@ -352,6 +379,25 @@ function TypeStep({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The curated tier is one cached knob read (60s TTL), so this is usually a
+ * single frame — but it is a real loading state, never a layout jump and never
+ * a flash of the uncurated list pretending to be the curated one.
+ */
+function CommonTierSkeleton() {
+  return (
+    <div
+      className="grid grid-cols-2 gap-1.5 sm:grid-cols-3"
+      aria-busy="true"
+      aria-label="Loading the types offered first"
+    >
+      {Array.from({ length: 6 }, (_, i) => (
+        <Skeleton key={i} className="h-[38px] w-full rounded-md" />
+      ))}
     </div>
   );
 }

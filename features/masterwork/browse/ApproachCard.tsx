@@ -50,7 +50,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DistillationApproach } from "./approaches";
+import { approachState, type DistillationApproach } from "./approaches";
 
 /** Static class maps so Tailwind sees every class it must emit. Exported
  *  because the intake flow's question tiles share the same accent family. */
@@ -140,9 +140,12 @@ export interface ApproachCardProps {
   inert?: boolean;
 }
 
-/** A named Approach with nowhere to go yet is still a card — it just says so. */
+/** A named Approach with nowhere to go yet is still a card — it just says so.
+ *  The badge reads the ONE predicate, never `availability` on its own, so the
+ *  pill and the section heading can never disagree. */
 function AvailabilityBadge({ approach }: { approach: DistillationApproach }) {
-  if (approach.availability === "coming_soon") {
+  const status = approachState(approach).status;
+  if (status === "coming_soon") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
         <Clock className="h-3 w-3" />
@@ -150,7 +153,7 @@ function AvailabilityBadge({ approach }: { approach: DistillationApproach }) {
       </span>
     );
   }
-  if (approach.availability === "partial") {
+  if (status === "partial") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
         <Clock className="h-3 w-3" />
@@ -172,9 +175,12 @@ export function ApproachCard({
   const look = APPROACH_LOOK[approach.key] ?? APPROACH_FALLBACK;
   const accent = ACCENT[look.accent];
   const Icon = look.icon;
-  // THE DOOR LAW, inverted: no door, no click. A coming-soon Approach never
-  // becomes a button that leads nowhere.
-  const reachable = approach.availability !== "coming_soon" && !inert;
+  // THE DOOR LAW, inverted: no door, no click. Reachability is the ONE
+  // predicate's answer AND a real handler — a card with neither an `href` nor
+  // an `onSelect` used to render as a <button> that did nothing when clicked.
+  const state = approachState(approach);
+  const reachable =
+    state.reachable && !inert && Boolean(href ?? onSelect);
 
   const body = (
     <>
@@ -232,7 +238,7 @@ export function ApproachCard({
       ? cn(accent.selected, "shadow-sm")
       : cn("border-border bg-card", reachable && cn("hover:shadow-lg", accent.hover)),
     !reachable && "border-dashed bg-muted/30",
-    inert && approach.availability !== "coming_soon" && "bg-card",
+    inert && state.status !== "coming_soon" && "bg-card",
   );
 
   if (!reachable) {

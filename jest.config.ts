@@ -69,6 +69,8 @@ const config: Config = {
             "<rootDir>/node_modules/@ai-matrx/agents/dist/$1/index.js",
         "^@ai-matrx/agents/catalog/react$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/react/index.js",
+        "^@ai-matrx/agents/content-transfer/react$":
+            "<rootDir>/node_modules/@ai-matrx/agents/dist/content-transfer/react/index.js",
         // @ai-matrx/associations subpaths are DIRECTORIES too
         // (dist/core/index.js, dist/react/index.js) — map before the generic
         // rule, same reason as agents/matrx above.

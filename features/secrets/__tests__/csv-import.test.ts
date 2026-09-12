@@ -104,6 +104,28 @@ describe("Vault CSV import", () => {
     ).toBe(true);
   });
 
+  test("flags matching title-only records only when both records have no active origin", () => {
+    const preview = parseCsvText("name,note\nExample,plain note", limits);
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    const mapping = suggestedCsvMapping(preview.headers);
+    expect(
+      isPossibleDuplicateRow(row, preview, mapping, [
+        { displayName: "Example", loginUrls: [] },
+      ]),
+    ).toBe(true);
+    expect(
+      isPossibleDuplicateRow(row, preview, mapping, [
+        { displayName: "Different", loginUrls: [] },
+      ]),
+    ).toBe(false);
+    expect(
+      isPossibleDuplicateRow(row, preview, mapping, [
+        { displayName: "Example", loginUrls: ["https://example.test"] },
+      ]),
+    ).toBe(false);
+  });
+
   test("stops on an ambiguous retry without dispatching the next frozen row", async () => {
     const calls: string[] = [];
     const command = {
@@ -295,7 +317,7 @@ describe("Vault CSV import", () => {
     });
     expect(
       toCsvImportCommand({ ...common, browserFillEnabled: true })?.body,
-    ).toMatchObject({ browser_fill_enabled: true });
+    ).toMatchObject({ browser_fill_enabled: true, uri_match_mode: "host" });
     const noPassword = parseCsvText(
       "name,username,password,url\nExample,user,,https://example.test",
       limits,
@@ -311,7 +333,7 @@ describe("Vault CSV import", () => {
         mapping: suggestedCsvMapping(noPassword.headers),
         browserFillEnabled: true,
       })?.body,
-    ).toMatchObject({ browser_fill_enabled: false });
+    ).toMatchObject({ browser_fill_enabled: false, uri_match_mode: "never" });
     const local = parseCsvText(
       "name,username,password,url\nLocal,user,secret,http://localhost:3000/login",
       limits,

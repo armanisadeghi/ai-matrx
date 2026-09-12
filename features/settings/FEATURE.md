@@ -68,7 +68,7 @@ The registry-backed editor (`universal/`) has an explicit Personal, Organization
 **Redux slice(s) exposed through `useSetting`**
 
 - `userPreferences` (`lib/redux/preferences/userPreferencesSlice.ts`) — 20 modules (incl. `favorites` — user-curated pins, capped at `FAVORITES_MAX`, mutated via dedicated `addFavorite`/`removeFavorite`/`toggleFavorite`/`reorderFavorites` reducers); persistence: **synced** (warm-cache: IDB + localStorage + Supabase).
-- `theme` (`styles/themes/themeSlice.ts`) — `{ mode: "light" | "dark" }`; persistence: **synced** (boot-critical: pre-paint localStorage).
+- `theme` (`styles/themes/themeSlice.ts`) — stored `{ mode: "light" | "dark" | "system" }`; persistence: **synced** (boot-critical: pre-paint localStorage). UI painting uses the separate resolved `light | dark` value, so an OS change never overwrites the saved System preference.
 - `adminPreferences` (`lib/redux/preferences/adminPreferencesSlice.ts`) — admin-only backend host override and desktop delegation target override (`desktopTargetInstanceId`); persistence: **local-only** (flagged for sync migration).
 - `layout` (`lib/redux/slices/layoutSlice.ts`) — layoutStyle + isInWindow; persistence: **local-only** (flagged for sync migration).
 - `windowManager` (`lib/redux/slices/windowManagerSlice.ts`) — action-only writes (`toggleHidden`, `restoreAll`); persistence: **session**.
@@ -265,6 +265,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- **2026-09-12 — Settings destinations are fixed by their host.** `/user-settings` mounts only the user rung and never selects an organization or scope; organization configuration receives its organization from the route and writes only that rung; system defaults stay in Limits & Knobs. `UniversalSettingsRows` is the shared typed renderer for all three destinations. Provider reads are keyed by authenticated identity, destination, route organization, inherited scopes, and refresh generation; organization reads never send user/device rungs, and stale rows are masked.
 
 - **2026-09-12 — Settings navigation is flat and searchable.** `SettingsFlatNavigation` converts registry and configuration trees into muted headings plus aligned links; desktop route navigation and the overlay share it, so neither has accordion state, tree arrows, or recursive indentation. The configuration group labels each routable Overview link with its domain name, preserving canonical URLs without linking folder ids. Search uses the generated static control index plus registry keys, shows an exact destination path, and opens the existing focused control anchor. A parent route marks only its section heading active. Mobile retains drill-in/back behavior.
 
