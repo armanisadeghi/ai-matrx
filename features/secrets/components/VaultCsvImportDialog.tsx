@@ -23,6 +23,7 @@ import {
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import {
   hasAmbiguousCsvMapping,
+  isPossibleDuplicateRow,
   parseCsvFile,
   runCsvImportCommands,
   suggestedCsvMapping,
@@ -106,8 +107,9 @@ export function VaultCsvImportDialog({
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [enableBrowserFill, setEnableBrowserFill] = useState(false);
-  const [createPossibleDuplicates, setCreatePossibleDuplicates] =
-    useState(false);
+  const [createDuplicateRows, setCreateDuplicateRows] = useState<Set<number>>(
+    new Set(),
+  );
   const [result, setResult] = useState<{
     imported: number;
     skipped: number;
@@ -189,14 +191,10 @@ export function VaultCsvImportDialog({
               browserFillEnabled: enableBrowserFill,
             });
             if (!command) return null;
-            const duplicate = existingItems.some(
-              (item) =>
-                item.displayName === command.body.display_name &&
-                item.loginUrls.some((url) =>
-                  command.body.login_urls?.includes(url),
-                ),
-            );
-            return duplicate && !createPossibleDuplicates ? null : command;
+            return isPossibleDuplicateRow(row, mapping, existingItems) &&
+              !createDuplicateRows.has(row.rowNumber)
+              ? null
+              : command;
           });
       if (!retry) frozenCommands.current = commands;
       const outcome = await runCsvImportCommands(
@@ -348,13 +346,44 @@ export function VaultCsvImportDialog({
                   </div>
                 ))}
               </div>
-              <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
+              <div className="space-y-2 rounded-md bg-muted p-3 text-xs text-muted-foreground">
                 Masked preview:
-                {preview.rows.slice(0, 5).map((row) => (
-                  <div key={row.rowNumber}>
-                    {maskedRowSummary(row, preview, mapping)}
-                  </div>
-                ))}
+                {preview.rows.slice(0, 5).map((row) => {
+                  const duplicate = isPossibleDuplicateRow(
+                    row,
+                    mapping,
+                    existingItems,
+                  );
+                  return (
+                    <div
+                      key={row.rowNumber}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <span>{maskedRowSummary(row, preview, mapping)}</span>
+                      {duplicate && (
+                        <label className="flex shrink-0 items-center gap-1">
+                          <Switch
+                            checked={createDuplicateRows.has(row.rowNumber)}
+                            onCheckedChange={(checked) =>
+                              setCreateDuplicateRows((current) => {
+                                const next = new Set(current);
+                                if (checked) next.add(row.rowNumber);
+                                else next.delete(row.rowNumber);
+                                return next;
+                              })
+                            }
+                            aria-label={`Create possible duplicate at row ${row.rowNumber}`}
+                          />
+                          <span>
+                            {createDuplicateRows.has(row.rowNumber)
+                              ? "Create separately"
+                              : "Skip"}
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <p className="text-xs text-muted-foreground">
                 Possible duplicates use matching title and URL metadata. They
@@ -372,18 +401,6 @@ export function VaultCsvImportDialog({
                   Enable browser fill only for eligible HTTPS or local
                   destinations. Matching destinations become visible credential
                   metadata.
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-xs text-muted-foreground">
-                <Switch
-                  checked={createPossibleDuplicates}
-                  onCheckedChange={setCreatePossibleDuplicates}
-                  aria-label="Create possible duplicates separately"
-                />
-                <span>
-                  Create possible duplicates separately. By default matching
-                  title and destination records are skipped; imports never
-                  overwrite.
                 </span>
               </label>
             </div>
