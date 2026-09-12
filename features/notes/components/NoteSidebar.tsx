@@ -134,6 +134,7 @@ import { formatRelativeTime } from "@/utils/datetime";
 const NOTE_AGE_CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 import { noteFolderIdentityKey, type NoteSortField, type NoteSortOrder, type NoteGroupBy } from "../types";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -838,7 +839,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           `Created ${folderName} and moved the note`,
         );
       } else {
-        const organizationId = requireOrganizationContext(activeOrgId);
+        const organizationId = await ensureOrganizationContext({ organizationId: activeOrgId });
         await createFolder(folderName, organizationId);
         handleNewNote(folderName, organizationId);
       }

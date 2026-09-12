@@ -21,7 +21,11 @@ import {
 import type { TaskRecord } from "@/features/agent-context/redux/tasksSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { OrganizationContextError, requireOrganizationContext } from "@/lib/api/organization-context";
+
+function isOrganizationRequiredError(error: unknown): boolean {
+  return error instanceof OrganizationContextError;
+}
 import {
   createSessionThunk,
   fetchCleanedSegmentsThunk,
@@ -1040,6 +1044,12 @@ export const addNoteToThread =
       );
       return note.id;
     } catch (err) {
+      if (isOrganizationRequiredError(err)) {
+        reportWarRoomError("addNoteToThread", err, {
+          toast: "This thread needs to be reopened or reloaded before a note can be created.",
+        });
+        return null;
+      }
       reportWarRoomError("addNoteToThread", err, {
         toast: "Couldn't create the note",
       });
