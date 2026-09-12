@@ -2,9 +2,9 @@
 name: skill-authoring
 type: Skill
 title: "skill-authoring — skills that fire, fit, and are proven"
-description: "Rules for SKILL.md files that trigger, fit, and are proven. Use when creating a skill, rewriting a description, splitting an oversized skill, or editing one because an agent ignored, misread, or never fired it."
+description: "Rules for SKILL.md files that trigger, fit, and are proven. Use when creating a SKILL.md, rewriting its description, splitting an oversized SKILL.md, or editing one because an agent ignored, misread, or never fired it."
 tags: [meta, skills, agents, docs-system]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-12T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -49,21 +49,27 @@ Rules:
   strings, the user's words.
 - **Never the procedure.** No "Covers / Encodes / Enforces / pipeline", no step lists — an agent handed
   the procedure in the description executes the summary and skips the body.
-- **No dates, rulings, approvals, or keyword dumps** — those live in the body.
+- **No dates, rulings, approvals, or keyword dumps** — those live in the body. Cutting a dump is a
+  MOVE, not a deletion: **every trigger you drop from the description gets a row in a relocation
+  table in the body — old trigger → its new home** — an index a repo grep still finds. That table is
+  what "don't lose a trigger" actually asks for, and it is what you show the owner.
 - **At most one `NOT for X (use Y)`**, only when a sibling skill is a real near-miss.
 - **Slash-only skill** (reached by `/name` and by nothing else) → `disable-model-invocation: true`.
   First `grep -r "<name>"` across all skills and agent definitions — no other skill or subagent can
   reach it afterwards.
 - **The lint enforces it:** `python3 common-docs/meta/scripts/skill_descriptions.py lint`
   (`--repo <dir>`, `--workspace`) fails a description over 500 chars unless allowlisted and over
-  1,024 always; `skill-description-allowlist.txt` only shrinks. Wired into `okf_lint.py`, aidream
+  1,024 always; `skill-description-allowlist.txt` only shrinks. **1,024 is a hard ceiling, never a
+  target** — the house target is ≤300, and every proven-good rewrite on record landed at 276–300.
+  Writing up to a cap is the failure this rule exists to stop. Wired into `okf_lint.py`, aidream
   `scripts/check_skill_descriptions.py`, and matrx-frontend `pnpm check:skill-descriptions`.
 - **A trigger that keeps missing** in a footgun area → run the `skill-creator` plugin's description
   optimization loop (should-fire + near-miss queries), never lengthen by hand.
 
 ## 2. Size — the body routes over branches
 
-- **SKILL.md body ≤500 lines.** Over budget is fixed by relocating, not by squeezing prose.
+- **SKILL.md body ≤500 lines** — the file itself, not the directory. Over budget is fixed by
+  relocating, not by squeezing prose.
 - **Branch test:** inline what every run needs; move what only some runs reach (one stage, one
   provider, one variant, a long API reference) into a sibling file named for the branch, with a
   pointer that says **when** to read it: `Stage V only → read stage-v.md.`
@@ -75,7 +81,7 @@ Rules:
 - **One level deep.** SKILL.md → file, never file → file. A reference file over 100 lines opens with a
   contents list.
 - **Point at `--help` or a script** instead of restating flags or deterministic steps.
-- **Splitting relocates; every rule survives.** Canonical skills' companion files ship with
+- **Splitting relocates; every rule survives.** Canonical SKILL.md companion files ship with
   `sync_skills.py` automatically (in common-docs they carry OKF frontmatter).
 - **Every step ends on a checkable completion criterion** — "every touched table returns
   `canonical_certify_ok`", never "understanding reached".
@@ -130,10 +136,10 @@ description rewrite. Exempt: typo, path, and pointer fixes.
 - [ ] Slash-only? `disable-model-invocation: true` after the cross-skill grep.
 - [ ] Body ≤500 lines; branch-only material disclosed one level deep with when-to-read pointers; any
   routing list names every companion file.
-- [ ] Split a skill? Every original line survives somewhere in the directory (re-grep or an oracle), an
+- [ ] Split a SKILL.md? Every original line survives somewhere in the directory (re-grep or an oracle), an
   agent that did not split it verifies routing, and a §5 scenario run proves no behavior was lost.
 - [ ] Guidance form matches the observed failure (§3).
 - [ ] Discipline skill: rationalization rows and red flags come from observed failures.
 - [ ] §5 run done (or exempt) and `evals.md` updated.
-- [ ] `context-docs` checklist passed (aidream, matrx-frontend, common-docs). Canonical skill? Edit `common-docs/skills/`, run
+- [ ] `context-docs` checklist passed (aidream, matrx-frontend, common-docs). Canonical SKILL.md? Edit the one under `common-docs/skills/` — never a synced copy — run
   `sync_skills.py`, commit every touched repo.

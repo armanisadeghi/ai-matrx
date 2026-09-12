@@ -9,7 +9,12 @@ timestamp: 2026-09-10T00:00:00Z
 # Independent verifier brief template
 
 Dispatch: `standard` (opus) by default; `quick` (sonnet) only with a mechanical oracle.
-Zero authorship: you did not build this and did not write its brief.
+A FRESH seat every time — never the builder, never a resumed worker, never a reviewer that already
+looked at this. Zero authorship: you did not build this and did not write its brief.
+
+🚨 **Return TWO verdicts, separately — A and B are never merged into one findings list.** Verdict A can
+pass while Verdict B fails, and the reverse; one merged list headed "findings by severity" lets either
+mask the other and is a failed review even if every check appears in it.
 
 ## What was requested
 Brief: [PATH]. Vision/spec: [PATHS §]. Acceptance targets: [list or register row].
@@ -41,6 +46,8 @@ calls a defect is still Important, labeled brief-mandated — the owner rules.
 Evidence you cannot read is a gap to report, not a failure to invent — re-read the path first.
 
 ## Output (no preamble; every line a verdict, a finding with file:line / URL, or a check you ran)
-### Verdict A  ### Verdict B  (each: Critical / Important / Minor)  ### ⚠ Cannot verify
+### Verdict A — vision/spec on the live surface  ### Verdict B — doctrine/quality from the diff
+(two separate headed sections, each carrying its own PASS/FAIL and its own Critical / Important /
+Minor findings — never one list)  ### ⚠ Cannot verify
 ### Build verified: [SHA/version]  ### Overall: FLIP | REOPEN — one sentence
 Never dispatch other reviewers. Read-only on the checkout.

@@ -2,7 +2,7 @@
 name: grilling
 type: Skill
 title: "grilling — interview by design tree, defaults ship"
-description: "The interview primitive for putting open decisions to Arman or any owner. Use on 'grill me' or 'stress-test this', and whenever a plan, scope, spec, vision, or question ledger needs owner rulings. NOT for steps only a human can perform (use a guided session)."
+description: "The interview primitive for putting open decisions to an owner. Use on 'grill me', 'stress-test this', or 'what do you need from me before you build this', and whenever a plan, scope, spec, vision, or question ledger needs owner rulings. NOT for steps only a human can perform (use a guided session)."
 tags: [interview, decisions, doctrine]
 timestamp: 2026-09-12T00:00:00Z
 ---
@@ -61,6 +61,9 @@ emojis. Then the question, in one sentence.
 Every round ends with:
 `Decided (override by number): D1 … · D2 …` / `Anything you skip ships with my recommendation.` /
 `What else should I know that I didn't ask?`
+A question he skipped in an earlier round joins the Decided list as its own numbered item, carrying
+the recommendation that shipped and the words **"default, not ruled"** — never written as though he
+ruled it.
 
 ## 4. After every answer
 
@@ -84,4 +87,9 @@ the same message in which you start the work.
 
 One question per message · approval after each design section · "see the doc" · menus of numbers ·
 asking whether it should stream/persist/resume · asking a fact · a fork with no recommendation · making
-him wait for a full audit before round 1.
+him wait for a full audit before round 1 · inventing a question that was not on the pruned tree.
+
+**Never invent a question to have one to ask.** A candidate that was not on the tree goes through the
+§1 prune first, like every other node — a decidable best practice spends a slot that belongs to
+vision. If the frontier comes up empty, say so and ship (§5); an empty frontier is the success
+condition, not a gap to fill.

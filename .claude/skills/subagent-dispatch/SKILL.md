@@ -2,9 +2,9 @@
 name: subagent-dispatch
 type: Skill
 title: "subagent-dispatch — delegate down, check hard, close the loop"
-description: "Mechanics of delegating work down to subagents: briefs, report statuses, independent review, bounded fix loops. Use whenever you dispatch a subagent to build, fix, or verify something you own. NOT for campaign-scale doctrine (use campaign-pattern)."
+description: "Delegating work down to subagents: briefs, report statuses, independent review. Use when writing an implementer or verifier brief, dispatching a subagent to build, fix, or verify work you own, or a subagent reports DONE, blocked, or concerns. NOT for campaign-scale doctrine (use campaign-pattern)."
 tags: [agents, delegation, verification, doctrine]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-12T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -71,6 +71,9 @@ A worker never dispatches a reviewer of its own work — it counts for nothing a
 
 Dispatch per [verifier-brief.md](verifier-brief.md) with the brief path, report path, review package,
 and the binding constraints copied verbatim from spec/DECISIONS.
+- **A verifier is always a FRESH seat with zero authorship** — never the builder, never a resumed
+  worker, never the reviewer that raised the finding. Resuming a seat saves a setup and costs you the
+  independence: it re-runs the corpus it already chose, and cannot see what that corpus missed.
 - **Review package in a shared checkout:** main moves under you, so never `BASE..HEAD`. Package the
   worker's OWN commits: `git show --stat -U10 <sha1> <sha2> … > pkg.diff`, SHAs from its report
   cross-checked against `git log -- <its paths>` (the git identity is shared, so `--author` proves
@@ -80,7 +83,10 @@ and the binding constraints copied verbatim from spec/DECISIONS.
 - **Verdict B — doctrine/quality, from the diff:** reuse-first (a second implementation?), no-legacy
   (shim, fallback, dead twin?), platform primitive vs feature-local, nothing-silent, opinions → knobs,
   fix-the-class guard shown RED→GREEN, tests that clear `forcing-function-tests`.
-- A passing while B fails, or the reverse, is common — separate verdicts stop one masking the other.
+- 🚨 **Two verdicts, always, in every review and every re-verify — never one merged checklist.** A
+  passing while B fails, or the reverse, is common; separate verdicts are the only thing that stops
+  one masking the other. A single list headed "findings by severity" is a merged verdict even when it
+  contains doctrine checks, because a doctrine failure can no longer fail on its own.
   Large lanes: run A and B as two parallel seats (B needs no browser).
 - **Never pre-judge for the reviewer.** A brief containing "don't flag", "at most Minor", or "the plan
   chose X" is you sparing yourself a loop. Let it be raised; adjudicate it.
@@ -96,6 +102,9 @@ as deferred and point the final review at the list (a roll-up nobody reads is a 
 - **Every round ends in a scoped re-verify** ([re-verify-brief.md](re-verify-brief.md)): each finding
   ADDRESSED / NOT ADDRESSED — "attempted" is not addressed — plus new breakage in the fix diff. Live
   proof re-runs the full acceptance targets the fix touches, not just the step the reviewer noticed.
+  🚨 A re-verify narrows the SCOPE, never the verdict count: it still returns **Verdict A and Verdict B
+  separately** (§3), with the ADDRESSED / NOT ADDRESSED list in front of them. A reopened finding that
+  comes back as one merged list has lost Verdict B.
 - **Breaker after round 3:** stop dispatching; adjudicate each open finding (§5). A structural failure
   that later work builds on is never parked silently.
 - Never fix findings yourself in the owner session — owner fixes skip review.

@@ -2,9 +2,9 @@
 name: plan-attack
 type: Skill
 title: "plan-attack — a zero-authorship agent hole-pokes a plan before anyone commits to it"
-description: "Pre-commitment attack on a plan by an agent that did not write it. Use when about to present a feature-deep-dive plan, assign vision-to-fleet briefs, move a register to build mode, ratify a scope list, or code a new contract or table. NOT for finished work (use subagent-dispatch)."
+description: "Pre-commitment attack on a plan by an agent that did not write it. Use when presenting a feature-deep-dive plan, assigning vision-to-fleet briefs, moving a register to build mode, ratifying a scope list, or coding a new contract or table. NOT for built work or DONE reports (use subagent-dispatch)."
 tags: [doctrine, planning, verification, adversarial]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-12T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -32,6 +32,9 @@ regret later."* A self-review is not an attack: the author is blind to what they
 
 - Fresh agent, zero authorship, lane named ([subagent-model-ladder](/policies/subagent-model-ladder.md)).
   Read-only; it may read code and the live DB.
+- **Pin the plan.** Give the reviewer the commit SHA (or snapshot path) it must judge, and say the
+  repo may have moved since: drift between the plan and newer live state is not a finding against
+  the plan.
 - Pass **pointers, never your summary**: plan path, EVERY vision doc from the vision sweep (the `take` skill: aidream, matrx-frontend, common-docs),
   not just the node's VISION.md, the settled-rulings path, repos. The reviewer judges the document,
   not your intent.
@@ -40,7 +43,9 @@ regret later."* A self-review is not an attack: the author is blind to what they
 
 ```
 LANE: standard (opus, medium). READ-ONLY. You did not write this plan. Find what we will regret.
-Plan: [path]  Vision: [paths]  Settled rulings: [path]  Repos: [list]
+Plan: [path] @ [commit SHA or snapshot] — judge THAT version. The repo has moved since; drift
+between the plan and newer live state is not a finding against the plan.
+Vision: [paths]  Settled rulings: [path]  Repos: [list]
 
 REGRET — what is missing
 - Map every vision requirement to the plan item that delivers it; list the unmapped ones.
@@ -51,7 +56,10 @@ REGRET — what is missing
   a fallback or stand-in that does not announce itself; the replaced thing not deleted; a decision
   with no companion machinery (notify / request path / undo).
 - Verification: is "done" proven by someone other than the builder, on the live surface, with
-  real data? Self-authored tests on manufactured data are a finding.
+  real data? Self-authored tests on manufactured data are a finding. Name every build flag, env
+  var, fixture or mock mode, seed script, seeded demo dataset and env toggle the plan can run
+  under, and say what proves a verification ran with none of them on — an unnoticed one turns
+  every "proven in the browser" claim into a claim about fake data.
 
 BUILDABILITY — could a strong agent with only this item + the repo ship the right thing
 - Placeholders: TBD/TODO, "handle edge cases", "add error handling", "similar to X", names or
