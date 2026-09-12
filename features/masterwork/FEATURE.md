@@ -56,6 +56,15 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 11. **`journey.ts` is a MIRROR of `aidream/services/masterwork_assists/journey.py`.** Precedence,
     thresholds and headline sentences must match byte for byte; change one, change both in the
     same commit, and keep the named test twins (`journey.test.ts` ↔ `tests/test_journey.py`).
+11a. 🚨 **ONE PREDICATE decides what an open question is: `coherence/types.ts::openTensions`**
+    — `state: "open"` AND every rule it names still live (mirror of the server's
+    `coherence.askable_tensions`). The headline count and the panel list both come from it
+    (`openTensionCount`); counting `state === "open"` anywhere else is refused by
+    `coherence/onePredicate.test.ts`. A `moot` tension was closed server-side because its rules
+    were removed — it is never open and never counted as something the Expert settled. The
+    defect this pins (2026-09-12, "Montessori Parenting Adviser"): the header said "4 questions
+    only you can settle are still open." above a panel showing none of them, an hour after a
+    repair removed the rules those four were about.
 12. **Every textarea in this module is `ProTextarea`** (mic + transcription) and every
     creation/working mode gets a real URL under `/masterwork/[id]/`. Creation/editing flows of
     substance are WindowPanels, never blocking modals; open them only through their
