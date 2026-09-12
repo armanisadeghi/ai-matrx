@@ -96,13 +96,22 @@ export function SeriesBars({ points, granularity, onPickDay }: SeriesBarsProps) 
           and lets it run right; `tickEvery` keeps labelled cells far enough
           apart (≥ 6 buckets at hour granularity) that labels never collide. */}
       <div className="relative mt-1 flex h-4 gap-[2px] overflow-hidden text-[10px] text-muted-foreground">
-        {points.map((p, i) => (
-          <div key={p.at} className="relative min-w-[3px] flex-1">
-            {i % tickEvery === 0 ? (
-              <span className="absolute left-0 top-0 whitespace-nowrap">{shortLocal(p.at)}</span>
-            ) : null}
-          </div>
-        ))}
+        {points.map((p, i) => {
+          if (i % tickEvery !== 0) return <div key={p.at} className="min-w-[3px] flex-1" />;
+          // A label in the last quarter of the row runs LEFT from its cell's
+          // right edge; running right there would leave the row's clip
+          // (a 24-bucket window rendered "Sep 12, 7 A" on the last tick).
+          const anchorRight = i * 4 >= points.length * 3;
+          return (
+            <div key={p.at} className="relative min-w-[3px] flex-1">
+              <span
+                className={`absolute top-0 whitespace-nowrap ${anchorRight ? "right-0" : "left-0"}`}
+              >
+                {shortLocal(p.at)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
