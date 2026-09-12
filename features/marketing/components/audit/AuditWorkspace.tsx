@@ -32,11 +32,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
-import {
-  csvExportItem,
-  jsonExportItem,
-} from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   groomerPresetVariants,
   type AgentCopyGroomerConfig,
@@ -584,7 +580,10 @@ function AuditBody({
       build: (level) =>
         level === "full"
           ? rollup.topIssues
-          : rollup.topIssues.slice(0, level === "compact" ? TOP_ISSUE_PREVIEW : 3),
+          : rollup.topIssues.slice(
+              0,
+              level === "compact" ? TOP_ISSUE_PREVIEW : 3,
+            ),
     },
     {
       id: "worst_pages",
@@ -673,17 +672,16 @@ function AuditBody({
               json={pageFullData}
               agent={pageAgentPayload}
               aiVariants={groomerPresetVariants(groomerConfig)}
+              groomer={groomerConfig}
+              export={{
+                items: [
+                  jsonExportItem(pageFullData, "Page data (.json)"),
+                  csvExportItem(issueCsvRows, "CSV (all issues)"),
+                  csvExportItem(worstPageCsvRows, "CSV (pages with findings)"),
+                  csvExportItem(gonePageCsvRows, "CSV (gone pages)"),
+                ],
+              }}
             />
-            <ExportMenu
-              label={`site-audit-${siteDomain}`}
-              items={[
-                jsonExportItem(pageFullData, "Page data (.json)"),
-                csvExportItem(issueCsvRows, "CSV (all issues)"),
-                csvExportItem(worstPageCsvRows, "CSV (pages with findings)"),
-                csvExportItem(gonePageCsvRows, "CSV (gone pages)"),
-              ]}
-            />
-            <AgentCopyGroomerLauncher config={groomerConfig} />
           </div>
         </section>
 
@@ -884,9 +882,7 @@ function AuditBody({
                     total={rollup.worstPages.length}
                     preview={WORST_PAGE_PREVIEW}
                     showingAll={showAllWorstPages}
-                    onToggle={() =>
-                      setShowAllWorstPages((current) => !current)
-                    }
+                    onToggle={() => setShowAllWorstPages((current) => !current)}
                   />
                   <ExportMenu
                     label={`audit-pages-${siteDomain}`}
@@ -974,9 +970,9 @@ function AuditBody({
                 {/* access-errors: ok — crawler-observed HTTP absence on the user's own site, a verified external fact */}
                 The crawler no longer finds these URLs. Their last-known metrics
                 are excluded from the findings above — editing them would change
-                a page the crawler can no longer reach. Restore the page or redirect the
-                URL. The ones with search traffic are costing you visits right
-                now.
+                a page the crawler can no longer reach. Restore the page or
+                redirect the URL. The ones with search traffic are costing you
+                visits right now.
               </span>
             </p>
             <div
@@ -991,7 +987,7 @@ function AuditBody({
                   page={page}
                   href={pagePath(page.pageId)}
                   location={pageLocation}
-                    kpis={pageKpis}
+                  kpis={pageKpis}
                 />
               ))}
             </div>

@@ -20,7 +20,6 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   groomerPresetVariants,
   type AgentCopyGroomerConfig,
@@ -557,8 +556,8 @@ export function LinksInspectionTable({
                 json={pageFullData}
                 agent={pageAgentPayload}
                 aiVariants={groomerPresetVariants(groomerConfig)}
+                groomer={groomerConfig}
               />
-              <AgentCopyGroomerLauncher config={groomerConfig} />
             </>
           ) : null}
           {showLocalSwitcher ? (

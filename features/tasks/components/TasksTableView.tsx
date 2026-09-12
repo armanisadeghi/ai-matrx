@@ -493,9 +493,11 @@ export default function TasksTableView() {
                   envelope names the active column filters so an agent is
                   never told a filtered set is the whole list. */}
               <CopyButtons
+                sourceId={`task-table:${JSON.stringify(columnFilters)}`}
                 size="xs"
                 unified
                 label="Task table"
+                primarySource="table"
                 human={() => taskListHuman(sorted)}
                 json={() => sorted.map(taskRow)}
                 agent={() =>
@@ -527,6 +529,7 @@ export default function TasksTableView() {
                   }),
                 ]}
                 export={{
+                  sheetRows: () => sorted.map(taskRow),
                   items: [
                     jsonExportItem(() => sorted.map(taskRow)),
                     csvExportItem(

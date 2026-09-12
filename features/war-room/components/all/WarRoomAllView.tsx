@@ -28,7 +28,6 @@ import {
   selectSessionsList,
 } from "@/features/war-room/redux/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildRoomListPayload,
@@ -215,20 +214,19 @@ export function WarRoomAllView() {
                           searchQuery,
                         })
                       }
-                    />
-                    <ExportMenu
-                      label="War Rooms"
-                      items={[
-                        jsonExportItem(() =>
-                          roomsWithStats.map((r) =>
-                            roomRow(r.session, r.stats),
+                      export={{
+                        items: [
+                          jsonExportItem(() =>
+                            roomsWithStats.map((r) =>
+                              roomRow(r.session, r.stats),
+                            ),
                           ),
-                        ),
-                        csvExportItem(
-                          () => roomCsvRows(roomsWithStats),
-                          "CSV (all War Rooms)",
-                        ),
-                      ]}
+                          csvExportItem(
+                            () => roomCsvRows(roomsWithStats),
+                            "CSV (all War Rooms)",
+                          ),
+                        ],
+                      }}
                     />
                   </div>
                 </div>

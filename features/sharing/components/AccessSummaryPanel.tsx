@@ -17,11 +17,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Globe, Lock, Loader2, Users, Boxes, AlertTriangle } from "lucide-react";
+import {
+  Globe,
+  Lock,
+  Loader2,
+  Users,
+  Boxes,
+  AlertTriangle,
+} from "lucide-react";
 import { useAccessSummary } from "@/features/sharing/hooks/useAccessSummary";
 import { type AccessSummary } from "@/features/sharing/service/accessSummary";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   accessKpis,
@@ -210,7 +216,11 @@ export function AccessSummaryPanel({
 
   if (!summary) return null;
 
-  const Icon = summary.isPublic ? Globe : isPrivateSummary(summary) ? Lock : Users;
+  const Icon = summary.isPublic
+    ? Globe
+    : isPrivateSummary(summary)
+      ? Lock
+      : Users;
 
   // ONE extractor feeds both the rendering below and every payload — the copy
   // can never drift from the reasons on screen.
@@ -245,7 +255,7 @@ export function AccessSummaryPanel({
               kind: "access-summary",
               location,
               description:
-                "Every reason this entity is reachable, exactly as rendered: its visibility setting, the one-line headline, and each reason row. This is the complete answer to \"who can see this, and why\" — direct grants are only one of the reasons listed.",
+                'Every reason this entity is reachable, exactly as rendered: its visibility setting, the one-line headline, and each reason row. This is the complete answer to "who can see this, and why" — direct grants are only one of the reasons listed.',
               data: { ...view(), kpis: context.kpis },
               summary: panelHuman(),
               attributes: {
@@ -257,16 +267,15 @@ export function AccessSummaryPanel({
                 can_manage: summary.canManage,
               },
             })}
-          />
-          <ExportMenu
-            label={`access-summary-${entityType}`}
-            items={[
-              jsonExportItem(view, "JSON (rendered summary)"),
-              csvExportItem(
-                () => reasonCsvRows(reasons),
-                "CSV (all access reasons)",
-              ),
-            ]}
+            export={{
+              items: [
+                jsonExportItem(view, "JSON (rendered summary)"),
+                csvExportItem(
+                  () => reasonCsvRows(reasons),
+                  "CSV (all access reasons)",
+                ),
+              ],
+            }}
           />
         </span>
       </div>

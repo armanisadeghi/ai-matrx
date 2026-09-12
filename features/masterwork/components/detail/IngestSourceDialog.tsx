@@ -71,15 +71,8 @@ const INGEST_TIMELINE_PATH =
 /** The server's own floor (`IngestTimelineRequest.text`, min_length=200). */
 const MIN_SOURCE_CHARS = 200;
 
-/**
- * The timeline distiller's mandate key. It is a real registered mandate (it is
- * the `mandate_key` of the live `platform.approach` row and it is in the
- * generator's source, aidream/apps/shared/matrx-agents/mandates/keys.generated.ts)
- * but it is NOT yet in the published `@ai-matrx/agents` map, so `MANDATE_KEYS`
- * cannot name it today. Literal until that package republishes — the mandate
- * key is the contract either way, and no agent id is pinned here.
- */
-const TIMELINE_MANDATE_KEY = "masterwork.timeline_distiller";
+/** The published declaration shared with the server. */
+const TIMELINE_MANDATE_KEY = MANDATE_KEYS.masterwork__timeline_distiller;
 
 /** Documents come back with page anchors; audio/video is transcribed first. */
 // THE ONE LIST (features/masterwork/sourceTypes.ts): the picker offers

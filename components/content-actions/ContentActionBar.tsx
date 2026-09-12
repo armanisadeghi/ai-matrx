@@ -26,21 +26,16 @@ import React, {
 } from "react";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
-  CopyTapButton,
-  CheckTapButton,
   PencilTapButton,
   MoreHorizontalTapButton,
   TrashTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
-import {
-  closeOverlay,
-  openOverlay,
-} from "@/lib/redux/slices/overlaySlice";
+import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -130,7 +125,6 @@ export function ContentActionBar({
   const user = useAppSelector(selectUser);
   const isAuthenticated = !!user?.email;
 
-  const [isCopied, setIsCopied] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
 
@@ -141,19 +135,6 @@ export function ContentActionBar({
     fallbackInstanceIdRef.current = `content-bar-${Math.random().toString(36).slice(2, 10)}`;
   }
   const resolvedInstanceKey = instanceKey ?? fallbackInstanceIdRef.current;
-
-  const handleCopy = useCallback(async () => {
-    await copyToClipboard(content, {
-      onSuccess: () => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      },
-      onError: (err) => {
-        // eslint-disable-next-line no-console
-        console.error("[ContentActionBar] Failed to copy:", err);
-      },
-    });
-  }, [content]);
 
   const handleOpenEditor = useCallback(() => {
     const editorInstanceId = `content-editor-${resolvedInstanceKey}`;
@@ -206,8 +187,8 @@ export function ContentActionBar({
   }, [isAuthenticated, content, dispatch]);
 
   const menuOptions: ContentActionsOptions = useMemo(
-    () => ({ hideAppItems }),
-    [hideAppItems],
+    () => ({ hideAppItems, hideTransferItems: !hideCopy }),
+    [hideAppItems, hideCopy],
   );
 
   const menuItems = useMemo(
@@ -234,6 +215,7 @@ export function ContentActionBar({
       resolvedInstanceKey,
       isAuthenticated,
       dispatch,
+      organizationId,
       menuOptions,
     ],
   );
@@ -249,22 +231,15 @@ export function ContentActionBar({
         )}
       >
         <TapTargetButtonGroup>
-          {!hideCopy &&
-            (isCopied ? (
-              <CheckTapButton
-                variant="group"
-                onClick={handleCopy}
-                ariaLabel="Copied"
-                className="text-blue-500 dark:text-blue-400"
-              />
-            ) : (
-              <CopyTapButton
-                variant="group"
-                onClick={handleCopy}
-                ariaLabel="Copy content"
-                className="text-muted-foreground"
-              />
-            ))}
+          {!hideCopy && (
+            <MarkdownCopyButton
+              key={resolvedInstanceKey}
+              markdownContent={content}
+              title={title ?? "Content"}
+              sourceId={resolvedInstanceKey}
+              hideHTMLPreview
+            />
+          )}
 
           {!hideSpeaker && (
             <StreamingSpeakerButton text={content} variant="group" />

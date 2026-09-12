@@ -51,7 +51,6 @@ import {
   type AgentAppAdminView,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 
 const ADMIN_AGENT_BASE = "/administration/agents/system-agents/agents";
@@ -222,7 +221,8 @@ export function AgentLineageTree() {
           </div>
         </div>
         <span className="text-xs text-muted-foreground shrink-0">
-          {visibleBuiltins.length} agent{visibleBuiltins.length !== 1 ? "s" : ""}
+          {visibleBuiltins.length} agent
+          {visibleBuiltins.length !== 1 ? "s" : ""}
         </span>
         {visibleBuiltins.length > 0 && (
           <>
@@ -248,22 +248,23 @@ export function AgentLineageTree() {
                 attributes: { count: visibleBuiltins.length },
                 context: { search: search || undefined },
               })}
-            />
-            <ExportMenu
-              label="agent-lineage"
-              items={[
-                jsonExportItem(() => buildLineageEntries(visibleBuiltins)),
-                csvExportItem(() => {
-                  return buildLineageEntries(visibleBuiltins).map((e) => ({
-                    id: e.id,
-                    name: e.name,
-                    description: e.description,
-                    derived_count: e.derived.length,
-                    shortcuts_count: e.shortcuts.length,
-                    apps_count: e.apps.length,
-                  }));
-                }, "CSV"),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(() => buildLineageEntries(visibleBuiltins)),
+                  csvExportItem(
+                    () =>
+                      buildLineageEntries(visibleBuiltins).map((e) => ({
+                        id: e.id,
+                        name: e.name,
+                        description: e.description,
+                        derived_count: e.derived.length,
+                        shortcuts_count: e.shortcuts.length,
+                        apps_count: e.apps.length,
+                      })),
+                    "CSV",
+                  ),
+                ],
+              }}
             />
           </>
         )}
@@ -376,7 +377,11 @@ function LineageCard({
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <CountBadge count={derived.length} label="Derived" icon={GitBranch} />
+            <CountBadge
+              count={derived.length}
+              label="Derived"
+              icon={GitBranch}
+            />
             <CountBadge
               count={shortcuts.length}
               label="Shortcuts"

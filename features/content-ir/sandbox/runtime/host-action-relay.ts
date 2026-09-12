@@ -4,14 +4,14 @@
  *
  * It exists as its own module for two reasons, both structural:
  *
- *  1. **No second door.** Chair ruling 7: the copy bar's two host-only items
- *     (Groom with an agent, Send to Google) are relayed through the SAME
+ *  1. **No second door.** Chair ruling 7: the copy bar's Send to Google action
+ *     is relayed through the SAME
  *     `matrx:sandbox:action` → `runAction` bridge the components use. They ask
  *     here; `frame-bridge.ts` installs the dispatcher; there is no other path
  *     out of the frame.
- *  2. **No import cycle.** `FrameGroomerHost` and `FrameSendToGoogle` are
- *     reached from the allowlist scope, which `frame-bridge` itself pulls in.
- *     A mutable dispatcher in a leaf module keeps that graph acyclic.
+ *  2. **No import cycle.** `FrameSendToGoogle` is reached from the allowlist
+ *     scope, which `frame-bridge` itself pulls in. A mutable dispatcher in a
+ *     leaf module keeps that graph acyclic.
  *
  * Before the bridge is installed (the bare-HTML acceptance harness, a frame
  * that never received its port) the relay answers with a named refusal. It

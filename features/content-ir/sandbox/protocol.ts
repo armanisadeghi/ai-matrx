@@ -158,7 +158,7 @@ export const EXPANDED_FRAME_HEIGHT_CEILING_PX = 20000;
  */
 
 /**
- * Reserved action keys the frame's two host-only copy-bar items relay on
+ * Reserved action keys the frame's host-only copy-bar item relays on
  * (chair ruling 7). They go through the SAME `matrx:sandbox:action` →
  * `runAction` bridge as every other action — there is no second door. If the
  * host has no handler registered for one, `runAction` answers
@@ -166,7 +166,6 @@ export const EXPANDED_FRAME_HEIGHT_CEILING_PX = 20000;
  * outcome, not a fallback.
  */
 export const HOST_RELAY_ACTION_KEYS = {
-    groomWithAgent: "agent_copy_groom",
     sendToGoogle: "send_to_google",
 } as const;
 

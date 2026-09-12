@@ -33,7 +33,6 @@ import {
   formatRelativeTime,
 } from "../utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildRosterListPayload,
@@ -185,16 +184,15 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                   sort,
                 })
               }
-            />
-            <ExportMenu
-              label={`${orgSlug} member roster`}
-              items={[
-                jsonExportItem(() => members.map(rosterMemberRow)),
-                csvExportItem(
-                  () => rosterCsvRows(members),
-                  "CSV (all members)",
-                ),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(() => members.map(rosterMemberRow)),
+                  csvExportItem(
+                    () => rosterCsvRows(members),
+                    "CSV (all members)",
+                  ),
+                ],
+              }}
             />
           </div>
         )}
@@ -270,19 +268,35 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                     </span>
                   )}
                 </TableCell>
-                <TableCell data-label="Last active" data-phone="inline" className="text-sm text-muted-foreground">
+                <TableCell
+                  data-label="Last active"
+                  data-phone="inline"
+                  className="text-sm text-muted-foreground"
+                >
                   {formatRelativeTime(m.lastOrgActivityAt)}
                 </TableCell>
-                <TableCell data-label="Files (org)" data-phone="inline" className="text-sm text-muted-foreground">
+                <TableCell
+                  data-label="Files (org)"
+                  data-phone="inline"
+                  className="text-sm text-muted-foreground"
+                >
                   <span className="text-foreground">{m.orgFilesCount}</span>{" "}
                   <span className="text-xs">
                     ({formatBytes(m.orgBytesUsed)})
                   </span>
                 </TableCell>
-                <TableCell data-label="Spend 24h" data-phone="inline" className="text-sm text-muted-foreground">
+                <TableCell
+                  data-label="Spend 24h"
+                  data-phone="inline"
+                  className="text-sm text-muted-foreground"
+                >
                   {formatMcents(m.cost24hMcents)}
                 </TableCell>
-                <TableCell data-label="Tier" data-phone="inline" className="text-sm">
+                <TableCell
+                  data-label="Tier"
+                  data-phone="inline"
+                  className="text-sm"
+                >
                   {m.memberLevel ? (
                     <Badge variant="info" className="capitalize">
                       {m.memberLevel}

@@ -2,9 +2,7 @@
 
 // features/war-room/components/room/RoomCopyControls.tsx
 //
-// The room page's whole-page copy: a quick CopyButtons pair whose plain click
-// is the what-I-see payload, plus the AgentCopyGroomerLauncher for grooming a
-// busy room down before copying.
+// The room page's whole-page copy keeps every representation in one menu.
 //
 // A room is threads × attached resources, which reaches the "massive" size
 // class fast — so a single button here would be a defect. The section list is
@@ -18,9 +16,7 @@
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   buildGroomerPresetPayload,
   groomerPresetVariants,
@@ -95,6 +91,7 @@ export function RoomCopyControls({ sessionId }: { sessionId: string }) {
             threads: input.threads.map(threadRow),
           };
         }}
+        sourceId={sessionId}
         agent={() =>
           buildGroomerPresetPayload(roomGroomerConfig(gather()), "everything")
         }
@@ -105,34 +102,29 @@ export function RoomCopyControls({ sessionId }: { sessionId: string }) {
           position: "first",
         }}
         aiVariants={groomerPresetVariants(() => roomGroomerConfig(gather()))}
-      />
-      <ExportMenu
-        label={`War Room ${session.title}`}
-        items={[
-          jsonExportItem(() => {
-            const input = gather();
-            return {
-              room: input.session,
-              threads: input.threads.map(threadRow),
-            };
-          }),
-          csvExportItem(() => {
-            const input = gather();
-            return input.threads.map((t) => {
-              const row = threadRow(t);
-              const { resources: _resources, resource_counts, ...rest } = row;
+        groomer={() => roomGroomerConfig(gather())}
+        export={{
+          items: [
+            jsonExportItem(() => {
+              const input = gather();
               return {
-                ...rest,
-                resource_counts: JSON.stringify(resource_counts ?? {}),
+                room: input.session,
+                threads: input.threads.map(threadRow),
               };
-            });
-          }, "CSV (thread tiles)"),
-        ]}
-      />
-      <AgentCopyGroomerLauncher
-        config={() => roomGroomerConfig(gather())}
-        buttonLabel="Groom"
-        className="h-7 shrink-0 px-2 text-xs"
+            }),
+            csvExportItem(() => {
+              const input = gather();
+              return input.threads.map((t) => {
+                const row = threadRow(t);
+                const { resources: _resources, resource_counts, ...rest } = row;
+                return {
+                  ...rest,
+                  resource_counts: JSON.stringify(resource_counts ?? {}),
+                };
+              });
+            }, "CSV (thread tiles)"),
+          ],
+        }}
       />
     </>
   );

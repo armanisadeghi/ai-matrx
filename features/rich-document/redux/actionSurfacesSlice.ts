@@ -73,14 +73,16 @@ const actionSurfacesSlice = createSlice({
         surfaceId: string;
         providerId: string;
         computedActionSpecs: RichDocumentActionSpec[];
+        contentSourceId: string;
       }>,
     ) {
-      const { surfaceId, providerId, computedActionSpecs } = action.payload;
+      const { surfaceId, providerId, computedActionSpecs, contentSourceId } =
+        action.payload;
       const stack = state.bySurfaceId[surfaceId];
       if (!stack) return;
       const idx = stack.findIndex((entry) => entry.providerId === providerId);
       if (idx < 0) return;
-      stack[idx] = { ...stack[idx], computedActionSpecs };
+      stack[idx] = { ...stack[idx], computedActionSpecs, contentSourceId };
     },
 
     /**

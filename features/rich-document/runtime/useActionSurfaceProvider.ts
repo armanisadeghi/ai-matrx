@@ -88,13 +88,16 @@ function actionsToSpecs(
  * changed" between renders and skip dispatch-thrash when nothing meaningful
  * moved. Not cryptographic — just identity for diffing.
  */
-function specsKey(specs: RichDocumentActionSpec[]): string {
-  return specs
+function specsKey(
+  specs: RichDocumentActionSpec[],
+  contentSourceId: string,
+): string {
+  return `${contentSourceId}::${specs
     .map(
       (s) =>
         `${s.id}|${s.label}|${s.disabled ? 1 : 0}|${s.disabledReason ?? ""}`,
     )
-    .join(";");
+    .join(";")}`;
 }
 
 /**
@@ -245,6 +248,7 @@ export function useActionSurfaceProvider(
     extra: actionsProp?.extra,
   });
   const specs = actionsToSpecs(resolvedActions, ctx);
+  const contentSourceId = ctx.instanceKey("alchemy");
 
   // Remote-surface registration — only when actionsVariant === "remote".
   // Initial mount registers the provider; spec changes are pushed via
@@ -258,11 +262,12 @@ export function useActionSurfaceProvider(
         registration: {
           providerId,
           computedActionSpecs: specs,
+          contentSourceId,
           sourceType: source.type,
         },
       }),
     );
-    lastSpecsKey.current = specsKey(specs);
+    lastSpecsKey.current = specsKey(specs, contentSourceId);
     return () => {
       dispatch(
         unregisterProvider({
@@ -281,7 +286,7 @@ export function useActionSurfaceProvider(
   // changed). Cheap; only touches the one stack entry.
   React.useEffect(() => {
     if (actionsVariant !== "remote" || !actionsSurfaceId) return;
-    const key = specsKey(specs);
+    const key = specsKey(specs, contentSourceId);
     if (key === lastSpecsKey.current) return;
     lastSpecsKey.current = key;
     dispatch(
@@ -289,9 +294,17 @@ export function useActionSurfaceProvider(
         surfaceId: actionsSurfaceId,
         providerId,
         computedActionSpecs: specs,
+        contentSourceId,
       }),
     );
-  }, [actionsVariant, actionsSurfaceId, providerId, dispatch, specs]);
+  }, [
+    actionsVariant,
+    actionsSurfaceId,
+    providerId,
+    dispatch,
+    specs,
+    contentSourceId,
+  ]);
 
   // Bridge registration — the module-scope side channel that lets a remote
   // RichDocumentActionSurface invoke handlers without functions traversing

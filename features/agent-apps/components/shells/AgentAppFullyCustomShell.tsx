@@ -33,6 +33,8 @@ import PublicMessageOptionsMenu from "@/features/public-chat/components/PublicMe
 import MarkdownStream from "@/components/MarkdownStream";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
+import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { useAgentAppTracker } from "@/features/agent-apps/tracking/useAgentAppTracker";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
 import type {
@@ -202,34 +204,42 @@ export function AgentAppFullyCustomShell({
 
   if (!sourceCode) {
     return (
-      <DefaultFallback
-        app={app}
-        ctx={ctx}
-        onLegacyExecute={handleLegacyExecute}
-        localError={localError}
-        setLocalError={setLocalError}
-      />
+      <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+        <DefaultFallback
+          app={app}
+          ctx={ctx}
+          onLegacyExecute={handleLegacyExecute}
+          localError={localError}
+          setLocalError={setLocalError}
+        />
+      </AgentAppTransferBoundary>
     );
   }
 
   if (compileError) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <div className="font-medium mb-1">App failed to compile</div>
-            <pre className="whitespace-pre-wrap font-mono text-xs opacity-80">
-              {compileError}
-            </pre>
+      <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+        <div className="p-6 max-w-2xl mx-auto">
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">App failed to compile</div>
+              <pre className="whitespace-pre-wrap font-mono text-xs opacity-80">
+                {compileError}
+              </pre>
+            </div>
           </div>
         </div>
-      </div>
+      </AgentAppTransferBoundary>
     );
   }
 
   if (!CustomApp) {
-    return null;
+    return (
+      <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+        {null}
+      </AgentAppTransferBoundary>
+    );
   }
 
   const error = localError ?? ctx.error;
@@ -256,85 +266,103 @@ export function AgentAppFullyCustomShell({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {guestLimit.showWarning && (
-        <div className="flex-shrink-0 p-4">
-          <GuestLimitWarning
-            remaining={guestLimit.remaining}
-            onDismiss={guestLimit.dismissWarning}
-          />
-        </div>
-      )}
+    <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
+      <div className="h-full flex flex-col">
+        {guestLimit.showWarning && (
+          <div className="flex-shrink-0 p-4">
+            <GuestLimitWarning
+              remaining={guestLimit.remaining}
+              onDismiss={guestLimit.dismissWarning}
+            />
+          </div>
+        )}
 
-      <SignupConversionModal
-        isOpen={guestLimit.showSignupModal}
-        onClose={guestLimit.dismissSignupModal}
-        totalUsed={guestLimit.totalUsed}
-      />
-
-      <div className="flex-1 overflow-auto">
-        <AgentAppErrorBoundary appName={app.name}>
-          <AgentAppStreamProvider
-            value={{
-              response: ctx.response,
-              requestId: ctx.requestId,
-              conversationId: ctx.conversationId,
-              isStreaming: ctx.isStreaming,
-            }}
-          >
-            <CustomApp {...hookProps} {...legacyProps} />
-          </AgentAppStreamProvider>
-        </AgentAppErrorBoundary>
-      </div>
-
-      {showActionBar && (
-        <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          >
-            {isCopied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-green-500" />
-                <span>Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
-              </>
-            )}
-          </button>
-          <button
-            ref={moreButtonRef}
-            onClick={() => setIsOptionsOpen(true)}
-            className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            aria-label="More options"
-          >
-            <MoreHorizontal className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      <PublicMessageOptionsMenu
-        isOpen={isOptionsOpen}
-        onClose={() => setIsOptionsOpen(false)}
-        content={ctx.response}
-        anchorElement={moreButtonRef.current}
-        onShowHtmlPreview={handleShowHtmlPreview}
-        onOpenCanvas={handleOpenCanvas}
-        onQuickHtmlShare={() => {}}
-      />
-
-      {htmlPreviewOpen && (
-        <HtmlPreviewModal
-          isOpen={htmlPreviewOpen}
-          onClose={() => setHtmlPreviewOpen(false)}
-          htmlContent={htmlPreviewContent}
-          title={htmlPreviewTitle}
+        <SignupConversionModal
+          isOpen={guestLimit.showSignupModal}
+          onClose={guestLimit.dismissSignupModal}
+          totalUsed={guestLimit.totalUsed}
         />
-      )}
-    </div>
+
+        <div className="flex-1 overflow-auto">
+          <AgentAppErrorBoundary appName={app.name}>
+            <AgentAppStreamProvider
+              value={{
+                response: ctx.response,
+                requestId: ctx.requestId,
+                conversationId: ctx.conversationId,
+                isStreaming: ctx.isStreaming,
+              }}
+            >
+              <CustomApp {...hookProps} {...legacyProps} />
+            </AgentAppStreamProvider>
+          </AgentAppErrorBoundary>
+        </div>
+
+        {showActionBar && (
+          <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              {isCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-green-500" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+            <button
+              ref={moreButtonRef}
+              onClick={() => setIsOptionsOpen(true)}
+              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label="More options"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        <PublicMessageOptionsMenu
+          isOpen={isOptionsOpen}
+          onClose={() => setIsOptionsOpen(false)}
+          content={ctx.response}
+          anchorElement={moreButtonRef.current}
+          onShowHtmlPreview={handleShowHtmlPreview}
+          onOpenCanvas={handleOpenCanvas}
+          onQuickHtmlShare={() => {}}
+        />
+
+        {htmlPreviewOpen && (
+          <HtmlPreviewModal
+            isOpen={htmlPreviewOpen}
+            onClose={() => setHtmlPreviewOpen(false)}
+            htmlContent={htmlPreviewContent}
+            title={htmlPreviewTitle}
+          />
+        )}
+      </div>
+    </AgentAppTransferBoundary>
+  );
+}
+
+function AgentAppTransferBoundary({
+  handle,
+  children,
+}: {
+  handle: UseAgentAppReturn["surfaceHandle"];
+  children: React.ReactNode;
+}) {
+  return handle ? (
+    <ContentTransferSurfaceProvider handle={handle}>
+      {children}
+    </ContentTransferSurfaceProvider>
+  ) : (
+    children
   );
 }
 

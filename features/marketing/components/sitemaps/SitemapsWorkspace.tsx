@@ -19,9 +19,7 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import type {
   AgentCopyGroomerConfig,
   AgentCopyGroomerSection,
@@ -301,25 +299,28 @@ export function SitemapsWorkspace() {
             </p>
           </div>
           <div className="flex items-center gap-1.5">
-            <CopyButtons size="icon" {...listCopy} json={() => pageFullData()} />
-            <ExportMenu
-              label={`sitemaps-${site.root_url}`}
-              items={[
-                jsonExportItem(pageFullData, "JSON (page data)"),
-                {
-                  id: "csv",
-                  label: "CSV (sitemaps)",
-                  build: () => ({
-                    content: rowsToCsv(
-                      rows as unknown as Array<Record<string, unknown>>,
-                    ),
-                    extension: "csv",
-                    mime: "text/csv",
-                  }),
-                },
-              ]}
+            <CopyButtons
+              size="icon"
+              {...listCopy}
+              json={() => pageFullData()}
+              groomer={groomerConfig}
+              export={{
+                items: [
+                  jsonExportItem(pageFullData, "JSON (page data)"),
+                  {
+                    id: "csv",
+                    label: "CSV (sitemaps)",
+                    build: () => ({
+                      content: rowsToCsv(
+                        rows as unknown as Array<Record<string, unknown>>,
+                      ),
+                      extension: "csv",
+                      mime: "text/csv",
+                    }),
+                  },
+                ],
+              }}
             />
-            <AgentCopyGroomerLauncher config={groomerConfig} />
             <Button
               variant={showDismissed ? "secondary" : "outline"}
               size="sm"

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronsLeft, Loader2, Mic, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import {
@@ -147,13 +146,12 @@ export function StudioSidebar({
                     attributes: { rows: sessions.length },
                   }),
                 ]}
-              />
-              <ExportMenu
-                label="Studio sessions"
-                items={[
-                  jsonExportItem(() => sessions.map(sessionData)),
-                  csvExportItem(() => sessionsCsvRows(sessions)),
-                ]}
+                export={{
+                  items: [
+                    jsonExportItem(() => sessions.map(sessionData)),
+                    csvExportItem(() => sessionsCsvRows(sessions)),
+                  ],
+                }}
               />
             </>
           )}

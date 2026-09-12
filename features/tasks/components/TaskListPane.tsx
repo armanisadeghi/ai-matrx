@@ -417,9 +417,11 @@ export default function TaskListPane() {
         {allVisibleTasks.length > 0 && (
           <div className="flex shrink-0 items-center gap-0.5">
             <CopyButtons
+              sourceId={`task-list:${activeProject ?? "all"}:${JSON.stringify(listView)}`}
               size="xs"
               unified
               label="Task list"
+              primarySource="table"
               human={() => taskListHuman(allVisibleTasks, listView)}
               json={() => allVisibleTasks.map(taskRow)}
               agent={() =>
@@ -434,6 +436,7 @@ export default function TaskListPane() {
                 })
               }
               export={{
+                sheetRows: () => allVisibleTasks.map(taskRow),
                 items: [
                   jsonExportItem(() => allVisibleTasks.map(taskRow)),
                   csvExportItem(
@@ -588,10 +591,11 @@ function TaskRow({
       {/* Hover-reveal pair. The row selects on click — CopyButtons stops
           propagation so copying never changes the open task. */}
       <CopyButtons
+        sourceId={`task:${task.id}`}
         size="xs"
         unified
         label={task.title}
-        className="absolute right-1.5 top-1.5 z-10 rounded bg-background/90 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+        className="absolute right-1.5 top-1.5 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
         human={() => taskSummary(task)}
         json={() => taskRow(task)}
         agent={() => buildTaskRowPayload({ task, kpis, view })}

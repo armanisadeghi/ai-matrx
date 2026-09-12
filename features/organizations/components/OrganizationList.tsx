@@ -2,12 +2,7 @@
 
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  Building2,
-  Plus,
-  Search,
-  Loader2,
-} from "lucide-react";
+import { Building2, Plus, Search, Loader2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,7 +11,6 @@ import { OrganizationCard } from "./OrganizationCard";
 import { CreateOrgModal } from "./CreateOrgModal";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildOrganizationListPayload,
@@ -145,16 +139,15 @@ export function OrganizationList() {
                 searchQuery: searchTerm,
               })
             }
-          />
-          <ExportMenu
-            label="Organizations"
-            items={[
-              jsonExportItem(() => organizations.map(organizationRow)),
-              csvExportItem(
-                () => organizationCsvRows(organizations),
-                "CSV (all organizations)",
-              ),
-            ]}
+            export={{
+              items: [
+                jsonExportItem(() => organizations.map(organizationRow)),
+                csvExportItem(
+                  () => organizationCsvRows(organizations),
+                  "CSV (all organizations)",
+                ),
+              ],
+            }}
           />
           <Button
             onClick={() => setIsCreateModalOpen(true)}

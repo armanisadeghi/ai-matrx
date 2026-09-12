@@ -8,7 +8,16 @@
 // surface (its indicator button / context card) re-resolves automatically.
 
 import { useCallback, useMemo, useState } from "react";
-import { BookA, Building2, Layers, ListPlus, Plus, Tag, User, X } from "lucide-react";
+import {
+  BookA,
+  Building2,
+  Layers,
+  ListPlus,
+  Plus,
+  Tag,
+  User,
+  X,
+} from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
@@ -19,14 +28,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   dictLocation,
   dictOwnerData,
   dictOwnerSummary,
 } from "@/features/dictionary/format";
-import type { DictEntryDraft, DictOwner, DictSelection } from "@/features/dictionary/types";
+import type {
+  DictEntryDraft,
+  DictOwner,
+  DictSelection,
+} from "@/features/dictionary/types";
 
 const OVERLAY_ID = "dictionarySelectorWindow";
 const WINDOW_ID = "dictionary-selector";
@@ -38,8 +50,15 @@ interface Props {
 }
 
 export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
-  const { owners, selection, setSelection, activeCount, customEntries, addCustomEntry, removeCustomEntry } =
-    useDictionaryContext(surfaceKey);
+  const {
+    owners,
+    selection,
+    setSelection,
+    activeCount,
+    customEntries,
+    addCustomEntry,
+    removeCustomEntry,
+  } = useDictionaryContext(surfaceKey);
 
   const toggleId = useCallback(
     (key: "organizationIds" | "scopeTypeIds" | "scopeIds", id: string) => {
@@ -54,7 +73,8 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
   );
 
   const setFlag = useCallback(
-    (patch: Partial<DictSelection>) => setSelection((prev) => ({ ...prev, ...patch })),
+    (patch: Partial<DictSelection>) =>
+      setSelection((prev) => ({ ...prev, ...patch })),
     [setSelection],
   );
 
@@ -129,8 +149,12 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
       titleNode={
         <div className="flex items-center gap-2 min-w-0">
           <BookA className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="truncate text-sm font-semibold text-foreground">Dictionary context</span>
-          <Badge variant="secondary" className="ml-1 shrink-0">{activeCount} active</Badge>
+          <span className="truncate text-sm font-semibold text-foreground">
+            Dictionary context
+          </span>
+          <Badge variant="secondary" className="ml-1 shrink-0">
+            {activeCount} active
+          </Badge>
         </div>
       }
       minWidth={360}
@@ -141,8 +165,8 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
         <div className="space-y-4 p-3">
           <div className="flex items-start gap-2">
             <p className="flex-1 text-xs text-muted-foreground">
-              Choose which dictionaries apply here. The active set is merged and de-duplicated; the
-              most specific level wins on conflicts.
+              Choose which dictionaries apply here. The active set is merged and
+              de-duplicated; the most specific level wins on conflicts.
             </p>
             <CopyButtons
               size="xs"
@@ -170,23 +194,21 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
                 },
                 context: { surface_key: surfaceKey },
               })}
-            />
-            <ExportMenu
-              label="Dictionary sources"
-              className="shrink-0"
-              items={[
-                jsonExportItem(() => catalogueRows()),
-                csvExportItem(() =>
-                  catalogueRows().map((r) => ({
-                    level: r.level,
-                    name: r.name,
-                    owner_id: r.owner_id,
-                    entry_count: r.entry_count,
-                    selected: r.selected,
-                    max_inline_chars: r.max_inline_chars ?? "",
-                  })),
-                ),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(() => catalogueRows()),
+                  csvExportItem(() =>
+                    catalogueRows().map((r) => ({
+                      level: r.level,
+                      name: r.name,
+                      owner_id: r.owner_id,
+                      entry_count: r.entry_count,
+                      selected: r.selected,
+                      max_inline_chars: r.max_inline_chars ?? "",
+                    })),
+                  ),
+                ],
+              }}
             />
           </div>
 
@@ -254,7 +276,8 @@ export function DictionarySelectorWindow({ onClose, surfaceKey }: Props) {
           />
 
           <p className="text-[11px] text-muted-foreground pt-1">
-            {totalEntries} total entr{totalEntries === 1 ? "y" : "ies"} available across your dictionaries.
+            {totalEntries} total entr{totalEntries === 1 ? "y" : "ies"}{" "}
+            available across your dictionaries.
           </p>
         </div>
       </ScrollArea>
@@ -294,7 +317,8 @@ function CustomEntriesSection({
         <ListPlus className="h-3.5 w-3.5" /> Add for this task
       </div>
       <p className="text-[11px] text-muted-foreground">
-        One-off pronunciations for this surface only — not saved to your dictionary.
+        One-off pronunciations for this surface only — not saved to your
+        dictionary.
       </p>
 
       {entries.length > 0 && (
@@ -306,7 +330,9 @@ function CustomEntriesSection({
             >
               <span className="truncate font-medium">{e.term}</span>
               <span className="text-muted-foreground">→</span>
-              <span className="flex-1 min-w-0 truncate text-muted-foreground">{e.pronunciation}</span>
+              <span className="flex-1 min-w-0 truncate text-muted-foreground">
+                {e.pronunciation}
+              </span>
               <button
                 type="button"
                 onClick={() => onRemove(e.term)}
@@ -375,7 +401,11 @@ function Row({
       <span className="text-muted-foreground">{icon}</span>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate">{label}</div>
-        {sublabel && <div className="text-[11px] text-muted-foreground truncate">{sublabel}</div>}
+        {sublabel && (
+          <div className="text-[11px] text-muted-foreground truncate">
+            {sublabel}
+          </div>
+        )}
       </div>
       {typeof count === "number" && (
         <span className="text-[11px] text-muted-foreground">{count}</span>
@@ -409,7 +439,12 @@ function Group({
       <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {icon} {title}
       </div>
-      <div className={cn("space-y-1", disabled && "opacity-50 pointer-events-none")}>
+      <div
+        className={cn(
+          "space-y-1",
+          disabled && "opacity-50 pointer-events-none",
+        )}
+      >
         {owners.map((o) => (
           <label
             key={o.owner_id}
@@ -421,7 +456,9 @@ function Group({
               aria-label={`Include ${o.name}`}
             />
             <span className="flex-1 min-w-0 truncate text-sm">{o.name}</span>
-            <span className="text-[11px] text-muted-foreground">{o.entry_count}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {o.entry_count}
+            </span>
             {/*
               A <label> activates its control on ANY descendant click, and
               stopPropagation alone does not cancel that default — copying a

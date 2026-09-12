@@ -19,7 +19,6 @@ import {
 import { useCrawl } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import type {
   AgentCopyGroomerConfig,
   AgentCopyGroomerSection,
@@ -219,8 +218,8 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
             summary: sessionCopy.human(),
             attributes: { session_id: row.id, site_id: site.id },
           })}
+          groomer={groomerConfig}
         />
-        <AgentCopyGroomerLauncher config={groomerConfig} />
       </div>
       <CrawlSubnav crawl={row} />
       <section className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6">
