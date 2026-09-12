@@ -13,6 +13,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { PlanUsagePanel } from "@/features/entitlements/components/PlanUsagePanel";
+import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 
 export function PlanUsageTab() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
@@ -24,6 +25,9 @@ export function PlanUsageTab() {
         marked as not enforced are shown so you can plan ahead — they don&apos;t
         stop you yet.
       </p>
+      {/* The person's own AI budget — entitlement, the organization's
+          ceiling, and the lower one they choose for themselves. */}
+      <SpendBudgetCard organizationId={organizationId} mode="user" canEdit />
       <PlanUsagePanel organizationId={organizationId} />
     </div>
   );

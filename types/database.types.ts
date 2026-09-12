@@ -5108,6 +5108,74 @@ export type Database = {
         }
         Relationships: []
       }
+      spend_guardrail: {
+        Row: {
+          capability: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          limit_value: number
+          metadata: Json
+          note: string | null
+          organization_id: string
+          period: Database["billing"]["Enums"]["meter_period"] | null
+          scope: string
+          scope_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          capability: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          limit_value: number
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          scope?: string
+          scope_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          capability?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          limit_value?: number
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          scope?: string
+          scope_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spend_guardrail_capability_fkey"
+            columns: ["capability"]
+            isOneToOne: false
+            referencedRelation: "capability"
+            referencedColumns: ["capability"]
+          },
+        ]
+      }
       stripe_event: {
         Row: {
           id: string
@@ -5382,9 +5450,22 @@ export type Database = {
             Args: { p_capability: string; p_org: string; p_user: string }
             Returns: Json
           }
+      resolve_capability_effective: {
+        Args: { p_capability: string; p_org: string; p_user: string }
+        Returns: Json
+      }
       resolve_effective_tier: {
         Args: { p_org: string; p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
+      }
+      resolve_guardrail: {
+        Args: { p_capability: string; p_org: string; p_user: string }
+        Returns: {
+          org_id: string
+          org_limit: number
+          user_guardrail_id: string
+          user_limit: number
+        }[]
       }
       resolve_limit: {
         Args: {
@@ -64367,6 +64448,19 @@ export type Database = {
         Args: { p_kind: string; p_op: Json; p_org_id: string }
         Returns: string
       }
+      _spend_ledger_registry: {
+        Args: never
+        Returns: {
+          cost_column: string
+          label: string
+          ledger_key: string
+          note: string
+          role: string
+          schema_name: string
+          table_name: string
+          ts_column: string
+        }[]
+      }
       _version_diff_json: { Args: { a: Json; b: Json }; Returns: Json }
       accept_context_item_suggestion: {
         Args: { p_suggestion_id: string }
@@ -64957,6 +65051,8 @@ export type Database = {
           url_path_template: string
         }[]
       }
+      admin_spend_headline: { Args: { p_tz?: string }; Returns: Json }
+      admin_spend_overview: { Args: { p_tz?: string }; Returns: Json }
       admin_taxonomy_delete: { Args: { p_id: string }; Returns: undefined }
       admin_taxonomy_list: {
         Args: never
@@ -90069,6 +90165,8 @@ export type Database = {
           name: string
           sort_order: number
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           updated_at: string
         }
         Insert: {
@@ -90084,6 +90182,8 @@ export type Database = {
           name: string
           sort_order?: number
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Update: {
@@ -90099,6 +90199,8 @@ export type Database = {
           name?: string
           sort_order?: number
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -90120,6 +90222,8 @@ export type Database = {
           mode: string
           name: string
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           updated_at: string
         }
         Insert: {
@@ -90130,6 +90234,8 @@ export type Database = {
           mode?: string
           name: string
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Update: {
@@ -90140,6 +90246,8 @@ export type Database = {
           mode?: string
           name?: string
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -90225,6 +90333,8 @@ export type Database = {
           name: string
           sort_order: number
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           typical_char_count: number
           updated_at: string
           value_type: string
@@ -90239,6 +90349,8 @@ export type Database = {
           name: string
           sort_order?: number
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           typical_char_count?: number
           updated_at?: string
           value_type?: string
@@ -90253,6 +90365,8 @@ export type Database = {
           name?: string
           sort_order?: number
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           typical_char_count?: number
           updated_at?: string
           value_type?: string
@@ -90273,11 +90387,14 @@ export type Database = {
           created_at: string
           description: string
           group_key: string
+          kind_key: string | null
           label: string
           mode: string
           name: string
           sort_order: number
           surface_name: string
+          synced_by: string | null
+          synced_from: string | null
           updated_at: string
           updates_value: string | null
           value_type: string
@@ -90287,11 +90404,14 @@ export type Database = {
           created_at?: string
           description?: string
           group_key?: string
+          kind_key?: string | null
           label?: string
           mode?: string
           name: string
           sort_order?: number
           surface_name: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
           updates_value?: string | null
           value_type?: string
@@ -90301,11 +90421,14 @@ export type Database = {
           created_at?: string
           description?: string
           group_key?: string
+          kind_key?: string | null
           label?: string
           mode?: string
           name?: string
           sort_order?: number
           surface_name?: string
+          synced_by?: string | null
+          synced_from?: string | null
           updated_at?: string
           updates_value?: string | null
           value_type?: string
