@@ -112,6 +112,20 @@ export function SettingsRow({
           {label}
         </label>
         {badge && <BadgePill badge={badge} />}
+        {designVariant === "compact" && (description || helpText) && (
+          <details className="relative">
+            <summary
+              aria-label={`About ${label}`}
+              className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-6 sm:w-6"
+            >
+              <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+            </summary>
+            <div className="absolute left-0 top-full z-20 mt-1 w-72 rounded-md border border-border bg-popover p-3 text-xs leading-snug text-popover-foreground shadow-md">
+              {description && <div>{description}</div>}
+              {helpText && <div className={cn(description && "mt-2")}>{helpText}</div>}
+            </div>
+          </details>
+        )}
         {helpText && designVariant !== "compact" && (
           <TooltipProvider delayDuration={150}>
             <Tooltip>
@@ -136,17 +150,6 @@ export function SettingsRow({
           {description}
         </div>
       ) : null}
-      {designVariant === "compact" && (description || helpText) && (
-        <details className="mt-1 text-xs text-muted-foreground">
-          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded px-1 text-xs underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-8">
-            About {label}
-          </summary>
-          <div className="mt-1 whitespace-normal leading-snug">
-            {description && <div>{description}</div>}
-            {helpText && <div className={cn(description && "mt-1")}>{helpText}</div>}
-          </div>
-        </details>
-      )}
       {warning && (
         <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />

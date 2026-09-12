@@ -22,9 +22,9 @@ need; do not add a barrel or a page-local substitute.
 
 - Controls compose **`SettingsRow`**. Keep their flat public APIs; add a
   variant here instead of styling a caller.
-- Compact descriptions remain one desktop line. The explicit `About <label>`
-  disclosure exposes the full description and `helpText`; warnings and errors
-  always wrap.
+- Compact descriptions remain one desktop line. The accessible `About <label>`
+  info icon exposes the full description and `helpText` on click; warnings and
+  errors always wrap.
 - Generated control ids use React `useId`; pass `id` only when a durable
   external target is required.
 - Large controls stack below their label on narrow screens. Action targets are
@@ -34,3 +34,4 @@ need; do not add a barrel or a page-local substitute.
 
 - 2026-09-12: Added compact presentation context, page/group/navigation
   compositions, responsive row behavior, stable ids, and accessibility rules.
+- 2026-09-12: Kept compact disclosure out of the row flow until requested.
