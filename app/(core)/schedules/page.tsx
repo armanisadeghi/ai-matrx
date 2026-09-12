@@ -25,18 +25,18 @@ export default function SchedulesPage() {
     <>
       <RouteHeader
         left={
-          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
-            Schedules
-          </h1>
-        }
-        center={
-          tasks.length > 0 ? (
-            <span className="hidden sm:inline text-xs text-muted-foreground whitespace-nowrap">
-              {tasks.length} schedule{tasks.length === 1 ? "" : "s"}
-              {" · "}
-              {tasks.filter((t) => t.enabled).length} enabled
-            </span>
-          ) : undefined
+          <div className="ml-2 flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-sm font-medium text-foreground">
+              Schedules
+            </h1>
+            {tasks.length > 0 ? (
+              <span className="hidden shrink-0 whitespace-nowrap text-xs text-muted-foreground sm:inline">
+                {tasks.length} schedule{tasks.length === 1 ? "" : "s"}
+                {" · "}
+                {tasks.filter((t) => t.enabled).length} enabled
+              </span>
+            ) : null}
+          </div>
         }
         right={
           <>
