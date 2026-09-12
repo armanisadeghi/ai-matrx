@@ -22,9 +22,11 @@ SET statement_timeout = '10min';
 DO $n01_preflight$
 DECLARE
   v_relation_oid constant oid := 1711434;
-  v_expected_acl_hash constant text := '8040d4c48089279c9365e8396ea54216';
-  v_expected_trigger_hash constant text := 'e97a235b197b830b74468987cf4ddd10';
-  v_expected_policy_hash constant text := 'ddff9aebc68fec7609e12231b8f42990';
+  -- Canonical semantic values captured by scripts/notes-n01-canonical-preflight-capture.sql.
+  -- OIDs are observations only; role names, definitions, function config and ACL semantics bind.
+  v_expected_acl_hash constant text := '0aeef0cb1a270e08c63e9cd8456a2463';
+  v_expected_trigger_hash constant text := '182d691933e2d5f56134223cc9f7f00a';
+  v_expected_policy_hash constant text := 'd9e12a49ae193c694ded6ffc3a60f157';
   v_old_index constant text := 'CREATE UNIQUE INDEX note_folders_created_by_name_unique ON workbench.note_folders USING btree (created_by, name)';
   v_scoped_index constant text := 'CREATE UNIQUE INDEX note_folders_organization_created_by_name_unique ON workbench.note_folders USING btree (organization_id, created_by, name)';
   v_parent_index constant text := 'CREATE UNIQUE INDEX note_folders_id_organization_unique ON workbench.note_folders USING btree (id, organization_id)';
@@ -38,14 +40,14 @@ BEGIN
       AND c.relowner = 'postgres'::regrole
       AND c.relrowsecurity
       AND NOT c.relforcerowsecurity
-      AND md5(coalesce(c.relacl::text, '')) = v_expected_acl_hash
+      AND md5((SELECT jsonb_build_object('acl_is_null',c.relacl IS NULL,'grants',coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',coalesce(g.rolname,'PUBLIC'),'grantee',coalesce(r.rolname,'PUBLIC'),'privilege',(x).privilege_type,'grantable',(x).is_grantable) ORDER BY coalesce(g.rolname,'PUBLIC'),coalesce(r.rolname,'PUBLIC'),(x).privilege_type,(x).is_grantable) FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x LEFT JOIN pg_roles g ON g.oid=(x).grantor LEFT JOIN pg_roles r ON r.oid=(x).grantee),'[]'::jsonb))::text) = v_expected_acl_hash
   ) THEN
     RAISE EXCEPTION 'N01 precondition failed: note_folders owner, ACL, or RLS state changed';
   END IF;
-  IF (SELECT md5(string_agg(t.oid::text || ':' || t.tgenabled::text || ':' || md5(pg_get_triggerdef(t.oid)), ',' ORDER BY t.oid)) FROM pg_trigger t WHERE t.tgrelid = v_relation_oid AND NOT t.tgisinternal) IS DISTINCT FROM v_expected_trigger_hash THEN
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',t.tgname,'enabled',t.tgenabled,'definition',pg_get_triggerdef(t.oid,false),'function',jsonb_build_object('schema',n.nspname,'name',p.proname,'identity_arguments',pg_get_function_identity_arguments(p.oid),'owner',o.rolname,'config',coalesce((SELECT jsonb_agg(v ORDER BY v) FROM unnest(p.proconfig) v),'[]'::jsonb),'acl',coalesce(p.proacl::text,''),'definition',pg_get_functiondef(p.oid))) ORDER BY t.tgname),'[]'::jsonb)::text) FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_roles o ON o.oid=p.proowner WHERE t.tgrelid=v_relation_oid AND NOT t.tgisinternal) IS DISTINCT FROM v_expected_trigger_hash THEN
     RAISE EXCEPTION 'N01 precondition failed: note_folders trigger set changed';
   END IF;
-  IF (SELECT md5(string_agg(p.oid::text || ':' || p.polname || ':' || p.polcmd::text || ':' || p.polpermissive::text || ':' || array_to_string(p.polroles, ',') || ':' || coalesce(pg_get_expr(p.polqual, p.polrelid), '') || ':' || coalesce(pg_get_expr(p.polwithcheck, p.polrelid), ''), ',' ORDER BY p.oid)) FROM pg_policy p WHERE p.polrelid = v_relation_oid) IS DISTINCT FROM v_expected_policy_hash THEN
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',p.polname,'command',p.polcmd,'permissive',p.polpermissive,'roles',coalesce((SELECT jsonb_agg(coalesce(r.rolname,'PUBLIC') ORDER BY coalesce(r.rolname,'PUBLIC')) FROM unnest(p.polroles) role_oid LEFT JOIN pg_roles r ON r.oid=role_oid),'[]'::jsonb),'using',pg_get_expr(p.polqual,p.polrelid,false),'with_check',pg_get_expr(p.polwithcheck,p.polrelid,false)) ORDER BY p.polname,p.polcmd),'[]'::jsonb)::text) FROM pg_policy p WHERE p.polrelid=v_relation_oid) IS DISTINCT FROM v_expected_policy_hash THEN
     RAISE EXCEPTION 'N01 precondition failed: note_folders RLS policy definitions changed';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid=v_relation_oid AND a.attname='organization_id' AND a.atttypid='uuid'::regtype AND a.attnotnull AND NOT a.attisdropped)
