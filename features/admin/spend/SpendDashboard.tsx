@@ -38,6 +38,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { SpendExplorer } from "./SpendExplorer";
 import { SpendHeadline } from "./SpendHeadline";
+import { knobNumber } from "@/lib/knobs/featureKnobs";
+
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
 import { count, staleness, timestamp, usd, usdPrecise, zoneLabel } from "./format";
@@ -134,6 +136,26 @@ export function SpendDashboard() {
 
   const knobsState = useSpendPopoverKnobs();
   const scareThresholdUsd = knobsState.knobs?.scareThresholdUsd ?? null;
+
+  // The one number no ledger can hold: invoice-billed hosting and plan-billed
+  // services, entered by the person who pays them (knob
+  // platform.spend.fixed_monthly_usd). Shown beside the measured spend, never
+  // added into it; 0 reads as "not entered yet", never as $0.00.
+  const [fixedMonthly, setFixedMonthly] = useState<number | null | "missing">(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const v = await knobNumber("platform.spend", "fixed_monthly_usd");
+        if (!cancelled) setFixedMonthly(v);
+      } catch {
+        if (!cancelled) setFixedMonthly("missing");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -302,6 +324,18 @@ export function SpendDashboard() {
           timezone={data.timezone}
           density="full"
         />
+      ) : null}
+
+      {data ? (
+        <p className="-mt-3 text-[11px] text-muted-foreground">
+          {fixedMonthly === "missing"
+            ? "Fixed costs (hosting, plan-billed services): the setting platform.spend.fixed_monthly_usd is missing, so none are shown."
+            : fixedMonthly === null
+              ? "Fixed costs (hosting, plan-billed services): reading…"
+              : fixedMonthly > 0
+                ? `Plus fixed costs of about ${usd(fixedMonthly / data.headline.daysInMonth)} per day (${usd(fixedMonthly)} a month for hosting and plan-billed services, entered by hand; not part of any number above).`
+                : "Fixed costs (hosting, plan-billed services) are not entered yet — set the monthly figure under Administration → Users → Limits (platform.spend.fixed_monthly_usd) and it will show here per day."}
+        </p>
       ) : null}
 
       <SpendExplorer />

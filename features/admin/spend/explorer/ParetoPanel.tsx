@@ -22,6 +22,7 @@ import { DIMENSION_LABEL, identityHref, percent, rowLabel } from "./labels";
 
 const PARETO_DIMENSIONS: readonly SpendDimension[] = [
   "user",
+  "session",
   "agent",
   "feature",
   "conversation",

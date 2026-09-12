@@ -216,8 +216,25 @@ BEGIN
     m.model,
     m.provider,
     CASE WHEN g.is_request_head THEN m.unpriced_calls ELSE 0 END AS unpriced_calls,
+    -- The LOGIN SESSION: every sign-in (a person, or an agent driving the UI
+    -- as admin@admin.com) gets its own Supabase session id, carried on the
+    -- request's JWT claims. It is the only thing that separates two agents
+    -- sharing one account. Label = who, and when they signed in.
+    ur.metadata->'jwt_claims'->>'session_id'                    AS login_session_id,
+    -- The label is built on the request's head row only (min() over the
+    -- dimension ignores NULLs), so to_timestamp runs once per request, not
+    -- once per ledger row.
+    CASE WHEN g.is_request_head AND ur.metadata->'jwt_claims'->>'session_id' IS NOT NULL THEN
+      coalesce(ur.metadata->'jwt_claims'->>'email', au.email, 'unknown')
+      || ' · signed in '
+      || CASE WHEN (ur.metadata->'jwt_claims'->'amr'->0->>'timestamp') ~ '^[0-9]+$'
+              THEN to_char(to_timestamp((ur.metadata->'jwt_claims'->'amr'->0->>'timestamp')::bigint)
+                           AT TIME ZONE v_tz, 'Mon DD, HH12:MI AM')
+              ELSE 'at an unknown time (' || left(ur.metadata->'jwt_claims'->>'session_id', 8) || ')' END
+    END                                                         AS login_label,
     to_char(g.created_at AT TIME ZONE v_tz, 'YYYY-MM-DD')       AS local_day,
-    date_trunc('hour', g.created_at AT TIME ZONE v_tz)          AS local_hour
+    date_trunc('hour', g.created_at AT TIME ZONE v_tz)          AS local_hour,
+    to_char(g.created_at AT TIME ZONE v_tz, 'YYYY-MM-DD"T"HH24:00') AS local_hour_key
   FROM g
   LEFT JOIN chat.user_request ur ON ur.id = g.request_id
   LEFT JOIN iam.organizations o  ON o.id = g.organization_id
@@ -259,10 +276,12 @@ BEGIN
       WHEN 'source'       THEN 'source'
       WHEN 'model'        THEN 'model'
       WHEN 'conversation' THEN 'conversation_id::text'
+      WHEN 'session'      THEN 'login_session_id'
       WHEN 'day'          THEN 'local_day'
+      WHEN 'hour'         THEN 'local_hour_key'
       ELSE NULL END;
     IF v_column IS NULL THEN
-      RAISE EXCEPTION 'admin_spend_breakdown: unknown filter key % (allowed: organization, user, agent, app, feature, origin, trigger, source, model, conversation, day)', v_filter_key
+      RAISE EXCEPTION 'admin_spend_breakdown: unknown filter key % (allowed: organization, user, agent, app, feature, origin, trigger, source, model, conversation, session, day, hour)', v_filter_key
         USING ERRCODE = '22023';
     END IF;
     IF v_filter_value IS NULL OR v_filter_value = '' THEN
@@ -318,7 +337,9 @@ BEGIN
       ('source',       'source',                'source', 100),
       ('model',        'model',                 'model', 100),
       ('conversation', 'conversation_id::text', 'conversation_title', 60),
-      ('day',          'local_day',             'local_day', 100)
+      ('session',      'login_session_id',      'login_label', 100),
+      ('day',          'local_day',             'local_day', 100),
+      ('hour',         'local_hour_key',        'local_hour_key', 100)
     ) AS d(name, key_expr, label_expr, cap)
   LOOP
     EXECUTE format($q$
@@ -693,7 +714,7 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.admin_spend_breakdown(timestamptz, timestamptz, text, jsonb, jsonb) IS
-  'Super-admin only. runtime.global_execution for any window (≤92 days), filtered by any combination of organization / user / agent / app / feature / origin / trigger / source / model / conversation / day, returned as totals, every dimension ranked with share-of-total and a remainder, zero-filled day and hour series split manual/automated, the "dig here" signals (failed spend, context-heavy conversations, iteration-heavy requests, conversation hogs, hour spikes, repeat bursts, unpriced calls) and the most expensive individual requests. Thresholds are the platform.spend_explorer.* knobs, resolved by the client and required.';
+  'Super-admin only. runtime.global_execution for any window (≤92 days), filtered by any combination of organization / user / agent / app / feature / origin / trigger / source / model / conversation / login session / day / hour, returned as totals, every dimension ranked with share-of-total and a remainder, zero-filled day and hour series split manual/automated, the "dig here" signals (failed spend, context-heavy conversations, iteration-heavy requests, conversation hogs, hour spikes, repeat bursts, unpriced calls) and the most expensive individual requests. Thresholds are the platform.spend_explorer.* knobs, resolved by the client and required.';
 
 -- ── admin_spend_overview: drop the superseded by_org / by_user arrays ─────────
 -- by_user came from chat.user_usage_summary (the rolling throttling window),
