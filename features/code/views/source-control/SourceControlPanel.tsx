@@ -212,6 +212,7 @@ function RepositoryPanel({
           "/home/agent",
         ticket,
       );
+      if (ticket === generation.current) setLoading(false);
       if (scan) {
         const found = await discoverRepositories(
           process,
@@ -240,7 +241,7 @@ function RepositoryPanel({
     setAutoStashes([]);
     setNotice(null);
     if (filesystem.id !== `sandbox:${sandboxId}` || !process.isReady) return;
-    void refresh(true);
+    void refresh(repositories.length === 0);
     return () => {
       generation.current++;
     };
@@ -468,8 +469,8 @@ function RepositoryPanel({
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Discovery checks up to four folder levels. Open a path directly for
-            deeper projects.
+            Discovery shows up to 24 repositories within four folder levels.
+            Open a path directly for other projects.
           </p>
           {(showOpen || (!repo && !loading)) && (
             <div className="space-y-2">
