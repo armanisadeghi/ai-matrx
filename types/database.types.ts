@@ -51027,6 +51027,33 @@ export type Database = {
           },
         ]
       }
+      dd171_containment_baseline: {
+        Row: {
+          axis: string
+          measured_at: string
+          phase: string
+          principal: string
+          reads_others_personal: number
+          token: string
+        }
+        Insert: {
+          axis: string
+          measured_at?: string
+          phase: string
+          principal: string
+          reads_others_personal: number
+          token: string
+        }
+        Update: {
+          axis?: string
+          measured_at?: string
+          phase?: string
+          principal?: string
+          reads_others_personal?: number
+          token?: string
+        }
+        Relationships: []
+      }
       definer_class_exemption: {
         Row: {
           declared_at: string
@@ -51708,6 +51735,36 @@ export type Database = {
           },
         ]
       }
+      superseded_policy: {
+        Row: {
+          id: string
+          policy_name: string
+          reason: string
+          schema_name: string
+          superseded_at: string
+          superseded_by: string
+          table_name: string
+        }
+        Insert: {
+          id?: string
+          policy_name: string
+          reason: string
+          schema_name: string
+          superseded_at?: string
+          superseded_by?: string
+          table_name: string
+        }
+        Update: {
+          id?: string
+          policy_name?: string
+          reason?: string
+          schema_name?: string
+          superseded_at?: string
+          superseded_by?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       system_orgs: {
         Row: {
           created_at: string
@@ -52317,6 +52374,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      generated_policy_names: { Args: never; Returns: string[] }
       governance_columns: { Args: { p_token: string }; Returns: string[] }
       has_access: {
         Args: {
@@ -52499,6 +52557,15 @@ export type Database = {
       starter_pack_ids_curated_by: {
         Args: { p_uid: string }
         Returns: string[]
+      }
+      supersede_bespoke_policies: {
+        Args: {
+          p_policy_names: string[]
+          p_reason: string
+          p_schema: string
+          p_table: string
+        }
+        Returns: undefined
       }
       table_has_visibility: {
         Args: { p_schema: string; p_table: string }
@@ -63325,6 +63392,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      declared_actor_system: { Args: never; Returns: string }
       declared_actor_tier: { Args: never; Returns: string }
       definer_guard_revoke_notice: {
         Args: {
