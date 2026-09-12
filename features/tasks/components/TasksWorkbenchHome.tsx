@@ -137,29 +137,24 @@ export function TasksWorkbenchHome() {
       className="flex h-full min-h-0 flex-col bg-background"
     >
       <div className="shrink-0 border-b border-border/60 bg-card/40 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">
-              Task workbench
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <Building2 className="size-3.5 shrink-0" />
-                <span className="truncate">{organizationName}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <Building2 className="size-3.5 shrink-0" />
+              <span className="truncate">{organizationName}</span>
+            </span>
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <Layers className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {selectedScopes.length > 0
+                  ? selectedScopes.join(" · ")
+                  : "All scope dimensions"}
               </span>
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <Layers className="size-3.5 shrink-0" />
-                <span className="truncate">
-                  {selectedScopes.length > 0
-                    ? selectedScopes.join(" · ")
-                    : "All scope dimensions"}
-                </span>
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <ListTodo className="size-3.5 shrink-0" />
-                {projects.length} project{projects.length === 1 ? "" : "s"}
-              </span>
-            </div>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ListTodo className="size-3.5 shrink-0" />
+              {projects.length} project{projects.length === 1 ? "" : "s"}
+            </span>
           </div>
           <div className="w-full sm:w-[18rem]">
             <TaskQuickAddBar

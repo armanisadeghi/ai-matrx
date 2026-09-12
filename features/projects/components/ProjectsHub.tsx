@@ -539,12 +539,6 @@ export function ProjectsHub({
     }
     return item;
   });
-  const subtitle = orgFilterId
-    ? `Projects in ${orgMap.get(orgFilterId)?.name ?? "this organization"}`
-    : scopeParam
-      ? "Projects tagged to this scope"
-      : null;
-
   // ── Surface context + the ONE menu for the list pane ─────────────────
   const [menuTarget, setMenuTarget] = React.useState<ProjectWithRole | null>(
     null,
@@ -674,73 +668,66 @@ export function ProjectsHub({
               label="Workspace destinations"
               items={workspaceNavigationItems}
             />
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                {subtitle && (
-                  <p className="text-sm text-muted-foreground">{subtitle}</p>
-                )}
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className="text-xs text-muted-foreground tabular-nums"
+                data-surface-value={
+                  projectsReadFailed ? undefined : "project_count"
+                }
+              >
+                {projectsReadFailed || scopeReadFailed
+                  ? projects.length > 0
+                    ? `${filtered.length} shown`
+                    : "Projects unavailable"
+                  : loading || scopeLoading
+                    ? "Loading projects…"
+                    : `${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`}
+              </span>
+              <div
+                className="relative min-w-0 flex-1 sm:flex-none"
+                data-surface-value="project_search_query"
+              >
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search projects…"
+                  className="h-11 w-full pl-8 text-base sm:w-44 lg:h-9 lg:text-sm"
+                />
               </div>
-              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                <span
-                  className="text-xs text-muted-foreground tabular-nums"
-                  data-surface-value={
-                    projectsReadFailed ? undefined : "project_count"
-                  }
+              <div
+                className="flex items-center rounded-lg border border-border p-0.5"
+                data-surface-value="project_list_view"
+              >
+                <button
+                  type="button"
+                  onClick={() => setView("cards")}
+                  aria-label="Card view"
+                  aria-pressed={view === "cards"}
+                  className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7 ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Card view"
                 >
-                  {projectsReadFailed || scopeReadFailed
-                    ? projects.length > 0
-                      ? `${filtered.length} shown`
-                      : "Projects unavailable"
-                    : loading || scopeLoading
-                      ? "Loading projects…"
-                      : `${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`}
-                </span>
-                <div
-                  className="relative min-w-0 flex-1 sm:flex-none"
-                  data-surface-value="project_search_query"
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("table")}
+                  aria-label="Table view"
+                  aria-pressed={view === "table"}
+                  className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7 ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Table view"
                 >
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search projects…"
-                    className="h-11 w-full pl-8 text-base sm:w-44 lg:h-9 lg:text-sm"
-                  />
-                </div>
-                <div
-                  className="flex items-center rounded-lg border border-border p-0.5"
-                  data-surface-value="project_list_view"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setView("cards")}
-                    aria-label="Card view"
-                    aria-pressed={view === "cards"}
-                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7 ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    title="Card view"
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView("table")}
-                    aria-label="Table view"
-                    aria-pressed={view === "table"}
-                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7 ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    title="Table view"
-                  >
-                    <TableIcon className="h-4 w-4" />
-                  </button>
-                </div>
-                {filtered.length > 0 && (
-                  <ReferencesBulkCopyButton
-                    referenceType="project"
-                    records={filtered.map((p) => ({ id: p.id, label: p.name }))}
-                    toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
-                    className="h-11 w-11 lg:h-6 lg:w-6"
-                  />
-                )}
+                  <TableIcon className="h-4 w-4" />
+                </button>
               </div>
+              {filtered.length > 0 && (
+                <ReferencesBulkCopyButton
+                  referenceType="project"
+                  records={filtered.map((p) => ({ id: p.id, label: p.name }))}
+                  toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
+                  className="h-11 w-11 lg:h-6 lg:w-6"
+                />
+              )}
             </div>
 
             {isFiltered && (
@@ -836,11 +823,11 @@ export function ProjectsHub({
                   <FolderKanban className="h-7 w-7 text-muted-foreground" />
                 </div>
                 <h3 className="font-semibold mb-1">No projects found</h3>
-                <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
-                  {query || isFiltered
-                    ? "Nothing matches your filters."
-                    : "Create a project to organize tasks, resources, and context."}
-                </p>
+                {(query || isFiltered) && (
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Nothing matches your filters.
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   {isFiltered && (
                     <Button

@@ -1,6 +1,6 @@
 # Education Hub — FEATURE.md
 
-**Status:** live but pre-launch · **Tier:** 1 · **Last updated:** 2026-08-29
+**Status:** live but pre-launch · **Tier:** 1 · **Last updated:** 2026-09-11
 
 > 🚨 **START AT THE CROSS-REPO PROJECT, NOT HERE:**
 > **`/Users/armanisadeghi/code/common-docs/systems/education/STATE.md`**
@@ -24,7 +24,9 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 
 ## The home (`/education/overview`) — THE COMPOSITION RULE
 
-🚨 **The home is ONE ordered list of blocks, never a per-maturity layout.** Each entry in `BLOCKS` (`home/EducationHome.tsx`) declares `signal(snapshot)` and returns `null` to render nothing, so what a day-0 learner sees versus a day-300 learner is an *emergent* property of what they own — there is no `if (isNewUser)` anywhere in the tree, and adding a block is a registry entry, not a new page variant. Two rules keep it feeling designed rather than accumulated: (1) **whatever they have is the hero** — one kit and no history means the page *is* that kit; a plan with work due means Study Today leads; nothing at all means the ingest is the whole page; (2) **exactly ONE nudge, and it is about their own material** (`home/nudges.ts`) — a kit with no quiz gets a chip on that kit. A grid of features the learner is not using reads as pressure, not invitation, and is banned here.
+- **2026-09-11** — Home chrome follows the application-copy rule: the empty-account actions are now concise action tiles without editorial descriptions or a standalone “other ways” label. Existing record metadata, unavailable-data recovery, and study-state guidance remain intact.
+
+🚨 **The home is ONE ordered list of blocks, never a per-maturity layout.** Each entry in `BLOCKS` (`home/EducationHome.tsx`) declares `signal(snapshot)` and returns `null` to render nothing, so what a day-0 learner sees versus a day-300 learner is an _emergent_ property of what they own — there is no `if (isNewUser)` anywhere in the tree, and adding a block is a registry entry, not a new page variant. Two rules keep it feeling designed rather than accumulated: (1) **whatever they have is the hero** — one kit and no history means the page _is_ that kit; a plan with work due means Study Today leads; nothing at all means the ingest is the whole page; (2) **exactly ONE nudge, and it is about their own material** (`home/nudges.ts`) — a kit with no quiz gets a chip on that kit. A grid of features the learner is not using reads as pressure, not invitation, and is banned here.
 
 **One snapshot feeds every block** (`home/snapshot.ts` → `loadEducationSnapshot()`): library page + facets, kits, plan, cross-mode mastery, goals, streak, gathered in one parallel pass. Per-block fetching is what the ranking cannot survive — the order would be computed before the data it ranks on arrived, and the page would reflow as each block discovered whether it had anything to say. Every lane preserves its availability state: one dead read costs its dependent block, never the page; it renders a compact unavailable notice with Retry and never becomes a false zero or empty-account state. The compact body navigation is projected from `EDU_TOOLS` through `EDU_TOOL_NAV`, so every tool stays reachable even for empty accounts. Recent material defaults to the canonical `MatrxDataTable` over the same snapshot rows and library columns/actions, with cards and rows as synced `useListViewPrefs("education-home-recent")` views. On phones the canonical table reuses the same rich row presentation.
 

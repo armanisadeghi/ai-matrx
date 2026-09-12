@@ -184,6 +184,8 @@ Two project-specific templates in `lib/email/client.ts`:
 
 ## Change Log
 
+- `2026-09-11` — `/projects` now keeps active filter identity in its actionable filter controls instead of repeating it as a page subtitle. The initial empty state leads directly to **New project**; filtered and searched empty states still explain that no records match.
+
 - `2026-09-11` — `/projects` now uses complete paged project and task-summary reads for its aggregate counts, derives its compact destination strip from the Workspaces registry, and groups cards by organization with stable identity accents. Card and table controls, scope/context behavior, and the existing create window remain shared.
 
 - `2026-08-09` — **The projects surface is now agent-writable.** `projects.manifest.ts` declares 5 `ask`-policy `entity` write targets (`project_name`, `project_description`, `project_status`, `project_priority`, `project_target_date`); handlers are built by the new `agent-context/projectWriteHandlers.ts` and passed to the `SurfaceRuntimeProvider` `ProjectWorkspace.tsx` already mounts. Every one persists through `updateProject`, the same canonical path the hero's inline editors use — no second write path, `validateProjectName` still runs on renames, and the viewer's `canManageSettings` gates agent writes exactly as it gates the pickers. Verified with a live agent run.
