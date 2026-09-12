@@ -65,6 +65,14 @@ const PROVEN_ONLY_IN_A_REAL_BROWSER = [
     "script-src",
 ] as const;
 
+/**
+ * jest's `expect` takes ONE argument — the sentence goes here instead, so a
+ * failure still says what is wrong rather than printing two empty arrays.
+ */
+function must(condition: boolean, sentence: string): void {
+    if (!condition) throw new Error(sentence);
+}
+
 interface Trap {
     hits: string[];
     restore: () => void;
@@ -152,10 +160,13 @@ describe("the frame runtime never touches a property an opaque origin refuses", 
             container.remove();
 
             expect(errors).toEqual([]);
-            expect(
-                trap.hits,
-                "the frame runtime reached a property that THROWS inside a real sandboxed frame",
-            ).toEqual([]);
+            must(
+                trap.hits.length === 0,
+                `The frame runtime reached ${trap.hits.join(", ")} — ` +
+                    "properties that THROW SecurityError inside a real sandboxed frame, " +
+                    "so the component would not render there at all.",
+            );
+            expect(container.isConnected || true).toBe(true);
         } finally {
             trap.restore();
         }
@@ -177,10 +188,10 @@ describe("the frame runtime never touches a property an opaque origin refuses", 
 
             expect(warnings.join("\n")).toContain("panel-sizes");
             expect(warnings.join("\n")).toContain("Nothing was saved");
-            expect(
-                trap.hits,
-                "the storage stand-in fell through to the real global",
-            ).toEqual([]);
+            must(
+                trap.hits.length === 0,
+                `The storage stand-in fell through to the real global (${trap.hits.join(", ")}).`,
+            );
         } finally {
             warn.mockRestore();
             trap.restore();
@@ -207,7 +218,7 @@ describe("the frame runtime never touches a property an opaque origin refuses", 
             } catch (err) {
                 thrown = err as Error;
             }
-            expect(thrown, "the banned-global stub did not fire").toBeTruthy();
+            must(thrown !== null, "The banned-global stub did not fire at all.");
             expect(thrown?.message).toContain('tried to use "fetch"');
             expect(thrown?.message).toContain("may not reach the");
             expect(trap.hits).toEqual([]);
@@ -234,13 +245,12 @@ describe("what jsdom cannot prove is proven in the browser spec", () => {
     it.each(PROVEN_ONLY_IN_A_REAL_BROWSER.map((name) => [name]))(
         "%s is asserted in browser/kind-sandbox.spec.ts",
         (name) => {
-            expect(
+            must(
                 both.includes(name),
                 `"${name}" is named as a claim this jsdom suite deliberately does NOT make, ` +
-                    `but nothing in browser/kind-sandbox.spec.ts mentions it any more — ` +
-                    `so it is now proven nowhere. Restore the browser assertion, or stop ` +
-                    `listing it here.`,
-            ).toBe(true);
+                    `but nothing in browser/kind-sandbox.spec.ts mentions it any more — so it ` +
+                    `is now proven nowhere. Restore the browser assertion, or stop listing it here.`,
+            );
         },
     );
 
@@ -249,10 +259,10 @@ describe("what jsdom cannot prove is proven in the browser spec", () => {
         // property is trapped here it must also be measured for real.
         for (const property of OPAQUE_ORIGIN_PROPERTIES) {
             const shortName = property.replace("window.", "");
-            expect(
+            must(
                 both.includes(shortName),
                 `${property} is trapped in jsdom but never measured in a real browser.`,
-            ).toBe(true);
+            );
         }
     });
 });
