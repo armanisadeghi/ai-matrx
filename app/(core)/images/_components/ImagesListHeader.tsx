@@ -3,8 +3,14 @@
 import { usePathname } from "next/navigation";
 import { Atom, ImageIcon } from "lucide-react";
 import { PlusTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
-import { IMAGES_ROOT_PATH, findImagesRoute } from "./imagesRoutes";
-import { RouteModeNav, type RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
+import {
+  IMAGES_ROOT_PATH,
+  findImagesRoute,
+} from "@/features/image-manager/components/imagesRoutes";
+import {
+  RouteModeNav,
+  type RouteNavItem,
+} from "@/features/shell/components/header/RouteModeNav";
 
 const IMAGE_MODE_ITEMS: RouteNavItem[] = [
   {

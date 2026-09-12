@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import type { Tables } from "@/types/database.types";
 import {
   orchestratorJsonHeaders,
   resolvePersistedOrchestrator,
 } from "@/lib/sandbox/orchestrator-routing";
+
+type SandboxInstance = Tables<"sandbox_instances">;
 
 async function verifyAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   try {
@@ -37,14 +40,40 @@ async function verifyAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
     };
   }
 }
+
+async function adminSession() {
+  try {
+    return await verifyAdmin(await createClient());
+  } catch {
+    return {
+      error: NextResponse.json(
+        { error: "Unable to verify admin access" },
+        { status: 500 },
+      ),
+    };
+  }
+}
+
 async function load(id: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("sandbox_instances")
-    .select("*")
-    .is("deleted_at", null)
-    .eq("id", id)
-    .single();
+  let admin: ReturnType<typeof createAdminClient>;
+  let data: SandboxInstance | null;
+  let error: { code?: string } | null;
+  try {
+    admin = createAdminClient();
+    ({ data, error } = await admin
+      .from("sandbox_instances")
+      .select("*")
+      .is("deleted_at", null)
+      .eq("id", id)
+      .single());
+  } catch {
+    return {
+      error: NextResponse.json(
+        { error: "Failed to read sandbox instance" },
+        { status: 500 },
+      ),
+    };
+  }
   if (error || !data) {
     if (error?.code === "PGRST116") {
       return {
@@ -70,13 +99,24 @@ async function load(id: string) {
 }
 
 async function loadForRead(id: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("sandbox_instances")
-    .select("*")
-    .is("deleted_at", null)
-    .eq("id", id)
-    .single();
+  let data: SandboxInstance | null;
+  let error: { code?: string } | null;
+  try {
+    const admin = createAdminClient();
+    ({ data, error } = await admin
+      .from("sandbox_instances")
+      .select("*")
+      .is("deleted_at", null)
+      .eq("id", id)
+      .single());
+  } catch {
+    return {
+      error: NextResponse.json(
+        { error: "Failed to read sandbox instance" },
+        { status: 500 },
+      ),
+    };
+  }
   if (!error && data) return { data, error: null };
   if (error?.code === "PGRST116") {
     return {
@@ -107,10 +147,11 @@ function failed(status: number) {
   );
 }
 function upstreamExpiry(payload: unknown): string | null {
-  if (!payload || typeof payload !== "object") return null;
-  const value =
-    (payload as Record<string, unknown>).new_expires_at ??
-    (payload as Record<string, unknown>).expires_at;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload))
+    return null;
+  const property = (key: string) =>
+    Object.getOwnPropertyDescriptor(payload, key)?.value;
+  const value = property("new_expires_at") ?? property("expires_at");
   return typeof value === "string" && !Number.isNaN(Date.parse(value))
     ? value
     : null;
@@ -120,7 +161,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await verifyAdmin(await createClient());
+  const session = await adminSession();
   if (session.error) return session.error;
   const item = await loadForRead((await params).id);
   if (item.error) return item.error;
@@ -130,7 +171,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await verifyAdmin(await createClient());
+  const session = await adminSession();
   if (session.error) return session.error;
   const id = (await params).id;
   const body = await request.json().catch(() => null);
@@ -204,7 +245,7 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await verifyAdmin(await createClient());
+  const session = await adminSession();
   if (session.error) return session.error;
   const id = (await params).id;
   const item = await load(id);
@@ -236,7 +277,7 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await verifyAdmin(await createClient());
+  const session = await adminSession();
   if (session.error) return session.error;
   const item = await load((await params).id);
   if (item.error) return item.error;

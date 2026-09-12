@@ -42,8 +42,7 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     pathPattern: /^\/administration(?:\/|$)/,
     iconName: "ShieldCheck",
     label: "Administration",
-    importFn: () =>
-      import("@/features/admin/components/AdminRouteSidebarMenu"),
+    importFn: () => import("@/features/admin/components/AdminRouteSidebarMenu"),
   },
   {
     pathPattern: /^\/chat(?:\/|$)/,
@@ -69,6 +68,6 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     iconName: "Images",
     label: "Images",
     importFn: () =>
-      import("@/app/(core)/images/_components/ImagesSidebarMenu"),
+      import("@/features/image-manager/components/ImagesSidebarMenu"),
   },
 ];
