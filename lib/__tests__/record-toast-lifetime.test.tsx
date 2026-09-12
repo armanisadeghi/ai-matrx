@@ -14,10 +14,12 @@
  * all count as hidden, so «Created "A"» can still be on screen after the SPA
  * has client-side navigated to record B — a sentence the screen cannot back up.
  *
- * RED proof (run before believing these): in `lib/toast.ts`, make `raise()`
- * hand sonner the real duration instead of `Infinity` and delete the `arm()`
- * call — test 1 and test 3 fail. Remove the `useRecordToastLifetime()` line
- * from `components/ui/sonner.tsx` — test 2 fails.
+ * RED proof (run before believing these): in `lib/toast.ts`, make the wall
+ * clock wrapper hand sonner the real duration instead of `Infinity` and drop
+ * the `arm()` call — the wall-clock tests fail (record AND plain). Remove the
+ * `useRecordToastLifetime()` line from `components/ui/sonner.tsx` — the
+ * navigation test fails. Recorded RED run: 2026-09-11, before the plain-toast
+ * wall clock existed, tests 1 and 2 failed exactly as described.
  */
 
 import * as React from "react";
@@ -34,8 +36,8 @@ import {
   toast,
   recordToast,
   dismissRecordToasts,
-  dismissAllRecordToasts,
-  sweepExpiredRecordToasts,
+  dismissAllTrackedToasts,
+  sweepExpiredToasts,
   liveRecordToastRefs,
 } from "@/lib/toast";
 
@@ -86,7 +88,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  dismissAllRecordToasts();
+  dismissAllTrackedToasts();
   toast.dismiss();
   await act(async () => {
     root.unmount();
@@ -109,25 +111,73 @@ async function navigateTo(pathname: string) {
 }
 
 describe("a record toast cannot outlive its record on screen", () => {
-  it("expires on the wall clock even while the document is hidden — a plain toast does not", async () => {
+  it("expires on the wall clock even while the document is hidden — every toast raised through lib/toast, record or not", async () => {
     hideDocument();
 
     await act(async () => {
-      toast.success("Plain notice stays put", { duration: 60 });
+      toast.success("Plain notice", { duration: 60 });
       recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', { duration: 60 });
     });
     await settle();
     expect(toastText()).toContain('Created "ZZZ Alpha"');
+    expect(toastText()).toContain("Plain notice");
 
     await act(async () => {
       await wait(400);
     });
 
-    // The plain toast is the defect, still frozen on screen: sonner's timer is
-    // paused because the document is hidden. The record toast ran on our clock.
-    expect(toastText()).toContain("Plain notice stays put");
+    // Sonner's own timer is paused because the document is hidden. Neither
+    // toast is on sonner's clock any more: both ran on the wall clock.
     expect(liveRecordToastRefs()).toHaveLength(0);
     expect(toastText()).not.toContain("ZZZ Alpha");
+    expect(toastText()).not.toContain("Plain notice");
+  });
+
+  it("a BARE toast naming record A (no identity, the baselined population) is gone after navigating to B while hidden", async () => {
+    hideDocument();
+
+    await act(async () => {
+      // Exactly the shape the 391 baselined call sites have: a template that
+      // names a record, raised without a ref. It cannot follow the route, so
+      // the wall clock is what takes it — and sonner's clock would never run.
+      toast.success(`Created "${RECORD_A.title}"`, { duration: 60 });
+    });
+    await settle();
+    expect(toastText()).toContain('Created "ZZZ Alpha"');
+
+    await navigateTo("/mandates/BBBB-2222");
+    await act(async () => {
+      await wait(400);
+    });
+
+    expect(toastText()).not.toContain("ZZZ Alpha");
+  });
+
+  it("leaves loading toasts and duration:Infinity toasts alone — they end when their caller says so", async () => {
+    hideDocument();
+
+    let loadingId: string | number = "";
+    await act(async () => {
+      loadingId = toast.loading("Saving…");
+      toast.info("Pinned until dismissed", { duration: Infinity });
+    });
+    await settle();
+
+    await act(async () => {
+      await wait(50);
+      sweepExpiredToasts(Date.now() + 10 * 60_000);
+      await wait(0);
+    });
+
+    expect(toastText()).toContain("Saving…");
+    expect(toastText()).toContain("Pinned until dismissed");
+
+    await act(async () => {
+      toast.dismiss(loadingId);
+      await wait(400);
+    });
+    expect(toastText()).not.toContain("Saving…");
+    expect(toastText()).toContain("Pinned until dismissed");
   });
 
   it("is gone after a client-side navigation to another record, with the document hidden", async () => {
@@ -223,7 +273,7 @@ describe("a record toast cannot outlive its record on screen", () => {
       await wait(50);
       // The sweep the Toaster runs when a hidden tab comes back, asked from
       // far in the future: an Infinity toast is due at no instant at all.
-      sweepExpiredRecordToasts(Date.now() + 10 * 60_000);
+      sweepExpiredToasts(Date.now() + 10 * 60_000);
       await wait(0);
     });
 

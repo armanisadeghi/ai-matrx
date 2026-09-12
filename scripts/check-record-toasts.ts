@@ -11,13 +11,15 @@
  * renamed, or after it was deleted. The sentence is then false, and a screen
  * that lies is forbidden outright (law 4).
  *
- * The fix is not "shorter toasts": it is identity. `recordToast.*` from
- * `@/lib/toast` takes the record's `{ type, id, title }` — the same reference
- * shape the context menu uses (`CONTEXT_MENU_ENTITY_KEY`) — and the toast it
- * raises runs on the WALL CLOCK, is dropped when the route leaves that record,
- * and can be withdrawn by `dismissRecordToasts(ref)` the moment the record is
- * deleted or renamed. None of that is possible for a toast that does not know
- * which record it is talking about.
+ * Since 2026-09-11 EVERY toast raised through `@/lib/toast` runs on the WALL
+ * CLOCK (tier (b) in that file), so a bare record-naming toast now expires on
+ * time even in a hidden pane. What it still cannot do is follow its record:
+ * only `recordToast.*` — which takes the record's `{ type, id, title }`, the
+ * same reference shape the context menu uses (`CONTEXT_MENU_ENTITY_KEY`) — is
+ * dropped the instant the route leaves that record and can be withdrawn by
+ * `dismissRecordToasts(ref)` the moment the record is deleted or renamed. A
+ * toast that does not know which record it is talking about can do neither,
+ * which is why new record-naming toasts must carry their record.
  *
  * WHAT IT FAILS ON
  *   A call `toast.success|error|info|warning(...)` (or any identifier ending in
