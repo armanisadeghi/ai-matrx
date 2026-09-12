@@ -20,9 +20,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-"$PG_BIN/initdb" -D "$DATA_DIR" -A trust --no-locale >/dev/null
+"$PG_BIN/initdb" -D "$DATA_DIR" -A trust --no-locale -E UTF8 >/dev/null
 "$PG_BIN/pg_ctl" -D "$DATA_DIR" -l "$LOG" -o "-h 127.0.0.1 -p $PORT -F" start >/dev/null
 PSQL=("$PG_BIN/psql" -h 127.0.0.1 -p "$PORT" -d postgres -X -v ON_ERROR_STOP=1)
+
+if [[ $("${PSQL[@]}" -Atc 'SHOW server_encoding') != UTF8 ]]; then
+  echo 'FAIL fixture: PostgreSQL 17 acceptance cluster is not UTF8' | tee -a "$RESULTS"; exit 1
+fi
+echo 'PASS fixture: PostgreSQL 17 acceptance cluster uses UTF8' | tee -a "$RESULTS"
 
 node - "$CENSUS" <<'NODE' | "${PSQL[@]}" >/dev/null
 const fs = require('fs');
@@ -137,7 +142,9 @@ const lexicalEmitterProbes = [
   "array_append(v_scan_tokens, replace(substr(v_function_source, v_scan_pos + 1, v_scan_next_pos - v_scan_pos - 2), '\"\"', '\"'))",
   "PostgreSQL Unicode-escaped quoted identifiers are identifiers, not",
   "v_scan_decoded_identifier := v_scan_decoded_identifier || chr",
-  "v_scan_uescape_match := regexp_match",
+  "Comments and whitespace are interchangeable lexical separators",
+  "v_standard_conforming_strings := current_setting('standard_conforming_strings') = 'on'",
+  "v_scan_next_codepoint NOT BETWEEN 56320 AND 57343",
 ];
 for (const probe of lexicalEmitterProbes) {
   if (!original.includes(probe)) throw new Error(`missing DD154 lexer emitter probe: ${probe}`);
@@ -152,8 +159,12 @@ for(const [ref,oid] of rows){
 let reversed=sql;
 for(const [ref,oid] of rows) reversed=reversed.split(`${oid}::oid`).join(`${old.get(ref)}::oid`);
 if(reversed!==original) throw new Error('mapped migration changed bytes beyond nine OID constants');
+const probeSql=fs.readFileSync(probes,'utf8');
+const invertedProbeSql=probeSql.replace(') <> 1 THEN', ') = 1 THEN');
+if (invertedProbeSql === probeSql) throw new Error('rollback positive-probe inversion control was not generated');
 fs.writeFileSync(out,sql);
-fs.writeFileSync(`${out}.with-probes.sql`, `${sql}\n${fs.readFileSync(probes,'utf8')}`);
+fs.writeFileSync(`${out}.with-probes.sql`, `${sql}\n${probeSql}`);
+fs.writeFileSync(`${out}.inverted-probes.sql`, invertedProbeSql);
 console.log(`PASS harness transform: only 9 OID constants changed, each in exactly 2 sites; reverse SHA ${crypto.createHash('sha256').update(reversed).digest('hex')}`);
 NODE
 
@@ -189,6 +200,15 @@ if [[ $("${PSQL[@]}" -Atc "
 fi
 echo 'PASS rollback probes: no persistent probe relation or function remains after the appended transaction' | tee -a "$RESULTS"
 
+set +e
+"${PSQL[@]}" -f "$RUN_DIR/mapped.sql.inverted-probes.sql" >"$RUN_DIR/inverted-probes.out" 2>&1
+INVERTED_PROBES_RC=$?
+set -e
+if [[ $INVERTED_PROBES_RC -eq 0 ]] || ! grep -q 'explicit writer was not persisted in its temporary relation' "$RUN_DIR/inverted-probes.out"; then
+  echo 'FAIL rollback forcing control: inverted positive row-count assertion did not fail closed' | tee -a "$RESULTS"; exit 1
+fi
+echo 'PASS rollback forcing control: inverted positive row-count assertion escaped the unique rollback sentinel' | tee -a "$RESULTS"
+
 "${PSQL[@]}" -AtF '|' -c "
 SELECT 'guard',r.rolname,p.prosecdef,coalesce(array_to_string(p.proconfig,','),''),coalesce(array_to_string(p.proacl::text[],','),'') FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid='platform._ddl_guard()'::regprocedure
 UNION ALL
@@ -205,7 +225,49 @@ fi
 echo 'PASS metadata: both function owners/security/config/ACL preserved; event owner/enabled preserved and CREATE TRIGGER added' | tee -a "$RESULTS"
 
 "${PSQL[@]}" <<'SQL' | tee -a "$RESULTS"
-CREATE TEMP TABLE review_results(label text, expected text, observed text, pass boolean);
+CREATE TEMP TABLE review_results(label text PRIMARY KEY, expected text NOT NULL, observed text NOT NULL, pass boolean NOT NULL);
+CREATE TEMP TABLE expected_cases(label text PRIMARY KEY, expected text NOT NULL);
+INSERT INTO expected_cases(label, expected) VALUES
+  ('known named assignment attachment','REJECT'),
+  ('pre-existing direct assigner attachment','REJECT'),
+  ('renamed existing known function attachment','REJECT'),
+  ('direct := assignment','REJECT'),
+  ('direct = assignment','REJECT'),
+  ('quoted direct assignment','REJECT'),
+  ('comment-separated direct assignment','REJECT'),
+  ('Unicode identifier default escape direct assignment','REJECT'),
+  ('Unicode identifier 4-hex escape direct assignment','REJECT'),
+  ('Unicode identifier 6-hex escape direct assignment','REJECT'),
+  ('Unicode identifier custom escape direct assignment','REJECT'),
+  ('Unicode identifier custom block-comment before UESCAPE','REJECT'),
+  ('Unicode identifier custom nested-comment after UESCAPE','REJECT'),
+  ('Unicode identifier custom line-comment after UESCAPE','REJECT'),
+  ('Unicode identifier comment-separated direct assignment','REJECT'),
+  ('Unicode identifier distinct quoted field','ALLOW'),
+  ('Unicode surrogate-pair distinct quoted field','ALLOW'),
+  ('single-quoted assignment text','ALLOW'),
+  ('dollar-quoted assignment text','ALLOW'),
+  ('nested-comment assignment text','ALLOW'),
+  ('assignment after dollar string','REJECT'),
+  ('assignment after escape string','REJECT'),
+  ('assignment after standard string backslash','REJECT'),
+  ('assignment after Unicode string literal','REJECT'),
+  ('assignment after line comment','REJECT'),
+  ('assignment to distinct quoted field','ALLOW'),
+  ('validation equality comparison','ALLOW'),
+  ('validation function','ALLOW'),
+  ('validation with explanatory assignment comment','ALLOW'),
+  ('ALTER adds org default','REJECT'),
+  ('CREATE TABLE with org default','REJECT'),
+  ('unrelated frozen-table ALTER','ALLOW'),
+  ('drop frozen default','ALLOW'),
+  ('recreate frozen default','REJECT'),
+  ('preserved RLS planner guard','REJECT'),
+  ('provisioner true refuses before relation side effect','REJECT'),
+  ('provisioner false creates explicit-writer table','ALLOW'),
+  ('explicit organization insert','ALLOW'),
+  ('attach validation trigger','ALLOW'),
+  ('validation trigger explicit insert','ALLOW');
 CREATE FUNCTION pg_temp.record_reject(label text, statement text) RETURNS void LANGUAGE plpgsql AS $f$
 DECLARE rejected boolean := false;
 BEGIN
@@ -240,13 +302,19 @@ SELECT pg_temp.record_reject('Unicode identifier default escape direct assignmen
 SELECT pg_temp.record_reject('Unicode identifier 4-hex escape direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_4hex() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat\0069on_id" := gen_random_uuid(); RETURN NEW; END $b$');
 SELECT pg_temp.record_reject('Unicode identifier 6-hex escape direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_6hex() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat\+000069on_id" := gen_random_uuid(); RETURN NEW; END $b$');
 SELECT pg_temp.record_reject('Unicode identifier custom escape direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_custom() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat!0069on_id" UESCAPE ''!'' := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier custom block-comment before UESCAPE', 'CREATE FUNCTION public.dd154_direct_unicode_custom_before_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat!0069on_id" /* separator */ UESCAPE ''!'' := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier custom nested-comment after UESCAPE', 'CREATE FUNCTION public.dd154_direct_unicode_custom_after_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat!0069on_id" UESCAPE /* outer /* separator */ outer */ ''!'' := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier custom line-comment after UESCAPE', $case$CREATE FUNCTION public.dd154_direct_unicode_custom_line_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat!0069on_id" UESCAPE -- separator
+'!' := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('Unicode identifier comment-separated direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_comments() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW /* record */ . /* field */ U&"organizat\0069on_id" /* assignment */ := gen_random_uuid(); RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('Unicode identifier distinct quoted field', 'CREATE FUNCTION public.dd154_unicode_distinct_quoted() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat\0069on_Id" := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_allow('Unicode surrogate-pair distinct quoted field', 'CREATE FUNCTION public.dd154_unicode_surrogate_distinct() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"distinct_\D83D\DE00" := gen_random_uuid(); RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('single-quoted assignment text', 'CREATE FUNCTION public.dd154_single_quote_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM ''NEW.organization_id := gen_random_uuid()''; RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('dollar-quoted assignment text', 'CREATE FUNCTION public.dd154_dollar_quote_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$NEW.organization_id := gen_random_uuid()$q$; RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('nested-comment assignment text', 'CREATE FUNCTION public.dd154_nested_comment_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN /* outer /* NEW.organization_id := gen_random_uuid() */ outer */ RETURN NEW; END $b$');
 SELECT pg_temp.record_reject('assignment after dollar string', $case$CREATE FUNCTION public.dd154_after_dollar() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$ordinary text$q$; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after escape string', $case$CREATE FUNCTION public.dd154_after_escape() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM E'it\'s text'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_reject('assignment after standard string backslash', $case$CREATE FUNCTION public.dd154_after_standard_backslash() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM '\'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after Unicode string literal', $case$CREATE FUNCTION public.dd154_after_unicode_literal() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM U&'ordinary \0069 text'; NEW.U&"organizat\0069on_id" := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after line comment', $case$CREATE FUNCTION public.dd154_after_line_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN -- an ordinary comment
 NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
@@ -285,11 +353,41 @@ TABLE review_results;
 SELECT 'TOTAL',count(*)::text,'failures',count(*) FILTER (WHERE NOT pass)::text FROM review_results;
 DO $verify$
 BEGIN
-  IF (SELECT count(*) FROM review_results) <> 35
-     OR EXISTS (SELECT 1 FROM review_results WHERE pass IS NOT TRUE) THEN
-    RAISE EXCEPTION 'DD154 executable matrix failed or did not run all 35 cases';
+  IF EXISTS (
+       SELECT 1
+       FROM expected_cases e FULL JOIN review_results r USING (label)
+       WHERE e.label IS NULL OR r.label IS NULL
+          OR e.expected <> r.expected OR r.pass IS NOT TRUE
+     ) THEN
+    RAISE EXCEPTION 'DD154 executable matrix labels, expectations, or outcomes differ from the exact manifest';
   END IF;
 END $verify$;
+
+DO $forcing$
+DECLARE
+  v_duplicate_rejected boolean := false;
+  v_missing_rejected boolean := false;
+BEGIN
+  BEGIN
+    INSERT INTO review_results VALUES ('direct := assignment','REJECT','REJECT',true);
+  EXCEPTION WHEN unique_violation THEN
+    v_duplicate_rejected := true;
+  END;
+  BEGIN
+    DELETE FROM review_results WHERE label = 'direct = assignment';
+    IF EXISTS (
+      SELECT 1 FROM expected_cases e FULL JOIN review_results r USING (label)
+      WHERE e.label IS NULL OR r.label IS NULL OR e.expected <> r.expected OR r.pass IS NOT TRUE
+    ) THEN
+      RAISE EXCEPTION 'DD154 expected manifest rejected a missing case' USING ERRCODE = 'PDD56';
+    END IF;
+  EXCEPTION WHEN SQLSTATE 'PDD56' THEN
+    v_missing_rejected := true;
+  END;
+  IF NOT v_duplicate_rejected OR NOT v_missing_rejected THEN
+    RAISE EXCEPTION 'DD154 matrix forcing controls did not reject duplicate or missing case IDs';
+  END IF;
+END $forcing$;
 SQL
 
 echo "ARTIFACT_RESULTS=/tmp/dd154-review-results.txt"

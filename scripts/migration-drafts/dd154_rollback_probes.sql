@@ -24,8 +24,10 @@ BEGIN
     IF (SELECT count(*) FROM dd154_probe_positive) <> 1 THEN
       RAISE EXCEPTION 'dd154 rollback probe: explicit writer was not persisted in its temporary relation';
     END IF;
-    RAISE EXCEPTION 'dd154 rollback-only positive probe complete' USING ERRCODE = 'P0001';
-  EXCEPTION WHEN SQLSTATE 'P0001' THEN
+    -- This sentinel is intentionally distinct from assertion failures (P0001)
+    -- so a broken positive probe cannot catch and bless its own failure.
+    RAISE EXCEPTION 'dd154 rollback-only positive probe complete' USING ERRCODE = 'PDD54';
+  EXCEPTION WHEN SQLSTATE 'PDD54' THEN
     v_rolled_back := true;
   END;
   IF NOT v_rolled_back OR to_regclass('pg_temp.dd154_probe_positive') IS NOT NULL
