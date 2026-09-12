@@ -39,6 +39,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
 import { OrganizationAbbreviation } from "@/features/organizations/components/OrganizationAbbreviation";
+import { OrganizationsStats } from "@/features/organizations/components/OrganizationsStats";
 import { OrgScopeTree } from "@/features/organizations/components/OrgScopeTree";
 import type {
   OrganizationWithRole,
@@ -496,19 +497,11 @@ export default function OrganizationsPage() {
           <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-6">
             {/* Stats + search */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div
-                className="flex items-center gap-5 flex-wrap"
-                data-surface-value="organization_count"
-              >
-                <Stat
-                  value={organizations.length}
-                  label={
-                    organizations.length === 1 ? "workspace" : "workspaces"
-                  }
-                />
-                <Stat
-                  value={teamCount}
-                  label={teamCount === 1 ? "team" : "teams"}
+              <div data-surface-value="organization_count">
+                <OrganizationsStats
+                  loading={loading}
+                  organizationCount={organizations.length}
+                  teamCount={teamCount}
                 />
               </div>
 
@@ -604,16 +597,5 @@ export default function OrganizationsPage() {
         onSuccess={() => refresh()}
       />
     </SurfaceRuntimeProvider>
-  );
-}
-
-function Stat({ value, label }: { value: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-lg font-bold text-foreground tabular-nums">
-        {value}
-      </span>
-      <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
   );
 }
