@@ -35,7 +35,7 @@ import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { nextRuleId } from "../../ruleIds";
 import { getRulebook, upsertRuleWithRetry } from "../../service";
 import type { Rulebook, RulebookRule } from "../../types";
-import { SEVERITY_LABELS } from "../../types";
+import { POLICY_FIELD_DEFAULTS, ruleFieldValues, SEVERITY_LABELS } from "../../types";
 import {
   policyRulePatch,
   RuleFields,
@@ -52,29 +52,10 @@ export interface AddRulePanelProps {
 
 type Mode = "ai" | "manual";
 
-/** THE POLICY RULE (W58): off unless the Expert says this is a judgment call. */
-const POLICY_FIELD_DEFAULTS = {
-  isPolicy: false,
-  precondition: "",
-  nextAction: "",
-  actionKind: "ask",
-  cost: "low",
-  risk: "low",
-} as const satisfies Pick<
-  RuleFieldValues,
-  "isPolicy" | "precondition" | "nextAction" | "actionKind" | "cost" | "risk"
->;
-
-const EMPTY_FIELDS = (section: string): RuleFieldValues => ({
-  name: "",
-  statement: "",
-  rationale: "",
-  detection: "",
-  quote: "",
-  severity: "major",
-  section,
-  ...POLICY_FIELD_DEFAULTS,
-});
+/** An empty manual form — the ONE derivation, with no rule behind it, so the
+ * decision fields (W58) come from the same place every other consumer reads. */
+const EMPTY_FIELDS = (section: string): RuleFieldValues =>
+  ruleFieldValues(undefined, { defaultSection: section });
 
 export function AddRulePanel({
   rulebookId,

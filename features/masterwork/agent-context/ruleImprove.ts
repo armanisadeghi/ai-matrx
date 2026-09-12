@@ -1,5 +1,15 @@
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
-import type { RulebookRule, RulebookSections, RuleSeverity } from "../types";
+import {
+  mergeRuleFieldValues,
+  POLICY_ACTION_KINDS,
+  POLICY_LEVELS,
+  type PolicyActionKind,
+  type PolicyLevel,
+  type RuleFieldValues,
+  type RulebookRule,
+  type RulebookSections,
+  type RuleSeverity,
+} from "../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
@@ -145,6 +155,13 @@ export function readRuleEditorDraft(
     rulebookVersion: number;
     mode: RulebookDraftSnapshot["mode"];
     ruleId: string | null;
+    /**
+     * The saved rule's form values. A draft carries only the keys it was
+     * written with, so anything it omits — the W58 decision fields on a draft
+     * written before they existed — reads from the live rule instead of being
+     * silently blanked.
+     */
+    fallback: RuleFieldValues;
   },
 ): {
   fields: RulebookDraftSnapshot;
@@ -174,16 +191,44 @@ export function readRuleEditorDraft(
     ) {
       return null;
     }
+    // The decision fields (W58) ride the same snapshot as the prose. Each is
+    // taken only when the stored value is one this form can actually produce;
+    // anything else falls back to the saved rule.
+    const policy: Partial<RuleFieldValues> = {};
+    if (typeof candidate.isPolicy === "boolean") {
+      policy.isPolicy = candidate.isPolicy;
+    }
+    if (typeof candidate.precondition === "string") {
+      policy.precondition = candidate.precondition;
+    }
+    if (typeof candidate.nextAction === "string") {
+      policy.nextAction = candidate.nextAction;
+    }
+    if (
+      POLICY_ACTION_KINDS.some((option) => option.value === candidate.actionKind)
+    ) {
+      policy.actionKind = candidate.actionKind as PolicyActionKind;
+    }
+    if (POLICY_LEVELS.some((option) => option.value === candidate.cost)) {
+      policy.cost = candidate.cost as PolicyLevel;
+    }
+    if (POLICY_LEVELS.some((option) => option.value === candidate.risk)) {
+      policy.risk = candidate.risk as PolicyLevel;
+    }
+
     return {
       mode,
       rule_id: ruleId,
-      name: candidate.name,
-      statement: candidate.statement,
-      rationale: candidate.rationale,
-      detection: candidate.detection,
-      quote: candidate.quote,
-      severity,
-      section: candidate.section,
+      ...mergeRuleFieldValues(expected.fallback, {
+        name: candidate.name,
+        statement: candidate.statement,
+        rationale: candidate.rationale,
+        detection: candidate.detection,
+        quote: candidate.quote,
+        severity,
+        section: candidate.section,
+        ...policy,
+      }),
     };
   };
 

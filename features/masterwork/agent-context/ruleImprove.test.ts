@@ -1,4 +1,5 @@
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
+import { ruleFieldValues } from "../types";
 import type { RulebookRule, RulebookSections } from "../types";
 import {
   applyRuleImprove,
@@ -35,16 +36,12 @@ const REVISED = {
   section: "U",
 };
 
+const SAVED_VALUES = ruleFieldValues(RULE, { defaultSection: "G" });
+
 const DRAFT: RulebookDraftSnapshot = {
   mode: "edit",
   rule_id: "R1",
-  name: RULE.name,
-  statement: RULE.statement,
-  rationale: RULE.rationale ?? "",
-  detection: RULE.detection ?? "",
-  quote: RULE.quote ?? "",
-  severity: RULE.severity,
-  section: RULE.section,
+  ...SAVED_VALUES,
 };
 
 describe("rule improve contract", () => {
@@ -120,6 +117,7 @@ describe("rule editor persisted draft", () => {
         rulebookVersion: 8,
         mode: "edit",
         ruleId: "R1",
+        fallback: SAVED_VALUES,
       }),
     ).toEqual({ fields: DRAFT, beforeTidy: null });
     expect(
@@ -127,6 +125,7 @@ describe("rule editor persisted draft", () => {
         rulebookVersion: 9,
         mode: "edit",
         ruleId: "R1",
+        fallback: SAVED_VALUES,
       }),
     ).toBeNull();
   });

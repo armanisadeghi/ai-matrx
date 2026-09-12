@@ -250,6 +250,149 @@ export function isPolicyRule(rule: RulebookRule): boolean {
 }
 
 /**
+ * 🚨 THE ONE RULE-FORM FIELD SET (W58, 2026-09-12). Every field the rule form
+ * owns — the prose, the classifications, AND the decision shape — lives in this
+ * ONE shape, and every consumer (the editor's form state, its persisted draft,
+ * the Add-rule window, the context menu's text replacement) derives from it.
+ *
+ * The wall it closes: the decision fields were added beside the prose fields as
+ * a second, parallel set of state. They were absent from the draft snapshot,
+ * from the draft restore, and from the open/reset effect, so Cancel-then-reopen
+ * kept a cancelled toggle and a later Save silently converted or stripped a
+ * policy rule (Bugbot, c016fe96). A field that rides this set cannot be
+ * forgotten by one consumer and remembered by another.
+ */
+export interface RuleFieldValues {
+  name: string;
+  statement: string;
+  rationale: string;
+  detection: string;
+  quote: string;
+  severity: RuleSeverity;
+  section: string;
+  /** `true` reveals the decision fields; they are carried on the rule itself
+   * (`kind: "policy"`) — see `policyRulePatch`, the ONE storage mapping. */
+  isPolicy: boolean;
+  precondition: string;
+  nextAction: string;
+  actionKind: PolicyActionKind;
+  cost: PolicyLevel;
+  risk: PolicyLevel;
+}
+
+/** Every key of the form set — the enumeration `mergeRuleFieldValues` walks, so
+ * a new field reaches every consumer by being added to `RuleFieldValues`. */
+export const RULE_FIELD_KEYS = [
+  "name",
+  "statement",
+  "rationale",
+  "detection",
+  "quote",
+  "severity",
+  "section",
+  "isPolicy",
+  "precondition",
+  "nextAction",
+  "actionKind",
+  "cost",
+  "risk",
+] as const satisfies ReadonlyArray<keyof RuleFieldValues>;
+
+/**
+ * The form's TEXT fields, keyed by the DOM id suffix `RuleFields` renders them
+ * under (`${idPrefix}-<suffix>`). The editor's context-menu replacement derives
+ * its accepted targets from here rather than hand-listing ids, so a new text
+ * field can never be replaceable in the form but unknown to the menu.
+ */
+export const RULE_FIELD_ELEMENT_IDS = {
+  name: "name",
+  statement: "statement",
+  rationale: "rationale",
+  detection: "detection",
+  quote: "quote",
+  precondition: "precondition",
+  "next-action": "nextAction",
+} as const satisfies Record<string, keyof RuleFieldValues>;
+
+export type RuleTextField = (typeof RULE_FIELD_ELEMENT_IDS)[keyof typeof RULE_FIELD_ELEMENT_IDS];
+
+/**
+ * Which form field a focused element edits, or null when the focus is not on
+ * one. `idPrefix` matches `RuleFields`' own prop.
+ */
+export function ruleFieldForElementId(
+  elementId: string | null | undefined,
+  idPrefix = "rule",
+): RuleTextField | null {
+  if (!elementId || !elementId.startsWith(`${idPrefix}-`)) return null;
+  const suffix = elementId.slice(idPrefix.length + 1);
+  return (
+    (RULE_FIELD_ELEMENT_IDS as Record<string, RuleTextField | undefined>)[
+      suffix
+    ] ?? null
+  );
+}
+
+/** The decision-field defaults of an ordinary (non-policy) rule. */
+export const POLICY_FIELD_DEFAULTS = {
+  isPolicy: false,
+  precondition: "",
+  nextAction: "",
+  actionKind: "ask",
+  cost: "low",
+  risk: "low",
+} as const satisfies Pick<
+  RuleFieldValues,
+  "isPolicy" | "precondition" | "nextAction" | "actionKind" | "cost" | "risk"
+>;
+
+/**
+ * THE ONE derivation of form values from a saved rule — what the editor shows
+ * when nothing is staged, and what a Cancel returns to. A rule with no policy
+ * shape reads as the ordinary defaults; a policy rule reads its own.
+ */
+export function ruleFieldValues(
+  rule: RulebookRule | undefined,
+  opts: { defaultSection: string },
+): RuleFieldValues {
+  return {
+    name: rule?.name ?? "",
+    statement: rule?.statement ?? "",
+    rationale: rule?.rationale ?? "",
+    detection: rule?.detection ?? "",
+    quote: rule?.quote ?? "",
+    severity: rule?.severity ?? "major",
+    section: rule?.section ?? opts.defaultSection,
+    isPolicy: rule ? isPolicyRule(rule) : false,
+    precondition: rule?.precondition ?? "",
+    nextAction: rule?.next_action ?? "",
+    actionKind: rule?.action_kind ?? POLICY_FIELD_DEFAULTS.actionKind,
+    cost: rule?.cost ?? POLICY_FIELD_DEFAULTS.cost,
+    risk: rule?.risk ?? POLICY_FIELD_DEFAULTS.risk,
+  };
+}
+
+/**
+ * Lay a staged or persisted draft over the saved values. Only keys the draft
+ * actually carries win — an older draft written before a field existed leaves
+ * that field on the saved rule instead of blanking it.
+ */
+export function mergeRuleFieldValues(
+  base: RuleFieldValues,
+  patch: Partial<RuleFieldValues> | null | undefined,
+): RuleFieldValues {
+  if (!patch) return { ...base };
+  const next = { ...base };
+  for (const key of RULE_FIELD_KEYS) {
+    const value = patch[key];
+    if (value === undefined) continue;
+    // Each key's value type is its own; the enumeration is the guarantee.
+    (next as Record<string, unknown>)[key] = value;
+  }
+  return next;
+}
+
+/**
  * The one review state of a rule — precedence
  * retired > rejected > evidence > draft > approved.
  *

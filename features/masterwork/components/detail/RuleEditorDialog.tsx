@@ -30,12 +30,13 @@ import {
 } from "../../agent-context/ruleImprove";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { policyRulePatch, RuleFields } from "./RuleFields";
-import type {
-  PolicyActionKind,
-  PolicyLevel,
-  RulebookRule,
-  RulebookSections,
-  RuleSeverity,
+import {
+  mergeRuleFieldValues,
+  ruleFieldForElementId,
+  ruleFieldValues,
+  type RuleFieldValues,
+  type RulebookRule,
+  type RulebookSections,
 } from "../../types";
 
 /**
@@ -117,6 +118,21 @@ function RuleEditorForm({
   });
   const isNew = !initial;
   const sectionCodes = useMemo(() => Object.keys(sections), [sections]);
+  /**
+   * 🚨 THE ONE FORM STATE (W58). The prose, the classifications AND the
+   * decision shape are ONE `RuleFieldValues` object, derived from the saved
+   * rule by the ONE derivation. They were two parallel sets of state: the
+   * decision fields were missing from the draft snapshot, the draft restore and
+   * the open/reset effect, so a cancelled toggle survived a reopen and a later
+   * Save silently converted or stripped a policy rule (Bugbot, c016fe96).
+   */
+  const savedValues = useMemo(
+    () =>
+      ruleFieldValues(initial, {
+        defaultSection: defaultSection ?? sectionCodes[0] ?? "G",
+      }),
+    [defaultSection, initial, sectionCodes],
+  );
   const wizardId = `masterwork-rule-editor:${rulebookId}:${initial?.id ?? "new"}`;
   const persistedEntry = useAppSelector((state) =>
     selectWizardDraft(wizardId)(state),
@@ -127,42 +143,13 @@ function RuleEditorForm({
         rulebookVersion,
         mode: isNew ? "new" : "edit",
         ruleId: initial?.id ?? null,
+        fallback: savedValues,
       }),
-    [initial?.id, isNew, persistedEntry?.data, rulebookVersion],
+    [initial?.id, isNew, persistedEntry?.data, rulebookVersion, savedValues],
   );
   const wasOpen = useRef(open);
-  // THE POLICY RULE (W58) — a decision rule's shape, editable field by field so
-  // "make it a test, not a question" is one control, not a rewrite.
-  const [isPolicy, setIsPolicy] = useState(initial?.kind === "policy");
-  const [precondition, setPrecondition] = useState(initial?.precondition ?? "");
-  const [nextAction, setNextAction] = useState(initial?.next_action ?? "");
-  const [actionKind, setActionKind] = useState<PolicyActionKind>(
-    initial?.action_kind ?? "ask",
-  );
-  const [cost, setCost] = useState<PolicyLevel>(initial?.cost ?? "low");
-  const [risk, setRisk] = useState<PolicyLevel>(initial?.risk ?? "low");
-  const [name, setName] = useState(stagedDraft?.name ?? initial?.name ?? "");
-  const [statement, setStatement] = useState(
-    stagedDraft?.statement ?? initial?.statement ?? "",
-  );
-  const [rationale, setRationale] = useState(
-    stagedDraft?.rationale ?? initial?.rationale ?? "",
-  );
-  const [detection, setDetection] = useState(
-    stagedDraft?.detection ?? initial?.detection ?? "",
-  );
-  const [quote, setQuote] = useState(
-    stagedDraft?.quote ?? initial?.quote ?? "",
-  );
-  const [severity, setSeverity] = useState<RuleSeverity>(
-    stagedDraft?.severity ?? initial?.severity ?? "major",
-  );
-  const [section, setSection] = useState(
-    stagedDraft?.section ??
-      initial?.section ??
-      defaultSection ??
-      sectionCodes[0] ??
-      "G",
+  const [values, setValues] = useState<RuleFieldValues>(() =>
+    mergeRuleFieldValues(savedValues, stagedDraft),
   );
   const [saving, setSaving] = useState(false);
   const [beforeTidy, setBeforeTidy] =
@@ -174,25 +161,9 @@ function RuleEditorForm({
     (): RulebookDraftSnapshot => ({
       mode: isNew ? "new" : "edit",
       rule_id: initial?.id ?? null,
-      name,
-      statement,
-      rationale,
-      detection,
-      quote,
-      severity,
-      section,
+      ...values,
     }),
-    [
-      detection,
-      initial?.id,
-      isNew,
-      name,
-      quote,
-      rationale,
-      section,
-      severity,
-      statement,
-    ],
+    [initial?.id, isNew, values],
   );
 
   useEffect(() => {
@@ -220,31 +191,16 @@ function RuleEditorForm({
 
   useEffect(() => {
     if (open && !wasOpen.current) {
-      const restored = stagedDraft ?? persistedDraft?.fields;
-      setName(restored?.name ?? initial?.name ?? "");
-      setStatement(restored?.statement ?? initial?.statement ?? "");
-      setRationale(restored?.rationale ?? initial?.rationale ?? "");
-      setDetection(restored?.detection ?? initial?.detection ?? "");
-      setQuote(restored?.quote ?? initial?.quote ?? "");
-      setSeverity(restored?.severity ?? initial?.severity ?? "major");
-      setSection(
-        restored?.section ??
-          initial?.section ??
-          defaultSection ??
-          sectionCodes[0] ??
-          "G",
+      // Reopening resets the WHOLE form to the saved rule, then lays the staged
+      // or persisted draft over it — one merge, every field, so a cancelled
+      // decision toggle never survives into the next open.
+      setValues(
+        mergeRuleFieldValues(savedValues, stagedDraft ?? persistedDraft?.fields),
       );
       setBeforeTidy(persistedDraft?.beforeTidy ?? null);
     }
     wasOpen.current = open;
-  }, [
-    defaultSection,
-    initial,
-    open,
-    persistedDraft,
-    sectionCodes,
-    stagedDraft,
-  ]);
+  }, [open, persistedDraft, savedValues, stagedDraft]);
 
   const getApplicationScope = useCallback(() => {
     const active = document.activeElement;
@@ -264,17 +220,20 @@ function RuleEditorForm({
     });
   }, [getSurfaceScope]);
 
+  // Which field a replacement lands in is derived from the ONE field set, not
+  // from a hand-kept list of ids — that list had never heard of the decision
+  // fields, so a context-menu replacement inside them threw (Bugbot, c016fe96).
   const replaceActiveField = useCallback((text: string) => {
-    const activeId = document.activeElement?.id;
-    if (activeId === "rule-name") setName(text);
-    else if (activeId === "rule-statement") setStatement(text);
-    else if (activeId === "rule-rationale") setRationale(text);
-    else if (activeId === "rule-detection") setDetection(text);
-    else if (activeId === "rule-quote") setQuote(text);
-    else throw new Error("Focus a Rulebook text field before replacing text.");
+    const field = ruleFieldForElementId(document.activeElement?.id);
+    if (!field) {
+      throw new Error("Focus a Rulebook text field before replacing text.");
+    }
+    setValues((current) => ({ ...current, [field]: text }));
   }, []);
 
   const save = async () => {
+    const { name, statement, rationale, detection, quote, severity, section } =
+      values;
     if (!name.trim() || !statement.trim()) {
       toast.error("A rule needs at least a short name and the rule itself.");
       return;
@@ -294,21 +253,7 @@ function RuleEditorForm({
           quote: quote.trim() || undefined,
           severity,
           section,
-          ...policyRulePatch({
-            name,
-            statement,
-            rationale,
-            detection,
-            quote,
-            severity,
-            section,
-            isPolicy,
-            precondition,
-            nextAction,
-            actionKind,
-            cost,
-            risk,
-          }),
+          ...policyRulePatch(values),
         },
       });
       dispatch(clearWizardDraft(wizardId));
@@ -324,13 +269,7 @@ function RuleEditorForm({
 
   const applyCleanedDraft = useCallback(
     (cleaned: RulebookDraftSnapshot, before: RulebookDraftSnapshot) => {
-      setName(cleaned.name);
-      setStatement(cleaned.statement);
-      setRationale(cleaned.rationale);
-      setDetection(cleaned.detection);
-      setQuote(cleaned.quote);
-      setSeverity(cleaned.severity);
-      setSection(cleaned.section);
+      setValues((current) => mergeRuleFieldValues(current, cleaned));
       setBeforeTidy(before);
     },
     [],
@@ -386,14 +325,7 @@ function RuleEditorForm({
 
   const undoCleanup = () => {
     if (!beforeTidy) return;
-    const restored = beforeTidy;
-    setName(restored.name);
-    setStatement(restored.statement);
-    setRationale(restored.rationale);
-    setDetection(restored.detection);
-    setQuote(restored.quote);
-    setSeverity(restored.severity);
-    setSection(restored.section);
+    setValues((current) => mergeRuleFieldValues(current, beforeTidy));
     setBeforeTidy(null);
     cleanupRun.dismiss();
     toast.success("AI cleanup undone.");
@@ -431,37 +363,10 @@ function RuleEditorForm({
             </DialogDescription>
           </DialogHeader>
           <RuleFields
-            values={{
-              name,
-              statement,
-              rationale,
-              detection,
-              quote,
-              severity,
-              section,
-              isPolicy,
-              precondition,
-              nextAction,
-              actionKind,
-              cost,
-              risk,
-            }}
-            onChange={(patch) => {
-              if (patch.name !== undefined) setName(patch.name);
-              if (patch.statement !== undefined) setStatement(patch.statement);
-              if (patch.rationale !== undefined) setRationale(patch.rationale);
-              if (patch.detection !== undefined) setDetection(patch.detection);
-              if (patch.quote !== undefined) setQuote(patch.quote);
-              if (patch.severity !== undefined) setSeverity(patch.severity);
-              if (patch.section !== undefined) setSection(patch.section);
-              if (patch.isPolicy !== undefined) setIsPolicy(patch.isPolicy);
-              if (patch.precondition !== undefined)
-                setPrecondition(patch.precondition);
-              if (patch.nextAction !== undefined) setNextAction(patch.nextAction);
-              if (patch.actionKind !== undefined) setActionKind(patch.actionKind);
-              if (patch.cost !== undefined) setCost(patch.cost);
-              if (patch.risk !== undefined) setRisk(patch.risk);
-            }}
+            values={values}
+            onChange={(patch) =>
+              setValues((current) => mergeRuleFieldValues(current, patch))
+            }
             sections={sections}
           />
           {cleanupRun.hasLiveRun ? (

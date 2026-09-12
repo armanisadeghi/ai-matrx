@@ -5,21 +5,22 @@ import { renderRulebookDocument } from "./rulebookDocument";
 import {
   ruleState,
   type Masterwork,
+  type RuleFieldValues,
   type Rulebook,
   type RulebookRule,
 } from "../types";
 
-export interface RulebookDraftSnapshot {
+/**
+ * The rule editor's live draft: the ONE form field set (`RuleFieldValues` —
+ * prose, classifications AND the W58 decision shape) plus which rule it is
+ * editing. Never re-list the fields here: a field added to `RuleFieldValues`
+ * must ride into the snapshot, the persisted draft and the surface scope
+ * automatically, which is exactly what the decision fields did not do.
+ */
+export type RulebookDraftSnapshot = RuleFieldValues & {
   mode: "new" | "edit";
   rule_id: string | null;
-  name: string;
-  statement: string;
-  rationale: string;
-  detection: string;
-  quote: string;
-  severity: RulebookRule["severity"];
-  section: string;
-}
+};
 
 export interface RulebookWorkspaceState {
   editor_open: boolean;

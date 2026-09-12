@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
+import { PolicyRuleShape } from "./PolicyRuleShape";
 import type { Rulebook, RulebookRule } from "../../types";
 import { ruleState, SEVERITY_LABELS } from "../../types";
 
@@ -224,6 +225,10 @@ export function RuleReviewWizard({
                       {rule.statement}
                     </p>
                   </div>
+                  {/* 🚨 A decision rule is APPROVED here, so its decision shape
+                      is read here — the same ONE renderer the rule row uses,
+                      never a second one. */}
+                  <PolicyRuleShape rule={rule} />
                   {rule.quote ? (
                     <div className="pt-2">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">

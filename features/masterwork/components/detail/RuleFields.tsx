@@ -25,31 +25,15 @@ import {
   POLICY_LEVELS,
   type PolicyActionKind,
   type PolicyLevel,
+  type RuleFieldValues,
   type RulebookSections,
   type RuleSeverity,
 } from "../../types";
 
-export interface RuleFieldValues {
-  name: string;
-  statement: string;
-  rationale: string;
-  detection: string;
-  quote: string;
-  severity: RuleSeverity;
-  section: string;
-  /**
-   * 🚨 THE POLICY RULE (W58). A rule used to be a static statement only, so a
-   * judgment call — "given what is known here, ask this one question next" —
-   * had to be flattened into prose. `isPolicy` reveals the decision fields;
-   * they are carried on the rule itself (`kind: "policy"`).
-   */
-  isPolicy: boolean;
-  precondition: string;
-  nextAction: string;
-  actionKind: PolicyActionKind;
-  cost: PolicyLevel;
-  risk: PolicyLevel;
-}
+// The form's field set is declared ONCE, in `../../types` — the editor's state,
+// its persisted draft and the context menu all derive from the same shape.
+// Re-exported here because this component is the form its consumers import.
+export type { RuleFieldValues } from "../../types";
 
 /** The decision fields as a rule stores them — the ONE mapping, so no consumer
  * invents its own. Returns the three clearing `undefined`s for an ordinary
