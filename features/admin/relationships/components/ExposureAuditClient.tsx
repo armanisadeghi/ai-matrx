@@ -88,7 +88,10 @@ function sumSummary(
   return summaries.reduce((total, row) => total + row[key], 0);
 }
 
-/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
+/**
+ * THE relative-time voice: @ai-matrx/kit/format owns "3m". Bare on purpose —
+ * these are dense audit cells under a header that already says when.
+ */
 function relativeTime(value: string): string {
   return formatRelativeTime(value, { style: "short", suffix: false });
 }

@@ -1497,6 +1497,46 @@ function runSelfTest(): number {
       console.log(`  ${TAG.ok} the annotation escape hatch credits exactly the names it declares, and they are still diffed`);
     }
 
+    // A key annotation must ADD to what resolution already read, never replace
+    // it — otherwise one dynamic family forces every static key beside it into
+    // the comment, and the comment starts drifting.
+    const partialFile = join(dir, "planted-partial.tsx");
+    writeFileSync(
+      partialFile,
+      [
+        "export function Partial({ generated }: { generated: Record<string, () => void> }) {",
+        "  return (",
+        '    <SurfaceRuntimeProvider surfaceName="matrx-selftest/fixture"',
+        "      // surface-write-handlers: planted_family_*",
+        "      getWriteHandlers={() => ({ planted_static: () => {}, ...generated })}>",
+        "      <div />",
+        "    </SurfaceRuntimeProvider>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const partialFindings = diff(
+      [
+        {
+          surfaceName: "matrx-selftest/fixture",
+          targets: ["planted_static", "planted_family_one", "planted_family_two"],
+        },
+      ],
+      scanFiles([partialFile]),
+    );
+    if (partialFindings.unhandled.length > 0) {
+      console.log(
+        `  ${TAG.fail} a key annotation REPLACED resolution instead of adding to it (lost: ${partialFindings.unhandled[0].targets.join(", ")}) — every partly-dynamic map would have to re-type its static keys`,
+      );
+      bad += 1;
+    } else {
+      console.log(
+        `  ${TAG.ok} a key annotation is additive: the statically-read keys and the annotated family are both credited`,
+      );
+    }
+
     // …and an annotation that lies (names a target the manifest does not have)
     // must NOT silence the real gap.
     const lyingFindings = diff(

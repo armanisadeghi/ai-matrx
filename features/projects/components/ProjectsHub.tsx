@@ -195,6 +195,13 @@ const ORGANIZATION_ACCENTS = [
   "bg-rose-500",
 ] as const;
 
+// NOT swapped to `@ai-matrx/kit/format`'s `avatarPaletteIndex` (census H1
+// 2026-09-07): that function's default is 8 buckets and this palette has 5,
+// AND the overflow handling differs (`>>> 0` unsigned vs. the package's
+// `Math.abs` on a signed accumulator) — negative intermediate hashes land on
+// different indices under the two schemes. Swapping would silently reshuffle
+// which accent color every existing organization gets; that is a visible
+// product decision, not a mechanical one, so this hash is left as-is.
 function organizationAccent(organizationId: string | null): string {
   if (!organizationId) return "bg-muted-foreground";
   let hash = 0;

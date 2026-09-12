@@ -26,6 +26,8 @@
  * nothing and `suspect` states its own uncertainty in the copy.
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 /** Deliveries this recent mean the bridge is demonstrably working. */
 const FRESH_MS = 15 * 60 * 1_000;
 
@@ -127,16 +129,14 @@ export function quietProfile(history: readonly (string | null)[]): QuietProfile 
   };
 }
 
-/** Human duration at the precision a person actually reads. */
+/**
+ * Human duration at the precision a person actually reads. This lands inside
+ * a sentence the owner reads — "Nothing has been delivered for 3 days." — so
+ * it speaks @ai-matrx/kit/format's `long` prose voice, which floors, spells
+ * the unit out and pluralises it correctly.
+ */
 export function formatGap(ms: number): string {
-  const rawMinutes = Math.floor(ms / 60_000);
-  if (rawMinutes < 60) {
-    const minutes = Math.max(1, rawMinutes);
-    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
-  }
-  const hours = Math.floor(rawMinutes / 60);
-  if (hours < 48) return `${hours} hour${hours === 1 ? "" : "s"}`;
-  return `${Math.floor(hours / 24)} days`;
+  return formatDurationMs(ms, { style: "long" });
 }
 
 export function captureGapVerdict(input: CaptureGapInput): CaptureGapVerdict {

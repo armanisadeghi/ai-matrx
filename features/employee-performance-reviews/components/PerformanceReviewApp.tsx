@@ -312,6 +312,13 @@ export default function PerformanceReviewApp({
     <SurfaceRuntimeProvider
       surfaceName={PERFORMANCE_REVIEW_SURFACE_NAME}
       getScope={getSurfaceScope}
+      // The twenty-three `rating_*` handlers are generated from RATING_SCHEMA
+      // (`Object.fromEntries` over `performanceReviewRatingSurfaceName`) — the
+      // SAME source and the SAME name helper the manifest's write targets are
+      // generated from, so the two halves cannot drift. The static guard cannot
+      // evaluate that, and the annotation is additive: every literal key beside
+      // it is still read from the code.
+      // surface-write-handlers: rating_*
       getWriteHandlers={getSurfaceWriteHandlers}
       isEditable
     >

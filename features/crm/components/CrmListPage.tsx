@@ -1030,6 +1030,10 @@ export function CrmListPage({
 
   return (
     <SurfaceRuntimeProvider
+      // The surface name is a prop, so the static handler guard cannot read it.
+      // Two mounts: the `/crm` route takes the CRM_SURFACE_NAME default, and
+      // `CrmManagerWindow` passes CRM_MANAGER_SURFACE_NAME.
+      // surface-write-handlers-surface: matrx-user/crm, matrx-user/crm-manager
       surfaceName={surfaceName}
       getScope={getScope}
       getWriteHandlers={buildCrmWriteHandlers}

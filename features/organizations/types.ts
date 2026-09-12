@@ -471,23 +471,14 @@ export function getRoleBadgeColor(role: OrgRole): string {
 /**
  * Format time remaining until expiration
  */
+/**
+ * THE prose voice: @ai-matrx/kit/format's `long` ("3 days", "5 hours",
+ * "20 minutes"), which floors so a countdown never over-promises, and
+ * pluralises correctly at every unit.
+ */
 export function getExpiryDisplay(expiresAt: string): string {
-  const now = new Date();
-  const expiry = new Date(expiresAt);
-  const diff = expiry.getTime() - now.getTime();
-
-  if (diff < 0) {
-    return "Expired";
-  }
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-  if (days > 0) {
-    return `Expires in ${days} day${days > 1 ? "s" : ""}`;
-  } else if (hours > 0) {
-    return `Expires in ${hours} hour${hours > 1 ? "s" : ""}`;
-  } else {
-    return "Expires soon";
-  }
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (Number.isNaN(diff)) return "Expired";
+  if (diff < 0) return "Expired";
+  return `Expires in ${formatDurationMs(diff, { style: "long" })}`;
 }

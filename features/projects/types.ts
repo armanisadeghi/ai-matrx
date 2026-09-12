@@ -277,17 +277,14 @@ export function getRoleBadgeColor(role: ProjectRole): string {
   return colors[role];
 }
 
+/**
+ * THE prose voice: @ai-matrx/kit/format's `long` ("3 days", "5 hours",
+ * "20 minutes"), which floors so a countdown never over-promises, and
+ * pluralises correctly at every unit.
+ */
 export function getExpiryDisplay(expiresAt: string): string {
-  const now = new Date();
-  const expiry = new Date(expiresAt);
-  const diff = expiry.getTime() - now.getTime();
-
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (Number.isNaN(diff)) return "Expired";
   if (diff < 0) return "Expired";
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-  if (days > 0) return `Expires in ${days} day${days > 1 ? "s" : ""}`;
-  if (hours > 0) return `Expires in ${hours} hour${hours > 1 ? "s" : ""}`;
-  return "Expires soon";
+  return `Expires in ${formatDurationMs(diff, { style: "long" })}`;
 }

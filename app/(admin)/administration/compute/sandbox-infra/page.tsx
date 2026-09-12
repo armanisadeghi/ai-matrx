@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { formatDurationSeconds, formatRelativeTime } from "@ai-matrx/kit/format";
 import { extractErrorMessage } from "@/utils/errors";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
@@ -99,11 +99,13 @@ interface DeployRun {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/**
+ * THE duration voice for a dense stat row: @ai-matrx/kit/format's `coarse`
+ * ("45 min", "1h 30m", "3d 4h"). It grew a day tier in kit 0.11.0, which is
+ * what this function was hand-rolling for.
+ */
 function uptimeHuman(seconds: number): string {
-    if (seconds < 60) return `${seconds.toFixed(0)}s`;
-    if (seconds < 3600) return `${(seconds / 60).toFixed(0)}m`;
-    if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}h`;
-    return `${(seconds / 86400).toFixed(1)}d`;
+    return formatDurationSeconds(seconds, { style: "coarse" });
 }
 
 /** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
