@@ -131,3 +131,15 @@ lines by relocating trial-specific detail into the trial's register.
   nonce.
 - 2026-09-11 — Read the register's walls before starting: eight of night 1's runs died on
   platform defects that are now fixed; the next trial starts on that floor.
+- 2026-09-12 — A Studio tab left open on the workflow autosaves layout; with a stale build it can
+  rewrite every card's type and break the desk mid-run. Before a run, know who has the workflow
+  open; a save with no author is itself a defect (fixed: every save now carries its author).
+- 2026-09-12 — A server redeploy kills an in-flight run and the watchdog FAILS it instead of
+  resuming from its checkpoint. Check the live build time when a run goes silent mid-step.
+- 2026-09-12 — "Presented" is not "stored": a to-frontend step emits its shaped result as an
+  event and passes its input through unchanged. Any surface judging a run's result (the Audition)
+  must read the emitted payload; a Conductor cannot work around it from the workflow side.
+- 2026-09-12 — The Conductor turns a one-line Expert correction into a real step ("whose footprint
+  to examine") — give it the book's rule, not the fix; it finds the dependency (source waits on
+  provenance) on its own.
+- 2026-09-12 — Cost of one desk run on a real case: about $1.50 (15 model calls). Quote it.
