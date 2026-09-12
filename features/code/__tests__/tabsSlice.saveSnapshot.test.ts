@@ -54,4 +54,48 @@ describe("tab save snapshots", () => {
       dirty: false,
     });
   });
+
+  it("refreshes an existing read-only Git comparison with the latest snapshot", () => {
+    const diff = {
+      ...file,
+      id: "git-diff:sandbox:one:/workspace:working:app.ts",
+      path: "git-diff:///workspace/app.ts",
+      readOnly: true,
+    };
+    let state = reducer(undefined, openTab(diff));
+    state = reducer(
+      state,
+      openTab({
+        ...diff,
+        content: "new comparison",
+        pristineContent: "new comparison",
+      }),
+    );
+
+    expect(state.order).toEqual([diff.id]);
+    expect(state.byId[diff.id]).toMatchObject({
+      content: "new comparison",
+      pristineContent: "new comparison",
+      dirty: false,
+    });
+  });
+
+  it("does not replace an existing editable dirty buffer", () => {
+    let state = reducer(undefined, openTab(file));
+    state = reducer(state, updateTabContent({ id: file.id, content: "draft" }));
+    state = reducer(
+      state,
+      openTab({
+        ...file,
+        content: "disk update",
+        pristineContent: "disk update",
+      }),
+    );
+
+    expect(state.byId[file.id]).toMatchObject({
+      content: "draft",
+      pristineContent: "one",
+      dirty: true,
+    });
+  });
 });

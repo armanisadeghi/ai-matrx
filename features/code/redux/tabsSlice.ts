@@ -48,9 +48,16 @@ const slice = createSlice({
   reducers: {
     openTab(state, action: PayloadAction<EditorFile>) {
       const file = action.payload;
-      if (!state.byId[file.id]) {
+      const existing = state.byId[file.id];
+      if (!existing) {
         state.byId[file.id] = { ...file, dirty: false };
         state.order.push(file.id);
+      } else if (isReadOnlyEditorTab(existing) && isReadOnlyEditorTab(file)) {
+        // Git comparison tabs deliberately reuse a stable id so reopening
+        // one focuses its existing tab. Unlike an editor buffer, their
+        // contents are a disposable read-only snapshot and must be replaced
+        // with the newly fetched comparison.
+        state.byId[file.id] = { ...file, dirty: false };
       }
       state.activeId = file.id;
       bumpRecent(state, file.id);
