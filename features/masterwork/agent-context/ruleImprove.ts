@@ -40,6 +40,80 @@ export interface RuleImproveResult {
   detection: string;
   severity: RuleSeverity;
   section: string;
+  /**
+   * The decision shape (W58), when the rewrite carries one. A decision rule
+   * handed to the Mandate comes back WITH its precondition / next action /
+   * cost / risk — the rewrite is of the judgment, not only of the sentence
+   * describing it. Absent on an ordinary rule.
+   */
+  policy?: RuleImprovePolicy;
+}
+
+/** The decision fields of a rewritten rule — the same closed sets the editor offers. */
+export interface RuleImprovePolicy {
+  precondition: string;
+  next_action: string;
+  action_kind: PolicyActionKind;
+  cost: PolicyLevel;
+  risk: PolicyLevel;
+}
+
+const POLICY_RESULT_KEYS = [
+  "precondition",
+  "next_action",
+  "action_kind",
+  "cost",
+  "risk",
+] as const;
+
+function isActionKind(value: unknown): value is PolicyActionKind {
+  return POLICY_ACTION_KINDS.some((option) => option.value === value);
+}
+
+function isPolicyLevel(value: unknown): value is PolicyLevel {
+  return POLICY_LEVELS.some((option) => option.value === value);
+}
+
+/**
+ * Read the decision fields off the Mandate's reply. `kind: "policy"` or any
+ * of the five decision keys present means the agent is returning a decision
+ * rule, and then every one of the five must be there and valid — a rewrite
+ * that names a precondition but drops the cost would land a half-judgment the
+ * Expert cannot review. Nothing present means an ordinary rule (`undefined`).
+ */
+function readPolicyResult(value: Record<string, unknown>): RuleImprovePolicy | undefined {
+  const declared = value.kind === "policy";
+  const present = POLICY_RESULT_KEYS.filter(
+    (key) => value[key] !== undefined && value[key] !== null && value[key] !== "",
+  );
+  if (!declared && present.length === 0) return undefined;
+  const missing = POLICY_RESULT_KEYS.filter((key) => !present.includes(key));
+  if (missing.length > 0) {
+    throw new Error(
+      `The AI returned a decision rule without its ${missing.join(", ")} field(s).`,
+    );
+  }
+  const precondition = value.precondition;
+  const nextAction = value.next_action;
+  if (typeof precondition !== "string" || typeof nextAction !== "string") {
+    throw new Error("The AI returned an invalid precondition or next_action field.");
+  }
+  if (!isActionKind(value.action_kind)) {
+    throw new Error("The AI returned an action_kind outside the allowed set.");
+  }
+  if (!isPolicyLevel(value.cost) || !isPolicyLevel(value.risk)) {
+    throw new Error("The AI returned a cost or risk outside low / medium / high.");
+  }
+  if (!precondition.trim() || !nextAction.trim()) {
+    throw new Error("The AI dropped the decision rule's precondition or next action.");
+  }
+  return {
+    precondition: precondition.trim(),
+    next_action: nextAction.trim(),
+    action_kind: value.action_kind,
+    cost: value.cost,
+    risk: value.risk,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -79,6 +153,7 @@ export function coerceRuleImproveResult(
     ? rawSection
     : opts.fallbackSection;
 
+  const policy = readPolicyResult(value);
   const result: RuleImproveResult = {
     name: requireString(value, "name"),
     statement: requireString(value, "statement"),
@@ -86,11 +161,45 @@ export function coerceRuleImproveResult(
     detection: requireString(value, "detection"),
     severity,
     section,
+    ...(policy ? { policy } : {}),
   };
   if (!result.name.trim() || !result.statement.trim()) {
     throw new Error("The AI dropped the rule name or the rule itself.");
   }
   return result;
+}
+
+/**
+ * The decision fields the rewrite lands with. The reply's decision shape wins
+ * when it carries one; a reply with none leaves a decision rule's stored
+ * judgment exactly as it was (a prose-only rewrite never demotes a decision
+ * rule to a statement), and an ordinary rule stays ordinary.
+ */
+function policyFieldsAfterImprove(
+  current: Pick<RulebookRule, "kind" | "precondition" | "next_action" | "action_kind" | "cost" | "risk">,
+  result: RuleImproveResult,
+): Pick<RulebookRule, "kind" | "precondition" | "next_action" | "action_kind" | "cost" | "risk"> {
+  if (result.policy) {
+    return {
+      kind: "policy",
+      precondition: result.policy.precondition,
+      next_action: result.policy.next_action,
+      action_kind: result.policy.action_kind,
+      cost: result.policy.cost,
+      risk: result.policy.risk,
+    };
+  }
+  if (current.kind === "policy") {
+    return {
+      kind: "policy",
+      precondition: current.precondition,
+      next_action: current.next_action,
+      action_kind: current.action_kind,
+      cost: current.cost,
+      risk: current.risk,
+    };
+  }
+  return {};
 }
 
 /**
@@ -111,6 +220,7 @@ export function applyRuleImprove(
     detection: result.detection.trim() || undefined,
     severity: result.severity,
     section: result.section,
+    ...policyFieldsAfterImprove(current, result),
     draft: true,
   };
   delete next.rejected;
@@ -136,9 +246,22 @@ export function applyRuleTidy(
     statement: result.statement.trim(),
     rationale: result.rationale.trim(),
     detection: result.detection.trim(),
+    // A decision rule's precondition and next action are prose too, so a tidy
+    // may polish them — but its action kind, cost and risk are the Expert's
+    // classifications and stay frozen exactly like severity and section. A
+    // tidy never adds or removes the decision shape.
+    ...(current.isPolicy && result.policy
+      ? {
+          precondition: result.policy.precondition,
+          nextAction: result.policy.next_action,
+        }
+      : {}),
   };
   if (!next.name || !next.statement) {
     throw new Error("AI cleanup removed the rule name or the rule statement.");
+  }
+  if (current.isPolicy && (!next.precondition.trim() || !next.nextAction.trim())) {
+    throw new Error("AI cleanup removed the decision rule's precondition or next action.");
   }
   return next;
 }
