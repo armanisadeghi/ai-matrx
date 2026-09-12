@@ -6,9 +6,7 @@ import { emptyFileRecord } from "@/features/files/redux/slice";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const partialFile = emptyFileRecord(
-  "3d199828-214a-4d78-8aa9-d8998b61b8e5",
-);
+const partialFile = emptyFileRecord("3d199828-214a-4d78-8aa9-d8998b61b8e5");
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -41,13 +39,16 @@ jest.mock("@/features/files/hooks/useFileBlob", () => ({
   useFileBlob: () => ({ url: null, loading: false }),
 }));
 
-jest.mock("@/features/files/components/core/FileActions/useFileActions", () => ({
-  useFileActions: () => ({
-    download: jest.fn(),
-    copyShareUrl: jest.fn(),
-    delete: jest.fn(),
+jest.mock(
+  "@/features/files/components/core/FileActions/useFileActions",
+  () => ({
+    useFileActions: () => ({
+      download: jest.fn(),
+      copyShareUrl: jest.fn(),
+      delete: jest.fn(),
+    }),
   }),
-}));
+);
 
 jest.mock("@/features/pdf/hooks/useExistingPdfExtraction", () => ({
   useExistingPdfExtraction: () => ({ extract: jest.fn() }),

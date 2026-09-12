@@ -294,10 +294,7 @@ export function FilePreview({
   // fields arrive. The record's presence is not proof that its empty
   // fileName/mimeType values are authoritative; rendering them as a generic
   // unsupported file produces a false failure until hydration finishes.
-  if (
-    ensure.status === "loading" ||
-    (!file && ensure.status === "idle")
-  ) {
+  if (ensure.status === "loading" || (!file && ensure.status === "idle")) {
     return (
       <div
         role="status"

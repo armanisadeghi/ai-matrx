@@ -7,25 +7,25 @@ in the same change.
 
 ## Where things are
 
-| Concern                                  | Location                                                                                                                                                                                                |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Types (the ONE source)                   | `types.ts`                                                                                                                                                                                              |
-| Table column allowlist + client          | `filesDb.ts` (`FILES_TABLE_COLUMNS`)                                                                                                                                                                    |
-| Redux                                    | `redux/` — slice `cloudFiles`, `thunks.ts`, `virtual-thunks.ts`, `request-ledger.ts`, `realtime-middleware.ts`                                                                                          |
-| Realtime attach/detach                   | `providers/CloudFilesRealtimeProvider.tsx`                                                                                                                                                              |
-| Direct-Supabase writes                   | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts`                                                                                                                                      |
-| Universal file handler                   | `handler/` (see `handler/FEATURE.md`)                                                                                                                                                                   |
-| Upload transport policy                  | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts`                                                                                                                               |
-| Core components                          | `components/core/` — FileTree, FileList, FileMeta, FilePreview, FileAcquisitionActions, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog. Media renderers (InlineMediaRef, MediaThumbnail, FileIcon, FileUploadDropzone) come from `@ai-matrx/media/react`, wired via `media-client/` |
-| Surfaces (6)                             | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                                              |
-| The one file picker                      | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                                                |
-| Previewer registration + dispatch adapter | `components/core/FilePreview/PreviewerSwitch.tsx` (bodies: `@ai-matrx/media/viewers`)                                                                                                                                                    |
-| File-type registry                       | `utils/file-types.ts` (`FILE_TYPES`, `getFilePreviewProfile`, `listSupportedTypes`)                                                                                                                     |
-| Route ownership (which host answers)     | `lib/api/service-routing.ts` (`STANDALONE_FILE_ROUTE_RULES`, `resolveFilesBaseUrl`)                                                                                                                     |
-| URL state                                | `utils/url-state.ts`, `utils/server-search-params.ts`                                                                                                                                                   |
-| Routes                                   | `app/(a)/files/` (`/files`; `/cloud-files/*` 308s here). Public shares: `app/(public)/s/[token]/`                                                                                                       |
-| Blocks (media rendering — NOT this node) | `blocks/`, `blocks/image/UNIFIED_IMAGE_BLOCK.md`                                                                                                                                                        |
-| Webhooks / event spine (NOT this node)   | `webhooks/FEATURE.md`                                                                                                                                                                                   |
+| Concern                                   | Location                                                                                                                                                                                                                                                                                                               |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Types (the ONE source)                    | `types.ts`                                                                                                                                                                                                                                                                                                             |
+| Table column allowlist + client           | `filesDb.ts` (`FILES_TABLE_COLUMNS`)                                                                                                                                                                                                                                                                                   |
+| Redux                                     | `redux/` — slice `cloudFiles`, `thunks.ts`, `virtual-thunks.ts`, `request-ledger.ts`, `realtime-middleware.ts`                                                                                                                                                                                                         |
+| Realtime attach/detach                    | `providers/CloudFilesRealtimeProvider.tsx`                                                                                                                                                                                                                                                                             |
+| Direct-Supabase writes                    | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts`                                                                                                                                                                                                                                                     |
+| Universal file handler                    | `handler/` (see `handler/FEATURE.md`)                                                                                                                                                                                                                                                                                  |
+| Upload transport policy                   | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts`                                                                                                                                                                                                                                              |
+| Core components                           | `components/core/` — FileTree, FileList, FileMeta, FilePreview, FileAcquisitionActions, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog. Media renderers (InlineMediaRef, MediaThumbnail, FileIcon, FileUploadDropzone) come from `@ai-matrx/media/react`, wired via `media-client/` |
+| Surfaces (6)                              | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                                                                                                                                                             |
+| The one file picker                       | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                                                                                                                                                               |
+| Previewer registration + dispatch adapter | `components/core/FilePreview/PreviewerSwitch.tsx` (bodies: `@ai-matrx/media/viewers`)                                                                                                                                                                                                                                  |
+| File-type registry                        | `utils/file-types.ts` (`FILE_TYPES`, `getFilePreviewProfile`, `listSupportedTypes`)                                                                                                                                                                                                                                    |
+| Route ownership (which host answers)      | `lib/api/service-routing.ts` (`STANDALONE_FILE_ROUTE_RULES`, `resolveFilesBaseUrl`)                                                                                                                                                                                                                                    |
+| URL state                                 | `utils/url-state.ts`, `utils/server-search-params.ts`                                                                                                                                                                                                                                                                  |
+| Routes                                    | `app/(a)/files/` (`/files`; `/cloud-files/*` 308s here). Public shares: `app/(public)/s/[token]/`                                                                                                                                                                                                                      |
+| Blocks (media rendering — NOT this node)  | `blocks/`, `blocks/image/UNIFIED_IMAGE_BLOCK.md`                                                                                                                                                                                                                                                                       |
+| Webhooks / event spine (NOT this node)    | `webhooks/FEATURE.md`                                                                                                                                                                                                                                                                                                  |
 
 ## Invariants — do not violate
 
@@ -54,7 +54,9 @@ in the same change.
    `MediaThumbnail`, and picker thumbnails all consume that same asset/variant identity; HEIC/HEIF
    never binds its original bytes to `<img>`. A successful upload seeds the original bytes under
    its new file ID before the local preview is retired. Never call a file URL endpoint directly
-   from image or thumbnail UI. A revoked blob-backed element delegates one bounded re-read to
+   from image or thumbnail UI. `FilePreview` treats an incomplete `useEnsureCloudFile` result as
+   loading even when Redux already holds a partial record; empty placeholder MIME/name values are
+   never rendered as an authoritative unsupported-file result. A revoked blob-backed element delegates one bounded re-read to
    `@ai-matrx/data/files` through `recoverBlobLoadError`; the host cache supplies only its existing
    per-file `invalidate` identity door and never implements retry policy.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
@@ -97,7 +99,7 @@ in the same change.
     becomes `SessionUnavailableError`, never a false file incident.
 22. **File Copy for AI starts with `<file_ref>`.** `fileInfoAgentPayload` carries `file_id` plus a
     permanent `durable_url` or `null`; `mediaSafe` replaces signed URLs and raw storage paths with
-   explicit omission notes. Human Copy remains `fileInfoHumanSummary`.
+    explicit omission notes. Human Copy remains `fileInfoHumanSummary`.
 23. **Duplicate decisions are durable intents.** `Use existing` returns the canonical id,
     `Overwrite` targets the existing path, `Skip` writes nothing, and `Make a copy` sends
     `force_new_copy` plus its reason. A renamed optimistic row backed by the original id is never a
@@ -112,6 +114,10 @@ in the same change.
 and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
+
+- **2026-09-11 — Partial deep-link records keep an honest preview loading state.** `FilePreview`
+  now waits for canonical render fields before dispatching by MIME/type, preventing a cold PDF
+  deep link from briefly claiming that the valid file cannot be previewed.
 
 - **2026-09-09 — Realtime identity transitions are synchronous.** Same-turn
   attach/detach or identity replacement cannot leave a subscription registered
@@ -212,7 +218,7 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
   now import from `@ai-matrx/media/react`; the originals are DELETED. The strangler
   `MediaClient` adapter over the handler lives in `media-client/` (client + host ports +
   `MediaHostProvider`, mounted once in `app/Providers.tsx`). `handler/hooks/{useFileSrc,
-  useDurableSrc,useFileBlob}.ts` are deleted — consumers use `useMediaResolution` /
+useDurableSrc,useFileBlob}.ts` are deleted — consumers use `useMediaResolution` /
   `useMediaLoadRecovery` from `@ai-matrx/media/core`. The handler itself (fileHandler,
   session, upload transports, blob cache, `useFileAs`/`useFileUpload`) stays the engine;
   `useFileAs` retires with the wave-2 block/preview swap.
