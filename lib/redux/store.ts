@@ -117,6 +117,23 @@ export interface StoreSyncContext {
   engineApi: () => SyncEngineApi | null;
   /** Idempotently hydrate persisted slices and attach sync listeners. */
   boot: () => Promise<void>;
+  /**
+   * THE "HAS PERSISTED STATE FINISHED LOADING?" SIGNAL (W43, 2026-09-12).
+   *
+   * Until this exists no consumer could tell "this cache holds nothing" from
+   * "this cache has not been read yet", so a surface that depends on restored
+   * state renders a confident lie for the first few hundred milliseconds —
+   * the Masterwork guided start rendered step 2 with default answers while the
+   * Expert's real ones were still in IndexedDB, and `ensureOrgId` hand-rolled
+   * its own `await _sync.boot()` for the same reason.
+   *
+   * True only once boot AND any identity resync it triggered have finished:
+   * a page renders anonymous and learns who you are ~100ms later, and the
+   * signed-in person's records are read only on that second pass.
+   */
+  hydrationSettled: () => boolean;
+  /** Subscribe to `hydrationSettled` transitions. Returns an unsubscribe. */
+  onHydrationSettledChange: (listener: () => void) => () => void;
 }
 
 function resolveUserPreferencesForBootstrap(
@@ -233,6 +250,20 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
 
   let bootPromise: Promise<void> | null = null;
   let identityWatchAttached = false;
+
+  // --- Hydration-settled signal (see StoreSyncContext.hydrationSettled) ---
+  let bootFinished = false;
+  let resyncsInFlight = 0;
+  const settledListeners = new Set<() => void>();
+  const notifySettled = () => {
+    for (const listener of settledListeners) {
+      try {
+        listener();
+      } catch (err) {
+        console.error("[sync] hydrationSettled listener threw", err);
+      }
+    }
+  };
   const syncContext: StoreSyncContext = {
     channel: syncChannel,
     identity: initialIdentity,
@@ -269,6 +300,10 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
             const previous = syncContext.getIdentity();
             if (next.key === previous.key) return;
             syncContext.setIdentity(next);
+            // The signed-in person's persisted records are read HERE, not at
+            // boot — so hydration is not settled again until this finishes.
+            resyncsInFlight += 1;
+            notifySettled();
             void resyncForIdentity({
               store,
               identity: next,
@@ -278,6 +313,9 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
               previousIdentity: previous,
               policies: syncPolicies,
               getIdentity: () => syncContext.getIdentity(),
+            }).finally(() => {
+              resyncsInFlight -= 1;
+              notifySettled();
             });
           });
           await result.idbHydration;
@@ -286,9 +324,22 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
           // Loud recovery: allow a later mount to retry a failed bootstrap.
           bootPromise = null;
           throw error;
+        })
+        .finally(() => {
+          // Settled either way: a bootstrap that FAILED has still had its
+          // chance, and leaving consumers waiting forever is the worse lie.
+          bootFinished = true;
+          notifySettled();
         });
 
       return bootPromise;
+    },
+    hydrationSettled: () => bootFinished && resyncsInFlight === 0,
+    onHydrationSettledChange: (listener: () => void) => {
+      settledListeners.add(listener);
+      return () => {
+        settledListeners.delete(listener);
+      };
     },
   };
   const storeWithSync = Object.assign(store, { _sync: syncContext });

@@ -31,6 +31,19 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-12 — The engine can now be ASKED whether persisted state has finished
+  loading: `store._sync.hydrationSettled()` / `onHydrationSettledChange()`, and
+  the `useSyncHydrated()` hook over them. Until this existed no consumer could
+  tell "this cache holds nothing" from "this cache has not been read yet", so a
+  surface that restores state rendered a confident lie for the first few
+  hundred milliseconds (W43: the Masterwork guided start drew step 2 from
+  default answers while the Expert's real ones were still in IndexedDB;
+  `ensureOrgId` hand-rolled `await _sync.boot()` for the same reason). Settled
+  means boot AND any identity resync it triggered have finished — the
+  signed-in person's records are read on that second pass, not at boot. The
+  hook never hangs: after `HYDRATION_BACKSTOP_MS` (8s) it screams and reports
+  settled, because a surface stuck on a spinner forever is the worse failure.
+
 - 2026-08-30 — User-preference remote writes now stamp the personal organization
   that owns the user-global singleton, never the currently selected workspace
   organization; PostgREST write failures are propagated to the sync engine.
