@@ -15,6 +15,49 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D313 — `components/ui/` holds 22 real components with no importer, several duplicating each other (2026-09-12)
+
+A full-repo import census (every `from`/`require`/`import()` specifier, `next/dynamic` included)
+found 137 files under `components/ui/`, 31 with zero importers, 9 of which are `*.test.tsx` (not
+findings). The remaining 22 are real, mostly finished components nobody wired to a screen:
+
+`GlassContainer.tsx`, `UnderConstructionBanner.tsx`, `animated-testimonials.tsx`, `chip.tsx`,
+`hover-border-gradient.tsx`, `responsive-icon-button-group.tsx`, `tabs-navigation.tsx`,
+`time-picker.tsx`, `unsaved-changes-alert.tsx`, `loaders/MagicButton.tsx`,
+`loaders/MultiSelectDropdown.tsx`, `matrx/PortalDropdownSelect.tsx`, `matrx/SearchableSelect.tsx`,
+`loaders/Spinner.tsx`, `loaders/select.tsx`, `draggable-card.tsx`, `sidebar-collapsible.tsx`,
+`sidebar-simple.tsx`, `JsonComponents/JsonDisplay.tsx`, `JsonComponents/dev/BasicJsonEditor.tsx`,
+`matrx/dialog.tsx`, `react-live-scope.ts`.
+
+Several are duplicate/competing implementations rather than one-offs: four sidebars exist
+(`sidebar.tsx` is the one actually referenced; `sidebar-collapsible.tsx` and `sidebar-simple.tsx`
+have no importer; `sidebar-saved.tsx` is reachable only through the dev sandbox below); two
+`select` implementations (`loaders/select.tsx` duplicates the canonical `select.tsx`); two spinners
+(`loaders/Spinner.tsx` vs. the top-level `spinner.tsx` actually in use); and two near-identical
+searchable selects (`matrx/PortalDropdownSelect.tsx`, `matrx/SearchableSelect.tsx`). Also orphaned:
+`draggable-card.tsx`, left behind when the enhanced version moved to `draggable-card-context.tsx`.
+
+The one worth recovering rather than removing: `matrx/dialog.tsx` — a finished extension of the
+canonical `dialog.tsx` adding window-panel popout support and a nested-portal container context.
+Real, purposeful work that was never adopted.
+
+Two traps for whoever works this, so a naive re-scan doesn't reintroduce false positives:
+- `canvas-reveal-effect-impl.tsx` is loaded via `next/dynamic` from `canvas-reveal-effect.tsx` and
+  is **not** dead, despite looking it in a stem-matching census.
+- `react-live-scope.ts` re-exports ~50 `components/ui` components into a dev-only `react-live` code
+  preview (`app/(dev)/demos/general/code-generator/components/DynamicComponentRenderer.tsx`), its
+  only consumer. 15 files — `animated-tooltip`, `aspect-ratio`,
+  `background-beams-with-collision`, `card-hover-effect`, `cards/apple-cards-carousel`, `carousel`,
+  `floating-dock`, `matrx/use-toast`, `menubar`, `navigation-menu`, `sidebar-saved`,
+  `tailwindcss-buttons`, `text-generate-effect`, `toggle`, `wobble-card` — are "referenced" only
+  through that sandbox, not by any real screen.
+
+Workspace rule applies: unreferenced means unfinished, never deletable on sight
+(`common-docs/policies/unfinished-work-alarm.md`). This is a census-and-converge item, not a delete
+list — work it as: pick the one live sidebar/select/spinner implementation and retire its
+duplicates' *usages* (never just the files), and finish adopting `matrx/dialog.tsx` where the
+window-panel system needs popout dialogs. Owner: whoever owns `components/ui`.
+
 ### D311 — the admin shell fires ~30 no-argument RPC probes on every page load and each one 400s (2026-09-12)
 
 Seen on `/administration/billing/spend` in the preview: on every load the page's network log

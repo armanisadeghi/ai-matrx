@@ -15,6 +15,7 @@
  */
 
 import React, { useState } from "react";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   AlertTriangle,
@@ -426,6 +427,16 @@ async function runServerScenario(args: {
     });
     return { ok: true, detail: "Stream consumed cleanly" };
   } catch (err) {
+    // The scenario did not fail — it never ran. Say which, so an admin does
+    // not read "Select an organization before sending this request." as a
+    // resilience finding about the server.
+    if (isOrganizationRequiredError(err)) {
+      return {
+        ok: false,
+        error:
+          "Not run — no organization is selected for this session, so the request was refused before it left the browser. Choose an organization from the avatar menu and run it again.",
+      };
+    }
     const message = extractErrorMessage(err);
     return { ok: false, error: message };
   }
