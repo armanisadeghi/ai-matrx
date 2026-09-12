@@ -1067,6 +1067,8 @@ For `legal.wc_impairment_definition` the fix is the **variant**, not the policy 
 
 **CLOSED 2026-09-12 06:24 UTC.** `migrations/iam_rls_read_lane_planner_trap_closed_d266.sql` was applied by the release train (ledgered, 10.0 s, every inline proof green). Verified live afterwards as the affected user through RLS: `files.files` primary-key read planning **1,289 ms → 6.4 ms**, `files.file_versions` 597 → 1.1 ms, `chat.message` 63 → 1.0 ms; `pg_policies` carries **0** trapped forms; `platform._ddl_guard()` carries lane (f) `rls_generator_planner_trap`. The 02:05 UTC `57014` rows are resolved with that proof. History below is kept as written.
 
+**Three other `57014` rows are NOT this defect** (measured 2026-09-12 16:30 UTC as the same user through RLS, DB idle): `seo.gsc_topic_placement_diff(site, 50)` executes in 1,953 ms with 0.0 ms planning (SECURITY DEFINER; its own work, row 659b7d2b at 06:46 UTC, after the migration); `seo.v_site_keyword_performance` for one site returns 200 rows in 1,993 ms with 12 ms planning (row fd7e3ca9, 22:03 UTC before the migration — planning is no longer the cost); `scheduler.system_schedule_alarms(90)` runs in 250 ms (row 8bca26e9 at 13:02 UTC — a 250 ms call dying at 8 s is DB-wide load, the pool-storm class, not the query). The two ~2 s SEO reads are the next performance class to own; they are left open in the error queue on purpose.
+
 
 db-rules §6d bans `IN (SELECT unnest(<STABLE fn>))` in a policy — `unnest`'s planner support
 function const-folds the STABLE call, so Postgres **executes the recursive `SECURITY DEFINER`
