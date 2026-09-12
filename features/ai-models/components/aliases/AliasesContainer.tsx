@@ -7,36 +7,39 @@
  * deprecated id) to a live ai.model_definition row so inbound requests using
  * the alternate name still resolve. Kinds (DB check constraint):
  *   alias | deprecated | latest
- *
- * Compact single-surface editor: table of live aliases + an inline editor
- * card (same visual language as the other /administration/ai/ai-models pages).
  */
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
-import { Label } from "@/components/ui/label";
 import {
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Save, Trash2, X, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { aiModelService } from "../../service";
-import type { AiModel, AiModelAliasRow } from "../../types";
-import { cn } from "@/lib/utils";
-import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { aiModelService } from "../../service";
+import type { AiModelAliasRow, AiModelRow } from "../../types";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
+type AliasTargetModel = Pick<
+  AiModelRow,
+  "id" | "name" | "common_name" | "is_deprecated"
+>;
 
 type AliasFormData = {
   alias: string;
@@ -52,9 +55,39 @@ const EMPTY_FORM: AliasFormData = {
   notes: "",
 };
 
+const kindBadgeClass: Record<AliasKind, string> = {
+  alias: "bg-blue-50 text-blue-600 dark:bg-blue-900/20",
+  deprecated: "bg-red-50 text-red-600 dark:bg-red-900/20",
+  latest: "bg-green-50 text-green-600 dark:bg-green-900/20",
+};
+
+function AliasDeleteAction({
+  item,
+  onDelete,
+}: {
+  item: AiModelAliasRow;
+  onDelete: (item: AiModelAliasRow) => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7"
+      onClick={(event) => {
+        event.stopPropagation();
+        onDelete(item);
+      }}
+      aria-label={`Delete alias ${item.alias}`}
+      title="Delete alias"
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+    </Button>
+  );
+}
+
 export default function AliasesContainer() {
   const [aliases, setAliases] = useState<AiModelAliasRow[]>([]);
-  const [models, setModels] = useState<AiModel[]>([]);
+  const [models, setModels] = useState<AliasTargetModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -67,10 +100,11 @@ export default function AliasesContainer() {
   );
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const [aliasRows, modelRows] = await Promise.all([
         aiModelService.fetchAliases(),
-        aiModelService.fetchAll(),
+        aiModelService.fetchAllAliasTargetModels(),
       ]);
       setAliases(aliasRows);
       setModels(modelRows);
@@ -83,28 +117,17 @@ export default function AliasesContainer() {
   }, []);
 
   useEffect(() => {
-    // Deferred so the effect body stays setState-free (loading starts true;
-    // load() only writes state after its awaits resolve).
-    const t = setTimeout(() => void load(), 0);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
   }, [load]);
 
-  const modelName = useCallback(
-    (id: string | null): string | null => {
-      if (!id) return null;
-      const m = models.find((x) => x.id === id);
-      return m ? m.common_name || m.name || null : null;
-    },
-    [models],
-  );
+  const modelName = (id: string): string | null => {
+    const model = models.find((item) => item.id === id);
+    return model ? model.common_name || model.name : null;
+  };
 
-  const modelLabel = useCallback(
-    (id: string | null): string => {
-      if (!id) return "Unknown AI model";
-      return modelName(id) ?? `Unknown AI model (${id})`;
-    },
-    [modelName],
-  );
+  const modelLabel = (id: string): string =>
+    modelName(id) ?? `Unknown AI model (${id})`;
 
   const startNew = () => {
     setEditingId("new");
@@ -115,12 +138,12 @@ export default function AliasesContainer() {
   const startEdit = (row: AiModelAliasRow) => {
     setEditingId(row.id);
     setForm({
-      alias: row.alias ?? "",
-      kind: (ALIAS_KINDS as readonly string[]).includes(row.kind ?? "")
+      alias: row.alias,
+      kind: (ALIAS_KINDS as readonly string[]).includes(row.kind)
         ? (row.kind as AliasKind)
         : "alias",
-      model_id: row.model_id ?? "",
-      notes: row.notes ?? "",
+      model_id: row.model_id,
+      notes: row.notes === null ? "" : row.notes,
     });
     setSaveError(null);
   };
@@ -148,12 +171,16 @@ export default function AliasesContainer() {
           ...payload,
           organization_id,
         });
-        setAliases((prev) =>
-          [...prev, saved].sort((a, b) => a.alias.localeCompare(b.alias)),
+        setAliases((current) =>
+          [...current, saved].sort((left, right) =>
+            left.alias.localeCompare(right.alias),
+          ),
         );
       } else if (editingId) {
         const saved = await aiModelService.updateAlias(editingId, payload);
-        setAliases((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+        setAliases((current) =>
+          current.map((item) => (item.id === saved.id ? saved : item)),
+        );
       }
       cancelEdit();
     } catch (err) {
@@ -166,7 +193,7 @@ export default function AliasesContainer() {
   const handleDelete = async (row: AiModelAliasRow) => {
     try {
       await aiModelService.deleteAlias(row.id);
-      setAliases((prev) => prev.filter((a) => a.id !== row.id));
+      setAliases((current) => current.filter((item) => item.id !== row.id));
       if (editingId === row.id) cancelEdit();
     } catch (err) {
       setSaveError(extractErrorMessage(err));
@@ -175,38 +202,107 @@ export default function AliasesContainer() {
     }
   };
 
-  const kindBadgeClass: Record<AliasKind, string> = {
-    alias: "bg-blue-50 dark:bg-blue-900/20 text-blue-600",
-    deprecated: "bg-red-50 dark:bg-red-900/20 text-red-600",
-    latest: "bg-green-50 dark:bg-green-900/20 text-green-600",
-  };
+  const columns: MatrxColumnDef<AiModelAliasRow>[] = [
+    {
+      accessorKey: "alias",
+      header: "Alias",
+      sortable: true,
+      cell: (item) => (
+        <span className="block max-w-[220px] truncate font-mono font-medium">
+          {item.alias}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "kind",
+      header: "Kind",
+      sortable: true,
+      cell: (item) => {
+        const kind = ALIAS_KINDS.includes(item.kind as AliasKind)
+          ? (item.kind as AliasKind)
+          : "alias";
+        return (
+          <Badge
+            variant="outline"
+            className={`text-[10px] ${kindBadgeClass[kind]}`}
+          >
+            {item.kind}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "model",
+      header: "Target model",
+      sortable: false,
+      filter: false,
+      cell: (item) => (
+        <span
+          className="block max-w-[260px]"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <AiModelRef
+            modelId={item.model_id}
+            name={modelName(item.model_id)}
+            showId
+            showIcon={false}
+          />
+        </span>
+      ),
+    },
+    {
+      accessorKey: "notes",
+      header: "Notes",
+      sortable: true,
+      cell: (item) => (
+        <span
+          className="block max-w-[320px] truncate text-muted-foreground"
+          title={item.notes === null ? "" : item.notes}
+        >
+          {item.notes || "—"}
+        </span>
+      ),
+    },
+  ];
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden p-3 gap-3">
-      <div className="flex items-center justify-end shrink-0">
-        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={startNew}>
-          <Plus className="h-3.5 w-3.5" />
-          New Alias
-        </Button>
-      </div>
-
-      {loadError && (
-        <div className="flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3">
+      {loadError ? (
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+        >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          {loadError}
+          <span className="min-w-0 flex-1 break-words">{loadError}</span>
+          <Button size="sm" variant="outline" onClick={() => void load()}>
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Retry
+          </Button>
         </div>
-      )}
+      ) : null}
 
-      {editingId && (
-        <div className="rounded-md border bg-card p-3 space-y-3 shrink-0">
-          <div className="grid grid-cols-4 gap-3">
+      {!editingId && saveError ? (
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span className="break-words">{saveError}</span>
+        </div>
+      ) : null}
+
+      {editingId ? (
+        <div className="shrink-0 space-y-3 rounded-md border bg-card p-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Alias <span className="text-destructive">*</span>
               </Label>
               <Input
                 value={form.alias}
-                onChange={(e) => setForm({ ...form, alias: e.target.value })}
+                onChange={(event) =>
+                  setForm({ ...form, alias: event.target.value })
+                }
                 placeholder="e.g. claude-3-5-sonnet-latest"
                 className="h-8 font-mono text-sm"
               />
@@ -217,17 +313,17 @@ export default function AliasesContainer() {
               </Label>
               <Select
                 value={form.kind}
-                onValueChange={(v) =>
-                  setForm({ ...form, kind: v as AliasKind })
+                onValueChange={(value) =>
+                  setForm({ ...form, kind: value as AliasKind })
                 }
               >
                 <SelectTrigger className="h-8 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALIAS_KINDS.map((k) => (
-                    <SelectItem key={k} value={k} className="text-xs">
-                      {k}
+                  {ALIAS_KINDS.map((kind) => (
+                    <SelectItem key={kind} value={kind} className="text-xs">
+                      {kind}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -257,17 +353,19 @@ export default function AliasesContainer() {
               </Label>
               <Input
                 value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                onChange={(event) =>
+                  setForm({ ...form, notes: event.target.value })
+                }
                 placeholder="Optional"
                 className="h-8 text-sm"
               />
             </div>
           </div>
-          {saveError && (
-            <p className="text-xs text-red-600 dark:text-red-400 break-words">
+          {saveError ? (
+            <p className="break-words text-xs text-red-600 dark:text-red-400">
               {saveError}
             </p>
-          )}
+          ) : null}
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
@@ -289,84 +387,126 @@ export default function AliasesContainer() {
             </Button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-        <table className={cn("text-left text-xs", MOBILE_TABLE_FROZEN)}>
-          <thead className="sticky top-0 bg-muted/60 backdrop-blur">
-            <tr className="border-b">
-              <th className="px-3 py-2 font-medium">Alias</th>
-              <th className="px-3 py-2 font-medium">Kind</th>
-              <th className="px-3 py-2 font-medium">Target model</th>
-              <th className="px-3 py-2 font-medium">Notes</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-3 py-6 text-center text-muted-foreground"
-                >
-                  Loading aliases…
-                </td>
-              </tr>
-            ) : aliases.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-3 py-6 text-center text-muted-foreground"
-                >
-                  No aliases yet.
-                </td>
-              </tr>
-            ) : (
-              aliases.map((row) => (
-                <tr
-                  key={row.id}
-                  className="cursor-pointer border-b last:border-b-0 hover:bg-muted/40"
-                  onClick={() => startEdit(row)}
-                >
-                  <td className="px-3 py-1.5 font-mono">{row.alias}</td>
-                  <td className="px-3 py-1.5">
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] ${kindBadgeClass[(row.kind as AliasKind) in kindBadgeClass ? (row.kind as AliasKind) : "alias"]}`}
-                    >
-                      {row.kind}
-                    </Badge>
-                  </td>
-                  <td className="px-3 py-1.5">
-                    <AiModelRef
-                      modelId={row.model_id}
-                      name={modelName(row.model_id)}
-                      showId
-                      showIcon={false}
-                    />
-                  </td>
-                  <td className="sm:max-w-64 sm:truncate px-3 py-1.5 text-muted-foreground">
-                    {row.notes ?? ""}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable<AiModelAliasRow>
+          data={aliases}
+          isLoading={loading}
+          columns={columns}
+          getRowId={(item) => item.id}
+          pageSize={25}
+          pageSizeOptions={[10, 25, 50, 100]}
+          defaultSort={{ id: "alias", direction: "asc" }}
+          searchText={(item) =>
+            [
+              item.alias,
+              item.kind,
+              item.notes === null ? "" : item.notes,
+              modelLabel(item.model_id),
+            ].join(" ")
+          }
+          onRowOpen={startEdit}
+          detail={{ enabled: false }}
+          rowClassName={(item) =>
+            item.id === editingId
+              ? "bg-primary/10 hover:bg-primary/15"
+              : undefined
+          }
+          emptyState={
+            loadError
+              ? {
+                  title: "Could not load aliases",
+                  description: loadError,
+                  icon: <AlertTriangle className="h-8 w-8" />,
+                  action: (
                     <Button
-                      variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPendingDelete(row);
-                      }}
-                      aria-label={`Delete alias ${row.alias}`}
+                      variant="outline"
+                      onClick={() => void load()}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                      Retry
                     </Button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  ),
+                }
+              : {
+                  title: "No aliases yet",
+                  icon: <AlertTriangle className="h-8 w-8" />,
+                }
+          }
+          toolbar={{
+            searchPlaceholder: "Search aliases…",
+            leading: (
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold">Model Aliases</h2>
+                <Badge variant="outline" className="text-xs">
+                  {aliases.length}
+                </Badge>
+              </div>
+            ),
+            actions: (
+              <Button
+                size="sm"
+                className="h-8 gap-1.5 px-2 text-xs"
+                onClick={startNew}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New Alias
+              </Button>
+            ),
+          }}
+          rowActions={(item) => (
+            <AliasDeleteAction item={item} onDelete={setPendingDelete} />
+          )}
+          mobileCards={(item, _index, controls) => (
+            <article
+              className={
+                item.id === editingId
+                  ? "space-y-2 rounded-md bg-primary/10 p-1"
+                  : "space-y-2 p-1"
+              }
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <button
+                    type="button"
+                    className="block max-w-full truncate text-left font-mono font-medium hover:underline"
+                    onClick={() => startEdit(item)}
+                  >
+                    {item.alias}
+                  </button>
+                  <Badge
+                    variant="outline"
+                    className={`mt-1 text-[10px] ${
+                      kindBadgeClass[
+                        ALIAS_KINDS.includes(item.kind as AliasKind)
+                          ? (item.kind as AliasKind)
+                          : "alias"
+                      ]
+                    }`}
+                  >
+                    {item.kind}
+                  </Badge>
+                </div>
+                <div className="shrink-0">{controls.actions}</div>
+              </div>
+              <div onClick={(event) => event.stopPropagation()}>
+                <AiModelRef
+                  modelId={item.model_id}
+                  name={modelName(item.model_id)}
+                  showId
+                  showIcon={false}
+                />
+              </div>
+              {item.notes ? (
+                <p className="break-words text-xs text-muted-foreground">
+                  {item.notes}
+                </p>
+              ) : null}
+            </article>
+          )}
+        />
       </div>
 
       <ConfirmDialog

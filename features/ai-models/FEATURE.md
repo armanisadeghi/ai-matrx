@@ -74,6 +74,8 @@ must obey.
 
 ## Change log
 
+- **2026-09-12** — Model Aliases now uses the shared `MatrxDataTable` over complete local `ai.model_alias` rows, ordered by alias/id and paged at 25. Alias target labels and the nondeprecated picker allowlist use a separate complete minimal `model_definition` identity read; this leaves the pricing-enriched model catalog untouched. The parent retains the inline editor, system-org create, soft-delete confirmation, model door, and save/error behavior; package detail is disabled so a row opens only that editor. Phone cards keep the alias editor and model door distinct, and fetch failure exposes Retry.
+
 - **2026-09-12** — Provider and setting delete confirmations describe removal from active lists, matching the existing soft-delete services without claiming irreversible erasure or lost references.
 
 - **2026-09-12** — Settings Vocabulary now uses the shared `MatrxDataTable` over a complete local `ai.setting` read, ordered by key/id and paged at 25. The parent remains the only owner of the selected detail editor and CRUD callbacks; loading failure exposes Retry. Phone cards make the setting-name door and row actions explicit, while system-delete protection remains intact.
