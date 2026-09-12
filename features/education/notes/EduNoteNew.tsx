@@ -10,18 +10,18 @@ import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export function EduNoteNew() {
   const router = useRouter();
   const started = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  const organizationId = useAppSelector(selectOrganizationId);
+  const { organizationId, canLoad, organizationRequired } = useOrganizationRequired();
 
   useEffect(() => {
-    if (started.current) return;
+    if (started.current || !canLoad || !organizationId) return;
     void (async () => {
       try {
         const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
@@ -34,11 +34,13 @@ export function EduNoteNew() {
         setError(e instanceof Error ? e.message : "Could not create the note");
       }
     })();
-  }, [router, organizationId]);
+  }, [router, organizationId, canLoad]);
 
   return (
     <div className="flex h-full w-full items-center justify-center bg-textured">
-      {error ? (
+      {organizationRequired ? (
+        <OrganizationRequiredNotice what="a new education note" />
+      ) : error ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card px-8 py-10 text-center">
           <AlertCircle className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">Couldn&apos;t create the note</p>
