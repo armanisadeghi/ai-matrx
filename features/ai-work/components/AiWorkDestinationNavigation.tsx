@@ -30,7 +30,7 @@ const CONTINUE_DOORS: readonly WorkDoor[] = [
     title: "Saved requests",
     description: "Reuse and manage the requests you have saved.",
     href: "/work/requests",
-    iconName: "BookmarkCheck",
+    iconName: "FileCheck2",
   },
   {
     title: "All conversations",
