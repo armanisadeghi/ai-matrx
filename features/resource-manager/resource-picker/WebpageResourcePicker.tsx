@@ -24,7 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
-import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
+import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -130,15 +130,12 @@ export function WebpageResourcePickerCore({
   const [charLimit, setCharLimit] = useState<number>(0);
   const [previewTab, setPreviewTab] = useState("pretty");
   const [copied, setCopied] = useState(false);
-  const {
-    scrapeUrl,
-    data,
-    isLoading,
-    hasError,
-    error,
-    errorDiagnostics,
-    reset,
-  } = useScraperApi();
+  // THE IN-PLACE REMEDY (W44): when a site refuses us, the way forward is to
+  // paste the text, right here — not to send the person back to the menu.
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pastedText, setPastedText] = useState("");
+  const { scrapeUrl, data, isLoading, hasError, failure, reset } =
+    useScraperApi();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // The content actually sent on confirm — respects the char limit
@@ -192,6 +189,7 @@ export function WebpageResourcePickerCore({
     }
 
     setSuggestedType(null);
+    setPasteOpen(false);
 
     try {
       const result = await scrapeUrl(normalized);
@@ -342,16 +340,75 @@ export function WebpageResourcePickerCore({
                 </div>
               )}
 
-              {/* Error Display */}
-              {hasError && (
-                <div className="flex flex-col gap-2 p-2 border border-destructive/20 bg-destructive/10 rounded">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-destructive">
-                      {error || "Failed to scrape webpage"}
-                    </p>
+              {/* Failure — plain words, a remedy the person can press, and the
+                  engineer's report only behind "Details". Never a stage or a
+                  stack as the body (W44). */}
+              {hasError && failure && (
+                <ScrapeFailureNotice
+                  failure={failure}
+                  remedyAction={
+                    pasteOpen
+                      ? undefined
+                      : {
+                          label: "Paste the text instead",
+                          onClick: () => setPasteOpen(true),
+                        }
+                  }
+                />
+              )}
+
+              {/* The paste lane the remedy opens. */}
+              {pasteOpen && (
+                <div className="space-y-2 rounded border border-border bg-muted/40 p-2">
+                  <p className="text-xs text-muted-foreground">
+                    Paste the page&apos;s text here and we&apos;ll use that
+                    instead.
+                  </p>
+                  <ProTextarea
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    placeholder="Paste the text of the page here…"
+                    minHeight={96}
+                    maxHeight={200}
+                    enableTextStats={false}
+                    auxiliaryControlsLabel="pasted page text"
+                    wrapperClassName="w-full"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setPasteOpen(false);
+                        setPastedText("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={!pastedText.trim()}
+                      onClick={() => {
+                        const text = pastedText.trim();
+                        if (!text) return;
+                        onSelect({
+                          url,
+                          title: url || "Pasted page text",
+                          textContent: text,
+                          charCount: text.length,
+                          scrapedAt: new Date().toISOString(),
+                        });
+                        setPasteOpen(false);
+                        setPastedText("");
+                        setUrl("");
+                        reset();
+                      }}
+                    >
+                      Add this text
+                    </Button>
                   </div>
-                  <ScraperHookErrorDetails diagnostics={errorDiagnostics} />
                 </div>
               )}
 

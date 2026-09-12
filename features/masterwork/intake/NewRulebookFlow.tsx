@@ -20,9 +20,12 @@
 //    knowledge answer marks one card Suggested and pre-selects it; the row's
 //    own intake_query routes the Expert into that Approach's surface.
 //
-// Draft durability: every input mirrors into the persisted generic
-// wizard-draft slice (the same primitive the research wizard uses), so a
-// refresh or a wander-off recovers the Expert's words. Cleared on create.
+// Draft durability (W43, 2026-09-12): the step lives in the URL, so the
+// ANSWERS must last exactly as long as the step does. Every input mirrors into
+// the shared `useWizardDraft` primitive (lib/wizard-draft/) — and the page
+// decides what to render through `resolveWizardStep`, so it can never draw a
+// complete-looking step 2 out of an unread cache or a missing draft. Cleared
+// on create.
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
@@ -60,13 +63,11 @@ import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  patchWizardDraft,
-  clearWizardDraft,
-  selectWizardDraft,
-} from "@/lib/redux/slices/wizardDraftSlice";
+import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
+import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
+import { WizardAnswersLost } from "@/lib/wizard-draft/WizardAnswersLost";
 import { createDraftRulebook } from "../service";
 import {
   fetchDistillationApproaches,
@@ -198,6 +199,62 @@ const QUESTIONS: IntakeQuestion[] = [
  * Which Approach the knowledge answer suggests — a soft hint (badge +
  * preselect), never a route. The Expert always sees every enabled card.
  */
+/** Every question's default — the state a fresh form starts in. */
+export function defaultIntakeAnswers(): Record<string, string> {
+  return Object.fromEntries(QUESTIONS.map((q) => [q.key, q.defaultValue]));
+}
+
+export interface NewRulebookDraftValues {
+  goal: string;
+  name: string;
+  answers: Record<string, string>;
+}
+
+/**
+ * Put a saved draft back on the form.
+ *
+ * 🚨 THE MULTI-SELECT TRAP (W43): `knowledge` is a SET and persists as one
+ * joined string ("In my head | In my AI chats"). The previous restorer checked
+ * every saved answer against the single option VALUES, so a multi answer never
+ * matched and was replaced by the default — silently. "Best for what you
+ * described" then showed the defaults' Approaches and Start created a Rulebook
+ * configured by answers the Expert never gave. Validate each PART, and report
+ * anything genuinely unrecognized instead of dropping it.
+ */
+export function restoreNewRulebookDraft(data: Record<string, unknown>): {
+  values: NewRulebookDraftValues;
+  rejectedKeys: string[];
+} {
+  const str = (v: unknown): string | null =>
+    typeof v === "string" && v.length > 0 ? v : null;
+  const rejectedKeys: string[] = [];
+  const answers = defaultIntakeAnswers();
+
+  for (const q of QUESTIONS) {
+    const saved = str(data[q.key]);
+    if (!saved) continue;
+    const parts = q.multi ? splitMulti(saved) : [saved];
+    const known = parts.filter((part) =>
+      q.options.some((o) => o.value === part),
+    );
+    if (known.length === 0) {
+      rejectedKeys.push(q.key);
+      continue;
+    }
+    if (known.length !== parts.length) rejectedKeys.push(q.key);
+    answers[q.key] = known.join(MULTI_SEP);
+  }
+
+  return {
+    values: {
+      goal: str(data.goal) ?? "",
+      name: str(data.name) ?? "",
+      answers,
+    },
+    rejectedKeys,
+  };
+}
+
 /** The single strongest fit — the card we pre-select. Derived from the SAME
  *  relevance map that orders the top row, so the badge can never disagree
  *  with what is shown. */
@@ -316,17 +373,23 @@ export function NewRulebookFlow() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const dispatch = useAppDispatch();
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
-  const draft = useAppSelector(selectWizardDraft(WIZARD_ID));
+  const {
+    status: draftStatus,
+    restored,
+    patch: patchDraft,
+    clear: clearDraft,
+  } = useWizardDraft<NewRulebookDraftValues>(WIZARD_ID, {
+    restore: restoreNewRulebookDraft,
+  });
   const [, startTransition] = useTransition();
 
   const [goal, setGoal] = useState("");
   const [name, setName] = useState("");
   // Every question starts on its sensible default — the Expert can click
   // straight through without touching any of them.
-  const [answers, setAnswers] = useState<Record<string, string>>(() =>
-    Object.fromEntries(QUESTIONS.map((q) => [q.key, q.defaultValue])),
+  const [answers, setAnswers] = useState<Record<string, string>>(
+    defaultIntakeAnswers,
   );
   const [approaches, setApproaches] = useState<DistillationApproach[] | null>(null);
   const [approachError, setApproachError] = useState<string | null>(null);
@@ -336,10 +399,19 @@ export function NewRulebookFlow() {
   );
   const [saving, setSaving] = useState(false);
 
-  // A deep link straight to ?step=2 with no goal yet falls back to step 1 —
-  // the goal is the one thing the Expert must actually say.
-  const step: 1 | 2 =
-    searchParams.get("step") === "2" && goal.trim() ? 2 : 1;
+  // The step lives in the URL; the answers live in a draft that is READ BACK
+  // ASYNCHRONOUSLY. Until that read settles we know nothing, so we render the
+  // form's waiting state rather than a step 2 made of defaults; once it has
+  // settled and the goal is still missing, we say so and send them back to
+  // step 1 instead of pretending (W43).
+  const requestedStep: 1 | 2 = searchParams.get("step") === "2" ? 2 : 1;
+  const resolution = resolveWizardStep<1 | 2>({
+    requestedStep,
+    firstStep: 1,
+    draftStatus,
+    prerequisitesMet: Boolean(goal.trim()),
+  });
+  const step: 1 | 2 = resolution.kind === "step" ? resolution.step : 1;
 
   // THE QUESTIONS COME FIRST (Arman, 2026-08-21) — they are not a form to
   // survive, they are the router: their answers decide which Approaches lead
@@ -348,28 +420,17 @@ export function NewRulebookFlow() {
   // configure the Rulebook itself (sharing, strictness, the Audition baseline).
   const preChosenKey = searchParams.get("approach");
 
-  const patchDraft = (patch: Record<string, unknown>) =>
-    dispatch(patchWizardDraft({ wizardId: WIZARD_ID, patch }));
-
   // One-time draft recovery — fill only what the Expert hasn't typed here.
-  const draftHydrated = useRef(false);
+  // `restored` settles exactly once, when the persisted read comes back.
+  const draftApplied = useRef(false);
   useEffect(() => {
-    if (draftHydrated.current || !draft) return;
-    draftHydrated.current = true;
-    const d = draft.data;
-    const str = (v: unknown): string | null =>
-      typeof v === "string" && v.length > 0 ? v : null;
-    if (!goal && str(d.goal)) setGoal(str(d.goal) as string);
-    if (!name && str(d.name)) setName(str(d.name) as string);
-    setAnswers((prev) => {
-      const next = { ...prev };
-      for (const q of QUESTIONS) {
-        const v = str(d[q.key]);
-        if (v && q.options.some((o) => o.value === v)) next[q.key] = v;
-      }
-      return next;
-    });
-  }, [draft, goal, name]);
+    if (draftApplied.current || !restored?.values) return;
+    draftApplied.current = true;
+    const v = restored.values;
+    if (v.goal) setGoal((current) => current || v.goal);
+    if (v.name) setName((current) => current || v.name);
+    setAnswers(v.answers);
+  }, [restored]);
 
   // Load the registry on mount so the cards are there the moment the Expert
   // reaches step 2.
@@ -457,6 +518,16 @@ export function NewRulebookFlow() {
       toast.error("Your workspace is still loading — try again in a moment.");
       return;
     }
+    // NOTHING FAILS SILENTLY: a Rulebook with no goal is not a Rulebook. The
+    // step resolver should make this unreachable; if it ever is reached, the
+    // Expert is told rather than handed an empty Rulebook (W43).
+    if (!goal.trim()) {
+      toast.error(
+        "We do not have what you are trying to build any more — tell us again and we'll start it.",
+      );
+      toStep(1);
+      return;
+    }
     setSaving(true);
     try {
       const rulebookName = name.trim() || nameFromGoal(goal) || "My expertise";
@@ -474,7 +545,7 @@ export function NewRulebookFlow() {
           approach: approach.key,
         },
       });
-      dispatch(clearWizardDraft(WIZARD_ID));
+      clearDraft();
       // Route into the chosen Approach: the registry row's own intake_query
       // is appended to the Rulebook URL (e.g. the interview Approach carries
       // {"interview":"1"} so the Scout opens on arrival).
@@ -499,7 +570,25 @@ export function NewRulebookFlow() {
     <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
       <StepDots step={step} />
 
-      {step === 1 ? (
+      {resolution.kind === "loading" ? (
+        // The URL asks for step 2 and we have not read the saved answers back
+        // yet. Say what we are doing — never draw step 2 from defaults (W43).
+        <div
+          className="flex items-center gap-3 rounded-xl border border-border bg-card p-6"
+          aria-busy="true"
+        >
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Finding what you told us…
+          </p>
+        </div>
+      ) : resolution.kind === "lost" ? (
+        <WizardAnswersLost
+          what="what you told us"
+          onStartOver={() => toStep(1)}
+          startOverLabel="Start again"
+        />
+      ) : step === 1 ? (
         <div className="space-y-9">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">

@@ -30,6 +30,10 @@ import type {
 } from "@/lib/api/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { captureScraperError } from "@/features/scraper/diagnostics/captureScraperError";
+import {
+  classifyScrapeFailure,
+  type ScrapeFailure,
+} from "@/features/scraper/failure/scrapeFailure";
 import type {
   QuickScrapeRequest,
   SearchKeywordsRequest,
@@ -330,6 +334,15 @@ function createStreamCtx(): StreamCtx {
 export interface UseScraperApiReturn extends ScraperApiState {
   /** Structured failure report (JSON-serializable). Only set when hasError. */
   errorDiagnostics: ScraperApiErrorDiagnostics | null;
+  /**
+   * THE USER-FACING FACE of the same failure: plain words + a remedy, with the
+   * engineer string and the diagnostics carried along for a "Details"
+   * disclosure. `error` above is the ENGINEER string (it names the hook, the
+   * operation and the pipeline stage) — a surface a person looks at renders
+   * this and `<ScrapeFailureNotice>`, never `error`. See
+   * features/scraper/failure/scrapeFailure.ts.
+   */
+  failure: ScrapeFailure | null;
   scrapeUrl: (
     url: string,
     options?: Partial<QuickScrapeRequest>,
@@ -1446,6 +1459,9 @@ export function useScraperApi(): UseScraperApiReturn {
     hasError: !!error,
     error,
     errorDiagnostics,
+    // Derived on render, in ONE place, so EVERY operation and every failure
+    // kind gets plain words — a new consumer cannot forget to build them.
+    failure: error ? classifyScrapeFailure({ error, diagnostics: errorDiagnostics }) : null,
     statusMessage,
     scrapeUrl,
     scrapeUrlSilent,
