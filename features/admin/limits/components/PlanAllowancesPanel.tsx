@@ -12,6 +12,12 @@
 //     them the same way is how a plan silently loses a capability.
 //   * A money dimension is stored in micro-dollars. The admin edits dollars;
 //     the conversion happens here, once, next to the constant that declares it.
+//   * `platform.points` is stored and edited in POINTS; the dollar figure beside
+//     it (20,000 points = $1 of AI) is commentary so the number means something
+//     to a human. It is never what gets saved.
+//   * A capability with `enforced = false` is TRACKING ONLY. Its number stops
+//     nothing yet, and the panel says so in plain words wherever the number
+//     appears — a limit that looks enforced and is not is a screen that lies.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
@@ -26,7 +32,35 @@ import {
   setPlanLimit,
 } from "../service";
 import type { Capability, Plan, PlanLimit } from "../types";
-import { isMicroUsd, limitToDisplay, limitToStored } from "../types";
+import {
+  isMicroUsd,
+  isPoints,
+  limitToDisplay,
+  limitToHuman,
+  limitToStored,
+  pointsToUsdLabel,
+} from "../types";
+
+/**
+ * The one honest word for `billing.capability.enforced`. "Tracking only" is
+ * deliberately not jargon: the number is counted against, and nobody is
+ * stopped. Shared with the add-ons tab so the two never drift apart.
+ */
+export function EnforcementBadge({ enforced }: { enforced: boolean }) {
+  return enforced ? (
+    <Badge variant="default" className="text-xs">
+      enforced
+    </Badge>
+  ) : (
+    <Badge
+      variant="outline"
+      className="border-warning text-xs text-warning"
+      title="Usage is counted against this limit, but nobody is blocked when they pass it."
+    >
+      tracking only — does not stop anything yet
+    </Badge>
+  );
+}
 
 function cellId(planId: string, capability: string, period: string): string {
   return `${planId}|${capability}|${period}`;
@@ -68,8 +102,11 @@ export function PlanAllowancesPanel() {
     }
   }, []);
 
+  // Deferred a tick so the first read is not a synchronous setState inside
+  // the effect body (the house pattern — see TaxonomyAdminClient).
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   const limitIndex = useMemo(() => {
@@ -133,19 +170,22 @@ export function PlanAllowancesPanel() {
           These are the numbers every gate on the platform asks for. A blank cell
           means <strong>unlimited</strong>; <strong>0</strong> means the plan does
           not include the capability at all — they are not the same thing. Money
-          dimensions are entered in dollars. Saving requires super-admin.
+          dimensions are entered in dollars; the AI budget is entered in points
+          (20,000 points = $1 of model spend) and shows its dollar equivalent
+          beside it. A capability marked <strong>tracking only</strong> is
+          counted but not stopped — its number does not block anyone yet.
+          Saving requires super-admin.
         </p>
       </div>
 
       {meteredCapabilities.map((cap) => {
         const money = isMicroUsd(cap.capability);
+        const points = isPoints(cap.capability);
         return (
           <section key={cap.capability} className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-mono text-sm font-semibold">{cap.capability}</h3>
-              <Badge variant={cap.enforced ? "default" : "outline"} className="text-xs">
-                {cap.enforced ? "enforced" : "visible only"}
-              </Badge>
+              <EnforcementBadge enforced={cap.enforced} />
               <Badge variant="secondary" className="text-xs">
                 per {cap.period ?? "lifetime"}
               </Badge>
@@ -159,50 +199,106 @@ export function PlanAllowancesPanel() {
                   entered in US dollars
                 </span>
               )}
+              {points && (
+                <span className="text-xs text-muted-foreground">
+                  entered in points — 20,000 points = $1 of AI
+                </span>
+              )}
             </div>
+            {!cap.enforced && (
+              <p className="text-xs text-warning">
+                Tracking only — this limit does not stop anything yet. Usage is
+                counted against it, but nobody is blocked when they pass it.
+              </p>
+            )}
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {plans.map((plan) => {
                 const period = cap.period ?? "lifetime";
                 const id = cellId(plan.id, cap.capability, period);
                 const existing = limitIndex.get(id);
+                const draft = drafts[id] ?? "";
+                const savedValue = existing?.limit_value ?? null;
                 const dirty =
-                  (drafts[id] ?? "") !==
-                  limitToDisplay(cap.capability, existing?.limit_value ?? null);
+                  draft !== limitToDisplay(cap.capability, savedValue);
+                // The live hint follows what is being TYPED; the saved line
+                // follows what is in the row. When they differ the admin sees
+                // both, which is the point of showing a draft at all.
+                const draftUsd = points ? pointsToUsdLabel(draft, period) : null;
+                const savedUsd = points
+                  ? pointsToUsdLabel(savedValue, period)
+                  : null;
                 return (
                   <div
                     key={id}
-                    className="flex items-center gap-2 rounded-md border border-border p-3"
+                    className="rounded-md border border-border p-3"
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {plan.name}
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          {plan.audience}
-                        </span>
-                      </p>
-                      {existing?.note && (
-                        <p className="truncate text-xs text-muted-foreground">
-                          {existing.note}
+                    <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {plan.name}
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            {plan.audience}
+                          </span>
                         </p>
+                        {existing?.note && (
+                          <p className="truncate text-xs text-muted-foreground">
+                            {existing.note}
+                          </p>
+                        )}
+                      </div>
+                      {money && (
+                        <span className="text-sm text-muted-foreground">$</span>
                       )}
+                      <Input
+                        className="w-28"
+                        placeholder="unlimited"
+                        aria-label={`${plan.name} ${cap.capability} allowance`}
+                        value={draft}
+                        onChange={(event) =>
+                          setDrafts((prev) => ({
+                            ...prev,
+                            [id]: event.target.value,
+                          }))
+                        }
+                      />
+                      <Button
+                        size="sm"
+                        variant={dirty ? "default" : "ghost"}
+                        disabled={!dirty || saving === id}
+                        aria-label="Save allowance"
+                        onClick={() => void save(plan.id, cap.capability, period)}
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                    {money && <span className="text-sm text-muted-foreground">$</span>}
-                    <Input
-                      className="w-28"
-                      placeholder="unlimited"
-                      value={drafts[id] ?? ""}
-                      onChange={(event) =>
-                        setDrafts((prev) => ({ ...prev, [id]: event.target.value }))
-                      }
-                    />
-                    <Button
-                      size="sm"
-                      variant={dirty ? "default" : "ghost"}
-                      disabled={!dirty || saving === id}
-                      onClick={() => void save(plan.id, cap.capability, period)}
-                    >
-                      <Save className="h-3.5 w-3.5" />
-                    </Button>
+                    {points && (
+                      <div className="mt-1.5 flex flex-wrap justify-end gap-x-3 text-xs text-muted-foreground">
+                        {dirty ? (
+                          <span>
+                            typing:{" "}
+                            {draft.trim() === ""
+                              ? "unlimited"
+                              : (draftUsd ?? "not a number")}
+                          </span>
+                        ) : null}
+                        <span>
+                          saved: {limitToHuman(cap.capability, savedValue)}
+                          {savedValue === 0
+                            ? " (not included)"
+                            : savedUsd
+                              ? ` · ${savedUsd}`
+                              : ""}
+                        </span>
+                        {!cap.enforced && (
+                          <span className="text-warning">tracking only</span>
+                        )}
+                      </div>
+                    )}
+                    {!points && !cap.enforced && (
+                      <p className="mt-1.5 text-right text-xs text-warning">
+                        tracking only — does not stop anything yet
+                      </p>
+                    )}
                   </div>
                 );
               })}
