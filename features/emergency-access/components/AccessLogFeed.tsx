@@ -31,6 +31,11 @@ import { createClient } from "@/utils/supabase/server";
 import type { AccessLogEntry } from "../types";
 import { fetchMyAccessLog } from "../service";
 import {
+  accessLogBadge,
+  accessLogOutcome,
+  accessLogVerb,
+  authorisedByLabel,
+  keyHolderLabel,
   keyWindowLabel,
   purposeLabel,
   recordKindLabel,
@@ -41,14 +46,12 @@ import {
  *  cap somebody silently hits — the footer says plainly when more exists. */
 const PAGE_SIZE = 100;
 
-/** Who did it: the door's own resolution, else the raw id, else plain words. */
-function actorLabel(entry: AccessLogEntry): string {
-  return (
-    entry.actorLabel ??
-    entry.actorUserId ??
-    "Someone whose account is no longer recorded"
-  );
-}
+// 🚨 WHO OPENED IT IS `keyHolderLabel`, NOT THE ACTOR. This file used to read
+// `entry.actorLabel`, which on the two-person path is the APPROVER — so the one
+// page that exists to tell a person who read their data named the person who
+// merely authorised it (V-38, 2026-09-12). Both are now shown, each as what it
+// is, and the model lives in `../presentation` so no future renderer can pick
+// the wrong one on its own.
 
 export async function AccessLogFeed() {
   const client = await createClient();
@@ -115,30 +118,39 @@ export async function AccessLogFeed() {
 }
 
 function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
-  const refused = !entry.granted;
+  // THE ACTION IS THE AUTHORITY. `!entry.granted` used to decide this, which
+  // painted every pending ask — the common case on the two-person path — as a
+  // red REFUSED card with the stand-in reason "No reason recorded".
+  const outcome = accessLogOutcome(entry);
+  const refused = outcome === "refused";
+  const opened = outcome === "granted";
+  const holder = keyHolderLabel(entry);
+  const authoriser = authorisedByLabel(entry);
+
+  const tone = refused
+    ? "rounded-lg border border-destructive/50 bg-destructive/5 p-4"
+    : opened
+      ? "rounded-lg border border-border bg-card p-4"
+      : "rounded-lg border border-border bg-muted/30 p-4";
+
+  const badgeTone = refused
+    ? "inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-destructive-foreground"
+    : opened
+      ? "inline-flex items-center gap-1.5 rounded-md bg-success px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-success-foreground"
+      : "inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
   return (
-    <article
-      className={
-        refused
-          ? "rounded-lg border border-destructive/50 bg-destructive/5 p-4"
-          : "rounded-lg border border-border bg-card p-4"
-      }
-    >
+    <article className={tone}>
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span
-          className={
-            refused
-              ? "inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-destructive-foreground"
-              : "inline-flex items-center gap-1.5 rounded-md bg-success px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-success-foreground"
-          }
-        >
+        <span className={badgeTone}>
           {refused ? (
             <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />
-          ) : (
+          ) : opened ? (
             <DoorOpen className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
           )}
-          {refused ? "Refused" : "Granted"}
+          {accessLogBadge(outcome)}
         </span>
         <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -162,8 +174,8 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
           aria-hidden="true"
         />
         <span>
-          <span className="font-medium break-all">{actorLabel(entry)}</span>{" "}
-          {refused ? "tried to open" : "opened"}{" "}
+          <span className="font-medium break-all">{holder}</span>{" "}
+          {accessLogVerb(outcome)}{" "}
           <span className="font-medium">
             {recordKindLabel(entry.targetToken)}
           </span>
@@ -174,6 +186,19 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
         </span>
       </p>
 
+      {/* The second person, named as what they are. Absent when there is only
+          one person in the act, so a `confidential` open does not read as if
+          somebody approved it. */}
+      {authoriser ? (
+        <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground">
+          <UserRound className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>
+            {opened ? "Approved by" : "Answered by"}{" "}
+            <span className="font-medium break-all">{authoriser}</span>.
+          </span>
+        </p>
+      ) : null}
+
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -183,18 +208,30 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
         </div>
         <div>
           <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-            {refused ? "Why it was refused" : "How long the key lasts"}
+            {refused
+              ? "Why it was refused"
+              : opened
+                ? "How long the key lasts"
+                : "What happened next"}
           </dt>
           <dd className="flex items-center gap-1.5 text-foreground">
-            {refused ? null : (
+            {opened ? (
               <KeyRound
                 className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
-            )}
+            ) : null}
+            {/* 🚨 NEVER purposeLabel(denialReason) ON A ROW THAT WAS NOT
+                REFUSED — on a pending ask that renders "No reason recorded",
+                an invented reason for a refusal that never happened. */}
             {refused
-              ? purposeLabel(entry.denialReason)
-              : keyWindowLabel(entry.grantExpiresAt)}
+              ? entry.denialReason?.trim() ||
+                "The reason was not recorded — tell us if you see this."
+              : opened
+                ? keyWindowLabel(entry.grantExpiresAt)
+                : outcome === "lapsed"
+                  ? "Nobody answered it and it lapsed. Nothing was opened."
+                  : "An owner of the organization has to approve it before anything opens."}
           </dd>
         </div>
         <div className="sm:col-span-2">
