@@ -1,64 +1,45 @@
 /**
- * D311 GUARD — the associations host must not invoke a single RPC on mount.
+ * D311 GUARD — mounting this app's associations provider must not issue a
+ * single RPC.
  *
- * The live defect: `AssociationsProvider` defaults to running the package's
- * `assertDemandedSchema`, which calls all 26 demanded RPCs with sentinel
- * arguments to ask whether each exists — fourteen of them WRITES. Measured on
- * `/administration/billing/spend`, that was 25 POSTs to `/rest/v1/rpc/<name>`
- * answered 400 on every single page load, ahead of the page's own reads.
+ * The live defect: `AssociationsProvider` ran the package's
+ * `assertDemandedSchema` on mount, which established whether each of the 26
+ * demanded RPCs existed by CALLING it with sentinel arguments — fourteen of
+ * them WRITES. Measured on `/administration/billing/spend`: 25 POSTs to
+ * `/rest/v1/rpc/<name>` answered 400 on every page load, ahead of the page's
+ * own reads. THE CLASS RULE: a write RPC is never invoked to ask whether it
+ * exists.
  *
- * THE CLASS RULE this guard holds: a write RPC is never invoked to ask
- * whether it exists.
+ * @ai-matrx/associations 0.9.0 deleted the probe and its `probeSchema` knob,
+ * so the class is closed for every consumer. This guard stays because it is
+ * THIS app's contract with the package across upgrades: the provider we mount
+ * is inert, whatever a future version decides to do on mount. It is written
+ * against the package's public surface — no knob to set, nothing to restate.
  *
- * The first test is the SELF-TEST that makes the second one mean something:
- * with the probe left on, this harness records the probe calls, and names
- * them. If the second test ever goes green because the recorder stopped
- * seeing calls (a mount that never happens, a dataSource that is never
- * reached), the first test goes red and says so.
+ * The first test is the SELF-TEST that makes the second mean something: it
+ * proves the recorder sees an RPC when one is actually made, so a green "zero
+ * calls" can never come from a recorder that was never reached.
  */
 
 import React, { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createAssociationsStore } from "@ai-matrx/associations/core";
+import {
+  createAssociationsStore,
+  type AssociationsStore,
+} from "@ai-matrx/associations/core";
 import { AssociationsProvider } from "@ai-matrx/associations/react";
-import { PROBE_SCHEMA_AT_BOOT } from "../associationsStore";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-/** RPC names the package probe invokes that WRITE when handed real arguments. */
-const WRITE_RPCS = [
-  "assoc_add",
-  "assoc_remove",
-  "assoc_set_targets",
-  "assoc_remove_for_entity",
-  "conversation_file_add",
-  "conversation_file_remove",
-  "agent_resource_add",
-  "agent_resource_remove",
-  "cat_create",
-  "cat_update",
-  "cat_reparent",
-  "cat_delete",
-  "ues_set",
-  "ues_touch",
-  "cmt_add",
-  "cmt_edit",
-  "cmt_delete",
-];
-
-function mountWithRecorder(probeSchema: boolean): {
-  calls: string[];
-  unmount: () => void;
-} {
+function makeStore(): { store: AssociationsStore; calls: string[] } {
   const calls: string[] = [];
-  const answer = () => Promise.resolve({ data: null, error: null });
   const store = createAssociationsStore({
     dataSource: {
       rpc: ((fn: string) => {
         calls.push(fn);
-        return answer();
+        return Promise.resolve({ data: null, error: null });
       }) as never,
     } as never,
     identity: {
@@ -67,27 +48,7 @@ function mountWithRecorder(probeSchema: boolean): {
     },
     errorSink: () => {},
   } as never);
-
-  const container = document.createElement("div");
-  document.body.appendChild(container);
-  let root: Root | null = null;
-  act(() => {
-    root = createRoot(container);
-    root.render(
-      <AssociationsProvider store={store} probeSchema={probeSchema}>
-        {"ready" as unknown as ReactNode}
-      </AssociationsProvider>,
-    );
-  });
-  return {
-    calls,
-    unmount: () => {
-      act(() => {
-        root?.unmount();
-      });
-      container.remove();
-    },
-  };
+  return { store, calls };
 }
 
 async function settle(): Promise<void> {
@@ -96,22 +57,31 @@ async function settle(): Promise<void> {
   });
 }
 
-describe("D311 — no RPC probe on associations host mount", () => {
-  it("SELF-TEST: with the probe ON the recorder sees the write RPCs fire", async () => {
-    const mounted = mountWithRecorder(true);
-    await settle();
-    const fired = mounted.calls.filter((fn) => WRITE_RPCS.includes(fn));
-    mounted.unmount();
-    // Without this the next test could pass for the wrong reason.
-    expect(fired.length).toBeGreaterThan(0);
+describe("D311 — the associations provider mount is inert", () => {
+  it("SELF-TEST: the recorder sees an RPC when one is actually made", async () => {
+    const { store, calls } = makeStore();
+    await store.services.categories.list();
+    expect(calls.length).toBeGreaterThan(0);
   });
 
-  it("ships with the probe OFF: mounting invokes ZERO RPCs", async () => {
-    expect(PROBE_SCHEMA_AT_BOOT).toBe(false);
-    const mounted = mountWithRecorder(PROBE_SCHEMA_AT_BOOT);
+  it("mounting AssociationsProvider invokes ZERO RPCs", async () => {
+    const { store, calls } = makeStore();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let root: Root | null = null;
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <AssociationsProvider store={store}>
+          {"ready" as unknown as ReactNode}
+        </AssociationsProvider>,
+      );
+    });
     await settle();
-    const { calls } = mounted;
-    mounted.unmount();
+    act(() => {
+      root?.unmount();
+    });
+    container.remove();
     expect(calls).toEqual([]);
   });
 });

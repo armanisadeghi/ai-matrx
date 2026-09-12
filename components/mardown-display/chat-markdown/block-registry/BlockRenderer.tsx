@@ -328,6 +328,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           messageId={messageId}
           conversationId={conversationId}
           value={readRecordValue(block)}
+          fingerprint={readEnvelope(block.metadata)?.fingerprint ?? null}
         />
       </div>
     );

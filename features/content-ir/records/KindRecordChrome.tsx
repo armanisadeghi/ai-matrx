@@ -60,6 +60,7 @@ import {
   countKindRecords,
   fetchRecordsProducedByMessage,
   saveRecordFromBlock,
+  subscribeToKindRecordChanges,
   type KindRecord,
 } from "./kind-record-service";
 
@@ -93,6 +94,7 @@ export function KindRecordChrome({
   messageId,
   conversationId,
   value,
+  fingerprint,
   className,
 }: {
   kind: string;
@@ -106,6 +108,13 @@ export function KindRecordChrome({
    * rather than offering a Save that would write nothing.
    */
   value?: Record<string, unknown> | null;
+  /**
+   * The block envelope's own fingerprint (`CanonicalBlockIR.fingerprint`) —
+   * stored as `metadata.source.fingerprint`, the same key the server store
+   * writes. Absent when the block carried no envelope, and then the key is
+   * simply not written rather than invented.
+   */
+  fingerprint?: string | null;
   className?: string;
 }) {
   const disposition = resolveKindRecordDisposition(kind);
@@ -151,6 +160,20 @@ export function KindRecordChrome({
 
   const reload = () => setReloadKey((n) => n + 1);
 
+  /**
+   * 🚨 THE SIBLING-COUNT RULE. Two blocks of the same kind in one conversation
+   * draw two of these strips, each holding its own copy of the organization's
+   * count. Saving the first one used to leave the SECOND reading "Save this as
+   * the first one" — false at the moment it was on screen, and only a full page
+   * reload fixed it (V-42 §3.1). Every write announces itself on the record
+   * bus; every strip listens, including the one that did the writing.
+   */
+  useEffect(() => {
+    return subscribeToKindRecordChanges((changed) => {
+      if (changed === null || changed === kind) reload();
+    });
+  }, [kind]);
+
   if (!disposition) return null;
 
   const tableHref = shapeRecordsTableHref(kind);
@@ -175,7 +198,6 @@ export function KindRecordChrome({
       return;
     }
     toast.success(`${disposition.label} confirmed`);
-    reload();
   };
 
   const onArchive = async () => {
@@ -204,7 +226,6 @@ export function KindRecordChrome({
         ? `${disposition.label} archived`
         : `${disposition.label} restored`,
     );
-    reload();
   };
 
   const onSave = async () => {
@@ -216,6 +237,7 @@ export function KindRecordChrome({
       organizationId,
       conversationId,
       messageId,
+      fingerprint: fingerprint ?? undefined,
     });
     setBusy(false);
     if (!result.ok) {
@@ -224,13 +246,19 @@ export function KindRecordChrome({
       });
       return;
     }
-    toast.success(`${disposition.label} saved`, {
-      description:
-        result.value.confirmation === "confirmed"
-          ? "You saved it yourself, so it is already confirmed."
-          : "It is waiting for someone to confirm it.",
-    });
-    reload();
+    const standing =
+      result.value.confirmation === "confirmed"
+        ? "You saved it yourself, so it is already confirmed."
+        : "It is waiting for someone to confirm it.";
+    if (result.value.provenanceWarning) {
+      // The row landed but its link back to this message did not. Never
+      // silent: the record exists, and the reader is told what is missing.
+      toast.warning(`${disposition.label} saved`, {
+        description: `${standing} ${result.value.provenanceWarning}`,
+      });
+    } else {
+      toast.success(`${disposition.label} saved`, { description: standing });
+    }
   };
 
   return (

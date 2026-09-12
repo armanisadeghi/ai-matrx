@@ -23,7 +23,7 @@ importers:
         version: 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/associations':
         specifier: latest
-        version: 0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.9.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/browser-audio':
         specifier: latest
         version: 0.3.3(react@19.3.0)
@@ -35,7 +35,7 @@ importers:
         version: 0.11.1
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.11.2(react@19.3.0)
+        version: 0.11.3(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
         version: 0.13.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
@@ -59,7 +59,7 @@ importers:
         version: 0.5.3(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/messaging':
         specifier: latest
-        version: 0.11.2(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.11.3(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/print':
         specifier: latest
         version: 0.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -859,8 +859,8 @@ packages:
       react-native-svg:
         optional: true
 
-  '@ai-matrx/associations@0.8.7':
-    resolution: {integrity: sha512-gOGQusdSNqM139n1Ko/uBeN0P26fJ3TVwDIdHg15g8lds2WSU10fYzeHzA697ZD0diIRLhMTi/SEMJJ2hdg5Lw==}
+  '@ai-matrx/associations@0.9.0':
+    resolution: {integrity: sha512-ieJBbkLaAiXiuT4XljZ1IyaAl/7aurZRDFgOrWVgnzgR24zz2APxefs5YYAKATq9BfoY2VWKgihqObJqorx7gw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -890,8 +890,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.11.2':
-    resolution: {integrity: sha512-2Eoa6Bt5Ps3/hkSMbVuqeq4NPMtPV+tPlbboeCcVEC7snLGjliIn/o4a4vaINReIZZfhKMiI3bpQD4AMLwIGmA==}
+  '@ai-matrx/content-ir-react@0.11.3':
+    resolution: {integrity: sha512-X+0rXgUQZQsJmRuAbGY0DkRaL6+7YnXpLjHEyUc0kF5UFhKl32BFzo4wtf42G37lvoR7PxsCBtH5uiPh2m6UNg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=19.0.0'
@@ -962,8 +962,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/messaging@0.11.2':
-    resolution: {integrity: sha512-L7wfwX6GCk/lV8ZNX1QrlNlwess4mx6gNEMm0QMxgqrDEJe7kByTr3QgTYHKujKAz292VMcIZORCkZYOrxUb/Q==}
+  '@ai-matrx/messaging@0.11.3':
+    resolution: {integrity: sha512-J0zB3TCt3uPUPJcgJvcbUvsxEZCheTtqNhgXjRzNOnVlTA05W1TFr3i40sEqX+RaJs2zElpTD5zM5SneDtWOvA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12787,7 +12787,7 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@ai-matrx/associations@0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/associations@0.9.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/design-system': 0.17.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.12.1(react@19.3.0)
@@ -12809,7 +12809,7 @@ snapshots:
     optionalDependencies:
       react-dom: 19.3.0(react@19.3.0)
 
-  '@ai-matrx/content-ir-react@0.11.2(react@19.3.0)':
+  '@ai-matrx/content-ir-react@0.11.3(react@19.3.0)':
     dependencies:
       '@ai-matrx/content-ir': 0.11.1
       react: 19.3.0
@@ -12893,7 +12893,7 @@ snapshots:
 
   '@ai-matrx/media@0.5.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@22.20.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/associations': 0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/associations': 0.9.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.12.1(react@19.3.0)
       react: 19.3.0
       tailwind-merge: 3.6.0
@@ -12908,7 +12908,7 @@ snapshots:
     dependencies:
       '@ai-matrx/agents': 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.12.1(react@19.3.0)
-      '@ai-matrx/messaging': 0.11.2(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/messaging': 0.11.3(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/realtime': 0.7.9(react@19.3.0)
       livekit-client: 2.22.3(@types/dom-mediacapture-record@1.0.22)
     optionalDependencies:
@@ -12922,7 +12922,7 @@ snapshots:
       - react-native
       - react-native-svg
 
-  '@ai-matrx/messaging@0.11.2(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/messaging@0.11.3(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/agents': 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.12.1(react@19.3.0)

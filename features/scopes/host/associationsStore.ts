@@ -29,37 +29,17 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
 
-/**
- * Whether `AssociationsProvider` runs the package's `assertDemandedSchema`
- * probe on mount (D311, 2026-09-12). **FALSE, and it must stay false.**
- *
- * The probe INVOKES all 26 demanded RPCs with sentinel arguments to ask
- * whether each function exists. Fourteen of them are WRITES (`assoc_add`,
- * `assoc_set_targets`, `cat_delete`, `cmt_add`, `ues_set`, …). Measured on
- * `/administration/billing/spend`: 25 POSTs to `/rest/v1/rpc/<name>` answered
- * 400 on EVERY page load, ahead of the page's own reads — and the package's
- * `isDevelopmentBuild()` is `typeof process !== "undefined"`, true in the
- * browser bundle, so it fired in production too.
- *
- * THE CLASS RULE: a write RPC is never invoked to ask whether it exists.
- * Nothing replaces the probe because nothing needs to: the package's
- * `mapPgError` already turns PostgREST's PGRST202 (function not found) into
- * the same `demanded_schema_violation` scream, with the same remedy, at every
- * REAL call site. A wrong database still announces itself loudly, at the
- * moment it matters, and costs nothing on the loads where it is right.
- *
- * Lives here rather than beside its JSX so the guard test can assert the
- * shipped value without dragging the whole React host import graph in.
- */
-export const PROBE_SCHEMA_AT_BOOT = false;
-
-// The sentinel-args suppression that used to live here is
-// GONE with the probe that produced them (D311). It existed only to keep the
-// package's boot probe — 26 RPC invocations with `__not_a_uuid__`, 14 of them
-// WRITES, 25 of them answered 400 on every page load — out of the Error
-// Inspector. AssociationsHost now passes `probeSchema={false}` (see its
-// header), so nothing calls these functions with sentinel arguments, and every
-// error that reaches this seam is a real one that must be captured.
+// D311 (2026-09-12): NOTHING here probes RPC existence, and nothing hides a
+// probe's errors. @ai-matrx/associations 0.9.0 DELETED the boot probe and its
+// `probeSchema` knob — it established that a demanded function existed by
+// CALLING it (14 of the 26 are writes), which cost this app 25 rpc 400s on
+// every page load. The class rule the package now holds: a write RPC is never
+// invoked to ask whether it exists. PGRST202 at a real call site still screams
+// `demanded_schema_violation` with a remedy.
+//
+// The sentinel-args Error-Inspector suppression that used to live at this seam
+// went with the probe: every error reaching it now is a real one, and must be
+// captured.
 
 /**
  * The supabase client, narrowed to the package's structural dataSource

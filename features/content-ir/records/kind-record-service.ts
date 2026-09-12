@@ -23,6 +23,13 @@
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  storeKindRecord,
+  PRODUCED_BY_LABEL as STORE_PRODUCED_BY_LABEL,
+  MESSAGE_SOURCE_TYPE as STORE_MESSAGE_SOURCE_TYPE,
+  KIND_INSTANCE_TARGET_TYPE as STORE_KIND_INSTANCE_TARGET_TYPE,
+  type KindRecordProvenance,
+} from "@/features/content-ir/studio/store-kind-record";
 
 /** `platform.confirmation`. */
 export type RecordConfirmation = "unconfirmed" | "confirmed";
@@ -31,10 +38,24 @@ export type RecordResult<T> =
   | { ok: true; value: T }
   | { ok: false; message: string };
 
-/** The association contract the server writes when a chat turn emits a kind. */
-export const PRODUCED_BY_LABEL = "produced_by";
-export const MESSAGE_SOURCE_TYPE = "message";
-export const KIND_INSTANCE_TARGET_TYPE = "content_ir_kind_instance";
+/**
+ * The association contract, re-exported from THE ONE CLIENT STORE so the
+ * reader and the writer can never name the edge differently.
+ */
+export const PRODUCED_BY_LABEL = STORE_PRODUCED_BY_LABEL;
+export const MESSAGE_SOURCE_TYPE = STORE_MESSAGE_SOURCE_TYPE;
+export const KIND_INSTANCE_TARGET_TYPE = STORE_KIND_INSTANCE_TARGET_TYPE;
+
+// The record change bus lives in its own module so THE ONE CLIENT STORE can
+// announce a write without importing this reader. Re-exported here because
+// this is the module every record view already imports.
+export {
+  subscribeToKindRecordChanges,
+  notifyKindRecordsChanged,
+  type KindRecordsChangedListener,
+} from "./record-change-bus";
+
+import { notifyKindRecordsChanged } from "./record-change-bus";
 
 export interface KindRecord {
   id: string;
@@ -158,18 +179,19 @@ interface RawInstanceRow {
  * TWO ROUTES, because there are two ways a record can come from a message and
  * neither is guaranteed:
  *
- *  - a `platform.associations` `produced_by` edge, which a SERVER path writes
- *    when a chat turn emits a verified kind block, and
- *  - `metadata.home = { conversation_id, message_id }`, which is what the
- *    client save below writes.
+ *  - a `platform.associations` `produced_by` edge, which BOTH the server store
+ *    and the client store (`studio/store-kind-record.ts`) write, and
+ *  - `metadata.source.message_id`, written by both stores beside the edge.
  *
- * 🚨 As of 2026-09-12 the server route DOES NOT FIRE for an ordinary
- * user-authored kind: `wine_tasting` is not in aidream's closed `BLOCK_KIND_MAP`
- * and its block detector claims no ordinary `__kind` body, so the server never
- * sees a verified block and writes no row. Only the FRONTEND resolves these
- * kinds. That is why this reads both routes and why the chrome's control has to
- * be an honest SAVE when neither answers — a screen that claimed the record was
- * already there would be lying today, on every wine tasting in every chat.
+ * Both are read because they answer the same question from different rows and
+ * an edge can be missing (the association insert was refused while the record
+ * itself landed — the store says so out loud and the record still exists).
+ *
+ * 🚨 On the product's own chat screen the server route does not fire today
+ * (the request carries no `block_mode`, V-42 §2.2), so in practice every wine
+ * tasting is written by the client store. That is why the chrome's control has
+ * to be an honest SAVE when neither route answers — a screen that claimed the
+ * record was already there would be lying, on every wine tasting in every chat.
  */
 export async function fetchRecordsProducedByMessage(args: {
   kind: string;
@@ -207,11 +229,12 @@ export async function fetchRecordsProducedByMessage(args: {
       for (const row of (data ?? []) as RawInstanceRow[]) byId.set(row.id, row);
     }
 
+    // `metadata.source.message_id` — the canonical shape BOTH stores write.
     const homed = await supabase
       .schema("content_ir")
       .from("kind_instance")
       .select(INSTANCE_COLUMNS)
-      .eq("metadata->home->>message_id", args.messageId)
+      .eq("metadata->source->>message_id", args.messageId)
       .eq("kind_definition_id", definition.value)
       .is("deleted_at", null);
     if (homed.error) {
@@ -243,13 +266,12 @@ export async function fetchRecordsProducedByMessage(args: {
 }
 
 /**
- * Save the block a person is looking at as a record of `kind`, HOMED in the
- * conversation and the message it came from.
+ * Save the block a person is looking at as a record of `kind`.
  *
- * Reuses the ONE studio write contract (`saveKindInstance`) — the same insert
- * the Shape Studio's Test tab and the "Save to my Shapes" message action use —
- * so a record born from a block can never diverge from one born anywhere else.
- * The only thing added is the home.
+ * Routes through THE ONE CLIENT STORE (`studio/store-kind-record.ts`) — the
+ * same function the "Save to my Shapes" message action and the Shape Studio's
+ * Test tab call — so the metadata shape and the `produced_by` edge can never
+ * differ between two client saves, nor from what the server store writes.
  *
  * A PERSON is clicking, so this write declares no `x-matrx-actor-tier` header.
  * That is not an omission: on the `authenticated` channel the absence of the
@@ -263,7 +285,9 @@ export async function saveRecordFromBlock(args: {
   organizationId: string | null;
   conversationId?: string;
   messageId?: string;
-}): Promise<RecordResult<KindRecord>> {
+  /** The block envelope's fingerprint, when the host could read one. */
+  fingerprint?: string;
+}): Promise<RecordResult<KindRecord & { provenanceWarning: string | null }>> {
   try {
     const { data: def, error } = await supabase
       .schema("content_ir")
@@ -280,23 +304,21 @@ export async function saveRecordFromBlock(args: {
       };
     }
 
-    const home: Record<string, string> = {};
-    if (args.conversationId) home.conversation_id = args.conversationId;
-    if (args.messageId) home.message_id = args.messageId;
-
-    const { saveKindInstance } = await import(
-      "@/features/content-ir/studio/instance-service"
-    );
     const { kindTitleKeyFromMetadata } = await import(
       "@/features/content-ir/studio/instance-title"
     );
-    const saved = await saveKindInstance({
+    const provenance: KindRecordProvenance = {
+      conversationId: args.conversationId ?? null,
+      messageId: args.messageId ?? null,
+      fingerprint: args.fingerprint ?? null,
+    };
+    const saved = await storeKindRecord({
       kindDefinitionId: def.id,
       kindVersion: def.version,
       value: args.value,
       organizationId: args.organizationId,
       titleKey: kindTitleKeyFromMetadata(def.metadata),
-      metadata: Object.keys(home).length > 0 ? { home } : null,
+      provenance,
     });
     definitionIdBySlug.set(def.kind, def.id);
     return {
@@ -309,6 +331,7 @@ export async function saveRecordFromBlock(args: {
         confirmation: saved.confirmation,
         archivedAt: null,
         createdAt: new Date().toISOString(),
+        provenanceWarning: saved.provenanceWarning,
       },
     };
   } catch (error) {
@@ -470,6 +493,8 @@ export async function confirmKindRecords(
       .schema("content_ir")
       .rpc("confirm_kind_instances", { p_ids: ids });
     if (error) return fail("confirmKindRecords", error);
+    // The kind is not knowable from an id list, so every listener re-reads.
+    notifyKindRecordsChanged(null);
     return {
       ok: true,
       value: (data ?? []).map(
@@ -497,6 +522,8 @@ export async function archiveKindRecords(
       .schema("content_ir")
       .rpc("archive_kind_instances", { p_ids: ids, p_archived: archived });
     if (error) return fail("archiveKindRecords", error);
+    // Archiving moves a row out of the ACTIVE count every strip prints.
+    notifyKindRecordsChanged(null);
     return {
       ok: true,
       value: (data ?? []).map((row: { id: string; archived_at: string | null }) => ({

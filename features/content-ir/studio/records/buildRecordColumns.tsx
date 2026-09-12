@@ -131,31 +131,75 @@ export interface RecordColumnContext {
 }
 
 /**
+ * 🚨 A RAW IDENTIFIER IS NEVER A NAME.
+ *
+ * `created_by_system` is supposed to hold the NAME of the system that wrote the
+ * row (`chat_kind_emission`, `dd131_backfill_amnesty`). On the client write
+ * path the database's own stamp puts the writer's user id there instead
+ * (`platform.actor_system()` falls back to `auth.uid()` when no system is
+ * declared), so this column printed a truncated UUID under CREATED BY while
+ * person-written rows said "You" (V-42 §3.3). This function refuses to print
+ * anything that is an id: a value that looks like a UUID is not a system name,
+ * and the honest answer for a machine-written row is the same one the WRITTEN
+ * BY filter already gives — "An agent".
+ */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The system's name as a person reads it, or null when it is not a name. */
+export function systemDisplayName(raw: string | null): string | null {
+  const value = raw?.trim();
+  if (!value || UUID_RE.test(value)) return null;
+  // `chat_kind_emission` → `Chat kind emission`. A registered system name is a
+  // slug by convention; a person reads a sentence.
+  const words = value.replace(/[_-]+/g, " ").trim();
+  if (!words) return null;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
  * Who wrote the row. `ai`/`code` are the machine tiers and get the machine
  * icon; everything else is a person (an unstamped NULL included — the platform
  * reads it as a person and it is never backfilled).
+ *
+ * A machine row reads "An agent", and names the system BESIDE it only when the
+ * system is actually named. A person's row resolves their real display name
+ * through the organization's members, and says "You" for the viewer.
  */
 function writerCell(row: KindRecordRow, ctx: RecordColumnContext): ReactNode {
   const isMachine = row.createdByTier === "ai" || row.createdByTier === "code";
-  const name = isMachine
-    ? (row.createdBySystem ?? "An agent")
-    : row.createdBy && row.createdBy === ctx.viewerId
+  const system = systemDisplayName(row.createdBySystem);
+  const personName =
+    row.createdBy && row.createdBy === ctx.viewerId
       ? "You"
       : row.createdBy
         ? (ctx.creatorNames.get(row.createdBy) ?? "A teammate")
-        : "Unattributed";
+        : null;
+  const name = isMachine ? "An agent" : (personName ?? "Unattributed");
   const Icon = isMachine ? BrainCircuit : User2;
+  const title = isMachine
+    ? [
+        `Written by an agent (${row.createdByTier}) — nobody has stood behind it unless it is confirmed`,
+        system ? `System: ${system}` : null,
+        personName && personName !== "Unattributed"
+          ? `Run from ${personName === "You" ? "your" : `${personName}'s`} account`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "Written by a person";
   return (
     <span
       className="inline-flex min-w-0 items-center gap-1.5 text-muted-foreground"
-      title={
-        isMachine
-          ? `Written by a machine (${row.createdByTier}) — nobody has stood behind it unless it is confirmed`
-          : "Written by a person"
-      }
+      title={title}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" />
       <span className="line-clamp-1">{name}</span>
+      {isMachine && system && (
+        <span className="hidden shrink-0 text-[11px] text-muted-foreground/70 xl:inline">
+          {system}
+        </span>
+      )}
     </span>
   );
 }
