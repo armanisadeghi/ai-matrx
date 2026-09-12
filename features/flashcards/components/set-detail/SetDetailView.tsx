@@ -647,7 +647,8 @@ export function SetDetailView({ setId }: { setId: string }) {
       | "edit"
       | "sessions"
       | "practice-oral"
-      | "audio-review",
+      | "audio-review"
+      | "print-hub",
     path: string,
   ) => {
     if (isPending) return;
@@ -1352,6 +1353,19 @@ export function SetDetailView({ setId }: { setId: string }) {
                         disabled={data.cards.length === 0}
                       >
                         <Printer className="mr-2 h-4 w-4" /> Print
+                      </Button>
+                      {/* This deck is one printable; the hub is the index of
+                          the rest (cheat sheets, practice tests, certificates,
+                          labels, codes, booklets, printed copies). */}
+                      <Button
+                        variant="ghost"
+                        className="h-11 justify-start"
+                        onClick={() => {
+                          setDeckToolsOpen(false);
+                          navigate("print-hub", "/print");
+                        }}
+                      >
+                        <Printer className="mr-2 h-4 w-4" /> More printing
                       </Button>
                     </div>
                   </section>

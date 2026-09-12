@@ -67,6 +67,13 @@ export function LabelBatchesPage() {
           <span className="hidden truncate text-xs text-muted-foreground sm:inline">
             Print runs of pooled intake codes
           </span>
+          {/* Label batches are one printable among many — the hub indexes the rest (label stock, QR, barcodes, ZPL, documents). */}
+          <Link
+            href="/print"
+            className="shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Print hub
+          </Link>
         </div>
       </PageHeader>
       {config && (

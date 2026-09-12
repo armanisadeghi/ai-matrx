@@ -42,6 +42,7 @@ competing with the one persistent shell header.
 
 ## Change log
 
+- 2026-09-11 — **Deleted `/demos/print-studio` and `/demos/lulu-pricing`.** Both went live as real product surfaces under `/print` (Arman's ruling: "get away from demos and just go live with this stuff"). The 11 print sections are now `/print/<printable>` and the Lulu calculator + paid order flow is `/print/order`. Home: [`features/print/FEATURE.md`](../../../features/print/FEATURE.md). No redirect — pre-launch, no legacy.
 - 2026-08-30 — Added `/demos/print-studio`: the feature-visibility surface for `@ai-matrx/print` — one page exercising `/qr`, `/qr-styled`, `/barcode`, `/labels` (+ `LabelSheetPreview`), `/flashcards` (+ `PrintOptionsDialog`), `/booklet`, and `/pdf` (the converter and stylesheet ship in the package as of 0.3.0 — no host seam).
 - 2026-08-23 — Added `/demos/canonical-flashcards` with four interactive variants and a recommended non-breaking convergence path for Chat, Education, and Canvas flashcards.
 - 2026-08-23 — Added `/demos/kind-kit`: exercises every `components/kind-kit/` primitive (SortableList, KindPanelGrid, KindPanel, KindHeaderBar, StreamingSkeleton, KeywordChip/TagList) with keyword-research sample data.

@@ -7,6 +7,11 @@ GAP_ANALYSIS supersedes any older status claim. This file holds the durable per-
 contracts; it was created by the flashcard-images build (2026-08-18) and is deliberately
 narrow — extend it as other lanes land, don't fork a second doc.
 
+**Related:** deck printing is the canonical `flashcardsPrinter` from `@ai-matrx/print`,
+shared with the markdown-block lane and with `/print/flashcards`. The set-detail deck tools
+carry a "More printing" door to the platform print hub
+([`features/print/FEATURE.md`](../print/FEATURE.md)). Never a second print UI.
+
 ## Data spine
 
 `education.fc_set` / `fc_card` / `fc_detail` (Supabase, direct client reads via

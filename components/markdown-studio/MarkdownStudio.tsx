@@ -21,6 +21,7 @@ import { toast } from "@/lib/toast";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkdownAutosave";
+import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { EditorPanel } from "./EditorPanel";
 import { PreviewPanel } from "./PreviewPanel";
 import { AnalysisView } from "./AnalysisView";
@@ -220,8 +221,24 @@ export function MarkdownStudio() {
     openSaveDialog("fork");
   }, [loadedSample, saving, content]);
 
+  // Print / Save PDF — the SAME canonical path every markdown surface uses
+  // (`printMarkdownContent` -> `@ai-matrx/print/markdown`). Never a second
+  // converter or stylesheet. More printables: the hub at /print.
+  const handlePrint = useCallback(() => {
+    if (!content.trim()) {
+      toast.info("Nothing to print yet");
+      return;
+    }
+    printMarkdownContent(content, loadedSample?.name ?? "Markdown");
+  }, [content, loadedSample]);
+
   const headerActions: HeaderAction[] = useMemo(() => {
     const actions: HeaderAction[] = [
+      {
+        icon: "Printer",
+        label: "Print / Save PDF",
+        onPress: handlePrint,
+      },
       {
         icon: "BookOpen",
         label:
@@ -253,6 +270,7 @@ export function MarkdownStudio() {
     isDirty,
     handlePrimaryAction,
     handleForkAction,
+    handlePrint,
   ]);
 
   // Surface scope — built at trigger time (▶ Run), never on mount, so the

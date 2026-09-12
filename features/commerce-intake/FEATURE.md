@@ -126,6 +126,12 @@ uniqueness forbids the duplicate row by design; re-scan now opens the existing a
   repoints them at `Database["commerce"]` and deletes the casts (labels/service.ts +
   the `/l/[code]` page).
 
+**Related:** printing is a platform hub, not a commerce feature — the label sheets, QR and
+barcode generators, ZPL export, and the label template registry these surfaces use are all
+indexed at `/print` ([`features/print/FEATURE.md`](../print/FEATURE.md)). `/commerce/labels`
+and `/commerce/labels/printers` are linked FROM that hub and carry a "Print hub" link back;
+never fork a printer here.
+
 ## Printer certification (2026-08-31 — `labels/printers/` module)
 
 `commerce.certified_printer` (applied + certified live 2026-08-31,
