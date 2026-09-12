@@ -25,16 +25,13 @@ import {
   isMirrorTable,
   type DeleteMirrorRowArgs,
 } from "@/features/surfaces/services/manifest-sync.service";
-
-function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
-  const status = message.startsWith("Unauthorized")
-    ? 401
-    : message.startsWith("Forbidden")
-      ? 403
-      : 500;
-  return NextResponse.json({ error: message }, { status });
-}
+// ONE error→status mapping for this route family, and the only thing that
+// describes a PostgREST failure (thrown as a plain object, never an Error).
+// This route is exactly why the mapping grew past 401/403/500: `deleteMirrorRow`
+// throws NO_SUCH_MIRROR_ROW_PREFIX / STILL_DECLARED_REFUSAL_PREFIX /
+// RECENT_ROW_REFUSAL_PREFIX, and the local copy this replaces answered every
+// one of them with a bare 500.
+import { errorResponse } from "@/app/api/admin/surfaces/error-response";
 
 function validate(body: unknown): DeleteMirrorRowArgs | { error: string } {
   if (!body || typeof body !== "object") {

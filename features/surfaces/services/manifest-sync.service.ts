@@ -1097,6 +1097,20 @@ export interface ApplyManifestSyncOptions {
   /** When false, skips registering manifests for surfaces not present in `ui_surface`. Defaults to false (no implicit surface creation). */
   createMissingSurfaces?: boolean;
   /**
+   * THE RECENCY GUARD ON THE GLOBAL SWEEP. `deleteStale: true` used to delete
+   * every `db_only` row with no age check at all — the per-row `deleteMirrorRow`
+   * lever refuses a row touched inside `RECENT_ROW_WINDOW_HOURS` (see that
+   * function's comment for why: in a repo with many concurrent branches, a
+   * fresh row is common evidence of a sibling's in-flight, not-yet-merged
+   * work), but the sweep had no equivalent and would happily delete that same
+   * row. Default `false`: the sweep now SKIPS any `db_only` row whose
+   * `updated_at` is inside the window, across all four mirror tables, and
+   * reports the skipped set on `skippedRecentRows` instead of silently
+   * sparing them. Pass `true` to delete recent rows anyway (still API-only —
+   * no UI control exists for this yet, see the admin sync route).
+   */
+  includeRecent?: boolean;
+  /**
    * WHO ran this sync and WHERE from, stamped onto every mirror row written
    * (`synced_by` / `synced_from`). The caller supplies it because only the
    * caller has a session: the admin route passes the super admin it already
@@ -1128,6 +1142,19 @@ export interface ApplyManifestSyncResult {
   sweptPrefCount: number;
   /** Manifests skipped because their `surfaceName` isn't in `ui_surface`. */
   skippedMissingSurface: string[];
+  /**
+   * `db_only` rows the sweep found stale but LEFT ALONE because they were
+   * touched inside `RECENT_ROW_WINDOW_HOURS` (see `includeRecent`). Empty
+   * whenever `deleteStale` is false, `includeRecent` is true, or nothing
+   * stale happened to be recent.
+   */
+  skippedRecentRows: {
+    table: MirrorTable;
+    surfaceName: string;
+    name: string;
+    updatedAt: string;
+    ageMs: number;
+  }[];
   /** `ui_surface.url_pattern` rows updated from manifests / route defaults. */
   urlPatternsUpdated: { surfaceName: string; urlPattern: string }[];
   /** `ui_surface.parent_surface_name` rows updated from manifest `inheritsFrom`. */
@@ -1432,6 +1459,46 @@ export async function deleteMirrorRow(
   };
 }
 
+/**
+ * Split a candidate-for-delete set into what the global sweep may actually
+ * remove and what it must leave alone because it was touched inside
+ * `RECENT_ROW_WINDOW_HOURS` — the sweep's version of the same guard
+ * `deleteMirrorRow` enforces per-row (see that function's step 3 for why a
+ * fresh `updated_at` is treated as probable in-flight work rather than
+ * proof of it). `includeRecent: true` bypasses the split entirely: every
+ * candidate is "to delete" and nothing is reported as skipped.
+ */
+function partitionStaleByRecency<
+  T extends { surface_name: string; name: string; updated_at: string },
+>(
+  table: MirrorTable,
+  candidates: T[],
+  includeRecent: boolean,
+): {
+  toDelete: T[];
+  skipped: ApplyManifestSyncResult["skippedRecentRows"];
+} {
+  if (includeRecent) return { toDelete: candidates, skipped: [] };
+  const toDelete: T[] = [];
+  const skipped: ApplyManifestSyncResult["skippedRecentRows"] = [];
+  const now = Date.now();
+  for (const row of candidates) {
+    const ageMs = now - new Date(row.updated_at).getTime();
+    if (ageMs < RECENT_ROW_WINDOW_HOURS * 3_600_000) {
+      skipped.push({
+        table,
+        surfaceName: row.surface_name,
+        name: row.name,
+        updatedAt: row.updated_at,
+        ageMs,
+      });
+    } else {
+      toDelete.push(row);
+    }
+  }
+  return { toDelete, skipped };
+}
+
 export async function applyManifestSync(
   sb: Sb,
   opts: ApplyManifestSyncOptions = {},
@@ -1439,8 +1506,10 @@ export async function applyManifestSync(
   const {
     deleteStale = false,
     createMissingSurfaces = false,
+    includeRecent = false,
     provenance = { syncedBy: null, syncedFrom: apiSyncedFrom() },
   } = opts;
+  const skippedRecentRows: ApplyManifestSyncResult["skippedRecentRows"] = [];
 
   // 1. Make sure surfaces referenced by manifests exist in ui_surface.
   // Existence read: `existingSurfaces.has()` below decides whether a manifest is
@@ -1703,7 +1772,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_value")
-          .select("surface_name, name", { count: "exact" })
+          .select("surface_name, name, updated_at", { count: "exact" })
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1717,11 +1786,17 @@ export async function applyManifestSync(
       ),
     );
 
-    const toDelete = allDb.filter(
+    const staleRows = allDb.filter(
       (r) =>
         managedSurfaces.has(r.surface_name) &&
         !manifestKeys.has(`${r.surface_name}::${r.name}`),
     );
+    const { toDelete, skipped } = partitionStaleByRecency(
+      "ui_surface_value",
+      staleRows,
+      includeRecent,
+    );
+    skippedRecentRows.push(...skipped);
     for (const row of toDelete) {
       const del = await sb
         .schema("ui")
@@ -1746,7 +1821,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_agent_role")
-          .select("surface_name, name", { count: "exact" })
+          .select("surface_name, name, updated_at", { count: "exact" })
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1760,11 +1835,14 @@ export async function applyManifestSync(
       ),
     );
 
-    const rolesToDelete = allDbRoles.filter(
+    const staleRoles = allDbRoles.filter(
       (r) =>
         managedSurfaces.has(r.surface_name) &&
         !manifestRoleKeys.has(`${r.surface_name}::${r.name}`),
     );
+    const { toDelete: rolesToDelete, skipped: skippedRoles } =
+      partitionStaleByRecency("ui_surface_agent_role", staleRoles, includeRecent);
+    skippedRecentRows.push(...skippedRoles);
     for (const row of rolesToDelete) {
       const prefCount = await sb
         .schema("ui")
@@ -1798,7 +1876,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_write_target")
-          .select("surface_name, name", { count: "exact" })
+          .select("surface_name, name, updated_at", { count: "exact" })
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1811,11 +1889,18 @@ export async function applyManifestSync(
         (m.writeTargets ?? []).map((t) => `${m.surfaceName}::${t.name}`),
       ),
     );
-    const targetsToDelete = allDbTargets.filter(
+    const staleTargets = allDbTargets.filter(
       (t) =>
         managedForTargets.has(t.surface_name) &&
         !manifestTargetKeys.has(`${t.surface_name}::${t.name}`),
     );
+    const { toDelete: targetsToDelete, skipped: skippedTargets } =
+      partitionStaleByRecency(
+        "ui_surface_write_target",
+        staleTargets,
+        includeRecent,
+      );
+    skippedRecentRows.push(...skippedTargets);
     for (const row of targetsToDelete) {
       const del = await sb
         .schema("ui")
@@ -1842,7 +1927,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_client_tool")
-          .select("surface_name, name", { count: "exact" })
+          .select("surface_name, name, updated_at", { count: "exact" })
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
@@ -1855,11 +1940,14 @@ export async function applyManifestSync(
         (m.clientTools ?? []).map((t) => `${m.surfaceName}::${t.name}`),
       ),
     );
-    const toolsToDelete = allDbTools.filter(
+    const staleTools = allDbTools.filter(
       (t) =>
         managedForTools.has(t.surface_name) &&
         !manifestToolKeys.has(`${t.surface_name}::${t.name}`),
     );
+    const { toDelete: toolsToDelete, skipped: skippedTools } =
+      partitionStaleByRecency("ui_surface_client_tool", staleTools, includeRecent);
+    skippedRecentRows.push(...skippedTools);
     for (const row of toolsToDelete) {
       const del = await sb
         .schema("ui")
@@ -1888,6 +1976,7 @@ export async function applyManifestSync(
     clientToolDeleted,
     sweptPrefCount,
     skippedMissingSurface,
+    skippedRecentRows,
     urlPatternsUpdated,
     parentsUpdated,
     driftAfter,

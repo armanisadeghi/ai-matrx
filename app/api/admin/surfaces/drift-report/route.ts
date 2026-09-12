@@ -9,16 +9,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { computeDriftReport } from "@/features/surfaces/services/manifest-sync.service";
-
-function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
-  const status = message.startsWith("Unauthorized")
-    ? 401
-    : message.startsWith("Forbidden")
-      ? 403
-      : 500;
-  return NextResponse.json({ error: message }, { status });
-}
+// ONE error→status mapping for this route family, and the only thing that
+// describes a PostgREST failure (thrown as a plain object, never an Error).
+import { errorResponse } from "@/app/api/admin/surfaces/error-response";
 
 export async function GET() {
   try {
