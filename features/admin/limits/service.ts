@@ -9,6 +9,8 @@
 
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
+import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { isJsonObject } from "@/types/json";
 import type { Database } from "@/types/database.types";
 import type {
   AccountAddon,
@@ -22,6 +24,16 @@ import type {
 } from "./types";
 
 type MeterPeriod = Database["billing"]["Enums"]["meter_period"];
+
+/** 0640 returns the updated feature_knob row on success; refusals use `{ok:false}`. */
+export function parseFeatureKnobSetResult(payload: unknown, feature: string, key: string): FeatureKnobSetResult {
+  if (!isJsonObject(payload)) throw new Error("feature_knob_set returned an invalid response");
+  if (payload.ok === false && typeof payload.reason === "string") {
+    return { ok: false, reason: payload.reason, detail: typeof payload.detail === "string" ? payload.detail : undefined };
+  }
+  if (payload.feature === feature && payload.key === key && "value" in payload) return { ok: true, feature, key };
+  throw new Error("feature_knob_set returned an invalid response");
+}
 
 export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
   // The admin board treats this as the COMPLETE register (404+ rows and
@@ -83,10 +95,9 @@ export async function setFeatureKnob(
     p_value: value ?? null,
   });
   if (error) throw error;
-  if (!data || typeof data !== "object" || Array.isArray(data) || !("ok" in data)) {
-    throw new Error("feature_knob_set returned an invalid response");
-  }
-  return data as FeatureKnobSetResult;
+  const result = parseFeatureKnobSetResult(data, feature, key);
+  if (result.ok) invalidateEffectiveKnob(`${feature}.${key}`);
+  return result;
 }
 
 export async function fetchPlans(): Promise<Plan[]> {

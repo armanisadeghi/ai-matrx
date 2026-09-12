@@ -103,7 +103,7 @@ export function KnobFieldControl(props: KnobFieldControlProps) {
 }
 
 /** Structured values are inspectable by default and editable only on intent. */
-function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
+function JsonField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
   const [editing, setEditing] = useState(false);
   const [raw, setRaw] = useState(() => JSON.stringify(ladder.value, null, 2));
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +122,7 @@ function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
   return (
     <div className="w-full min-w-64 space-y-2">
       <Textarea
-        aria-label="Structured value"
+        aria-label={`Structured value for ${knob.label}`}
         className="min-h-28 font-mono text-xs"
         value={raw}
         disabled={disabled}
