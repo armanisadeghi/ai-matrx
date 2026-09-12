@@ -66,6 +66,18 @@ three answers below. A subject that fails any of them is rejected.
    a result they would recognise as theirs (Arman's examples: his own keyword-research order; an
    agent equipped with Tony Robbins' systems — PROGRAM.md ruling 7).
 
+5. **Is it tacit, intuitive or non-consensus (Arman's mandate, 2026-09-12 —
+   `projects/expert-book-challenge/MANDATE.md`)?** The principal source of value is the "gut feeling",
+   the experiential rubric, the heuristic the field does not agree on, the "magic" that never made
+   it into procedure. A trial on a consensus handbook (trial 8's two WHO guides) exercises the
+   operationalization and validation halves only; say so in the register. Prefer a source that is
+   a PERSON or an opinionated practitioner, captured the way the expertise lives — voice, an
+   interview, a scenario walk-through, a "day in the life", annotated cases — over a text.
+6. **Will the pipeline keep the dissent?** Two schools stay two Rulebooks and two desks; a divergent
+   or "odd" rule is kept and tagged with its provenance, never averaged away or retired as noise.
+   **Consensus collapse is a wall class**: a triage, a distiller, an improver or a judge that pulls a
+   minority approach toward the majority is a platform defect to fix, not a cleaner result.
+
 Prefer subjects that need **no external service**. Fancy APIs make the distillation neither harder
 nor easier — the barrier is never technology, it is whether the system captures the skill. When the
 method genuinely needs a primitive (reverse image search, a records lookup), build it in the shared
@@ -372,3 +384,11 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 8) Seed knob weights by running the real path once: the path-score weights I chose from
   arithmetic on eight questions zeroed every real workup (seventeen cheap questions). A starting value is
   a guess until one live run has been scored with it.
+- 2026-09-12 — Arman's architecture brief (MANDATE.md, verbatim, owner authority) sets the bar for every
+  trial: the tacit, intuitive, non-consensus, controversial layer is the principal value; capture must be
+  multi-modal (voice, video, interviews, scenario Q&A, day-in-the-life observation, annotated cases); experts
+  validate and challenge in their own modalities; dissent and schools of thought stay navigable, never
+  collapsed. Success = "can the system execute and extend the most nuanced, non-obvious forms of expertise,
+  previously inexpressible to either humans or AI, and make them available, editable and testable". Rules 5
+  and 6 in §1 came from it; trial 8 is honestly a consensus-source trial that built the operationalization
+  and validation halves.
