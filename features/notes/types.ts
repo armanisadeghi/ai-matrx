@@ -97,6 +97,18 @@ export interface FolderReference {
     name: string;
 }
 
+/** A persisted folder can be moved to by its stable organization-qualified ID. */
+export function noteFolderReference(
+    note: Pick<Note, "organization_id" | "folder_id" | "folder_name">,
+): FolderReference | null {
+    if (!note.folder_id || !note.organization_id) return null;
+    return {
+        id: note.folder_id,
+        organizationId: note.organization_id,
+        name: note.folder_name ?? "Uncategorized",
+    };
+}
+
 export function noteFolderIdentityKey(note: Pick<Note, "organization_id" | "folder_id" | "folder_name">): string {
     return note.folder_id
         ? `folder:${note.organization_id ?? "unassigned"}:${note.folder_id}`

@@ -1,4 +1,5 @@
 import { selectFolderReferences, selectNotesGroupedBy } from "./selectors";
+import { moveNoteToFolder } from "./thunks";
 
 const orgA = "11111111-1111-4111-8111-111111111111";
 const orgB = "22222222-2222-4222-8222-222222222222";
@@ -27,5 +28,32 @@ describe("notes folder identity", () => {
     const groups = selectNotesGroupedBy(stateWithHomonyms() as never).byFolder();
     expect(groups.size).toBe(2);
     expect([...groups.values()].map((notes) => notes[0].id).sort()).toEqual(["a", "b"]);
+  });
+
+  it("refuses a same-name folder from another organization before any move write", async () => {
+    const dispatch = jest.fn();
+    const state = {
+      ...stateWithHomonyms(),
+      userAuth: { id: "user-1" },
+    } as never;
+
+    const action = await moveNoteToFolder({
+      noteId: "a",
+      folder: "Research",
+      folderId: "folder-b",
+      organizationId: orgB,
+    })(dispatch, () => state, undefined);
+
+    if (!moveNoteToFolder.rejected.match(action)) {
+      throw new Error("Expected the cross-organization move to be rejected.");
+    }
+    expect(action.meta.requestStatus).toBe("rejected");
+    expect(action.error.message).toBe(
+      "A note can only move to a folder in its own organization.",
+    );
+    expect(dispatch.mock.calls.map(([dispatched]) => dispatched.type)).toEqual([
+      "notes/moveNoteToFolder/pending",
+      "notes/moveNoteToFolder/rejected",
+    ]);
   });
 });

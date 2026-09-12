@@ -25,34 +25,39 @@ import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getFolderIconAndColor } from "../utils/folderUtils";
+import type { FolderReference } from "../types";
 import { cn } from "@/lib/utils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 
 interface MoveNoteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (targetFolder: string) => void | Promise<void>;
+  /** Existing folders always carry their persisted organization-qualified ID. */
+  onConfirm: (targetFolder: FolderReference) => void | Promise<void>;
+  /** A name is only used while creating a folder that does not exist yet. */
+  onCreateFolder: (folderName: string) => void | Promise<void>;
   /**
    * The note being moved. Required so its name can be a door — every caller
    * already holds it (it is what `onConfirm` moves).
    */
   noteId: string;
   noteName: string;
-  currentFolder: string;
-  availableFolders: string[];
+  currentFolder: FolderReference | null;
+  availableFolders: readonly FolderReference[];
 }
 
 export function MoveNoteDialog({
   open,
   onOpenChange,
   onConfirm,
+  onCreateFolder,
   noteId,
   noteName,
   currentFolder,
   availableFolders,
 }: MoveNoteDialogProps) {
   const isMobile = useIsMobile();
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<FolderReference | null>(null);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
@@ -76,12 +81,12 @@ export function MoveNoteDialog({
     const normalized = query.trim().toLocaleLowerCase();
     if (!normalized) return availableFolders;
     return availableFolders.filter((folder) =>
-      folder.toLocaleLowerCase().includes(normalized),
+      folder.name.toLocaleLowerCase().includes(normalized),
     );
   }, [availableFolders, query]);
 
-  const moveToFolder = async (folder: string) => {
-    if (busy || folder === currentFolder) return;
+  const moveToFolder = async (folder: FolderReference) => {
+    if (busy || folder.id === currentFolder?.id && folder.organizationId === currentFolder.organizationId) return;
     setBusy(true);
     try {
       await onConfirm(folder);
@@ -101,7 +106,7 @@ export function MoveNoteDialog({
   };
 
   const handleCreateFolder = async (folderName: string) => {
-    await onConfirm(folderName);
+    await onCreateFolder(folderName);
     recordToast.success(
       { type: "note", id: noteId, title: noteName },
       `Created ${folderName} and moved the note`,
@@ -143,12 +148,12 @@ export function MoveNoteDialog({
         <div className="space-y-1">
           {filteredFolders.map((folder) => {
             const { icon: FolderIcon, color: iconColor } =
-              getFolderIconAndColor(folder);
-            const isSelected = selectedFolder === folder;
-            const isCurrent = folder === currentFolder;
+              getFolderIconAndColor(folder.name);
+            const isSelected = selectedFolder?.id === folder.id && selectedFolder.organizationId === folder.organizationId;
+            const isCurrent = folder.id === currentFolder?.id && folder.organizationId === currentFolder.organizationId;
             return (
               <button
-                key={folder}
+                key={`${folder.organizationId}:${folder.id}`}
                 type="button"
                 onClick={() => setSelectedFolder(folder)}
                 disabled={isCurrent || busy}
@@ -159,7 +164,7 @@ export function MoveNoteDialog({
                 )}
               >
                 <FolderIcon className={cn("h-4 w-4 shrink-0", iconColor)} />
-                <span className="flex-1 truncate">{folder}</span>
+                <span className="flex-1 truncate">{folder.name}</span>
                 {isCurrent ? (
                   <span className="text-xs text-muted-foreground">Current</span>
                 ) : null}
@@ -188,7 +193,7 @@ export function MoveNoteDialog({
       </Button>
       <Button
         type="submit"
-        disabled={!selectedFolder || selectedFolder === currentFolder || busy}
+        disabled={!selectedFolder || (selectedFolder.id === currentFolder?.id && selectedFolder.organizationId === currentFolder.organizationId) || busy}
       >
         Move note
       </Button>
@@ -200,7 +205,7 @@ export function MoveNoteDialog({
       open={createFolderOpen}
       onOpenChange={setCreateFolderOpen}
       onConfirm={handleCreateFolder}
-      existingFolders={availableFolders}
+      existingFolders={availableFolders.map((folder) => folder.name)}
       description="Create a folder and move this note into it immediately."
       confirmLabel="Create & Move"
     />

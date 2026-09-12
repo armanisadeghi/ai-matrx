@@ -39,7 +39,7 @@ import {
   selectNoteIsDirtyById,
   selectNoteFolder,
   selectNoteLabel,
-  selectAllFolders,
+  selectFolderReferences,
   selectInstanceTabs,
   selectNoteSaveState,
 } from "../redux/selectors";
@@ -84,6 +84,7 @@ import { selectFindReplaceState } from "../redux/selectors";
 import { computeMatches } from "../utils/findMatches";
 import { usePreviewFindHighlight } from "../hooks/usePreviewFindHighlight";
 import { getDiffRange, type DiffRange } from "../utils/diffRange";
+import { noteFolderReference, type FolderReference } from "../types";
 
 // Floating outline panel — imports WindowPanel, so it MUST stay behind this
 // lazy boundary (window-panels bundle invariant). Mounted only while open.
@@ -150,7 +151,7 @@ export function NoteContentEditor({
     dispatch(setNoteEditorMode({ id: noteId, mode: preferredDefaultMode }));
   }, [dispatch, noteId, noteExists, savedEditorMode, preferredDefaultMode]);
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
-  const allFolders = useAppSelector(selectAllFolders);
+  const folderReferences = useAppSelector(selectFolderReferences);
   const currentFolder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
   const noteLabel = useAppSelector(selectNoteLabel(noteId)) ?? "Untitled";
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
@@ -496,12 +497,32 @@ export function NoteContentEditor({
   }, []);
 
   const handleMoveConfirm = useCallback(
-    async (targetFolder: string) => {
+    async (targetFolder: FolderReference) => {
       await dispatch(
-        moveNoteToFolder({ noteId, folder: targetFolder }),
+        moveNoteToFolder({
+          noteId,
+          folder: targetFolder.name,
+          folderId: targetFolder.id,
+          organizationId: targetFolder.organizationId,
+        }),
       ).unwrap();
     },
     [dispatch, noteId],
+  );
+
+  const availableFolderReferences = folderReferences.filter(
+    (folder) => folder.organizationId === noteExists?.organization_id,
+  );
+
+  const handleMoveByName = useCallback(
+    (folderName: string) => {
+      const folder = availableFolderReferences.find(
+        (candidate) => candidate.name === folderName,
+      );
+      if (!folder) throw new Error("Selected folder is no longer available.");
+      return handleMoveConfirm(folder);
+    },
+    [availableFolderReferences, handleMoveConfirm],
   );
 
   const handleCreateFolder = useCallback(
@@ -651,12 +672,15 @@ export function NoteContentEditor({
         // effect: `moveNoteToFolder` resolves through `createFolder`, which
         // creates-or-gets, so an invented name would silently add a folder to
         // the user's sidebar. Creating folders stays a human decision.
-        if (!allFolders.includes(folder))
+        const targetFolder = availableFolderReferences.find(
+          (candidate) => candidate.name === folder,
+        );
+        if (!targetFolder)
           throw new Error(
             // access-errors: ok — AI tool-call validation against the loaded folder list; the name is verifiably absent from it
-            `note_folder expects an existing folder. "${folder}" does not exist — choose one of: ${allFolders.join(" | ")}.`,
+            `note_folder expects an existing folder. "${folder}" does not exist — choose one of: ${availableFolderReferences.map((candidate) => candidate.name).join(" | ")}.`,
           );
-        await dispatch(moveNoteToFolder({ noteId, folder })).unwrap();
+        await handleMoveConfirm(targetFolder);
       },
     };
   };
@@ -677,7 +701,7 @@ export function NoteContentEditor({
   // Notes-specific menu items wired to the REAL handlers above (no stubs).
   const notesExtras = createNotesEditorExtraSections({
     isDirty,
-    allFolders,
+    allFolders: availableFolderReferences.map((folder) => folder.name),
     currentFolder,
     openTabCount: openTabs?.length ?? 1,
     onSave: handleSave,
@@ -685,7 +709,7 @@ export function NoteContentEditor({
     onExport: handleExport,
     onShareLink: handleShareLink,
     onShareClipboard: handleShareClipboard,
-    onMoveToFolder: handleMoveConfirm,
+    onMoveToFolder: handleMoveByName,
     onMoveDialog: handleMove,
     onCreateFolder: () => setCreateFolderOpen(true),
     onCloseTab: handleCloseTab,
@@ -991,17 +1015,18 @@ export function NoteContentEditor({
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
         onConfirm={handleMoveConfirm}
+        onCreateFolder={handleCreateFolder}
         noteId={noteId}
         noteName={noteLabel}
-        currentFolder={currentFolder}
-        availableFolders={allFolders}
+        currentFolder={noteExists ? noteFolderReference(noteExists) : null}
+        availableFolders={availableFolderReferences}
       />
 
       <CreateFolderDialog
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         onConfirm={handleCreateFolder}
-        existingFolders={allFolders}
+        existingFolders={availableFolderReferences.map((folder) => folder.name)}
         description="Create a folder and move this note into it immediately."
         confirmLabel="Create & Move"
       />

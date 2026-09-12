@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { Note, CreateNoteInput, UpdateNoteInput } from "../types";
+import type { Note, CreateNoteInput, FolderReference, UpdateNoteInput } from "../types";
 import {
   setActiveNote as setActiveNoteAction,
   addTab,
@@ -186,6 +186,28 @@ export function useNotesRedux() {
     [dispatch],
   );
 
+  const moveNote = useCallback(
+    async (noteId: string, folder: FolderReference): Promise<void> => {
+      await dispatch(
+        moveNoteToFolder({
+          noteId,
+          folder: folder.name,
+          folderId: folder.id,
+          organizationId: folder.organizationId,
+        }),
+      ).unwrap();
+    },
+    [dispatch],
+  );
+
+  /** A name is accepted only while creating a folder that is not persisted yet. */
+  const moveNoteToNewFolder = useCallback(
+    async (noteId: string, folderName: string): Promise<void> => {
+      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
+    },
+    [dispatch],
+  );
+
   const openNoteInTab = useCallback(
     (noteId: string) => {
       dispatch(addTab(noteId));
@@ -225,6 +247,8 @@ export function useNotesRedux() {
     copyNote: copyNoteFn,
     refreshNotes,
     findOrCreateEmptyNote,
+    moveNote,
+    moveNoteToNewFolder,
     openTabs,
     openNoteInTab,
     closeTab,

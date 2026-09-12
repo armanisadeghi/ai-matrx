@@ -16,7 +16,7 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
 import { PHANTOM_NOTE_ID, createPhantomNote } from "../utils/phantomNote";
-import type { Note } from "../types";
+import type { FolderReference, Note } from "../types";
 import { cn } from "@/lib/utils";
 import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -53,6 +53,8 @@ export function NotesLayout({
     copyNote,
     refreshNotes,
     findOrCreateEmptyNote,
+    moveNote,
+    moveNoteToNewFolder,
     openNoteInTab,
     openTabs,
     closeTab,
@@ -273,20 +275,30 @@ export function NotesLayout({
   );
 
   const handleMoveNote = useCallback(
-    async (noteId: string, newFolder: string) => {
+    async (noteId: string, targetFolder: FolderReference) => {
       try {
         const note = notes.find((n) => n.id === noteId);
         if (!note) return;
 
-        await updateNote(noteId, { folder_name: newFolder });
+        await moveNote(noteId, targetFolder);
 
-        toast.success(`Moved "${note.label}" to "${newFolder}"`);
+        toast.success(`Moved "${note.label}" to "${targetFolder.name}"`);
       } catch (error) {
         console.error("Error moving note:", error);
         toast.error(error);
       }
     },
-    [notes, updateNote, toast],
+    [moveNote, notes, toast],
+  );
+
+  const handleMoveNoteToNewFolder = useCallback(
+    async (noteId: string, folderName: string) => {
+      const note = notes.find((candidate) => candidate.id === noteId);
+      if (!note) return;
+      await moveNoteToNewFolder(noteId, folderName);
+      toast.success(`Moved "${note.label}" to "${folderName}"`);
+    },
+    [moveNoteToNewFolder, notes, toast],
   );
 
   const handleRenameFolder = useCallback(
@@ -386,6 +398,7 @@ export function NotesLayout({
             onDeleteNote={handleDeleteNote}
             onCreateFolder={handleCreateFolder}
             onMoveNote={handleMoveNote}
+            onMoveNoteToNewFolder={handleMoveNoteToNewFolder}
             onRenameFolder={handleRenameFolder}
             onDeleteFolderNotes={handleDeleteFolderNotes}
             onCopyNote={handleCopyNote}
@@ -423,6 +436,7 @@ export function NotesLayout({
                 onDeleteNote={handleDeleteNote}
                 onCreateFolder={handleCreateFolder}
                 onMoveNote={handleMoveNote}
+                onMoveNoteToNewFolder={handleMoveNoteToNewFolder}
                 onRenameFolder={handleRenameFolder}
                 onDeleteFolderNotes={handleDeleteFolderNotes}
                 onCopyNote={handleCopyNote}
@@ -444,6 +458,7 @@ export function NotesLayout({
             onCopyNote={handleCopyNote}
             onShareNote={handleShareNote}
             onMoveNote={handleMoveNote}
+            onMoveNoteToNewFolder={handleMoveNoteToNewFolder}
             onUpdateNote={handleUpdateNote}
             onSaveNote={handleSaveNote}
             isDirty={isDirty}
