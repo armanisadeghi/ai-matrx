@@ -178,6 +178,24 @@ function withoutComments(line) {
 }
 
 /**
+ * Is this whole line a COMMENT — a line-comment opener, a block-comment
+ * opener, or a JSDoc continuation star? Such a line can never be a byte
+ * formatter, and the day this rule started reading prose it began reporting
+ * the prose that explains its own collapses: the note added to matrx-local's `gbToBytes` to correct a
+ * backwards claim quotes `bytes / 1024 ** 3` and `Math.round(gb * 1000)` MB,
+ * and the guard reported the CORRECTION as a twin.
+ *
+ * DELIBERATELY WHOLE-LINE ONLY. A trailing comment on a real code line is left
+ * in place, because the code before it still has to be judged; `withoutComments`
+ * handles the label side of that case. The one thing this gives up is a
+ * multiplication continued onto its own line after a leading `*`
+ * (`const x = a\n  * 1024;`), which no formatter in the fleet is written as.
+ */
+function isCommentLine(line) {
+  return /^\s*(?:\/\/|\/\*|\*)/.test(line);
+}
+
+/**
  * A callee whose NAME carries the unit — `formatGb(bytes / 1024 ** 3)`. The
  * exponent spellings (`1024 ** 2/3/4`) need no separate divisor pattern: they
  * are written with the literal 1024 and a division in front of it, so
@@ -273,6 +291,7 @@ export function byteShapeIn(source) {
   const out = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    if (isCommentLine(line)) continue;
     const divides =
       BYTE_DIVISOR_RE.test(line) ||
       (identifierDivisor !== null && identifierDivisor.test(line));
@@ -506,7 +525,37 @@ export function selfTestByteShape() {
     '  // it and must clamp. Sizes are in %, bytes are not involved. B.',
   ].join("\n");
   if (byteShapeIn(commentedNumber).length !== 0) {
-    return { ok: false, why: "a `//` comment before a number was read as a division" };
+    return { ok: false, why: "a whole-line `//` comment was read as a division" };
+  }
+  // …and the same thing TRAILING a real code line, which `isCommentLine` does
+  // not see because the line is code. Only the `(?<![/*])` lookbehind stops the
+  // comment opener's own slash from reading as the division operator.
+  const trailingComment = [
+    "  const half = bounds.width * 0.075; // 1000px minimum, sizes in %, not B.",
+  ].join("\n");
+  if (byteShapeIn(trailingComment).length !== 0) {
+    return {
+      ok: false,
+      why: "a TRAILING `//` comment's own slash was read as a division operator",
+    };
+  }
+  // …and PROSE EXPLAINING A COLLAPSE is not a twin. This is verbatim the note
+  // written onto matrx-local's `gbToBytes` to correct a backwards claim, and
+  // the rule reported the correction itself until whole-line comments were
+  // excluded. A guard that flags its own documentation teaches people to stop
+  // writing it.
+  const explanatoryProse = [
+    "/**",
+    " * The old body took `bytes / 1024 ** 3` and printed `Math.round(gb * 1000)`",
+    " * MB — an effective divisor of 1,073,741.824 — while formatFileSize divides",
+    ' * by 1,048,576, so "644 MB" now reads "659 MB".',
+    " */",
+  ].join("\n");
+  if (byteShapeIn(explanatoryProse).length !== 0) {
+    return {
+      ok: false,
+      why: "a comment block explaining a collapse was reported as a byte formatter",
+    };
   }
 
   // THE MULTIPLY-FROM-GB ARM: the body takes GIGABYTES and scales UP, so no
