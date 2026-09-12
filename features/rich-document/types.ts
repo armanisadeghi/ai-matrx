@@ -196,6 +196,8 @@ export interface RichDocumentActionContext {
   source: ContentSource;
   metadata: Record<string, unknown> | null;
   dispatch: AppDispatch;
+  /** Active organization supplied by the action host for note writes. */
+  organizationId: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isCreator: boolean;

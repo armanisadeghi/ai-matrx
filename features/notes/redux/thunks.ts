@@ -30,7 +30,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
-import { createFolder } from "../service/notesService";
+import { createFolder, createNote } from "../service/notesService";
 import {
   hydrateNoteContextLinks,
   syncNoteContextLinks,
@@ -455,59 +455,10 @@ export const createNewNote = createAsyncThunk<
   Note,
   CreateNoteInput
 >("notes/createNewNote", async (input, { dispatch, getState }) => {
-  const userId = getUserId(getState);
-  const organizationId = requireOrganizationContext(input.organization_id);
-  const folderName = input.folder_name ?? "Draft";
-
-  // Resolve folder_id from note_folders table
-  const folderId = input.folder_id ?? (await resolveFolderId(folderName, organizationId));
-  if (input.folder_id) {
-    const { data: folder, error: folderError } = await supabase
-      .schema("workbench")
-      .from("note_folders")
-      .select("id")
-      .eq("id", input.folder_id)
-      .eq("organization_id", organizationId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (folderError || !folder) {
-      throw folderError ?? new Error("The selected folder is unavailable in this organization. Choose another folder and try again.");
-    }
-  }
-
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("notes")
-    .insert({
-      // Canonical RLS std_insert requires created_by = auth.uid().
-      created_by: userId,
-      label: input.label ?? "New Note",
-      content: input.content ?? "",
-      folder_name: folderName,
-      folder_id: folderId,
-      tags: input.tags ?? [],
-      metadata: {},
-      position: 0,
-      // Private by default — the `notes.visibility` enum DB default is
-      // 'internal' (org-visible), so set it explicitly on create.
-      visibility: input.visibility ?? "personal",
-      // folder_id can be null here, so the org-inherit trigger may have no
-      // parent to read — resolve the org explicitly (never insert a null org).
-      organization_id: organizationId,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  if (!data) throw new Error("Failed to create note");
-
-  await syncNoteContextLinks({
-    noteId: data.id,
-    organizationId,
-    projectId: input.project_id,
-    taskId: input.task_id,
-  });
-  const [note] = await hydrateNoteContextLinks([data]);
+  // NotesService owns organization admission, parent validation, empty-note
+  // reuse, metadata/position, and context links. Keep Redux as hydration only.
+  getUserId(getState);
+  const note = await createNote(input);
 
   dispatch(
     upsertNoteFromServer({

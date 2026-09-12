@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import AdvancedMenu from "@/components/official/AdvancedMenu";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectMessageActionInstance } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
 import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
@@ -37,6 +38,7 @@ const MessageOptionsMenu: React.FC<MessageOptionsMenuProps> = ({
   );
   const user = useAppSelector(selectUser);
   const isAuthenticated = !!user?.email;
+  const organizationId = useAppSelector(selectOrganizationId);
   const [isBrowserTtsPlaying, setIsBrowserTtsPlaying] = useState(false);
 
   const hasUnsavedChanges = useAppSelector((state) =>
@@ -74,6 +76,7 @@ const MessageOptionsMenu: React.FC<MessageOptionsMenuProps> = ({
     metadata: instance.metadata,
     hasUnsavedChanges,
     dispatch,
+    organizationId,
     onClose,
     showFullPrint,
     onFullPrint,

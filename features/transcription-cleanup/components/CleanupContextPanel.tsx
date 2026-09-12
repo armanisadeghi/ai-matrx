@@ -25,6 +25,9 @@ import { BookOpen, Loader2, Plus, Save, Unlink, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import {
   NotePickerPopover,
   invalidateNotePickerCache,
@@ -124,6 +127,7 @@ export function CleanupContextPanel({
   );
   const [savingId, setSavingId] = useState<string | null>(null);
   const [loadingNoteId, setLoadingNoteId] = useState<string | null>(null);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   // ── Mutation helper: update blocks + fire onChange in one step ─────────────
   const updateAndNotify = useCallback(
@@ -232,10 +236,12 @@ export function CleanupContextPanel({
       }
       setSavingId(blockId);
       try {
+        const capturedOrganizationId = requireOrganizationContext(organizationId);
         const note = await NotesAPI.create({
           label: block.title.trim() || "Transcription Context",
           content: block.text,
           folder_name: CONTEXT_FOLDER,
+          organization_id: capturedOrganizationId,
         });
         updateAndNotify((prev) =>
           prev.map((b) =>

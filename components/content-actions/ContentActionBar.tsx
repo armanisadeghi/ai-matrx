@@ -35,6 +35,7 @@ import {
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   closeOverlay,
@@ -125,6 +126,7 @@ export function ContentActionBar({
   extras,
 }: ContentActionBarProps) {
   const dispatch = useAppDispatch();
+  const organizationId = useAppSelector(selectOrganizationId);
   const user = useAppSelector(selectUser);
   const isAuthenticated = !!user?.email;
 
@@ -219,6 +221,7 @@ export function ContentActionBar({
           instanceKey: resolvedInstanceKey,
           isAuthenticated,
           dispatch,
+          organizationId,
           onClose: () => setShowOptionsMenu(false),
         },
         menuOptions,

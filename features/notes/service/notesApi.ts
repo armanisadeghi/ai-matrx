@@ -21,11 +21,6 @@ import type {
   NoteListItem,
 } from "../types";
 
-/** Compatibility wrapper for older callers; the writer still rejects before I/O. */
-type NotesApiCreateInput = Omit<CreateNoteInput, "organization_id"> & {
-  organization_id?: string | null;
-};
-
 /**
  * Create a new note (client-side call)
  * @example
@@ -38,11 +33,8 @@ type NotesApiCreateInput = Omit<CreateNoteInput, "organization_id"> & {
  * });
  * ```
  */
-export async function create(input: NotesApiCreateInput): Promise<Note> {
-  if (!input.organization_id) {
-    throw new Error("Choose an organization before creating a note.");
-  }
-  return createNoteService({ ...input, organization_id: input.organization_id });
+export async function create(input: CreateNoteInput): Promise<Note> {
+  return createNoteService(input);
 }
 
 /**

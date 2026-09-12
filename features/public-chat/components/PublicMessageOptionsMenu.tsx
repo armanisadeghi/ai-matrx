@@ -34,6 +34,8 @@ import { toast } from "@/lib/toast";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
@@ -85,6 +87,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   }>({ name: "this feature" });
 
   const user = useSelector(selectUser);
+  const organizationId = useSelector(selectOrganizationId);
   const isAuthenticated = !!user?.email;
 
   // ── Resume pending post-auth actions ──────────────────────────────────────
@@ -101,14 +104,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       };
       if (savedContent !== content) return; // stale — different message
       if (action === "save-scratch") {
-        NotesAPI.create({
-          label: "New Note",
-          content: savedContent,
-          folder_name: "Scratch",
-          tags: [],
-        })
-          .then(() => toast.success("Saved to Scratch!"))
-          .catch(() => toast.error("Failed to save to Scratch"));
+        dispatch(openOverlay({ overlayId: "saveToNotes", instanceId: crypto.randomUUID(), data: { initialContent: savedContent, defaultFolder: "Scratch", initialEditorMode: undefined } }));
       } else if (action === "save-notes") {
         dispatch(
           openOverlay({
@@ -388,11 +384,13 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
 
   const handleSaveToScratch = async () => {
     if (isAuthenticated) {
+      const capturedOrganizationId = requireOrganizationContext(organizationId);
       await NotesAPI.create({
         label: "New Note",
         content,
         folder_name: "Scratch",
         tags: [],
+        organization_id: capturedOrganizationId,
       });
     } else {
       requireAuth(

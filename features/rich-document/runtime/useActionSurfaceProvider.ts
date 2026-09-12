@@ -23,6 +23,7 @@
 
 import * as React from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   registerProvider,
   unregisterProvider,
@@ -110,6 +111,7 @@ function buildContext(args: {
   dispatch: ReturnType<typeof useAppDispatch>;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  organizationId: string | null;
 }): RichDocumentActionContext {
   const adapter = getSourceAdapter(args.source.type);
   const prefix = adapter.instanceKeyPrefix(args.source);
@@ -125,6 +127,7 @@ function buildContext(args: {
     source: args.source,
     metadata: null, // Phase 1 populates from source-specific selectors
     dispatch: args.dispatch,
+    organizationId: args.organizationId,
     isAuthenticated: args.isAuthenticated,
     isAdmin: args.isAdmin,
     isCreator: false, // Phase 1 wires from source-specific selector
@@ -180,6 +183,7 @@ export function useActionSurfaceProvider(
     Boolean(state.userAuth?.id),
   );
   const isAdmin = useAppSelector((state) => Boolean(state.userAuth?.isAdmin));
+  const organizationId = useAppSelector(selectOrganizationId);
 
   // Per-instance provider ID — stable across renders.
   const providerId = React.useId();
@@ -218,6 +222,7 @@ export function useActionSurfaceProvider(
       dispatch: dispatchRef.current,
       isAuthenticated: isAuthRef.current,
       isAdmin: isAdminRef.current,
+      organizationId,
     });
 
   // Build the live context from props for render-time spec computation.
@@ -229,6 +234,7 @@ export function useActionSurfaceProvider(
     dispatch,
     isAuthenticated,
     isAdmin,
+    organizationId,
   });
 
   // Resolve which actions are visible for this source + this consumer's

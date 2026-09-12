@@ -20,6 +20,9 @@ import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import type { NoteListItem } from "@/features/notes/types";
 import { formatRelativeTime } from "@/utils/datetime";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 type VisibilityFilter = "all" | "mine" | "shared" | "public";
 const VISIBILITY_FILTERS: { id: VisibilityFilter; label: string }[] = [
@@ -81,6 +84,7 @@ export function EduNotesHome() {
   const [isPending, startTransition] = useTransition();
   const [navId, setNavId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +118,8 @@ export function EduNotesHome() {
     if (creating) return;
     setCreating(true);
     try {
-      const note = await NotesAPI.create({ label: "Untitled note", content: "" });
+      const capturedOrganizationId = requireOrganizationContext(organizationId);
+      const note = await NotesAPI.create({ label: "Untitled note", content: "", organization_id: capturedOrganizationId });
       startTransition(() => router.push(`/education/notes/${note.id}`));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not create the note");

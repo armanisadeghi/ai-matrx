@@ -16,6 +16,7 @@ import {
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { registerAction } from "../registry";
@@ -99,11 +100,13 @@ registerAction({
     )
       return;
     try {
+      const organizationId = requireOrganizationContext(ctx.organizationId);
       await NotesAPI.create({
         label: "New Note",
         content: ctx.content,
         folder_name: "Scratch",
         tags: [],
+        organization_id: organizationId,
       });
       toast.success("Saved to Scratch!");
     } catch (error) {

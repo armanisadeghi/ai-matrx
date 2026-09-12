@@ -10,24 +10,29 @@ import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 export function EduNoteNew() {
   const router = useRouter();
   const started = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    const capturedOrganizationId = requireOrganizationContext(organizationId);
     void (async () => {
       try {
-        const note = await NotesAPI.create({ label: "Untitled note", content: "" });
+        const note = await NotesAPI.create({ label: "Untitled note", content: "", organization_id: capturedOrganizationId });
         router.replace(`/education/notes/${note.id}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not create the note");
       }
     })();
-  }, [router]);
+  }, [router, organizationId]);
 
   return (
     <div className="flex h-full w-full items-center justify-center bg-textured">

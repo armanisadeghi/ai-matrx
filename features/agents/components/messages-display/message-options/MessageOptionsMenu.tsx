@@ -163,6 +163,7 @@ export function MessageOptionsMenu({
       turnContent ?? content,
       dispatch,
       openMessageTemplateSave,
+      store.getState,
     );
   }, [
     isAuthenticated,

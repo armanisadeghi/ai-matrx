@@ -36,6 +36,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { extractErrorMessage } from "@/utils/errors";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action_content";
@@ -69,6 +70,7 @@ export interface ContentActionContext {
   instanceKey?: string;
   isAuthenticated: boolean;
   dispatch: AppDispatch;
+  organizationId: string | null;
   onClose: () => void;
 }
 
@@ -508,11 +510,13 @@ function saveItems(ctx: ContentActionContext): MenuItem[] {
           )
         )
           return;
+        const organizationId = requireOrganizationContext(ctx.organizationId);
         await NotesAPI.create({
           label: title ?? "New Note",
           content,
           folder_name: "Scratch",
           tags: [],
+          organization_id: organizationId,
         });
       },
       category: "Actions",
@@ -790,14 +794,7 @@ export function resumePendingContentAuthAction(
     };
     if (savedContent !== content) return;
     if (action === "save-scratch") {
-      NotesAPI.create({
-        label: "New Note",
-        content: savedContent,
-        folder_name: "Scratch",
-        tags: [],
-      })
-        .then(() => toast.success("Saved to Scratch!"))
-        .catch(() => toast.error("Failed to save to Scratch"));
+      dispatch(openOverlay({ overlayId: "saveToNotes", instanceId: `save-scratch-resume-${Date.now()}`, data: { initialContent: savedContent, defaultFolder: "Scratch", initialEditorMode: undefined } }));
     } else if (action === "save-notes") {
       dispatch(
         openOverlay({
