@@ -3701,3 +3701,36 @@ failed; 220.6s**. Before: 32 suites / 56 tests red. `pnpm type-check` clean.
 
 ### D310 — Four fixed-interval aidream pollers have no jitter, backoff, or Retry-After handling (2026-09-12)
 Same alignment class as the 2026-09-12 change-feed pool storms (43 sandbox pollers in one second exhausted aidream's 10-slot pool; server now sheds with 503 + Retry-After, sandbox SDK honours it). These client pollers still poll in lockstep: `features/cloud-browser/hooks/useScreenshotSession.ts:117` (2s/15s), `features/workflow-runtime/redux/adopt-workflow-run.thunk.ts:578` (3s, SSE-fallback only), `features/cms/hooks/useCmsAdminActivity.ts:41` (8s), `features/research/components/agents/GoogleBackgroundAgentCard.tsx:89` (5s). Fix: one shared poll helper (jitter ±20%, exponential backoff on 5xx, honour `Retry-After`) and adopt it in all four; per-tab fleets are small today, so this is preventive. Decides: nobody — do it.
+
+### D311 — `@ai-matrx/kit/format` is a stale publish: 42 type errors across 7 files (2026-09-12)
+Found while type-checking the organization-refusal class fix. `pnpm type-check` reports 42 errors
+with a single cause: the installed `@ai-matrx/kit/format` does not export `safeRatio`, `sumKnown`,
+`UNKNOWN_DISPLAY`, `isKnownNumber`, `formatUsd` or `formatCount`, which `lib/format/honest.ts`
+re-exports and six more files consume (`features/entitlements/guardrails/service.ts`,
+`features/marketing/components/coverage/format.ts`,
+`features/marketing/seo/keyword-research/format.ts`, `features/agent-apps/format.ts`,
+`app/(admin)/administration/agents/agent-apps/analytics/page.tsx`,
+`features/proof-runs/components/ProofRunsClient.tsx`,
+`features/administration/local-storage/storage-usage.ts`,
+`components/mardown-display/blocks/chart/labels.ts`). This is the published-sibling-pin class:
+the source package has the exports, the installed copy does not. Fix = publish `@ai-matrx/kit` and
+adopt it here in the same session (THE SAME-SESSION LAW). Pre-existing and unrelated to the
+organization work; left untouched rather than widening scope. Decides: nobody — do it.
+
+### D312 — aidream refuses every authenticated request with no organization, including platform-admin reads (2026-09-12)
+Verdict recorded from reading the routes, not guessed. `packages/matrx-connect/matrx_connect/middleware/auth.py`
+gates EVERY authenticated non-exempt request on a resolved organization
+(`_organization_admission_reason`), so a client cannot drop `X-Organization-Id` even where the
+route ignores it. Several scheduling routes do ignore it entirely:
+`aidream/api/routers/scheduling.py::admin_list_system_tasks` / `admin_patch_system_task` /
+`/scheduling/admin/db-jobs` are `ctx.is_admin`-gated and platform-wide (`admin_list_system_tasks()`
+takes no organization), and `packages/matrx-scheduler/.../router_scheduler.py` contains the string
+"organization" zero times — it is RLS-by-user. aidream already carries the precedent and the exact
+reasoning in `ORGANIZATION_EXEMPT_PATHS`: `/admin/persistence` was exempted because requiring an
+ambient organization "made every dashboard persistence request fail before its admin route could
+run for a valid admin with no selected organization", and `/coding-sessions/sessions` for the same
+reason. `/scheduling/admin` and `/scheduler` qualify on identical grounds. NOT changed here:
+adding to the org-admission exempt list is a platform auth-policy edit with a blast radius beyond
+this frontend class, and the frontend side is now honest either way (the console states the
+condition and offers the picker). Decides: whoever owns matrx-connect auth admission — the two
+existing exemptions are the precedent, not a new argument.
