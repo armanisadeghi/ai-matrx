@@ -90,6 +90,28 @@ describe("the rule editor's form values", () => {
     expect(ordinary.next_action).toBeUndefined();
   });
 
+  it("persists the wizard draft as the RAW form values — an emptied precondition and a toggled-off shape survive", () => {
+    // Bugbot on e22c8f29: the wizard draft was briefly persisted through
+    // improveFieldsFrom, whose stored-name overlay writes `undefined` onto the
+    // three keys the form and the store spell the same way (precondition,
+    // cost, risk); readRuleEditorDraft treats those as missing and falls back
+    // to the saved rule, so an emptied precondition or a toggle-off did not
+    // survive Escape or a refresh.
+    const edited = mergeRuleFieldValues(SAVED, { isPolicy: false, precondition: "" });
+    const snapshot: RulebookDraftSnapshot = { mode: "edit", rule_id: "R1", ...edited };
+    const read = readRuleEditorDraft(
+      { baseVersion: 4, fields: snapshot, beforeTidy: null },
+      { rulebookVersion: 4, mode: "edit", ruleId: "R1", fallback: SAVED },
+    );
+    expect(read?.fields.isPolicy).toBe(false);
+    expect(read?.fields.precondition).toBe("");
+    // The improve-side derivation is NOT a persistence shape: it drops exactly
+    // those keys, which is why only the model hand-off uses it.
+    const viaImprove = improveFieldsFrom(edited);
+    expect(viaImprove.precondition).toBeUndefined();
+    expect(viaImprove.cost).toBeUndefined();
+  });
+
   it("keeps an ordinary rule ordinary when nothing is staged", () => {
     const plain = ruleFieldValues(
       { ...POLICY_RULE, kind: undefined, precondition: undefined },

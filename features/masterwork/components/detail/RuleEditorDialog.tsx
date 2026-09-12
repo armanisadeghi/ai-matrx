@@ -174,7 +174,7 @@ function RuleEditorForm({
         wizardId,
         patch: {
           baseVersion: rulebookVersion,
-          fields: improveFieldsFrom(draftSnapshot()),
+          fields: draftSnapshot(),
           beforeTidy,
         },
       }),
