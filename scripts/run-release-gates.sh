@@ -146,6 +146,11 @@ if $STRICT; then
         # re-ENABLE inside ONE transaction, so a guard left disabled at rest is a
         # mistake, not a state. (aidream/scripts/release.sh asserts the same.)
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards:strict"
+        # A policy that reads its own relation raises 42P17 and the table is
+        # unreadable by everyone — platform.rulebook and seo.starter_pack, live,
+        # 2026-09-12, from the moment a routine iam.apply_rls sweep first emitted
+        # the generator's self-joining curator lane.
+        "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference:strict"
         # HR PUNCH WRITE PATH is BLOCKING in strict mode, because RLS does NOT
         # prevent the insert: hr.punch is a `component` table whose write policy
         # admits anyone holding editor on the parent, so a client-direct
@@ -444,6 +449,7 @@ else
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
+        "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference"
         # HR PUNCH WRITE PATH — BLOCKING in --strict (see the strict list above for
         # why RLS does not prevent a client-direct `insert into hr.punch`). Listed
         # here with `:strict` ON PURPOSE for the same reason component-created-by
