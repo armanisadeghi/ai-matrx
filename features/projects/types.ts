@@ -5,6 +5,8 @@
  * projects, members, and invitations. Mirrors the organizations feature.
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import type { Json } from "@/types/database.types";
 
 // ============================================================================
@@ -286,5 +288,5 @@ export function getExpiryDisplay(expiresAt: string): string {
   const diff = new Date(expiresAt).getTime() - Date.now();
   if (Number.isNaN(diff)) return "Expired";
   if (diff < 0) return "Expired";
-  return `Expires in ${formatDurationMs(diff, { style: "long" })}`;
+  return `Expires in ${formatDurationMs(diff, { style: "coarse" })}`;
 }

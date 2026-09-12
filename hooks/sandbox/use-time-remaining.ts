@@ -79,8 +79,15 @@ export function computeTimeRemaining(
   }
   // THE ONE HOME for "a millisecond count becomes a unit string" is
   // `@ai-matrx/kit/format`. A per-second countdown is the `clock` voice
-  // ("1:05:23"); a per-minute one is `coarse` ("1h 5m", "45 min").
-  const text = formatDurationMs(diff, {
+  // ("1:05:23"); a per-minute one is `coarse` ("1h 5m", "45 min", "3d 4h").
+  //
+  // `round: "down"` IS NOT OPTIONAL HERE. This is time REMAINING: with 5m30s
+  // left, `coarse`'s default nearest-rounding said "6 min" and handed the
+  // user half a minute they did not have. A countdown floors, always.
+  // (`clock` already truncates by construction; passing it is harmless and
+  // keeps the rule visible at the one call site that must never forget it.)
+  const displayMs = granularity === "second" ? diff : Math.floor(diff / 60_000) * 60_000;
+  const text = formatDurationMs(displayMs, {
     style: granularity === "second" ? "clock" : "coarse",
   });
   return { text, isExpired: false, millisRemaining: diff };

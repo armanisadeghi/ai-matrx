@@ -112,8 +112,20 @@
  * lane and so the self-test can plant a body and prove it fails.
  */
 
-/** Unit-label literal: " B", "KB", "MiB"… inside a string or template. */
-const UNIT_LABEL_RE = /(?:^|[^A-Za-z])(?:[KMGT]i?B|B)(?:[^A-Za-z]|$)/;
+/**
+ * A DISPLAYED unit label: " B", "KB", "MiB"… as a reader would see it — after
+ * whitespace, a closing `}`, a quote, or an opening delimiter.
+ *
+ * WHY THE LEADING SET IS NARROW (tightened 2026-09-11, with the decimal
+ * widening). It used to accept any non-letter, which meant an identifier or an
+ * arithmetic operand could impersonate a label: `MAX_SIZE_MB * 1024 * 1024`
+ * (`_MB`) read as a capacity ceiling wearing a unit, and the comment
+ * `(0.299*R + 0.587*G + 0.114*B)` beside a `/ 1000` brightness formula read as
+ * a byte label (`*B`). Neither is a label anyone sees. `_`, `*`, `.` and
+ * alphanumerics are therefore NOT label boundaries; whitespace and the
+ * delimiters a rendered string actually starts after are.
+ */
+const UNIT_LABEL_RE = /(?:^|[\s>}'"`([,+:=])(?:[KMGT]i?B|B)(?:[^A-Za-z0-9_]|$)/;
 
 /**
  * A byte BASE as it is actually written in source: the binary three (and the
@@ -130,9 +142,18 @@ const BYTE_BASE_LITERAL =
   "1_?000_?000_?000_?000|1_?000_?000_?000|1_?000_?000|1_?000|" +
   "1e(?:12|9|6|3))(?![\\d_.])";
 
-/** A byte DIVISION or THRESHOLD COMPARISON. Multiplication never matches. */
+/**
+ * A byte DIVISION or THRESHOLD COMPARISON. Multiplication never matches.
+ *
+ * The `(?<![/*])` guard keeps a COMMENT from reading as a division. A line
+ * comment opener puts a slash immediately before its text, so `// 1000px …`
+ * parsed as a division by 1000; a resizable-panel test comment was reported as
+ * a byte formatter for exactly that reason. A block-comment closer does the
+ * same with a star before the slash, so both openers are excluded.
+ */
 const BYTE_DIVISOR_RE = new RegExp(
-  `(?:\\/\\s*\\(?\\s*${BYTE_BASE_LITERAL}|[<>]=?\\s*\\(?\\s*${BYTE_BASE_LITERAL})`,
+  `(?:(?<![/*])\\/\\s*\\(?\\s*${BYTE_BASE_LITERAL}` +
+    `|[<>]=?\\s*\\(?\\s*${BYTE_BASE_LITERAL})`,
 );
 
 /**
@@ -343,18 +364,49 @@ export function selfTestByteShape() {
   }
   // THE NAMED-BINDING ARM: the key says nothing (`used`) and the label is
   // forty-five lines away in JSX. Only following the binding sees this.
+  //
+  // THE LABEL MUST SIT OUTSIDE THE WINDOW, and this fixture was wrong until an
+  // independent review caught it (2026-09-11): it placed `{memoryInfo.used}MB`
+  // three lines below the division — inside WINDOW — so the pre-existing
+  // windowed arm reported it and the arm under test was never exercised. The
+  // reviewer stubbed `renderedBesideUnit` to `return false`, killing this whole
+  // arm, and the self-test still printed PASSED. A proof that survives the
+  // deletion of the thing it proves is worse than no proof. The filler below is
+  // load-bearing: it puts the label WINDOW + 1 lines away so the windowed arm
+  // cannot see it and only the whole-file binding follow can.
   const boundProperty = [
     "        setMemoryInfo({",
     "          used: Math.round(extendedPerf.memory.usedJSHeapSize / 1024 / 1024),",
     "        });",
-    "  // …forty-five lines later, in the render:",
-    "  // <span>{memoryInfo.used}MB / {memoryInfo.limit}MB</span>",
+    "      }",
+    "    }, 1500);",
+    "    return () => clearInterval(id);",
+    "  }, []);",
+    "",
+    "  if (!open) return null;",
+    "",
+    "  return (",
+    "    <span>{memoryInfo.used}MB / {memoryInfo.limit}MB</span>",
   ].join("\n");
   if (byteShapeIn(boundProperty).length === 0) {
     return {
       ok: false,
       why: "a byte division bound to an object property and rendered beside `MB` was NOT reported",
     };
+  }
+  // …and the fixture above must be reported ONLY by that arm. If the label ever
+  // drifts back inside the window this check goes red, because a fixture whose
+  // label the windowed arm can see proves nothing about the binding follow.
+  {
+    const lines = boundProperty.split("\n");
+    const divisionLine = lines.findIndex((l) => l.includes("usedJSHeapSize"));
+    const labelLine = lines.findIndex((l) => l.includes("memoryInfo.used"));
+    if (labelLine - divisionLine <= WINDOW) {
+      return {
+        ok: false,
+        why: "the named-binding fixture puts its unit label inside WINDOW, so the windowed arm catches it and the binding arm is never exercised",
+      };
+    }
   }
   // THE CALL-ARGUMENT ARM: no adjacent label, no unit-named binding — the
   // unit is in the CALLEE's name and the " GB" is in another module.
@@ -420,6 +472,88 @@ export function selfTestByteShape() {
   if (byteShapeIn(unrelatedDivisor).length !== 0) {
     return { ok: false, why: "a non-byte identifier divisor was reported" };
   }
+  // THE DECIMAL (SI) FAMILY: the same capability with the wrong divisor. Each
+  // of these was a LIVE twin the binary-only rule returned zero findings on.
+  const decimalBodies = [
+    ["const mb = m.value / 1_000_000;", '  return `${mb.toFixed(1)} MB`;'],
+    ["{Math.round(result.meta.content_length / 1000)}KB content"],
+    ["{Math.ceil(effectiveContent.length / 1000)} KB"],
+    ['const mbTotal = `/ ${(p.total_bytes / 1e6).toFixed(0)} MB`;'],
+    ['const gb = `${(n / 1e9).toFixed(1)} GB`;'],
+  ];
+  for (const body of decimalBodies) {
+    if (byteShapeIn(body.join("\n")).length === 0) {
+      return {
+        ok: false,
+        why: `a DECIMAL byte body was NOT reported: ${body[0].trim()}`,
+      };
+    }
+  }
+  // …and the decimal widening must not swallow the neighbouring literals. A
+  // divisor of 10000 is not 1000, and 10240 is not 1024.
+  const neighbouringDivisors = [
+    'const pct = `${(n / 10000).toFixed(1)} B`;',
+    'const blocks = `${(n / 10240).toFixed(1)} KB`;',
+  ].join("\n");
+  if (byteShapeIn(neighbouringDivisors).length !== 0) {
+    return { ok: false, why: "a divisor of 10000 / 10240 was read as 1000 / 1024" };
+  }
+  // …and a COMMENT is not a division. `// 1000px` puts a slash immediately
+  // before the number; a resizable-panel test comment was reported for it.
+  const commentedNumber = [
+    '  const half = bounds.width * 0.075;',
+    "  // 1000px: minSize 200px is now 20%, so a 7.5% restore is below half of",
+    '  // it and must clamp. Sizes are in %, bytes are not involved. B.',
+  ].join("\n");
+  if (byteShapeIn(commentedNumber).length !== 0) {
+    return { ok: false, why: "a `//` comment before a number was read as a division" };
+  }
+
+  // THE MULTIPLY-FROM-GB ARM: the body takes GIGABYTES and scales UP, so no
+  // division exists anywhere in it. matrx-local's `fmtSize` is verbatim this.
+  const multiplyFromGb = [
+    "function fmtSize(gb: number): string {",
+    "  if (gb < 1) return `${Math.round(gb * 1024)} MB`;",
+    "  return `${gb.toFixed(1)} GB`;",
+    "}",
+  ].join("\n");
+  if (byteShapeIn(multiplyFromGb).length === 0) {
+    return {
+      ok: false,
+      why: "a GB-input body that MULTIPLIES (`${Math.round(gb * 1024)} MB`) was NOT reported",
+    };
+  }
+  // …and THE ASYMMETRY THAT MAKES THE RULE USABLE still holds, in both of its
+  // halves. A capacity ceiling computed from a VARIABLE fails the operand test
+  // only if it also fails the label test, so both are pinned here.
+  const variableCeilings = [
+    "const MAX_SIZE_MB = 8;",
+    "if (file.size > MAX_SIZE_MB * 1024 * 1024) {",
+    "  toast.error('Too large');",
+    "}",
+    "const maxBytes = limitMb * 1024 * 1024; // 25 MB ceiling",
+    "const buffer = chunkCount * 1000;",
+  ].join("\n");
+  if (byteShapeIn(variableCeilings).length !== 0) {
+    return {
+      ok: false,
+      why: "a capacity ceiling scaled from a variable was reported as a formatter",
+    };
+  }
+  // …and the ADOPTED conversion feeding the package formatter is not a twin:
+  // `formatFileSize(gb * 1024 ** 3)` is the collapsed form this rule asks for.
+  const adoptedConversion = [
+    "  // Sizes arrive in GB; THE package formatter takes BYTES and picks the unit.",
+    "  const fmtStorage = (gb: number) => formatFileSize(gb * 1024 ** 3);",
+    "  const formatRam = (mb: number) => formatFileSize(mb * 1024 * 1024);",
+  ].join("\n");
+  if (byteShapeIn(adoptedConversion).length !== 0) {
+    return {
+      ok: false,
+      why: "the adopted `formatFileSize(gb * 1024 ** 3)` conversion was reported as a twin",
+    };
+  }
+
   // A bound name that is NEVER rendered beside a unit is arithmetic, not a
   // formatter, and must stay silent.
   const boundButUnlabelled = [

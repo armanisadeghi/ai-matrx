@@ -136,7 +136,7 @@ export function quietProfile(history: readonly (string | null)[]): QuietProfile 
  * the unit out and pluralises it correctly.
  */
 export function formatGap(ms: number): string {
-  return formatDurationMs(ms, { style: "long" });
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 export function captureGapVerdict(input: CaptureGapInput): CaptureGapVerdict {

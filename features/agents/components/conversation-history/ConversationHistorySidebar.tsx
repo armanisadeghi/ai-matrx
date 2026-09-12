@@ -1451,7 +1451,7 @@ function formatRelative(iso: string | undefined): string {
   // THE relative-time voice (@ai-matrx/kit/format) inside the week; a calendar
   // date past it, which is how a conversation list is actually scanned.
   if (Date.now() - t < 604_800_000) {
-    return formatRelativeTime(t, { style: "short", suffix: false });
+    return formatRelativeTime(t, { style: "short" }).replace(/ ago$/, "");
   }
   return new Date(t).toLocaleDateString([], { month: "short", day: "numeric" });
 }
