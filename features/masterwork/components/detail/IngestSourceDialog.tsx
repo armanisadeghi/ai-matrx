@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
@@ -224,9 +225,10 @@ export function IngestSourceDialog({
 
   // Drafts that landed while the user was away still have to reach the page
   // behind this dialog.
-  useEffect(() => {
-    if (run.result) onIngested?.();
-  }, [run.result, onIngested]);
+  // ONCE PER COMPLETED RUN, never once per render: the host passes a new
+  // inline callback every render and the reload it starts re-renders this
+  // dialog. See `useRunResultOnce`.
+  useRunResultOnce(run, onIngested);
 
   useEffect(() => {
     if (run.error) toast.error(run.error);

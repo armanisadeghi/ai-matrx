@@ -127,6 +127,50 @@ describe("parseTimelineSummary + describeTimelineIngest", () => {
     expect(sentence).not.toMatch(/rules added as drafts/);
   });
 
+  /**
+   * THE WITHHOLDING LAW REACHES THE RENDERED INSTANCE (Bugbot, PR #222).
+   * The parser used to keep the server's timeline byte for byte and hand it to
+   * `KindInstanceRender`; the kind bridge withholds `resolution` only when the
+   * instance says `sealed: true`, so a held-out payload that still carried the
+   * outcome — or simply lacked the flag — drew "how it turned out" one line
+   * under copy promising nobody ever sees it. ONE-LINE BUG THIS CATCHES:
+   * dropping the seal-and-strip in `parseTimelineSummary`.
+   */
+  it("strips a held-out case's resolution before anything can render it", () => {
+    const summary = parseTimelineSummary({
+      corpus_item_id: "ci-4",
+      role: "heldout",
+      timeline: {
+        ...unfolded,
+        // The server answered WITHOUT the seal and WITH the answer.
+        resolution: {
+          summary: "Bacterial meningitis; she survived after 40 minutes.",
+        },
+      },
+      added: 0,
+    })!;
+    expect(summary.timeline).not.toBeNull();
+    expect(summary.timeline).not.toHaveProperty("resolution");
+    expect(summary.timeline!.sealed).toBe(true);
+    // Nothing anywhere in what gets rendered mentions the outcome.
+    expect(JSON.stringify(summary.timeline)).not.toContain("meningitis");
+    // …and the marker is part of the data — never stripped on the way past.
+    expect(summary.timeline!.__kind).toBe("serial_observation_timeline");
+    // The steps still read normally, so the seal costs the Expert nothing.
+    expect(summary.steps).toBe(3);
+  });
+
+  it("leaves a TEACHING case's resolution alone — it is hers to read", () => {
+    const summary = parseTimelineSummary({
+      corpus_item_id: "ci-5",
+      role: "teaching",
+      timeline: { ...unfolded, resolution: { summary: "She recovered." } },
+      added: 2,
+    })!;
+    expect(summary.timeline).toHaveProperty("resolution");
+    expect(summary.timeline!.sealed).toBeUndefined();
+  });
+
   it("says out loud when no steps could be read, instead of reporting zero rules", () => {
     const summary = parseTimelineSummary({
       corpus_item_id: "ci-3",

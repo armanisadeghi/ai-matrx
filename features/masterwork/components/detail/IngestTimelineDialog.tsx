@@ -52,6 +52,7 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import { SERIAL_OBSERVATION_TIMELINE_KIND } from "@/features/content-ir/kinds/serial-observation-timeline";
 import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 
 /**
@@ -107,13 +108,30 @@ export function parseTimelineSummary(
   // A timeline result is identified by its corpus row or its unfolded case —
   // `added` is legitimately 0 for a held-out case, so it proves nothing.
   if (!("corpus_item_id" in data) && !("timeline" in data)) return null;
-  const timeline =
+  const role: TimelineRole = data.role === "heldout" ? "heldout" : "teaching";
+  const rawTimeline =
     data.timeline && typeof data.timeline === "object" && !Array.isArray(data.timeline)
       ? (data.timeline as Record<string, unknown>)
       : null;
+  /**
+   * THE WITHHOLDING LAW, applied HERE — in the ONE parser, before anything
+   * renders. The kind bridge withholds `resolution` only when the instance
+   * says `sealed: true`, and a server payload for a held-out case that still
+   * carried the outcome (or simply forgot the flag) would have been drawn in
+   * full by `KindInstanceRender` — one line under copy promising "nobody sees
+   * how it turned out". The role the Expert chose is the authority, so a
+   * held-out timeline is sealed and stripped of its resolution on the way in
+   * and the answer never enters the rendered instance at all.
+   * `__kind` rides through untouched — it is part of the data.
+   */
+  let timeline = rawTimeline;
+  if (timeline && role === "heldout") {
+    const { resolution: _withheld, ...rest } = timeline;
+    timeline = { ...rest, sealed: true };
+  }
   const steps = Array.isArray(timeline?.steps) ? timeline.steps.length : 0;
   return {
-    role: data.role === "heldout" ? "heldout" : "teaching",
+    role,
     corpusItemId:
       typeof data.corpus_item_id === "string" ? data.corpus_item_id : null,
     timeline,
@@ -227,10 +245,10 @@ export function IngestTimelineDialog({
   const summary = run.result;
 
   // Drafts and corpus rows that landed while the Expert was away still have to
-  // reach the page behind this dialog.
-  useEffect(() => {
-    if (run.result) onIngested?.();
-  }, [run.result, onIngested]);
+  // reach the page behind this dialog — ONCE per completed run, never once per
+  // render (the host passes a new inline callback every time, and the reload
+  // it starts re-renders this dialog). See `useRunResultOnce`.
+  useRunResultOnce(run, onIngested);
 
   useEffect(() => {
     if (run.error) toast.error(run.error);

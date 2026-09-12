@@ -118,13 +118,35 @@ function readCases(raw: unknown): UnfoldingCaseResult[] {
 
 /**
  * Parse the terminal verdict. Returns null — which the durable-run primitive
- * treats as a LOUD rejection — when the payload is not this event or carries
- * no per-case table at all: a run that answered something else must not be
- * drawn as an empty scoreboard.
+ * treats as a LOUD rejection — when the payload is neither the live event nor
+ * the stored table it settles into: a run that answered something else must
+ * not be drawn as an empty scoreboard.
+ *
+ * TWO LAWFUL SHAPES, one reader. The live terminal event carries its own
+ * `type`; the durable row's `result` column stores the table WITHOUT it
+ * (`{cases, diagnosis_score, safety_score, desk_beats_vanilla}` — exactly what
+ * `listUnfoldingAuditions` below reads back). Requiring the discriminator
+ * therefore refused every REJOINED or snapshot-settled run as a failure
+ * (Bugbot, PR #222, 2026-09-12) — a run that finished perfectly came back as
+ * "the server returned an incomplete result" after a reload. So an untyped
+ * payload is accepted when it carries the table itself; a payload carrying a
+ * DIFFERENT `type` is still somebody else's event and is still refused.
  */
 export function parseUnfoldingVerdict(raw: unknown): UnfoldingVerdict | null {
   if (!isRecord(raw)) return null;
-  if (raw.type !== UNFOLDING_AUDITION_EVENT) return null;
+  const type = raw.type;
+  if (type !== undefined && type !== null && type !== UNFOLDING_AUDITION_EVENT) {
+    return null;
+  }
+  if (type === undefined || type === null) {
+    // The stored shape has to prove itself some other way: the per-case table
+    // AND at least one field only this verdict emits.
+    const hasHeadline =
+      "desk_beats_vanilla" in raw ||
+      "diagnosis_score" in raw ||
+      "safety_score" in raw;
+    if (!Array.isArray(raw.cases) || !hasHeadline) return null;
+  }
   const cases = readCases(raw.cases);
   if (cases.length === 0) return null;
   return {

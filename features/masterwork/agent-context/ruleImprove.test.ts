@@ -121,7 +121,7 @@ describe("rule editor persisted draft", () => {
         mode: "edit",
         ruleId: "R1",
       }),
-    ).toEqual({ fields: DRAFT, beforeTidy: null });
+    ).toEqual({ fields: DRAFT, beforeTidy: null, policy: null });
     expect(
       readRuleEditorDraft(stored, {
         rulebookVersion: 9,
@@ -129,5 +129,70 @@ describe("rule editor persisted draft", () => {
         ruleId: "R1",
       }),
     ).toBeNull();
+  });
+});
+
+/**
+ * THE POLICY HALF SURVIVES A RELOAD (Bugbot, PR #222, 2026-09-12).
+ *
+ * `precondition` / `next_action` are persisted BESIDE `fields` — they are not
+ * part of `RulebookDraftSnapshot`, which is the prose an agent writes. Until
+ * this they were persisted nowhere, so the editor's reopen path restored the
+ * name and the statement from the draft and reset "When:" and "Next:" from the
+ * live rule: everything the Expert had typed into them was gone.
+ *
+ * ONE-LINE BUG EACH TEST CATCHES:
+ *  · first  — dropping `policy` from the restore path;
+ *  · second — trusting a stored policy without checking it, so a corrupted
+ *    half puts words in the Expert's mouth.
+ */
+describe("rule editor persisted policy fields", () => {
+  const POLICY = {
+    preconditionSummary: "Fever plus a stiff neck, within the hour",
+    preconditionKnown: "temp 39.1\nneck stiffness",
+    preconditionUnknown: "CSF result",
+    nextActionKind: "test" as const,
+    nextActionTarget: "Lumbar puncture",
+    nextActionBuys: "Rules meningitis in or out",
+    nextActionCost: "3",
+    nextActionRisk: "2",
+    nextActionUrgency: "now" as const,
+  };
+
+  it("restores what was typed into When: and Next:", () => {
+    const restored = readRuleEditorDraft(
+      { baseVersion: 8, fields: DRAFT, beforeTidy: null, policy: POLICY },
+      { rulebookVersion: 8, mode: "edit", ruleId: "R1" },
+    );
+    expect(restored?.policy).toEqual(POLICY);
+  });
+
+  it("treats an unreadable stored policy as absent rather than half-applying it", () => {
+    const restored = readRuleEditorDraft(
+      {
+        baseVersion: 8,
+        fields: DRAFT,
+        beforeTidy: null,
+        policy: { ...POLICY, nextActionKind: "teleport" },
+      },
+      { rulebookVersion: 8, mode: "edit", ruleId: "R1" },
+    );
+    // The prose still restores; the policy falls back to the live rule.
+    expect(restored?.fields).toEqual(DRAFT);
+    expect(restored?.policy).toBeNull();
+  });
+
+  it("fills the fields a stored policy simply does not carry", () => {
+    const restored = readRuleEditorDraft(
+      {
+        baseVersion: 8,
+        fields: DRAFT,
+        beforeTidy: null,
+        policy: { preconditionSummary: "Just this much" },
+      },
+      { rulebookVersion: 8, mode: "edit", ruleId: "R1" },
+    );
+    expect(restored?.policy?.preconditionSummary).toBe("Just this much");
+    expect(restored?.policy?.nextActionKind).toBe("");
   });
 });

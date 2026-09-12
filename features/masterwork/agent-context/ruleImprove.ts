@@ -1,5 +1,15 @@
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
-import type { RulebookRule, RulebookSections, RuleSeverity } from "../types";
+import type {
+  RulebookRule,
+  RulebookSections,
+  RulePolicyFieldValues,
+  RuleSeverity,
+} from "../types";
+import {
+  EMPTY_RULE_POLICY_FIELDS,
+  RULE_ACTION_KINDS,
+  RULE_ACTION_URGENCIES,
+} from "../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
@@ -135,9 +145,17 @@ export function applyRuleTidy(
 
 /**
  * Restore the Rule Editor's persisted wizard draft (fields + the pre-tidy
- * snapshot behind "Undo AI cleanup") — only when it belongs to the same
- * Rulebook version, mode, and rule. Anything else returns null and the editor
- * starts from the live rule.
+ * snapshot behind "Undo AI cleanup" + the POLICY half) — only when it belongs
+ * to the same Rulebook version, mode, and rule. Anything else returns null and
+ * the editor starts from the live rule.
+ *
+ * The policy fields (`precondition` / `next_action`, contract §2) live BESIDE
+ * `fields` rather than inside `RulebookDraftSnapshot`, which is the prose an
+ * agent writes and reads. They were not persisted at all until 2026-09-12
+ * (Bugbot, PR #222): a reload or a tidy restore brought back the name and the
+ * statement and silently dropped everything the Expert had typed into "When:"
+ * and "Next:". A stored half that does not typecheck is simply absent — the
+ * editor then falls back to the live rule, never to a half-read policy.
  */
 export function readRuleEditorDraft(
   value: unknown,
@@ -149,6 +167,7 @@ export function readRuleEditorDraft(
 ): {
   fields: RulebookDraftSnapshot;
   beforeTidy: RulebookDraftSnapshot | null;
+  policy: RulePolicyFieldValues | null;
 } | null {
   if (!isRecord(value) || value.baseVersion !== expected.rulebookVersion) {
     return null;
@@ -192,5 +211,64 @@ export function readRuleEditorDraft(
   return {
     fields,
     beforeTidy: readSnapshot(value.beforeTidy),
+    policy: readPolicyFields(value.policy),
+  };
+}
+
+/**
+ * The policy half as the FORM holds it: every value a plain string, so a
+ * half-typed line survives a reload exactly as it was typed. Every key must be
+ * a string or the whole thing is refused — a partially-read policy would put
+ * words in the Expert's mouth.
+ */
+export function readPolicyFields(
+  value: unknown,
+): RulePolicyFieldValues | null {
+  if (!isRecord(value)) return null;
+  const free = (raw: unknown): string | null => {
+    if (raw === undefined) return "";
+    return typeof raw === "string" ? raw : null;
+  };
+  const oneOf = <T extends string>(
+    raw: unknown,
+    allowed: readonly T[],
+  ): T | "" | null => {
+    if (raw === undefined || raw === "") return "";
+    const match = allowed.find((option) => option === raw);
+    return match ?? null;
+  };
+  const summary = free(value.preconditionSummary);
+  const known = free(value.preconditionKnown);
+  const unknown = free(value.preconditionUnknown);
+  const target = free(value.nextActionTarget);
+  const buys = free(value.nextActionBuys);
+  const cost = free(value.nextActionCost);
+  const risk = free(value.nextActionRisk);
+  const kind = oneOf(value.nextActionKind, RULE_ACTION_KINDS);
+  const urgency = oneOf(value.nextActionUrgency, RULE_ACTION_URGENCIES);
+  if (
+    summary === null ||
+    known === null ||
+    unknown === null ||
+    target === null ||
+    buys === null ||
+    cost === null ||
+    risk === null ||
+    kind === null ||
+    urgency === null
+  ) {
+    return null;
+  }
+  return {
+    ...EMPTY_RULE_POLICY_FIELDS,
+    preconditionSummary: summary,
+    preconditionKnown: known,
+    preconditionUnknown: unknown,
+    nextActionKind: kind,
+    nextActionTarget: target,
+    nextActionBuys: buys,
+    nextActionCost: cost,
+    nextActionRisk: risk,
+    nextActionUrgency: urgency,
   };
 }

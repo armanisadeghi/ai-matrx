@@ -162,6 +162,12 @@ function RuleEditorForm({
    * agent draft (`RulebookDraftSnapshot` is the prose the Conductor writes);
    * an edit that touches only these fields still saves, because
    * `applyManualRuleEdit` merges the whole edited rule either way.
+   *
+   * It IS persisted, beside `fields`, in the wizard draft: until 2026-09-12
+   * (Bugbot, PR #222) it was written nowhere, so a reload — or the reopen path
+   * below, which restores name/statement/rationale from the persisted draft —
+   * silently threw away everything typed into "When:" and "Next:" and put the
+   * live rule's values back.
    */
   const [policy, setPolicy] = useState<RulePolicyFieldValues>(() =>
     initial ? rulePolicyFieldsFromRule(initial) : EMPTY_RULE_POLICY_FIELDS,
@@ -207,6 +213,7 @@ function RuleEditorForm({
           baseVersion: rulebookVersion,
           fields: draftSnapshot(),
           beforeTidy,
+          policy,
         },
       }),
     );
@@ -216,6 +223,7 @@ function RuleEditorForm({
     draftSnapshot,
     onDraftChange,
     open,
+    policy,
     rulebookVersion,
     wizardId,
   ]);
@@ -237,8 +245,13 @@ function RuleEditorForm({
           "G",
       );
       setBeforeTidy(persistedDraft?.beforeTidy ?? null);
+      // The restored policy wins over the live rule for the same reason the
+      // restored prose does: it is what the Expert typed and has not saved.
       setPolicy(
-        initial ? rulePolicyFieldsFromRule(initial) : EMPTY_RULE_POLICY_FIELDS,
+        persistedDraft?.policy ??
+          (initial
+            ? rulePolicyFieldsFromRule(initial)
+            : EMPTY_RULE_POLICY_FIELDS),
       );
     }
     wasOpen.current = open;

@@ -131,3 +131,21 @@ export async function listSealedCases(
     published: publishedOf(row.source_meta),
   }));
 }
+
+/**
+ * IS THE CHOSEN CASE ONE THIS DESK IS ACTUALLY OFFERING?
+ *
+ * The run box holds the choice in state, and state outlives a change of
+ * Masterwork or a reload of the list (Bugbot, PR #222, 2026-09-12): a stale id
+ * would otherwise start a desk against a case from another Rulebook, or
+ * against a row that has since been deleted. Only an id ON the list the picker
+ * is currently showing may be sent, so the answer is "no" while the list is
+ * still loading, when it failed to load, and when the id is not on it.
+ */
+export function chosenSealedCaseIsCurrent(
+  caseItemId: string | null,
+  state: { status: "idle" | "loading" | "ready" | "error"; cases?: readonly SealedCase[] },
+): boolean {
+  if (caseItemId === null || state.status !== "ready") return false;
+  return (state.cases ?? []).some((item) => item.id === caseItemId);
+}

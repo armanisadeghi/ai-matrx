@@ -100,6 +100,7 @@ import {
 } from "../../unfolding/caseDisclosures";
 import {
   CASE_ITEM_INPUT_NAME,
+  chosenSealedCaseIsCurrent,
   findCaseDiscloseNodeId,
 } from "../../unfolding/sealedCases";
 import {
@@ -373,6 +374,30 @@ export function TryMasterworkBox({
     sealedCases.status === "ready" &&
     sealedCases.cases.length === 0;
 
+  /**
+   * THE CHOSEN CASE BELONGS TO THIS DESK, AND ONLY THIS ONE (Bugbot, PR #222,
+   * 2026-09-12). `caseItemId` used to survive a change of `masterworkId` or of
+   * the disclose node, so a reused box could start the NEXT desk against the
+   * PREVIOUS Masterwork's sealed case — a run against a case from another
+   * Rulebook, silently. The same render-time adjust the re-attach question
+   * uses (never an effect, which would let one render start a run first).
+   */
+  const caseScopeKey = `${masterworkId}:${discloseNodeId ?? ""}`;
+  const [caseChoiceFor, setCaseChoiceFor] = useState(caseScopeKey);
+  if (caseChoiceFor !== caseScopeKey) {
+    setCaseChoiceFor(caseScopeKey);
+    setCaseItemId(null);
+  }
+  /**
+   * And the id must still be ON the list this desk is offering — a case
+   * deleted, or a list that reloaded into a different Rulebook's cases, must
+   * not be startable just because a stale id is in state.
+   */
+  const chosenCaseIsCurrent = chosenSealedCaseIsCurrent(
+    caseItemId,
+    sealedCases,
+  );
+
   const finalAggregate = useAppSelector(
     selectNodeAggregate(runId ?? "", finalStep?.nodeId ?? ""),
   );
@@ -444,7 +469,7 @@ export function TryMasterworkBox({
     // A DESK IS NOT RUNNABLE WITHOUT A CASE. The picker is right there, so the
     // refusal names the thing to do rather than letting a run start against
     // nothing and fail three steps in.
-    if (discloseNodeId !== null && !caseItemId) {
+    if (discloseNodeId !== null && !chosenCaseIsCurrent) {
       toast.error(
         noSealedCases
           ? "This Rulebook holds no sealed cases yet — add one from Sources and mark it held-out."
@@ -481,7 +506,7 @@ export function TryMasterworkBox({
     // THE SEALED CASE travels as a named run input, stamped `human` like every
     // other value this form carries: the Expert chose it, and the oracle node
     // reads `case_item_id` to know which row it may unseal.
-    if (discloseNodeId !== null && caseItemId) {
+    if (discloseNodeId !== null && caseItemId && chosenCaseIsCurrent) {
       submission.inputs[CASE_ITEM_INPUT_NAME] = caseItemId;
       submission.inputSources[CASE_ITEM_INPUT_NAME] = "human";
     }
@@ -511,6 +536,7 @@ export function TryMasterworkBox({
     startServedRun,
     discloseNodeId,
     caseItemId,
+    chosenCaseIsCurrent,
     noSealedCases,
   ]);
 

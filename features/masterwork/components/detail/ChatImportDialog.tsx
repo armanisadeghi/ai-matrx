@@ -27,6 +27,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import {
   describeIngest,
@@ -185,9 +186,10 @@ export function ChatImportDialog({
     setShortlisting(false);
   };
 
-  useEffect(() => {
-    if (run.result) onIngested?.();
-  }, [run.result, onIngested]);
+  // ONCE PER COMPLETED RUN, never once per render: the host passes a new
+  // inline callback every render and the reload it starts re-renders this
+  // dialog. See `useRunResultOnce`.
+  useRunResultOnce(run, onIngested);
 
   useEffect(() => {
     if (run.error) toast.error(run.error);

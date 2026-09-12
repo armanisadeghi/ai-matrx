@@ -211,6 +211,33 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-12` — **Six review findings on the unfolding-case lane (Bugbot, PR #222), each fixed
+  at its class with a guard proven failing-then-passing.** **(1) A held-out timeline could show
+  the answer.** `parseTimelineSummary` kept the server's timeline byte for byte and handed it to
+  `KindInstanceRender`; the kind bridge withholds `resolution` only on `sealed: true`, so a
+  held-out payload carrying the outcome drew "how it turned out" under copy promising nobody
+  ever sees it. The ONE parser now seals and strips a held-out case on the way in
+  (`__tests__/timeline-intake.test.ts`). **(2) A finished ingest reloaded the Rulebook forever.**
+  All four ingest dialogs fired `onIngested` from an effect keyed on the callback, and every host
+  passes a new inline arrow every render — so the reload the callback started re-rendered the
+  dialog, which reloaded again. ONE primitive now owns it: `durable-run/useRunResultOnce.ts`
+  fires once per (run, result) pair, adopted by the timeline, source, chat-import and
+  body-of-work dialogs. **(3) A rejoined unfolding audition read as a failure.**
+  `parseUnfoldingVerdict` required the live event's `type`, but the durable row stores the table
+  without it, so every snapshot-settled run was refused as "an incomplete result"; the untyped
+  stored table is now accepted when it carries the case table plus a headline field, and a
+  payload carrying a DIFFERENT type is still refused. **(4) The policy fields vanished on
+  restore.** `precondition` / `next_action` were persisted nowhere, so a reload or a tidy restore
+  brought back the prose and reset "When:" / "Next:" from the live rule; the wizard draft now
+  carries them beside `fields` (`readPolicyFields`, validated — an unreadable half is absent, never
+  half-applied). **(5) A reused run box kept the previous Masterwork's sealed case.** `caseItemId`
+  is reset when the Masterwork or the disclose node changes, and the start guard asks the new
+  `chosenSealedCaseIsCurrent` — an id must be ON the list this desk is offering. **(6) The live
+  ledger could go backwards.** `readCaseDisclosures` concatenates emissions then stored outputs,
+  so a fresh emission for turn 5 followed by a stored output for turn 2 made the box draw the
+  older ledger; `latestCaseDisclosure` now ranks by the ledger's own monotonic `steps`.
+
+
 - `2026-09-12` — **The unfolding-case lane's frontend half (contract §1, §2, §5).** Three
   additions, all additive; nothing any other lane does changes. **(1) Policy rule fields.**
   `precondition` (summary + known/unknown) and `next_action` (kind, target, buys, cost, risk,

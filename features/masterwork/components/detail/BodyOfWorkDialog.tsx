@@ -23,6 +23,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { describeMissingIngestParts } from "./IngestSourceDialog";
@@ -177,12 +178,13 @@ export function BodyOfWorkDialog({
     return () => clearInterval(timer);
   }, [open, run.running, refreshBoard]);
 
-  useEffect(() => {
-    if (run.result) {
-      void refreshBoard();
-      onIngested?.();
-    }
-  }, [run.result, onIngested, refreshBoard]);
+  // ONCE PER COMPLETED RUN, never once per render: the host passes a new
+  // inline callback every render and the reload it starts re-renders this
+  // dialog. See `useRunResultOnce`.
+  useRunResultOnce(run, () => {
+    void refreshBoard();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
