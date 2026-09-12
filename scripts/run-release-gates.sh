@@ -407,6 +407,18 @@ if $STRICT; then
         # shadows are baselined by declaration; any NEW shadow hard-fails the
         # strict lane, while direct generated aliases remain legal.
         "Generated API type shadow ratchet|pnpm check:generated-contracts"
+        # THE GENERATED FILES THEMSELVES ARE FRESH — the only guard that sees a
+        # HAND EDIT. `sync-types` and its drop guard watch a REGENERATION; commit
+        # 4c827d5530 (2026-09-12) never ran one — it deleted
+        # DirectiveConfirmRequest.conversation_id straight out of api-types.ts
+        # along with the client code that read it, and every gate here stayed
+        # green while a second Approve wrote a second project (DD-128). This
+        # re-emits the contract from ../aidream and compares (~2-3 min), so it is
+        # ADVISORY in both lanes: it also goes red, correctly, whenever that
+        # checkout has simply moved ahead of the committed files, and the remedy
+        # is the same either way — `pnpm sync-types`.
+        # `pnpm check:api-types-fresh:self-test` proves it can still fail.
+        "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
         # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
@@ -699,6 +711,10 @@ else
         # Loud here and blocking in --strict: a new handwritten API mirror
         # suppresses the generated-contract drift errors we need to see.
         "Generated API type shadow ratchet|pnpm check:generated-contracts"
+        # A generated file EDITED BY HAND — the hole 4c827d5530 walked through on
+        # 2026-09-12 (DD-128). Full story in the strict list above; advisory in
+        # both lanes, remedy `pnpm sync-types`.
+        "Generated API types are fresh, not hand-edited|pnpm check:api-types-fresh"
         # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
         # settings screen that accepts a value the system does not honour
         # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans

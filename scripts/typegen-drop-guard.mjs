@@ -26,10 +26,13 @@
  * A drop that is DELIBERATE is recorded in `scripts/typegen-drop-allowlist.json`
  * with a reason — never by weakening this guard.
  *
- * GRANULARITY, stated plainly: this matches property NAMES, not name-at-path. If
- * `message` disappears from one schema while another schema's `message` is still
- * read, the guard still refuses. That is the safe direction for a contract guard,
- * and the allowlist is the way to say "yes, really".
+ * GRANULARITY, stated plainly: the DROP is decided per declaration site, but the
+ * USAGE search matches property NAMES. If `message` disappears from one schema
+ * while another schema's `message` is still read, the guard still refuses. That is
+ * the safe direction for a contract guard, and the allowlist is the way to say
+ * "yes, really". To keep that breadth from burying the real call site, the files
+ * and lines it prints are RANKED by the declaring type (`DirectiveConfirmRequest`),
+ * so the code that actually breaks is named first.
  */
 
 import { execFileSync } from "node:child_process";
@@ -136,6 +139,70 @@ export function findUsages(name, root) {
     }
 }
 
+/**
+ * The TYPE NAMES a drop was declared on — `components.schemas.DirectiveConfirmRequest`
+ * → `DirectiveConfirmRequest`. This is what turns a name-wide usage list into a
+ * pointer at the real call site.
+ */
+export function declarationTypeNames(sites) {
+    const names = new Set();
+    for (const site of sites) {
+        const match = /components\.schemas\.([A-Za-z0-9_]+)/.exec(site);
+        if (match) names.add(match[1]);
+    }
+    return [...names];
+}
+
+/** Files in `root` that mention any of these type names (a cheap file-level index). */
+function filesUsingTypes(typeNames, root) {
+    const files = new Set();
+    for (const typeName of typeNames) {
+        const isGitRepo = existsSync(resolve(root, ".git"));
+        try {
+            const out = isGitRepo
+                ? execFileSync(
+                      "git",
+                      ["grep", "-l", "-I", "-F", typeName, "--", ...SOURCE_GLOBS, ...EXCLUDED_PATHSPECS],
+                      { cwd: root, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 },
+                  )
+                : execFileSync(
+                      "grep",
+                      ["-rl", "-I", "-F", "--include=*.ts", "--include=*.tsx", typeName, "."],
+                      { cwd: root, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 },
+                  );
+            for (const line of out.split("\n").filter(Boolean)) files.add(line.replace(/^\.\//, ""));
+        } catch (error) {
+            if (!error || error.status !== 1) throw error;
+        }
+    }
+    return files;
+}
+
+/**
+ * Rank usage hits by the property's DECLARATION TYPE, not by the bare name.
+ *
+ * 🚨 WHY. `conversation_id` is read on 384 lines of this repo; printing the first
+ * five in path order sent the reader to CX-dashboard files that have nothing to
+ * do with the drop, while the actual approve call site —
+ * `features/matrx-envelope/components/ProposedDirectivesZone.tsx`, which imports
+ * `DirectiveConfirmRequest` — was nowhere in the human output (V-26, D-2). A hit
+ * in a file that names the declaring type outranks everything else.
+ */
+export function rankHitsByDeclaringType(hits, typeNames, root) {
+    if (typeNames.length === 0) return { hits, files: new Set() };
+    const files = filesUsingTypes(typeNames, root);
+    const score = (hit) => {
+        const file = hit.split(":", 1)[0];
+        if (typeNames.some((typeName) => hit.includes(typeName))) return 2;
+        return files.has(file) ? 1 : 0;
+    };
+    const ranked = hits
+        .map((hit, index) => ({ hit, index, score: score(hit) }))
+        .sort((a, b) => (b.score - a.score) || (a.index - b.index))
+        .map((entry) => entry.hit);
+    return { hits: ranked, files };
+}
+
 export function runDropGuard({ beforePath, afterPath, root = REPO_ROOT }) {
     const before = collectDeclarations(JSON.parse(readFileSync(beforePath, "utf-8")));
     const after = collectDeclarations(JSON.parse(readFileSync(afterPath, "utf-8")));
@@ -166,9 +233,18 @@ export function runDropGuard({ beforePath, afterPath, root = REPO_ROOT }) {
             allowed.push({ name, declaredIn, reason: allowlist[name] });
             continue;
         }
-        const hits = findUsages(name, root);
-        const record = { name, declaredIn, hits };
-        if (hits.length > 0) violations.push(record);
+        const typeNames = declarationTypeNames(declaredIn);
+        const { hits: ranked, files } = rankHitsByDeclaringType(findUsages(name, root), typeNames, root);
+        const record = {
+            name,
+            declaredIn,
+            declaringTypes: typeNames,
+            // The files this repo has that actually use the declaring type — the
+            // call sites a human needs, ahead of every same-named coincidence.
+            callSites: [...files],
+            hits: ranked,
+        };
+        if (ranked.length > 0) violations.push(record);
         else unusedDrops.push(record);
     }
 
@@ -209,11 +285,23 @@ function main() {
     console.error("\n  ✗ THE NEW SCHEMA IS MISSING PROPERTIES THIS REPO STILL USES.");
     console.error("    The schema you generated from is older than this repo, or the server");
     console.error("    genuinely removed these. Nothing was written.\n");
-    for (const { name, declaredIn, hits } of result.violations) {
+    for (const { name, declaredIn, declaringTypes, callSites, hits } of result.violations) {
         console.error(`    • "${name}" — was declared at ${declaredIn.join(", ")}`);
+        // THE CALL SITES FIRST. These are the files that use the declaring type
+        // itself, so they are the code that actually breaks — never a same-named
+        // coincidence somewhere else in the repo.
+        if (callSites.length > 0) {
+            const shown = callSites.slice(0, MAX_HITS_SHOWN);
+            console.error(`      the code that uses ${declaringTypes.join(", ")} lives in:`);
+            for (const file of shown) console.error(`        ${file}`);
+            if (callSites.length > shown.length) {
+                console.error(`        …and ${callSites.length - shown.length} more file(s)`);
+            }
+        }
         // The DROP is per-schema and exact; the USAGE count is a name-wide search of
-        // this repo's sources, so it is a ceiling, not a precise blast radius.
-        console.error(`      ${hits.length} source line(s) in this repo use that name, for example:`);
+        // this repo's sources, so it is a ceiling, not a precise blast radius. The
+        // lines are ranked so the declaring type's own call sites come first.
+        console.error(`      ${hits.length} source line(s) in this repo use that name, closest first:`);
         for (const hit of hits.slice(0, MAX_HITS_SHOWN)) console.error(`        ${hit.trim()}`);
         if (hits.length > MAX_HITS_SHOWN) console.error(`        …and ${hits.length - MAX_HITS_SHOWN} more`);
     }

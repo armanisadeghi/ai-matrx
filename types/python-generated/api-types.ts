@@ -25311,6 +25311,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -57228,6 +57252,33 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /**
          * DevtoServiceStatus
          * @description Safe aggregate status projection for Devto's fixed status page.
@@ -57756,10 +57807,7 @@ export interface components {
              * @default false
              */
             force?: boolean;
-            /**
-             * Conversation Id
-             * @description The conversation the proposal was made in. NOT decoration: it is the idempotency NAMESPACE, so without it a confirm keys on a per-request uuid and a second Approve writes a second project (V-19, 2026-09-12).
-             */
+            /** Conversation Id */
             conversation_id?: string | null;
         };
         /** DirectiveConfirmResult */
@@ -57774,10 +57822,7 @@ export interface components {
             failed: number;
             /** Receipts */
             receipts: (components["schemas"]["DirectiveItemApplied"] | components["schemas"]["DirectiveItemFailed"])[];
-            /**
-             * Message
-             * @description THE RECEIPT SENTENCE for the whole confirm (DD-118 / V-19). The confirm path is REST, not the stream, so nothing here streams a receipt. The words are the server's.
-             */
+            /** Message */
             message: string;
         };
         /**
@@ -70860,7 +70905,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
+            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -154309,6 +154354,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

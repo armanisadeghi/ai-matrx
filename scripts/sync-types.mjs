@@ -41,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { assertServerMeetsContractPin } from './aidream-contract-pin.mjs';
+import { normalizeDuplicateOperationIds as normalizeOperationIds } from './typegen-openapi-normalize.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -72,16 +73,6 @@ const AIDREAM_GENERATED_DIR = resolve(AIDREAM_ROOT, 'aidream/api/generated');
 const DROP_GUARD = resolve(__dirname, 'typegen-drop-guard.mjs');
 const BACKEND_SYNC_MAX_ATTEMPTS = 3;
 const BACKEND_SYNC_RETRY_DELAY_MS = 3_000;
-const OPENAPI_METHODS = new Set([
-    'get',
-    'put',
-    'post',
-    'delete',
-    'options',
-    'head',
-    'patch',
-    'trace',
-]);
 
 /**
  * aidream's generated filename → this repo's filename. The two repos disagree on
@@ -101,32 +92,14 @@ const BUNDLE_FILES = {
     'canvas-chat.ts': 'canvas-chat-ts.ts',
 };
 
+/**
+ * Normalize duplicate operationIds in a staged openapi.json, in place.
+ * The rewrite itself lives in `typegen-openapi-normalize.mjs` so that
+ * `check:api-types-fresh` re-derives the committed file through the SAME code.
+ */
 function normalizeDuplicateOperationIds(openapiPath) {
     const document = JSON.parse(readFileSync(openapiPath, 'utf-8'));
-    const operationsById = new Map();
-
-    for (const [path, pathItem] of Object.entries(document.paths ?? {})) {
-        if (!pathItem || typeof pathItem !== 'object') continue;
-        for (const [method, operation] of Object.entries(pathItem)) {
-            if (!OPENAPI_METHODS.has(method) || !operation || typeof operation !== 'object') continue;
-            const operationId = operation.operationId;
-            if (typeof operationId !== 'string' || operationId.length === 0) continue;
-            const entries = operationsById.get(operationId) ?? [];
-            entries.push({ method, operation, path });
-            operationsById.set(operationId, entries);
-        }
-    }
-
-    let normalized = 0;
-    for (const [operationId, entries] of operationsById) {
-        if (entries.length < 2) continue;
-        for (const { method, operation, path } of entries) {
-            const pathSuffix = path.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
-            operation.operationId = `${operationId}__${method}__${pathSuffix}`;
-            normalized += 1;
-        }
-    }
-
+    const normalized = normalizeOperationIds(document);
     if (normalized > 0) {
         writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
     }
