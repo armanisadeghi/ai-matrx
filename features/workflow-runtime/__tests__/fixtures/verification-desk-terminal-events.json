@@ -1,0 +1,692 @@
+[
+ {
+  "ts": "2026-09-12T01:06:14.326694Z",
+  "kind": null,
+  "mode": "restructured",
+  "step": 18,
+  "event": "node_emitted",
+  "title": "Verdict",
+  "run_id": "ae724cc1-440a-4296-a631-fcac3c15ec34",
+  "attempt": 1,
+  "kind_ok": null,
+  "node_id": "pack",
+  "payload": {
+   "ruling": {
+    "doubts": [
+     "The generated-or-manipulated check was never run: no forensic test exists on this platform, so the desk cannot affirmatively assert the frame is camera-original footage rather than synthesised or composited. It is only AFP's word (and a matching 2020 wire still) that ties it to real 2018 imagery.",
+     "Location is entirely unpinned. Nobody at the desk has matched a single in-frame reference point to maps or imagery; the identification of the cone as Anak Krakatau rests wholly on AFP's assertion and on the caption itself.",
+     "The source check is unchecked with no examinable account, so the originating uploader \u2014 the 'volcano photographer' AFP names only generically \u2014 has never been independently identified, and AFP's October 2018 dating cannot be corroborated by a second trace. The provenance date rests on a single publisher's unlinked assertion.",
+     "EXIF is entirely absent from a JPEG. Consistent with a screenshot of a Threads post, which is what the desk was told it is, but it removes any independent internal dating or geotag signal.",
+     "The submitted item is a still screenshot, not the video file. All identification of the clip \u2014 the volcanic lightning, the sped-up motion, the three-minute length \u2014 comes from a description supplied to the desk, not from anything the desk inspected. A single still could in principle have been paired with a different video than the one AFP examined.",
+     "The ABC7 page is dated 11 April 2020 and describes a 1,640-foot ash column with a Level 2 alert \u2014 a much smaller event than the October 2018 activity AFP dates the clip to. The provenance pack calls this an 'exact match' for the image, but the retrieved ABC7 text credits an AP photo by Suzanne Plunkett and does not obviously correspond to a night-time lava-and-lightning frame; the nature of the match is not documented in the text supplied.",
+     "AFP's rating of 'False' attaches to the composite claim ('video shows the 2026 eruption'), not to each factual element. The underlying eruption, the 50,000 ft plume and the Level III alert are all corroborated by AP, Guardian, Al Jazeera and CNA, so a reader could be misled by treating the whole caption as fabricated.",
+     "The specific figure 'over 200 aircraft diverted' does not match any official number in the record \u2014 the Transport Ministry's published counts run 1,558 delayed flights (6 Sep), ~2,300 (7 Sep) and 2,961 affected (8 Sep). The 200 figure is unsourced and unpinned to any ministry statement, but the record neither confirms nor denies a diversion-only subtotal.",
+     "The Britannica page carries a 'last updated Sep. 9, 2026' stamp and the ABC7 page a 2026 copyright line while dated April 2020 \u2014 routine CMS behaviour, but it means dates on the retrieved pages cannot be taken at face value without the underlying article history."
+    ],
+    "verdict": "NOT REAL",
+    "headline": "media: NOT REAL; caption claim: unverified",
+    "reasoning": "Starting from the assumption the item is recycled: it holds up. The published fact-check archive WAS searched (status 'searched', one review returned), and the AFP entry is not a bare rating \u2014 the retrieved full text documents a concrete, item-specific contradiction. AFP quotes verbatim the exact caption under review, including the distinctive '50,000 feet' and 'Over 200 aircraft have been forced to divert' wording from the Chinese-language Threads post of 7 September 2026, and states the attached clip was uploaded to YouTube by a volcano photographer showing the same volcano erupting in October 2018. That is a documented incompatibility between the caption's date and the media's origin, not an inference from a headline. It is reinforced by an exact-match still on an ABC7 page dated 11 April 2020, six years before the claimed event. The date check independently lands on 2018-10 and is marked contradicted. So the recycling finding is solid on the media's date.\n\nWhat is NOT solid is anything asserting the media is authentic footage of that volcano. The generated-or-manipulated test was never run, location was never pinned, and the source check found nobody to examine \u2014 so the desk is leaning entirely on AFP for the 2018 attribution and on nothing at all for geolocation. That caps how far the desk can go and should be carried as doubts, not treated as corroboration.\n\nA second thing worth separating out: the underlying event is real. Anak Krakatau did erupt 4\u20135 September 2026, plumes did reach 50,000 ft (AP, quoting Lana Saria), Jakarta's Soekarno-Hatta and up to seven other airports did close, and Level III was in force. The claim as worded \u2014 eruption caused Jakarta airport suspensions and diversions \u2014 is broadly true of the real event. What is false is that THIS footage shows it. The '200 aircraft diverted' number does not correspond to any figure in the official record, but the ministry published delay/cancellation totals rather than a diversion-only count, so that is an unpinnable caption number and belongs in doubts, not contradictions.\n\nNothing here is too good to be true in the fabrication sense; the pattern is the ordinary, high-frequency one of dramatic old eruption footage being reattached to a fresh, genuine disaster.",
+    "restriction": {
+     "notice": "",
+     "restricted": false,
+     "media_not_carried": "This pack carries findings only. The media itself is never carried into the pack outputs."
+    },
+    "claim_verdict": "unverified",
+    "contradictions": [
+     "AFP Fact Check (factcheck.afp.com/doc.afp.com.C7JH6CQ, published 2026-09-08, by Livia LIU / AFP Hong Kong) documents that the clip attached to this exact caption is old: 'The clip was originally uploaded to YouTube by a volcano photographer and shows the same volcano erupting in October 2018,' and 'a video circulating online showing a volcano is not linked to the eruption.' This is incompatible with the caption's assertion that the footage shows an eruption that happened 'this morning' in September 2026.",
+     "AFP's article reproduces the identical caption text under review \u2014 'The Anak Krakatau volcano in Indonesia erupted again this morning, spewing ashes up to 50,000 feet... Major airports in Jakarta have suspended flights. Over 200 aircraft have been forced to divert, with thousands of passengers stranded' \u2014 and ties it to a Chinese-language Threads post of September 7, 2026, establishing that the fact-check is item-specific rather than generic, and directly contradicting the 'erupted again this morning' framing of the attached media.",
+     "A reverse-image exact match appears on abc7news.com ('Indonesia's Anak Krakatau volcano shoots ash, lava') dated Saturday, April 11, 2020 \u2014 the same imagery in circulation more than six years before the claimed September 2026 eruption it is captioned with, which cannot be reconciled with the media being new footage of the 2026 event.",
+     "The date check independently places the earliest known upload at approximately October 2018, which is incompatible with the claimed capture date of September 7, 2026 by nearly eight years."
+    ],
+    "verdict_meanings": {
+     "REAL": "All four checks confirmed, the media tested clean for manipulation, any required specialist consulted, and nothing contradicts.",
+     "NOT REAL": "Fabricated or manipulated media, or a caption whose claim is itself contradicted outright.",
+     "RECYCLED": "An earlier copy of this same media exists that predates the claimed event: real footage of a real earlier event put under a new caption. RECYCLED does not assert the media is authentic to the claim, so it needs NO forensic test and NO specialist \u2014 the documented earlier copy is the evidence.",
+     "CANNOT TELL YET": "Not enough confirmed, or REAL was blocked because a required specialist was never consulted or the media could not be tested for manipulation."
+    },
+    "two_findings_note": "These are TWO separate findings and must be read separately. The media verdict rests on provenance, source, date and location. The caption claim is judged on its own; an unverified claim is carried as a doubt and never drags the media verdict down, and genuine media never lends the claim credibility it has not earned."
+   },
+   "verdict_pack": {
+    "checks": {
+     "date": {
+      "reason": "The claimed date of September 7, 2026 is contradicted because the earliest known upload of the footage dates back to approximately October 2018, predating the claimed date by nearly eight years.",
+      "status": "contradicted",
+      "evidence": [
+       "Earliest known upload dates to approximately October 2018, per AFP.",
+       "Weather record was unchecked and treated as an absent signal."
+      ],
+      "weather_agreement": "absent",
+      "best_date_estimate": "2018-10",
+      "independent_signals": [],
+      "independent_signal_count": 0
+     },
+     "source": {
+      "reason": "No account to examine: the earliest copy is a publication and the post carries no handle. There is nobody to establish, so no uploader search was run and the source check is recorded as unchecked. This is a real and expected situation, not a failure: the method anticipates that sometimes there is nobody to establish.",
+      "status": "unchecked",
+      "evidence": [],
+      "account_examined": "none \u2014 there was no examinable account",
+      "how_to_treat_this": "An unchecked source blocks REAL, because REAL requires the originating uploader to be established by at least two independent traces. It does NOT block RECYCLED or NOT REAL, which rest on documented evidence rather than on an assertion of authenticity. Do not read this as a doubt about the media \u2014 it is an absence of anybody to examine.",
+      "independent_traces": [],
+      "no_account_to_examine": true,
+      "originator_type_found": "unknown",
+      "is_originating_account": false,
+      "badge_needs_human_hover": false,
+      "independent_trace_count": 0,
+      "poster_handle_on_the_submitted_copy": "",
+      "earliest_account_named_by_provenance": ""
+     },
+     "location": {
+      "geotag": {
+       "note": "From the file metadata. Noted, never sufficient alone \u2014 location confirmed needs two independent in-frame reference points, or one unmistakable landmark plus a consistent account history.",
+       "latitude": null,
+       "longitude": null,
+       "geotag_present": false
+      },
+      "reason": "LOCATION CANNOT BE PINNED YET. Two capabilities are missing: the desk cannot see the image itself, and there is no Street View, satellite, historical imagery or mapping source to compare in-frame reference points against. The desk will not guess a location. Because location is one of the four checks, no item can reach REAL while this stays open. When it is built, LOCATION CONFIRMED means at least two independent reference points in the media match maps or imagery, or one unmistakable landmark plus an account history consistent with that place. An embedded geotag from the file metadata arrives here when one exists \u2014 noted, never sufficient alone, because automated geolocation is not foolproof.",
+      "status": "unchecked",
+      "claimed_place": "Anak Krakatau, Indonesia",
+      "geotag_present": false,
+      "reference_points": [],
+      "best_location_estimate": "",
+      "language_or_dialect_note": ""
+     },
+     "provenance": {
+      "reason": "The submitted still comes from a video that AFP Fact Check (published 2026-09-08) traced back to footage shot in October 2018 of the same volcano, uploaded to YouTube by a volcano photographer. AFP's article \"Years-old footage falsely shared as Indonesia volcano eruption in September 2026\" is an exact-match page for this image and explicitly documents the identical Chinese-language Threads post of September 7, 2026 that carries the exact wording of this claim (\"spewing ashes up to 50,000 feet... Major airports in Jakarta have suspended flights. Over 200 aircraft have been forced to divert\"). An exact match also appears on an ABC7 News page dated April 11, 2020, well before the claimed September 2026 eruption, further confirming the imagery predates the event it is captioned with. Anak Krakatau did in fact erupt on September 5, 2026 with real airport disruption, but this specific footage is old material recycled under the new caption. The original YouTube upload by the volcano photographer is named only generically in the retrieved text; I could not reach or identify the channel/handle or its exact upload date, so I deliberately leave earliest_account empty rather than credit AFP or ABC7, which are later republishers.",
+      "status": "contradicted",
+      "evidence": [
+       "AFP Fact Check (factcheck.afp.com/doc.afp.com.C7JH6CQ, 2026-09-08): 'The clip was originally uploaded to YouTube by a volcano photographer and shows the same volcano erupting in October 2018.'",
+       "AFP quotes the exact claim text: Chinese-language Threads post of September 7, 2026 saying 'Major airports in Jakarta have suspended flights. Over 200 aircraft have been forced to divert, with thousands of passengers stranded.'",
+       "AFP: 'However, the circulating clip does not show Anak Krakatau's eruption in September 2026.'",
+       "Reverse image search exact match dated 2020-04-11 (abc7news.com 'Indonesia's Anak Krakatau volcano shoots ash, lava'), six years before the claimed event.",
+       "Real background event confirmed separately (ABC Australia, 2026-09-10; Britannica updated 2026-09-09) - Anak Krakatau did erupt in September 2026 - but the media used is older footage."
+      ],
+      "earliest_url": "",
+      "originator_type": "unknown",
+      "earliest_account": "",
+      "earliest_datetime": "2018-10 (approximate; per AFP, original YouTube upload by an unnamed volcano photographer)",
+      "contradiction_kind": "recycled",
+      "original_reachable": false
+     }
+    },
+    "doubts": [
+     "The generated-or-manipulated check was never run: no forensic test exists on this platform, so the desk cannot affirmatively assert the frame is camera-original footage rather than synthesised or composited. It is only AFP's word (and a matching 2020 wire still) that ties it to real 2018 imagery.",
+     "Location is entirely unpinned. Nobody at the desk has matched a single in-frame reference point to maps or imagery; the identification of the cone as Anak Krakatau rests wholly on AFP's assertion and on the caption itself.",
+     "The source check is unchecked with no examinable account, so the originating uploader \u2014 the 'volcano photographer' AFP names only generically \u2014 has never been independently identified, and AFP's October 2018 dating cannot be corroborated by a second trace. The provenance date rests on a single publisher's unlinked assertion.",
+     "EXIF is entirely absent from a JPEG. Consistent with a screenshot of a Threads post, which is what the desk was told it is, but it removes any independent internal dating or geotag signal.",
+     "The submitted item is a still screenshot, not the video file. All identification of the clip \u2014 the volcanic lightning, the sped-up motion, the three-minute length \u2014 comes from a description supplied to the desk, not from anything the desk inspected. A single still could in principle have been paired with a different video than the one AFP examined.",
+     "The ABC7 page is dated 11 April 2020 and describes a 1,640-foot ash column with a Level 2 alert \u2014 a much smaller event than the October 2018 activity AFP dates the clip to. The provenance pack calls this an 'exact match' for the image, but the retrieved ABC7 text credits an AP photo by Suzanne Plunkett and does not obviously correspond to a night-time lava-and-lightning frame; the nature of the match is not documented in the text supplied.",
+     "AFP's rating of 'False' attaches to the composite claim ('video shows the 2026 eruption'), not to each factual element. The underlying eruption, the 50,000 ft plume and the Level III alert are all corroborated by AP, Guardian, Al Jazeera and CNA, so a reader could be misled by treating the whole caption as fabricated.",
+     "The specific figure 'over 200 aircraft diverted' does not match any official number in the record \u2014 the Transport Ministry's published counts run 1,558 delayed flights (6 Sep), ~2,300 (7 Sep) and 2,961 affected (8 Sep). The 200 figure is unsourced and unpinned to any ministry statement, but the record neither confirms nor denies a diversion-only subtotal.",
+     "The Britannica page carries a 'last updated Sep. 9, 2026' stamp and the ABC7 page a 2026 copyright line while dated April 2020 \u2014 routine CMS behaviour, but it means dates on the retrieved pages cannot be taken at face value without the underlying article history."
+    ],
+    "verdict": "NOT REAL",
+    "handling": {
+     "route": "continue",
+     "graphic": false,
+     "reasoning": "The media depicts a natural volcanic eruption at night with ash and lightning. No individuals are depicted or identified, so there is no risk of reprisal or harm to identifiable persons.",
+     "risk_found": false,
+     "handling_note": "Standard visual verification required to confirm date and location, as volcano eruption footage is frequently recycled. No privacy or protection restrictions needed.",
+     "knowing_activist": false,
+     "unable_to_consent": false,
+     "visual_is_essential": "no"
+    },
+    "headline": "media: NOT REAL; caption claim: unverified",
+    "reasoning": "Starting from the assumption the item is recycled: it holds up. The published fact-check archive WAS searched (status 'searched', one review returned), and the AFP entry is not a bare rating \u2014 the retrieved full text documents a concrete, item-specific contradiction. AFP quotes verbatim the exact caption under review, including the distinctive '50,000 feet' and 'Over 200 aircraft have been forced to divert' wording from the Chinese-language Threads post of 7 September 2026, and states the attached clip was uploaded to YouTube by a volcano photographer showing the same volcano erupting in October 2018. That is a documented incompatibility between the caption's date and the media's origin, not an inference from a headline. It is reinforced by an exact-match still on an ABC7 page dated 11 April 2020, six years before the claimed event. The date check independently lands on 2018-10 and is marked contradicted. So the recycling finding is solid on the media's date.\n\nWhat is NOT solid is anything asserting the media is authentic footage of that volcano. The generated-or-manipulated test was never run, location was never pinned, and the source check found nobody to examine \u2014 so the desk is leaning entirely on AFP for the 2018 attribution and on nothing at all for geolocation. That caps how far the desk can go and should be carried as doubts, not treated as corroboration.\n\nA second thing worth separating out: the underlying event is real. Anak Krakatau did erupt 4\u20135 September 2026, plumes did reach 50,000 ft (AP, quoting Lana Saria), Jakarta's Soekarno-Hatta and up to seven other airports did close, and Level III was in force. The claim as worded \u2014 eruption caused Jakarta airport suspensions and diversions \u2014 is broadly true of the real event. What is false is that THIS footage shows it. The '200 aircraft diverted' number does not correspond to any figure in the official record, but the ministry published delay/cancellation totals rather than a diversion-only count, so that is an unpinnable caption number and belongs in doubts, not contradictions.\n\nNothing here is too good to be true in the fabrication sense; the pattern is the ordinary, high-frequency one of dramatic old eruption footage being reattached to a fresh, genuine disaster.",
+    "specialist": {
+     "notice": "",
+     "required": false,
+     "expertise_needed": "none",
+     "language_support_needed": "none"
+    },
+    "restriction": {
+     "notice": "",
+     "restricted": false,
+     "media_not_carried": "This pack carries findings only. The media itself is never carried into the pack outputs."
+    },
+    "claim_finding": {
+     "reason": "The caption text itself was not supplied with this pack \ns- only the public-record search results were provided \ns- so there is no specific assertion that can be matched against the record. What the search does establish is the general context: Anak Krakatau began erupting late on 4-5 September 2026, ash closed up to eight airports including Jakarta's Soekarno-Hatta, and official figures rose from ~170,000 to ~341,000 affected passengers across roughly 2,961 flights before reopening on 8 September. Context of that kind does not settle any particular caption claim \ns- for example a claim that a given clip shows a specific eruption at a specific hour, or that a specific death/damage figure is official. Notably the passenger and flight figures in the record are themselves moving targets across 6-8 September, so any caption citing a single number needs to be pinned to the date and the issuing ministry. No named party has confirmed the claim under review, and nothing in the record denies it outright, so it stays unverified and is carried as a doubt separate from the media's own authenticity verdict.",
+     "status": "unverified",
+     "evidence": [
+      "Guardian, 7 Sep 2026: 'To date, 1,558 flights have been delayed at the eight affected airports, with 170,000 passengers stranded,' the transport ministry said in a statement on Sunday.",
+      "Al Jazeera, 6-7 Sep 2026: eight airports including Soekarno-Hatta halted operations after ash was detected, 'leaving more than 270,000 passengers stranded, the Transport Ministry reported on Monday.'",
+      "CNN/CNA, 7 Sep 2026: 'Around 341,000 people have been affected by the delay, diversion, or cancellation of 2,961 flights,' said chief infrastructure minister Agus Harimurti Yudhoyono.",
+      "AP, 6 Sep 2026: Lana Saria, head of Indonesia's Geological Agency, said activity at Anak Krakatau has intensified since July, with Sunday's eruption the strongest during that period; one plume rose to 20,000 feet and a second reached 50,000 feet.",
+      "BBC, 8 Sep 2026: Indonesia reopened five airports past midnight on Tuesday; Soekarno-Hatta resumed operations at 00:30 local time.",
+      "CNBC, 7 Sep 2026: Anak Krakatau remains at Level III ('Alert') with a 3-kilometre exclusion zone maintained."
+     ],
+     "draft_enquiry": "Dear Sir or Madam, I am checking a widely shared item of footage attributed to the Anak Krakatau eruption of 4-8 September 2026 and would be grateful for your help pinning down the accompanying claim. Could you confirm, first, the date and time of the specific eruptive event shown and whether the Geological Agency or PVMBG holds or has released imagery matching it; and second, which passenger and flight-disruption figures were current on each day, given that published totals moved from roughly 170,000 passengers and 1,558 flights on 6 September to about 341,000 passengers and 2,961 flights by 8 September? If the Ministry has issued any correction or clarification about figures or imagery circulating online, a pointer to that statement would be very helpful. Thank you for your time.",
+     "names_a_party": false,
+     "what_would_settle_it": "First, the exact caption wording under review, which is missing from this pack \ns- without it no assertion can be tested. Once supplied: if the claim concerns eruption timing, plume height or alert level, a statement or bulletin from Indonesia's Geological Agency/PVMBG (head Lana Saria) referring to that specific event; if it concerns flight, airport-closure or passenger figures, a dated statement from the Transport Ministry (Minister Dudy Purwagandhi) or InJourney Airports/Angkasa Pura specifying which day the number applies to; if it concerns casualties or damage, a BNPB figure. Absent one of those, the claim cannot be moved off unverified.",
+     "what_the_record_shows": "The record firmly establishes the underlying event: Anak Krakatau erupted from late 4-5 September 2026, sending plumes to 20,000 ft and 50,000 ft, closing up to eight airports including both Jakarta airports, with schools moved online and a 3 km exclusion zone at Alert Level III. Official impact figures escalated day by day \ns- 170,000 passengers/1,558 flights (6 Sep), more than 270,000/2,300 (7 Sep), about 341,000/2,961 including 622 international services (8 Sep) \ns- and airports reopened from 00:30 on 8 September. It does not address any particular caption's assertion about a specific clip, location, casualty count or cause, and it contains no denial of any such assertion."
+    },
+    "claim_verdict": "unverified",
+    "contradictions": [
+     "AFP Fact Check (factcheck.afp.com/doc.afp.com.C7JH6CQ, published 2026-09-08, by Livia LIU / AFP Hong Kong) documents that the clip attached to this exact caption is old: 'The clip was originally uploaded to YouTube by a volcano photographer and shows the same volcano erupting in October 2018,' and 'a video circulating online showing a volcano is not linked to the eruption.' This is incompatible with the caption's assertion that the footage shows an eruption that happened 'this morning' in September 2026.",
+     "AFP's article reproduces the identical caption text under review \u2014 'The Anak Krakatau volcano in Indonesia erupted again this morning, spewing ashes up to 50,000 feet... Major airports in Jakarta have suspended flights. Over 200 aircraft have been forced to divert, with thousands of passengers stranded' \u2014 and ties it to a Chinese-language Threads post of September 7, 2026, establishing that the fact-check is item-specific rather than generic, and directly contradicting the 'erupted again this morning' framing of the attached media.",
+     "A reverse-image exact match appears on abc7news.com ('Indonesia's Anak Krakatau volcano shoots ash, lava') dated Saturday, April 11, 2020 \u2014 the same imagery in circulation more than six years before the claimed September 2026 eruption it is captioned with, which cannot be reconciled with the media being new footage of the 2026 event.",
+     "The date check independently places the earliest known upload at approximately October 2018, which is incompatible with the claimed capture date of September 7, 2026 by nearly eight years."
+    ],
+    "media_examined": {
+     "note": "This is what the reverse image search and the file reader actually worked from \u2014 the uploaded file, or the supplied link to the image when no file was given.",
+     "source": "the supplied link to the image"
+    },
+    "confirmed_means": {
+     "date": "At least two independent date signals agree and none contradict.",
+     "rule": "One contradicting signal on any check outweighs agreement.",
+     "source": "Identity established by at least two independent traces, or by direct contact whose answers match what we found.",
+     "location": "At least two independent reference points match maps or imagery, or one unmistakable landmark plus a consistent account history.",
+     "provenance": "The earliest upload found and identified (account and timestamp), and neither reverse image search nor the text trail found an earlier copy."
+    },
+    "could_not_check": {
+     "date": false,
+     "source": "No account to examine: the earliest copy is a publication and the post carries no handle. There is nobody to establish, so no uploader search was run and the source check is recorded as unchecked. This is a real and expected situation, not a failure: the method anticipates that sometimes there is nobody to establish.",
+     "location": "LOCATION CANNOT BE PINNED YET. Two capabilities are missing: the desk cannot see the image itself, and there is no Street View, satellite, historical imagery or mapping source to compare in-frame reference points against. The desk will not guess a location. Because location is one of the four checks, no item can reach REAL while this stays open. When it is built, LOCATION CONFIRMED means at least two independent reference points in the media match maps or imagery, or one unmistakable landmark plus an account history consistent with that place. An embedded geotag from the file metadata arrives here when one exists \u2014 noted, never sufficient alone, because automated geolocation is not foolproof.",
+     "provenance": false,
+     "file_metadata": {
+      "gps": {
+       "latitude": null,
+       "longitude": null
+      },
+      "format": "JPEG",
+      "reason": "No metadata is present. No EXIF metadata at all, in a JPEG file \u2014 a format that normally carries it. Re-encoding by a social network, a screenshot, a messaging app, or a deliberate strip all produce this. It is an observation, not a verdict.",
+      "status": "unchecked",
+      "software": "None",
+      "tag_count": 0,
+      "timestamp": "None",
+      "dimensions": "703 x 666",
+      "camera_model": "None None",
+      "geotag_caveat": "An embedded geotag is noted but never sufficient on its own: automated geolocation is not foolproof and must be corroborated against in-frame reference points.",
+      "software_note": "",
+      "stripped_note": "No EXIF metadata at all, in a JPEG file \u2014 a format that normally carries it. Re-encoding by a social network, a screenshot, a messaging app, or a deliberate strip all produce this. It is an observation, not a verdict.",
+      "geotag_present": false,
+      "media_examined": "the supplied link to the image",
+      "flickr_exception": false,
+      "timestamp_caveat": "An EXIF timestamp may default to the camera manufacturer settings and must never be cited as proof on its own.",
+      "upload_signature": "No direct-upload file extension or YouTube Capture marker in the post text.",
+      "metadata_stripped": true,
+      "timestamp_as_written": "None",
+      "absence_is_not_evidence": "",
+      "stripping_expected_on_this_platform": false
+     },
+     "fact_check_archive": {
+      "status": "searched",
+      "reviews": [
+       {
+        "claimant": "Multiple individuals",
+        "claim_date": "2026-09-07T00:00:00Z",
+        "claim_text": "Video shows Mount Anak Krakatau's eruption in 2026",
+        "review_url": "https://factcheck.afp.com/doc.afp.com.C7JH6CQ",
+        "review_date": "2026-09-08T11:04:00Z",
+        "review_title": "Years-old footage falsely shared as Indonesia volcano eruption in ...",
+        "language_code": "en",
+        "publisher_name": "AFP Fact Check",
+        "publisher_site": "factcheck.afp.com",
+        "textual_rating": "False"
+       }
+      ],
+      "summary": "1 published fact-check from AFP Fact Check match this claim.",
+      "searched": true,
+      "zero_means": "",
+      "review_count": 1,
+      "handling_note": "A FACT-CHECK IS EVIDENCE, NOT A VERDICT. An item-specific fact-check that documents a CONCRETE CONTRADICTION sets NOT REAL, with the finding and the publisher quoted. A bare rating with no documented contradiction is a DOUBT for the red team, nothing more. Each rating is that publisher own wording and ratings are NOT comparable across publishers: quote them, never normalise them. Never parrot a source, including a fact-checker. A rating of true or correct must never push an item toward REAL: that is earned only by provenance, source, date and location.",
+      "searched_claim": "Anak Krakatau eruption Jakarta airports flights suspended divert",
+      "searched_reviewers_note": "Covers the ClaimReview corpus Google indexes \u2014 Snopes, Lead Stories, AFP, Reuters, PolitiFact, Full Fact and hundreds more. Finding nothing means no indexed fact-checker has published on this claim; it is not evidence the claim is true."
+     },
+     "generated_or_manipulated": {
+      "method": "none",
+      "reason": "NOT TESTED. There is no generated-or-manipulated media check on this platform and none currently planned, and the desk will not guess. Because REAL and RECYCLED both assert the media is authentic, an untested item can reach NEITHER: the verdict is capped at CANNOT TELL YET until a real forensic test exists. NOT REAL remains reachable on other evidence. A published fact-check that documents this item as generated is EVIDENCE for the sanity check to act on, and a writing-software tag in the metadata is a lead \u2014 neither is a forensic test and neither lifts this cap. This limitation appears in the could-not-check list of every pack, every time.",
+      "status": "unchecked",
+      "assessment": "",
+      "indicators": [],
+      "what_the_desk_was_told_it_shows": "A night-time video, under three minutes, of a volcanic eruption: a cone throwing glowing lava and ash high into the air, with volcanic lightning visible in the ash column; the clip appears sped up. The same clip is circulating on TikTok, X and Threads in Chinese, English, Japanese, Spanish, Malay and Thai since about September 5-7, 2026. What I can give the desk is a screenshot of the Threads post (the still shows the eruption frame); I do not have the video file itself."
+     },
+     "fact_check_archive_was_not_searched": false,
+     "generated_or_manipulated_blocks_REAL_only": true,
+     "specialist_never_consulted_blocks_REAL_only": false
+    },
+    "verdict_drivers": {
+     "note": "BOTH CAPS BLOCK REAL ONLY. An unconsulted specialist and an untested-for-manipulation file are each a reason not to call the media authentic to the claim; neither is a reason to withhold RECYCLED. RECYCLED asserts only that an earlier copy of the same media predates the claimed event, so a documented earlier copy carries it with no forensic test and no specialist. NOT REAL is reserved for fabricated or manipulated media, or a caption claim contradicted outright, and no cap ever suppresses it.",
+     "recycling_signal": true,
+     "all_four_confirmed": false,
+     "earlier_copy_citation": {
+      "url": "",
+      "account": "",
+      "datetime": "2018-10 (approximate; per AFP, original YouTube upload by an unnamed volcano photographer)"
+     },
+     "earlier_copy_documented": false,
+     "specialist_gap_blocks_REAL_only": false,
+     "manipulation_untested_blocks_REAL_only": true,
+     "fabricated_or_manipulated_or_claim_contradicted": true
+    },
+    "source_questions": {
+     "draft_message": "Hello, thank you for sharing this material regarding the eruption of Anak Krakatau and flight disruptions. We are looking into this event to accurately document what happened. Could you please tell us more about the footage or images you posted? Specifically, did you capture this media yourself or did someone share it with you? Where exactly were you when you recorded this or learned about it, and what was the date and time? What did you observe firsthand regarding the volcanic activity and the reported airport suspensions or flight diversions? How do you know that over 200 flights were diverted or suspended, and how else do you know that? Any context you can provide helps us understand the situation accurately.",
+     "blind_questions": [
+      "Did you record or take this media yourself, or did you obtain it from someone else?",
+      "Where exactly were you located when this footage was captured or when you observed these events?",
+      "What exact date and time were you present or when was this material recorded?",
+      "What specific volcanic activity and disruptions did you see or experience firsthand?",
+      "How do you know that major airports in Jakarta suspended flights and diverted over 200 aircraft?",
+      "How else do you know that?",
+      "What device or camera equipment was used to capture this footage?"
+     ],
+     "safety_check_required": false,
+     "reflect_back_only_after_answers": [
+      "Request original, uncompressed files directly from the capturing device to verify original capture metadata.",
+      "Request additional photos or video files captured immediately before and after this specific sequence from the same vantage point.",
+      "Probe any discrepancies regarding exact observation location, vantage point, and visibility line to Anak Krakatau.",
+      "Press for specific primary documentation or flight tracking sources supporting the exact claim of over 200 diverted aircraft.",
+      "Probe any timeline gaps between the stated time of eruption and the reported airport shutdown."
+     ]
+    },
+    "verdict_meanings": {
+     "REAL": "All four checks confirmed, the media tested clean for manipulation, any required specialist consulted, and nothing contradicts.",
+     "NOT REAL": "Fabricated or manipulated media, or a caption whose claim is itself contradicted outright.",
+     "RECYCLED": "An earlier copy of this same media exists that predates the claimed event: real footage of a real earlier event put under a new caption. RECYCLED does not assert the media is authentic to the claim, so it needs NO forensic test and NO specialist \u2014 the documented earlier copy is the evidence.",
+     "CANNOT TELL YET": "Not enough confirmed, or REAL was blocked because a required specialist was never consulted or the media could not be tested for manipulation."
+    },
+    "two_findings_note": "These are TWO separate findings and must be read separately. The media verdict rests on provenance, source, date and location. The caption claim is judged on its own; an unverified claim is carried as a doubt and never drags the media verdict down, and genuine media never lends the claim credibility it has not earned.",
+    "published_factchecks": {
+     "status": "searched",
+     "reviews": [
+      {
+       "claimant": "Multiple individuals",
+       "claim_date": "2026-09-07T00:00:00Z",
+       "claim_text": "Video shows Mount Anak Krakatau's eruption in 2026",
+       "review_url": "https://factcheck.afp.com/doc.afp.com.C7JH6CQ",
+       "review_date": "2026-09-08T11:04:00Z",
+       "review_title": "Years-old footage falsely shared as Indonesia volcano eruption in ...",
+       "language_code": "en",
+       "publisher_name": "AFP Fact Check",
+       "publisher_site": "factcheck.afp.com",
+       "textual_rating": "False"
+      }
+     ],
+     "summary": "1 published fact-check from AFP Fact Check match this claim.",
+     "searched": true,
+     "zero_means": "",
+     "review_count": 1,
+     "handling_note": "A FACT-CHECK IS EVIDENCE, NOT A VERDICT. An item-specific fact-check that documents a CONCRETE CONTRADICTION sets NOT REAL, with the finding and the publisher quoted. A bare rating with no documented contradiction is a DOUBT for the red team, nothing more. Each rating is that publisher own wording and ratings are NOT comparable across publishers: quote them, never normalise them. Never parrot a source, including a fact-checker. A rating of true or correct must never push an item toward REAL: that is earned only by provenance, source, date and location.",
+     "searched_claim": "Anak Krakatau eruption Jakarta airports flights suspended divert",
+     "searched_reviewers_note": "Covers the ClaimReview corpus Google indexes \u2014 Snopes, Lead Stories, AFP, Reuters, PolitiFact, Full Fact and hundreds more. Finding nothing means no indexed fact-checker has published on this claim; it is not evidence the claim is true."
+    },
+    "human_checks_still_required": [
+     "Reverse image search fallback: TinEye, and view-other-sizes for the highest-resolution copy. The automated search cannot do either, so a human always backs this check.",
+     "Verified badge: hover the blue check to confirm the popup reads Verified Account or Verified Page. Only a human can do this.",
+     "Specialist consultation where one is named above \u2014 until then REAL is blocked.",
+     "Sending the blind questions to the source, and sending the drafted enquiry to any named institution.",
+     "Exact matches beyond the tenth are listed in the provenance sheet but were not fetched and read in full \u2014 read them by eye if the earliest upload is still unsettled."
+    ]
+   }
+  },
+  "surface": "matrx-user/workflow",
+  "metadata": null,
+  "item_index": 0,
+  "dispatch_id": "",
+  "presentation": "showcase",
+  "component_ref": null
+ },
+ {
+  "ts": "2026-09-12T01:06:14.383472Z",
+  "step": 18,
+  "event": "node_completed",
+  "output": {
+   "verdict_pack": {
+    "checks": {
+     "date": {
+      "reason": "The claimed date of September 7, 2026 is contradicted because the earliest known upload of the footage dates back to approximately October 2018, predating the claimed date by nearly eight years.",
+      "status": "contradicted",
+      "evidence": [
+       "Earliest known upload dates to approximately October 2018, per AFP.",
+       "Weather record was unchecked and treated as an absent signal."
+      ],
+      "weather_agreement": "absent",
+      "best_date_estimate": "2018-10",
+      "independent_signals": [],
+      "independent_signal_count": 0
+     },
+     "source": {
+      "reason": "No account to examine: the earliest copy is a publication and the post carries no handle. There is nobody to establish, so no uploader search was run and the source check is recorded as unchecked. This is a real and expected situation, not a failure: the method anticipates that sometimes there is nobody to establish.",
+      "status": "unchecked",
+      "evidence": [],
+      "account_examined": "none \u2014 there was no examinable account",
+      "how_to_treat_this": "An unchecked source blocks REAL, because REAL requires the originating uploader to be established by at least two independent traces. It does NOT block RECYCLED or NOT REAL, which rest on documented evidence rather than on an assertion of authenticity. Do not read this as a doubt about the media \u2014 it is an absence of anybody to examine.",
+      "independent_traces": [],
+      "no_account_to_examine": true,
+      "originator_type_found": "unknown",
+      "is_originating_account": false,
+      "badge_needs_human_hover": false,
+      "independent_trace_count": 0,
+      "poster_handle_on_the_submitted_copy": "",
+      "earliest_account_named_by_provenance": ""
+     },
+     "location": {
+      "geotag": {
+       "note": "From the file metadata. Noted, never sufficient alone \u2014 location confirmed needs two independent in-frame reference points, or one unmistakable landmark plus a consistent account history.",
+       "latitude": null,
+       "longitude": null,
+       "geotag_present": false
+      },
+      "reason": "LOCATION CANNOT BE PINNED YET. Two capabilities are missing: the desk cannot see the image itself, and there is no Street View, satellite, historical imagery or mapping source to compare in-frame reference points against. The desk will not guess a location. Because location is one of the four checks, no item can reach REAL while this stays open. When it is built, LOCATION CONFIRMED means at least two independent reference points in the media match maps or imagery, or one unmistakable landmark plus an account history consistent with that place. An embedded geotag from the file metadata arrives here when one exists \u2014 noted, never sufficient alone, because automated geolocation is not foolproof.",
+      "status": "unchecked",
+      "claimed_place": "Anak Krakatau, Indonesia",
+      "geotag_present": false,
+      "reference_points": [],
+      "best_location_estimate": "",
+      "language_or_dialect_note": ""
+     },
+     "provenance": {
+      "reason": "The submitted still comes from a video that AFP Fact Check (published 2026-09-08) traced back to footage shot in October 2018 of the same volcano, uploaded to YouTube by a volcano photographer. AFP's article \"Years-old footage falsely shared as Indonesia volcano eruption in September 2026\" is an exact-match page for this image and explicitly documents the identical Chinese-language Threads post of September 7, 2026 that carries the exact wording of this claim (\"spewing ashes up to 50,000 feet... Major airports in Jakarta have suspended flights. Over 200 aircraft have been forced to divert\"). An exact match also appears on an ABC7 News page dated April 11, 2020, well before the claimed September 2026 eruption, further confirming the imagery predates the event it is captioned with. Anak Krakatau did in fact erupt on September 5, 2026 with real airport disruption, but this specific footage is old material recycled under the new caption. The original YouTube upload by the volcano photographer is named only generically in the retrieved text; I could not reach or identify the channel/handle or its exact upload date, so I deliberately leave earliest_account empty rather than credit AFP or ABC7, which are later republishers.",
+      "status": "contradicted",
+      "evidence": [
+       "AFP Fact Check (factcheck.afp.com/doc.afp.com.C7JH6CQ, 2026-09-08): 'The clip was originally uploaded to YouTube by a volcano photographer and shows the same volcano erupting in October 2018.'",
+       "AFP quotes the exact claim text: Chinese-language Threads post of September 7, 2026 saying 'Major airports in Jakarta have suspended flights. Over 200 aircraft have been forced to divert, with thousands of passengers stranded.'",
+       "AFP: 'However, the circulating clip does not show Anak Krakatau's eruption in September 2026.'",
+       "Reverse image search exact match dated 2020-04-11 (abc7news.com 'Indonesia's Anak Krakatau volcano shoots ash, lava'), six years before the claimed event.",
+       "Real background event confirmed separately (ABC Australia, 2026-09-10; Britannica updated 2026-09-09) - Anak Krakatau did erupt in September 2026 - but the media used is older footage."
+      ],
+      "earliest_url": "",
+      "originator_type": "unknown",
+      "earliest_account": "",
+      "earliest_datetime": "2018-10 (approximate; per AFP, original YouTube upload by an unnamed volcano photographer)",
+      "contradiction_kind": "recycled",
+      "original_reachable": false
+     }
+    },
+    "doubts": [
+     "The generated-or-manipulated check was never run: no forensic test exists on this platform, so the desk cannot affirmatively assert the frame is camera-original footage rather than synthesised or composited. It is only AFP's word (and a matching 2020 wire still) that ties it to real 2018 imagery.",
+     "Location is entirely unpinned. Nobody at the desk has matched a single in-frame reference point to maps or imagery; the identification of the cone as Anak Krakatau rests wholly on AFP's assertion and on the caption itself.",
+     "The source check is unchecked with no examinable account, so the originating uploader \u2014 the 'volcano photographer' AFP names only generically \u2014 has never been independently identified, and AFP's October 2018 dating cannot be corroborated by a second trace. The provenance date rests on a single publisher's unlinked assertion.",
+     "EXIF is entirely absent from a JPEG. Consistent with a screenshot of a Threads post, which is what the desk was told it is, but it removes any independent internal dating or geotag signal.",
+     "The submitted item is a still screenshot, not the video file. All identification of the clip \u2014 the volcanic lightning, the sped-up motion, the three-minute length \u2014 comes from a description supplied to the desk, not from anything the desk inspected. A single still could in principle have been paired with a different video than the one AFP examined.",
+     "The ABC7 page is dated 11 April 2020 and describes a 1,640-foot ash column with a Level 2 alert \u2014 a much smaller event than the October 2018 activity AFP dates the clip to. The provenance pack calls this an 'exact match' for the image, but the retrieved ABC7 text credits an AP photo by Suzanne Plunkett and does not obviously correspond to a night-time lava-and-lightning frame; the nature of the match is not documented in the text supplied.",
+     "AFP's rating of 'False' attaches to the composite claim ('video shows the 2026 eruption'), not to each factual element. The underlying eruption, the 50,000 ft plume and the Level III alert are all corroborated by AP, Guardian, Al Jazeera and CNA, so a reader could be misled by treating the whole caption as fabricated.",
+     "The specific figure 'over 200 aircraft diverted' does not match any official number in the record \u2014 the Transport Ministry's published counts run 1,558 delayed flights (6 Sep), ~2,300 (7 Sep) and 2,961 affected (8 Sep). The 200 figure is unsourced and unpinned to any ministry statement, but the record neither confirms nor denies a diversion-only subtotal.",
+     "The Britannica page carries a 'last updated Sep. 9, 2026' stamp and the ABC7 page a 2026 copyright line while dated April 2020 \u2014 routine CMS behaviour, but it means dates on the retrieved pages cannot be taken at face value without the underlying article history."
+    ],
+    "verdict": "NOT REAL",
+    "handling": {
+     "route": "continue",
+     "graphic": false,
+     "reasoning": "The media depicts a natural volcanic eruption at night with ash and lightning. No individuals are depicted or identified, so there is no risk of reprisal or harm to identifiable persons.",
+     "risk_found": false,
+     "handling_note": "Standard visual verification required to confirm date and location, as volcano eruption footage is frequently recycled. No privacy or protection restrictions needed.",
+     "knowing_activist": false,
+     "unable_to_consent": false,
+     "visual_is_essential": "no"
+    },
+    "headline": "media: NOT REAL; caption claim: unverified",
+    "reasoning": "Starting from the assumption the item is recycled: it holds up. The published fact-check archive WAS searched (status 'searched', one review returned), and the AFP entry is not a bare rating \u2014 the retrieved full text documents a concrete, item-specific contradiction. AFP quotes verbatim the exact caption under review, including the distinctive '50,000 feet' and 'Over 200 aircraft have been forced to divert' wording from the Chinese-language Threads post of 7 September 2026, and states the attached clip was uploaded to YouTube by a volcano photographer showing the same volcano erupting in October 2018. That is a documented incompatibility between the caption's date and the media's origin, not an inference from a headline. It is reinforced by an exact-match still on an ABC7 page dated 11 April 2020, six years before the claimed event. The date check independently lands on 2018-10 and is marked contradicted. So the recycling finding is solid on the media's date.\n\nWhat is NOT solid is anything asserting the media is authentic footage of that volcano. The generated-or-manipulated test was never run, location was never pinned, and the source check found nobody to examine \u2014 so the desk is leaning entirely on AFP for the 2018 attribution and on nothing at all for geolocation. That caps how far the desk can go and should be carried as doubts, not treated as corroboration.\n\nA second thing worth separating out: the underlying event is real. Anak Krakatau did erupt 4\u20135 September 2026, plumes did reach 50,000 ft (AP, quoting Lana Saria), Jakarta's Soekarno-Hatta and up to seven other airports did close, and Level III was in force. The claim as worded \u2014 eruption caused Jakarta airport suspensions and diversions \u2014 is broadly true of the real event. What is false is that THIS footage shows it. The '200 aircraft diverted' number does not correspond to any figure in the official record, but the ministry published delay/cancellation totals rather than a diversion-only count, so that is an unpinnable caption number and belongs in doubts, not contradictions.\n\nNothing here is too good to be true in the fabrication sense; the pattern is the ordinary, high-frequency one of dramatic old eruption footage being reattached to a fresh, genuine disaster.",
+    "specialist": {
+     "notice": "",
+     "required": false,
+     "expertise_needed": "none",
+     "language_support_needed": "none"
+    },
+    "restriction": {
+     "notice": "",
+     "restricted": false,
+     "media_not_carried": "This pack carries findings only. The media itself is never carried into the pack outputs."
+    },
+    "claim_finding": {
+     "reason": "The caption text itself was not supplied with this pack \ns- only the public-record search results were provided \ns- so there is no specific assertion that can be matched against the record. What the search does establish is the general context: Anak Krakatau began erupting late on 4-5 September 2026, ash closed up to eight airports including Jakarta's Soekarno-Hatta, and official figures rose from ~170,000 to ~341,000 affected passengers across roughly 2,961 flights before reopening on 8 September. Context of that kind does not settle any particular caption claim \ns- for example a claim that a given clip shows a specific eruption at a specific hour, or that a specific death/damage figure is official. Notably the passenger and flight figures in the record are themselves moving targets across 6-8 September, so any caption citing a single number needs to be pinned to the date and the issuing ministry. No named party has confirmed the claim under review, and nothing in the record denies it outright, so it stays unverified and is carried as a doubt separate from the media's own authenticity verdict.",
+     "status": "unverified",
+     "evidence": [
+      "Guardian, 7 Sep 2026: 'To date, 1,558 flights have been delayed at the eight affected airports, with 170,000 passengers stranded,' the transport ministry said in a statement on Sunday.",
+      "Al Jazeera, 6-7 Sep 2026: eight airports including Soekarno-Hatta halted operations after ash was detected, 'leaving more than 270,000 passengers stranded, the Transport Ministry reported on Monday.'",
+      "CNN/CNA, 7 Sep 2026: 'Around 341,000 people have been affected by the delay, diversion, or cancellation of 2,961 flights,' said chief infrastructure minister Agus Harimurti Yudhoyono.",
+      "AP, 6 Sep 2026: Lana Saria, head of Indonesia's Geological Agency, said activity at Anak Krakatau has intensified since July, with Sunday's eruption the strongest during that period; one plume rose to 20,000 feet and a second reached 50,000 feet.",
+      "BBC, 8 Sep 2026: Indonesia reopened five airports past midnight on Tuesday; Soekarno-Hatta resumed operations at 00:30 local time.",
+      "CNBC, 7 Sep 2026: Anak Krakatau remains at Level III ('Alert') with a 3-kilometre exclusion zone maintained."
+     ],
+     "draft_enquiry": "Dear Sir or Madam, I am checking a widely shared item of footage attributed to the Anak Krakatau eruption of 4-8 September 2026 and would be grateful for your help pinning down the accompanying claim. Could you confirm, first, the date and time of the specific eruptive event shown and whether the Geological Agency or PVMBG holds or has released imagery matching it; and second, which passenger and flight-disruption figures were current on each day, given that published totals moved from roughly 170,000 passengers and 1,558 flights on 6 September to about 341,000 passengers and 2,961 flights by 8 September? If the Ministry has issued any correction or clarification about figures or imagery circulating online, a pointer to that statement would be very helpful. Thank you for your time.",
+     "names_a_party": false,
+     "what_would_settle_it": "First, the exact caption wording under review, which is missing from this pack \ns- without it no assertion can be tested. Once supplied: if the claim concerns eruption timing, plume height or alert level, a statement or bulletin from Indonesia's Geological Agency/PVMBG (head Lana Saria) referring to that specific event; if it concerns flight, airport-closure or passenger figures, a dated statement from the Transport Ministry (Minister Dudy Purwagandhi) or InJourney Airports/Angkasa Pura specifying which day the number applies to; if it concerns casualties or damage, a BNPB figure. Absent one of those, the claim cannot be moved off unverified.",
+     "what_the_record_shows": "The record firmly establishes the underlying event: Anak Krakatau erupted from late 4-5 September 2026, sending plumes to 20,000 ft and 50,000 ft, closing up to eight airports including both Jakarta airports, with schools moved online and a 3 km exclusion zone at Alert Level III. Official impact figures escalated day by day \ns- 170,000 passengers/1,558 flights (6 Sep), more than 270,000/2,300 (7 Sep), about 341,000/2,961 including 622 international services (8 Sep) \ns- and airports reopened from 00:30 on 8 September. It does not address any particular caption's assertion about a specific clip, location, casualty count or cause, and it contains no denial of any such assertion."
+    },
+    "claim_verdict": "unverified",
+    "contradictions": [
+     "AFP Fact Check (factcheck.afp.com/doc.afp.com.C7JH6CQ, published 2026-09-08, by Livia LIU / AFP Hong Kong) documents that the clip attached to this exact caption is old: 'The clip was originally uploaded to YouTube by a volcano photographer and shows the same volcano erupting in October 2018,' and 'a video circulating online showing a volcano is not linked to the eruption.' This is incompatible with the caption's assertion that the footage shows an eruption that happened 'this morning' in September 2026.",
+     "AFP's article reproduces the identical caption text under review \u2014 'The Anak Krakatau volcano in Indonesia erupted again this morning, spewing ashes up to 50,000 feet... Major airports in Jakarta have suspended flights. Over 200 aircraft have been forced to divert, with thousands of passengers stranded' \u2014 and ties it to a Chinese-language Threads post of September 7, 2026, establishing that the fact-check is item-specific rather than generic, and directly contradicting the 'erupted again this morning' framing of the attached media.",
+     "A reverse-image exact match appears on abc7news.com ('Indonesia's Anak Krakatau volcano shoots ash, lava') dated Saturday, April 11, 2020 \u2014 the same imagery in circulation more than six years before the claimed September 2026 eruption it is captioned with, which cannot be reconciled with the media being new footage of the 2026 event.",
+     "The date check independently places the earliest known upload at approximately October 2018, which is incompatible with the claimed capture date of September 7, 2026 by nearly eight years."
+    ],
+    "media_examined": {
+     "note": "This is what the reverse image search and the file reader actually worked from \u2014 the uploaded file, or the supplied link to the image when no file was given.",
+     "source": "the supplied link to the image"
+    },
+    "confirmed_means": {
+     "date": "At least two independent date signals agree and none contradict.",
+     "rule": "One contradicting signal on any check outweighs agreement.",
+     "source": "Identity established by at least two independent traces, or by direct contact whose answers match what we found.",
+     "location": "At least two independent reference points match maps or imagery, or one unmistakable landmark plus a consistent account history.",
+     "provenance": "The earliest upload found and identified (account and timestamp), and neither reverse image search nor the text trail found an earlier copy."
+    },
+    "could_not_check": {
+     "date": false,
+     "source": "No account to examine: the earliest copy is a publication and the post carries no handle. There is nobody to establish, so no uploader search was run and the source check is recorded as unchecked. This is a real and expected situation, not a failure: the method anticipates that sometimes there is nobody to establish.",
+     "location": "LOCATION CANNOT BE PINNED YET. Two capabilities are missing: the desk cannot see the image itself, and there is no Street View, satellite, historical imagery or mapping source to compare in-frame reference points against. The desk will not guess a location. Because location is one of the four checks, no item can reach REAL while this stays open. When it is built, LOCATION CONFIRMED means at least two independent reference points in the media match maps or imagery, or one unmistakable landmark plus an account history consistent with that place. An embedded geotag from the file metadata arrives here when one exists \u2014 noted, never sufficient alone, because automated geolocation is not foolproof.",
+     "provenance": false,
+     "file_metadata": {
+      "gps": {
+       "latitude": null,
+       "longitude": null
+      },
+      "format": "JPEG",
+      "reason": "No metadata is present. No EXIF metadata at all, in a JPEG file \u2014 a format that normally carries it. Re-encoding by a social network, a screenshot, a messaging app, or a deliberate strip all produce this. It is an observation, not a verdict.",
+      "status": "unchecked",
+      "software": "None",
+      "tag_count": 0,
+      "timestamp": "None",
+      "dimensions": "703 x 666",
+      "camera_model": "None None",
+      "geotag_caveat": "An embedded geotag is noted but never sufficient on its own: automated geolocation is not foolproof and must be corroborated against in-frame reference points.",
+      "software_note": "",
+      "stripped_note": "No EXIF metadata at all, in a JPEG file \u2014 a format that normally carries it. Re-encoding by a social network, a screenshot, a messaging app, or a deliberate strip all produce this. It is an observation, not a verdict.",
+      "geotag_present": false,
+      "media_examined": "the supplied link to the image",
+      "flickr_exception": false,
+      "timestamp_caveat": "An EXIF timestamp may default to the camera manufacturer settings and must never be cited as proof on its own.",
+      "upload_signature": "No direct-upload file extension or YouTube Capture marker in the post text.",
+      "metadata_stripped": true,
+      "timestamp_as_written": "None",
+      "absence_is_not_evidence": "",
+      "stripping_expected_on_this_platform": false
+     },
+     "fact_check_archive": {
+      "status": "searched",
+      "reviews": [
+       {
+        "claimant": "Multiple individuals",
+        "claim_date": "2026-09-07T00:00:00Z",
+        "claim_text": "Video shows Mount Anak Krakatau's eruption in 2026",
+        "review_url": "https://factcheck.afp.com/doc.afp.com.C7JH6CQ",
+        "review_date": "2026-09-08T11:04:00Z",
+        "review_title": "Years-old footage falsely shared as Indonesia volcano eruption in ...",
+        "language_code": "en",
+        "publisher_name": "AFP Fact Check",
+        "publisher_site": "factcheck.afp.com",
+        "textual_rating": "False"
+       }
+      ],
+      "summary": "1 published fact-check from AFP Fact Check match this claim.",
+      "searched": true,
+      "zero_means": "",
+      "review_count": 1,
+      "handling_note": "A FACT-CHECK IS EVIDENCE, NOT A VERDICT. An item-specific fact-check that documents a CONCRETE CONTRADICTION sets NOT REAL, with the finding and the publisher quoted. A bare rating with no documented contradiction is a DOUBT for the red team, nothing more. Each rating is that publisher own wording and ratings are NOT comparable across publishers: quote them, never normalise them. Never parrot a source, including a fact-checker. A rating of true or correct must never push an item toward REAL: that is earned only by provenance, source, date and location.",
+      "searched_claim": "Anak Krakatau eruption Jakarta airports flights suspended divert",
+      "searched_reviewers_note": "Covers the ClaimReview corpus Google indexes \u2014 Snopes, Lead Stories, AFP, Reuters, PolitiFact, Full Fact and hundreds more. Finding nothing means no indexed fact-checker has published on this claim; it is not evidence the claim is true."
+     },
+     "generated_or_manipulated": {
+      "method": "none",
+      "reason": "NOT TESTED. There is no generated-or-manipulated media check on this platform and none currently planned, and the desk will not guess. Because REAL and RECYCLED both assert the media is authentic, an untested item can reach NEITHER: the verdict is capped at CANNOT TELL YET until a real forensic test exists. NOT REAL remains reachable on other evidence. A published fact-check that documents this item as generated is EVIDENCE for the sanity check to act on, and a writing-software tag in the metadata is a lead \u2014 neither is a forensic test and neither lifts this cap. This limitation appears in the could-not-check list of every pack, every time.",
+      "status": "unchecked",
+      "assessment": "",
+      "indicators": [],
+      "what_the_desk_was_told_it_shows": "A night-time video, under three minutes, of a volcanic eruption: a cone throwing glowing lava and ash high into the air, with volcanic lightning visible in the ash column; the clip appears sped up. The same clip is circulating on TikTok, X and Threads in Chinese, English, Japanese, Spanish, Malay and Thai since about September 5-7, 2026. What I can give the desk is a screenshot of the Threads post (the still shows the eruption frame); I do not have the video file itself."
+     },
+     "fact_check_archive_was_not_searched": false,
+     "generated_or_manipulated_blocks_REAL_only": true,
+     "specialist_never_consulted_blocks_REAL_only": false
+    },
+    "verdict_drivers": {
+     "note": "BOTH CAPS BLOCK REAL ONLY. An unconsulted specialist and an untested-for-manipulation file are each a reason not to call the media authentic to the claim; neither is a reason to withhold RECYCLED. RECYCLED asserts only that an earlier copy of the same media predates the claimed event, so a documented earlier copy carries it with no forensic test and no specialist. NOT REAL is reserved for fabricated or manipulated media, or a caption claim contradicted outright, and no cap ever suppresses it.",
+     "recycling_signal": true,
+     "all_four_confirmed": false,
+     "earlier_copy_citation": {
+      "url": "",
+      "account": "",
+      "datetime": "2018-10 (approximate; per AFP, original YouTube upload by an unnamed volcano photographer)"
+     },
+     "earlier_copy_documented": false,
+     "specialist_gap_blocks_REAL_only": false,
+     "manipulation_untested_blocks_REAL_only": true,
+     "fabricated_or_manipulated_or_claim_contradicted": true
+    },
+    "source_questions": {
+     "draft_message": "Hello, thank you for sharing this material regarding the eruption of Anak Krakatau and flight disruptions. We are looking into this event to accurately document what happened. Could you please tell us more about the footage or images you posted? Specifically, did you capture this media yourself or did someone share it with you? Where exactly were you when you recorded this or learned about it, and what was the date and time? What did you observe firsthand regarding the volcanic activity and the reported airport suspensions or flight diversions? How do you know that over 200 flights were diverted or suspended, and how else do you know that? Any context you can provide helps us understand the situation accurately.",
+     "blind_questions": [
+      "Did you record or take this media yourself, or did you obtain it from someone else?",
+      "Where exactly were you located when this footage was captured or when you observed these events?",
+      "What exact date and time were you present or when was this material recorded?",
+      "What specific volcanic activity and disruptions did you see or experience firsthand?",
+      "How do you know that major airports in Jakarta suspended flights and diverted over 200 aircraft?",
+      "How else do you know that?",
+      "What device or camera equipment was used to capture this footage?"
+     ],
+     "safety_check_required": false,
+     "reflect_back_only_after_answers": [
+      "Request original, uncompressed files directly from the capturing device to verify original capture metadata.",
+      "Request additional photos or video files captured immediately before and after this specific sequence from the same vantage point.",
+      "Probe any discrepancies regarding exact observation location, vantage point, and visibility line to Anak Krakatau.",
+      "Press for specific primary documentation or flight tracking sources supporting the exact claim of over 200 diverted aircraft.",
+      "Probe any timeline gaps between the stated time of eruption and the reported airport shutdown."
+     ]
+    },
+    "verdict_meanings": {
+     "REAL": "All four checks confirmed, the media tested clean for manipulation, any required specialist consulted, and nothing contradicts.",
+     "NOT REAL": "Fabricated or manipulated media, or a caption whose claim is itself contradicted outright.",
+     "RECYCLED": "An earlier copy of this same media exists that predates the claimed event: real footage of a real earlier event put under a new caption. RECYCLED does not assert the media is authentic to the claim, so it needs NO forensic test and NO specialist \u2014 the documented earlier copy is the evidence.",
+     "CANNOT TELL YET": "Not enough confirmed, or REAL was blocked because a required specialist was never consulted or the media could not be tested for manipulation."
+    },
+    "two_findings_note": "These are TWO separate findings and must be read separately. The media verdict rests on provenance, source, date and location. The caption claim is judged on its own; an unverified claim is carried as a doubt and never drags the media verdict down, and genuine media never lends the claim credibility it has not earned.",
+    "published_factchecks": {
+     "status": "searched",
+     "reviews": [
+      {
+       "claimant": "Multiple individuals",
+       "claim_date": "2026-09-07T00:00:00Z",
+       "claim_text": "Video shows Mount Anak Krakatau's eruption in 2026",
+       "review_url": "https://factcheck.afp.com/doc.afp.com.C7JH6CQ",
+       "review_date": "2026-09-08T11:04:00Z",
+       "review_title": "Years-old footage falsely shared as Indonesia volcano eruption in ...",
+       "language_code": "en",
+       "publisher_name": "AFP Fact Check",
+       "publisher_site": "factcheck.afp.com",
+       "textual_rating": "False"
+      }
+     ],
+     "summary": "1 published fact-check from AFP Fact Check match this claim.",
+     "searched": true,
+     "zero_means": "",
+     "review_count": 1,
+     "handling_note": "A FACT-CHECK IS EVIDENCE, NOT A VERDICT. An item-specific fact-check that documents a CONCRETE CONTRADICTION sets NOT REAL, with the finding and the publisher quoted. A bare rating with no documented contradiction is a DOUBT for the red team, nothing more. Each rating is that publisher own wording and ratings are NOT comparable across publishers: quote them, never normalise them. Never parrot a source, including a fact-checker. A rating of true or correct must never push an item toward REAL: that is earned only by provenance, source, date and location.",
+     "searched_claim": "Anak Krakatau eruption Jakarta airports flights suspended divert",
+     "searched_reviewers_note": "Covers the ClaimReview corpus Google indexes \u2014 Snopes, Lead Stories, AFP, Reuters, PolitiFact, Full Fact and hundreds more. Finding nothing means no indexed fact-checker has published on this claim; it is not evidence the claim is true."
+    },
+    "human_checks_still_required": [
+     "Reverse image search fallback: TinEye, and view-other-sizes for the highest-resolution copy. The automated search cannot do either, so a human always backs this check.",
+     "Verified badge: hover the blue check to confirm the popup reads Verified Account or Verified Page. Only a human can do this.",
+     "Specialist consultation where one is named above \u2014 until then REAL is blocked.",
+     "Sending the blind questions to the source, and sending the drafted enquiry to any named institution.",
+     "Exact matches beyond the tenth are listed in the provenance sheet but were not fetched and read in full \u2014 read them by eye if the earliest upload is still unsettled."
+    ]
+   }
+  },
+  "run_id": "ae724cc1-440a-4296-a631-fcac3c15ec34",
+  "attempt": 1,
+  "node_id": "pack",
+  "wrapper": {
+   "step": 18,
+   "error": null,
+   "__kind": "node_outcome",
+   "output": null,
+   "run_id": "ae724cc1-440a-4296-a631-fcac3c15ec34",
+   "status": "completed",
+   "attempt": 1,
+   "node_id": "pack",
+   "ended_at": "2026-09-12T01:06:14.383401+00:00",
+   "output_ref": "output",
+   "started_at": "2026-09-12T01:06:14.326069+00:00",
+   "duration_ms": 57,
+   "output_kind": null,
+   "workflow_id": "aa3e6306-dc2a-485b-b656-3fff9b790b26",
+   "output_kind_ok": null,
+   "output_kind_errors": null
+  },
+  "metadata": null,
+  "spec_type": "output.to_frontend",
+  "item_index": 0,
+  "dispatch_id": "",
+  "duration_ms": 57,
+  "output_kind": null,
+  "output_kind_ok": null,
+  "invocation_count": 1,
+  "output_kind_errors": null,
+  "output_kind_version": null,
+  "output_kind_degraded": null
+ },
+ {
+  "ts": "2026-09-12T01:05:22.112645Z",
+  "step": 12,
+  "event": "node_completed",
+  "output": {
+   "result": {
+    "reason": "No account to examine: the earliest copy is a publication and the post carries no handle. There is nobody to establish, so no uploader search was run and the source check is recorded as unchecked. This is a real and expected situation, not a failure: the method anticipates that sometimes there is nobody to establish.",
+    "status": "unchecked",
+    "evidence": [],
+    "account_examined": "none \u2014 there was no examinable account",
+    "how_to_treat_this": "An unchecked source blocks REAL, because REAL requires the originating uploader to be established by at least two independent traces. It does NOT block RECYCLED or NOT REAL, which rest on documented evidence rather than on an assertion of authenticity. Do not read this as a doubt about the media \u2014 it is an absence of anybody to examine.",
+    "independent_traces": [],
+    "no_account_to_examine": true,
+    "originator_type_found": "unknown",
+    "is_originating_account": false,
+    "badge_needs_human_hover": false,
+    "independent_trace_count": 0,
+    "poster_handle_on_the_submitted_copy": "",
+    "earliest_account_named_by_provenance": ""
+   }
+  },
+  "run_id": "ae724cc1-440a-4296-a631-fcac3c15ec34",
+  "attempt": 1,
+  "node_id": "source_unchecked",
+  "wrapper": {
+   "step": 12,
+   "error": null,
+   "__kind": "node_outcome",
+   "output": null,
+   "run_id": "ae724cc1-440a-4296-a631-fcac3c15ec34",
+   "status": "completed",
+   "attempt": 1,
+   "node_id": "source_unchecked",
+   "ended_at": "2026-09-12T01:05:22.112591+00:00",
+   "output_ref": "output",
+   "started_at": "2026-09-12T01:05:22.111004+00:00",
+   "duration_ms": 1,
+   "output_kind": null,
+   "workflow_id": "aa3e6306-dc2a-485b-b656-3fff9b790b26",
+   "output_kind_ok": null,
+   "output_kind_errors": null
+  },
+  "metadata": null,
+  "spec_type": "data.transform",
+  "item_index": 0,
+  "dispatch_id": "",
+  "duration_ms": 1,
+  "output_kind": null,
+  "output_kind_ok": null,
+  "invocation_count": 1,
+  "output_kind_errors": null,
+  "output_kind_version": null,
+  "output_kind_degraded": null
+ }
+]

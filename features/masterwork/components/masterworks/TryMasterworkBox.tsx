@@ -45,6 +45,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import { useWorkflowRun } from "@/features/workflow-runtime/hooks/useWorkflowRun";
+import type { WorkflowDefinitionLike } from "@/features/workflow-runtime/trigger-points";
 import {
   selectNodeAggregate,
   selectNodeAggregatePhases,
@@ -65,7 +66,7 @@ import {
 } from "@/features/workflow-runtime/components/readout-parts";
 import {
   describeWorkflowSteps,
-  deliverableSteps,
+  terminalStep,
   type RunStepPresentation,
 } from "@/features/workflow-runtime/components/run/node-presentation";
 import {
@@ -212,6 +213,10 @@ export function TryMasterworkBox({
   const isEdit = masterworkKind !== "generate";
 
   const [steps, setSteps] = useState<RunStepPresentation[]>([]);
+  /** The definition itself — its EDGES are what name the handover step. */
+  const [definition, setDefinition] = useState<WorkflowDefinitionLike | null>(
+    null,
+  );
   const [runId, setRunId] = useState<string | null>(null);
   /** Where the run on screen came from — said out loud beside it. */
   const [runOrigin, setRunOrigin] = useState<"fresh" | "rejoined" | null>(null);
@@ -261,7 +266,9 @@ export function TryMasterworkBox({
   useEffect(() => {
     let alive = true;
     void getMasterworkDefinition(masterworkId).then((def) => {
-      if (alive && def) setSteps(describeWorkflowSteps(def));
+      if (!alive || !def) return;
+      setSteps(describeWorkflowSteps(def));
+      setDefinition(def);
     });
     return () => {
       alive = false;
@@ -321,17 +328,14 @@ export function TryMasterworkBox({
     () => steps.filter((s) => !s.collectsInput),
     [steps],
   );
-  const finalStep = useMemo(() => {
-    const withOutput = deliverableSteps(visibleSteps);
-    // `show` is the builder's own handover node; otherwise the last step that
-    // declares an output is the closest honest answer.
-    return (
-      visibleSteps.find((s) => s.nodeId === "show") ??
-      withOutput[withOutput.length - 1] ??
-      visibleSteps[visibleSteps.length - 1] ??
-      null
-    );
-  }, [visibleSteps]);
+  // THE HANDOVER STEP, READ FROM THE EDGES — never from array position. A
+  // definition's `nodes` array is layout order: on the live Verification Desk
+  // the last entry is a mid-graph transform, and the real handover sits at
+  // index 50. `terminalStep` is the one answer, in the runtime layer.
+  const finalStep = useMemo(
+    () => terminalStep(visibleSteps, definition),
+    [visibleSteps, definition],
+  );
 
   const finalAggregate = useAppSelector(
     selectNodeAggregate(runId ?? "", finalStep?.nodeId ?? ""),

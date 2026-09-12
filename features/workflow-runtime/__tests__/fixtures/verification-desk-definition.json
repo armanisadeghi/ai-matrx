@@ -1,0 +1,3073 @@
+{
+ "nodes": [
+  {
+   "id": "intake",
+   "data": {
+    "icon": null,
+    "label": "The item on the desk",
+    "config": {
+     "title": "One circulating item",
+     "fields": [
+      {
+       "key": "post_text",
+       "help": "Caption and any visible text.",
+       "type": "long_text",
+       "label": "The post, pasted",
+       "required": true
+      },
+      {
+       "key": "post_url",
+       "help": "Paste the post URL. The uploader's handle usually lives in it. If you genuinely have no link, type: none",
+       "type": "text",
+       "label": "Link to the post",
+       "required": true
+      },
+      {
+       "key": "media_note",
+       "type": "long_text",
+       "label": "What the photo/video shows",
+       "required": false
+      },
+      {
+       "key": "media_files",
+       "help": "Upload the file if you have it. If you only have a link, leave this empty and paste the link below instead.",
+       "type": "file",
+       "label": "The image or video file",
+       "required": false
+      },
+      {
+       "key": "media_url",
+       "help": "A direct link to the image or video itself \u2014 not the post. Used when no file is uploaded: the reverse image search and the file reader will both work from this link instead.",
+       "type": "text",
+       "label": "Link to the image or video",
+       "required": false
+      },
+      {
+       "key": "submitted_by",
+       "type": "text",
+       "label": "Who is asking",
+       "required": false
+      }
+     ],
+     "description": "ONE circulating item at a time. Give the desk the media either way \u2014 upload the file, or paste a direct link to it."
+    },
+    "category": "custom",
+    "spec_type": "io.user_input"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 104
+   },
+   "position": {
+    "x": 12.0,
+    "y": 1394.0
+   }
+  },
+  {
+   "id": "media_ref",
+   "data": {
+    "icon": null,
+    "label": "The media the desk will examine",
+    "config": {
+     "expression": "{'image': (({'url': inputs['media_files']} if 'http' in str(inputs['media_files']) else {'file_id': inputs['media_files']}) if inputs['media_files'] else {'url': inputs['media_url']}), 'media_source_used': 'the uploaded file' if inputs['media_files'] else ('the supplied link to the image' if inputs['media_url'] else 'no media was supplied'), 'have_media': bool(inputs['media_files'] or inputs['media_url'])}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 1236.0,
+    "y": 1321.0
+   }
+  },
+  {
+   "id": "intake_pack",
+   "data": {
+    "icon": null,
+    "label": "Collect the item",
+    "config": {
+     "expression": "{'bundle': {'post_text': inputs['post_text'], 'post_url': inputs['post_url']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 422.0,
+    "y": 1137.0
+   }
+  },
+  {
+   "id": "intake_text",
+   "data": {
+    "icon": null,
+    "input": {
+     "template": "POST TEXT:\n{{post_text}}\n\nPOST URL:\n{{post_url}}"
+    },
+    "label": "The item as one sheet",
+    "config": {},
+    "category": "custom",
+    "spec_type": "text.template"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 829.0,
+    "y": 1137.0
+   }
+  },
+  {
+   "id": "read_post",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "gemini-3.8-flash",
+     "instruction": "Read this circulating post and its URL.\n\nState the single assertion being made as one plain sentence.\n\nPull out: any named institution or organization, any named person, the claimed place, the claimed date, the uploader handle, and 3-6 distinctive verbatim phrases from the caption that could be searched to find earlier copies.\n\nUPLOADER HANDLE: if the caption does not name the uploader, READ IT FROM THE URL. A Facebook URL like facebook.com/AJAnimalking/posts/123 means the handle is AJAnimalking. Apply the same to any platform: the account segment of the URL is the handle.\n\nCRITICAL \u2014 NEVER output the words 'not stated', 'unknown', 'N/A' or any placeholder. If a field is genuinely absent, return an EMPTY STRING for it.\n\nCLAIMED DATE, TWO WAYS. Return claimed_date as the date exactly as the post expresses it, in its own words. ALSO return claimed_date_iso: that same date as a strict calendar date in YYYY-MM-DD form, and ONLY when the post states or unambiguously implies ONE specific calendar day. If the date is vague ('last week', 'recently', 'a few days ago'), relative, a month or year only, or absent, return an EMPTY STRING for claimed_date_iso. NEVER guess a day, never round a month to its first day, and never substitute today's date. An empty claimed_date_iso is a correct and useful answer \u2014 it tells the desk the date cannot be checked against records.\n\nThen build three search queries. Each query must contain ONLY the elements you actually know. Silently OMIT anything you do not know \u2014 never include a placeholder, never include the words 'not stated', never leave a dangling quote:\n- provenance_query: the distinctive caption phrases, plus place and date only if known. This is used to find earlier copies and any fact-checks.\n- uploader_query: the uploader handle plus the named person if known. Omit the handle entirely if you have none.\n- claim_query: the named institution plus the core of the claim. If no institution is named, use the claim's key nouns. This query is ALSO sent to the published fact-check archive, which matches on claims, so write it as searchable keywords rather than a long quoted sentence.\n\nEvery query must be a clean, searchable string that would return real results if typed into a search engine. Never return an empty provenance_query \u2014 fall back to the core nouns of the claim.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "claim": {
+        "type": "string"
+       },
+       "claim_query": {
+        "type": "string"
+       },
+       "claimed_date": {
+        "type": "string"
+       },
+       "named_person": {
+        "type": "string"
+       },
+       "claimed_place": {
+        "type": "string"
+       },
+       "uploader_query": {
+        "type": "string"
+       },
+       "uploader_handle": {
+        "type": "string"
+       },
+       "claimed_date_iso": {
+        "type": "string"
+       },
+       "provenance_query": {
+        "type": "string"
+       },
+       "named_institution": {
+        "type": "string"
+       },
+       "distinctive_phrases": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    },
+    "label": "Read the post: claim and entities",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 134
+   },
+   "position": {
+    "x": 1236.0,
+    "y": 480.0
+   }
+  },
+  {
+   "id": "fields",
+   "data": {
+    "icon": null,
+    "label": "The searchable facts",
+    "config": {
+     "expression": "{'claim': inputs['d']['claim'], 'claimed_date': inputs['d']['claimed_date'], 'claimed_date_iso': inputs['d']['claimed_date_iso'], 'claimed_place': inputs['d']['claimed_place'], 'uploader_handle': inputs['d']['uploader_handle'], 'named_institution': inputs['d']['named_institution'], 'provenance_query': inputs['d']['provenance_query'], 'uploader_query': inputs['d']['uploader_query'], 'claim_query': inputs['d']['claim_query']}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 1648.8125,
+    "y": 495.0
+   }
+  },
+  {
+   "id": "harm_gate",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "gemini-3.8-flash",
+     "instruction": "Assess potential for future harm BEFORE this material is used. Are the people shown in a dangerous part of the world? Do they risk reprisals for sharing or being shown? Can consent be safely assumed? Are they knowing activists (who must NOT be censored) or people unaware of the risk / unable to consent (who must be protected)? Also state whether the material is graphic and must be signposted and restricted to those who need it.\n\nVERIFICATION ITSELF HARMS NOBODY, so never route to stop: the desk always continues verifying. Your finding governs USE, not whether the work proceeds. Set risk_found true when there is a real risk of harm to identifiable people; the pack will then be marked restricted, with withholding as the default remedy and blurring as the alternative when the visual is essential. Always return route 'continue'.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "route": {
+        "type": "string"
+       },
+       "graphic": {
+        "type": "boolean"
+       },
+       "reasoning": {
+        "type": "string"
+       },
+       "risk_found": {
+        "type": "boolean"
+       },
+       "handling_note": {
+        "type": "string"
+       },
+       "knowing_activist": {
+        "type": "boolean"
+       },
+       "unable_to_consent": {
+        "type": "boolean"
+       },
+       "visual_is_essential": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "label": "Harm and handling gate",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 134
+   },
+   "position": {
+    "x": 5734.0,
+    "y": 1122.0
+   }
+  },
+  {
+   "id": "know_enough",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "gemini-3.8-flash",
+     "instruction": "Ask: do we know enough to verify this? Does it require understanding of cultural, ethnic, religious, linguistic or regional complexities, or specialist subject knowledge? Name the specific expertise a human would need to bring in, and whether a native speaker of a particular language is required. If no specialist is needed say so plainly and set specialist_needed false.\n\nThis answer has consequences: if you say a specialist is required and none is consulted, the desk caps its verdict at CANNOT TELL YET. So set specialist_needed true only where the expertise genuinely changes what the evidence means \u2014 not merely because the subject is foreign or unfamiliar.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "reasoning": {
+        "type": "string"
+       },
+       "specialist_needed": {
+        "type": "boolean"
+       },
+       "expertise_required": {
+        "type": "string"
+       },
+       "language_support_required": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "label": "Do we know enough to verify?",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 134
+   },
+   "position": {
+    "x": 5734.0,
+    "y": 1321.0
+   }
+  },
+  {
+   "id": "prov_web",
+   "data": {
+    "icon": null,
+    "input": {
+     "count": 8
+    },
+    "label": "Earlier copies and fact-checks on the web",
+    "config": {},
+    "category": "custom",
+    "spec_type": "web.brave.search"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 2056.0,
+    "y": 599.0
+   }
+  },
+  {
+   "id": "prov_news",
+   "data": {
+    "icon": null,
+    "input": {
+     "page": 1,
+     "sort_by": "publishedAt"
+    },
+    "label": "Earliest news coverage",
+    "config": {},
+    "category": "custom",
+    "spec_type": "web.news.everything"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 119
+   },
+   "position": {
+    "x": 3286.0,
+    "y": 552.0
+   }
+  },
+  {
+   "id": "n-38588f6956",
+   "data": {
+    "input": {
+     "country": "us",
+     "engines": [
+      "google_lens"
+     ],
+     "language": "en",
+     "timeout_s": 45,
+     "max_exact_matches": 50,
+     "max_visual_matches": 25
+    },
+    "label": "Reverse image search (Google Lens)",
+    "config": {},
+    "plan_id": "3802d804-0c3b-4342-b778-16d623ab508f",
+    "category": "io",
+    "spec_type": "web.google.reverse_image_search"
+   },
+   "type": "io",
+   "measured": {
+    "width": 300,
+    "height": 151
+   },
+   "position": {
+    "x": 1646.0,
+    "y": 734.0
+   }
+  },
+  {
+   "id": "lens_shape",
+   "data": {
+    "icon": null,
+    "label": "Sort exact matches from lookalikes",
+    "config": {
+     "expression": "{'lens_results': {'exact_matches': inputs['exact_matches'], 'visual_matches': inputs['visual_matches'], 'exact_match_count': inputs['exact_match_count'], 'visual_match_count': inputs['visual_match_count'], 'earliest_dated_match': inputs['earliest_seen'], 'earliest_dated_match_text': inputs['earliest_seen_date_text'], 'earliest_dated_match_link': inputs['earliest_seen_link'], 'earliest_is_approximate': inputs['earliest_seen_is_approximate'], 'dated_match_count': inputs['dated_match_count'], 'pages_sent_for_full_reading': min(10, len(inputs['exact_matches'])), 'reading_cap_note': 'The first 10 EXACT matches are fetched and read in full. Any exact matches beyond the tenth are still listed here in full and must be read by eye if the earliest upload is not settled by the first ten.', 'evidence_note': 'EXACT matches are pages Google reports as CONTAINING this image: treat them as evidence. VISUAL matches merely look similar: treat them as leads, never as proof. The earliest dated match is a HINT ONLY, drawn from the ' + str(inputs['dated_match_count']) + ' matches Google put a date on. The original is the earliest UPLOAD and must be confirmed from the text of the pages themselves, never from this hint.'}, 'human_context': {'summary': 'AUTOMATED GOOGLE LENS RESULT: ' + str(inputs['exact_match_count']) + ' exact matches (pages containing this image) and ' + str(inputs['visual_match_count']) + ' visual lookalikes. Google put a date on ' + str(inputs['dated_match_count']) + ' of them; earliest dated match reads: ' + str(inputs['earliest_seen_date_text']), 'exact_matches': inputs['exact_matches'], 'exact_match_count': inputs['exact_match_count'], 'lookalike_count': inputs['visual_match_count'], 'visual_matches': inputs['visual_matches'], 'dated_match_count': inputs['dated_match_count'], 'earliest_dated_match_text': str(inputs['earliest_seen_date_text']), 'earliest_dated_match_link': str(inputs['earliest_seen_link']), 'how_to_read_this': 'EXACT matches are pages Google reports as CONTAINING this image \u2014 evidence. VISUAL lookalikes merely resemble it \u2014 leads only. The earliest dated match is a hint: Google dates very few results.', 'what_lens_did_not_do': 'Google Lens only. It did NOT search TinEye, and it did NOT check other sizes for the highest-resolution copy. Those two are yours.'}, 'urls': ([inputs['exact_matches'][0]['link']] if len(inputs['exact_matches']) > 0 else []) + ([inputs['exact_matches'][1]['link']] if len(inputs['exact_matches']) > 1 else []) + ([inputs['exact_matches'][2]['link']] if len(inputs['exact_matches']) > 2 else []) + ([inputs['exact_matches'][3]['link']] if len(inputs['exact_matches']) > 3 else []) + ([inputs['exact_matches'][4]['link']] if len(inputs['exact_matches']) > 4 else []) + ([inputs['exact_matches'][5]['link']] if len(inputs['exact_matches']) > 5 else []) + ([inputs['exact_matches'][6]['link']] if len(inputs['exact_matches']) > 6 else []) + ([inputs['exact_matches'][7]['link']] if len(inputs['exact_matches']) > 7 else []) + ([inputs['exact_matches'][8]['link']] if len(inputs['exact_matches']) > 8 else []) + ([inputs['exact_matches'][9]['link']] if len(inputs['exact_matches']) > 9 else []), 'summary_text': 'AUTOMATED GOOGLE LENS RESULT: ' + str(inputs['exact_match_count']) + ' exact matches (pages containing this image) and ' + str(inputs['visual_match_count']) + ' visual lookalikes. Google put a date on ' + str(inputs['dated_match_count']) + ' of them; earliest dated match reads: ' + str(inputs['earliest_seen_date_text'])}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 2056.0,
+    "y": 758.0
+   }
+  },
+  {
+   "id": "prov_urls",
+   "data": {
+    "icon": null,
+    "label": "Pages worth reading in full",
+    "config": {
+     "expression": "{'urls': inputs['web_urls'] + inputs['lens_urls']}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 2467.0,
+    "y": 862.0
+   }
+  },
+  {
+   "id": "human_reverse",
+   "data": {
+    "icon": null,
+    "label": "Human reverse image search",
+    "config": {
+     "title": "Finish the reverse image search",
+     "preset": "form",
+     "prompt": "{context.summary}\n\nThe exact matches, the lookalikes and the earliest dated match are all shown beside this question. EXACT matches are pages Google reports as CONTAINING this image \u2014 evidence. Lookalikes merely resemble it \u2014 leads only.\n\nYour job is the two things Google Lens provably cannot do.\n\n1. TinEye. Put the same image through TinEye. It indexes differently to Google and often surfaces older copies Google never returns.\n2. View other sizes. On any match, click through to the other sizes and record the highest-resolution version \u2014 that is usually the one closest to the original. Remember the original is the EARLIEST UPLOAD; resolution is only a way to find it.\n\nIf the automated result came back thin or empty, do the whole reverse search yourself as well. This step is the desk's standing fallback for anything the automated search cannot handle.\n\nPaste the URLs of every earlier or identical copy you find, the oldest date you can actually see on any of them, and anything that looks like a different event \u2014 a different event, place or time is what turns a genuine image into a RECYCLED one. If nothing comes back, say 'no matches' \u2014 that is a real answer and the desk records it as a check it could not complete.",
+     "schema_hint": {
+      "type": "object",
+      "required": [
+       "matches_found"
+      ],
+      "properties": {
+       "notes": {
+        "type": "string",
+        "title": "Anything that looks like a different event"
+       },
+       "matches_found": {
+        "type": "boolean",
+        "title": "Did anything come back?"
+       },
+       "tineye_result": {
+        "type": "string",
+        "title": "What TinEye returned (URLs, oldest date)"
+       },
+       "earlier_copies": {
+        "type": "string",
+        "title": "URLs of earlier or identical copies"
+       },
+       "oldest_date_seen": {
+        "type": "string",
+        "title": "Oldest date visible on any copy"
+       },
+       "highest_resolution_url": {
+        "type": "string",
+        "title": "Highest-resolution version found (view other sizes)"
+       }
+      }
+     },
+     "presentation": "showcase"
+    },
+    "category": "custom",
+    "spec_type": "control.human_input"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 151
+   },
+   "position": {
+    "x": 2877.5,
+    "y": 627.0
+   }
+  },
+  {
+   "id": "factcheck_fetch",
+   "data": {
+    "icon": null,
+    "input": {
+     "fast": true,
+     "concurrency": 8
+    },
+    "label": "Read those pages in full",
+    "config": {},
+    "category": "custom",
+    "spec_type": "scraper.scrape_many"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 119
+   },
+   "position": {
+    "x": 2877.5,
+    "y": 862.0
+   }
+  },
+  {
+   "id": "pages_text",
+   "data": {
+    "icon": null,
+    "input": {
+     "max_chars_per_page": 2500
+    },
+    "label": "Combine the page text",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.util.format_scraped_content"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 3286.0,
+    "y": 870.0
+   }
+  },
+  {
+   "id": "prov_assemble",
+   "data": {
+    "icon": null,
+    "label": "Gather the provenance trail",
+    "config": {
+     "expression": "{'bundle': {'claim': inputs['claim'], 'claimed_date': inputs['claimed_date'], 'claimed_place': inputs['claimed_place'], 'web_results': inputs['web_results'], 'news_articles': inputs['news_articles'], 'lens_results': inputs['lens_results'], 'human_findings': inputs['human_findings'], 'page_text': inputs['page_text']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 3693.4285714285716,
+    "y": 678.0
+   }
+  },
+  {
+   "id": "prov_text",
+   "data": {
+    "icon": null,
+    "input": {
+     "template": "CLAIM: {{claim}}\nCLAIMED DATE: {{claimed_date}}\nCLAIMED PLACE: {{claimed_place}}\n\nWEB RESULTS:\n{{web_results}}\n\nFULL TEXT OF THOSE PAGES:\n{{page_text}}\n\nNEWS ARTICLES (oldest first):\n{{news_articles}}\n\nREVERSE IMAGE SEARCH (automated):\n{{lens_results}}\n\nREVERSE IMAGE SEARCH (human: TinEye and highest resolution):\n{{human_findings}}"
+    },
+    "label": "Provenance evidence sheet",
+    "config": {},
+    "category": "custom",
+    "spec_type": "text.template"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 4103.0,
+    "y": 567.0
+   }
+  },
+  {
+   "id": "name_original",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "claude-opus-5",
+     "instruction": "Identify the ORIGINAL version of this content.\n\nTHE ORIGINAL IS THE EARLIEST UPLOAD, full stop \u2014 highest resolution is only a way to find it, never the definition. When the highest-resolution copy and the earliest upload are different posts, the earliest upload is the original. You have the full text of the retrieved pages, not just their titles \u2014 read them for dates and for earlier versions.\n\nAN UPLOAD IS NOT A PUBLICATION. The earliest UPLOAD is the person, channel or account that put this media online. A news outlet, agency, blog or fact-check page that carried the still afterwards is a LATER COPY, however early its publication date. Do not name a publisher as the originator merely because its page carries the earliest date you can see: ask who shot it and who posted it first. If the pages credit a photographer, a channel, a rights holder or an account, THAT is the originator. If the earliest thing you can find is an outlet republishing it and you cannot name the account behind it, leave earliest_account EMPTY and say so \u2014 an empty answer is correct and useful; naming the outlet is wrong and sends the source check after the wrong party.\n\nSet originator_type: 'person_or_channel' when you can name the account, channel or photographer that uploaded it; 'news_outlet' when the earliest copy you can reach is a publisher republishing it; 'unknown' when you cannot tell.\n\nTWO KINDS OF MATCH, AND YOU MUST KEEP THEM APART. An EXACT match is a page Google reports as containing this very image: that is evidence. A VISUAL match merely looks similar: that is a lead to be checked, never proof of anything. Never date the original from a visual match. The 'earliest dated match' figure is a hint only \u2014 Google dates very few results \u2014 so confirm any date from the text of the page itself before you rely on it. Note also that only the first ten exact matches were fetched and read in full; if the earliest upload is not settled by those, say so rather than assuming the rest were checked.\n\nPROVENANCE IS CONFIRMED ONLY WHEN: the earliest upload has been found and identified \u2014 both the account and the timestamp \u2014 AND neither the reverse image search nor the text trail found an earlier copy. Anything less is not confirmed.\n\nProvenance is a HARD GATE: this desk never says REAL without the original found. If the earliest known version cannot be reached \u2014 a locked account, a deleted post, a login wall \u2014 return 'unchecked' and say exactly that; an original that cannot be reached can never support REAL.\n\nRETURN 'contradicted' when the earliest version is plainly from a different event, date or place than claimed \u2014 and then you MUST set contradiction_kind, because it decides the desk's verdict:\n- 'recycled' \u2014 the media itself is genuine, but an earlier copy of it predates the claimed event: real footage of a real earlier event put under a new caption. This is the commonest finding and it leads to a RECYCLED verdict. When you set this, give earliest_url and earliest_datetime if you have them at all \u2014 that citation is what lets the desk rule RECYCLED without any forensic test.\n- 'fabricated' \u2014 the media itself appears fabricated, staged or manipulated rather than merely miscaptioned. This leads to NOT REAL.\nSet contradiction_kind to 'none' whenever status is not 'contradicted'. Never guess 'fabricated' because you cannot find the original \u2014 that is 'unchecked'.\n\nNever mark confirmed on the strength of the submitted copy alone.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "reason": {
+        "type": "string"
+       },
+       "status": {
+        "enum": [
+         "confirmed",
+         "contradicted",
+         "unchecked"
+        ],
+        "type": "string"
+       },
+       "evidence": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "earliest_url": {
+        "type": "string"
+       },
+       "originator_type": {
+        "enum": [
+         "person_or_channel",
+         "news_outlet",
+         "unknown"
+        ],
+        "type": "string"
+       },
+       "earliest_account": {
+        "type": "string"
+       },
+       "earliest_datetime": {
+        "type": "string"
+       },
+       "contradiction_kind": {
+        "enum": [
+         "recycled",
+         "fabricated",
+         "none"
+        ],
+        "type": "string"
+       },
+       "original_reachable": {
+        "type": "boolean"
+       }
+      }
+     }
+    },
+    "label": "Name the original",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "position": {
+    "x": 4510.0,
+    "y": 552.0
+   }
+  },
+  {
+   "id": "n-66f2f2bdc2",
+   "data": {
+    "input": {
+     "timeout_s": 60,
+     "include_raw_tags": false
+    },
+    "label": "Read the file's metadata",
+    "config": {},
+    "plan_id": "da0947e9-2985-415c-bc76-093487359aa2",
+    "category": "data",
+    "spec_type": "image.metadata.read"
+   },
+   "type": "data",
+   "measured": {
+    "width": 297,
+    "height": 119
+   },
+   "position": {
+    "x": 1647.5,
+    "y": 1241.0
+   }
+  },
+  {
+   "id": "exif_interpret",
+   "data": {
+    "icon": null,
+    "label": "What the metadata does and does not prove",
+    "config": {
+     "expression": "{'exif': {'status': 'confirmed' if inputs['has_exif'] else 'unchecked', 'media_examined': str(inputs['media_source_used']), 'reason': 'Metadata was read from ' + str(inputs['media_source_used']) + '.' if inputs['has_exif'] else ('No metadata is present, which is EXPECTED on this platform and is NOT evidence of tampering: ' + str(inputs['stripped_note']) if ('facebook.' in str(inputs['post_url']) or 'fb.watch' in str(inputs['post_url']) or 'twitter.' in str(inputs['post_url']) or 'x.com/' in str(inputs['post_url']) or 'instagram.' in str(inputs['post_url'])) else 'No metadata is present. ' + str(inputs['stripped_note'])), 'camera_model': str(inputs['camera_make']) + ' ' + str(inputs['camera_model']), 'timestamp': str(inputs['datetime_original']), 'timestamp_as_written': str(inputs['datetime_original_text']), 'timestamp_caveat': 'An EXIF timestamp may default to the camera manufacturer settings and must never be cited as proof on its own.', 'dimensions': str(inputs['width']) + ' x ' + str(inputs['height']), 'metadata_stripped': inputs['metadata_stripped'], 'stripped_note': str(inputs['stripped_note']), 'stripping_expected_on_this_platform': ('facebook.' in str(inputs['post_url']) or 'fb.watch' in str(inputs['post_url']) or 'twitter.' in str(inputs['post_url']) or 'x.com/' in str(inputs['post_url']) or 'instagram.' in str(inputs['post_url'])), 'flickr_exception': 'flickr.' in str(inputs['post_url']), 'absence_is_not_evidence': 'Twitter, Facebook and Instagram strip most metadata (Flickr is the exception). Absent metadata on this item is expected and is NOT evidence of tampering.' if ('facebook.' in str(inputs['post_url']) or 'fb.watch' in str(inputs['post_url']) or 'twitter.' in str(inputs['post_url']) or 'x.com/' in str(inputs['post_url']) or 'instagram.' in str(inputs['post_url'])) else '', 'software': str(inputs['software']), 'software_note': 'A writing-software tag records what last SAVED the file. It is a lead worth chasing, never a finding: editing software in this tag does not by itself mean the image was faked, and it is NOT a manipulation test.' if inputs['software'] else '', 'geotag_present': inputs['gps_latitude'] != None, 'gps': {'latitude': inputs['gps_latitude'], 'longitude': inputs['gps_longitude']}, 'geotag_caveat': 'An embedded geotag is noted but never sufficient on its own: automated geolocation is not foolproof and must be corroborated against in-frame reference points.', 'upload_signature': 'A direct-from-device file extension or a YouTube Capture marker appears in the post text, which can indicate the file came straight off a device rather than through an edit.' if ('.AVI' in str(inputs['post_text']) or '.MP4' in str(inputs['post_text']) or '.avi' in str(inputs['post_text']) or '.mp4' in str(inputs['post_text']) or 'YouTube Capture' in str(inputs['post_text'])) else 'No direct-upload file extension or YouTube Capture marker in the post text.', 'tag_count': inputs['tag_count'], 'format': str(inputs['format'])}, 'geotag': {'geotag_present': inputs['gps_latitude'] != None, 'latitude': inputs['gps_latitude'], 'longitude': inputs['gps_longitude'], 'note': 'From the file metadata. Noted, never sufficient alone \u2014 location confirmed needs two independent in-frame reference points, or one unmistakable landmark plus a consistent account history.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 2056.0,
+    "y": 1340.0
+   }
+  },
+  {
+   "id": "manip_open",
+   "data": {
+    "icon": "lightbulb",
+    "label": "RETIRED CARD \u2014 the manipulation check now runs as the step beside it; safe to delete",
+    "config": {
+     "plan_id": "13be2b04-a76c-4ef2-816d-ffa33d120b86",
+     "stand_in_output": {
+      "result": {
+       "method": "none",
+       "reason": "There is no generated-or-manipulated media check on this platform and none currently planned. The desk will not guess. Until a real forensic test exists, this stays an open check and appears in the 'could not check' list of every pack.",
+       "status": "unchecked",
+       "assessment": "",
+       "indicators": []
+      }
+     },
+     "stand_in_scenario": "happy",
+     "output_schema_json": {
+      "type": "object",
+      "required": [
+       "result"
+      ],
+      "properties": {
+       "result": {
+        "type": "object",
+        "required": [
+         "status",
+         "reason",
+         "method",
+         "assessment",
+         "indicators"
+        ],
+        "properties": {
+         "method": {
+          "enum": [
+           "detection",
+           "judgment",
+           "none"
+          ],
+          "type": "string"
+         },
+         "reason": {
+          "type": "string"
+         },
+         "status": {
+          "enum": [
+           "confirmed",
+           "contradicted",
+           "unchecked"
+          ],
+          "type": "string"
+         },
+         "assessment": {
+          "type": "string"
+         },
+         "indicators": {
+          "type": "array",
+          "items": {
+           "type": "string"
+          }
+         }
+        },
+        "additionalProperties": false
+       }
+      },
+      "additionalProperties": false
+     },
+     "allow_stand_in_in_production": false
+    },
+    "category": "plan",
+    "spec_type": "plan.step"
+   },
+   "type": "plan",
+   "measured": {
+    "width": 240,
+    "height": 84
+   },
+   "position": {
+    "x": 892.0,
+    "y": 12.0
+   }
+  },
+  {
+   "id": "uploader_web",
+   "data": {
+    "input": {
+     "count": 20
+    },
+    "label": "The uploader's digital footprint",
+    "config": {},
+    "category": "custom",
+    "spec_type": "web.brave.search"
+   },
+   "type": "custom",
+   "position": {
+    "x": 5250.0,
+    "y": 120.0
+   }
+  },
+  {
+   "id": "uploader_pack",
+   "data": {
+    "label": "Collect uploader results",
+    "config": {
+     "expression": "{'bundle': {'results': inputs['results'], 'urls': inputs['urls'], 'claimed_place': inputs['claimed_place'], 'examined': inputs['examined'], 'why': inputs['why'], 'is_originating_account': inputs['is_originating_account'], 'poster_handle': inputs['poster_handle'], 'earliest_account': inputs['earliest_account'], 'earliest_url': inputs['earliest_url']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "position": {
+    "x": 5600.0,
+    "y": 120.0
+   }
+  },
+  {
+   "id": "uploader_text",
+   "data": {
+    "input": {
+     "template": "WHOSE FOOTPRINT THIS IS: {{examined}}\nWHY THAT ACCOUNT: {{why}}\nIs this the originating account? {{is_originating_account}}\n\nEarliest account named by the provenance trail: {{earliest_account}}\nEarliest copy URL: {{earliest_url}}\nHandle on the copy submitted to the desk: {{poster_handle}}\n\nCLAIMED PLACE OF THE ITEM: {{claimed_place}}\n\nSEARCH RESULTS FOR THAT ACCOUNT:\n{{results}}\n\nURLS:\n{{urls}}"
+    },
+    "label": "Uploader evidence sheet",
+    "config": {},
+    "category": "custom",
+    "spec_type": "text.template"
+   },
+   "type": "custom",
+   "position": {
+    "x": 5950.0,
+    "y": 120.0
+   }
+  },
+  {
+   "id": "source_check",
+   "data": {
+    "input": {
+     "model": "claude-opus-5",
+     "instruction": "Examine this account's digital footprint to decide whether the person behind it is a reliable source.\n\nWHOSE FOOTPRINT THIS IS MATTERS, AND IT IS STATED AT THE TOP OF THE SHEET. The method says establish the ORIGINAL uploader, not whoever reposted the item onto our desk. The desk has already chosen the subject for you: the originating account named by the provenance trail when one was found, otherwise the handle on the submitted copy. You MUST report which one you examined in account_examined, and set is_originating_account accordingly.\n\nIF YOU ARE LOOKING AT A REPOSTER rather than the originator, say so plainly in your reason and do NOT return 'confirmed'. Establishing a reposter's identity does not establish the original uploader, and treating it as if it did is the error this instruction exists to prevent. 'unchecked' is the honest answer there.\n\nConsider: account history and how long it has been active, how active it is, biographical details, past uploads, who they follow and interact with, other accounts under the same name or username on other networks, whether the account scrapes content from news organizations and other accounts rather than posting its own, and whether logos, dates, descriptions and quality are consistent across their posts. Adopt the shooter's perspective: who are they, where are they, when did they get there, what could they see, where do they stand, and why are they there. Never treat an account as reliable merely because it is a witness, a victim or an authority.\n\nTHE SOURCE IS CONFIRMED ONLY WHEN the ORIGINATING uploader's identity is established by AT LEAST TWO INDEPENDENT TRACES \u2014 an account history consistent with the claimed place and activity, PLUS a second account or public record \u2014 or by direct contact whose answers match what we found. One trace is never enough. Count the independent traces you actually have and state them.\n\nOne contradicting signal outweighs agreement: if anything in the footprint conflicts with the claimed place, activity or identity, that is 'contradicted' even if other signals agree.\n\nReturn 'contradicted' if they misrepresent themselves or the account is a scraper; 'unchecked' if the account could not be examined \u2014 behind a login, no handle available, or the subject was a reposter rather than the originator \u2014 and say exactly which in the reason. Note separately that a blue check must be confirmed by hovering, which only a human can do.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "reason": {
+        "type": "string"
+       },
+       "status": {
+        "enum": [
+         "confirmed",
+         "contradicted",
+         "unchecked"
+        ],
+        "type": "string"
+       },
+       "evidence": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "scrapes_others": {
+        "type": "string"
+       },
+       "account_examined": {
+        "type": "string"
+       },
+       "independent_traces": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "shooters_perspective": {
+        "type": "string"
+       },
+       "who_they_appear_to_be": {
+        "type": "string"
+       },
+       "is_originating_account": {
+        "type": "boolean"
+       },
+       "badge_needs_human_hover": {
+        "type": "boolean"
+       },
+       "independent_trace_count": {
+        "type": "number"
+       },
+       "account_age_and_activity": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "label": "Establish the uploader",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "position": {
+    "x": 6300.0,
+    "y": 120.0
+   }
+  },
+  {
+   "id": "n-238b2d2ab0",
+   "data": {
+    "input": {
+     "end_hour": 23,
+     "language": "en",
+     "timezone": "auto",
+     "timeout_s": 20,
+     "start_hour": 0
+    },
+    "label": "Weather on that day, in that place",
+    "config": {},
+    "plan_id": "760d63f6-cd86-49be-b152-5cad3908356f",
+    "category": "io",
+    "spec_type": "weather.history.lookup"
+   },
+   "type": "io",
+   "measured": {
+    "width": 300,
+    "height": 146
+   },
+   "position": {
+    "x": 2056.0,
+    "y": 284.0
+   }
+  },
+  {
+   "id": "weather_shape",
+   "data": {
+    "icon": null,
+    "label": "The weather record, with its limits",
+    "config": {
+     "expression": "{'weather': {'status': 'read', 'weather_available': True, 'resolved_place': inputs['place'], 'date': inputs['date'], 'daily': inputs['daily'], 'hourly': inputs['hourly'], 'hour_window': inputs['hour_window'], 'summary': inputs['summary'], 'provider': inputs['provider'], 'check_the_resolved_place': 'CHECK THE RESOLVED PLACE. This reading is for the place the archive resolved, which is not necessarily the place the post named. If the archive resolved a different town of the same name, or a different country, this reading proves nothing about the claim and must be reported as unchecked.', 'caution': 'A weather archive reading is a nearest-station record summarised over a day, not the sky above an exact spot at an exact minute. A mismatch is a genuine DOUBT and should be reported as one. It should NOT on its own flip a date to contradicted unless another independent check fails alongside it.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 99
+   },
+   "position": {
+    "x": 3693.0,
+    "y": 244.0
+   }
+  },
+  {
+   "id": "weather_unchecked",
+   "data": {
+    "icon": null,
+    "label": "Weather unavailable \u2014 record it as unchecked",
+    "config": {
+     "expression": "{'weather': {'status': 'unchecked', 'weather_available': False, 'reason': ('The post states no specific calendar day, and the weather archive requires one, so no weather reading was possible for this item.' if inputs['claimed_date_iso'] == '' else 'The weather archive could not be read for ' + str(inputs['claimed_date_iso']) + ' at ' + str(inputs['claimed_place']) + '. Either that day falls inside roughly the last five days, which the archive does not yet cover, or the archive was unavailable when the desk asked.'), 'date_the_desk_had': str(inputs['claimed_date_iso']), 'date_as_the_post_wrote_it': str(inputs['claimed_date']), 'place_the_desk_had': str(inputs['claimed_place']), 'resolved_place': '', 'summary': '', 'how_to_treat_this': 'WEATHER IS AN ABSENT SIGNAL for this item. An absent signal is NOT agreement and NOT a contradiction. Do not count it toward the two independent agreeing signals the date check requires, and never record it as confirming or contradicting anything. The date must stand or fall on the remaining signals: the earliest known upload, the news timeline, and any in-frame date markers.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 2466.0,
+    "y": 346.0
+   }
+  },
+  {
+   "id": "date_news",
+   "data": {
+    "icon": null,
+    "input": {
+     "sort_by": "publishedAt"
+    },
+    "label": "What happened there that day",
+    "config": {},
+    "category": "custom",
+    "spec_type": "web.news.everything"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 4103.0,
+    "y": 365.0
+   }
+  },
+  {
+   "id": "date_assemble",
+   "data": {
+    "icon": null,
+    "label": "Gather the date evidence",
+    "config": {
+     "expression": "{'bundle': {'claimed_date': inputs['claimed_date'], 'claimed_place': inputs['claimed_place'], 'articles': inputs['articles'], 'weather': inputs['weather'], 'earliest_datetime': inputs['prov']['earliest_datetime']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 4920.0,
+    "y": 365.0
+   }
+  },
+  {
+   "id": "date_text",
+   "data": {
+    "icon": null,
+    "input": {
+     "template": "CLAIMED DATE: {{claimed_date}}\nCLAIMED PLACE: {{claimed_place}}\nEARLIEST KNOWN UPLOAD: {{earliest_datetime}}\n\nNEWS FROM THAT DAY:\n{{articles}}\n\nWEATHER RECORD:\n{{weather}}"
+    },
+    "label": "Date evidence sheet",
+    "config": {},
+    "category": "custom",
+    "spec_type": "text.template"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 5327.0,
+    "y": 349.0
+   }
+  },
+  {
+   "id": "date_check",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "gemini-3.8-flash",
+     "instruction": "Verify the date and approximate time. Compare the claimed date against the weather record for that day and place, against news reports of that day's events, and against the earliest known upload. Check whether earlier content from the same event predates this example. If a YouTube timestamp is involved, remember it is Pacific Standard Time recorded from the moment upload begins, not filming time.\n\nTHE DATE IS CONFIRMED ONLY WHEN at least TWO INDEPENDENT DATE SIGNALS AGREE \u2014 drawn from the upload timestamp, the weather record, the news timeline, and in-frame markers such as clocks, screens or newspapers \u2014 AND none contradict. One agreeing signal is not confirmation. Count the independent signals you actually have and name them.\n\nONE CONTRADICTING SIGNAL OUTWEIGHS AGREEMENT. If any signal conflicts, the check is not confirmed even when others agree.\n\nTHE WEATHER RECORD HAS LIMITS AND YOU MUST RESPECT THEM.\n- If the weather record has status 'unchecked', the archive could not be read at all. Weather is then an ABSENT signal: it is not agreement, it is not a contradiction, and it must NOT be counted toward the two agreeing signals. Read its reason and carry that reason into your own reason.\n- If a reading was returned, first check its resolved place actually matches the claimed place. If the archive resolved a different town or country of the same name, the reading proves nothing and you must treat weather as unavailable, not as a signal.\n- A weather archive reading is a nearest-station summary over a whole day, not the sky above an exact spot at an exact minute. A weather mismatch on its own is a DOUBT, not a contradiction: report it in the reason and do NOT return 'contradicted' on weather alone. Return 'contradicted' on weather only when an independent signal fails alongside it.\n\nReturn 'contradicted' where the date cannot hold \u2014 for example the earliest copy predates the claimed date, which usually means genuine media has been recycled into a new context. Return 'unchecked' if the records needed were unavailable, and name which ones in the reason.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "reason": {
+        "type": "string"
+       },
+       "status": {
+        "enum": [
+         "confirmed",
+         "contradicted",
+         "unchecked"
+        ],
+        "type": "string"
+       },
+       "evidence": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "weather_agreement": {
+        "type": "string"
+       },
+       "best_date_estimate": {
+        "type": "string"
+       },
+       "independent_signals": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "independent_signal_count": {
+        "type": "number"
+       }
+      }
+     }
+    },
+    "label": "Pin the date",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 134
+   },
+   "position": {
+    "x": 5734.0,
+    "y": 334.0
+   }
+  },
+  {
+   "id": "location_open",
+   "data": {
+    "icon": "lightbulb",
+    "label": "RETIRED CARD \u2014 the location check now runs as the step beside it; safe to delete",
+    "config": {
+     "plan_id": "8fd6363b-86f0-4981-84b9-8e8e0f610a21",
+     "stand_in_output": {
+      "result": {
+       "reason": "Location cannot be pinned yet. Two capabilities are missing: the desk cannot see the image itself, and there is no Street View, satellite, historical imagery or mapping source to compare reference points against. Because location is one of the four checks, no item can reach REAL while this stays open.",
+       "status": "unchecked",
+       "geotag_present": false,
+       "reference_points": [],
+       "best_location_estimate": "",
+       "language_or_dialect_note": ""
+      }
+     },
+     "stand_in_scenario": "happy",
+     "output_schema_json": {
+      "type": "object",
+      "required": [
+       "result"
+      ],
+      "properties": {
+       "result": {
+        "type": "object",
+        "required": [
+         "status",
+         "reason",
+         "best_location_estimate",
+         "reference_points",
+         "geotag_present",
+         "language_or_dialect_note"
+        ],
+        "properties": {
+         "reason": {
+          "type": "string"
+         },
+         "status": {
+          "enum": [
+           "confirmed",
+           "contradicted",
+           "unchecked"
+          ],
+          "type": "string"
+         },
+         "geotag_present": {
+          "type": "boolean"
+         },
+         "reference_points": {
+          "type": "array",
+          "items": {
+           "type": "string"
+          }
+         },
+         "best_location_estimate": {
+          "type": "string"
+         },
+         "language_or_dialect_note": {
+          "type": "string"
+         }
+        },
+        "additionalProperties": false
+       }
+      },
+      "additionalProperties": false
+     },
+     "allow_stand_in_in_production": false
+    },
+    "category": "plan",
+    "spec_type": "plan.step"
+   },
+   "type": "plan",
+   "measured": {
+    "width": 240,
+    "height": 84
+   },
+   "position": {
+    "x": 1152.0,
+    "y": 12.0
+   }
+  },
+  {
+   "id": "n-4e2d5f2c1a",
+   "data": {
+    "input": {
+     "page_size": 10,
+     "timeout_s": 20
+    },
+    "label": "Search published fact-checks",
+    "config": {},
+    "plan_id": "114f2d09-a8d8-47e4-a8ef-3ce52e59b8db",
+    "category": "io",
+    "spec_type": "web.factcheck.search"
+   },
+   "type": "io",
+   "measured": {
+    "width": 293,
+    "height": 111
+   },
+   "position": {
+    "x": 5329.666666666667,
+    "y": 546.0
+   }
+  },
+  {
+   "id": "fc_shape",
+   "data": {
+    "icon": null,
+    "label": "What the fact-checkers already said",
+    "config": {
+     "expression": "{'factcheck': {'status': 'searched', 'searched': True, 'review_count': inputs['review_count'], 'reviews': inputs['reviews'], 'summary': inputs['summary'], 'searched_reviewers_note': inputs['searched_reviewers_note'], 'searched_claim': inputs['claim'], 'zero_means': 'No indexed fact-checker has written about this claim. That is a real answer and it NEVER means the claim is true.' if inputs['review_count'] == 0 else '', 'handling_note': 'A FACT-CHECK IS EVIDENCE, NOT A VERDICT. An item-specific fact-check that documents a CONCRETE CONTRADICTION sets NOT REAL, with the finding and the publisher quoted. A bare rating with no documented contradiction is a DOUBT for the red team, nothing more. Each rating is that publisher own wording and ratings are NOT comparable across publishers: quote them, never normalise them. Never parrot a source, including a fact-checker. A rating of true or correct must never push an item toward REAL: that is earned only by provenance, source, date and location.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 99
+   },
+   "position": {
+    "x": 5734.0,
+    "y": 533.0
+   }
+  },
+  {
+   "id": "fc_unchecked",
+   "data": {
+    "icon": null,
+    "label": "Fact-check archive unavailable \u2014 record it as unchecked",
+    "config": {
+     "expression": "{'factcheck': {'status': 'unchecked', 'searched': False, 'review_count': 0, 'reviews': [], 'summary': '', 'searched_claim': str(inputs['claim_query']), 'reason': 'The published fact-check archive could not be searched for this item, so no published ruling was looked for and none was retrieved. The claim that would have been searched: ' + str(inputs['claim_query']), 'zero_means': 'NOTHING WAS SEARCHED. The absence of a ruling here means the search did not happen \u2014 it does NOT mean no ruling exists.', 'how_to_treat_this': 'This is a GAP, not a finding. It is NOT evidence the item is genuine and it is NOT evidence the item is false. A published ruling may well exist, unread. Where the full text of a retrieved page happens to contain a published fact-check, weigh that page text on its own terms and say where it came from. Never treat this unchecked state as support or as contradiction.', 'handling_note': 'A FACT-CHECK IS EVIDENCE, NOT A VERDICT. Never parrot a source, including a fact-checker.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 5734.0,
+    "y": 688.0
+   }
+  },
+  {
+   "id": "claim_web",
+   "data": {
+    "icon": null,
+    "input": {
+     "count": 20
+    },
+    "label": "The named institution's public record",
+    "config": {},
+    "category": "custom",
+    "spec_type": "web.brave.search"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 4510.0,
+    "y": 862.0
+   }
+  },
+  {
+   "id": "claim_pack",
+   "data": {
+    "icon": null,
+    "label": "Collect public-record results",
+    "config": {
+     "expression": "{'bundle': {'results': inputs['results'], 'urls': inputs['urls']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 4920.0,
+    "y": 862.0
+   }
+  },
+  {
+   "id": "claim_text",
+   "data": {
+    "icon": null,
+    "input": {
+     "template": "PUBLIC RECORD SEARCH:\n{{results}}\n\nURLS:\n{{urls}}"
+    },
+    "label": "Claim evidence sheet",
+    "config": {},
+    "category": "custom",
+    "spec_type": "text.template"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 5327.0,
+    "y": 862.0
+   }
+  },
+  {
+   "id": "claim_finding",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "claude-opus-5",
+     "instruction": "This is a SEPARATE question from whether the media is genuine \u2014 the desk verifies two things independently: is the content genuine, and is the caption's claim true. Authentic, correctly dated, correctly located media does not make its caption true. Judge only the assertion.\n\nWhen the claim names an institution or a person, their own public record and their own statement is what settles it \u2014 the claim stays UNVERIFIED until they confirm. Search results here are that public record. Note that a named party settles a claim ABOUT THEM only; they are not trusted on anything else simply because of who they are.\n\nWHEN THE CLAIM IS BROAD AND NAMES NO PARTY \u2014 for example 'this proves a chemical attack happened' \u2014 do NOT stretch to a verdict. Return 'unverified' and say plainly what would be needed to settle it. The media verdict stands on its own four checks; this unresolved claim is carried as a doubt, and the pack reports the two findings separately. Never let an unpinnable broad claim drag the media verdict down, and never let genuine media lend the claim credibility it has not earned.\n\nReturn status 'confirmed' only where the named party has themselves confirmed it; 'contradicted' where they or a credible record deny it outright; 'unverified' where they have not yet been reached or the claim cannot be pinned down either way. Then draft a short, specific enquiry a human can send \u2014 plain, courteous, one paragraph.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "reason": {
+        "type": "string"
+       },
+       "status": {
+        "enum": [
+         "confirmed",
+         "contradicted",
+         "unverified"
+        ],
+        "type": "string"
+       },
+       "evidence": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "draft_enquiry": {
+        "type": "string"
+       },
+       "names_a_party": {
+        "type": "boolean"
+       },
+       "what_would_settle_it": {
+        "type": "string"
+       },
+       "what_the_record_shows": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "label": "Is the caption's claim true?",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 134
+   },
+   "position": {
+    "x": 5734.0,
+    "y": 847.0
+   }
+  },
+  {
+   "id": "blind_pack",
+   "data": {
+    "icon": null,
+    "label": "The blind sheet (claim and uploader only)",
+    "config": {
+     "expression": "{'bundle': {'claim': inputs['claim'], 'uploader_handle': inputs['uploader_handle'], 'dangerous_context': inputs['harm']['reasoning'], 'risk_found': inputs['harm']['risk_found']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 6144.0,
+    "y": 1170.0
+   }
+  },
+  {
+   "id": "blind_text",
+   "data": {
+    "icon": null,
+    "input": {
+     "template": "THE CLAIM BEING MADE: {{claim}}\n\nTHE UPLOADER: {{uploader_handle}}\n\nSAFETY CONTEXT (for deciding whether to ask the safety question first): {{dangerous_context}}\nREAL RISK OF HARM FOUND: {{risk_found}}\n\nYou are deliberately given NOTHING ELSE. No metadata, no location findings, no timeline, no provenance. That is by design."
+    },
+    "label": "Blind sheet",
+    "config": {},
+    "category": "custom",
+    "spec_type": "text.template"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 6554.0,
+    "y": 1170.0
+   }
+  },
+  {
+   "id": "redteam_assemble",
+   "data": {
+    "icon": null,
+    "label": "Gather everything found",
+    "config": {
+     "expression": "{'bundle': {'claim': inputs['claim'], 'provenance': inputs['provenance'], 'source_check': inputs['source_check'], 'date_check': inputs['date_check'], 'location_check': inputs['location_check'], 'claim_finding': inputs['claim_finding'], 'manipulation': inputs['manipulation'], 'exif': inputs['exif'], 'factcheck': inputs['factcheck'], 'harm': inputs['harm'], 'know_enough': inputs['know_enough'], 'page_text': inputs['page_text']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 6144.214285714285,
+    "y": 980.0
+   }
+  },
+  {
+   "id": "redteam_text",
+   "data": {
+    "icon": null,
+    "input": {
+     "template": "CLAIM: {{claim}}\n\nPROVENANCE: {{provenance}}\nSOURCE: {{source_check}}\nDATE: {{date_check}}\nLOCATION: {{location_check}}\nCLAIM FINDING: {{claim_finding}}\n\nFILE READ (EXIF): {{exif}}\nGENERATED OR MANIPULATED: {{manipulation}}\nPUBLISHED FACT-CHECKS FOUND: {{factcheck}}\n\nFULL TEXT OF PAGES RETRIEVED ABOUT THIS ITEM (read these \u2014 they may include published fact-checks):\n{{page_text}}\n\nHARM ASSESSMENT: {{harm}}\nEXPERTISE NEEDED: {{know_enough}}"
+    },
+    "label": "Everything on one sheet",
+    "config": {},
+    "category": "custom",
+    "spec_type": "text.template"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 297,
+    "height": 103
+   },
+   "position": {
+    "x": 6554.0,
+    "y": 980.0
+   }
+  },
+  {
+   "id": "sanity",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "claude-opus-5",
+     "instruction": "Step back now that provenance, source, date and location are done. Start from the assumption that this content is inaccurate, or has been scraped, sliced, diced, duplicated or reposted with different context.\n\nYou have been given the FULL TEXT of the pages retrieved about this item, not merely their titles. READ THAT TEXT. You have also been given the result of a direct search of the published fact-check archive.\n\nA FACT-CHECK IS EVIDENCE, NOT A VERDICT. An item-specific fact-check that DOCUMENTS A CONCRETE CONTRADICTION about this very item is a genuine contradiction: set contradiction_found true and quote the finding and the publisher. A bare rating with no documented contradiction behind it is a DOUBT, not a contradiction \u2014 list it as a doubt. Never adopt a publisher's rating as the desk's conclusion; never translate one publisher's rating into another's wording; never infer a fact-check's verdict from its headline alone. A fact-check finding NOTHING is not evidence the item is genuine.\n\nIF THE FACT-CHECK ARCHIVE COMES BACK WITH STATUS 'unchecked', no search happened at all. That is a gap, not a result: it is neither support nor contradiction, and you must say in your reasoning that the archive was not searched. Any published ruling found in the retrieved PAGE TEXT still counts as evidence on its own terms \u2014 say which page it came from.\n\nAsk: does the content make sense given the context it was shot in? Does anything look out of place? Do the source's details or answers fail to add up? Did established media outlets distribute similar images or video? Does anything feel off, or too good to be true?\n\nList every concrete contradiction \u2014 a contradiction means one finding is incompatible with another, not merely that something is missing. A weather mismatch alone is NOT a contradiction: record it as a doubt. An unpinnable broad caption claim is NOT a contradiction either: record it as a doubt. A check that simply could not be run is NOT a contradiction. List doubts separately: doubts trouble you but contradict nothing. Do not restate the findings themselves; the desk already has them.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "doubts": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "reasoning": {
+        "type": "string"
+       },
+       "contradictions": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "contradiction_found": {
+        "type": "boolean"
+       },
+       "existing_factchecks": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "too_good_to_be_true": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "label": "Sanity-check the whole",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 134
+   },
+   "position": {
+    "x": 6961.0,
+    "y": 965.0
+   }
+  },
+  {
+   "id": "source_packet",
+   "data": {
+    "icon": null,
+    "input": {
+     "model": "gemini-3.8-flash",
+     "instruction": "Draft the questions to put to the uploader.\n\nYou have deliberately been given ONLY the claim and the uploader. You do not have the EXIF findings, the location findings, the timeline or the provenance trail, and that is on purpose: a source handed the answer key cannot corroborate anything. Ask the source BLIND.\n\nAsk direct questions about what they saw, where they were, when they got there and how they came by the material. Ask 'How do you know that?' and 'How else do you know that?'\n\nThen separately list the follow-up points a human should reflect back ONLY AFTER the source has answered, to press on gaps \u2014 including asking for additional images shot before and after the one in question. Write these as placeholders describing WHAT to press on, since you do not hold our findings.\n\nFinally: if there is any sign the material comes from a dangerous location or that a real risk of harm was found, the first question must be whether it is safe for them to speak with us at all; set safety_check_required accordingly.",
+     "schema_definition": {
+      "type": "object",
+      "properties": {
+       "draft_message": {
+        "type": "string"
+       },
+       "blind_questions": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "safety_check_required": {
+        "type": "boolean"
+       },
+       "reflect_back_only_after_answers": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    },
+    "label": "Questions for the source (blind)",
+    "config": {},
+    "category": "custom",
+    "spec_type": "ai.extract"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 134
+   },
+   "position": {
+    "x": 6961.0,
+    "y": 1155.0
+   }
+  },
+  {
+   "id": "weigh",
+   "data": {
+    "icon": null,
+    "label": "The Weighing",
+    "config": {
+     "expression": "{'verdict_pack': {'verdict': 'NOT REAL' if (inputs['manipulation']['status'] == 'contradicted' or (inputs['provenance']['status'] == 'contradicted' and inputs['provenance']['contradiction_kind'] == 'fabricated') or inputs['sanity']['contradiction_found'] == True or inputs['claim_finding']['status'] == 'contradicted') else ('RECYCLED' if (inputs['provenance']['status'] == 'contradicted' or inputs['date_check']['status'] == 'contradicted' or inputs['location_check']['status'] == 'contradicted') else ('REAL' if (inputs['provenance']['status'] == 'confirmed' and inputs['source_check']['status'] == 'confirmed' and inputs['date_check']['status'] == 'confirmed' and inputs['location_check']['status'] == 'confirmed' and inputs['manipulation']['status'] == 'confirmed' and inputs['know_enough']['specialist_needed'] != True) else 'CANNOT TELL YET')), 'headline': 'media: ' + ('NOT REAL' if (inputs['manipulation']['status'] == 'contradicted' or (inputs['provenance']['status'] == 'contradicted' and inputs['provenance']['contradiction_kind'] == 'fabricated') or inputs['sanity']['contradiction_found'] == True or inputs['claim_finding']['status'] == 'contradicted') else ('RECYCLED' if (inputs['provenance']['status'] == 'contradicted' or inputs['date_check']['status'] == 'contradicted' or inputs['location_check']['status'] == 'contradicted') else ('REAL' if (inputs['provenance']['status'] == 'confirmed' and inputs['source_check']['status'] == 'confirmed' and inputs['date_check']['status'] == 'confirmed' and inputs['location_check']['status'] == 'confirmed' and inputs['manipulation']['status'] == 'confirmed' and inputs['know_enough']['specialist_needed'] != True) else 'CANNOT TELL YET'))) + '; caption claim: ' + str(inputs['claim_finding']['status']), 'two_findings_note': 'These are TWO separate findings and must be read separately. The media verdict rests on provenance, source, date and location. The caption claim is judged on its own; an unverified claim is carried as a doubt and never drags the media verdict down, and genuine media never lends the claim credibility it has not earned.', 'verdict_meanings': {'REAL': 'All four checks confirmed, the media tested clean for manipulation, any required specialist consulted, and nothing contradicts.', 'RECYCLED': 'An earlier copy of this same media exists that predates the claimed event: real footage of a real earlier event put under a new caption. RECYCLED does not assert the media is authentic to the claim, so it needs NO forensic test and NO specialist \u2014 the documented earlier copy is the evidence.', 'NOT REAL': 'Fabricated or manipulated media, or a caption whose claim is itself contradicted outright.', 'CANNOT TELL YET': 'Not enough confirmed, or REAL was blocked because a required specialist was never consulted or the media could not be tested for manipulation.'}, 'verdict_drivers': {'fabricated_or_manipulated_or_claim_contradicted': (inputs['manipulation']['status'] == 'contradicted' or (inputs['provenance']['status'] == 'contradicted' and inputs['provenance']['contradiction_kind'] == 'fabricated') or inputs['sanity']['contradiction_found'] == True or inputs['claim_finding']['status'] == 'contradicted'), 'specialist_gap_blocks_REAL_only': inputs['know_enough']['specialist_needed'] == True, 'manipulation_untested_blocks_REAL_only': inputs['manipulation']['status'] != 'confirmed', 'recycling_signal': (inputs['provenance']['status'] == 'contradicted' or inputs['date_check']['status'] == 'contradicted' or inputs['location_check']['status'] == 'contradicted'), 'earlier_copy_documented': (inputs['provenance']['contradiction_kind'] == 'recycled' and str(inputs['provenance']['earliest_url']) != '' and str(inputs['provenance']['earliest_datetime']) != ''), 'earlier_copy_citation': {'url': str(inputs['provenance']['earliest_url']), 'datetime': str(inputs['provenance']['earliest_datetime']), 'account': str(inputs['provenance']['earliest_account'])}, 'all_four_confirmed': (inputs['provenance']['status'] == 'confirmed' and inputs['source_check']['status'] == 'confirmed' and inputs['date_check']['status'] == 'confirmed' and inputs['location_check']['status'] == 'confirmed'), 'note': 'BOTH CAPS BLOCK REAL ONLY. An unconsulted specialist and an untested-for-manipulation file are each a reason not to call the media authentic to the claim; neither is a reason to withhold RECYCLED. RECYCLED asserts only that an earlier copy of the same media predates the claimed event, so a documented earlier copy carries it with no forensic test and no specialist. NOT REAL is reserved for fabricated or manipulated media, or a caption claim contradicted outright, and no cap ever suppresses it.'}, 'claim_verdict': inputs['claim_finding']['status'], 'checks': {'provenance': inputs['provenance'], 'source': inputs['source_check'], 'date': inputs['date_check'], 'location': inputs['location_check']}, 'confirmed_means': {'provenance': 'The earliest upload found and identified (account and timestamp), and neither reverse image search nor the text trail found an earlier copy.', 'source': 'Identity established by at least two independent traces, or by direct contact whose answers match what we found.', 'date': 'At least two independent date signals agree and none contradict.', 'location': 'At least two independent reference points match maps or imagery, or one unmistakable landmark plus a consistent account history.', 'rule': 'One contradicting signal on any check outweighs agreement.'}, 'contradictions': inputs['sanity']['contradictions'], 'doubts': inputs['sanity']['doubts'], 'reasoning': inputs['sanity']['reasoning'], 'claim_finding': inputs['claim_finding'], 'published_factchecks': inputs['factcheck'], 'media_examined': {'source': str(inputs['media_source']), 'note': 'This is what the reverse image search and the file reader actually worked from \u2014 the uploaded file, or the supplied link to the image when no file was given.'}, 'specialist': {'required': inputs['know_enough']['specialist_needed'], 'expertise_needed': inputs['know_enough']['expertise_required'], 'language_support_needed': inputs['know_enough']['language_support_required'], 'notice': 'A specialist is required and none was consulted. That blocks REAL \u2014 the desk will not call this media authentic to the claim until that expertise is brought in. It does not block RECYCLED or NOT REAL, which rest on documented evidence rather than on an assertion of authenticity.' if inputs['know_enough']['specialist_needed'] == True else ''}, 'restriction': {'restricted': inputs['harm']['risk_found'], 'notice': 'RESTRICTED MEDIA \u2014 withhold or blur before any use. Default remedy: WITHHOLD. Blurring is the alternative only where the visual is essential.' if inputs['harm']['risk_found'] == True else '', 'media_not_carried': 'This pack carries findings only. The media itself is never carried into the pack outputs.'}, 'human_checks_still_required': ['Reverse image search fallback: TinEye, and view-other-sizes for the highest-resolution copy. The automated search cannot do either, so a human always backs this check.', 'Verified badge: hover the blue check to confirm the popup reads Verified Account or Verified Page. Only a human can do this.', 'Specialist consultation where one is named above \u2014 until then REAL is blocked.', 'Sending the blind questions to the source, and sending the drafted enquiry to any named institution.', 'Exact matches beyond the tenth are listed in the provenance sheet but were not fetched and read in full \u2014 read them by eye if the earliest upload is still unsettled.'], 'could_not_check': {'provenance': (inputs['provenance']['status'] == 'unchecked') and inputs['provenance']['reason'], 'source': (inputs['source_check']['status'] == 'unchecked') and inputs['source_check']['reason'], 'date': (inputs['date_check']['status'] == 'unchecked') and inputs['date_check']['reason'], 'location': (inputs['location_check']['status'] == 'unchecked') and inputs['location_check']['reason'], 'generated_or_manipulated': inputs['manipulation'], 'generated_or_manipulated_blocks_REAL_only': inputs['manipulation']['status'] != 'confirmed', 'specialist_never_consulted_blocks_REAL_only': inputs['know_enough']['specialist_needed'] == True, 'file_metadata': inputs['exif'], 'fact_check_archive': inputs['factcheck'], 'fact_check_archive_was_not_searched': inputs['factcheck']['status'] == 'unchecked'}, 'source_questions': inputs['source_questions'], 'handling': inputs['harm']}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "position": {
+    "x": 7371.0,
+    "y": 984.0
+   }
+  },
+  {
+   "id": "pack",
+   "data": {
+    "icon": null,
+    "label": "The verdict pack",
+    "config": {
+     "mode": "restructured",
+     "title": "Verdict",
+     "presentation": "showcase",
+     "transform_expression": "{'ruling': {'verdict': inputs['verdict_pack']['verdict'], 'headline': inputs['verdict_pack']['headline'], 'claim_verdict': inputs['verdict_pack']['claim_verdict'], 'reasoning': inputs['verdict_pack']['reasoning'], 'contradictions': inputs['verdict_pack']['contradictions'], 'doubts': inputs['verdict_pack']['doubts'], 'verdict_meanings': inputs['verdict_pack']['verdict_meanings'], 'two_findings_note': inputs['verdict_pack']['two_findings_note'], 'restriction': inputs['verdict_pack']['restriction']}, 'verdict_pack': inputs['verdict_pack']}"
+    },
+    "category": "custom",
+    "spec_type": "output.to_frontend"
+   },
+   "type": "custom",
+   "position": {
+    "x": 7778.0,
+    "y": 969.0
+   }
+  },
+  {
+   "id": "lens_open",
+   "data": {
+    "icon": "lightbulb",
+    "label": "RETIRED CARD \u2014 reverse image search is a real step now; safe to delete",
+    "config": {
+     "plan_id": "3802d804-0c3b-4342-b778-16d623ab508f",
+     "allow_stand_in_in_production": false
+    },
+    "category": "plan",
+    "spec_type": "plan.step"
+   },
+   "type": "plan",
+   "measured": {
+    "width": 200,
+    "height": 31
+   },
+   "position": {
+    "x": 12.0,
+    "y": 12.0
+   }
+  },
+  {
+   "id": "exif_open",
+   "data": {
+    "icon": "lightbulb",
+    "label": "RETIRED CARD \u2014 the file read is a real step now; safe to delete",
+    "config": {
+     "plan_id": "da0947e9-2985-415c-bc76-093487359aa2",
+     "allow_stand_in_in_production": false
+    },
+    "category": "plan",
+    "spec_type": "plan.step"
+   },
+   "type": "plan",
+   "measured": {
+    "width": 200,
+    "height": 31
+   },
+   "position": {
+    "x": 232.0,
+    "y": 12.0
+   }
+  },
+  {
+   "id": "weather_open",
+   "data": {
+    "icon": "lightbulb",
+    "label": "RETIRED CARD \u2014 the weather archive is a real step now; safe to delete",
+    "config": {
+     "plan_id": "760d63f6-cd86-49be-b152-5cad3908356f",
+     "allow_stand_in_in_production": false
+    },
+    "category": "plan",
+    "spec_type": "plan.step"
+   },
+   "type": "plan",
+   "measured": {
+    "width": 200,
+    "height": 31
+   },
+   "position": {
+    "x": 452.0,
+    "y": 12.0
+   }
+  },
+  {
+   "id": "factcheck_open",
+   "data": {
+    "icon": "lightbulb",
+    "label": "RETIRED CARD \u2014 the fact-check search is a real step now; safe to delete",
+    "config": {
+     "plan_id": "114f2d09-a8d8-47e4-a8ef-3ce52e59b8db",
+     "allow_stand_in_in_production": false
+    },
+    "category": "plan",
+    "spec_type": "plan.step"
+   },
+   "type": "plan",
+   "measured": {
+    "width": 200,
+    "height": 31
+   },
+   "position": {
+    "x": 672.0,
+    "y": 12.0
+   }
+  },
+  {
+   "id": "location_gap",
+   "data": {
+    "label": "OPEN: Pin the location \u2014 no capability yet, reports unchecked",
+    "config": {
+     "expression": "{'result': {'status': 'unchecked', 'best_location_estimate': '', 'reference_points': [], 'language_or_dialect_note': '', 'geotag_present': inputs['geotag']['geotag_present'], 'geotag': inputs['geotag'], 'claimed_place': str(inputs['claimed_place']), 'reason': 'LOCATION CANNOT BE PINNED YET. Two capabilities are missing: the desk cannot see the image itself, and there is no Street View, satellite, historical imagery or mapping source to compare in-frame reference points against. The desk will not guess a location. Because location is one of the four checks, no item can reach REAL while this stays open. When it is built, LOCATION CONFIRMED means at least two independent reference points in the media match maps or imagery, or one unmistakable landmark plus an account history consistent with that place. An embedded geotag from the file metadata arrives here when one exists \u2014 noted, never sufficient alone, because automated geolocation is not foolproof.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 2876.0,
+    "y": 1321.0
+   }
+  },
+  {
+   "id": "manip_gap",
+   "data": {
+    "label": "OPEN: Generated or manipulated? \u2014 no test yet, blocks REAL and RECYCLED",
+    "config": {
+     "expression": "{'result': {'status': 'unchecked', 'method': 'none', 'assessment': '', 'indicators': [], 'what_the_desk_was_told_it_shows': str(inputs['media_note']), 'reason': 'NOT TESTED. There is no generated-or-manipulated media check on this platform and none currently planned, and the desk will not guess. Because REAL and RECYCLED both assert the media is authentic, an untested item can reach NEITHER: the verdict is capped at CANNOT TELL YET until a real forensic test exists. NOT REAL remains reachable on other evidence. A published fact-check that documents this item as generated is EVIDENCE for the sanity check to act on, and a writing-software tag in the metadata is a lead \u2014 neither is a forensic test and neither lifts this cap. This limitation appears in the could-not-check list of every pack, every time.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "measured": {
+    "width": 300,
+    "height": 103
+   },
+   "position": {
+    "x": 5734.0,
+    "y": 1511.0
+   }
+  },
+  {
+   "id": "uploader_subject",
+   "data": {
+    "label": "Whose footprint to examine \u2014 the originator, not the reposter",
+    "config": {
+     "expression": "{'has_examinable_account': ((str(inputs['prov']['earliest_account']) != '' and str(inputs['prov']['earliest_account']) != 'None' and str(inputs['prov']['originator_type']) != 'news_outlet') or (str(inputs['uploader_query']) != '' and str(inputs['uploader_query']) != 'None')), 'query': (str(inputs['prov']['earliest_account']) if (str(inputs['prov']['earliest_account']) != '' and str(inputs['prov']['earliest_account']) != 'None' and str(inputs['prov']['originator_type']) != 'news_outlet') else str(inputs['uploader_query'])), 'claimed_place': str(inputs['claimed_place']), 'is_originating_account': (str(inputs['prov']['earliest_account']) != '' and str(inputs['prov']['earliest_account']) != 'None' and str(inputs['prov']['originator_type']) != 'news_outlet'), 'originator_type': str(inputs['prov']['originator_type']), 'examined': (('THE ORIGINATING ACCOUNT named by the provenance trail: ' + str(inputs['prov']['earliest_account'])) if (str(inputs['prov']['earliest_account']) != '' and str(inputs['prov']['earliest_account']) != 'None' and str(inputs['prov']['originator_type']) != 'news_outlet') else (('THE POSTER of the copy on our desk: ' + str(inputs['uploader_handle'])) if (str(inputs['uploader_query']) != '' and str(inputs['uploader_query']) != 'None') else 'NOBODY \u2014 there is no account to examine.')), 'why': ('The provenance trail named the account, channel or photographer that uploaded this media first. The method says establish the ORIGINAL uploader, so that is the footprint examined \u2014 not the reposter, and not a news outlet that republished it later.' if (str(inputs['prov']['earliest_account']) != '' and str(inputs['prov']['earliest_account']) != 'None' and str(inputs['prov']['originator_type']) != 'news_outlet') else ('The provenance trail named no originating account \u2014 either it found none, or the earliest copy it could reach was a news outlet republishing the media, which is a LATER COPY and not the originator. The desk fell back to the handle on the copy it was given. READ THIS AS A REPOSTER, NOT THE ORIGINATOR: this finding does not establish the original uploader and must not be read as if it did.' if (str(inputs['uploader_query']) != '' and str(inputs['uploader_query']) != 'None') else 'No account to examine: the earliest copy is a publication and the post carries no handle. There is nobody to establish, so no uploader search is run and the source check is recorded as unchecked.')), 'poster_handle': str(inputs['uploader_handle']), 'earliest_account': str(inputs['prov']['earliest_account']), 'earliest_url': str(inputs['prov']['earliest_url'])}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "position": {
+    "x": 4900.0,
+    "y": 120.0
+   }
+  },
+  {
+   "id": "source_unchecked",
+   "data": {
+    "label": "Nobody to establish \u2014 record the source as unchecked",
+    "config": {
+     "expression": "{'result': {'status': 'unchecked', 'reason': 'No account to examine: the earliest copy is a publication and the post carries no handle. There is nobody to establish, so no uploader search was run and the source check is recorded as unchecked. This is a real and expected situation, not a failure: the method anticipates that sometimes there is nobody to establish.', 'account_examined': 'none \u2014 there was no examinable account', 'is_originating_account': False, 'no_account_to_examine': True, 'originator_type_found': str(inputs['originator_type']), 'earliest_account_named_by_provenance': str(inputs['earliest_account']), 'poster_handle_on_the_submitted_copy': str(inputs['poster_handle']), 'evidence': [], 'independent_traces': [], 'independent_trace_count': 0, 'badge_needs_human_hover': False, 'how_to_treat_this': 'An unchecked source blocks REAL, because REAL requires the originating uploader to be established by at least two independent traces. It does NOT block RECYCLED or NOT REAL, which rest on documented evidence rather than on an assertion of authenticity. Do not read this as a doubt about the media \u2014 it is an absence of anybody to examine.'}}"
+    },
+    "category": "custom",
+    "spec_type": "data.transform"
+   },
+   "type": "custom",
+   "position": {
+    "x": 5250.0,
+    "y": 340.0
+   }
+  }
+ ],
+ "edges": [
+  {
+   "id": "e0a",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "post_url": "post_url",
+     "post_text": "post_text"
+    }
+   },
+   "type": "default",
+   "source": "intake",
+   "target": "intake_pack",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e0b",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "variables": "bundle"
+    }
+   },
+   "type": "default",
+   "source": "intake_pack",
+   "target": "intake_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e1",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "intake_text",
+   "target": "read_post",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e2",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "intake_text",
+   "target": "harm_gate",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e3",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "intake_text",
+   "target": "know_enough",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e4",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "d": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "read_post",
+   "target": "fields",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e5",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "query": "provenance_query"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "prov_web",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e6",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "query": "provenance_query"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "prov_news",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-mediaref",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "media_url": "media_url",
+     "media_files": "media_files"
+    }
+   },
+   "type": "default",
+   "source": "intake",
+   "target": "media_ref",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-lens-in",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "image": "image"
+    }
+   },
+   "type": "default",
+   "source": "media_ref",
+   "target": "n-38588f6956",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-lens-shape",
+   "data": {
+    "kind": "data"
+   },
+   "type": "default",
+   "source": "n-38588f6956",
+   "target": "lens_shape",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-lens-human",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "context": "human_context"
+    }
+   },
+   "type": "default",
+   "source": "lens_shape",
+   "target": "human_reverse",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-lens-prov",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "lens_results": "lens_results"
+    }
+   },
+   "type": "default",
+   "source": "lens_shape",
+   "target": "prov_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-provurls-web",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "web_urls": "urls"
+    }
+   },
+   "type": "default",
+   "source": "prov_web",
+   "target": "prov_urls",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-provurls-lens",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "lens_urls": "urls"
+    }
+   },
+   "type": "default",
+   "source": "lens_shape",
+   "target": "prov_urls",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e8a",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "urls": "urls"
+    }
+   },
+   "type": "default",
+   "source": "prov_urls",
+   "target": "factcheck_fetch",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e8b",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "values": "pages"
+    }
+   },
+   "type": "default",
+   "source": "factcheck_fetch",
+   "target": "pages_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e9",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "web_results": "results"
+    }
+   },
+   "type": "default",
+   "source": "prov_web",
+   "target": "prov_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e10",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "news_articles": "articles"
+    }
+   },
+   "type": "default",
+   "source": "prov_news",
+   "target": "prov_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e12",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "human_findings": "answer"
+    }
+   },
+   "type": "default",
+   "source": "human_reverse",
+   "target": "prov_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e12b",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "page_text": "formatted_text"
+    }
+   },
+   "type": "default",
+   "source": "pages_text",
+   "target": "prov_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e13",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claim": "claim",
+     "claimed_date": "claimed_date",
+     "claimed_place": "claimed_place"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "prov_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e14",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "variables": "bundle"
+    }
+   },
+   "type": "default",
+   "source": "prov_assemble",
+   "target": "prov_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e15",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "prov_text",
+   "target": "name_original",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-exif-in",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "image": "image"
+    }
+   },
+   "type": "default",
+   "source": "media_ref",
+   "target": "n-66f2f2bdc2",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-exif-shape",
+   "data": {
+    "kind": "data"
+   },
+   "type": "default",
+   "source": "n-66f2f2bdc2",
+   "target": "exif_interpret",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-exif-ctx",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "post_url": "post_url",
+     "post_text": "post_text"
+    }
+   },
+   "type": "default",
+   "source": "intake",
+   "target": "exif_interpret",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-exif-src",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "media_source_used": "media_source_used"
+    }
+   },
+   "type": "default",
+   "source": "media_ref",
+   "target": "exif_interpret",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-exif-geo",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "geotag": "geotag"
+    }
+   },
+   "type": "default",
+   "source": "exif_interpret",
+   "target": "location_gap",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-exif-red",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "exif": "exif"
+    }
+   },
+   "type": "default",
+   "source": "exif_interpret",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-exif-weigh",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "exif": "exif"
+    }
+   },
+   "type": "default",
+   "source": "exif_interpret",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e17",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "media_url": "media_url",
+     "media_note": "media_note",
+     "media_files": "media_files"
+    }
+   },
+   "type": "default",
+   "source": "intake",
+   "target": "manip_gap",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e19",
+   "data": {
+    "kind": "conditional",
+    "mappings": {
+     "query": "query"
+    },
+    "condition": "inputs['has_examinable_account'] == True"
+   },
+   "type": null,
+   "source": "uploader_subject",
+   "target": "uploader_web",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e20",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "urls": "urls",
+     "results": "results"
+    }
+   },
+   "type": "default",
+   "source": "uploader_web",
+   "target": "uploader_pack",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e20b",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "variables": "bundle"
+    }
+   },
+   "type": "default",
+   "source": "uploader_pack",
+   "target": "uploader_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e21",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "uploader_text",
+   "target": "source_check",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-weather-in",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "date": "claimed_date_iso",
+     "place": "claimed_place"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "n-238b2d2ab0",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-weather-shape",
+   "data": {
+    "kind": "data"
+   },
+   "type": "default",
+   "source": "n-238b2d2ab0",
+   "target": "weather_shape",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-weather-date",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "weather": "weather"
+    }
+   },
+   "type": "default",
+   "source": "weather_shape",
+   "target": "date_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-weather-err",
+   "data": {
+    "kind": "error"
+   },
+   "type": "default",
+   "source": "n-238b2d2ab0",
+   "target": "weather_unchecked",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-wu-fields",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claimed_date": "claimed_date",
+     "claimed_place": "claimed_place",
+     "claimed_date_iso": "claimed_date_iso"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "weather_unchecked",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-wu-date",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "weather": "weather"
+    }
+   },
+   "type": "default",
+   "source": "weather_unchecked",
+   "target": "date_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e23",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "query": "provenance_query"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "date_news",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e24",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "articles": "articles"
+    }
+   },
+   "type": "default",
+   "source": "date_news",
+   "target": "date_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e26",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claimed_date": "claimed_date",
+     "claimed_place": "claimed_place"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "date_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e27",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "prov": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "name_original",
+   "target": "date_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e28",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "variables": "bundle"
+    }
+   },
+   "type": "default",
+   "source": "date_assemble",
+   "target": "date_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e29",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "date_text",
+   "target": "date_check",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e30",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claimed_place": "claimed_place"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "location_gap",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fc-in",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claim": "claim_query"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "n-4e2d5f2c1a",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fc-shape",
+   "data": {
+    "kind": "data"
+   },
+   "type": "default",
+   "source": "n-4e2d5f2c1a",
+   "target": "fc_shape",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fc-red",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "factcheck": "factcheck"
+    }
+   },
+   "type": "default",
+   "source": "fc_shape",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fc-weigh",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "factcheck": "factcheck"
+    }
+   },
+   "type": "default",
+   "source": "fc_shape",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fc-err",
+   "data": {
+    "kind": "error"
+   },
+   "type": "default",
+   "source": "n-4e2d5f2c1a",
+   "target": "fc_unchecked",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fcu-fields",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claim_query": "claim_query"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "fc_unchecked",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fcu-red",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "factcheck": "factcheck"
+    }
+   },
+   "type": "default",
+   "source": "fc_unchecked",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-fcu-weigh",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "factcheck": "factcheck"
+    }
+   },
+   "type": "default",
+   "source": "fc_unchecked",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e33",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "query": "claim_query"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "claim_web",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e34",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "urls": "urls",
+     "results": "results"
+    }
+   },
+   "type": "default",
+   "source": "claim_web",
+   "target": "claim_pack",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e34b",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "variables": "bundle"
+    }
+   },
+   "type": "default",
+   "source": "claim_pack",
+   "target": "claim_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e35",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "claim_text",
+   "target": "claim_finding",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e36",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claim": "claim"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e37",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "provenance": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "name_original",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e38",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "source_check": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "source_check",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e39",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "date_check": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "date_check",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e40",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "location_check": "result"
+    }
+   },
+   "type": "default",
+   "source": "location_gap",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e41",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claim_finding": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "claim_finding",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e42",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "manipulation": "result"
+    }
+   },
+   "type": "default",
+   "source": "manip_gap",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e44b",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "page_text": "formatted_text"
+    }
+   },
+   "type": "default",
+   "source": "pages_text",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e45",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "harm": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "harm_gate",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e46",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "know_enough": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "know_enough",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e47",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "variables": "bundle"
+    }
+   },
+   "type": "default",
+   "source": "redteam_assemble",
+   "target": "redteam_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e48",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "redteam_text",
+   "target": "sanity",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-blind-fields",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claim": "claim",
+     "uploader_handle": "uploader_handle"
+    }
+   },
+   "type": "default",
+   "source": "fields",
+   "target": "blind_pack",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-blind-harm",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "harm": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "harm_gate",
+   "target": "blind_pack",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-blind-text",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "variables": "bundle"
+    }
+   },
+   "type": "default",
+   "source": "blind_pack",
+   "target": "blind_text",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e49",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "text": "text"
+    }
+   },
+   "type": "default",
+   "source": "blind_text",
+   "target": "source_packet",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e50",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "provenance": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "name_original",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e51",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "source_check": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "source_check",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e52",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "date_check": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "date_check",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e53",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "location_check": "result"
+    }
+   },
+   "type": "default",
+   "source": "location_gap",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e54",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "sanity": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "sanity",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e55",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claim_finding": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "claim_finding",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e56",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "manipulation": "result"
+    }
+   },
+   "type": "default",
+   "source": "manip_gap",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-media-weigh",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "media_source": "media_source_used"
+    }
+   },
+   "type": "default",
+   "source": "media_ref",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e59",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "source_questions": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "source_packet",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e60",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "harm": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "harm_gate",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e60b",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "know_enough": "extracted_data"
+    }
+   },
+   "type": "default",
+   "source": "know_enough",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e61",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "verdict_pack": "verdict_pack"
+    }
+   },
+   "type": "default",
+   "source": "weigh",
+   "target": "pack",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-subj-prov",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "prov": "extracted_data"
+    }
+   },
+   "type": null,
+   "source": "name_original",
+   "target": "uploader_subject",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-subj-fields",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "claimed_place": "claimed_place",
+     "uploader_query": "uploader_query",
+     "uploader_handle": "uploader_handle"
+    }
+   },
+   "type": null,
+   "source": "fields",
+   "target": "uploader_subject",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-subj-pack",
+   "data": {
+    "kind": "conditional",
+    "mappings": {
+     "why": "why",
+     "examined": "examined",
+     "earliest_url": "earliest_url",
+     "claimed_place": "claimed_place",
+     "poster_handle": "poster_handle",
+     "earliest_account": "earliest_account",
+     "is_originating_account": "is_originating_account"
+    },
+    "condition": "inputs['has_examinable_account'] == True"
+   },
+   "type": null,
+   "source": "uploader_subject",
+   "target": "uploader_pack",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-subj-none",
+   "data": {
+    "kind": "conditional",
+    "mappings": {
+     "why": "why",
+     "examined": "examined",
+     "poster_handle": "poster_handle",
+     "originator_type": "originator_type",
+     "earliest_account": "earliest_account"
+    },
+    "condition": "inputs['has_examinable_account'] == False"
+   },
+   "type": null,
+   "source": "uploader_subject",
+   "target": "source_unchecked",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-srcnone-red",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "source_check": "result"
+    }
+   },
+   "type": null,
+   "source": "source_unchecked",
+   "target": "redteam_assemble",
+   "sourceHandle": null,
+   "targetHandle": null
+  },
+  {
+   "id": "e-srcnone-weigh",
+   "data": {
+    "kind": "data",
+    "mappings": {
+     "source_check": "result"
+    }
+   },
+   "type": null,
+   "source": "source_unchecked",
+   "target": "weigh",
+   "sourceHandle": null,
+   "targetHandle": null
+  }
+ ]
+}

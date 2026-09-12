@@ -271,3 +271,49 @@ export function deliverableSteps(
 ): RunStepPresentation[] {
   return steps.filter((step) => step.outputKind !== null);
 }
+
+/**
+ * THE TERMINAL STEP — the one that hands the reader the finished work.
+ *
+ * ── THE DEFECT THIS CLOSES (W33 live check, 2026-09-12) ────────────────────
+ * Callers used to answer this with `steps[steps.length - 1]`. A definition's
+ * `nodes` array is LAYOUT order, not execution order, so on the live
+ * Verification Desk (definition aa3e6306, 57 nodes) that picked
+ * `source_unchecked` — a mid-graph transform with two outgoing edges whose
+ * output is `{result}` — while the real handover, the `output.to_frontend`
+ * node `pack` that emitted `{ruling, verdict_pack}`, sat at index 50. The run
+ * box therefore rendered the wrong step's output and told the Expert their
+ * finished verdict "returned result".
+ *
+ * The EDGES answer it: the handover is a SINK (nothing consumes it). Among
+ * sinks, an `output.to_frontend` step is the author's explicit "this is what
+ * I am showing you"; then a step that declares an `output_kind`; then the last
+ * sink. Array position is the last resort, for a definition with no edges at
+ * all (or a cycle through every node).
+ */
+export function terminalStep(
+  steps: RunStepPresentation[],
+  definition: WorkflowDefinitionLike | null | undefined,
+): RunStepPresentation | null {
+  if (steps.length === 0) return null;
+  // The builder's own handover node id, when this graph has one.
+  const show = steps.find((step) => step.nodeId === "show");
+  if (show) return show;
+
+  const hasOutgoing = new Set(
+    (definition?.edges ?? []).map((edge) => edge.source),
+  );
+  const sinks = definition?.edges?.length
+    ? steps.filter((step) => !hasOutgoing.has(step.nodeId))
+    : [];
+  const pool = sinks.length > 0 ? sinks : steps;
+
+  const last = <T,>(items: T[]): T | undefined => items[items.length - 1];
+  return (
+    last(pool.filter((step) => step.specType === "output.to_frontend")) ??
+    last(pool.filter((step) => step.specType?.startsWith("output."))) ??
+    last(deliverableSteps(pool)) ??
+    last(pool) ??
+    null
+  );
+}

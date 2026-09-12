@@ -126,7 +126,27 @@ export function readPresentedResult(args: {
 }): PresentedResult | null {
   const { nodeId, emissions, output } = args;
   const presented = nodeId ? lastPresentedPayload(emissions, nodeId) : null;
-  return pick(presented, "emitted") ?? pick(output ?? null, "output");
+  return (
+    pick(presented, "emitted") ??
+    // ANY node's last presented result, not just the one the caller named.
+    // W33's live check: the caller CAN name the wrong node (a definition's
+    // `nodes` array is layout order, so the box was pointed at a mid-graph
+    // transform), and a ruling that reached the screen must never be invisible
+    // here because of a step-resolution mistake upstream.
+    pick(lastResultPayload(emissions), "emitted") ??
+    pick(output ?? null, "output")
+  );
+}
+
+/** The last payload ANY node presented that carries a result key. */
+function lastResultPayload(
+  emissions: readonly WorkflowRunEmission[],
+): Record<string, unknown> | null {
+  for (let index = emissions.length - 1; index >= 0; index -= 1) {
+    const payload = asRecord(emissions[index].payload);
+    if (payload && RESULT_KEYS.some((key) => key in payload)) return payload;
+  }
+  return null;
 }
 
 /**
@@ -140,8 +160,11 @@ export function absentResultReason(args: {
   output: Record<string, unknown> | null | undefined;
 }): string {
   const { nodeId, emissions, output } = args;
-  const presented = nodeId ? lastPresentedPayload(emissions, nodeId) : null;
-  const carrier = presented ?? output ?? null;
+  const carrier =
+    (nodeId ? lastPresentedPayload(emissions, nodeId) : null) ??
+    lastResultPayload(emissions) ??
+    output ??
+    null;
   if (!carrier) {
     return "This run's final step recorded nothing, so there is nothing for the Audition to judge.";
   }
