@@ -4,13 +4,12 @@
  * category label, and the tag set.
  *
  * Promoted out of inline handler code so there is ONE place that says what a
- * valid value is. Two consumers import from here and must not re-type the
- * numbers:
- *   - `features/surfaces/manifests/admin-system-agents.manifest.ts` —
- *     interpolates these bounds into the `writeTargets` descriptions an agent
- *     reads, so the contract the model SEES is the contract that is ENFORCED.
- *   - `useSystemAgentWriteHandlers` — calls the validators below before the
- *     value reaches the canonical `saveAgentField` write path.
+ * valid value is. `features/surfaces/manifests/admin-system-agents.manifest.ts`
+ * interpolates these bounds into the `writeTargets` descriptions an agent
+ * reads, so the contract the model SEES is the contract that is ENFORCED. The
+ * actual write handlers (`SystemAgentWriteTargets.tsx`) currently enforce
+ * their own shape checks inline rather than calling these validators — if you
+ * add a second consumer here, keep it in this list.
  *
  * Every validator THROWS on a bad shape rather than coercing. That is
  * deliberate: the surface writeback seam

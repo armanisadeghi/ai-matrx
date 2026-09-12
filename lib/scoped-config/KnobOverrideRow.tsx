@@ -21,6 +21,7 @@ import { Input } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
+import { formatKnobValue } from "./ladder";
 import { setKnobOverride, setKnobRungLock } from "./service";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 
@@ -177,9 +178,10 @@ export function KnobOverrideRow(props: {
   const clear = async () => {
     const confirmed = await confirm({
       title: `Inherit ${knob.label} from ${inheritedFrom}?`,
-      description: `The override is removed and this setting falls back to ${valueText(
+      description: `The override is removed and this setting falls back to ${formatKnobValue(
         inheritedValue,
-      )}${knob.unit ? ` ${knob.unit}` : ""}.`,
+        knob.unit,
+      )}.`,
       confirmLabel: "Inherit it",
     });
     if (confirmed) await write(null);
@@ -227,7 +229,7 @@ export function KnobOverrideRow(props: {
           {knob.bound_value !== null && knob.bound_value !== undefined && (
             <Badge variant="outline" className="gap-1 text-xs">
               <Gavel className="h-3 w-3" />
-              floor {valueText(knob.bound_value)}
+              floor {formatKnobValue(knob.bound_value, knob.unit)}
             </Badge>
           )}
         </div>
@@ -250,8 +252,7 @@ export function KnobOverrideRow(props: {
           </p>
         )}
         <p className="mt-1 text-xs text-muted-foreground">
-          Platform default {valueText(knob.platform_default)}
-          {knob.unit ? ` ${knob.unit}` : ""}
+          Platform default {formatKnobValue(knob.platform_default, knob.unit)}
           {knob.basis ? (
             <>
               {" · "}
@@ -276,7 +277,7 @@ export function KnobOverrideRow(props: {
             onChange={(event) => setDraft(event.target.value)}
           >
             <option value="" disabled>
-              {valueText(knob.effective_value)}
+              {formatKnobValue(knob.effective_value, knob.unit)}
             </option>
             {enumOptions.map((option) => (
               <option key={option} value={option}>
@@ -287,7 +288,7 @@ export function KnobOverrideRow(props: {
         ) : (
           <Input
             className="w-40"
-            placeholder={valueText(knob.effective_value)}
+            placeholder={formatKnobValue(knob.effective_value, knob.unit)}
             value={draft}
             disabled={busy}
             onChange={(event) => setDraft(event.target.value)}

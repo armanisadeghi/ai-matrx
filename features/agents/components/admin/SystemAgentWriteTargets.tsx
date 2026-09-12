@@ -36,6 +36,7 @@
  */
 
 import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -99,6 +100,7 @@ function requireWritableSystemAgent(state: RootState, agentId: string) {
 export function SystemAgentWriteTargets({ agentId }: { agentId: string }) {
   const store = useAppStore();
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   /**
    * Persist ONE field the way the admin's own Save does, then prove it landed.
@@ -135,8 +137,14 @@ export function SystemAgentWriteTargets({ agentId }: { agentId: string }) {
           `${target} did not persist — the agent still shows its previous value. Nothing was changed.`,
         );
       }
+
+      // Redux is now correct, but this route's server-rendered bits (the
+      // page title / header, fed by `getAgent`) are not — refresh the RSC
+      // tree so a renamed/redescribed agent doesn't keep showing its old
+      // value until a manual reload.
+      router.refresh();
     },
-    [store, dispatch, agentId],
+    [store, dispatch, agentId, router],
   );
 
   useSurfaceWriteHandlers(ADMIN_SYSTEM_AGENTS_SURFACE_NAME, {
