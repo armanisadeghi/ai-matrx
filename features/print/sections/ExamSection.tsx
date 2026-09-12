@@ -16,6 +16,7 @@ import { ClipboardCheck, FileQuestion, KeyRound, MessageSquareText, Printer } fr
 import type { PrintSettings } from "@ai-matrx/print/core";
 import { BUBBLE_SHEET_GEOMETRY, practiceTestPrinter, type PracticeTestVariant } from "@ai-matrx/print/exam";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/lib/toast";
 import { Field, SectionShell, StatusChip, announcePrintOutcome, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_PRACTICE_TEST } from "./sample-data";
@@ -128,14 +129,13 @@ export function ExamSection() {
                                         const checked = Boolean(settings[setting.id] ?? setting.defaultValue);
                                         return (
                                             <label key={setting.id} className="flex items-start gap-2 text-xs">
-                                                <input
-                                                    type="checkbox"
+                                                <Checkbox
                                                     className="mt-0.5"
                                                     checked={checked}
-                                                    onChange={(e) =>
+                                                    onCheckedChange={(nextChecked) =>
                                                         setSettings((prev) => ({
                                                             ...prev,
-                                                            [setting.id]: e.target.checked,
+                                                            [setting.id]: nextChecked === true,
                                                         }))
                                                     }
                                                 />

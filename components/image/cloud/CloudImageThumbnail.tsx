@@ -6,7 +6,7 @@ import type { CloudFileRecord } from "@/features/files/types";
 
 type ThumbnailFile = Pick<
   CloudFileRecord,
-  "id" | "fileName" | "mimeType" | "fileSize" | "thumbnailUrl"
+  "id" | "fileName" | "mimeType" | "fileSize"
 >;
 
 export interface CloudImageThumbnailProps {
@@ -49,7 +49,6 @@ export function CloudImageThumbnail({
       }}
       fileName={file.fileName}
       mimeType={file.mimeType}
-      thumbnailUrl={file.thumbnailUrl}
       iconSize={iconSize}
       className={className}
     />

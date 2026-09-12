@@ -398,6 +398,7 @@ export function isBlockLoading(block: {
  *    "string") and a SILENT truncation.
  */
 export type FeSynthesizedBlockType =
+  | "directive_receipt"
   | "media_block"
   | "video_prompt_options"
   | "keyword_research"
@@ -509,6 +510,7 @@ export type DetectorProtocolBlockType =
 /** Crosswalk classification: protocol — control plumbing, never Shapes. */
 export type ProtocolBlockType =
   | ServerProtocolRenderBlock["type"]
+  | "directive_receipt"
   | "thinking"
   | "reasoning"
   | "consolidated_reasoning"

@@ -26,7 +26,13 @@ jest.mock("@/features/content-ir/registry/schema-source-kind-tables", () => ({
     mockGetKindInputContract(kind),
 }));
 
-import { applySurfaceWrite, refuseSurfaceWrite } from "./surface-writeback";
+import {
+  applySurfaceWrite,
+  listAgentWritableTargets,
+  listUnwiredAgentTargets,
+  refuseSurfaceWrite,
+  __resetUnwiredTargetReports,
+} from "./surface-writeback";
 import { invalidateKindContractCache } from "@/features/content-ir/registry/validate-against-kind";
 import { registerSurfaceRuntime } from "./SurfaceRuntimeContext";
 
@@ -247,5 +253,87 @@ describe("surface writeback value contract", () => {
 
     expect(result.ok).toBe(false);
     expect(handled).toEqual([]);
+  });
+});
+
+/**
+ * THE OFFER IS NEVER WIDER THAN THE WIRING (live defect, 2026-09-12).
+ *
+ * `matrx-user/masterwork-rulebook` declares `rule_draft`, and is mounted both
+ * by the Rulebook detail page (which registers a handler) and by every
+ * `/masterwork/[id]/<lane>` route. On a mount with no handler the Masterwork
+ * Conductor was told it could stage a rule and found there was nothing to stage
+ * it with. The offer builder must drop such a target — and say so.
+ */
+describe("agent write-target offer", () => {
+  const ruleDraft = {
+    name: "rule_draft",
+    label: "Rule draft",
+    description: "Stages a proposed rule in the page's Add/Edit Rule dialog.",
+    valueType: "object" as const,
+    mode: "draft" as const,
+    applyPolicy: "ask" as const,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    __resetUnwiredTargetReports();
+    mockGetManifest.mockReturnValue({ writeTargets: [ruleDraft] });
+  });
+
+  it("offers a declared target only when a handler is mounted", () => {
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/masterwork-rulebook",
+        getScope: () => ({}),
+        getWriteHandlers: () => ({ rule_draft: () => {} }),
+      },
+      1,
+    );
+
+    expect(listAgentWritableTargets().map((entry) => entry.target.name)).toEqual(
+      ["rule_draft"],
+    );
+    expect(listUnwiredAgentTargets()).toEqual([]);
+    unregister();
+  });
+
+  it("refuses to offer a declared target with no handler, loudly", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const unregister = registerSurfaceRuntime(
+      { surfaceName: "matrx-user/masterwork-rulebook", getScope: () => ({}) },
+      1,
+    );
+
+    expect(listAgentWritableTargets()).toEqual([]);
+    expect(
+      listUnwiredAgentTargets().map((entry) => entry.target.name),
+    ).toEqual(["rule_draft"]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('declares agent-writable target "rule_draft"'),
+    );
+    // One line per page load, not one per turn.
+    listAgentWritableTargets();
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+    unregister();
+  });
+
+  it("still fails loudly if an unwired target is applied anyway", async () => {
+    const unregister = registerSurfaceRuntime(
+      { surfaceName: "matrx-user/masterwork-rulebook", getScope: () => ({}) },
+      1,
+    );
+
+    const result = await applySurfaceWrite("rule_draft", { mode: "new" });
+
+    expect(result.ok).toBe(false);
+    expect(mockCaptureError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "surface-writeback",
+        message: expect.stringContaining("registered no handler"),
+      }),
+    );
+    unregister();
   });
 });

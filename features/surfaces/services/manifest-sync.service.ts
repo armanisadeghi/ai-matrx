@@ -36,6 +36,7 @@ import {
 } from "@/features/surfaces/manifests/registry";
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
 import { readAllRows } from "@ai-matrx/data/db";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import type {
   BrokenMapping,
   SurfaceAgentRole,
@@ -1331,12 +1332,10 @@ export async function deleteMirrorRow(
   // 3. Recency guard — warn, do not block. See RECENT_ROW_WINDOW_HOURS.
   const updatedAt = read.data.updated_at;
   const ageMs = Date.now() - new Date(updatedAt).getTime();
-  const ageHours = ageMs / 3_600_000;
-  if (!acknowledgeRecent && ageHours < RECENT_ROW_WINDOW_HOURS) {
-    const rounded =
-      ageHours < 1
-        ? `${Math.max(1, Math.round(ageHours * 60))} minute(s)`
-        : `${Math.round(ageHours)} hour(s)`;
+  if (!acknowledgeRecent && ageMs < RECENT_ROW_WINDOW_HOURS * 3_600_000) {
+    const rounded = formatDurationMs(Math.max(60_000, ageMs), {
+      style: "coarse",
+    });
     throw new Error(
       `${RECENT_ROW_REFUSAL_PREFIX} ${surfaceName} · ${name} was written ${rounded} ago, which usually means a branch that has not merged yet is still using it. Confirm again to delete it anyway.`,
     );

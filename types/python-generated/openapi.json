@@ -17992,7 +17992,7 @@
           "Lulu Print"
         ],
         "summary": "Payment Mode",
-        "description": "What this server's print lane actually is — test or live, and whether the\ntwo money integrations agree.\n\nA surface that offers ordering MUST badge this rather than infer a mode from\nits own hostname: a local page talks to whichever backend the server toggle\nnames, so \"I am on localhost\" says nothing about whose money is at stake.\nCarries no secret — only the derived mode.",
+        "description": "What this server's print lane actually is — test or live, whether the two\nmoney integrations agree, and what the two commerce settings currently say.\n\nA surface that offers ordering MUST badge this rather than infer a mode from\nits own hostname: a local page talks to whichever backend the server toggle\nnames, so \"I am on localhost\" says nothing about whose money is at stake.\nCarries no secret — only the derived mode and the resolved settings.\n\nThe settings are resolved for the caller's organization, so two orgs can get\ntwo honest answers from one server.",
         "operationId": "payment_mode_lulu_payment_mode_get",
         "responses": {
           "200": {
@@ -69813,6 +69813,112 @@
         }
       }
     },
+    "/plans/{plan_id}/emit": {
+      "post": {
+        "tags": [
+          "Workflow Plans"
+        ],
+        "summary": "Emit From Plan",
+        "description": "Emit ONE real, wired step from a plan that keeps working. Until\n2026-09-12 this move was reachable only through the Steward's tool —\nan agent-only capability, which the design law forbids.",
+        "operationId": "emit_from_plan_plans__plan_id__emit_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmitFromPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmitFromPlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plans/{plan_id}/settle": {
+      "post": {
+        "tags": [
+          "Workflow Plans"
+        ],
+        "summary": "Settle Plan",
+        "description": "Close a plan that emitted its way to empty: 1 plan → N real steps,\nsettled into a record that points at all of them. No receipt — the\nanchor is no longer server-owned once the plan is settled.",
+        "operationId": "settle_plan_plans__plan_id__settle_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettlePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlePlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/plans/{plan_id}/dissolve": {
       "post": {
         "tags": [
@@ -114324,6 +114430,11 @@
             "type": "boolean",
             "title": "Write",
             "default": false
+          },
+          "include_published": {
+            "type": "boolean",
+            "title": "Include Published",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -136505,6 +136616,233 @@
         ],
         "title": "EmbeddingResponse"
       },
+      "EmitFromPlanRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "target_spec_type": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Target Spec Type"
+          },
+          "target_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Config"
+          },
+          "target_input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Input"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale",
+            "default": ""
+          },
+          "upstream_node_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upstream Node Ids"
+          },
+          "downstream_node_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downstream Node Ids"
+          },
+          "parallel": {
+            "type": "boolean",
+            "title": "Parallel",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_spec_type"
+        ],
+        "title": "EmitFromPlanRequest",
+        "description": "`emit` — a real step comes out, the plan KEEPS WORKING (FEATURE.md\n§ Emission). Same target fields as resolve plus the wiring contract's\nanchors; the service refuses unknown ids and bad configs before any write."
+      },
+      "EmitFromPlanResponse": {
+        "properties": {
+          "emitted_node_id": {
+            "type": "string",
+            "title": "Emitted Node Id"
+          },
+          "spec_type": {
+            "type": "string",
+            "title": "Spec Type"
+          },
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id"
+          },
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "plan_still_active": {
+            "type": "boolean",
+            "title": "Plan Still Active",
+            "default": true
+          },
+          "emitted_so_far": {
+            "type": "integer",
+            "title": "Emitted So Far"
+          },
+          "wired": {
+            "$ref": "#/components/schemas/EmittedWiring"
+          },
+          "wiring_mode": {
+            "type": "string",
+            "enum": [
+              "explicit",
+              "chained",
+              "parallel",
+              "default",
+              "unwired"
+            ],
+            "title": "Wiring Mode"
+          },
+          "chained_from": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Chained From"
+          },
+          "wired_note": {
+            "type": "string",
+            "title": "Wired Note"
+          },
+          "handshake_warnings": {
+            "items": {
+              "$ref": "#/components/schemas/HandshakeWarning"
+            },
+            "type": "array",
+            "title": "Handshake Warnings"
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanAnchorState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "emitted_node_id",
+          "spec_type",
+          "plan_id",
+          "definition_id",
+          "emitted_so_far",
+          "wired",
+          "wiring_mode",
+          "wired_note"
+        ],
+        "title": "EmitFromPlanResponse"
+      },
+      "EmittedWiring": {
+        "properties": {
+          "upstream": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Upstream"
+          },
+          "downstream": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Downstream"
+          }
+        },
+        "type": "object",
+        "title": "EmittedWiring"
+      },
       "EmplifiServiceStatus": {
         "properties": {
           "__kind": {
@@ -151955,6 +152293,45 @@
           "success"
         ],
         "title": "HandleDialogResult"
+      },
+      "HandshakeWarning": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "node_label": {
+            "type": "string",
+            "title": "Node Label",
+            "default": ""
+          },
+          "spec_type": {
+            "type": "string",
+            "title": "Spec Type",
+            "default": ""
+          },
+          "field": {
+            "type": "string",
+            "title": "Field",
+            "default": ""
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "node_id",
+          "message"
+        ],
+        "title": "HandshakeWarning",
+        "description": "One certain interface break at the placed step's joints (handshake.py)."
       },
       "HappeoServiceStatus": {
         "properties": {
@@ -196328,6 +196705,26 @@
             "type": "string",
             "title": "Message",
             "description": "One human sentence naming the mode and, when refused, the remedy."
+          },
+          "require_mode_pairing": {
+            "type": "boolean",
+            "title": "Require Mode Pairing",
+            "description": "The commerce.print_orders.require_mode_pairing setting as it resolves for this organization. True = a mismatched pairing refuses the order."
+          },
+          "allow_dev_origin_live_charges": {
+            "type": "boolean",
+            "title": "Allow Dev Origin Live Charges",
+            "description": "The commerce.print_orders.allow_dev_origin_live_charges setting as it resolves for this organization. True = a localhost-origin request may open a live charge, and every such order is recorded."
+          },
+          "ordering_allowed": {
+            "type": "boolean",
+            "title": "Ordering Allowed",
+            "description": "The server's own answer for a request from a DEPLOYED surface: whether ordering is open right now, once the settings above are applied. A dev-origin surface must also consult allow_dev_origin_live_charges."
+          },
+          "settings_note": {
+            "type": "string",
+            "title": "Settings Note",
+            "description": "Plain words naming what each setting is currently doing, for the badge."
           }
         },
         "type": "object",
@@ -196337,7 +196734,11 @@
           "payment_mode",
           "pairing_ok",
           "charges_real_money",
-          "message"
+          "message",
+          "require_mode_pairing",
+          "allow_dev_origin_live_charges",
+          "ordering_allowed",
+          "settings_note"
         ],
         "title": "PrintPaymentMode",
         "description": "What the backend's print lane actually is — the honest answer a surface\nbadges instead of asserting a mode from its own hostname."
@@ -218895,6 +219296,96 @@
         ],
         "title": "SetVariableOp",
         "description": "Upsert a declared run variable by name."
+      },
+      "SettlePlanRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "SettlePlanRequest"
+      },
+      "SettlePlanResponse": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/PlanRecord"
+          },
+          "node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Node Ids"
+          },
+          "emitted_count": {
+            "type": "integer",
+            "title": "Emitted Count"
+          },
+          "detached_edges": {
+            "type": "integer",
+            "title": "Detached Edges"
+          },
+          "needs_wiring": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Needs Wiring"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "node_ids",
+          "emitted_count",
+          "detached_edges",
+          "needs_wiring",
+          "note"
+        ],
+        "title": "SettlePlanResponse"
       },
       "SetupAgentBody": {
         "properties": {
