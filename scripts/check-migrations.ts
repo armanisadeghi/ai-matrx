@@ -128,21 +128,12 @@ function sha256(s: string): string {
  * before an authorized regeneration. Keep this source-only so a correction cannot
  * quietly be mistaken for a live migration.
  */
-function dd137b13SourceRepairErrors(): string[] {
+function dd137b13SourceRepairErrorsFromText(repairSource: string): string[] {
   const errors: string[] = [];
-  if (!existsSync(DD137B13_HISTORICAL_GATE)) {
-    errors.push("the applied DD-137b13 historical gate is missing");
-  }
-  if (!existsSync(DD137B13_SOURCE_REPAIR)) {
-    errors.push("the DD-137b13 source-record repair SQL is missing");
-    return errors;
-  }
-
-  const repair = readFileSync(DD137B13_SOURCE_REPAIR, "utf8").toLowerCase();
+  const repair = repairSource.toLowerCase();
   const required = [
     "do not apply this file as a migration",
     "where pr.run_id = v_before",
-    "raise exception",
     "access_delta_assert_no_widening(v_before, v_after)",
   ];
   for (const text of required) {
@@ -154,7 +145,86 @@ function dd137b13SourceRepairErrors(): string[] {
   if (repair.includes("from pg_policy") || repair.includes("polname = 'platform_admin_all'")) {
     errors.push("source repair substitutes a platform_admin_all policy-name check for a per-principal delta");
   }
+
+  const refusal = /if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then([\s\S]*?)end\s+if\s*;/i.exec(
+    repair,
+  );
+  if (!refusal) {
+    errors.push("source repair is missing the structural unpinnable-BEFORE refusal block");
+  } else {
+    if (!/raise\s+exception\b/i.test(refusal[1])) {
+      errors.push("unpinnable-BEFORE block does not raise an exception");
+    }
+    const assertionIndex = repair.indexOf("access_delta_assert_no_widening(v_before, v_after)");
+    if (assertionIndex < refusal.index + refusal[0].length) {
+      errors.push("full per-principal assertion must run only after the unpinnable-BEFORE refusal");
+    }
+  }
+
+  const unpinnedQuery = /from\s+iam\.access_delta_probe\s+pr[\s\S]*?where\s+pr\.run_id\s*=\s*v_before[\s\S]*?pr\.error_text\s+like\s+'note:\s*no\s+created_at%'/i;
+  if (!unpinnedQuery.test(repair)) {
+    errors.push("source repair does not derive unpinnable tokens from the exact BEFORE snapshot");
+  }
   return errors;
+}
+
+function dd137b13SourceRepairErrors(): string[] {
+  const errors: string[] = [];
+  if (!existsSync(DD137B13_HISTORICAL_GATE)) {
+    errors.push("the applied DD-137b13 historical gate is missing");
+  }
+  if (!existsSync(DD137B13_SOURCE_REPAIR)) {
+    errors.push("the DD-137b13 source-record repair SQL is missing");
+    return errors;
+  }
+  return errors.concat(
+    dd137b13SourceRepairErrorsFromText(readFileSync(DD137B13_SOURCE_REPAIR, "utf8")),
+  );
+}
+
+function runDd137b13SelfTest(): number {
+  const source = readFileSync(DD137B13_SOURCE_REPAIR, "utf8");
+  const cases = [
+    {
+      name: "missing refusal block",
+      sql: source.replace(
+        /if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then[\s\S]*?end\s+if\s*;/i,
+        "",
+      ),
+      finding: "structural unpinnable-BEFORE refusal block",
+    },
+    {
+      name: "refusal downgraded to notice",
+      sql: source.replace(
+        /(if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then[\s\S]*?)raise\s+exception/i,
+        "$1raise notice",
+      ),
+      finding: "does not raise an exception",
+    },
+    {
+      name: "probe deletion injected",
+      sql: source.replace(
+        "v_msg := iam.access_delta_assert_no_widening(v_before, v_after);",
+        "delete from iam.access_delta_probe where run_id = v_before;\n  v_msg := iam.access_delta_assert_no_widening(v_before, v_after);",
+      ),
+      finding: "deletes access-delta probes",
+    },
+  ];
+
+  const baseline = dd137b13SourceRepairErrorsFromText(source);
+  if (baseline.length) {
+    console.error(`DD-137b13 self-test baseline failed: ${baseline.join("; ")}`);
+    return 1;
+  }
+  for (const testCase of cases) {
+    const errors = dd137b13SourceRepairErrorsFromText(testCase.sql);
+    if (!errors.some((error) => error.includes(testCase.finding))) {
+      console.error(`DD-137b13 self-test missed ${testCase.name}: ${errors.join("; ")}`);
+      return 1;
+    }
+  }
+  console.log(`DD-137b13 source-repair self-test passed (${cases.length} planted violations).`);
+  return 0;
 }
 
 /** Resolve Supabase URL + a key. There is exactly ONE name for the URL —
@@ -363,6 +433,8 @@ function loadDriftOkSet(): Set<string> {
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
 
+  if (process.argv.includes("--self-test-dd137b13")) return runDd137b13SelfTest();
+
   const dd137b13Errors = dd137b13SourceRepairErrors();
   if (dd137b13Errors.length) {
     console.log();
@@ -413,7 +485,7 @@ async function main(): Promise<number> {
     console.log(
       `${TAG.warn}Migrations: Supabase creds absent — ledger check skipped`,
     );
-    return 0; // never block on missing local creds
+    return dd137b13Errors.length && strict ? 1 : 0;
   }
 
   const ledgerRows = await fetchLedger(env.url, env.key);
