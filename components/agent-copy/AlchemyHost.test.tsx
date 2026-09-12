@@ -6,7 +6,10 @@ import type { AiPreparation } from "@ai-matrx/kit/content-transfer";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useContentTransferCapabilities } from "@ai-matrx/design-system/content-transfer";
 
-let identity = { userId: "user-a", organizationId: "org-a" };
+let identity: { userId: string; organizationId: string | null } = {
+  userId: "user-a",
+  organizationId: "org-a",
+};
 const dispatch = jest.fn();
 let providerProps: {
   transport: { fetch: (path: string, init: unknown) => Promise<unknown> };
@@ -19,6 +22,12 @@ let providerProps: {
 let lastPreparationSignal: AbortSignal | undefined;
 let mockAdoptOptions: { abortController?: AbortController } | null = null;
 const mockConsume = jest.fn(() => new Promise<void>(() => {}));
+const transportFetch = jest.fn(
+  async (_path: string, init: { signal?: AbortSignal }) => {
+    lastPreparationSignal = init.signal;
+    return mockResponse;
+  },
+);
 let mockResponse: {
   ok: boolean;
   headers: { get: (name: string) => string | null };
@@ -65,10 +74,7 @@ jest.mock("@ai-matrx/agents/content-transfer/react", () => ({
 
 jest.mock("@/lib/api/matrx-transport", () => ({
   createMatrxTransport: () => ({
-    fetch: async (_path: string, init: { signal?: AbortSignal }) => {
-      lastPreparationSignal = init.signal;
-      return mockResponse;
-    },
+    fetch: transportFetch,
   }),
 }));
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
@@ -97,6 +103,7 @@ describe("AlchemyHost identity lifecycle", () => {
     lastPreparationSignal = undefined;
     mockAdoptOptions = null;
     mockConsume.mockClear();
+    transportFetch.mockClear();
     mockResponse = {
       ok: false,
       headers: { get: () => null },
@@ -234,5 +241,6 @@ describe("AlchemyHost identity lifecycle", () => {
     expect(exposedAi).toBeUndefined();
     expect(providerProps).not.toBeNull();
     expect(mockConsume).not.toHaveBeenCalled();
+    expect(transportFetch).not.toHaveBeenCalled();
   });
 });

@@ -5,15 +5,45 @@ const replace = jest.fn();
 const create = jest.fn();
 let organizationId: string | null = null;
 
+const reduxState = () =>
+  ({
+    appContext: {
+      organization_id: organizationId,
+      organization_name: null,
+      personal_organization_id: null,
+      scope_selections: {},
+      active_scope_type_ids: [],
+      project_id: null,
+      project_name: null,
+      task_id: null,
+      task_name: null,
+      conversation_id: null,
+      orgBootstrapResolved: false,
+    },
+    scopesTree: {
+      organizations: {},
+      organizationIds: [],
+      treeStatus: "idle",
+      treeError: null,
+      treeFetchedAt: null,
+    },
+    userAuth: { id: null },
+    userPreferences: { organization: { defaultOrganizationId: null } },
+  }) as never;
+
 jest.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: () => organizationId,
+  useAppSelector: (selector: (state: unknown) => unknown) => selector(reduxState()),
+  useAppDispatch: () => jest.fn(),
+  useAppStore: () => ({ getState: reduxState }),
 }));
 jest.mock("@/features/notes/service/notesApi", () => ({
   NotesAPI: { create },
 }));
 
 import { EduNoteNew } from "./EduNoteNew";
+
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("EduNoteNew organization hydration", () => {
   let host: HTMLDivElement;
