@@ -10,6 +10,8 @@
 
 :root {
   --shell-header-h: 2.75rem;
+  --shell-header-fade-h: 2.5rem;
+  --shell-header-clearance: calc(var(--shell-header-h) + var(--shell-header-fade-h));
   /* Marketing CTA banner: right inset so its action button clears the
      fixed header user avatar. Scoped to AuthedWorkspaceCTA — NOT applied
      page-wide (that offsets every centered section left). */
@@ -1284,7 +1286,7 @@ button.shell-nav-flyout-item {
   /* Long fade tail past the header's edge. A short tail reads as a hard band
      across hero art — the extra stops below approximate an ease-out so the
      scrim dissolves instead of ending. */
-  bottom: -2.5rem;
+  bottom: calc(-1 * var(--shell-header-fade-h));
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(

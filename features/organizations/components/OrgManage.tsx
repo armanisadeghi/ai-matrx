@@ -14,6 +14,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useAnchoredSections } from "@/hooks/useAnchoredSections";
 import {
   Settings,
   Users,
@@ -82,6 +83,10 @@ export function OrgManage({
 }: OrgManageProps) {
   const [displayOrganization, setDisplayOrganization] =
     React.useState<Organization>(organization);
+
+  const { contentRef, navRef, activeSection } = useAnchoredSections(
+    organization.id,
+  );
 
   const canManageSettings = isOwner || isAdmin;
   const canManageMembers = isOwner || isAdmin;
@@ -167,13 +172,6 @@ export function OrgManage({
     },
   ].filter((s) => s.show);
 
-  function jumpTo(id: string) {
-    const section = document.getElementById(id);
-    if (!section) return;
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
-    section.focus({ preventScroll: true });
-  }
-
   return (
     <>
       <CrumbTrailHeader
@@ -183,7 +181,10 @@ export function OrgManage({
           { label: "Settings" },
         ]}
       />
-      <div className="bg-textured pb-6">
+      <div
+        ref={contentRef}
+        className="bg-textured pb-6 pt-[var(--shell-header-clearance)] [&_section[id]]:scroll-mt-[var(--section-scroll-clearance)]"
+      >
         <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5">
           {/* Identity header */}
           <Card className="p-5 relative overflow-hidden">
@@ -252,25 +253,50 @@ export function OrgManage({
           </Card>
 
           {/* Sticky section nav */}
-          <div className="sticky top-0 z-20 -mx-4 px-4 md:-mx-6 md:px-6 py-2 bg-textured/90 backdrop-blur border-b border-border">
+          <nav
+            ref={navRef}
+            aria-label="Settings sections"
+            className="sticky top-[var(--shell-header-clearance)] z-20 -mx-4 px-4 md:-mx-6 md:px-6 py-2 bg-background border-b border-border"
+          >
             <div className="flex items-center gap-1.5 overflow-x-auto">
               {sections.map((s) => (
-                <button
-                  type="button"
+                <a
                   key={s.id}
-                  onClick={() => jumpTo(s.id)}
+                  href={`#${s.id}`}
+                  onClick={(event) => {
+                    if (
+                      event.button !== 0 ||
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    )
+                      return;
+                    event.preventDefault();
+                    const url = new URL(window.location.href);
+                    url.hash = s.id;
+                    url.searchParams.delete("sectionOffset");
+                    window.history.pushState(window.history.state, "", url);
+                    window.dispatchEvent(new HashChangeEvent("hashchange"));
+                    document
+                      .getElementById(s.id)
+                      ?.focus({ preventScroll: true });
+                  }}
+                  aria-current={activeSection === s.id ? "location" : undefined}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                    s.danger
-                      ? "text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    activeSection === s.id
+                      ? "bg-primary text-primary-foreground"
+                      : s.danger
+                        ? "text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <s.icon className="h-3.5 w-3.5" />
                   {s.label}
-                </button>
+                </a>
               ))}
             </div>
-          </div>
+          </nav>
 
           {!canManageSettings && (
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -350,7 +376,7 @@ export function OrgManage({
 
           {/* Scopes — inline tree + edit links */}
           {canManageSettings && (
-            <section id="scopes" tabIndex={-1} className="scroll-mt-16">
+            <section id="scopes" tabIndex={-1}>
               <Card className="p-5">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-2.5">
@@ -487,7 +513,7 @@ export function OrgManage({
 
           {/* Custom Dictionary — org-wide terminology + pronunciation */}
           {canManageSettings && (
-            <section id="dictionary" tabIndex={-1} className="scroll-mt-16">
+            <section id="dictionary" tabIndex={-1}>
               <DictionarySection
                 level="organization"
                 ownerId={displayOrganization.id}
@@ -549,7 +575,7 @@ export function OrgManage({
 
           {/* Danger zone */}
           {canDelete && (
-            <section id="danger" tabIndex={-1} className="scroll-mt-16">
+            <section id="danger" tabIndex={-1}>
               <Card className="p-5 border-red-200 dark:border-red-900/50">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -608,7 +634,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} tabIndex={-1} className="scroll-mt-16">
+    <section id={id} tabIndex={-1}>
       <Card className="p-5">
         <div className="mb-4">
           <SectionHeading icon={icon} title={title} description={description} />
