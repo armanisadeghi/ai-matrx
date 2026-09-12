@@ -117,6 +117,13 @@ function sha256(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
 }
 
+/** Remove non-executable SQL comments before validating proof structure. */
+function stripSqlComments(sql: string): string {
+  return sql
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/--[^\n\r]*/g, " ");
+}
+
 /**
  * DD-137b13 was already ledgered before its unpinnable-baseline branch was found
  * unsound. The historical file must stay byte-for-byte intact; this guard holds
@@ -130,12 +137,17 @@ function sha256(s: string): string {
  */
 function dd137b13SourceRepairErrorsFromText(repairSource: string): string[] {
   const errors: string[] = [];
-  const repair = repairSource.toLowerCase();
+  const rawRepair = repairSource.toLowerCase();
+  const repair = stripSqlComments(repairSource).toLowerCase();
   const required = [
-    "do not apply this file as a migration",
     "where pr.run_id = v_before",
     "access_delta_assert_no_widening(v_before, v_after)",
   ];
+  if (!rawRepair.includes("do not apply this file as a migration")) {
+    errors.push(
+      "source repair is missing required proof clause: do not apply this file as a migration",
+    );
+  }
   for (const text of required) {
     if (!repair.includes(text)) errors.push(`source repair is missing required proof clause: ${text}`);
   }
@@ -190,6 +202,14 @@ function runDd137b13SelfTest(): number {
       sql: source.replace(
         /if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then[\s\S]*?end\s+if\s*;/i,
         "",
+      ),
+      finding: "structural unpinnable-BEFORE refusal block",
+    },
+    {
+      name: "refusal block commented out",
+      sql: source.replace(
+        /if\s+cardinality\s*\(\s*v_unpinned\s*\)\s*>\s*0\s+then[\s\S]*?end\s+if\s*;/i,
+        (block) => block.split("\n").map((line) => `-- ${line}`).join("\n"),
       ),
       finding: "structural unpinnable-BEFORE refusal block",
     },
