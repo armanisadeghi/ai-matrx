@@ -48,6 +48,17 @@ FAILED="$BASE.failed"
 # downward only after re-measuring heavy routes with the cache cap in force.
 MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-192}"
 NO_PROGRESS_SEC="${MATRX_PREVIEW_NO_PROGRESS_SEC:-300}"
+# Log runaway bound. 2026-09-12: a `pnpm install` in this shared checkout
+# relinked @ai-matrx/design-system while the server was compiling. 1,268 files
+# import that package, so Turbopack reported module-not-found for every one of
+# them, with full import traces, on every recompile — 3,565,305 trace lines and
+# ~460 MB in a SINGLE compile's issue set. The log reached 1.46 GB in minutes
+# and the dev server died serialising that payload (RangeError: Invalid string
+# length, uncaughtException). We cannot bound Next's serialiser, but an error
+# storm must never also fill the disk. Past the cap the log is rotated in place
+# (tail preserved) and the rotation announces itself in the log and in status.
+MAX_LOG_GB="${MATRX_PREVIEW_MAX_LOG_GB:-2}"
+LOG_TAIL_KB="${MATRX_PREVIEW_LOG_TAIL_KB:-2048}"
 
 log() { printf '[preview] %s\n' "$1"; }
 fail() { printf '[preview] ERROR: %s\n' "$1" >&2; exit 1; }
@@ -307,6 +318,33 @@ stop_for_limit() {
   rm -f "$META" "$READY" "$JAR"
 }
 
+# Keep an error storm from filling the volume. The Next process holds this file
+# open in APPEND mode, so truncating in place is safe: every later write still
+# lands at the (new) end rather than leaving a sparse hole.
+rotate_oversized_log() {
+  local size_bytes cap_bytes tail_file
+  [[ -f "$LOG" ]] || return 0
+  cap_bytes="$(awk -v gb="$MAX_LOG_GB" 'BEGIN { printf "%d", gb * 1073741824 }')"
+  size_bytes="$(stat -f %z "$LOG" 2>/dev/null || stat -c %s "$LOG" 2>/dev/null || echo 0)"
+  (( size_bytes >= cap_bytes )) || return 0
+
+  tail_file="$LOG.tail"
+  tail -c "$(( LOG_TAIL_KB * 1024 ))" "$LOG" >"$tail_file" 2>/dev/null || : >"$tail_file"
+  : >"$LOG"
+  {
+    printf '[preview] ============================================================\n'
+    printf '[preview] LOG ROTATED: it passed %s GB and was truncated in place.\n' "$MAX_LOG_GB"
+    printf '[preview] A log this size means an ERROR STORM, not normal traffic —\n'
+    printf '[preview] usually a package that stopped resolving (check for a\n'
+    printf '[preview] "Module not found" flood below). That same storm is what\n'
+    printf '[preview] kills this server with "RangeError: Invalid string length".\n'
+    printf '[preview] The last %s KB before rotation are kept at:\n' "$LOG_TAIL_KB"
+    printf '[preview]   %s\n' "$tail_file"
+    printf '[preview] ============================================================\n'
+    cat "$tail_file" 2>/dev/null || true
+  } >>"$LOG"
+}
+
 cmd_monitor() {
   local expected_pid="${1:-}" threshold_kb last_log_mtime now log_mtime rss_kb
   alive "$expected_pid" || exit 0
@@ -321,6 +359,8 @@ cmd_monitor() {
       stop_for_limit "$expected_pid" "preview stopped at $(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }') GB RSS (cap ${MAX_RSS_GB} GB); no automatic restart"
       exit 0
     fi
+
+    rotate_oversized_log
 
     if [[ ! -f "$READY" ]]; then
       log_mtime="$(mtime "$LOG")"
@@ -395,11 +435,16 @@ cmd_stop() {
   log "managed preview stopped; build cache $DISTDIR was preserved"
 }
 
-case "${1:-}" in
-  start) cmd_start ;;
-  stop) cmd_stop ;;
-  status) cmd_status ;;
-  warm) cmd_warm "${2:-}" ;;
-  monitor) cmd_monitor "${2:-}" ;;
-  *) echo "usage: $0 {start|stop|status}" >&2; exit 2 ;;
-esac
+# Only dispatch when executed. Sourcing this file exposes the helpers (the log
+# rotation bound has a forcing test that calls `rotate_oversized_log` directly)
+# without starting or stopping anything.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  case "${1:-}" in
+    start) cmd_start ;;
+    stop) cmd_stop ;;
+    status) cmd_status ;;
+    warm) cmd_warm "${2:-}" ;;
+    monitor) cmd_monitor "${2:-}" ;;
+    *) echo "usage: $0 {start|stop|status}" >&2; exit 2 ;;
+  esac
+fi
