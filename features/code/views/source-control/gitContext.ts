@@ -26,6 +26,7 @@ interface CapturedText {
 export interface RepositoryContextSnapshot {
   __kind: "git_repository_snapshot";
   capturedAt: string;
+  sandboxId: string;
   repository: Pick<
     RepositoryMetadata,
     "rootPath" | "branch" | "headSha" | "upstream"
@@ -63,6 +64,7 @@ function captureText(text: string, limit: number): CapturedText {
  * truncated file is recorded in `omissions`.
  */
 export function buildRepositoryContextSnapshot({
+  sandboxId,
   repository,
   status,
   stagedDiff,
@@ -71,6 +73,7 @@ export function buildRepositoryContextSnapshot({
   limits,
   capturedAt = new Date().toISOString(),
 }: {
+  sandboxId: string;
   repository: RepositoryMetadata;
   status: GitStatusResponse;
   stagedDiff: string;
@@ -126,6 +129,7 @@ export function buildRepositoryContextSnapshot({
   return {
     __kind: "git_repository_snapshot",
     capturedAt,
+    sandboxId,
     repository: {
       rootPath: repository.rootPath,
       branch: repository.branch,

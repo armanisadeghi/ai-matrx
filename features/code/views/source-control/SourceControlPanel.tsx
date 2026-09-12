@@ -498,7 +498,16 @@ function RepositoryPanel({
           });
         }
       }
+      if (
+        !isCurrentSandbox() ||
+        selectActiveRepositoryRoot(store.getState()) !== cwd
+      ) {
+        throw new Error(
+          "The active sandbox or repository changed. Attach the current repository again.",
+        );
+      }
       const snapshot = buildRepositoryContextSnapshot({
+        sandboxId,
         repository: latestRepository,
         status: latestStatus,
         stagedDiff: stagedDiff.text,
