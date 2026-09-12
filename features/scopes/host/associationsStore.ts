@@ -28,32 +28,38 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
-import { suppressSupabaseErrorCapture } from "@/lib/diagnostics/supabaseErrorCapture";
-
-const DEMANDED_SCHEMA_PROBE_SENTINELS = new Set([
-  "__not_a_uuid__",
-  "__probe__",
-]);
 
 /**
- * The package's development-only demanded-schema check intentionally calls
- * each RPC with impossible sentinel values. Those expected Postgres errors
- * prove that the function exists; they are not application failures and must
- * not fill the global Error Inspector. The package still receives the raw
- * result and remains responsible for screaming when a function is missing.
+ * Whether `AssociationsProvider` runs the package's `assertDemandedSchema`
+ * probe on mount (D311, 2026-09-12). **FALSE, and it must stay false.**
+ *
+ * The probe INVOKES all 26 demanded RPCs with sentinel arguments to ask
+ * whether each function exists. Fourteen of them are WRITES (`assoc_add`,
+ * `assoc_set_targets`, `cat_delete`, `cmt_add`, `ues_set`, …). Measured on
+ * `/administration/billing/spend`: 25 POSTs to `/rest/v1/rpc/<name>` answered
+ * 400 on EVERY page load, ahead of the page's own reads — and the package's
+ * `isDevelopmentBuild()` is `typeof process !== "undefined"`, true in the
+ * browser bundle, so it fired in production too.
+ *
+ * THE CLASS RULE: a write RPC is never invoked to ask whether it exists.
+ * Nothing replaces the probe because nothing needs to: the package's
+ * `mapPgError` already turns PostgREST's PGRST202 (function not found) into
+ * the same `demanded_schema_violation` scream, with the same remedy, at every
+ * REAL call site. A wrong database still announces itself loudly, at the
+ * moment it matters, and costs nothing on the loads where it is right.
+ *
+ * Lives here rather than beside its JSX so the guard test can assert the
+ * shipped value without dragging the whole React host import graph in.
  */
-export function isDemandedSchemaProbeArgs(value: unknown): boolean {
-  if (typeof value === "string") {
-    return DEMANDED_SCHEMA_PROBE_SENTINELS.has(value);
-  }
-  if (Array.isArray(value)) {
-    return value.some(isDemandedSchemaProbeArgs);
-  }
-  if (value && typeof value === "object") {
-    return Object.values(value).some(isDemandedSchemaProbeArgs);
-  }
-  return false;
-}
+export const PROBE_SCHEMA_AT_BOOT = false;
+
+// The sentinel-args suppression that used to live here is
+// GONE with the probe that produced them (D311). It existed only to keep the
+// package's boot probe — 26 RPC invocations with `__not_a_uuid__`, 14 of them
+// WRITES, 25 of them answered 400 on every page load — out of the Error
+// Inspector. AssociationsHost now passes `probeSchema={false}` (see its
+// header), so nothing calls these functions with sentinel arguments, and every
+// error that reaches this seam is a real one that must be captured.
 
 /**
  * The supabase client, narrowed to the package's structural dataSource
@@ -74,9 +80,6 @@ const client = supabase as unknown as {
 export const associationsDataSource: AssociationsDataSource = {
   rpc: (fn, args) => {
     const call = client.rpc(fn, args);
-    if (isDemandedSchemaProbeArgs(args)) {
-      return suppressSupabaseErrorCapture(call);
-    }
     if (fn !== "cmt_add") return call;
     // The cmt_add tap (W6 comments adoption): EVERY comment post — the
     // package CommentThread composer, the store service, any host caller —

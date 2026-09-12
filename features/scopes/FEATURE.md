@@ -332,6 +332,25 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-12 — **D311: the associations boot probe invoked 26 RPCs — 14 of them WRITES — on every
+  page load, and 25 of them answered 400.** `AssociationsProvider` defaults `probeSchema` to the
+  package's `assertDemandedSchema`, which asks whether each demanded function exists by CALLING it
+  with sentinel arguments (`__not_a_uuid__`): `assoc_add`, `assoc_set_targets`, `cat_delete`,
+  `cmt_add`, `ues_set` and the rest. Measured on `/administration/billing/spend`: 25 POSTs to
+  `/rest/v1/rpc/<name>` answered 400 before the page's own reads — and on every load, not only in
+  dev, because the package's `isDevelopmentBuild()` is `typeof process !== "undefined"`, which is
+  true in the browser bundle. `AssociationsHost` now passes `probeSchema={PROBE_SCHEMA_AT_BOOT}`
+  (`false`, documented in `host/associationsStore.ts`). **The class rule: a write RPC is never
+  invoked to ask whether it exists.** Nothing replaces the probe because nothing needs to — the
+  package's own `mapPgError` turns PGRST202 into the same `demanded_schema_violation` scream, with
+  the same remedy, at every real call site, so a wrong database still announces itself at the moment
+  it matters. The host's sentinel-args Error-Inspector suppression went with it (it existed only to
+  hide the probe's errors, and would now hide real ones). Guard:
+  `host/__tests__/noBootRpcProbe.test.tsx` — a recorder mounted with the probe ON names the write
+  RPCs firing (the self-test that makes the green mean something), and the shipped value mounts with
+  zero RPC calls; proven RED by flipping the constant. After: 0 rpc 400s on
+  `/administration/billing/spend` (25→0) and on `/administration` (0 of 7 reads).
+
 - 2026-09-11 — **B-7 fix round 1** (independent verification V-7). `list_scopes`, `get_scope_tree`
   and `search_scopes` were handing a non-creator member the **complete row** of a `personal` scope —
   name, slug, visibility, `created_by` — in the same breath as the table gave them 0 rows; all three
