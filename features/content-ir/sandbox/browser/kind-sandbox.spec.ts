@@ -201,6 +201,7 @@ test.describe("the Shape sandbox boundary, in a real browser", () => {
         expect(framed["parent.document"]).toMatch(/SecurityError/);
         expect(framed["document.cookie"]).toMatch(/SecurityError/);
         expect(framed.localStorage).toMatch(/SecurityError/);
+        expect(framed.sessionStorage).toMatch(/SecurityError/);
 
         /**
          * THE TWO ORIGINS (the S6 correction). `frame-bridge.ts` compares
@@ -227,5 +228,6 @@ test.describe("the Shape sandbox boundary, in a real browser", () => {
         expect(inPage["window.top"]).toBe("allowed");
         expect(inPage["document.cookie"]).toBe("allowed");
         expect(inPage.localStorage).toBe("allowed");
+        expect(inPage.sessionStorage).toBe("allowed");
     });
 });

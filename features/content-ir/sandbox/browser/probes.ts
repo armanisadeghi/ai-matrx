@@ -36,6 +36,7 @@ export const ISOLATION_PROBE_NAMES = [
     "parent.document",
     "document.cookie",
     "localStorage",
+    "sessionStorage",
 ] as const;
 
 /**
@@ -129,6 +130,7 @@ export const ISOLATION_SOURCE = String.raw`() => {
   probe("parent.document", () => { void window.parent.document.title; });
   probe("document.cookie", () => { void document.cookie; });
   probe("localStorage", () => { window.localStorage.setItem("matrx-probe", "1"); });
+  probe("sessionStorage", () => { window.sessionStorage.setItem("matrx-probe", "1"); });
   out["isSubFrame"] = String(window.parent !== window.self);
   // THE TWO ORIGINS, measured rather than assumed. They are NOT the same
   // thing inside a sandboxed frame and the difference is load-bearing: the
