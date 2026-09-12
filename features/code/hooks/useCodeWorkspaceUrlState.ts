@@ -11,6 +11,7 @@ import { toast } from "@/lib/toast";
 import {
   revealView,
   selectActiveFilesystemId,
+  selectActiveRepositoryRoot,
   selectActiveSandboxId,
   selectActiveView,
   selectExplorerRootOverride,
@@ -19,6 +20,7 @@ import {
   selectRightOpen,
   selectSideOpen,
   setExplorerRootOverride,
+  setActiveRepositoryRoot,
   setExplorerSandboxMode,
   setFarRightOpen,
   setRightOpen,
@@ -51,10 +53,11 @@ import {
 export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null): void {
   const params = useSearchParams();
   const dispatch = useAppDispatch();
-  const { filesystem } = useCodeWorkspace();
+  const { filesystem, process } = useCodeWorkspace();
   const openFile = useOpenFile();
   const activeSandboxId = useAppSelector(selectActiveSandboxId);
   const activeFilesystemId = useAppSelector(selectActiveFilesystemId);
+  const activeRepositoryRoot = useAppSelector(selectActiveRepositoryRoot);
   const activeView = useAppSelector(selectActiveView);
   const explorerRootOverride = useAppSelector(selectExplorerRootOverride);
   const explorerSandboxMode = useAppSelector(selectExplorerSandboxMode);
@@ -107,6 +110,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
         // a sandbox-less history entry prevents a prior hidden/open choice
         // from leaking into the next manual sandbox connection.
         dispatch(setExplorerSandboxMode("collapsed"));
+        dispatch(setActiveRepositoryRoot(null));
       }
       if (state.sideOpen !== null) dispatch(setSideOpen(state.sideOpen));
       if (state.rightOpen !== null) dispatch(setRightOpen(state.rightOpen));
@@ -200,6 +204,11 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     const state = parseCodeWorkspaceUrlState(new URLSearchParams(targetSearch));
     if (state.sandboxId && activeFilesystemId !== `sandbox:${state.sandboxId}`) return;
     if (!state.sandboxId && activeSandboxId) return;
+    if (
+      state.sandboxId &&
+      state.repositoryRoot &&
+      (!process.isReady || process.id !== `sandbox:${state.sandboxId}`)
+    ) return;
 
     dispatch(
       setExplorerRootOverride(
@@ -208,6 +217,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
           : null,
       ),
     );
+    dispatch(setActiveRepositoryRoot(state.repositoryRoot));
     if (state.filePath) {
       const abortController = new AbortController();
       fileRestoreAbortRef.current = abortController;
@@ -232,7 +242,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     if (state.sandboxId && state.sandboxId === initialSandboxRef.current) {
       initialSandboxRef.current = null;
     }
-  }, [activeFilesystemId, activeSandboxId, completeRestore, dispatch, filesystem, locationSearch, openFile]);
+  }, [activeFilesystemId, activeSandboxId, completeRestore, dispatch, filesystem, locationSearch, openFile, process.id, process.isReady]);
 
   // Reflect normal workspace interaction back into the current route without
   // changing history on every panel drag or tab click. `popstate` remains the
@@ -275,6 +285,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       bottomOpen,
       bottomTab,
       explorerSandboxMode: activeSandboxId ? explorerSandboxMode : null,
+      repositoryRoot: activeSandboxId ? activeRepositoryRoot : null,
     });
     const nextSearch = next.toString();
     if (nextSearch === currentSearch) {
@@ -297,6 +308,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   }, [
     activeSandboxId,
     activeTab,
+    activeRepositoryRoot,
     activeView,
     bottomOpen,
     bottomTab,

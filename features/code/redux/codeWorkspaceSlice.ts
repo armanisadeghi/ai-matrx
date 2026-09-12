@@ -54,6 +54,8 @@ export interface CodeWorkspaceState {
   explorerRootOverride: string | null;
   /** Visibility of the Explorer's active-sandbox lower split. */
   explorerSandboxMode: ExplorerSandboxMode;
+  /** Source Control's selected worktree. Explorer browsing never changes it. */
+  activeRepositoryRoot: string | null;
   /**
    * Mirror of the active filesystem adapter. The adapter itself is held in
    * React context (`CodeWorkspaceProvider`) because it isn't serializable,
@@ -103,6 +105,7 @@ const initialState: CodeWorkspaceState = {
   activeSandboxProxyUrl: null,
   explorerRootOverride: null,
   explorerSandboxMode: "collapsed",
+  activeRepositoryRoot: null,
   activeFilesystemId: null,
   activeFilesystemLabel: null,
   activeFilesystemRoot: null,
@@ -189,6 +192,7 @@ const slice = createSlice({
       // Reset any custom explorer root when a new sandbox is connected so
       // the user always starts at the adapter's default path.
       state.explorerRootOverride = null;
+      state.activeRepositoryRoot = null;
       // Disconnecting clears the proxy URL too; re-connecting will set
       // it via `setActiveSandboxProxyUrl` below.
       if (action.payload === null) {
@@ -200,6 +204,7 @@ const slice = createSlice({
       state.activeSandbox = action.payload;
       state.activeSandboxId = action.payload?.id ?? null;
       state.activeSandboxProxyUrl = action.payload?.proxy_url ?? null;
+      state.activeRepositoryRoot = null;
       if (action.payload === null) {
         state.explorerRootOverride = null;
       }
@@ -212,6 +217,9 @@ const slice = createSlice({
     },
     setExplorerSandboxMode(state, action: PayloadAction<ExplorerSandboxMode>) {
       state.explorerSandboxMode = action.payload;
+    },
+    setActiveRepositoryRoot(state, action: PayloadAction<string | null>) {
+      state.activeRepositoryRoot = action.payload;
     },
     /**
      * Mirror the active filesystem adapter into Redux. Called by
@@ -256,6 +264,7 @@ export const {
   setActiveSandboxProxyUrl,
   setExplorerRootOverride,
   setExplorerSandboxMode,
+  setActiveRepositoryRoot,
   setActiveFilesystem,
   bumpFreshSession,
 } = slice.actions;
@@ -287,6 +296,8 @@ export const selectExplorerRootOverride = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).explorerRootOverride;
 export const selectExplorerSandboxMode = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).explorerSandboxMode;
+export const selectActiveRepositoryRoot = (state: WithCodeWorkspace) =>
+  selectCodeWorkspace(state).activeRepositoryRoot;
 export const selectEditorMode = (state: WithCodeWorkspace): EditorMode =>
   selectCodeWorkspace(state).editorMode;
 export const selectActiveFilesystemId = (state: WithCodeWorkspace) =>

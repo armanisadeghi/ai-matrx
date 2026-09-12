@@ -6,6 +6,8 @@ import {
   withCodeWorkspaceUrlState,
 } from "../url-state";
 import codeWorkspaceReducer, {
+  setActiveRepositoryRoot,
+  setActiveSandboxId,
   setExplorerSandboxMode,
 } from "../redux/codeWorkspaceSlice";
 
@@ -21,6 +23,7 @@ describe("code workspace URL state", () => {
       sandboxId: "s1",
       filePath: "/home/agent/src/app.ts",
       explorerRoot: "/home/agent",
+      repositoryRoot: null,
       activeView: "explorer",
       sideOpen: false,
       rightOpen: true,
@@ -44,6 +47,7 @@ describe("code workspace URL state", () => {
         sandboxId: "sandbox-1",
         filePath: "/workspace/index.ts",
         explorerRoot: null,
+        repositoryRoot: "/workspace/repo",
         activeView: "explorer",
         sideOpen: true,
         rightOpen: false,
@@ -55,7 +59,7 @@ describe("code workspace URL state", () => {
     );
 
     expect(result.toString()).toBe(
-      "open=file-1&folder=folder-1&agentId=a&conversationId=c&view=explorer&sandbox=sandbox-1&file=%2Fworkspace%2Findex.ts&side=1&chat=0&history=0&bottom=1&bottomTab=terminal&sandboxPane=hidden",
+      "open=file-1&folder=folder-1&agentId=a&conversationId=c&view=explorer&sandbox=sandbox-1&file=%2Fworkspace%2Findex.ts&side=1&chat=0&history=0&bottom=1&bottomTab=terminal&sandboxPane=hidden&repo=%2Fworkspace%2Frepo",
     );
   });
 
@@ -79,12 +83,13 @@ describe("code workspace URL state", () => {
 
   it("round-trips an active sandbox pane mode and defaults bare sandbox links to collapsed", () => {
     const restored = parseCodeWorkspaceUrlState(
-      new URLSearchParams("sandbox=s1&sandboxPane=open"),
+      new URLSearchParams("sandbox=s1&sandboxPane=open&repo=%2Fworkspace%2Frepo"),
     );
     expect(restored.explorerSandboxMode).toBe("open");
+    expect(restored.repositoryRoot).toBe("/workspace/repo");
     expect(
       withCodeWorkspaceUrlState(new URLSearchParams("agentId=a"), restored).toString(),
-    ).toBe("agentId=a&sandbox=s1&sandboxPane=open");
+    ).toBe("agentId=a&sandbox=s1&sandboxPane=open&repo=%2Fworkspace%2Frepo");
 
     const bareSandbox = parseCodeWorkspaceUrlState(new URLSearchParams("sandbox=s1"));
     expect(resolveCodeWorkspaceExplorerSandboxMode(bareSandbox)).toBe("collapsed");
@@ -112,5 +117,16 @@ describe("code workspace URL state", () => {
       codeWorkspaceReducer(hidden, setExplorerSandboxMode("collapsed"))
         .explorerSandboxMode,
     ).toBe("collapsed");
+  });
+
+  it("clears the selected repository whenever the sandbox changes", () => {
+    const withRepository = codeWorkspaceReducer(
+      undefined,
+      setActiveRepositoryRoot("/workspace/repo"),
+    );
+    expect(
+      codeWorkspaceReducer(withRepository, setActiveSandboxId("sandbox-2"))
+        .activeRepositoryRoot,
+    ).toBeNull();
   });
 });

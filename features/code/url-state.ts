@@ -14,6 +14,7 @@ export const CODE_WORKSPACE_URL_KEYS = {
   bottom: "bottom",
   bottomTab: "bottomTab",
   sandboxPane: "sandboxPane",
+  repository: "repo",
 } as const;
 
 const ACTIVITY_VIEWS = new Set<ActivityViewId>([
@@ -58,6 +59,7 @@ export interface CodeWorkspaceUrlState {
   /** The active sandbox's Explorer lower split. Null leaves a deep link at
    * its compact default. */
   explorerSandboxMode: ExplorerSandboxMode | null;
+  repositoryRoot: string | null;
 }
 
 export const EMPTY_CODE_WORKSPACE_URL_STATE: CodeWorkspaceUrlState = {
@@ -71,6 +73,7 @@ export const EMPTY_CODE_WORKSPACE_URL_STATE: CodeWorkspaceUrlState = {
   bottomOpen: null,
   bottomTab: null,
   explorerSandboxMode: null,
+  repositoryRoot: null,
 };
 
 function readBoolean(params: URLSearchParams, key: string): boolean | null {
@@ -100,6 +103,7 @@ export function parseCodeWorkspaceUrlState(
     sandboxId: params.get(CODE_WORKSPACE_URL_KEYS.sandbox),
     filePath: readAbsolutePath(params, CODE_WORKSPACE_URL_KEYS.file),
     explorerRoot: readAbsolutePath(params, CODE_WORKSPACE_URL_KEYS.root),
+    repositoryRoot: readAbsolutePath(params, CODE_WORKSPACE_URL_KEYS.repository),
     activeView: view && ACTIVITY_VIEWS.has(view as ActivityViewId)
       ? (view as ActivityViewId)
       : null,
@@ -158,5 +162,6 @@ export function withCodeWorkspaceUrlState(
   set(CODE_WORKSPACE_URL_KEYS.bottom, state.bottomOpen === null ? null : state.bottomOpen ? "1" : "0");
   set(CODE_WORKSPACE_URL_KEYS.bottomTab, state.bottomTab);
   set(CODE_WORKSPACE_URL_KEYS.sandboxPane, state.explorerSandboxMode);
+  set(CODE_WORKSPACE_URL_KEYS.repository, state.repositoryRoot);
   return params;
 }
