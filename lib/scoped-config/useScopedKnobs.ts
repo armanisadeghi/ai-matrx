@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { fetchKnobIndex } from "./service";
 import type { ScopedKnob } from "./types";
@@ -30,58 +30,37 @@ export function useScopedKnobs(options: {
   overriddenOnly?: boolean;
 }): ScopedKnobsValue {
   const { organizationId, featurePrefix, userId, overriddenOnly } = options;
-  const [knobs, setKnobs] = useState<ScopedKnob[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Mask old configuration synchronously when ANY resolver input changes.
+  // An effect-only reset briefly exposes the previous user's/org's policy.
+  const requestKey = JSON.stringify([organizationId, featurePrefix, userId, overriddenOnly]);
+  const [snapshot, setSnapshot] = useState<{
+    requestKey: string;
+    knobs: ScopedKnob[];
+    isLoading: boolean;
+    error: string | null;
+  } | null>(null);
   const [generation, setGeneration] = useState(0);
-  const loadedOrgRef = useRef<string | null>(null);
-
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
   useEffect(() => {
-    if (!organizationId) {
-      setKnobs([]);
-      setIsLoading(false);
-      loadedOrgRef.current = null;
-      return;
-    }
-    // A NEW organization (including the id arriving after a null first render)
-    // is a first read, not a refresh: show loading rather than presenting the
-    // previous (or empty) list as this org's final answer.
-    if (loadedOrgRef.current !== organizationId) {
-      setIsLoading(true);
-      loadedOrgRef.current = organizationId;
-    }
+    if (!organizationId) return;
     let cancelled = false;
-    (async () => {
-      try {
-        const rows = await fetchKnobIndex({
-          organizationId,
-          featurePrefix,
-          userId,
-          overriddenOnly,
-        });
-        if (!cancelled) {
-          setKnobs(rows);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : String(err));
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, featurePrefix, userId, overriddenOnly, generation]);
+    void fetchKnobIndex({ organizationId, featurePrefix, userId, overriddenOnly })
+      .then((knobs) => {
+        if (!cancelled) setSnapshot({ requestKey, knobs, isLoading: false, error: null });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setSnapshot({ requestKey, knobs: [], isLoading: false,
+          error: err instanceof Error ? err.message : String(err) });
+      });
+    return () => { cancelled = true; };
+  }, [organizationId, featurePrefix, userId, overriddenOnly, requestKey, generation]);
 
-  const missing = useMemo(
-    () => knobs.filter((knob) => knob.origin === "missing"),
-    [knobs],
-  );
+  const current = organizationId && snapshot?.requestKey === requestKey ? snapshot : null;
+  const knobs = current?.knobs ?? [];
+  const isLoading = Boolean(organizationId) && !current;
+  const error = current?.error ?? null;
+  const missing = knobs.filter((knob) => knob.origin === "missing");
 
   return { knobs, isLoading, error, refresh, missing };
 }
