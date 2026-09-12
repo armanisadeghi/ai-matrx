@@ -10,7 +10,7 @@
 // changing anything in this route.
 
 import { PrintSectionFrame } from "@/features/print/components/PrintSectionFrame";
-import PrintOrderWorkspace from "@/features/print/order/PrintOrderWorkspace";
+import { PrintOrderWorkspace } from "@/features/print/order/PrintOrderWorkspace";
 
 export default function PrintOrderRoute() {
     return (
