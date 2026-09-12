@@ -59,6 +59,8 @@ const FIXTURE_EVENT: NodeEmittedEvent = {
   kind: "status_report",
   kind_ok: true,
   metadata: { __ir: { verified: true } },
+  empty_values: [],
+  empty_notice: null,
 };
 
 function propsFromEvent(event: NodeEmittedEvent, seq: number): EmitRendererProps {
