@@ -12,6 +12,7 @@ import type { Database, Json } from "@/types/database.types";
 import { readAllRows } from "@ai-matrx/data/db";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
+import { componentSourceGate } from "@/features/agent-apps/utils/component-source-gate";
 
 export type KindComponentCodeClient = SupabaseClient<Database>;
 
@@ -95,6 +96,18 @@ export async function listKindComponentCode(
   }
 }
 
+/**
+ * The row's render flavor. `"html"` bodies never reach the in-page compiler —
+ * they render inside `KindHtmlFrame`'s origin-isolated iframe — so the TSX
+ * source gate does not apply to them.
+ */
+function readFlavor(config: Json): string | null {
+  if (!config || typeof config !== "object" || Array.isArray(config))
+    return null;
+  const flavor = (config as Record<string, Json>).flavor;
+  return typeof flavor === "string" ? flavor : null;
+}
+
 export interface SaveKindComponentCodeArgs {
   component: KindComponentCodeRecord;
   componentSource: string;
@@ -113,6 +126,18 @@ export async function saveKindComponentCode(
   if (!args.componentSource.trim()) {
     throw new Error("Component code cannot be empty.");
   }
+
+  // 🚨 THE SOURCE GATE (Q82 / B-17, 2026-09-11). Until this call the browser
+  // write path ran NO check at all while the aidream agent-tool path ran an
+  // import allowlist — so a component saved here could `fetch()` the reader's
+  // session data to any host. Both paths now run the SAME rule
+  // (features/agent-apps/utils/component-source-gate.ts and its Python twin in
+  // aidream kind_shared.py, held byte-identical by a parity test), and a
+  // database trigger on content_ir.kind_component backstops both.
+  const refusal = componentSourceGate(args.componentSource, {
+    flavor: readFlavor(args.component.config),
+  });
+  if (refusal) throw new Error(refusal);
 
   const { data: authData, error: authError } = await client.auth.getUser();
   if (authError) {

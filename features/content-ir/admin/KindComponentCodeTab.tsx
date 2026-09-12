@@ -172,6 +172,9 @@ export default function KindComponentCodeTab({
         const compiled = compileSlotComponent({
           code: draft,
           allowedImports: declaredImports,
+          // Same scope the reader gets (Q82 / B-17) — the editor must never
+          // compile against a wider scope than the one it saves into.
+          sandboxDangerousGlobals: true,
         });
         if (!compiled.Component || compiled.error) {
           throw new Error(
