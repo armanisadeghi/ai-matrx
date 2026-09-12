@@ -242,6 +242,38 @@ export interface SurfaceWriteTarget {
   /** Shape of the value a caller must pass. */
   valueType: SurfaceValueType;
   /**
+   * THE VALUE CONTRACT — the slug of a registered Kind
+   * (`content_ir.kind_definition`) whose schema describes the value this
+   * target accepts. Not a shape written here: the kind's
+   * `emitted_json_schema` IS the contract, and it is the SAME contract
+   * everywhere the value travels — on the wire (the `apply_surface_write`
+   * inline spec), at the seam (`applySurfaceWrite` validates through
+   * `validateAgainstKind` before approval and before the handler), and in
+   * the DB mirror (`ui.ui_surface_write_target.kind_key`, which aidream's
+   * resolver prints as `kind=<slug>`).
+   *
+   * THE RULE:
+   * - REQUIRED for a structured target (`valueType: "object" | "array"`).
+   *   A structured value with only prose to describe it is a contract an
+   *   agent can only guess at, and the handler's hand-rolled throw is the
+   *   only thing between a malformed value and the page. This is RATCHETED,
+   *   not retroactive: `pnpm check:surface-drift` prints the count of
+   *   structured targets still lacking one (advisory, loud) and ERRORS on
+   *   any target naming a kind the generated registry does not carry. New
+   *   structured targets declare one.
+   * - OPTIONAL for a primitive target (`string`/`number`/`boolean`/
+   *   `document`) — `valueType` already is the contract. Declare one anyway
+   *   when the primitive is constrained (an enum, a pattern, a bounded
+   *   number) and a kind captures that.
+   *
+   * NO INLINE JSON SCHEMAS. The One-Type Law puts kind payload shapes in
+   * `features/content-ir/kinds/generated/kinds.generated.ts` and nowhere
+   * else; a target NAMES a kind, it never re-declares one. Need a shape no
+   * kind carries? Register the kind (see the `shape-system` skill) and name
+   * it here.
+   */
+  valueKind?: string;
+  /**
    * The declared SurfaceValue this target updates, when there is a 1:1 read
    * twin — the evidence loop (read the value, write the target). Omit for
    * pure-action targets with no read twin.
