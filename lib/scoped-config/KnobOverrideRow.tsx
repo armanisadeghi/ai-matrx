@@ -34,6 +34,13 @@ import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
 import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 
 function valueText(value: unknown): string {
@@ -291,23 +298,27 @@ export function KnobOverrideRow(props: {
       ) : (
       <div className="flex items-start gap-2">
         {enumOptions ? (
-          <select
-            className="h-9 w-40 rounded-md border border-border bg-background px-2 text-sm"
-            id={knob.full_key}
-            aria-label={knob.label}
-            value={draft}
+          <Select
+            value={draft || undefined}
             disabled={busy || !canWrite}
-            onChange={(event) => setDraft(event.target.value)}
+            onValueChange={setDraft}
           >
-            <option value="" disabled>
-              {formatKnobValue(knob.effective_value, knob.unit)}
-            </option>
+            <SelectTrigger
+              id={knob.full_key}
+              aria-label={knob.label}
+              size="default"
+              className="w-40"
+            >
+              <SelectValue placeholder={formatKnobValue(knob.effective_value, knob.unit)} />
+            </SelectTrigger>
+            <SelectContent>
             {enumOptions.map((option) => (
-              <option key={option} value={option}>
+              <SelectItem key={option} value={option}>
                 {option}
-              </option>
+              </SelectItem>
             ))}
-          </select>
+            </SelectContent>
+          </Select>
         ) : (
           <Input
             className="w-40"
