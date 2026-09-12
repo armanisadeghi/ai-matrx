@@ -19,7 +19,7 @@ Super-admin documentation routes browse the active feature-document registry wit
 
 1. `FeatureDocsTable` loads the full source list through `listFeatureDocs()` and displays any error above the table.
 2. It applies zone and dot-directory restriction before include/exclude glob rules, title, area, slug, sync-state, and version filters.
-3. `MatrxDataTable` owns local sorting and responsive table/card presentation with `pageSize={0}`, preserving the full-list view.
+3. `MatrxDataTable` applies local sorting and filtering to the complete loaded source, then renders its standard 25-row page. Its page-size control remains available; large tooling directories do not mount thousands of rows by default.
 4. The explicit **Open** action resolves `featureDocViewHref(path)` and opens the document viewer in a new tab.
 
 ## Invariants
@@ -36,4 +36,5 @@ Super-admin documentation routes browse the active feature-document registry wit
 
 ## Change log
 
+- 2026-09-12: Restored the canonical 25-row rendering default after the live .claude view exposed 5,215 records; local search and filters still cover the complete source.
 - 2026-09-12: Replaced the bespoke Feature Docs renderer with `MatrxDataTable`, preserving full-list local filtering, sorting, refresh/error behavior, mobile presentation, and document navigation.
