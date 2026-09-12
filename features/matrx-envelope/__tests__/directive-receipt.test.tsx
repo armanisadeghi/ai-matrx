@@ -86,12 +86,19 @@ describe("the directive receipt says what happened", () => {
     expect(already).toContain("Already applied — nothing new was created.");
   });
 
-  it("never claims a resource count on an outcome that wrote nothing", () => {
-    expect(renderReceipt("proposed")).not.toMatch(/\d+ projects? affected/);
-    expect(renderReceipt("blocked")).not.toMatch(/\d+ projects? affected/);
-    expect(renderReceipt("applied", ["p", "t1", "t2", "t3", "t4"])).toContain(
-      "5 projects affected",
-    );
+  it("counts NOTHING on screen — the sentence is the whole card (V-19)", () => {
+    // The first cut printed "{N} {resource_kind}s affected" from
+    // `resource_ids.length`. For the real create_project_with_tasks receipt —
+    // five ids, all under resource_kind "project", for ONE project and FOUR
+    // tasks — that read "5 projects affected" beneath a correct sentence. The
+    // same false derivation the server refuses to make, made on the client.
+    const applied = renderReceipt("applied", ["p", "t1", "t2", "t3", "t4"]);
+    expect(applied).not.toMatch(/\d+\s+projects?\s+affected/);
+    expect(applied).not.toMatch(/affected/);
+    expect(renderReceipt("proposed")).not.toMatch(/affected/);
+    expect(renderReceipt("blocked")).not.toMatch(/affected/);
+    // What IS on screen: the server's sentence, and the outcome label.
+    expect(applied).toContain(SERVER_SENTENCES.applied);
   });
 
   it("pins the RED: the pre-DD-118 client-composed line could not tell the outcomes apart", () => {
