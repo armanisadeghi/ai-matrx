@@ -813,6 +813,35 @@ export interface LegalSyncEventData {
   error?: string | null;
 }
 
+export interface MasterworkAuditionOutcomeVerdictData {
+  type?: "masterwork_audition_outcome_verdict";
+  rulebook_id: string;
+  case_id: string;
+  run_scope: string;
+  verdict: string;
+  why?: string;
+  summary?: string;
+  judge_confidence?: number | null;
+  dangerous_branch?: boolean;
+  dangerous_branch_quote?: string;
+  decisive_question_seq?: number | null;
+  missed_cheaper_question?: string;
+  disclosures?: number;
+  asks?: number;
+  cost_points?: number;
+  risk_points?: number;
+  quality_score?: number | null;
+  weights?: Record<string, number>;
+  vanilla_compared?: boolean;
+  vanilla_verdict?: string | null;
+  vanilla_answer?: string | null;
+  vanilla_score?: number | null;
+  vanilla_model?: string | null;
+  vanilla_error?: string | null;
+  beat_vanilla?: boolean | null;
+  verdict_sentence?: string | null;
+}
+
 export interface MasterworkAuditionProgressData {
   type?: "masterwork_audition_progress";
   step: string;
@@ -1039,6 +1068,21 @@ export interface MasterworkRunSnapshotData {
   completed_at?: string | null;
 }
 
+export interface MasterworkSealedCaseDisclosureData {
+  type?: "masterwork_sealed_case_disclosure";
+  case_id: string;
+  run_scope: string;
+  seq: number;
+  event?: string;
+  question?: string;
+  answer?: string;
+  found?: boolean;
+  cost?: string | null;
+  risk?: string | null;
+  asked_kind?: string | null;
+  disclosures_so_far?: number;
+}
+
 export interface MasterworkShortlistItem {
   key: string;
   reason?: string;
@@ -1048,6 +1092,41 @@ export interface MasterworkShortlistData {
   type?: "masterwork_shortlist";
   selected?: MasterworkShortlistItem[];
   considered?: number;
+}
+
+export interface MasterworkTriageDecision {
+  rule_id: string;
+  name?: string;
+  verdict?: string;
+  reason?: string;
+  statement?: string;
+}
+
+export interface MasterworkTriageCompleteData {
+  type?: "masterwork_triage_complete";
+  rulebook_id: string;
+  rulebook_version: number;
+  drafts_considered?: number;
+  retired?: number;
+  kept?: number;
+  rewritten?: number;
+  refused?: string[];
+  failed_batches?: number;
+  drafts_unreviewed?: number;
+  dry_run?: boolean;
+  decisions?: MasterworkTriageDecision[];
+}
+
+export interface MasterworkTriageProgressData {
+  type?: "masterwork_triage_progress";
+  step: string;
+  message: string;
+  batch_index?: number | null;
+  batch_count?: number | null;
+  drafts_total?: number;
+  retired?: number;
+  kept?: number;
+  rewritten?: number;
 }
 
 export interface AudioBlock {
@@ -1805,6 +1884,7 @@ export type TypedDataPayload =
   | ImageStudioProcessCompleteData
   | ImageStudioVariantData
   | LegalSyncEventData
+  | MasterworkAuditionOutcomeVerdictData
   | MasterworkAuditionProgressData
   | MasterworkAuditionVerdictData
   | MasterworkBuildCompleteData
@@ -1821,7 +1901,10 @@ export type TypedDataPayload =
   | MasterworkRunData
   | MasterworkRunFailedData
   | MasterworkRunSnapshotData
+  | MasterworkSealedCaseDisclosureData
   | MasterworkShortlistData
+  | MasterworkTriageCompleteData
+  | MasterworkTriageProgressData
   | MediaBlockData
   | MediaNoticeData
   | MemoryBufferSpawnedData

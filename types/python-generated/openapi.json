@@ -8985,17 +8985,35 @@
           "Meet"
         ],
         "summary": "Intelligence Ask",
-        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\njoin decision exactly, including the org's `meet.guest_join_enabled` knob.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nExpected refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n409 for an empty transcript, 422 for a blank question, and 503 naming the\nMandate admin when nothing is bound to answer.",
+        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\nadmission decision, including a verified room pass and the org's\n`meet.guest_join_enabled` knob. The pass rides `x-meet-room-token`, never a URL.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nExpected refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n409 for an empty transcript, 422 for a blank question, and 503 naming the\nMandate admin when nothing is bound to answer.",
         "operationId": "intelligence_ask_v1_meet_intelligence_ask_post",
+        "parameters": [
+          {
+            "name": "x-meet-room-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Meet-Room-Token"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MeetQuestionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -9910,6 +9928,22 @@
         "operationId": "create_item_vault_items_post",
         "parameters": [
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
             "name": "X-Organization-Id",
             "in": "header",
             "required": true,
@@ -10175,6 +10209,22 @@
             }
           },
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
             "name": "X-Organization-Id",
             "in": "header",
             "required": true,
@@ -10364,6 +10414,22 @@
             "schema": {
               "type": "string",
               "title": "Field Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
             }
           },
           {
@@ -48636,6 +48702,86 @@
         }
       }
     },
+    "/masterworks/ingest-timeline": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Ingest Rulebook Timeline",
+        "description": "The `timeline` Approach: a case written in the order it happened. A\nsegmenter finds the case's own moments, and each moment is distilled\nknowing only what was known at the time — the ending is kept back by\ndefault — so the rules come back forward-looking (\"given what you know now,\ndo X\") instead of static and written with hindsight.",
+        "operationId": "ingest_rulebook_timeline_masterworks_ingest_timeline_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestTimelineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/triage": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Triage Rulebook Drafts",
+        "description": "Sort the DRAFT pile by what the Rulebook is FOR (W59 + W61).\n\nA distiller reads the page in front of it, never the Rulebook's purpose, so\none training workbook produced 336 drafts about infection control for a\nRulebook about deciding the next diagnostic question. Asking the Scout to\n\"retire them as classes\" died at the model's output ceiling with zero tool\ncalls, twice, because retiring was one rule per call. This lane takes the\nExpert's own two sentences — what belongs, what to set aside — and reads\nevery draft against them in batches, applying each batch in one write.\n`dry_run` returns the plan and writes nothing.",
+        "operationId": "triage_rulebook_drafts_masterworks_triage_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriageDraftsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/masterworks/ingest-file": {
       "post": {
         "tags": [
@@ -48957,6 +49103,46 @@
         }
       }
     },
+    "/masterworks/audition-outcome": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Audition Outcome Endpoint",
+        "description": "The OUTCOME Audition — judge a Masterwork run over a SEALED CASE by the\nfact the case only reveals at the bottom, and by the path it took there.\n\nNot the text-vs-text comparison ``/audition`` runs: the desk's committed\nanswer is judged against the published resolution, and every score is\nderived mechanically from the case's own disclosure ledger (the judge is\nnever asked for a number).",
+        "operationId": "audition_outcome_endpoint_masterworks_audition_outcome_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditionOutcomeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/masterworks/clean-corpus": {
       "post": {
         "tags": [
@@ -49024,6 +49210,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExpertCorpusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/sealed-cases": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Create Sealed Case Endpoint",
+        "description": "Seal one case onto a Rulebook — the source a Masterwork has to INTERROGATE.\n\nRefuses BEFORE writing anything when the ``resolution_marker`` does not\nlocate the ending: a case whose resolution cannot be proven removed would\nhand the answer to the first agent that asked it a question.",
+        "operationId": "create_sealed_case_endpoint_masterworks_sealed_cases_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSealedCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SealedCaseSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/{rulebook_id}/sealed-cases": {
+      "get": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "List Sealed Cases Endpoint",
+        "description": "The sealed cases on this Rulebook. NEVER the case text or the resolution —\na list that leaked either would be the seal, opened, from a GET.",
+        "operationId": "list_sealed_cases_endpoint_masterworks__rulebook_id__sealed_cases_get",
+        "parameters": [
+          {
+            "name": "rulebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rulebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SealedCaseListResponse"
                 }
               }
             }
@@ -92667,6 +92939,11 @@
             "type": "integer",
             "title": "Offset"
           },
+          "scanned_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Scanned Count"
+          },
           "filter_summary": {
             "type": "string",
             "title": "Filter Summary"
@@ -92680,6 +92957,7 @@
           "total",
           "limit",
           "offset",
+          "scanned_count",
           "filter_summary"
         ],
         "title": "AppLogListResponse"
@@ -96070,6 +96348,91 @@
         ],
         "title": "AuditionCompareRequest",
         "description": "Judge a Masterwork's output against the real published exemplar (the R2\noutcome signal). Comparison verdict cites rulebook rule ids; gaps the\nreference exposes optionally land as DRAFT rules (never auto-activated)."
+      },
+      "AuditionOutcomeRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "case_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Case Id",
+            "description": "platform.masterwork_corpus_item id (sealed_case)"
+          },
+          "run_scope": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Run Scope",
+            "description": "The run whose disclosure ledger is judged, e.g. 'workflow_run:<id>'."
+          },
+          "compare_vanilla": {
+            "type": "boolean",
+            "title": "Compare Vanilla",
+            "description": "Also hand the WHOLE case (resolution stripped) to the same model tier in one call, with nothing to ask, and judge it the same way. A paid call.",
+            "default": false
+          },
+          "masterwork_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Masterwork Id",
+            "description": "The built Masterwork this run came from, when the caller knows it."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "case_id",
+          "run_scope"
+        ],
+        "title": "AuditionOutcomeRequest",
+        "description": "Judge one Masterwork run over a SEALED CASE by the held-out later fact.\n\nNot a text-vs-text comparison: the desk's committed answer is judged against\nthe case's published resolution, and the path it took (every fact it had to\nask the case for, what each cost and risked) is scored mechanically from the\ncase's own disclosure ledger. ``run_scope`` is the identity of the RUN whose\nledger is being judged — two runs over the same case keep separate ledgers,\nand the count of what one run had to ask IS the measurement."
       },
       "AudiusTrackStatistics": {
         "properties": {
@@ -124495,6 +124858,113 @@
         ],
         "title": "CreateProfileRequest",
         "description": "Start a NEW cloud browser (D-28, Arman 2026-08-23: *\"they can have as many\nas they want… make it easy to start\"*).\n\nThe user names it. Nothing else is a caller decision: ownership is the acting\nuser, the organization is resolved by the platform resolver (never accepted\nfrom the client), and the new profile is NEVER the default — the single\ndefault is the one the DB's partial unique index guarantees."
+      },
+      "CreateSealedCaseRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "title": "Rulebook Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "case_text": {
+            "type": "string",
+            "title": "Case Text",
+            "description": "The FULL case, ending included."
+          },
+          "resolution": {
+            "type": "string",
+            "title": "Resolution",
+            "description": "The final answer, VERBATIM — what a run is graded against."
+          },
+          "resolution_marker": {
+            "type": "string",
+            "title": "Resolution Marker",
+            "description": "A phrase that appears exactly where the answer begins. Everything from it onward is removed before the case is ever asked anything."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "title",
+          "case_text",
+          "resolution",
+          "resolution_marker"
+        ],
+        "title": "CreateSealedCaseRequest",
+        "description": "Seal one case onto a Rulebook.\n\nInherits ``AcceptsInjectedScope`` because the FE's ``callApi`` merges\n``organization_id`` / ``project_id`` / ``task_id`` onto every POST body."
       },
       "CreateSendingIdentityRequest": {
         "properties": {
@@ -158260,6 +158730,131 @@
         ],
         "title": "IngestSourceRequest",
         "description": "Distill source material into DRAFT rules on an existing rulebook.\n\nTwo source shapes, one pipeline:\n- mode=\"instructional\" — the source TEACHES (a chapter, a playbook, a\n  transcribed hour of the expert explaining their method); rules are stated.\n- mode=\"exemplar\" — the source IS the finished work (the R2 regime: great\n  articles/emails/briefs with no explanation); rules are implicit and get\n  reverse-engineered, quotes anchor as illustrations.\n\nEither way: chunk, distill per chunk, dedupe, verify quotes verbatim, then\nappend as `draft: true` rules the expert approves one by one.\nHuman-first invariant: never auto-activated, never non-draft."
+      },
+      "IngestTimelineRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 600000,
+            "minLength": 200,
+            "title": "Text",
+            "description": "The narrative, in the order it happened, verbatim."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "Where this case came from ('ED case 3, March 2026')."
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach",
+            "description": "Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults to 'timeline'."
+          },
+          "hide_resolution": {
+            "type": "boolean",
+            "title": "Hide Resolution",
+            "description": "🚨 Keep the ENDING away from the distiller (default). A rule written by an agent that already knows how the case turned out is hindsight wearing a rule's clothes — it says 'suspect X' where the expert, at that moment, could only say 'this is what makes X worth ruling out'. The resolution is still STORED on the Rulebook (metadata.timeline_sources) so the Audition can score against it. Set false only when the ending itself is the lesson.",
+            "default": true
+          },
+          "chunk_words": {
+            "type": "integer",
+            "maximum": 8000,
+            "minimum": 500,
+            "title": "Chunk Words",
+            "description": "Word budget for the cumulative `known_before` history handed to each step. The step's own facts are never trimmed; the OLDEST history is.",
+            "default": 2500
+          },
+          "source_ref_extra": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref Extra",
+            "description": "Extra provenance keys merged into every rule's source_ref — how a delegating lane anchors rules to the piece they came from. Never overrides the lane's own keys."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "text"
+        ],
+        "title": "IngestTimelineRequest",
+        "description": "Distill a case that UNFOLDS IN TIME into forward-looking POLICY rules.\n\nThe `timeline` Approach (W58). A case report, an incident write-up, a\ndeal that took four meetings: the expert skill in such a document is not\na list of facts, it is the SEQUENCE of choices — what was known at each\nmoment, what was still unknown, what was done next, and what that cost\nand risked.\n\nSo this lane does NOT chunk by size. A segmenter reads the narrative into\nordered steps, and ONE distiller run sees ONE step: everything known up to\nthe previous step, this step's new facts, and the action taken — with the\nfuture, including the ending, withheld. Rules come back as \"given what you\nknow now, do X, because Y\".\n\nHuman-first invariant, identical to every other lane: drafts only."
       },
       "InitialIterationRequest": {
         "properties": {
@@ -217458,6 +218053,111 @@
         "title": "ScrubRequest",
         "description": "Composite scrub call — wipes the categories opted-in via flags."
       },
+      "SealedCaseListResponse": {
+        "properties": {
+          "rulebook_id": {
+            "type": "string",
+            "title": "Rulebook Id"
+          },
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/SealedCaseSummary"
+            },
+            "type": "array",
+            "title": "Cases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rulebook_id"
+        ],
+        "title": "SealedCaseListResponse"
+      },
+      "SealedCaseSummary": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "rulebook_id": {
+            "type": "string",
+            "title": "Rulebook Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "canonical_key": {
+            "type": "string",
+            "title": "Canonical Key"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License"
+          },
+          "words": {
+            "type": "integer",
+            "title": "Words",
+            "default": 0
+          },
+          "sealed": {
+            "type": "boolean",
+            "title": "Sealed",
+            "default": true
+          },
+          "run_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Run Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_id",
+          "rulebook_id",
+          "canonical_key"
+        ],
+        "title": "SealedCaseSummary",
+        "description": "A sealed case as a LIST row — never carries raw_value or the resolution."
+      },
       "SearchAndScrapeLimitedRequest": {
         "properties": {
           "get_organized_data": {
@@ -240058,6 +240758,87 @@
           "indicator"
         ],
         "title": "TresoritServiceStatus"
+      },
+      "TriageDraftsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "keep": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Keep",
+            "description": "What SERVES this Rulebook, in the Expert's own words — the kind of rule that belongs here."
+          },
+          "set_aside": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Set Aside",
+            "description": "The classes to set aside, in the Expert's own words. Optional: `keep` alone is a complete instruction, and an empty value means 'anything that does not serve the purpose'.",
+            "default": ""
+          },
+          "batch_size": {
+            "type": "integer",
+            "maximum": 200,
+            "minimum": 5,
+            "title": "Batch Size",
+            "description": "How many drafts one triage run reads. A CEILING, never a promise: the lane sizes every batch against the holder's real output ceiling and halves a batch whose reply was cut.",
+            "default": 80
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Return the plan — every draft with its verdict and reason — and write NOTHING. The Expert's 'show me first'.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "keep"
+        ],
+        "title": "TriageDraftsRequest",
+        "description": "Sort a Rulebook's DRAFT pile by what the Rulebook is FOR.\n\n🚨 W59 + W61, 2026-09-12. A Rulebook's intake says, in the Expert's own\nwords, what it is for (\"given the first facts of an acutely ill person,\ndecide the next question or test\"). The chunk distiller never sees it, so\nan 18,000-word training workbook produced 336 draft rules about PPE, hand\nhygiene, CPR technique and snakebite, and a back-pain guideline produced 83\nabout disclaimers, GRADE wording and drug choices. Then the Expert asked\nthe Scout, in one sentence, to \"retire, as classes, every draft that is\n…\" — and the turn died at the model's 16,000-token output ceiling with\nZERO tool calls, because the only retirement verb took one id at a time and\nthe agent tried to plan 250 retirements in prose. Twice, at ~$0.53 each,\nnothing landed.\n\nSo the sorting is a LANE, not a conversation: the Expert says what to keep\nand what to set aside in plain English, and the platform reads every draft\nagainst it in batches sized to the holder's output ceiling.\n\nHuman-first, unchanged: only DRAFT rules are ever touched, an approved rule\nis refused by id, and a rewrite lands as a NEW draft the Expert reviews."
       },
       "TriggerCreate": {
         "properties": {
