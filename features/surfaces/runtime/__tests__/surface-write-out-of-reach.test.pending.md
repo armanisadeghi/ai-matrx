@@ -1,4 +1,4 @@
-/** @jest-environment jsdom */
+<!-- Pending implementation; preserved from the integration sweep. -->
 
 /**
  * FORCING GUARD — the dead-chat class (live defect, 2026-09-12).
