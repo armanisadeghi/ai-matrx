@@ -27,13 +27,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
+// ONE vocabulary for the placement ladder — the same words the Offering
+// cell's inherited marker says. Lifted out of this file 2026-09-12.
+import { SCOPE_TIER_LABEL } from "@/features/marketing/seo/keyword-workbench/scope-tiers";
 import { getTopicPlacementDiff } from "./data";
-
-const SCOPE_TIER_LABEL: Record<string, string> = {
-  brand: "the brand default",
-  organization: "the organization default",
-  system: "the platform default",
-};
 
 export function PlacementDiffQueue({
   siteId,

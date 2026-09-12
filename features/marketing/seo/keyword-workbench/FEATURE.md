@@ -48,6 +48,12 @@ context plus the controls. Everything else is table.
 
 ## THE OFFERING COLUMN (2026-08-24)
 
+Inherited placements now carry a compact information marker beside the Offering.
+It names whether the brand, organization, or platform supplied the ruling and
+offers one explicit action to adopt the same Offering as this site's own ruling.
+The marker reads the canonical `seo.keyword_placement_resolve` ladder and writes
+through the existing placement mutation; it is not a second placement system.
+
 > 🚨 **Renamed 2026-08-24 (KI-047).** This column and its components were
 > called "Service" through 2026-08-24; every user-visible label and the
 > `ServicePicker`/`ServiceAssignPanel` components are now **Offering**. The

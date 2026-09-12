@@ -21,6 +21,10 @@ import type {
   GscResolvedPeriods,
 } from "@/features/marketing/search-console/types";
 import { cleanGscFilters } from "@/features/marketing/search-console/data";
+import {
+  isPlacementScopeTier,
+  type PlacementScopeTier,
+} from "./scope-tiers";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -249,6 +253,16 @@ export interface KeywordServicePlacement {
   /** The ancestor the worth is inherited FROM, when it is inherited. */
   worthFromId: string | null;
   worthFromName: string | null;
+  /**
+   * WHICH RUNG DECIDED THIS — site | brand | organization | system, straight
+   * from `seo.keyword_placement_resolve`. `null` only when the resolver could
+   * not be matched to this placement (see `getKeywordServices`): the surface
+   * then says nothing rather than guessing a rung, because naming the wrong
+   * decision-maker is worse than naming none.
+   */
+  scopeTier: PlacementScopeTier | null;
+  /** The organization whose ruling this is, when the rung is an organization. */
+  scopeOrganizationId: string | null;
 }
 
 /** keyword_id → its primary placement. Unplaced keywords are simply absent. */
@@ -266,18 +280,60 @@ export async function getKeywordServices(
 ): Promise<KeywordServiceMap> {
   const map: KeywordServiceMap = new Map();
   if (keywordIds.length === 0) return map;
-  const response = await (await seoDb())
-    .rpc("gsc_keyword_topics_for", {
-      p_site_id: siteId,
-      p_keyword_ids: keywordIds,
-    })
-    .abortSignal(signal ?? new AbortController().signal);
+  const db = await seoDb();
+  const abort = signal ?? new AbortController().signal;
+  /**
+   * TWO READS, ONE WINDOW. `gsc_keyword_topics_for` answers WHAT the placement
+   * is (name, root, lineage, worth); `keyword_placement_resolve` answers WHO
+   * DECIDED IT — the rung of the defaults ladder that governs this site. Both
+   * take the same ≤2,000 ids, both assert site access, and they run together
+   * because a placement whose decision-maker is unknown is exactly the state
+   * this reader existed in until 2026-09-12: 15,008 platform-tier rulings
+   * rendered as though the site had made them.
+   */
+  const [response, resolved] = await Promise.all([
+    db
+      .rpc("gsc_keyword_topics_for", {
+        p_site_id: siteId,
+        p_keyword_ids: keywordIds,
+      })
+      .abortSignal(abort),
+    db
+      .rpc("keyword_placement_resolve", {
+        p_site_id: siteId,
+        p_keyword_ids: keywordIds,
+      })
+      .abortSignal(abort),
+  ]);
   const rows = assertData(
     response.data,
     response.error,
     "read which service these keywords map to",
   );
+  const governing = new Map<
+    string,
+    { topicId: string | null; scopeTier: string | null; organizationId: string | null }
+  >();
+  for (const row of assertData(
+    resolved.data,
+    resolved.error,
+    "read which level decided these keywords' service",
+  )) {
+    governing.set(row.keyword_id, {
+      topicId: row.topic_id,
+      scopeTier: row.scope_tier,
+      organizationId: row.organization_id,
+    });
+  }
   for (const row of rows) {
+    // The rung is only attached when the resolver is talking about the SAME
+    // topic this row describes. If they ever disagree the cell shows the
+    // placement and stays silent about who chose it.
+    const rung = governing.get(row.keyword_id);
+    const tier =
+      rung && rung.topicId === row.topic_id && isPlacementScopeTier(rung.scopeTier)
+        ? rung.scopeTier
+        : null;
     map.set(row.keyword_id, {
       topicId: row.topic_id,
       topicName: row.topic_name,
@@ -292,6 +348,8 @@ export async function getKeywordServices(
       hasOwnWorth: row.has_own_worth,
       worthFromId: row.worth_from_id,
       worthFromName: row.worth_from_name,
+      scopeTier: tier,
+      scopeOrganizationId: tier ? (rung?.organizationId ?? null) : null,
     });
   }
   return map;
