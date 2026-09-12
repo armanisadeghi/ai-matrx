@@ -15,26 +15,29 @@ organizations → projects → project_members → auth.users
 ## Database Schema
 
 ### `projects`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid | PK |
-| `name` | text | Required |
-| `slug` | text | URL-safe, unique per org |
-| `description` | text | Optional |
-| `organization_id` | uuid | FK → organizations. Every project has a non-null org, including personal projects |
-| `created_by` | uuid | FK → auth.users |
-| `settings` | jsonb | Extensible config |
+
+| Column            | Type  | Notes                                                                             |
+| ----------------- | ----- | --------------------------------------------------------------------------------- |
+| `id`              | uuid  | PK                                                                                |
+| `name`            | text  | Required                                                                          |
+| `slug`            | text  | URL-safe, unique per org                                                          |
+| `description`     | text  | Optional                                                                          |
+| `organization_id` | uuid  | FK → organizations. Every project has a non-null org, including personal projects |
+| `created_by`      | uuid  | FK → auth.users                                                                   |
+| `settings`        | jsonb | Extensible config                                                                 |
 
 > **Personal-ness is org-derived.** `ctx_projects.is_personal` was **dropped** — a project is "personal" **iff its owning organization's `organizations.is_personal` is true** (every user has exactly one personal org). Never treat `organization_id IS NULL` as "personal" anymore. Read personal-ness from the org: join `organizations(is_personal)`, or use the RPC-derived `NavProject.is_personal`. The canonical `createProject` service in `features/projects/service.ts` resolves missing org input to the user's real personal org via `ensure_personal_organization` and writes that id.
 
 ### `project_members`
-| Column | Type | Notes |
-|--------|------|-------|
-| `role` | project_role | `owner \| admin \| member` |
-| `joined_at` | timestamptz | Auto-set |
-| `invited_by` | uuid | FK → auth.users |
+
+| Column       | Type         | Notes                      |
+| ------------ | ------------ | -------------------------- |
+| `role`       | project_role | `owner \| admin \| member` |
+| `joined_at`  | timestamptz  | Auto-set                   |
+| `invited_by` | uuid         | FK → auth.users            |
 
 ### `project_invitations`
+
 Mirrors `organization_invitations` — email-based, token-based, 7-day expiry.
 
 ## Role Hierarchy
@@ -43,13 +46,13 @@ Mirrors `organization_invitations` — email-based, token-based, 7-day expiry.
 owner > admin > member
 ```
 
-| Permission | owner | admin | member |
-|------------|-------|-------|--------|
-| View project | ✅ | ✅ | ✅ |
-| Edit settings | ✅ | ✅ | ❌ |
-| Manage members | ✅ | ✅ | ❌ |
-| Invite members | ✅ | ✅ | ❌ |
-| Delete project | ✅ | ❌ | ❌ |
+| Permission     | owner | admin | member |
+| -------------- | ----- | ----- | ------ |
+| View project   | ✅    | ✅    | ✅     |
+| Edit settings  | ✅    | ✅    | ❌     |
+| Manage members | ✅    | ✅    | ❌     |
+| Invite members | ✅    | ✅    | ❌     |
+| Delete project | ✅    | ❌    | ❌     |
 
 ## RLS Policies
 
@@ -61,16 +64,28 @@ owner > admin > member
 
 ## Routes
 
-| Route | Description |
-|-------|-------------|
-| `/projects` | Personal projects hub (also lists org projects, linking back to their org routes) |
-| `/projects/[id]` | Personal project detail. Segment is a UUID — slug is not globally unique (DB only enforces `UNIQUE (organization_id, slug)`), so the personal-scope route must use the UUID. Slug-shaped values are accepted as a back-compat fallback. |
-| `/projects/[id]/settings` | Personal project settings |
-| `/org/[slug]/projects` | List org projects |
-| `/org/[slug]/projects/[project-slug]` | Org project detail / task view. The segment accepts either the slug (unique within the org) or the project UUID. |
-| `/org/[slug]/projects/[project-slug]/settings` | Org project settings (tabbed) |
-| `/settings/projects` | User's projects across all orgs (routes each card to its correct personal- or org-scoped detail page) |
-| `/invitations/project/accept/[token]` | Accept project invitation |
+| Route                                          | Description                                                                                                                                                                                                                             |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/projects`                                    | Personal projects hub (also lists org projects, linking back to their org routes)                                                                                                                                                       |
+| `/projects/[id]`                               | Personal project detail. Segment is a UUID — slug is not globally unique (DB only enforces `UNIQUE (organization_id, slug)`), so the personal-scope route must use the UUID. Slug-shaped values are accepted as a back-compat fallback. |
+| `/projects/[id]/settings`                      | Personal project settings                                                                                                                                                                                                               |
+| `/org/[slug]/projects`                         | List org projects                                                                                                                                                                                                                       |
+| `/org/[slug]/projects/[project-slug]`          | Org project detail / task view. The segment accepts either the slug (unique within the org) or the project UUID.                                                                                                                        |
+| `/org/[slug]/projects/[project-slug]/settings` | Org project settings (tabbed)                                                                                                                                                                                                           |
+| `/settings/projects`                           | User's projects across all orgs (routes each card to its correct personal- or org-scoped detail page)                                                                                                                                   |
+| `/invitations/project/accept/[token]`          | Accept project invitation                                                                                                                                                                                                               |
+
+## Projects hub
+
+`ProjectsHub` is the signed-in `/projects` home. It keeps the same RLS-filtered
+project rows for cards and the sortable table, supports the existing organization
+and scope filtered views, and groups unfiltered cards by owning organization.
+Its compact workspace navigation is derived from the `Workspaces` children in
+`primaryNavItems`; destination actions remain real buttons in their owning
+surfaces. Project and task-summary metrics use `readAllRows` with an exact count
+and stable order, so an aggregate never silently stops at PostgREST's 1,000-row
+page limit. A failed complete read is shown as unavailable with retry rather
+than as a zero count.
 
 ## Feature Directory
 
@@ -118,16 +133,16 @@ Both require authentication and project admin role (enforced by RLS).
 ## Key Hooks
 
 ```ts
-useOrgProjects(organizationId)      // Projects in an org where user is a member
-useUserProjects()                   // All user's projects across all orgs (incl. personal)
-usePersonalProjects()               // Projects owned by the user's personal org
-useProject(projectId)               // Single project
-useProjectUserRole(projectId)       // Current user's role + permission flags
-useProjectMembers(projectId)        // Member list with user details
-useProjectMemberOperations(projectId) // updateRole, remove, leave
-useProjectInvitations(projectId)    // Invitation list
-useProjectInvitationOperations(projectId) // invite, cancel, resend
-useProjectSlugAvailability(slug, orgId) // Debounced slug check
+useOrgProjects(organizationId); // Projects in an org where user is a member
+useUserProjects(); // All user's projects across all orgs (incl. personal)
+usePersonalProjects(); // Projects owned by the user's personal org
+useProject(projectId); // Single project
+useProjectUserRole(projectId); // Current user's role + permission flags
+useProjectMembers(projectId); // Member list with user details
+useProjectMemberOperations(projectId); // updateRole, remove, leave
+useProjectInvitations(projectId); // Invitation list
+useProjectInvitationOperations(projectId); // invite, cancel, resend
+useProjectSlugAvailability(slug, orgId); // Debounced slug check
 ```
 
 > **`useUserProjects` / `usePersonalProjects` / `useOrgProjects` are now derived from the Redux nav tree** (`features/agent-context`). They no longer issue their own queries — the single source of truth is the `get_user_full_context` RPC, hydrated into Redux on mount. Any project mutation must dispatch `invalidateAndRefetchFullContext()` so consumers stay in sync.
@@ -136,37 +151,40 @@ useProjectSlugAvailability(slug, orgId) // Debounced slug check
 
 Every project write path dispatches `invalidateAndRefetchFullContext()` from `features/agent-context/redux/hierarchyThunks` so `/projects`, `/org/[slug]/projects`, the `HierarchyCascade`, the `NoteSidebar`, the wizard, and any other nav-tree consumer all converge on the same data.
 
-| Write path | Where | Notes |
-|------------|-------|-------|
-| Create (canonical) | `features/projects/service.ts createProject` | Writes the project row; its database trigger atomically writes the canonical `iam.memberships` owner row (no `is_personal` — personal-ness is org-derived) |
-| Create modal (compat) | `CreateProjectModal` | Now a thin wrapper over `ProjectFormSheet` — every consumer (ResearchInitForm, ProjectList) gets the Manual + Use AI experience. Preserves the old `isOpen` / `onClose` / `onSuccess(CreatedProjectInfo)` / `redirectOnSuccess` contract (`redirectOnSuccess=false` → `skipRedirect`) |
-| AI create | `ProjectCreatePanel` "Use AI" tab → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`) | The agent writes the project **directly to the DB server-side**. On the run's `running/streaming → complete` edge, `AgentRunWrapper.onRunComplete` fires; the panel dispatches `invalidateAndRefetchFullContext()` (refreshes every nav-tree-derived consumer) and calls `onAiComplete()` for self-fetching surfaces (`ProjectsHub` → its local `refresh()` via the window's `ai-created` event) |
-| Create core | `ProjectFormCore` | Canonical chrome-less form. Every surface (sheet, window, route) wraps this — never fork it |
-| Create panel | `ProjectCreatePanel` | Two-mode body: "Manual" → `ProjectFormCore`; "Use AI" → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`). Pass `enableAi={false}` for manual-only |
-| Create sheet | `ProjectFormSheet` | Dialog/Drawer over `ProjectCreatePanel` (AI on by default; `enableAi` prop). Dispatches invalidation; redirects personal projects to `/projects/...` |
-| Create window | `CreateProjectWindow` | WindowPanel over `ProjectCreatePanel` (overlay system; open via `useOpenCreateProjectWindow`). Consumers: War Room picker + the `/projects` hub "New project" button. Emits `created` (manual) and `ai-created` (AI) so self-fetching consumers refresh |
-| Create route | `/projects/new` (`app/(core)/projects/new/page.tsx`) | Full-page `ProjectCreatePanel`; routes to `/projects/{id}/settings` on success |
-| Update settings | `GeneralSettings` | Dispatches invalidation on save |
-| Delete | `DangerZone` | Dispatches invalidation before navigating away |
-| Hierarchy service create | `hierarchyService.createProject` | Delegates to canonical `createProject` — single owner of the write |
+| Write path               | Where                                                                                                                                | Notes                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Create (canonical)       | `features/projects/service.ts createProject`                                                                                         | Writes the project row; its database trigger atomically writes the canonical `iam.memberships` owner row (no `is_personal` — personal-ness is org-derived)                                                                                                                                                                                                                                       |
+| Create modal (compat)    | `CreateProjectModal`                                                                                                                 | Now a thin wrapper over `ProjectFormSheet` — every consumer (ResearchInitForm, ProjectList) gets the Manual + Use AI experience. Preserves the old `isOpen` / `onClose` / `onSuccess(CreatedProjectInfo)` / `redirectOnSuccess` contract (`redirectOnSuccess=false` → `skipRedirect`)                                                                                                            |
+| AI create                | `ProjectCreatePanel` "Use AI" tab → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`) | The agent writes the project **directly to the DB server-side**. On the run's `running/streaming → complete` edge, `AgentRunWrapper.onRunComplete` fires; the panel dispatches `invalidateAndRefetchFullContext()` (refreshes every nav-tree-derived consumer) and calls `onAiComplete()` for self-fetching surfaces (`ProjectsHub` → its local `refresh()` via the window's `ai-created` event) |
+| Create core              | `ProjectFormCore`                                                                                                                    | Canonical chrome-less form. Every surface (sheet, window, route) wraps this — never fork it                                                                                                                                                                                                                                                                                                      |
+| Create panel             | `ProjectCreatePanel`                                                                                                                 | Two-mode body: "Manual" → `ProjectFormCore`; "Use AI" → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`). Pass `enableAi={false}` for manual-only                                                                                                                                                                                                |
+| Create sheet             | `ProjectFormSheet`                                                                                                                   | Dialog/Drawer over `ProjectCreatePanel` (AI on by default; `enableAi` prop). Dispatches invalidation; redirects personal projects to `/projects/...`                                                                                                                                                                                                                                             |
+| Create window            | `CreateProjectWindow`                                                                                                                | WindowPanel over `ProjectCreatePanel` (overlay system; open via `useOpenCreateProjectWindow`). Consumers: War Room picker + the `/projects` hub "New project" button. Emits `created` (manual) and `ai-created` (AI) so self-fetching consumers refresh                                                                                                                                          |
+| Create route             | `/projects/new` (`app/(core)/projects/new/page.tsx`)                                                                                 | Full-page `ProjectCreatePanel`; routes to `/projects/{id}/settings` on success                                                                                                                                                                                                                                                                                                                   |
+| Update settings          | `GeneralSettings`                                                                                                                    | Dispatches invalidation on save                                                                                                                                                                                                                                                                                                                                                                  |
+| Delete                   | `DangerZone`                                                                                                                         | Dispatches invalidation before navigating away                                                                                                                                                                                                                                                                                                                                                   |
+| Hierarchy service create | `hierarchyService.createProject`                                                                                                     | Delegates to canonical `createProject` — single owner of the write                                                                                                                                                                                                                                                                                                                               |
 
 ## Email Templates
 
 Two project-specific templates in `lib/email/client.ts`:
+
 - `emailTemplates.projectInvitation(...)` — Initial invite
 - `emailTemplates.projectInvitationReminder(...)` — Resend reminder
 
 ## RPC Functions
 
-| Function | Purpose |
-|----------|---------|
-| `get_project_members_with_users(p_project_id)` | Secure member + user details join |
-| `get_user_projects(p_org_id?)` | User's projects with role and member count |
-| `auth_is_project_member(project_id)` | RLS policy helper |
-| `auth_is_project_admin(project_id)` | RLS policy helper |
-| `auth_is_project_owner(project_id)` | RLS policy helper |
+| Function                                       | Purpose                                    |
+| ---------------------------------------------- | ------------------------------------------ |
+| `get_project_members_with_users(p_project_id)` | Secure member + user details join          |
+| `get_user_projects(p_org_id?)`                 | User's projects with role and member count |
+| `auth_is_project_member(project_id)`           | RLS policy helper                          |
+| `auth_is_project_admin(project_id)`            | RLS policy helper                          |
+| `auth_is_project_owner(project_id)`            | RLS policy helper                          |
 
 ## Change Log
+
+- `2026-09-11` — `/projects` now uses complete paged project and task-summary reads for its aggregate counts, derives its compact destination strip from the Workspaces registry, and groups cards by organization with stable identity accents. Card and table controls, scope/context behavior, and the existing create window remain shared.
 
 - `2026-08-09` — **The projects surface is now agent-writable.** `projects.manifest.ts` declares 5 `ask`-policy `entity` write targets (`project_name`, `project_description`, `project_status`, `project_priority`, `project_target_date`); handlers are built by the new `agent-context/projectWriteHandlers.ts` and passed to the `SurfaceRuntimeProvider` `ProjectWorkspace.tsx` already mounts. Every one persists through `updateProject`, the same canonical path the hero's inline editors use — no second write path, `validateProjectName` still runs on renames, and the viewer's `canManageSettings` gates agent writes exactly as it gates the pickers. Verified with a live agent run.
 - `2026-07-23` — Promoted the War Room's flat dropdown into the shared `ProjectPicker`. It renders the complete nav-tree result set in one searchable, scrollable popover (cross-org or filtered to one org), refreshes in place, and opens the canonical `CreateProjectWindow`; callers can expose a persistent **New** button beside the trigger. Research creation and War Room now consume this one primitive.

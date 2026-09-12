@@ -83,6 +83,7 @@ import {
   type LegacyListViewImport,
 } from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import type { Tables } from "@/types/database.types";
 import type {
   ProjectWithRole,
   ProjectStatus,
@@ -134,27 +135,38 @@ type Stat = {
 type SortKey = "name" | "org" | "open" | "done" | "updated";
 type OrgMap = Map<string, { name: string; slug: string; isPersonal: boolean }>;
 
-type ProjectListRow = {
-  id: string;
-  name: string;
-  slug: string | null;
-  description: string | null;
-  organization_id: string | null;
-  created_by: string | null;
-  updated_at: string | null;
-  status: ProjectStatus | null;
-  priority: ProjectPriority | null;
-  start_date: string | null;
-  target_date: string | null;
-};
+type ProjectListRow = Pick<
+  Tables<{ schema: "workspace" }, "projects">,
+  | "id"
+  | "name"
+  | "slug"
+  | "description"
+  | "organization_id"
+  | "created_by"
+  | "updated_at"
+  | "status"
+  | "priority"
+  | "start_date"
+  | "target_date"
+>;
 
-type TaskSummaryRow = {
-  id: string;
-  project_id: string;
-  status: string;
-  parent_task_id: string | null;
-  title: string;
-};
+type TaskSummaryRow = Pick<
+  Tables<{ schema: "workspace" }, "tasks">,
+  "id" | "project_id" | "status" | "parent_task_id" | "title"
+>;
+
+function projectStatus(value: string): ProjectStatus {
+  if (
+    value === "planning" ||
+    value === "active" ||
+    value === "paused" ||
+    value === "completed" ||
+    value === "archived"
+  ) {
+    return value;
+  }
+  return "active";
+}
 
 function workspaceDestinations(): MetricNavigationItem[] {
   const workspaces = primaryNavItems.find(
@@ -284,7 +296,7 @@ export function ProjectsHub({
             // Personal-ness is org-derived (see isPersonalProject); the project
             // row no longer carries is_personal. Resolved against orgMap at render.
             isPersonal: false,
-            status: r.status ?? "active",
+            status: projectStatus(r.status),
             priority: r.priority ?? null,
             startDate: r.start_date ?? null,
             targetDate: r.target_date ?? null,
@@ -339,7 +351,7 @@ export function ProjectsHub({
         const m = new Map<string, Stat>();
         for (const id of ids) m.set(id, { open: 0, done: 0, preview: [] });
         for (const row of data) {
-          if (row.parent_task_id) continue; // top-level only
+          if (row.parent_task_id || !row.project_id) continue; // top-level only
           const s = m.get(row.project_id);
           if (!s) continue;
           if (row.status === "completed") s.done += 1;
