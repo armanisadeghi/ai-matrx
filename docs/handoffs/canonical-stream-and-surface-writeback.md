@@ -44,6 +44,27 @@ every input should be agent-drivable; also spawns chips for the other
 marketing surfaces). Later: specialized cheap agents per surface replace
 Badass Agent for these writes.
 
+## Closure plan — 2026-09-11 (owner: the session that wrote this; subagents per WP, lane named)
+
+Arman's directive: close the write-back system for good — harden it to the
+declared-kinds standard, fix every weakness found in the 2026-09 review, keep
+docs + skills (Claude AND platform `skill.definition`) current, finish without
+him. State at start: 371 targets / 109 manifests / 173 structured
+(object|array) targets with NO declared value contract; approval is the inline
+`requestApproval` card (2026-08-24), not `confirm()`.
+
+| WP | Lane | Scope | Status |
+|---|---|---|---|
+| WP1 value contracts | standard/opus | `SurfaceWriteTarget.valueKind` (registered Kind slug — THE contract; no inline schemas, One-Type Law) → drift ratchet (advisory count of structured targets lacking a kind; unknown slug = error) → per-target kind schema in the `apply_surface_write` inline spec where aidream forwards it → `applySurfaceWrite` validates via `validateAgainstKind` BEFORE approval and handler → mirror column `ui.ui_surface_write_target.kind_key` (migration via `pnpm db:apply`, `pnpm db-types`, manifest-sync + SQL emitter) → aidream resolver + `<surface_write_targets>` print `kind=` → adopt on targets an existing Kind already fits → census of the rest | open |
+| WP2 trap guard | standard/opus | code guard for the "structured-output mandate + write targets pauses forever" trap: no `apply_surface_write` / surface client-tool injection for a run whose agent carries an output contract; loud info line with remedy; forcing-function test; RUNTIME.md note | open |
+| WP3 handler guard | standard/opus | `pnpm check:surface-write-handlers`: every declared target has a registered handler (AST over `getWriteHandlers` / `useSurfaceWriteHandlers`), self-test failing-then-passing, advisory in release gates; wire every fixable gap | open |
+| WP4 platform skills | standard/opus (aidream) | `scripts/ingest_skills.py` across all repos (platform `skill.definition` reference skills frozen at 2026-07-16); delete merged `surface-registration` stub (dir + row); make ingest part of the existing doctrine sync path, never a new schedule | open |
+| WP5 mirror hygiene | standard/opus | stale-row age in drift report; recency guard on global `deleteStale`; `synced_by`/`synced_from` provenance on the 4 mirror tables; unify `errorResponse` across `app/api/admin/surfaces/*` | open |
+| WP6 small fixes | quick/sonnet | drop empty `writeTargets: []` (3 manifests); actorLabel fallback via the shared agent-name cache; FEATURE.md adopter paragraph → counts + exemplars; skill Step 3 matches the ApprovalCard flow | open |
+| WP7 independent verify | standard/opus | after WP1–6: live agent run on `/tasks` + a marketing page + admin drift page; adversarial re-verify of each WP's claim | open |
+
+Rules for every WP: shared checkout — `git add <own files>` + `git commit -m … -- <own files>`, push `main`, never stash/reset; `pnpm type-check` before done; docs (FEATURE.md change log, this table) in the same commit; live verification only on the ONE dev server (`pnpm preview:start`, port 3001), one lane at a time.
+
 ## Remaining work
 
 1. **aidream `block_stream.py` stays PARKED** — pipeline runs still stream
