@@ -17,7 +17,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, Check, Gauge, Infinity as InfinityIcon, Loader2, Pencil, ShieldAlert, Trash2, UserRound, X } from "lucide-react";
+import {
+  Building2,
+  Check,
+  Gauge,
+  Infinity as InfinityIcon,
+  Loader2,
+  Pencil,
+  ShieldAlert,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -47,21 +58,43 @@ interface SpendBudgetCardProps {
   className?: string;
 }
 
-export function SpendBudgetCard({ organizationId, mode, canEdit, className }: SpendBudgetCardProps) {
-  const { userId, effective, guardrails, loading, error, refresh } = useSpendBudget(organizationId);
+export function SpendBudgetCard({
+  organizationId,
+  mode,
+  canEdit,
+  className,
+}: SpendBudgetCardProps) {
+  const { userId, effective, guardrails, loading, error, refresh } =
+    useSpendBudget(organizationId);
 
   if (!organizationId) {
     return (
-      <div className={cn("rounded-lg border border-border bg-card p-4 text-sm", className)}>
-        <p className="text-foreground">Pick an organization to see its AI budget.</p>
-        <p className="mt-1 text-xs text-muted-foreground">A budget belongs to an account, so we need to know which one you are looking at.</p>
+      <div
+        className={cn(
+          "rounded-lg border border-border bg-card p-4 text-sm",
+          className,
+        )}
+      >
+        <p className="text-foreground">
+          Pick an organization to see its AI budget.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          A budget belongs to an account, so we need to know which one you are
+          looking at.
+        </p>
       </div>
     );
   }
 
   if (loading && !effective) {
     return (
-      <div className={cn("space-y-3 rounded-lg border border-border bg-card p-4", className)} aria-busy>
+      <div
+        className={cn(
+          "space-y-3 rounded-lg border border-border bg-card p-4",
+          className,
+        )}
+        aria-busy
+      >
         <div className="h-4 w-40 animate-pulse rounded bg-muted" />
         <div className="h-7 w-64 animate-pulse rounded bg-muted" />
         <div className="h-1 w-full animate-pulse rounded bg-muted" />
@@ -73,10 +106,24 @@ export function SpendBudgetCard({ organizationId, mode, canEdit, className }: Sp
 
   if (error || !effective) {
     return (
-      <div className={cn("rounded-lg border border-destructive/40 bg-card p-4 text-sm", className)}>
-        <p className="font-medium text-destructive">Could not load the AI budget.</p>
-        <p className="mt-1 text-xs text-muted-foreground">{error ?? "The billing resolver returned nothing."}</p>
-        <Button size="sm" variant="outline" className="mt-3" onClick={() => void refresh()}>
+      <div
+        className={cn(
+          "rounded-lg border border-destructive/40 bg-card p-4 text-sm",
+          className,
+        )}
+      >
+        <p className="font-medium text-destructive">
+          Could not load the AI budget.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {error ?? "The billing resolver returned nothing."}
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-3"
+          onClick={() => void refresh()}
+        >
           Try again
         </Button>
       </div>
@@ -84,7 +131,7 @@ export function SpendBudgetCard({ organizationId, mode, canEdit, className }: Sp
   }
 
   return (
-    <div className={cn("rounded-lg border border-border bg-card", className)}>
+    <div className={cn("rounded-md border border-border bg-card", className)}>
       <Headline effective={effective} mode={mode} />
       <div className="divide-y divide-border border-t border-border">
         <EntitlementRow effective={effective} />
@@ -100,7 +147,11 @@ export function SpendBudgetCard({ organizationId, mode, canEdit, className }: Sp
         <GuardrailRow
           scope="user"
           effective={effective}
-          existing={guardrails.find((g) => g.scope === "user" && g.scope_user_id === userId) ?? null}
+          existing={
+            guardrails.find(
+              (g) => g.scope === "user" && g.scope_user_id === userId,
+            ) ?? null
+          }
           organizationId={organizationId}
           userId={userId}
           editable={mode === "user"}
@@ -111,9 +162,10 @@ export function SpendBudgetCard({ organizationId, mode, canEdit, className }: Sp
         <div className="flex items-start gap-2 border-t border-border bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
           <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <p>
-            <span className="font-medium text-foreground">Tracking only.</span> AI spend is measured against this
-            budget, but nothing is stopped when it is reached yet. Enforcement is switched on platform-wide by the
-            administrator; when it is, this exact number is what applies.
+            <span className="font-medium text-foreground">Tracking only.</span>{" "}
+            AI spend is measured against this budget, but nothing is stopped
+            when it is reached yet. Enforcement is switched on platform-wide by
+            the administrator; when it is, this exact number is what applies.
           </p>
         </div>
       ) : null}
@@ -123,17 +175,30 @@ export function SpendBudgetCard({ organizationId, mode, canEdit, className }: Sp
 
 // ── Pieces ─────────────────────────────────────────────────────────────────
 
-function Headline({ effective, mode }: { effective: EffectiveCapability; mode: GuardrailScope }) {
+function Headline({
+  effective,
+  mode,
+}: {
+  effective: EffectiveCapability;
+  mode: GuardrailScope;
+}) {
   // The counter the binding layer is measured on: org layers meter the
   // organization, a user guardrail meters the person.
-  const used = effective.limitSource === "user_guardrail" ? effective.userUsed : effective.orgUsed;
+  const used =
+    effective.limitSource === "user_guardrail"
+      ? effective.userUsed
+      : effective.orgUsed;
   const limit = effective.effectiveLimit;
-  const pct = limit !== null && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-  const tone = pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-warning" : "bg-primary";
+  const pct =
+    limit !== null && limit > 0
+      ? Math.min(100, Math.round((used / limit) * 100))
+      : 0;
+  const tone =
+    pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-warning" : "bg-primary";
   const when = periodPhrase(effective.period);
 
   return (
-    <div className="p-4">
+    <div className="p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Gauge className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -152,35 +217,60 @@ function Headline({ effective, mode }: { effective: EffectiveCapability; mode: G
       </div>
 
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="text-2xl font-semibold tabular-nums text-foreground">{formatUsd(pointsToUsd(used))}</span>
+        <span className="text-2xl font-semibold tabular-nums text-foreground">
+          {formatUsd(pointsToUsd(used))}
+        </span>
         <span className="text-sm text-muted-foreground">
           {limit === null ? (
             <span className="inline-flex items-center gap-1">
-              used {when} · <InfinityIcon className="h-3.5 w-3.5" aria-hidden /> no limit
+              used {when} · <InfinityIcon className="h-3.5 w-3.5" aria-hidden />{" "}
+              no limit
             </span>
           ) : (
-            <>of {formatUsd(pointsToUsd(limit))} {when}</>
+            <>
+              of {formatUsd(pointsToUsd(limit))} {when}
+            </>
           )}
         </span>
       </div>
 
       {limit !== null ? (
         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
-          <div className={cn("h-full rounded-full transition-all", tone)} style={{ width: `${pct}%` }} />
+          <div
+            className={cn("h-full rounded-full transition-all", tone)}
+            style={{ width: `${pct}%` }}
+          />
         </div>
       ) : null}
 
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-        {limit !== null ? <span>Limit set by {LIMIT_SOURCE_LABEL[effective.limitSource]}</span> : null}
-        {limit !== null ? <span>{formatPoints(used)} of {formatPoints(limit)}</span> : null}
+        {limit !== null ? (
+          <span>Limit set by {LIMIT_SOURCE_LABEL[effective.limitSource]}</span>
+        ) : null}
+        {limit !== null ? (
+          <span>
+            {formatPoints(used)} of {formatPoints(limit)}
+          </span>
+        ) : null}
         {effective.resetsAt ? (
-          <span>Resets {new Date(effective.resetsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+          <span>
+            Resets{" "}
+            {new Date(effective.resetsAt).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
         ) : null}
         {mode === "user" && effective.limitSource !== "user_guardrail" ? (
-          <span>You: {formatUsd(pointsToUsd(effective.userUsed))} · Organization: {formatUsd(pointsToUsd(effective.orgUsed))}</span>
+          <span>
+            You: {formatUsd(pointsToUsd(effective.userUsed))} · Organization:{" "}
+            {formatUsd(pointsToUsd(effective.orgUsed))}
+          </span>
         ) : null}
         {effective.wouldBlock && !effective.enforced ? (
-          <span className="text-warning">Over budget — would be stopped once enforcement is on</span>
+          <span className="text-warning">
+            Over budget — would be stopped once enforcement is on
+          </span>
         ) : null}
       </div>
     </div>
@@ -201,24 +291,33 @@ function Row({
   binding: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className="flex items-center gap-3 px-3 py-2.5 sm:px-4">
       <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="text-sm text-foreground">{label}</span>
           {binding ? (
-            <span className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">binding</span>
+            <span className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+              binding
+            </span>
           ) : null}
         </div>
-        {hint ? <p className="truncate text-xs text-muted-foreground">{hint}</p> : null}
+        {hint ? (
+          <p className="truncate text-xs text-muted-foreground">{hint}</p>
+        ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2 text-sm tabular-nums">{children}</div>
+      <div className="flex shrink-0 items-center gap-2 text-sm tabular-nums">
+        {children}
+      </div>
     </div>
   );
 }
 
 function EntitlementRow({ effective }: { effective: EffectiveCapability }) {
-  const binding = effective.limitSource === "plan" || effective.limitSource === "addon" || effective.limitSource === "tier";
+  const binding =
+    effective.limitSource === "plan" ||
+    effective.limitSource === "addon" ||
+    effective.limitSource === "tier";
   const hint = effective.fromAddon
     ? "Plan allowance raised by an add-on"
     : effective.planName
@@ -231,7 +330,9 @@ function EntitlementRow({ effective }: { effective: EffectiveCapability }) {
           <InfinityIcon className="h-3.5 w-3.5" aria-hidden /> Unlimited
         </span>
       ) : (
-        <span className="text-foreground">{formatPointsAsMoney(effective.entitlementLimit)}</span>
+        <span className="text-foreground">
+          {formatPointsAsMoney(effective.entitlementLimit)}
+        </span>
       )}
     </Row>
   );
@@ -259,8 +360,11 @@ function GuardrailRow({
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const value = scope === "org" ? effective.orgGuardrail : effective.userGuardrail;
-  const binding = effective.limitSource === (scope === "org" ? "org_guardrail" : "user_guardrail");
+  const value =
+    scope === "org" ? effective.orgGuardrail : effective.userGuardrail;
+  const binding =
+    effective.limitSource ===
+    (scope === "org" ? "org_guardrail" : "user_guardrail");
   const label = scope === "org" ? "Organization budget" : "Your own budget";
   const Icon = scope === "org" ? Building2 : UserRound;
   const ceiling = effective.entitlementLimit;
@@ -273,9 +377,12 @@ function GuardrailRow({
 
   const draftPoints = useMemo(() => {
     const n = Number(draft);
-    return draft.trim() !== "" && Number.isFinite(n) && n >= 0 ? usdToPoints(n) : null;
+    return draft.trim() !== "" && Number.isFinite(n) && n >= 0
+      ? usdToPoints(n)
+      : null;
   }, [draft]);
-  const aboveCeiling = draftPoints !== null && ceiling !== null && draftPoints > ceiling;
+  const aboveCeiling =
+    draftPoints !== null && ceiling !== null && draftPoints > ceiling;
 
   const hint =
     value === null
@@ -311,7 +418,9 @@ function GuardrailRow({
         limitValue: draftPoints,
         note: note.trim() || null,
       });
-      toast.success(`${label} set to ${formatUsd(pointsToUsd(draftPoints))} ${periodPhrase(effective.period)}`.trim());
+      toast.success(
+        `${label} set to ${formatUsd(pointsToUsd(draftPoints))} ${periodPhrase(effective.period)}`.trim(),
+      );
       setEditing(false);
       await onChanged();
     } catch (err) {
@@ -339,14 +448,19 @@ function GuardrailRow({
 
   if (editing) {
     return (
-      <div className="px-4 py-3">
+      <div className="px-3 py-3 sm:px-4">
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Icon
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
           <span className="text-sm text-foreground">{label}</span>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <div className="relative">
-            <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-sm text-muted-foreground">$</span>
+            <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-sm text-muted-foreground">
+              $
+            </span>
             <Input
               autoFocus
               inputMode="decimal"
@@ -363,7 +477,9 @@ function GuardrailRow({
             />
           </div>
           <span className="text-xs text-muted-foreground">
-            {periodPhrase(effective.period).replace(/^this /, "per ").replace(/^today$/, "per day")}
+            {periodPhrase(effective.period)
+              .replace(/^this /, "per ")
+              .replace(/^today$/, "per day")}
             {draftPoints !== null ? ` · ${formatPoints(draftPoints)}` : ""}
           </span>
           <Input
@@ -374,16 +490,35 @@ function GuardrailRow({
             onChange={(e) => setNote(e.target.value)}
             aria-label="Note"
           />
-          <Button size="sm" onClick={() => void save()} disabled={busy || draftPoints === null || aboveCeiling}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Check className="h-3.5 w-3.5" aria-hidden />}
+          <Button
+            size="sm"
+            onClick={() => void save()}
+            disabled={busy || draftPoints === null || aboveCeiling}
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : (
+              <Check className="h-3.5 w-3.5" aria-hidden />
+            )}
             Save
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={busy}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setEditing(false)}
+            disabled={busy}
+          >
             <X className="h-3.5 w-3.5" aria-hidden />
             Cancel
           </Button>
           {existing ? (
-            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => void remove()} disabled={busy}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive"
+              onClick={() => void remove()}
+              disabled={busy}
+            >
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Remove
             </Button>
@@ -391,11 +526,15 @@ function GuardrailRow({
         </div>
         {aboveCeiling && ceiling !== null ? (
           <p className="mt-1.5 text-xs text-destructive">
-            A budget can only lower your limit. This account is entitled to {formatPointsAsMoney(ceiling)}; enter that
-            or less. Raising a limit is an add-on, which a platform administrator grants.
+            A budget can only lower your limit. This account is entitled to{" "}
+            {formatPointsAsMoney(ceiling)}; enter that or less. Raising a limit
+            is an add-on, which a platform administrator grants.
           </p>
         ) : ceiling !== null ? (
-          <p className="mt-1.5 text-xs text-muted-foreground">Up to {formatUsd(pointsToUsd(ceiling))} — the entitlement is the ceiling.</p>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Up to {formatUsd(pointsToUsd(ceiling))} — the entitlement is the
+            ceiling.
+          </p>
         ) : null}
       </div>
     );
@@ -409,7 +548,13 @@ function GuardrailRow({
         <span className="text-foreground">{formatPointsAsMoney(value)}</span>
       )}
       {editable ? (
-        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={beginEdit} aria-label={value === null ? `Set ${label}` : `Edit ${label}`}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2"
+          onClick={beginEdit}
+          aria-label={value === null ? `Set ${label}` : `Edit ${label}`}
+        >
           <Pencil className="h-3.5 w-3.5" aria-hidden />
           {value === null ? "Set" : "Edit"}
         </Button>

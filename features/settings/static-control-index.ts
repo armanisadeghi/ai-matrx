@@ -65,7 +65,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "general.privacy",
     "label": "Auto knowledge-graph",
-    "description": "Let Matrx analyze your notes, tasks, and files in the background to suggest scope fills. Suggestions are never applied automatically — you accept each one.",
+    "description": "Let Matrx analyze your notes, tasks, and files in the background to suggest useful connections. Suggestions are never applied automatically — you accept each one.",
     "controlId": "settings-control-knowledge-graph-auto-knowledge-graph"
   },
   {
@@ -94,12 +94,6 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "appearance",
-    "label": "Dark mode (legacy flag)",
-    "description": "Used by older components that don't yet read from the theme slice.",
-    "controlId": "settings-control-theme-dark-mode-legacy-flag"
-  },
-  {
-    "tabId": "appearance",
     "label": "Accent theme",
     "description": "Custom color scheme overlays.",
     "controlId": "settings-control-theme-accent-theme"
@@ -132,12 +126,6 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "appearance.theme",
-    "label": "Dark mode (legacy flag)",
-    "description": "Used by older components that don't yet read from the theme slice.",
-    "controlId": "settings-control-theme-dark-mode-legacy-flag"
-  },
-  {
-    "tabId": "appearance.theme",
     "label": "Accent theme",
     "description": "Custom color scheme overlays.",
     "controlId": "settings-control-theme-accent-theme"
@@ -167,12 +155,6 @@ export const staticSettingsControlIndex = [
     "label": "Color mode",
     "description": "Applies before first paint — synced across tabs.",
     "controlId": "settings-control-theme-color-mode"
-  },
-  {
-    "tabId": "appearance.density",
-    "label": "Dark mode (legacy flag)",
-    "description": "Used by older components that don't yet read from the theme slice.",
-    "controlId": "settings-control-theme-dark-mode-legacy-flag"
   },
   {
     "tabId": "appearance.density",
@@ -205,12 +187,6 @@ export const staticSettingsControlIndex = [
     "label": "Color mode",
     "description": "Applies before first paint — synced across tabs.",
     "controlId": "settings-control-theme-color-mode"
-  },
-  {
-    "tabId": "appearance.accent",
-    "label": "Dark mode (legacy flag)",
-    "description": "Used by older components that don't yet read from the theme slice.",
-    "controlId": "settings-control-theme-dark-mode-legacy-flag"
   },
   {
     "tabId": "appearance.accent",
