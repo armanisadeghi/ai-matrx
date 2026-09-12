@@ -3,11 +3,12 @@
 /**
  * Per-member ORG-SCOPED resource inventory at
  * /organizations/[orgId]/admin/users/[userId]/resources.
- * Shows what the member owns within THIS org and lets an admin reassign it.
+ * Shows what the member owns within THIS org. Read-only: transferring another person's
+ * resources is an audited action with its own door (DD-140), never a button on a list.
  */
-import React, { useMemo, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { ArrowLeft, FolderInput, Loader2, Package } from "lucide-react";
+import { ArrowLeft, Loader2, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,8 +22,7 @@ import {
 } from "@/components/ui/table";
 import type { Organization } from "../../types";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
-import { useOrgMemberDetail, useOrgRoster } from "../hooks";
-import { ReassignResourcesDialog, type ReassignCandidate } from "./ReassignResourcesDialog";
+import { useOrgMemberDetail } from "../hooks";
 
 interface Props {
   orgId: string;
@@ -31,17 +31,8 @@ interface Props {
 }
 
 export function MemberResourcesView({ orgId, organization, userId }: Props) {
-  const { member, loading, error, refresh } = useOrgMemberDetail(orgId, userId);
-  const { members } = useOrgRoster(orgId);
-  const [reassignOpen, setReassignOpen] = useState(false);
+  const { member, loading, error } = useOrgMemberDetail(orgId, userId);
 
-  const candidates: ReassignCandidate[] = useMemo(
-    () =>
-      members
-        .filter((m) => m.userId !== userId)
-        .map((m) => ({ userId: m.userId, label: m.displayName || m.email || m.userId })),
-    [members, userId],
-  );
 
   if (loading && !member) {
     return (
@@ -81,14 +72,6 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
             Personal-org resources are not shown and are never affected.
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setReassignOpen(true)}
-          disabled={member.resources.length === 0 || candidates.length === 0}
-        >
-          <FolderInput className="mr-2 h-4 w-4" />
-          Reassign
-        </Button>
       </div>
 
       {member.resources.length === 0 ? (
@@ -123,18 +106,6 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
         </Card>
       )}
 
-      <ReassignResourcesDialog
-        open={reassignOpen}
-        onOpenChange={setReassignOpen}
-        orgId={orgId}
-        orgSlug={organization.slug}
-        mode="reassign"
-        sourceUserId={userId}
-        sourceLabel={label}
-        resources={member.resources}
-        candidates={candidates}
-        onDone={refresh}
-      />
     </div>
   );
 }

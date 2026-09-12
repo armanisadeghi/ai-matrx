@@ -4,15 +4,15 @@
 **Tier:** `2` (sub-feature of `organizations`)
 **Last updated:** `2026-08-24`
 
-> The org-admin console: an org owner/admin manages the org's **users** — roster, usage, budgets, tiers, suspend, invite, remove, and resource reassignment. Lives under `features/organizations/admin/`; routes under `/organizations/[orgId]/admin`. Parent: [`../FEATURE.md`](../FEATURE.md).
+> The org-admin console: an org owner/admin manages the org's **users** — roster, usage, budgets, tiers, suspend, invite, and remove. Lives under `features/organizations/admin/`; routes under `/organizations/[orgId]/admin`. Parent: [`../FEATURE.md`](../FEATURE.md).
 
 ---
 
 ## Purpose
 
-Matrx is membership-first (a user joins many orgs), but enterprises onboard an org and manage its people. This is that surface. It does **everything an enterprise org admin expects**: see every member, who's active vs dormant, file usage, spend; set per-member budgets / storage caps / tiers; suspend / remove; invite; and **reassign a departing user's org-scoped resources** to someone else.
+Matrx is membership-first (a user joins many orgs), but enterprises onboard an org and manage its people. This is that surface. It covers the safe management path: see every member, who's active vs dormant, file usage, spend; set per-member budgets / storage caps / tiers; suspend / remove; and invite.
 
-**Multi-org invariant (load-bearing):** a user belongs to many orgs, so admin power is **scoped to this org only**. Metrics, controls, and reassignment never reach the user's personal-org resources or another org's data. Reassignment moves only rows where `organization_id = <this org>`.
+**Multi-org invariant (load-bearing):** a user belongs to many orgs, so admin power is **scoped to this org only**. Metrics and controls never reach the user's personal-org resources or another org's data. Removing a membership leaves the person's resources and ownership unchanged; ownership transfer requires a separate audited door that is not exposed here.
 
 ---
 
@@ -43,13 +43,13 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 | `org_admin_overview(org)`                                    | Aggregate tiles (members, active, suspended, storage, spend)                                         |
 | `org_admin_get_member(org, user)`                            | One member: roster row + resource breakdown                                                          |
 | `org_admin_list_member_resources(org, user)`                 | Registry-driven count of the member's org-scoped resources per type                                  |
-| `org_admin_reassign_member_resources(org, from, to, types?)` | Reassign ownership of org-scoped resources (registry-driven, drift-tolerant owner-column resolution) |
+| `org_admin_reassign_member_resources(org, from, to, types?)` | Service-role-only compatibility function; client execution is revoked and self-transfer is refused (DD-140) |
 | `org_admin_set_member_controls(org, user, …)`                | Upsert budget / storage cap / tier / level / notes                                                   |
 | `org_admin_set_member_status(org, user, status, reason?)`    | Suspend / reactivate (owners can't be suspended; can't change own status)                            |
-| `org_admin_remove_member(org, user, reassign_to?)`           | Remove member; optional reassign-then-remove (last-owner + self guards)                              |
+| `org_admin_remove_member(org, user, reassign_to?)`           | Remove member; any non-null reassignment target is refused (last-owner + self guards)                |
 | `org_admin_list_audit(org, limit?)`                          | Governance audit log                                                                                 |
 
-**Registry-driven:** resource listing/reassignment iterate `public.shareable_resource_registry`, include only tables that physically have `organization_id`, and resolve the owner column tolerant of registry drift (`registry owner_column → created_by → user_id → owner_id → owner_user_id`). Add a shareable resource → it's covered automatically.
+**Registry-driven:** resource listing iterates `public.shareable_resource_registry` and includes only tables that physically have `organization_id`. The former bulk owner-rewrite lane is closed to clients because it could transfer private resources without an audited approval.
 
 ---
 
@@ -59,7 +59,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 
 - `/admin` — dashboard: overview tiles + member roster + invite + audit log
 - `/admin/users/[userId]` — member detail: identity, status actions, usage metrics, controls, resource summary
-- `/admin/users/[userId]/resources` — member's org-scoped resource inventory + reassign
+- `/admin/users/[userId]/resources` — read-only member resource inventory
 
 **Surfaced from:** `OrgManage` header → "Manage users" button (owners/admins, non-personal orgs).
 
@@ -69,8 +69,8 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 - `service.ts` — the single client chokepoint for the `org_admin_*` RPCs (snake→camel mapping)
 - `hooks.ts` — `useOrgAdminGate` (resolve+role), `useOrgRoster`, `useOrgMemberDetail`
 - `utils.ts` — `formatBytes` / `formatMcents` / `usdToMcents` / `gbToBytes` / `formatRelativeTime` / `activityBucket`
-- `components/` — `OrgAdminBoundary`, `OrgAdminDashboard`, `MemberRosterTable`, `MemberDetailView`, `MemberResourcesView`, `MemberControlsForm`, `ReassignResourcesDialog`, `OrgAdminAuditTable`
-- `MemberRosterTable` and `ReassignResourcesDialog` use `UserSearchField` with only this organization roster's candidates; selecting a roster result opens the member, while selecting a reassignment result sets the existing protected mutation target.
+- `components/` — `OrgAdminBoundary`, `OrgAdminDashboard`, `MemberRosterTable`, `MemberDetailView`, `MemberResourcesView`, `MemberControlsForm`, `RemoveMemberDialog`, `OrgAdminAuditTable`
+- `MemberRosterTable` uses `UserSearchField` with only this organization roster's candidates; selecting a result opens the member.
 
 **Invite** reuses the existing `InvitationManager` (org invite flow) — not reinvented.
 
@@ -78,9 +78,9 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 
 ## Invariants
 
-- **Org-scoped only.** Never read/write/reassign outside `organization_id = <this org>`. Personal resources are untouchable here.
+- **Org-scoped only.** Never read/write outside `organization_id = <this org>`. Personal resources are untouchable here.
 - **One RPC family, one audit log.** All governance writes flow through `org_admin_*`; each writes `iam.org_admin_audit`.
-- **Guards live in the DB:** owners can't be suspended; you can't change your own status; the last owner can't be removed; reassign target must be a member.
+- **Guards live in the DB:** owners can't be suspended; you can't change your own status; the last owner can't be removed; bulk ownership reassignment is not client-callable.
 - **Reuse, don't fork:** invite via `InvitationManager`; role/remove for the _Members_ settings tab still use `MemberManagement` — this console is the heavier admin surface, not a replacement.
 - **Search does not widen org-admin authority.** Advanced member search receives only candidates already returned by the org-scoped RPC; it never calls the platform super-admin directory.
 
@@ -89,7 +89,6 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 ## Known limitations / follow-ups
 
 - **Controls are advisory in v1.** `monthly_budget_mcents`, `storage_cap_bytes`, `tier_override` are stored, tracked, and displayed but **not yet hard-enforced** in the upload/usage paths. Enforcement (wire into the `files` quota block + `chat.user_usage_summary` gating) is the next pass. Surfaced to admins in `MemberControlsForm`.
-- **Reassigning files** updates `files.files.created_by` but does not recompute the cached `files.user_storage_usage` counters for old/new owner. Re-mint of those counters is a follow-up.
 - **Suspend** sets the governance status and shows everywhere in admin; it does not yet block the suspended user's sessions/requests (enforcement pass).
 - `tier_override` / `member_level` are free-text in the form; a tier picker sourced from `files.account_tiers` is a polish follow-up.
 
@@ -97,6 +96,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 
 ## Change Log
 
+- **2026-09-12** — Closed the unaudited bulk ownership-transfer lane (DD-140). Client execution of `org_admin_reassign_member_resources` is revoked, member removal refuses reassignment, and the org-admin UI is now explicit that resources keep their existing owner.
 - **2026-08-24** — Added the canonical advanced member picker to the roster and resource-reassignment flow. Search remains bounded to the current organization, and every governance mutation still runs through the existing audited `org_admin_*` RPC family.
 - **2026-08-15** — claude: **Governance surfaces carry Copy / Copy-for-AI / export (agent-copy rollout).** New `copy.ts` builds the payloads; human summaries reuse the tables' own `formatBytes` / `formatMcents` / `formatRelativeTime`, so a copied roster reads in the units on screen rather than raw bytes and mcents. `MemberRosterTable` gained a list pair + `ExportMenu` (JSON + CSV) + a per-row `xs` pair (the row navigates to member detail, so `CopyButtons`' `stopPropagation` keeps copying from opening the member); `OrgAdminAuditTable` gained a list pair + `ExportMenu` + a per-entry pair carrying the RENDERED action label rather than the raw slug. Copy/export always cover ALL members and ALL audit entries; when the roster's search or sort is active the envelope names it and still carries the full set — an admin acting on a governance roster must never be handed a silently truncated one. `pnpm type-check` clean.
 

@@ -68,12 +68,6 @@ export interface OrgAdminMemberDetail extends OrgAdminMember {
   resources: OrgMemberResource[];
 }
 
-/** Result of a reassignment, per resource type actually moved. */
-export interface ReassignResult {
-  resourceType: string;
-  reassigned: number;
-}
-
 /** The admin-settable controls for a member (the editable subset). */
 export interface OrgMemberControlsInput {
   memberLevel: string | null;

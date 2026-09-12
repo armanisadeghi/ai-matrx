@@ -37,7 +37,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
   `organization_id` writer. Current review drafts remain browser-local and are
   not tenant persistence. Feature contract:
   [`features/employee-performance-reviews/FEATURE.md`](../employee-performance-reviews/FEATURE.md).
-- `app/(core)/organizations/[orgId]/admin/{,users/[userId]/{,resources}}` — **org-admin user management** (roster, usage/metrics, budgets, tiers, suspend, remove, resource reassignment). Owner/admin-gated; surfaced from the `OrgManage` header ("Manage users"). Full contract: [`admin/FEATURE.md`](./admin/FEATURE.md). **Read it before touching any `org_admin_*` RPC or `iam.org_member_controls`.**
+- `app/(core)/organizations/[orgId]/admin/{,users/[userId]/{,resources}}` — **org-admin user management** (roster, usage/metrics, budgets, tiers, suspend, remove, and read-only resource inventory). Owner/admin-gated; surfaced from the `OrgManage` header ("Manage users"). Bulk ownership reassignment is intentionally not client-callable. Full contract: [`admin/FEATURE.md`](./admin/FEATURE.md). **Read it before touching any `org_admin_*` RPC or `iam.org_member_controls`.**
 - `app/(authenticated)/invitations/organization/accept/[token]/page.tsx` — accept org invitation
 - `app/(authenticated)/invitations/project/accept/[token]/page.tsx` — accept project invitation
 
@@ -284,6 +284,10 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-12` — **The org-admin surface no longer exposes unaudited bulk
+  ownership reassignment.** Member removal leaves resources with their existing
+  owner, resource inventory is read-only, and the database client door is
+  revoked while the service-only compatibility function refuses self-transfer.
 - `2026-09-12` — **Cold boot now ends with an explicit organization whenever
   the memberships can name one.** `resolveActiveOrgContext` and its
   `useActiveOrganizationAutoSelect` recovery layer both apply stored selection
