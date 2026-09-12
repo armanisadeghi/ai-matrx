@@ -100,6 +100,7 @@ import {
   WEBSITE_LOGIN_DEFINITION_KEY,
   type CredentialDefinition,
   type UriMatchMode,
+  isProtectedExecutionField,
   type VaultAccessMode,
   type VaultAttachment,
   type VaultField,
@@ -156,6 +157,7 @@ export function VaultItemDetail({
   const otherFields = item.fields.filter(
     (field) => !primaryIds.has(field.id) && field.id !== recoveryCodesField?.id,
   );
+  const hasProtectedExecutionField = item.fields.some(isProtectedExecutionField);
 
   const renderField = (field: VaultField, emphasis: boolean) => (
     <FieldRow
@@ -180,19 +182,22 @@ export function VaultItemDetail({
       key: "transfer",
       icon: ArrowLeftRight,
       label: "Move scope",
-      show: caps.can_manage === true,
+      show: caps.can_manage === true && !hasProtectedExecutionField,
     },
     {
       key: "give",
       icon: UserPlus,
       label: "Give ownership",
-      show: caps.can_manage === true && Boolean(item.user_id),
+      show:
+        caps.can_manage === true &&
+        Boolean(item.user_id) &&
+        !hasProtectedExecutionField,
     },
     {
       key: "fork",
       icon: GitFork,
       label: "Copy as independent",
-      show: caps.can_use === true,
+      show: caps.can_use === true && !hasProtectedExecutionField,
     },
     { key: "audit", icon: History, label: "Audit trail", show: true },
   ];
@@ -372,6 +377,13 @@ export function VaultItemDetail({
       {/* Action bar — the three everyday actions stay in reach; the rare and
           irreversible ones live one deliberate click away. */}
       <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
+        {hasProtectedExecutionField && (
+          <p className="mr-2 text-xs text-muted-foreground">
+            This credential includes private passkey material for native
+            provider use only. Moving, giving ownership, and copying are
+            unavailable.
+          </p>
+        )}
         {caps.can_manage && (
           <ActionToggle
             panel="share"
@@ -886,6 +898,7 @@ function FieldRow({
   const envInputRef = useRef<HTMLInputElement>(null);
 
   const displayLabel = fieldLabelOf(field, label);
+  const protectedExecution = isProtectedExecutionField(field);
   const showEnvAlias = !envAliasIsRedundant(field);
   const metadataChanged =
     envDraft !== (field.env_key ?? "") ||
@@ -953,7 +966,7 @@ function FieldRow({
 
       {/* Display and edit occupy the SAME row. Never create a second value
           panel below the value a person is already looking at. */}
-      {editingValue && editMode ? (
+      {editingValue && editMode && !protectedExecution ? (
         <div className="mt-1 flex min-w-0 items-center gap-1">
           <Input
             type={field.handling === "visible" ? "text" : "password"}
@@ -1004,7 +1017,7 @@ function FieldRow({
           showCountdown
           className="mt-1 min-w-0"
         >
-          {editMode && caps.can_edit && (
+          {editMode && caps.can_edit && !protectedExecution && (
             <>
               {field.editable && (
                 <Button
@@ -1034,7 +1047,8 @@ function FieldRow({
         </SecretValue>
       )}
 
-      {(showEnvAlias || field.inject_into_sandbox || field.description) && (
+      {!protectedExecution &&
+        (showEnvAlias || field.inject_into_sandbox || field.description) && (
         <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
           {showEnvAlias && (
             <code className="max-w-full whitespace-normal break-all rounded bg-muted/45 px-1.5 py-0.5 font-mono">
@@ -1054,7 +1068,7 @@ function FieldRow({
         </div>
       )}
 
-      {editMode && caps.can_edit && (
+      {editMode && caps.can_edit && !protectedExecution && (
         <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
           <div className="flex min-w-0 flex-wrap items-end gap-2">
             <label className="flex min-w-[14rem] flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs">

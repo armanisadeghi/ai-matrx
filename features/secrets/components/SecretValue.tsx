@@ -37,13 +37,18 @@ import { toast } from "@/lib/toast";
 
 import { useTransientSecret } from "../vault-hooks";
 import { resolveVaultFields, revealVaultField } from "../vault-service";
-import type { VaultField, VaultItem } from "../types";
+import {
+  isProtectedExecutionField,
+  type VaultField,
+  type VaultItem,
+} from "../types";
 
 /**
  * Whether a human may see this field's value at all. `sealed` is false for
  * everyone, at every capability level, forever.
  */
 export function canShowField(item: VaultItem, field: VaultField): boolean {
+  if (isProtectedExecutionField(field)) return false;
   if (!field.is_active) return false;
   if (field.handling === "visible") return item.capabilities.can_use === true;
   if (field.handling === "revealable")
@@ -85,6 +90,7 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
   );
 
   const fetchValue = async (): Promise<string | null> => {
+    if (isProtectedExecutionField(field)) return null;
     // `visible` resolves under can_use; `revealable` uses the audited reveal
     // endpoint under can_reveal. `sealed` never reaches here.
     const value =
@@ -212,6 +218,7 @@ export function SecretValue({
   // render before that effect runs, a value the user may no longer see is
   // never painted.
   const revealed = secret.allowed && secret.value !== null;
+  const protectedExecution = isProtectedExecutionField(field);
   const visibleRequest = useRef<string | null>(null);
   const visibleRequestKey = `${item.id}/${field.id}/${field.value_version}`;
   const [visibleLoadFailed, setVisibleLoadFailed] = useState(false);
@@ -221,6 +228,7 @@ export function SecretValue({
   useEffect(() => {
     if (
       field.handling !== "visible" ||
+      protectedExecution ||
       !secret.allowed ||
       revealed ||
       secret.working ||
@@ -235,6 +243,7 @@ export function SecretValue({
     });
   }, [
     field.handling,
+    protectedExecution,
     revealed,
     secret.allowed,
     secret.reveal,
@@ -242,7 +251,15 @@ export function SecretValue({
     visibleRequestKey,
   ]);
 
-  const controls = secret.sealed ? (
+  const controls = protectedExecution ? (
+    <span
+      className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground"
+      title="Native provider use only — this private passkey material cannot be revealed, copied, or used as a runtime value."
+    >
+      <LockKeyhole className="h-3.5 w-3.5" />
+      Native provider only
+    </span>
+  ) : secret.sealed ? (
     // Sealed: a lock and nothing else. There is no unseal control to hide.
     <span
       className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground"
@@ -336,7 +353,12 @@ export function SecretValue({
           revealed ? "text-foreground" : "text-muted-foreground",
         )}
       >
-        {revealed ? (
+        {protectedExecution ? (
+          <span className="font-sans text-xs text-muted-foreground">
+            Native provider use only. This private passkey material cannot be
+            revealed, copied, or used as a runtime value.
+          </span>
+        ) : revealed ? (
           secret.value
         ) : field.handling === "visible" && visibleLoadFailed ? (
           <span className="font-sans text-xs text-destructive">

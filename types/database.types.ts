@@ -9,11 +9,6 @@
 export type Json = unknown
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   admin: {
     Tables: {
       admin_audit_log: {
@@ -66557,6 +66552,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_unprotected_relation_report: {
+        Args: never
+        Returns: {
+          client_grants: string
+          relation: string
+          write_open: boolean
+        }[]
+      }
       admin_unregistered_pairs: {
         Args: never
         Returns: {
@@ -93581,6 +93584,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           editable: boolean
+          execution_purpose: string
           field_key: string | null
           handling: string
           id: string
@@ -93607,6 +93611,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           editable?: boolean
+          execution_purpose?: string
           field_key?: string | null
           handling?: string
           id?: string
@@ -93633,6 +93638,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           editable?: boolean
+          execution_purpose?: string
           field_key?: string | null
           handling?: string
           id?: string
@@ -102278,3 +102284,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

@@ -65,7 +65,12 @@ export type VaultAttachment = Pick<
  *  string index signature that makes `Omit` collapse every prop to unknown. */
 export type VaultField = Pick<
   VaultFieldWire,
-  "id" | "credential_item_id" | "field_key" | "created_at" | "updated_at"
+  | "id"
+  | "credential_item_id"
+  | "field_key"
+  | "execution_purpose"
+  | "created_at"
+  | "updated_at"
 > & {
   env_key: string | null;
   handling: VaultHandling;
@@ -126,6 +131,10 @@ export function normalizeNonSecretFields(raw: unknown): NonSecretField[] {
 export function normalizeWireField(wire: VaultFieldWire): VaultField {
   return {
     ...wire,
+    // Deliberately do not default missing metadata to `general`: an older
+    // server response must retain its compatibility shape rather than making
+    // a client-side security promise. The server remains authoritative.
+    execution_purpose: normalizeExecutionPurpose(wire.execution_purpose),
     env_key: wire.env_key ?? null,
     handling: normalizeVaultHandling(wire.handling),
     editable: wire.editable ?? true,
@@ -135,6 +144,20 @@ export function normalizeWireField(wire: VaultFieldWire): VaultField {
     is_active: wire.is_active ?? true,
     description: wire.description ?? null,
   };
+}
+
+/** Validate database/API purpose metadata without declaring a parallel type. */
+export function normalizeExecutionPurpose(
+  value: unknown,
+): VaultFieldWire["execution_purpose"] {
+  if (value === undefined || value === null) return undefined;
+  if (value === "general" || value === "passkey_private") return value;
+  throw new Error(`Invalid Vault execution purpose: ${String(value)}`);
+}
+
+/** Protected fields never enter the browser's generic credential flow. */
+export function isProtectedExecutionField(field: VaultField): boolean {
+  return field.execution_purpose === "passkey_private";
 }
 
 export function normalizeWireItem(wire: VaultItemWire): VaultItem {
@@ -318,7 +341,7 @@ export const CREDENTIAL_ITEM_COLUMNS =
 /** Masked field columns. `value_encrypted` is UNREADABLE by client roles —
  *  never select it, never `select *` on `users.user_secrets`. */
 export const VAULT_FIELD_COLUMNS =
-  "id, credential_item_id, field_key, key, handling, editable, inject_into_sandbox, value_hint, value_version, is_active, description, created_at, updated_at" as const;
+  "id, credential_item_id, field_key, execution_purpose, key, handling, editable, inject_into_sandbox, value_hint, value_version, is_active, description, created_at, updated_at" as const;
 
 /** Attachment metadata only. Encrypted file bytes are deliberately absent and
  *  are not selectable by browser roles even if a caller changes this list. */
@@ -354,6 +377,7 @@ export type VaultFieldMaskedRow = Pick<
   | "id"
   | "credential_item_id"
   | "field_key"
+  | "execution_purpose"
   | "key"
   | "handling"
   | "editable"
