@@ -587,10 +587,20 @@ export function RulebookSourcesPanel({
                 extraActions={
                   <>
                     <span className="mx-1 h-4 w-px bg-border" />
+                    {/* A TOGGLE SAYS WHICH WAY IT WENT. Both of these open a
+                        panel below the row, and neither said so: no
+                        `aria-expanded`, no `aria-pressed`, so anyone who
+                        pressed twice — or read the page instead of seeing it —
+                        got "I clicked and nothing happened" (census row 9,
+                        2026-09-12). The state is now declared, not just
+                        painted. */}
                     <Button
                       type="button"
                       size="sm"
                       variant="ghost"
+                      aria-expanded={showUrlAdd}
+                      aria-pressed={showUrlAdd}
+                      aria-controls="rulebook-sources-url-add"
                       onClick={() => {
                         setShowUrlAdd((v) => !v);
                         setShowPicker(false);
@@ -607,6 +617,9 @@ export function RulebookSourcesPanel({
                       type="button"
                       size="sm"
                       variant="ghost"
+                      aria-expanded={showPicker}
+                      aria-pressed={showPicker}
+                      aria-controls="rulebook-sources-workspace-picker"
                       onClick={() => {
                         setShowPicker((v) => !v);
                         setShowUrlAdd(false);
@@ -623,7 +636,10 @@ export function RulebookSourcesPanel({
                 }
               >
                 {showUrlAdd ? (
-                  <div className="border-b border-border/60 p-2">
+                  <div
+                    id="rulebook-sources-url-add"
+                    className="border-b border-border/60 p-2"
+                  >
                     {/* Scrape-on-add: the Core fetches the page and shows an
                         honest preview before "Add Content" stages the URL. */}
                     <WebpageResourcePickerCore
@@ -638,7 +654,10 @@ export function RulebookSourcesPanel({
                   </div>
                 ) : null}
                 {showPicker ? (
-                  <div className="flex max-h-80 flex-col border-b border-border/60 bg-muted/30 p-2">
+                  <div
+                    id="rulebook-sources-workspace-picker"
+                    className="flex max-h-80 flex-col border-b border-border/60 bg-muted/30 p-2"
+                  >
                     <UniversalAssociationPicker
                       tokens={DUMP_SOURCE_TOKENS}
                       orgId={rulebook.organization_id}

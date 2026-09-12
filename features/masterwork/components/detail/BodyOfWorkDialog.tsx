@@ -27,6 +27,7 @@ import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { describeMissingIngestParts } from "./IngestSourceDialog";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
 
 /**
  * "Everything you've published" — the `body_of_work` Distillation Approach.
@@ -54,7 +55,9 @@ import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
  */
 
 const INGEST_CORPUS_PATH = "/masterworks/ingest-corpus" satisfies keyof paths;
-const FILE_ACCEPT = ".pdf,.doc,.docx,.txt,.md,.rtf,.epub,.pptx,audio/*,video/*";
+// THE ONE LIST (features/masterwork/sourceTypes.ts): the picker offers
+// exactly what the server reads — never a hand-typed second copy.
+const FILE_ACCEPT = MASTERWORK_UPLOAD_ACCEPT;
 const MAX_PIECES = 80;
 const BOARD_REFRESH_MS = 4000;
 
