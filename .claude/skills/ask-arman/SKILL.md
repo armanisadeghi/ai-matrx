@@ -34,6 +34,14 @@ the register is [the Question Ledger](/operations/questions.md); the interviewer
 
 Run them in order. The first that says "not a question" ends the matter.
 
+0. **Are you asking the boss, or the user?** *Would this question exist if Arman had never used
+   the product himself?* If it exists only because he owns a recycling company, an SEO brand, a
+   site or a team — the content, taste or configuration of ONE organization — it is not his
+   question and never reaches him. Convert it: make the product ask its own user (an onboarding
+   step or a starter kit), make it a knob with a default, or decide it and record it. Law:
+   [ask the boss, not the user](/policies/ask-the-builder-not-the-user.md). Arman, 2026-09-12:
+   *"they're not asking me as the developer building this platform. They're asking me as the
+   user and that's a horrible waste of our development resources."*
 1. **Is it a fact?** Anything code, the database, a document, or the web can settle is looked
    up, never asked. "Does X exist", "which table", "what does the endpoint return", "what did
    the last run do" — dispatch a `quick` lane if it is tedious. Record where you looked.

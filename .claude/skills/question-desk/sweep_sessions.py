@@ -237,11 +237,18 @@ def gather(since_s: float, ledger: Path | None, use_cli: bool = True) -> list[Ca
     for cand in scan_transcripts(since_s):
         by_id[cand.session_id] = cand
     for sid, rec in read_inbox(since_s).items():
-        cand = by_id.get(sid) or Candidate(session_id=sid)
+        cand = by_id.get(sid)
+        if cand is not None:
+            # The transcript is the truth about whether the turn is still waiting:
+            # a hook line is a snapshot from the moment the question was asked, and
+            # the owner may have answered since. Only the source tag is added.
+            cand.sources.append("hook-inbox")
+            continue
+        cand = Candidate(session_id=sid)  # no transcript read this run: the hook line is all we have
         cand.sources.append("hook-inbox")
-        cand.cwd = cand.cwd or rec.get("cwd", "")
-        cand.tail = cand.tail or rec.get("last_msg", "")
-        cand.transcript = cand.transcript or rec.get("transcript_path", "")
+        cand.cwd = rec.get("cwd", "")
+        cand.tail = rec.get("last_msg", "")
+        cand.transcript = rec.get("transcript_path", "")
         cand.ended_on_assistant = True
         by_id[sid] = cand
     if use_cli:
@@ -307,10 +314,23 @@ def self_test() -> int:
             rec("user", "Fix the lint", sid_n),
             rec("assistant", "Lint is green and pushed. Everything you've given me is complete.", sid_n),
         ]))
+        # a chat whose question the owner already answered, with a stale hook line
+        sid_a = "33333333-3333-4333-8333-333333333333"
+        (proj / f"{sid_a}.jsonl").write_text("\n".join([
+            rec("user", "Wire the guest record", sid_a),
+            rec("assistant", "1. Should guests read the record? Rec: yes.", sid_a),
+            rec("user", "yes, go with your rec", sid_a),
+        ]))
+        global INBOX
+        saved_inbox = INBOX
+        INBOX = Path(tmp) / "inbox.jsonl"
+        INBOX.write_text(json.dumps({"ts": time.time(), "session_id": sid_a, "cwd": "/tmp/repo",
+                                     "last_msg": "1. Should guests read the record? Rec: yes."}) + "\n")
         try:
             found = {c.session_id: c for c in gather(86400 * 3650, None, use_cli=False)}
         finally:
             PROJECTS_DIR = saved
+            INBOX = saved_inbox
     ok = True
     if sid_q not in found or found[sid_q].score < 3:
         print("SELF-TEST FAIL: the questioning chat was not detected", file=sys.stderr); ok = False
@@ -318,6 +338,8 @@ def self_test() -> int:
         print("SELF-TEST FAIL: a chat with no question was flagged", file=sys.stderr); ok = False
     if "agent-x" in found:
         print("SELF-TEST FAIL: a subagent transcript surfaced", file=sys.stderr); ok = False
+    if sid_a in found:
+        print("SELF-TEST FAIL: an answered question was revived by a stale hook-inbox line", file=sys.stderr); ok = False
     if found.get(sid_q) and not found[sid_q].title.startswith("Build the guest"):
         print("SELF-TEST FAIL: title not taken from the first prompt", file=sys.stderr); ok = False
     print("SELF-TEST PASS" if ok else "SELF-TEST FAILED")

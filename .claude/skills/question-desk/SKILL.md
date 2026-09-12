@@ -67,6 +67,10 @@ For each open row, in parallel `quick` dispatches where the check is mechanical,
 tests of [`ask-arman`](/skills/ask-arman/SKILL.md) § The homework gate as if you were the asker.
 Close without Arman, status `closed-by-desk — <reason>`, when:
 
+- **it asks the user, not the boss** — the question exists only because he owns one of the
+  organizations on the platform (its content, its taste, its settings). Convert it: build the
+  onboarding step or starter kit that asks the real customer, or set the knob's default, or
+  decide and record. Law: [ask the boss, not the user](/policies/ask-the-builder-not-the-user.md);
 - **it is a fact** — look it up in code, the DB, or the web, and answer the row yourself;
 - **he already ruled** — the owning `DECISIONS.md`, `VISION.md`, the lexicon, `log.md`, the
   conflicts register (laws 3a/3h), or this ledger's answered rows carry a dated verbatim answer;

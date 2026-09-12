@@ -17,6 +17,10 @@ timestamp: 2026-09-12T00:00:00Z
   surface; the title is the first prompt.
 - `question_capture_hook.py` appended one inbox line for *"Two options. Which do you prefer?"*
   and none for *"All done and pushed."* against a scratch config dir.
+- 2026-09-12 (later): a review bot found that merging the hook inbox forced a session to read as
+  still waiting even when the transcript showed the owner had replied. The transcript's verdict
+  now wins whenever one was read; the self-test gained the answered-question-plus-stale-inbox-line
+  case and was watched failing on the old merge, passing on the fix.
 - A live sweep over this sandbox's own transcripts returned no candidates (the only session was
   mid-turn), which is the correct answer.
 
