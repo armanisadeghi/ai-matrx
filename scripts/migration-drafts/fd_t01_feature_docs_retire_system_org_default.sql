@@ -52,12 +52,21 @@ DECLARE
   v_non_system_rows bigint;
   v_trigger_hash text;
 BEGIN
+  PERFORM set_config('lock_timeout', '5s', true);
   -- Hold the catalog steady from its proof through DROP DEFAULT. This is a
   -- migration-time write lock only; it neither changes rows nor bypasses RLS.
   LOCK TABLE admin.feature_docs IN SHARE ROW EXCLUSIVE MODE;
 
   IF 'admin.feature_docs'::regclass::oid <> v_relation_oid THEN
     RAISE EXCEPTION 'FD-T01 precondition failed: admin.feature_docs OID changed';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_class WHERE oid = v_relation_oid AND relrowsecurity AND NOT relforcerowsecurity) THEN
+    RAISE EXCEPTION 'FD-T01 precondition failed: RLS enablement/force state changed';
+  END IF;
+
+  IF (SELECT count(*) FROM pg_policy WHERE polrelid = v_relation_oid) <> 7 THEN
+    RAISE EXCEPTION 'FD-T01 precondition failed: RLS policy set changed';
   END IF;
 
   IF NOT EXISTS (
@@ -95,6 +104,14 @@ BEGIN
     AND NOT t.tgisinternal;
   IF v_trigger_hash IS DISTINCT FROM v_expected_trigger_hash THEN
     RAISE EXCEPTION 'FD-T01 precondition failed: feature_docs trigger set changed';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_trigger t LEFT JOIN pg_proc p ON p.oid = t.tgfoid
+    WHERE t.tgrelid = v_relation_oid AND NOT t.tgisinternal
+      AND p.oid IS NULL
+  ) THEN
+    RAISE EXCEPTION 'FD-T01 precondition failed: a required trigger function is absent';
   END IF;
 
   SELECT count(*), count(*) FILTER (WHERE organization_id <> v_system_organization)

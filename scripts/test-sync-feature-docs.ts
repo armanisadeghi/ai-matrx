@@ -15,7 +15,7 @@ assert.throws(
 );
 assert.throws(
   () => parseArgs(["--organization-id", "not-a-uuid"]),
-  /--organization-id <UUID> is required/,
+  /selected organization ID is invalid/,
   "a malformed organization must fail before client or filesystem work",
 );
 assert.throws(
@@ -32,7 +32,7 @@ assert.throws(
 assert.deepEqual(
   parseArgs([
     "--organization-id",
-    organizationId,
+    ` ${organizationId.toUpperCase()} `,
     "--push",
     "--confirm-delete",
   ]),

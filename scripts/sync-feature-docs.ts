@@ -21,6 +21,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { globSync } from "glob";
+import { readAllRows } from "@ai-matrx/data/db";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import type { Database } from "@/types/database.types";
 import {
   FEATURE_DOC_GLOBS,
@@ -29,11 +31,35 @@ import {
 } from "@/features/feature-docs/sync-utils";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 type FeatureDocRow = Database["admin"]["Tables"]["feature_docs"]["Row"];
+type FeatureDocInsert = Database["admin"]["Tables"]["feature_docs"]["Insert"];
+type FeatureDocUpdate = Database["admin"]["Tables"]["feature_docs"]["Update"];
 type SyncMode = "bidirectional" | "push" | "pull";
+
+export interface SyncOperation {
+  organizationId: string;
+  gitHead: string;
+}
+
+export interface FeatureDocsStore {
+  list(organizationId: string): Promise<FeatureDocRow[]>;
+  insert(row: FeatureDocInsert): Promise<FeatureDocRow>;
+  update(
+    id: string,
+    organizationId: string,
+    update: FeatureDocUpdate,
+  ): Promise<FeatureDocRow>;
+  softDelete(
+    id: string,
+    organizationId: string,
+    path: string,
+  ): Promise<FeatureDocRow>;
+  delete(
+    id: string,
+    organizationId: string,
+    path: string,
+  ): Promise<FeatureDocRow>;
+}
 
 interface CliOptions {
   mode: SyncMode;
@@ -67,13 +93,9 @@ export function parseArgs(args: readonly string[]): CliOptions {
     );
   }
   const organizationIdIndex = organizationIdIndexes[0];
-  const organizationId =
+  const organizationIdRaw =
     organizationIdIndex === -1 ? undefined : args[organizationIdIndex + 1];
-  if (!organizationId || !UUID_PATTERN.test(organizationId)) {
-    throw new Error(
-      "--organization-id <UUID> is required before the sync can read or write admin.feature_docs.",
-    );
-  }
+  const organizationId = requireOrganizationContext(organizationIdRaw);
 
   return {
     mode: push ? "push" : pull ? "pull" : "bidirectional",
@@ -126,37 +148,85 @@ function collectRepoDocs(): Map<string, string> {
   return docs;
 }
 
-async function fetchDbRows(
+function assertOne(
+  operation: string,
+  data: Pick<FeatureDocRow, "id" | "path" | "organization_id">[] | null,
+  error: { message: string } | null,
+): Pick<FeatureDocRow, "id" | "path" | "organization_id"> {
+  if (error) throw new Error(`${operation}: ${error.message}`);
+  if (!data || data.length !== 1)
+    throw new Error(
+      `${operation}: expected exactly one affected row, received ${data?.length ?? 0}`,
+    );
+  return data[0];
+}
+
+export function createFeatureDocsStore(
   supabase: SupabaseClient<Database>,
-  organizationId: string,
-): Promise<Map<string, FeatureDocRow>> {
-  const map = new Map<string, FeatureDocRow>();
-  const PAGE = 1000;
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .schema("admin")
-      .from("feature_docs")
-      // Select all columns so the result matches the full `FeatureDocRow`
-      // (the map stores whole rows). An explicit subset drops columns the
-      // Row type requires and fails assignment under strict checking.
-      .select("*")
-      .eq("organization_id", organizationId)
-      .range(from, from + PAGE - 1);
-    if (error) {
-      console.error("[FAIL] Failed to load admin.feature_docs:", error.message);
-      process.exit(2);
-    }
-    if (!data || data.length === 0) break;
-    for (const row of data) {
-      map.set(row.path, row);
-    }
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-
-  return map;
+): FeatureDocsStore {
+  return {
+    async list(organizationId) {
+      return readAllRows<FeatureDocRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("admin")
+            .from("feature_docs")
+            .select("*")
+            .eq("organization_id", organizationId)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "admin.feature_docs sync inventory" },
+      );
+    },
+    async insert(row) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .insert(row)
+        .select("id,path,organization_id");
+      const found = assertOne("feature-doc insert", result.data, result.error);
+      return { ...row, ...found } as FeatureDocRow;
+    },
+    async update(id, organizationId, update) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .update(update)
+        .eq("id", id)
+        .eq("organization_id", organizationId)
+        .select("id,path,organization_id");
+      const found = assertOne("feature-doc update", result.data, result.error);
+      return { ...update, ...found } as FeatureDocRow;
+    },
+    async softDelete(id, organizationId, path) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("path", path)
+        .eq("organization_id", organizationId)
+        .select("id,path,organization_id");
+      const found = assertOne(
+        "feature-doc soft-delete",
+        result.data,
+        result.error,
+      );
+      return found as FeatureDocRow;
+    },
+    async delete(id, organizationId, path) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .delete()
+        .eq("id", id)
+        .eq("path", path)
+        .eq("organization_id", organizationId)
+        .select("id,path,organization_id");
+      const found = assertOne("feature-doc delete", result.data, result.error);
+      return found as FeatureDocRow;
+    },
+  };
 }
 
 function writeRepoFile(path: string, content: string): void {
@@ -166,8 +236,8 @@ function writeRepoFile(path: string, content: string): void {
 }
 
 async function batchUpsertDocs(
-  supabase: SupabaseClient<Database>,
-  organizationId: string,
+  store: FeatureDocsStore,
+  operation: SyncOperation,
   items: Array<{ path: string; content: string }>,
   dbRows: Map<string, FeatureDocRow>,
   gitHead: string,
@@ -178,7 +248,7 @@ async function batchUpsertDocs(
     const parsed = parseFeatureDocFile(path, content);
     const fileHash = md5(content);
     return {
-      organization_id: organizationId,
+      organization_id: operation.organizationId,
       path,
       slug: parsed.slug,
       title: parsed.title,
@@ -201,11 +271,13 @@ async function batchUpsertDocs(
   for (let i = 0; i < toInsert.length; i += INSERT_CHUNK) {
     const chunk = toInsert.slice(i, i + INSERT_CHUNK);
     const rows = chunk.map(({ path, content }) => buildRow(path, content));
-    const { error } = await supabase
-      .schema("admin")
-      .from("feature_docs")
-      .insert(rows);
-    if (error) throw new Error(`batch insert: ${error.message}`);
+    for (const row of rows) {
+      const inserted = await store.insert(row);
+      if (inserted.organization_id !== operation.organizationId)
+        throw new Error(
+          "feature-doc insert returned a mismatched organization",
+        );
+    }
     done += chunk.length;
     process.stdout.write(`\r[INFO] Inserted ${done}/${items.length}…`);
   }
@@ -216,16 +288,23 @@ async function batchUpsertDocs(
     const results = await Promise.all(
       chunk.map(({ path, content }) => {
         const existing = dbRows.get(path)!;
-        return supabase
-          .schema("admin")
-          .from("feature_docs")
-          .update(buildRow(path, content))
-          .eq("id", existing.id)
-          .eq("organization_id", organizationId);
+        if (existing.organization_id !== operation.organizationId)
+          throw new Error(
+            `feature-doc update refused: ${path} belongs to a different organization`,
+          );
+        const { organization_id: _organizationId, ...update } = buildRow(
+          path,
+          content,
+        );
+        return store.update(existing.id, operation.organizationId, update);
       }),
     );
-    const failed = results.find((r) => r.error);
-    if (failed?.error) throw new Error(`batch update: ${failed.error.message}`);
+    for (const updated of results) {
+      if (updated.organization_id !== operation.organizationId)
+        throw new Error(
+          "feature-doc update returned a mismatched organization",
+        );
+    }
     done += chunk.length;
     process.stdout.write(`\r[INFO] Upserted ${done}/${items.length}…`);
   }
@@ -235,8 +314,8 @@ async function batchUpsertDocs(
 }
 
 async function batchRefreshSyncMeta(
-  supabase: SupabaseClient<Database>,
-  organizationId: string,
+  store: FeatureDocsStore,
+  operation: SyncOperation,
   rows: FeatureDocRow[],
   gitHead: string,
 ): Promise<void> {
@@ -247,38 +326,45 @@ async function batchRefreshSyncMeta(
     await Promise.all(
       chunk.map((row) => {
         const hash = row.content_hash ?? md5(row.content);
-        return supabase
-          .schema("admin")
-          .from("feature_docs")
-          .update({
-            sync_base_hash: hash,
-            sync_base_commit: gitHead,
-            synced_at: now,
-          })
-          .eq("id", row.id)
-          .eq("organization_id", organizationId);
+        if (row.organization_id !== operation.organizationId)
+          throw new Error(
+            `feature-doc metadata refresh refused: ${row.path} belongs to a different organization`,
+          );
+        return store.update(row.id, operation.organizationId, {
+          sync_base_hash: hash,
+          sync_base_commit: gitHead,
+          synced_at: now,
+        });
       }),
     );
   }
 }
 
 async function batchSoftDelete(
-  supabase: SupabaseClient<Database>,
-  organizationId: string,
+  store: FeatureDocsStore,
+  operation: SyncOperation,
   rows: FeatureDocRow[],
 ): Promise<void> {
-  const ids = rows.map((r) => r.id);
   const CHUNK = 100;
-  const now = new Date().toISOString();
-  for (let i = 0; i < ids.length; i += CHUNK) {
-    const chunk = ids.slice(i, i + CHUNK);
-    const { error } = await supabase
-      .schema("admin")
-      .from("feature_docs")
-      .update({ deleted_at: now })
-      .in("id", chunk)
-      .eq("organization_id", organizationId);
-    if (error) throw new Error(`batch soft-delete: ${error.message}`);
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    await Promise.all(
+      chunk.map(async (row) => {
+        if (row.organization_id !== operation.organizationId)
+          throw new Error(
+            `feature-doc soft-delete refused: ${row.path} belongs to a different organization`,
+          );
+        const deleted = await store.softDelete(
+          row.id,
+          operation.organizationId,
+          row.path,
+        );
+        if (deleted.organization_id !== operation.organizationId)
+          throw new Error(
+            "feature-doc soft-delete returned a mismatched organization",
+          );
+      }),
+    );
   }
 }
 
@@ -286,14 +372,19 @@ async function runSync(options: CliOptions): Promise<SyncStats> {
   // Capture the validated boundary value once. Every read and mutation below
   // receives this value; a later environment or selection change cannot retarget
   // an admitted sync operation.
-  const organizationId = options.organizationId;
+  const operation: SyncOperation = {
+    organizationId: options.organizationId,
+    gitHead: getGitHead(),
+  };
   const supabase = createAdminClient();
-  const gitHead = getGitHead();
+  const store = createFeatureDocsStore(supabase);
   console.log("[INFO] Collecting repo markdown…");
   const repoDocs = collectRepoDocs();
   console.log(`[INFO] Found ${repoDocs.size} repo .md files`);
   console.log("[INFO] Loading DB rows…");
-  const dbRows = await fetchDbRows(supabase, organizationId);
+  const dbRows = new Map(
+    (await store.list(operation.organizationId)).map((row) => [row.path, row]),
+  );
   console.log(`[INFO] Found ${dbRows.size} DB rows`);
   const allPaths = new Set([...repoDocs.keys(), ...dbRows.keys()]);
 
@@ -408,11 +499,11 @@ async function runSync(options: CliOptions): Promise<SyncStats> {
 
   if (toPush.length > 0) {
     stats.pushed = await batchUpsertDocs(
-      supabase,
-      organizationId,
+      store,
+      operation,
       toPush,
       dbRows,
-      gitHead,
+      operation.gitHead,
     );
   }
 
@@ -422,25 +513,25 @@ async function runSync(options: CliOptions): Promise<SyncStats> {
   }
   if (toPull.length > 0) {
     await batchRefreshSyncMeta(
-      supabase,
-      organizationId,
+      store,
+      operation,
       toPull.map((p) => p.row),
-      gitHead,
+      operation.gitHead,
     );
   }
 
   if (toRefreshMeta.length > 0) {
     await batchRefreshSyncMeta(
-      supabase,
-      organizationId,
+      store,
+      operation,
       toRefreshMeta,
-      gitHead,
+      operation.gitHead,
     );
     stats.inSync = toRefreshMeta.length;
   }
 
   if (toSoftDelete.length > 0) {
-    await batchSoftDelete(supabase, organizationId, toSoftDelete);
+    await batchSoftDelete(store, operation, toSoftDelete);
     stats.softDeleted = toSoftDelete.length;
   }
 
