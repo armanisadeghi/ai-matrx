@@ -94,8 +94,12 @@ The recurring worker follows this exact order:
    alone is not a human-only blocker.
 3. Prove the selected browser admin session, then atomically claim one eligible item, prioritizing
    human-requested repairs, agent-requested repairs, then submissions.
-4. Read the entire durable conversation and target repo's `CLAUDE.md`. Execute the real test
-   instructions on the live target, including declared browser/data/API checks.
+4. Read the entire durable conversation and target repo's `CLAUDE.md`. **Before the first live
+   write, prove the target record is owned by `admin@admin.com` and explicitly disposable.** A
+   queue URL pointing at another person's record is a routing defect, not permission to mutate it:
+   leave that record unchanged, select or create an equivalent disposable admin fixture, and
+   correct the row URL and instructions to name the safe target. Execute the real test instructions
+   on that live target, including declared browser/data/API checks.
 5. On a pass, independently record evidence and promote. On failure, retain ownership while
    fixing or coordinating a named repair worker; record the reproducible defect and repair
    evidence. Commit/push, resolve delivery failures, and dispatch an independent live reviewer.
