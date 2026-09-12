@@ -109,6 +109,7 @@ export function VaultCsvImportDialog({
   const cancelled = useRef(false);
   const parseGeneration = useRef(0);
   const jsonWorker = useRef<Worker | null>(null);
+  const jsonWorkerTimeout = useRef<number | null>(null);
   const limitsRef = useRef<Awaited<
     ReturnType<typeof fetchCsvImportLimits>
   > | null>(null);
@@ -141,6 +142,8 @@ export function VaultCsvImportDialog({
     parseGeneration.current += 1;
     jsonWorker.current?.terminate();
     jsonWorker.current = null;
+    if (jsonWorkerTimeout.current !== null) window.clearTimeout(jsonWorkerTimeout.current);
+    jsonWorkerTimeout.current = null;
     cancelled.current = true;
     limitsRef.current = null;
     frozenCommands.current = [];
@@ -173,6 +176,8 @@ export function VaultCsvImportDialog({
       parseGeneration.current += 1;
       jsonWorker.current?.terminate();
       jsonWorker.current = null;
+      if (jsonWorkerTimeout.current !== null) window.clearTimeout(jsonWorkerTimeout.current);
+      jsonWorkerTimeout.current = null;
       limitsRef.current = null;
       frozenCommands.current = [];
       previewActor.current = null;
@@ -250,8 +255,9 @@ export function VaultCsvImportDialog({
         if (generation !== parseGeneration.current || cancelled.current) return;
         const parser = createBitwardenJsonWorker();
         jsonWorker.current = parser;
-        const settle = (message?: string) => { window.clearTimeout(timeout); parser.terminate(); if (jsonWorker.current === parser) jsonWorker.current = null; if (generation !== parseGeneration.current || cancelled.current) return; if (message) setUnavailable(message); };
-        const timeout = window.setTimeout(() => settle("The JSON export took too long to parse. Choose a smaller export and try again."), limits.jsonWorkerTimeoutMs ?? 5_000);
+        let settled = false;
+        const settle = (message?: string) => { if (settled) return; settled = true; if (jsonWorkerTimeout.current !== null) window.clearTimeout(jsonWorkerTimeout.current); jsonWorkerTimeout.current = null; parser.terminate(); if (jsonWorker.current === parser) jsonWorker.current = null; if (generation !== parseGeneration.current || cancelled.current) return; if (message) setUnavailable(message); };
+        jsonWorkerTimeout.current = window.setTimeout(() => settle("The JSON export took too long to parse. Choose a smaller export and try again."), limits.jsonWorkerTimeoutMs ?? 5_000);
         parser.onerror = () => settle("The JSON export could not be read.");
         parser.onmessageerror = () => settle("The JSON export could not be read.");
         parser.onmessage = (event: MessageEvent<{ ok: boolean; records?: BitwardenImportRecord[]; error?: string }>) => { if (!event.data.ok) { settle(event.data.error ?? "The JSON export could not be read."); return; } settle(); if (generation === parseGeneration.current && !cancelled.current) { setJsonRecords(event.data.records ?? []); setJsonLoaded(true); } };
@@ -263,7 +269,7 @@ export function VaultCsvImportDialog({
       setPreview(parsed);
       setMapping(suggestedCsvMapping(parsed.headers));
     } catch (cause) {
-      if (!cancelled.current)
+      if (generation === parseGeneration.current && !cancelled.current)
         setUnavailable(
           cause instanceof Error
             ? cause.message
