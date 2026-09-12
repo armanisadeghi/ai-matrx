@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { checkIsSuperAdmin } from '@/utils/supabase/userSessionData'
 import {
     resolveOrchestratorByTier,
     orchestratorJsonHeaders,
@@ -15,9 +16,8 @@ import type { SandboxTier } from '@/types/sandbox'
  * - Without `tier`: returns both tiers in a single response.
  * - With `tier`: returns just that tier.
  *
- * Auth: requires a Supabase session (any authenticated user). The orchestrator
- * itself enforces an API key — that's added server-side from env, never exposed
- * to the browser.
+ * Auth: requires a super-admin session. The orchestrator itself enforces an API
+ * key — that's added server-side from env, never exposed to the browser.
  */
 
 interface OrchestratorSystemInfo {
@@ -53,6 +53,10 @@ function routeCountFromSurface(payload: unknown): number | undefined {
     if (!payload || typeof payload !== 'object') return undefined
     const routes = (payload as Record<string, unknown>).routes
     return Array.isArray(routes) ? routes.length : undefined
+}
+
+function isSandboxTier(value: string): value is SandboxTier {
+    return value === 'ec2' || value === 'hosted'
 }
 
 export async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSystemInfo> {
@@ -132,8 +136,20 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
         }
 
-        const tierParam = request.nextUrl.searchParams.get('tier') as SandboxTier | null
-        const tiers: SandboxTier[] = tierParam ? [tierParam] : ['ec2', 'hosted']
+        const isAdmin = await checkIsSuperAdmin(supabase, user.id)
+        if (!isAdmin) {
+            return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+        }
+
+        const tierParam = request.nextUrl.searchParams.get('tier')
+        if (tierParam !== null && !isSandboxTier(tierParam)) {
+            return NextResponse.json(
+                { error: 'Invalid tier. Expected ec2 or hosted.' },
+                { status: 400 }
+            )
+        }
+
+        const tiers: SandboxTier[] = tierParam === null ? ['ec2', 'hosted'] : [tierParam]
 
         const results = await Promise.all(tiers.map(fetchTierInfo))
         return NextResponse.json({ tiers: results })

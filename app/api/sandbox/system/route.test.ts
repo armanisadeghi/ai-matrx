@@ -1,6 +1,10 @@
 /** @jest-environment node */
 
-import { fetchTierInfo } from "./route";
+import { NextRequest } from "next/server";
+import { GET, fetchTierInfo } from "./route";
+
+const mockCreateClient = jest.fn();
+const mockCheckIsSuperAdmin = jest.fn();
 
 jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
   resolveOrchestratorByTier: (tier: string) => ({
@@ -13,10 +17,57 @@ jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
   }),
 }));
 
-jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn() }));
+jest.mock("@/utils/supabase/server", () => ({
+  createClient: (...args: unknown[]) => mockCreateClient(...args),
+}));
+jest.mock("@/utils/supabase/userSessionData", () => ({
+  checkIsSuperAdmin: (...args: unknown[]) => mockCheckIsSuperAdmin(...args),
+}));
 
 afterEach(() => {
   jest.restoreAllMocks();
+  mockCreateClient.mockReset();
+  mockCheckIsSuperAdmin.mockReset();
+});
+
+function authenticatedSession(userId = "admin-user") {
+  mockCreateClient.mockResolvedValue({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: { user: { id: userId } },
+        error: null,
+      }),
+    },
+  });
+}
+
+test("refuses aggregate host information to an authenticated non-super-admin", async () => {
+  authenticatedSession();
+  mockCheckIsSuperAdmin.mockResolvedValue(false);
+  const fetch = jest.spyOn(global, "fetch");
+
+  const response = await GET(new NextRequest("http://localhost/api/sandbox/system"));
+
+  expect(response.status).toBe(403);
+  await expect(response.json()).resolves.toEqual({ error: "Admin access required" });
+  expect(mockCheckIsSuperAdmin).toHaveBeenCalledWith(expect.anything(), "admin-user");
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test("rejects an invalid tier before contacting an orchestrator", async () => {
+  authenticatedSession();
+  mockCheckIsSuperAdmin.mockResolvedValue(true);
+  const fetch = jest.spyOn(global, "fetch");
+
+  const response = await GET(
+    new NextRequest("http://localhost/api/sandbox/system?tier=invalid-tier"),
+  );
+
+  expect(response.status).toBe(400);
+  await expect(response.json()).resolves.toEqual({
+    error: "Invalid tier. Expected ec2 or hosted.",
+  });
+  expect(fetch).not.toHaveBeenCalled();
 });
 
 test("reads protected release metadata and route inventory with the tier key", async () => {
