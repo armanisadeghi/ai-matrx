@@ -5,7 +5,9 @@ const resolveVaultFields = jest.fn();
 const revealVaultField = jest.fn();
 const writeText = jest.fn();
 let selectedOrganizationId = "org-a";
-let authStateListener: ((event: string) => void) | null = null;
+let authStateListener:
+  | ((event: string, session?: { user: { id: string } } | null) => void)
+  | null = null;
 
 jest.mock("@/features/secrets/vault-service", () => ({
   resolveVaultFields: (...args: unknown[]) => resolveVaultFields(...args),
@@ -17,7 +19,9 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
-      onAuthStateChange: (listener: (event: string) => void) => {
+      onAuthStateChange: (
+        listener: (event: string, session?: { user: { id: string } } | null) => void,
+      ) => {
         authStateListener = listener;
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       },
@@ -248,6 +252,57 @@ describe("useFieldSecret operation lifecycle", () => {
     });
     await act(async () => {
       authStateListener?.("SIGNED_OUT");
+      oldValue.resolve({ value: "old plaintext" });
+      await copying;
+    });
+
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  test("synchronously invalidates a deferred copy when SIGNED_IN replaces the actor", async () => {
+    const oldValue = deferred<{ value: string }>();
+    revealVaultField.mockReturnValueOnce(oldValue.promise);
+    let copying!: Promise<void>;
+    act(() => {
+      copying = latest.copy();
+    });
+    await act(async () => {
+      authStateListener?.("SIGNED_IN", { user: { id: "user-b" } });
+      oldValue.resolve({ value: "old plaintext" });
+      await copying;
+    });
+
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  test("does not revoke a deferred copy for a same-actor token refresh", async () => {
+    await act(async () => {
+      authStateListener?.("INITIAL_SESSION", { user: { id: "user-a" } });
+    });
+    const oldValue = deferred<{ value: string }>();
+    revealVaultField.mockReturnValueOnce(oldValue.promise);
+    let copying!: Promise<void>;
+    act(() => {
+      copying = latest.copy();
+    });
+    await act(async () => {
+      authStateListener?.("TOKEN_REFRESHED", { user: { id: "user-a" } });
+      oldValue.resolve({ value: "old plaintext" });
+      await copying;
+    });
+
+    expect(writeText).toHaveBeenCalledWith("old plaintext");
+  });
+
+  test("synchronously invalidates a deferred copy when auth reports no actor", async () => {
+    const oldValue = deferred<{ value: string }>();
+    revealVaultField.mockReturnValueOnce(oldValue.promise);
+    let copying!: Promise<void>;
+    act(() => {
+      copying = latest.copy();
+    });
+    await act(async () => {
+      authStateListener?.("SIGNED_IN", null);
       oldValue.resolve({ value: "old plaintext" });
       await copying;
     });
