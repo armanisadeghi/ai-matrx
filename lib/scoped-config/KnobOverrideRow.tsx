@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 
 import {
   KnobFieldControl,
@@ -184,7 +185,7 @@ export function KnobOverrideRow(props: {
       onChanged();
       return true;
     } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
+      const detail = extractErrorMessage(err);
       setInlineError(detail);
       toast.error(detail);
       return false;

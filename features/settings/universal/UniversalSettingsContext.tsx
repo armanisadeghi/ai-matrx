@@ -27,6 +27,7 @@ import { fetchKnobIndex, type KnobScopeRef } from "@/lib/scoped-config/service";
 import { getWebDeviceId } from "@/lib/scoped-config/deviceId";
 import type { KnobUiHints, ScopedKnob } from "@/lib/scoped-config/types";
 import { isJsonObject } from "@/types/json";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   fetchTaxonomyIndex,
   resolveKnobTaxonomy,
@@ -352,7 +353,7 @@ export function UniversalSettingsProvider({
           setTaxonomyState({
             generation,
             taxonomy: { byId: new Map(), bySlug: new Map() },
-            error: err instanceof Error ? err.message : String(err),
+            error: extractErrorMessage(err),
           });
         }
       });
@@ -382,7 +383,7 @@ export function UniversalSettingsProvider({
           requestKey,
           knobs: [],
           taxonomy: { byId: new Map(), bySlug: new Map() },
-          error: err instanceof Error ? err.message : String(err),
+          error: extractErrorMessage(err),
         });
       });
     return () => {
@@ -402,7 +403,7 @@ export function UniversalSettingsProvider({
           generation,
           rows: [],
           taxonomy: { byId: new Map(), bySlug: new Map() },
-          error: err instanceof Error ? err.message : String(err),
+          error: extractErrorMessage(err),
         });
       });
     return () => { cancelled = true; };
@@ -435,7 +436,7 @@ export function UniversalSettingsProvider({
           (rows) => [kind, rows] as const,
           // A rung whose rows cannot be read is still shown — with the reason.
           (err: unknown) =>
-            [kind, [{ id: "__unlistable__", label: `Could not list: ${err instanceof Error ? err.message : String(err)}` }]] as const,
+            [kind, [{ id: "__unlistable__", label: `Could not list: ${extractErrorMessage(err)}` }]] as const,
         ),
       ),
     ).then((entries) => {

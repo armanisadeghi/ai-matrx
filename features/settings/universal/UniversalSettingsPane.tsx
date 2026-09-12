@@ -158,10 +158,10 @@ function readableGroupName(feature: string): string {
 export function OrganizationRungSection() {
   const { organizations, organizationId, selectOrganization } = useUniversalSettings();
   return (
-    <div className="flex min-w-0 items-center gap-2 text-sm">
+    <div className="flex min-w-72 flex-wrap items-center gap-2 text-sm">
       <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
       <label htmlFor="settings-organization" className="shrink-0 text-muted-foreground">Organization</label>
-      <select id="settings-organization" className="h-8 min-w-0 max-w-56 rounded-md border border-border bg-background px-2" value={organizationId ?? ""} onChange={(event) => selectOrganization(event.target.value)}>
+      <select id="settings-organization" className="h-8 min-w-48 max-w-64 rounded-md border border-border bg-background px-2" value={organizationId ?? ""} onChange={(event) => selectOrganization(event.target.value)}>
         {organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
       </select>
     </div>

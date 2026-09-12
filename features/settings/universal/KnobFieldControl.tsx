@@ -46,6 +46,7 @@ import { formatKnobValue, type KnobControl, type KnobLadder } from "@/lib/scoped
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { extractErrorMessage } from "@/utils/errors";
 
 /** The control kinds this file renders. Anything else keeps the row's own editor. */
 const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
@@ -303,7 +304,7 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
     try {
       await sendMessage(VOICE_SAMPLE_LINE, VoiceSpeed.NORMAL, { mode: "id", id: current });
     } catch (err) {
-      setFailure(err instanceof Error ? err.message : String(err));
+      setFailure(extractErrorMessage(err));
     } finally {
       setPlaying(false);
     }
