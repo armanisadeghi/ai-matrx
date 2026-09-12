@@ -218,8 +218,9 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
       <Centered>
         <h1 className="text-base font-semibold">{meeting.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          You are joining as a guest. No account needed — the host will let you
-          in from the waiting room.
+          {meeting.lobbyEnabled
+            ? "You are joining as a guest. No account needed. The host must admit you from the waiting room."
+            : "You are joining as a guest. No account needed."}
         </p>
         <form
           className="mt-4 space-y-3"
