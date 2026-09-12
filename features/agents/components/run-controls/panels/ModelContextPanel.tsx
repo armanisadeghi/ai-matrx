@@ -22,6 +22,8 @@
 
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { fetchContextState } from "@/lib/api/context-api";
 import {
   selectContextState,
@@ -83,11 +85,29 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
   // Cold-start hydration — fetch the snapshot on conversation change. Stream
   // events keep the slice fresh after this, so this only fires once per
   // conversation switch.
+  // `fetchContextState` refuses BEFORE networking when no organization is
+  // selected, and its rejection is dropped on the floor — so the panel used to
+  // render the calm lie "No context measurements yet. Fire a turn to populate."
+  // Firing a turn would not have populated anything. Skip the call while the
+  // selection is unresolved, and say the true thing once it settles with none.
+  const { canLoad, organizationRequired } = useOrganizationRequired();
+
   useEffect(() => {
+    if (!canLoad) return undefined;
     const controller = new AbortController();
     dispatch(fetchContextState({ conversationId, signal: controller.signal }));
     return () => controller.abort();
-  }, [conversationId, dispatch]);
+  }, [canLoad, conversationId, dispatch]);
+
+  if (organizationRequired && !state) {
+    return (
+      <OrganizationRequiredNotice
+        compact
+        title="Choose an organization to read context"
+        description="Context measurements are read in one organization's context, and none is selected for this session."
+      />
+    );
+  }
 
   if (!state) {
     return (

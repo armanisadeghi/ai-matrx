@@ -15,6 +15,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   Coins,
   FlaskConical,
@@ -28,7 +30,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatUsd } from "@/lib/format/honest";
+import { formatUsd } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -111,6 +113,10 @@ export default function ProofRunsClient() {
   const [openRun, setOpenRun] = useState<ProofRunDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // The proof-run API answers fine — we never called it. Kept apart from
+  // `loadError` so this screen stops blaming the server (and offering a 404
+  // hint that cannot apply) for a refusal that happened in this browser.
+  const [orgRequired, setOrgRequired] = useState(false);
   const [mode, setMode] = useState<ProofRunMode>("auto");
   const [console_, setConsole] = useState<ProofRunConsoleState>(EMPTY_CONSOLE);
   const [runningSlug, setRunningSlug] = useState<string | null>(null);
@@ -122,6 +128,7 @@ export default function ProofRunsClient() {
 
   const refresh = useCallback(async () => {
     setLoadError(null);
+    setOrgRequired(false);
     try {
       const [checksResponse, runsResponse, scenarioResponse, catalog] =
         await Promise.all([
@@ -148,7 +155,13 @@ export default function ProofRunsClient() {
       });
       setRuns(runsResponse.runs ?? []);
     } catch (err) {
-      setLoadError(extractErrorMessage(err));
+      if (isOrganizationRequiredError(err)) {
+        setOrgRequired(true);
+        setLoadError(null);
+      } else {
+        setOrgRequired(false);
+        setLoadError(extractErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -358,6 +371,16 @@ export default function ProofRunsClient() {
           </p>
         </CardContent>
       </Card>
+
+      {orgRequired ? (
+        <OrganizationRequiredNotice
+          what="Proof runs"
+          description="Proof runs are listed per organization, and none is selected for this session. Pick one and this loads."
+          onRetry={() => {
+            void refresh();
+          }}
+        />
+      ) : null}
 
       {loadError ? (
         <div className="space-y-1 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">

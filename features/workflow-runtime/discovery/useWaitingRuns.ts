@@ -27,8 +27,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { callApi } from "@/lib/api/call-api";
 
 import { parseWaitingRuns, type WaitingRunRow } from "./waiting";
@@ -42,6 +42,12 @@ export interface WaitingRunsState {
   loading: boolean;
   /** Set when the projection could not be read — never rendered as "all clear". */
   error: string | null;
+  /**
+   * Boot settled with no organization selected. The projection cannot be read
+   * at all, so the caller renders the honest notice — NOT a skeleton, which is
+   * what this state used to show, forever.
+   */
+  organizationRequired: boolean;
   refresh: () => void;
 }
 
@@ -53,7 +59,8 @@ export function useWaitingRuns(): WaitingRunsState {
    * `appContext.organization_id` has hydrated. A fetch fired on mount alone is
    * refused on every cold load and never retried.
    */
-  const organizationId = useAppSelector(selectOrganizationId);
+  const { organizationId, canLoad, organizationRequired } =
+    useOrganizationRequired();
   const [rows, setRows] = useState<WaitingRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +69,13 @@ export function useWaitingRuns(): WaitingRunsState {
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
   useEffect(() => {
-    if (!organizationId) return undefined;
+    // Boot settled with nothing selected: this is terminal, not pending. Stop
+    // the skeleton so the caller can say so instead of spinning forever.
+    if (organizationRequired) {
+      setLoading(false);
+      return undefined;
+    }
+    if (!canLoad) return undefined;
     let live = true;
     void (async () => {
       const result = await dispatch(
@@ -87,7 +100,7 @@ export function useWaitingRuns(): WaitingRunsState {
     return () => {
       live = false;
     };
-  }, [dispatch, organizationId, generation]);
+  }, [canLoad, dispatch, organizationRequired, organizationId, generation]);
 
   /**
    * Coalesced refetch. A single answered interrupt produces several
@@ -131,5 +144,5 @@ export function useWaitingRuns(): WaitingRunsState {
     },
   });
 
-  return { rows, loading, error, refresh };
+  return { rows, loading, error, organizationRequired, refresh };
 }

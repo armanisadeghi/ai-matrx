@@ -29,6 +29,7 @@ import {
   type WaitingRunRow,
 } from "../waiting";
 import { useWaitingRuns } from "../useWaitingRuns";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 function WaitingRowCard({ row }: { row: WaitingRunRow }) {
   const summary = waitingSummary(row);
@@ -98,7 +99,18 @@ function WaitingRowCard({ row }: { row: WaitingRunRow }) {
 }
 
 export function WaitingInbox() {
-  const { rows, loading, error } = useWaitingRuns();
+  const { rows, loading, error, organizationRequired } = useWaitingRuns();
+
+  // Terminal, not pending: this used to hold the skeleton forever.
+  if (organizationRequired) {
+    return (
+      <OrganizationRequiredNotice
+        what="Waiting runs"
+        description="What is waiting on you is read per organization, and none is selected for this session. Pick one and this list loads."
+      />
+    );
+  }
+
 
   if (loading) {
     return (
