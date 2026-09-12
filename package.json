@@ -541,6 +541,7 @@
     "ts-node": "latest",
     "tus-js-client": "^4.3.1",
     "twilio": "^6.1.1",
+    "unicode-regex": "^4.2.3",
     "unsplash-js": "^7.0.20",
     "uuid": "latest",
     "vaul": "latest",
