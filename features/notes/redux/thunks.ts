@@ -25,7 +25,8 @@ import {
 } from "@/lib/supabase/authRetry";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
@@ -441,13 +442,8 @@ export const saveNote = createAsyncThunk<void, string>(
  * (createFolder uses requireUserId(); RLS forbids creating one for anyone else),
  * so no user id is threaded here.
  */
-async function resolveFolderId(folderName: string): Promise<string | null> {
-  try {
-    return await createFolder(folderName);
-  } catch (err) {
-    console.error("Error resolving folder id:", err);
-    return null;
-  }
+async function resolveFolderId(folderName: string, organizationId: string): Promise<string> {
+  return createFolder(folderName, organizationId);
 }
 
 /**
@@ -457,14 +453,27 @@ async function resolveFolderId(folderName: string): Promise<string | null> {
  */
 export const createNewNote = createAsyncThunk<
   Note,
-  CreateNoteInput | undefined
->("notes/createNewNote", async (input = {}, { dispatch, getState }) => {
+  CreateNoteInput
+>("notes/createNewNote", async (input, { dispatch, getState }) => {
   const userId = getUserId(getState);
+  const organizationId = requireOrganizationContext(input.organization_id);
   const folderName = input.folder_name ?? "Draft";
 
   // Resolve folder_id from note_folders table
-  const folderId = input.folder_id ?? (await resolveFolderId(folderName));
-  const organizationId = await ensureOrgId(input.organization_id);
+  const folderId = input.folder_id ?? (await resolveFolderId(folderName, organizationId));
+  if (input.folder_id) {
+    const { data: folder, error: folderError } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id")
+      .eq("id", input.folder_id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (folderError || !folder) {
+      throw folderError ?? new Error("The selected folder is unavailable in this organization. Choose another folder and try again.");
+    }
+  }
 
   const { data, error } = await supabase
     .schema("workbench")
@@ -618,9 +627,9 @@ export const copyNote = createAsyncThunk<
       // note someone shared with us: the sharee may not be a member of the
       // owner's org and std_insert would 42501. Home their copy in their
       // own active/personal org instead.
-      organization_id: await ensureOrgId(
-        record._sharedWithMe ? undefined : record.organization_id,
-      ),
+      organization_id: record._sharedWithMe
+        ? requireOrganizationContext(selectOrganizationId(state))
+        : requireOrganizationContext(record.organization_id),
     })
     .select()
     .single();
@@ -660,6 +669,7 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
   "notes/findOrCreateEmptyNote",
   async (folder = "Draft", { dispatch, getState }) => {
     const state = getState() as RootState;
+    const organizationId = requireOrganizationContext(selectOrganizationId(state));
     const allNotes = state.notes.notes;
 
     // Check state for existing "New Note" with empty content in the folder
@@ -669,6 +679,7 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
         record.label === "New Note" &&
         (!record.content || record.content.trim() === "") &&
         record.folder_name === folder &&
+        record.organization_id === organizationId &&
         !record.deleted_at
       ) {
         dispatch(addTab(record.id));
@@ -679,7 +690,7 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
 
     // No existing empty note found — create one
     const result = await dispatch(
-      createNewNote({ folder_name: folder }),
+      createNewNote({ folder_name: folder, organization_id: organizationId }),
     ).unwrap();
 
     return result;
@@ -700,10 +711,14 @@ export const moveNoteToFolder = createAsyncThunk<
 >(
   "notes/moveNoteToFolder",
   async ({ noteId, folder }, { dispatch, getState }) => {
-    const userId = getUserId(getState);
+    const state = getState() as RootState;
+    getUserId(getState);
+    const note = state.notes.notes[noteId] as NoteRecord | undefined;
+    if (!note) throw new Error("Note not found in state");
+    const organizationId = requireOrganizationContext(note.organization_id);
 
     // Resolve folder_id for the target folder
-    const folderId = await resolveFolderId(folder);
+    const folderId = await resolveFolderId(folder, organizationId);
 
     dispatch(
       setNoteField({

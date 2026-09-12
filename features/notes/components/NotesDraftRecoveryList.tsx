@@ -25,6 +25,8 @@ import {
 } from "../redux/slice";
 import { createNewNote, fetchNoteContent } from "../redux/thunks";
 import { selectInstanceTabs, selectNotesMap } from "../redux/selectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { discardNoteDraft, listNoteDrafts } from "../utils/notesDrafts";
 import {
   getDraftsVersion,
@@ -41,6 +43,7 @@ export function NotesDraftRecoveryList({
 }: NotesDraftRecoveryListProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector((state) => state.userAuth.id);
+  const organizationId = useAppSelector(selectOrganizationId);
   const notesMap = useAppSelector(selectNotesMap);
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -72,10 +75,12 @@ export function NotesDraftRecoveryList({
   const handleRecoverAsNew = async (draft: LocalDraft) => {
     setBusyKey(draft.key);
     try {
+      const capturedOrganizationId = requireOrganizationContext(organizationId);
       const created = await dispatch(
         createNewNote({
           label: draft.label || "Recovered note",
           content: draft.content,
+          organization_id: capturedOrganizationId,
         }),
       ).unwrap();
       drop(draft.entityId);

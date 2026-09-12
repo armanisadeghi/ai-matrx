@@ -21,6 +21,7 @@ import {
 import type { TaskRecord } from "@/features/agent-context/redux/tasksSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import {
   createSessionThunk,
   fetchCleanedSegmentsThunk,
@@ -1010,11 +1011,15 @@ export const addNoteToThread =
     if (inFlightThreadOps.has(key)) return null;
     inFlightThreadOps.add(key);
     try {
+      const capturedOrganizationId = requireOrganizationContext(
+        selectThreadEffectiveContext(threadId, roomId)(getState()).organizationId,
+      );
       const note = await createNote({
         content: content ?? "",
         label:
           label?.trim() || deriveThreadNoteLabel(getState(), threadId, roomId),
         task_id: selectThreadTaskId(threadId)(getState()) ?? undefined,
+        organization_id: capturedOrganizationId,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
       const assignment = await assoc.createAssignment({

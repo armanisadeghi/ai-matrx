@@ -42,7 +42,6 @@ import { cn } from "@/lib/utils";
 import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { createFolder } from "../service/notesService";
 import { notesEditorManifest } from "@/features/surfaces/manifests/notes-editor.manifest";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
@@ -207,7 +206,6 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
 
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      await createFolder(folderName);
       await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
     },
     [dispatch, noteId],

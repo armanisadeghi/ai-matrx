@@ -26,6 +26,9 @@ import { getFolderIconAndColor } from '../utils/folderUtils';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 function noteUpdatedAtMs(updatedAt: string | null): number {
     return updatedAt ? new Date(updatedAt).getTime() : 0;
@@ -59,6 +62,7 @@ export function CategoryNotesModal({
     description,
 }: CategoryNotesModalProps) {
     const { notes, createNote, updateNote, deleteNote, isLoading } = useNotesRedux();
+    const organizationId = useAppSelector(selectOrganizationId);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'import'>('list');
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -137,10 +141,12 @@ export function CategoryNotesModal({
 
         setActionLoading(true);
         try {
+            const capturedOrganizationId = requireOrganizationContext(organizationId);
             const newNote = await createNote({
                 label: newNoteLabel.trim() || undefined,
                 content: newNoteContent.trim(),
                 folder_name: categoryName,
+                organization_id: capturedOrganizationId,
             });
             
             toast.success('Created successfully');
@@ -234,6 +240,7 @@ export function CategoryNotesModal({
                 content: sourceNote.content,
                 folder_name: categoryName,
                 tags: sourceNote.tags,
+                organization_id: requireOrganizationContext(organizationId),
             });
             
             toast.success(`Imported: ${sourceNote.label}`);

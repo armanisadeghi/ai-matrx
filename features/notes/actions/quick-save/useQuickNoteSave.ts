@@ -22,6 +22,8 @@ import {
 } from "@/components/content-refine/useRefinableContent";
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 // Vocabulary lives in a pure module so the surface manifest can import the
 // same constants this hook validates against (see quickNoteSaveVocabulary).
@@ -75,6 +77,7 @@ export function useQuickNoteSave({
     return [defaultFolder, ...foldersFromRedux];
   }, [foldersFromRedux, defaultFolder]);
   const listStatus = useAppSelector(selectNotesListStatus);
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
     if (listStatus === "idle" || listStatus === "error") {
@@ -133,6 +136,7 @@ export function useQuickNoteSave({
     const selectedNoteForUpdate = mode === "update" ? selectedNote : undefined;
 
     const requestId = `note_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const organizationId = requireOrganizationContext(selectedOrganizationId);
     const trimmedContent = workingContent.trim();
     const isCreate = mode === "create";
     const label = isCreate
@@ -147,6 +151,7 @@ export function useQuickNoteSave({
           label: noteName.trim() || "Quick Note",
           content: trimmedContent,
           folder_name: folder,
+          organization_id: organizationId,
         }
       : {
           op: "update" as const,
@@ -180,6 +185,7 @@ export function useQuickNoteSave({
                 label: noteName.trim() || "Quick Note",
                 content: trimmedContent,
                 folder_name: folder,
+                organization_id: organizationId,
                 tags: [],
               }),
             ).unwrap();

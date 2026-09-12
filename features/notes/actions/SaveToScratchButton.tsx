@@ -12,6 +12,9 @@ import {
 import { FileText, Check } from "lucide-react";
 import { NotesAPI } from "../service/notesApi";
 import { useToastManager } from "@/hooks/useToastManager";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 interface SaveToScratchButtonProps {
   content: string;
@@ -35,6 +38,7 @@ export function SaveToScratchButton({
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const toast = useToastManager("notes");
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -44,11 +48,13 @@ export function SaveToScratchButton({
 
     setIsSaving(true);
     try {
+      const capturedOrganizationId = requireOrganizationContext(organizationId);
       await NotesAPI.create({
         label: "New Note",
         content: content.trim(),
         folder_name: "Scratch",
         tags: [],
+        organization_id: capturedOrganizationId,
       });
 
       setJustSaved(true);

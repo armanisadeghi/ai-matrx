@@ -32,7 +32,6 @@ import {
 import MobileNoteToolbar from "./MobileNoteToolbar";
 import { NoteContextSection } from "../NoteContextSection";
 import { CreateFolderDialog } from "../CreateFolderDialog";
-import { createFolder } from "../../service/notesService";
 import { selectAllFolders } from "../../redux/selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -302,7 +301,6 @@ export function NoteEditorDock({
         onOpenChange={setCreateFolderOpen}
         existingFolders={availableFolders}
         onConfirm={async (folderName) => {
-          await createFolder(folderName);
           onFolderChange(folderName);
         }}
         description="Create a folder and move this note into it immediately."

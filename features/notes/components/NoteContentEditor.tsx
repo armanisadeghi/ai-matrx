@@ -79,7 +79,6 @@ import { FindMatchOverlay } from "./FindMatchOverlay";
 import { RecentChangeOverlay } from "./RecentChangeOverlay";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { createFolder } from "../service/notesService";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { selectFindReplaceState } from "../redux/selectors";
 import { computeMatches } from "../utils/findMatches";
@@ -507,7 +506,6 @@ export function NoteContentEditor({
 
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      await createFolder(folderName);
       await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
     },
     [dispatch, noteId],

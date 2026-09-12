@@ -14,7 +14,7 @@ import type { Note } from "../types";
 type StateWithNotes = { notes: NotesSliceState; userAuth: UserAuthState };
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import {
   markNoteSaving,
   markNoteSaved,
@@ -46,6 +46,7 @@ const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 export async function resolveMaterializedFolderId(
   userId: string,
   folderName: string,
+  organizationId: string,
 ): Promise<string | null> {
   const { data, error } = await supabase
     .schema("workbench")
@@ -53,6 +54,7 @@ export async function resolveMaterializedFolderId(
     .select("id")
     .eq("created_by", userId)
     .eq("name", folderName)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .limit(1)
     .maybeSingle();
@@ -200,12 +202,17 @@ export const autoSaveMiddleware: Middleware =
             return;
           }
 
+          // A client-only record is allowed only before it becomes a pending
+          // write. Refuse an empty/malformed destination before any folder or
+          // note I/O; do not recapture the active organization here.
+          const organizationId = requireOrganizationContext(recordAfterLabel.organization_id);
           // Resolve folder_id if not already set
           let folderId = recordAfterLabel.folder_id;
           if (!folderId && recordAfterLabel.folder_name) {
             folderId = await resolveMaterializedFolderId(
               userId,
               recordAfterLabel.folder_name,
+              organizationId,
             );
           }
 
@@ -222,9 +229,7 @@ export const autoSaveMiddleware: Middleware =
               folder_id: folderId,
               // folder_id may be null, so the org-inherit trigger may have no
               // parent to read — resolve the org explicitly (never a null org).
-              organization_id: await ensureOrgId(
-                recordAfterLabel.organization_id,
-              ),
+              organization_id: organizationId,
               tags: recordAfterLabel.tags,
               metadata: recordAfterLabel.metadata,
               position: recordAfterLabel.position ?? 0,

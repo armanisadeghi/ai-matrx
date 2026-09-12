@@ -48,7 +48,6 @@ import {
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { createFolder } from "../service/notesService";
 
 // Dynamic imports for heavy components (only load when needed)
 const TuiEditorContent = dynamic(
@@ -504,7 +503,6 @@ export function NoteEditor({
   };
 
   const handleCreateFolder = async (folderName: string) => {
-    await createFolder(folderName);
     handleFolderChange(folderName);
   };
 
