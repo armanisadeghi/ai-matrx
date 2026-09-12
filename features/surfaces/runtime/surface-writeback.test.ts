@@ -337,3 +337,81 @@ describe("agent write-target offer", () => {
     unregister();
   });
 });
+
+/**
+ * WALL W49 (2026-09-12) — a write no open page can apply.
+ *
+ * The Masterwork Conductor called `apply_surface_write` from the plain
+ * `/chat/<id>` tab its own "open the full conversation in a new tab" link
+ * opens. That page mounts no surface at all. The seam failed correctly and said
+ * so in a toast that named no remedy, the tool answer never reached the server,
+ * and the turn ended with nothing on screen.
+ *
+ * The outcome now has its own shape — `unapplicable` — because the remedy is
+ * different from every other failure (go to a page that can apply it), and it
+ * is NOT a captured platform defect: nothing in the code is broken.
+ */
+describe("a write nothing open can apply (W49)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetManifest.mockReturnValue({ writeTargets: [target] });
+  });
+
+  it("says so with the remedy, and does not capture a defect, when no surface is mounted", async () => {
+    const result = await applySurfaceWrite("rule_draft", { mode: "new" });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.unapplicable).toBe(true);
+    // The sentence has to carry the fact AND both ways forward.
+    expect(result.error).toContain("nothing was written");
+    expect(result.error).toContain("conduct page");
+    // On screen, with the remedy — not a silent failure.
+    expect(mockToastError).toHaveBeenCalledWith(
+      "This page can't apply that change",
+      expect.objectContaining({
+        description: expect.stringContaining("nothing was written"),
+      }),
+    );
+    // Being on the wrong page is not a platform defect.
+    expect(mockCaptureError).not.toHaveBeenCalled();
+  });
+
+  it("says so when a surface IS mounted but declares no such target", async () => {
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/test",
+        getScope: () => ({}),
+        getWriteHandlers: () => ({ review_field: () => undefined }),
+      },
+      1,
+    );
+
+    const result = await applySurfaceWrite("rule_draft", { mode: "new" });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.unapplicable).toBe(true);
+    expect(result.error).toContain("matrx-user/test");
+    expect(mockCaptureError).not.toHaveBeenCalled();
+    unregister();
+  });
+
+  it("keeps a real page defect a defect — an unwired handler still captures", async () => {
+    mockGetManifest.mockReturnValue({
+      writeTargets: [{ ...target, name: "rule_draft" }],
+    });
+    const unregister = registerSurfaceRuntime(
+      { surfaceName: "matrx-user/masterwork-rulebook", getScope: () => ({}) },
+      1,
+    );
+
+    const result = await applySurfaceWrite("rule_draft", { mode: "new" });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.unapplicable).toBeUndefined();
+    expect(mockCaptureError).toHaveBeenCalled();
+    unregister();
+  });
+});

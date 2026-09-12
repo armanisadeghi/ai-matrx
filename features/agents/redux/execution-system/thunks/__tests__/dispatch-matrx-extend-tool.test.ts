@@ -120,4 +120,56 @@ describe("dispatchMatrxExtendTool", () => {
       }),
     );
   });
+
+  // W49 class (2026-09-12): a delegated tool whose OWNER is absent must answer
+  // with something the model can act on. Both no-handler outcomes used to send
+  // the identical generic sentence, with the real reason kept in Redux where
+  // only a developer could see it.
+  it("tells the model the extension is MISSING, with the remedy", async () => {
+    mockInvokeMatrxExtendTool.mockResolvedValue({
+      handled: false,
+      reason: "matrx_extend_unavailable",
+    });
+
+    await runDispatch();
+
+    const answer = mockSubmitToolResult.mock.calls[0][0].output.message;
+    expect(answer).toContain("Matrx Extend");
+    expect(answer).toContain("no Matrx Extend is installed or reachable");
+    expect(answer).toContain("Nothing ran");
+    expect(answer).toMatch(/install or enable Matrx Extend/);
+  });
+
+  it("tells the model the extension is THERE but does not own the name", async () => {
+    mockInvokeMatrxExtendTool.mockResolvedValue({
+      handled: false,
+      reason: "tool_not_owned_by_matrx_extend",
+    });
+
+    await runDispatch();
+
+    const answer = mockSubmitToolResult.mock.calls[0][0].output.message;
+    expect(answer).toContain("Matrx Extend is installed here");
+    expect(answer).toContain("does not own a tool named");
+    expect(answer).toContain("Do not retry the same name");
+  });
+
+  it("never sends the same sentence for both absences", async () => {
+    mockInvokeMatrxExtendTool.mockResolvedValue({
+      handled: false,
+      reason: "matrx_extend_unavailable",
+    });
+    await runDispatch();
+    const missing = mockSubmitToolResult.mock.calls[0][0].output.message;
+
+    jest.clearAllMocks();
+    mockInvokeMatrxExtendTool.mockResolvedValue({
+      handled: false,
+      reason: "tool_not_owned_by_matrx_extend",
+    });
+    await runDispatch();
+    const unowned = mockSubmitToolResult.mock.calls[0][0].output.message;
+
+    expect(missing).not.toBe(unowned);
+  });
 });

@@ -353,7 +353,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "rule_draft",
     label: "Rule draft",
     description:
-      "Stages a complete or partial proposed rule in the page's Add/Edit Rule dialog. For edit mode, rule_id must identify a rule already present; the user sees the populated form and still decides whether to save it.",
+      "Stages a complete or partial proposed rule in the page's Add/Edit Rule dialog; the user sees the populated form and still decides whether to save it. The value is an object and the field mode is REQUIRED: mode=\"new\" proposes a new rule, mode=\"edit\" requires rule_id identifying a rule already present in this Rulebook. A value without mode is refused before anything is staged. The remaining fields are optional text: name, statement, rationale, detection, quote; severity must be critical, major, or minor; section must be one of this Rulebook's section codes.",
     valueType: "object",
     updatesValue: "active_rule_draft",
     mode: "draft",

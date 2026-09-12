@@ -308,6 +308,16 @@ export const surfaceDelegatedToolCall = (
       return;
     }
 
+    // THE HONEST ANSWER WHEN THE OWNER IS NOT THERE (W49 class, 2026-09-12).
+    // Reached only for a `local_*` desktop tool with no desktop online. It
+    // names the absent OWNER, states that nothing ran, and gives the remedy —
+    // a generic "no handler" sentence tells the model nothing it can act on
+    // and invites it to narrate a success it never had.
+    const noOwnerMessage =
+      `'${toolName}' runs on the user's own machine through the Matrx Local ` +
+      `desktop app, and no desktop is connected right now. Nothing ran and ` +
+      `nothing was changed. Tell the user plainly, and ask them to open Matrx ` +
+      `Local and sign in — or take a route that does not need their machine.`;
     const postUnsupportedError = () => {
       dispatch(
         upsertToolLifecycle({
@@ -317,7 +327,7 @@ export const surfaceDelegatedToolCall = (
           status: "error",
           isDelegated: true,
           errorType: "unsupported_client_tool",
-          errorMessage: `Client has no handler for tool '${toolName}'.`,
+          errorMessage: noOwnerMessage,
         }),
       );
       void import("@/features/agents/api/submit-tool-results").then(
@@ -331,9 +341,9 @@ export const surfaceDelegatedToolCall = (
               output: {
                 ok: false,
                 reason: "unsupported_client_tool",
-                message: `Client has no handler for tool '${toolName}'.`,
+                message: noOwnerMessage,
               },
-              error_message: `Client has no handler for tool '${toolName}'.`,
+              error_message: noOwnerMessage,
             }),
           );
         },

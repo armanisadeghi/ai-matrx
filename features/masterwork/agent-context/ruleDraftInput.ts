@@ -27,8 +27,29 @@ export function requireRuleDraftInput(
     throw new Error("Rule draft must be an object.");
   }
   const input = value as Record<string, unknown>;
+  // MODE IS REQUIRED AND IT IS THE FIRST THING CHECKED.
+  //
+  // Wall W49-adjacent (2026-09-12): the Masterwork Conductor sent a complete,
+  // well-reasoned rule with no `mode` at all and got back only
+  // 'Rule draft mode must be "new" or "edit".' — a sentence that reads like a
+  // wrong VALUE, not a missing FIELD, so it re-sent the same shape. An omission
+  // and a bad value are different mistakes and now get different sentences,
+  // each naming the field and stating what each mode needs. The tool's own
+  // description (see the `rule_draft` target in
+  // features/surfaces/manifests/masterwork-rulebook.manifest.ts) states the
+  // same requirement, so a model should never reach either of these.
+  if (input.mode === undefined || input.mode === null || input.mode === "") {
+    throw new Error(
+      'Rule draft is missing the required field "mode". Send mode: "new" to ' +
+        'propose a new rule, or mode: "edit" together with a rule_id that ' +
+        "already exists in this Rulebook.",
+    );
+  }
   if (input.mode !== "new" && input.mode !== "edit") {
-    throw new Error('Rule draft mode must be "new" or "edit".');
+    throw new Error(
+      'Rule draft field "mode" must be exactly "new" or "edit" — got ' +
+        `${JSON.stringify(input.mode)}.`,
+    );
   }
 
   const initial =
