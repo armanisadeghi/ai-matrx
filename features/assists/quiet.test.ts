@@ -69,7 +69,7 @@ describe("formatQuietRemaining", () => {
   });
 
   it("degrades from minutes to hours to days", () => {
-    expect(formatQuietRemaining("2026-08-19T14:45:00.000Z", NOW)).toBe("15m left");
+    expect(formatQuietRemaining("2026-08-19T14:45:00.000Z", NOW)).toBe("15 min left");
     expect(formatQuietRemaining("2026-08-19T18:30:00.000Z", NOW)).toBe("4h left");
     expect(formatQuietRemaining("2026-08-26T14:30:00.000Z", NOW)).toBe("7d left");
   });

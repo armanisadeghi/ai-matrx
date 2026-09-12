@@ -92,7 +92,7 @@ export const COVERAGE_META: Record<
   red: {
     label: RED_WORD,
     description:
-      "No Holder and no fallback that resolves — this Mandate cannot run.",
+      "No Holder and no fallback resolves — the Mandate resolver refuses this job.",
     toneClassName: "border-rose-500/40 text-rose-700 dark:text-rose-400",
     iconClassName: "text-rose-600 dark:text-rose-400",
   },

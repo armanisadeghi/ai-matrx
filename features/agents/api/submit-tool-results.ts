@@ -73,6 +73,7 @@
 
 import { callApi } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { ThunkAction, ThunkDispatch } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
@@ -409,7 +410,7 @@ function holdUndelivered(
     toast.error("The agent's tool answer hasn't reached the server yet", {
       description:
         `${reason} — the answer is saved here and is being re-sent every ` +
-        `${Math.round(OUTBOX_INTERVAL_MS / 1000)} seconds. Keep this tab open; ` +
+        `${formatDurationMs(OUTBOX_INTERVAL_MS, { style: "compact" })}. Keep this tab open; ` +
         "reloading the page also re-delivers it.",
     });
   }

@@ -248,7 +248,7 @@ export const JOB_ADVANCED_WORDS: Partial<AdvancedSectionWords> = {
 export const JOB_OVERRIDE_WORDS = {
   heading: "Model settings for this binding",
   scopeNote:
-    "These are stored on this binding and applied by the server on every run of this job, for everyone this rung covers — not to one conversation. Resetting a value hands it back to the holder's own default.",
+    "These are stored on this binding and applied whenever the server resolves this binding for someone this rung covers — not to one conversation. Resetting a value hands it back to the holder's own default.",
   noModelNote:
     "No model resolved for this holder yet — its settings appear once it is read.",
   // The job vocabulary's own word for the picker's "no override" choice. The

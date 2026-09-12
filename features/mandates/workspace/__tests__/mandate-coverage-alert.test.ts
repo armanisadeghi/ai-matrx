@@ -13,8 +13,8 @@
  * These pin the four ways that could go wrong again:
  *   · green is silent (a banner on 382 healthy rows is noise, not information)
  *   · a FAILED report is never silent — silence there reads as "all clear"
- *   · red says the CONSEQUENCE, not just the status, and carries the server's
- *     own sentence verbatim rather than a second client-written one
+ *   · red uses the shared status word and carries the server's own consequence
+ *     sentence verbatim rather than a second client-written one
  *   · orange NAMES the leader whose Holder is carrying it
  */
 import {
@@ -61,7 +61,7 @@ describe("mandateCoverageAlertVerdict", () => {
     expect(verdict.detail).toContain("503");
   });
 
-  it("says the CONSEQUENCE for red, in the platform's one word, and offers the fix", () => {
+  it("uses the platform's one red word, preserves the server consequence, and offers the fix", () => {
     const verdict = mandateCoverageAlertVerdict({
       row: RED_ROW,
       loading: false,
@@ -73,7 +73,6 @@ describe("mandateCoverageAlertVerdict", () => {
     // ONE word for the state (FIX-R17) — imported, never re-spelled.
     expect(verdict.title).toBe(RED_TITLE);
     expect(verdict.title).toContain(RED_WORD);
-    expect(verdict.title).toContain("nothing runs when this Mandate is called");
     // The SERVER's sentence, verbatim. A second client-written reason beside it
     // is the two-judges class this whole feature exists to avoid.
     expect(verdict.detail).toBe(RED_ROW.reason);

@@ -118,7 +118,7 @@ export function systemRungHealth(facts: SystemRungFacts): SystemRungHealth {
   const scope = homeScopePhrase(facts.home);
   if (!facts.holderSet) {
     return {
-      sentence: `Nothing is assigned, so nothing runs this job for ${scope}.`,
+      sentence: `Nothing is assigned for ${scope}, so the Mandate resolver refuses this job.`,
       remedy: "Choose an agent or a workflow above.",
       broken: true,
     };
