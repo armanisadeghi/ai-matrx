@@ -118,12 +118,17 @@ function parseBranches(output: string): RepositoryBranch[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Inspects a repository at or above `path`; linked worktrees resolve through
- * Git itself instead of guessing whether `.git` is a directory or file. */
-export async function inspectRepository(
+interface RepositoryIdentity {
+  rootPath: string;
+  gitDir: string;
+  commonGitDir: string;
+}
+
+/** One cheap Git call that resolves normal repositories and linked worktrees. */
+async function inspectRepositoryIdentity(
   process: ProcessAdapter,
   path: string,
-): Promise<RepositoryMetadata | null> {
+): Promise<RepositoryIdentity | null> {
   const requestedPath = safeAbsolutePath(path);
   const identity = await process.exec(
     commandForGit(requestedPath, [
@@ -146,6 +151,18 @@ export async function inspectRepository(
   if (!rootPath || !gitDir || !commonGitDir) {
     throw new Error("Git did not return complete repository metadata.");
   }
+  return { rootPath, gitDir, commonGitDir };
+}
+
+/** Inspects a repository at or above `path`; linked worktrees resolve through
+ * Git itself instead of guessing whether `.git` is a directory or file. */
+export async function inspectRepository(
+  process: ProcessAdapter,
+  path: string,
+): Promise<RepositoryMetadata | null> {
+  const identity = await inspectRepositoryIdentity(process, path);
+  if (!identity) return null;
+  const { rootPath, gitDir, commonGitDir } = identity;
 
   const [branchResult, headResult, upstreamResult, remotesResult, branchesResult] =
     await Promise.all([
@@ -171,7 +188,9 @@ export async function inspectRepository(
 /** Finds nested repositories by their `.git` marker, including linked
  * worktree `.git` files. The scan is intentionally shallow (four levels) and
  * skips dependency/build trees; callers must describe that scope rather than
- * presenting the capped result set as a complete workspace inventory. */
+ * presenting the capped result set as a complete workspace inventory. It
+ * deliberately returns identity-only metadata: selecting a root calls
+ * `inspectRepository` for branches, remotes, and status details. */
 export async function discoverRepositories(
   process: ProcessAdapter,
   startingPath: string,
@@ -179,7 +198,7 @@ export async function discoverRepositories(
 ): Promise<RepositoryMetadata[]> {
   const root = safeAbsolutePath(startingPath);
   const maxResults = Math.min(Math.max(options.maxResults ?? DEFAULT_SCAN_LIMIT, 1), 100);
-  const direct = await inspectRepository(process, root);
+  const direct = await inspectRepositoryIdentity(process, root);
   const scan = await process.exec(
     `find ${quoteRepositoryShellArgument(root)} -xdev -maxdepth 4 \\( -type d -name .git -print0 -prune \\) -o \\( -type d \\( -name node_modules -o -name .next \\) -prune \\) -o \\( -type f -name .git -print0 \\)`,
     { cwd: root, timeoutSec: 30 },
@@ -190,13 +209,23 @@ export async function discoverRepositories(
     .split("\0")
     .filter(Boolean)
     .map((marker) => safeAbsolutePath(marker.slice(0, marker.lastIndexOf("/"))));
-  const inspected = await Promise.all(
-    candidates.slice(0, maxResults).map((candidate) => inspectRepository(process, candidate)),
+  const identities = await Promise.all(
+    candidates
+      .slice(0, maxResults)
+      .map((candidate) => inspectRepositoryIdentity(process, candidate)),
   );
   const byRoot = new Map<string, RepositoryMetadata>();
-  if (direct) byRoot.set(direct.rootPath, direct);
-  for (const repository of inspected) {
-    if (repository) byRoot.set(repository.rootPath, repository);
+  for (const identity of [direct, ...identities]) {
+    if (identity) {
+      byRoot.set(identity.rootPath, {
+        ...identity,
+        branch: null,
+        headSha: null,
+        upstream: null,
+        remotes: [],
+        branches: [],
+      });
+    }
   }
   return [...byRoot.values()].sort((a, b) => a.rootPath.localeCompare(b.rootPath));
 }

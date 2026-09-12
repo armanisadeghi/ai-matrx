@@ -93,19 +93,34 @@ describe("repositoryService", () => {
   });
 
   it("keeps repository discovery shallow and excludes dependency/build trees", async () => {
+    let identityCalls = 0;
     const exec = jest.fn(async (command: string) => {
-      if (command.includes("'--show-toplevel'")) return result("", 1, "fatal: not a git repository");
+      if (command.includes("'--show-toplevel'")) {
+        identityCalls += 1;
+        return identityCalls === 1
+          ? result("", 1, "fatal: not a git repository")
+          : result("/workspace/apps/site\n/workspace/apps/site/.git\n/workspace/apps/site/.git\n");
+      }
       if (command.startsWith("find ")) return result("/workspace/apps/site/.git\0");
       throw new Error(`Unexpected command: ${command}`);
     });
     const process = { exec } as unknown as ProcessAdapter;
 
-    await expect(discoverRepositories(process, "/workspace")).resolves.toEqual([]);
+    await expect(discoverRepositories(process, "/workspace")).resolves.toEqual([
+      expect.objectContaining({
+        rootPath: "/workspace/apps/site",
+        branch: null,
+        remotes: [],
+        branches: [],
+      }),
+    ]);
     const scanCommand = exec.mock.calls.find(([command]) => command.startsWith("find "))?.[0] as string;
     expect(scanCommand).toContain("-maxdepth 4");
     expect(scanCommand).toContain("-name node_modules");
     expect(scanCommand).toContain("-name .next");
     expect(scanCommand).not.toContain("|");
+    expect(exec.mock.calls.map(([command]) => command).join("\n")).not.toContain("'remote' '-v'");
+    expect(exec.mock.calls.map(([command]) => command).join("\n")).not.toContain("'for-each-ref'");
   });
 
   it("unstages an unborn repository without discarding its files", async () => {
