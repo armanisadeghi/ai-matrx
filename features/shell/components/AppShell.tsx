@@ -29,6 +29,7 @@ import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
 // CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
 import { FORCE_EXCLUDE_SIDEMENU } from "@/features/shell/build-flags.js";
+import { SettingsRouteProvider } from "@/features/settings/route-shell/SettingsRouteProvider";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -54,33 +55,38 @@ export default function AppShell({
 }: AppShellProps) {
   return (
     <Providers initialReduxState={initialReduxState}>
-      <div
-        className="shell-root"
-        data-pathname={pathname}
-        {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
-      >
-        <input
-          type="checkbox"
-          id="shell-sidebar-toggle"
-          aria-hidden="true"
-          defaultChecked={sidebarExpanded}
-        />
-        <input type="checkbox" id="shell-mobile-menu" aria-hidden="true" />
-        <input type="checkbox" id="shell-user-menu" aria-hidden="true" />
-        <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
-        <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
+      <SettingsRouteProvider active={pathname.startsWith("/user-settings")}>
+        <div
+          className="shell-root"
+          data-pathname={pathname}
+          {...(pathname.startsWith("/user-settings")
+            ? { "data-settings-route": "" }
+            : {})}
+          {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
+        >
+          <input
+            type="checkbox"
+            id="shell-sidebar-toggle"
+            aria-hidden="true"
+            defaultChecked={sidebarExpanded}
+          />
+          <input type="checkbox" id="shell-mobile-menu" aria-hidden="true" />
+          <input type="checkbox" id="shell-user-menu" aria-hidden="true" />
+          <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
+          <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
 
-        {/* When FORCE_EXCLUDE_SIDEMENU, next.config aliases these imports to stubs. */}
-        <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
-        <Header userData={userData} isAuthenticated={isAuthenticated} />
+          {/* When FORCE_EXCLUDE_SIDEMENU, next.config aliases these imports to stubs. */}
+          <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
+          <Header userData={userData} isAuthenticated={isAuthenticated} />
 
-        <main className="shell-main">{children}</main>
+          <main className="shell-main">{children}</main>
 
-        <MobileSideSheet
-          isAuthenticated={isAuthenticated}
-          pathname={pathname}
-        />
-      </div>
+          <MobileSideSheet
+            isAuthenticated={isAuthenticated}
+            pathname={pathname}
+          />
+        </div>
+      </SettingsRouteProvider>
 
       <GlassPortal>
         <MobileDock isAuthenticated={isAuthenticated} />

@@ -32,6 +32,12 @@ export interface RouteMenuEntry {
 
 export const routeMenuRegistry: RouteMenuEntry[] = [
   {
+    pathPattern: /^\/user-settings(?:\/|$)/,
+    iconName: "Settings",
+    label: "Settings",
+    importFn: () => import("@/features/settings/route-menu/SettingsRouteMenu"),
+  },
+  {
     pathPattern: AGENT_RUN_PATH_PATTERN,
     iconName: "Webhook",
     label: "Agent Runs",

@@ -185,13 +185,14 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
         getApplicationScope={getScope}
         contentSource={{ type: "raw" }}
       >
-        <div className="contents">
+        <div className="min-h-full pt-[var(--shell-header-h)] pb-safe">
           <SettingsTabHost
             activeTab={activeTab}
             treeNodes={treeNodes}
             onNavigate={navigate}
             showBreadcrumb={Boolean(tabId)}
             navigationPending={isNavigationPending}
+            scrollOwner="shell"
           />
         </div>
       </NonEditableContextMenu>

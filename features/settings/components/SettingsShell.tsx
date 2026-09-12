@@ -21,6 +21,7 @@ import { UniversalSettingsProvider } from "../universal/UniversalSettingsContext
 import { useSettingsTree } from "../universal/useSettingsTree";
 import { SettingsTabHost } from "./SettingsTabHost";
 import { SettingsPresentationProvider } from "./SettingsPresentationContext";
+import { SettingsDesignProvider } from "@/components/official/settings/SettingsDesignProvider";
 
 export type SettingsShellProps = {
   /** Controls whether the shell is mounted. */
@@ -63,7 +64,9 @@ export function SettingsShell(props: SettingsShellProps) {
   if (!props.isOpen) return null;
   return (
     <UniversalSettingsProvider>
-      <SettingsShellBody {...props} />
+      <SettingsDesignProvider variant="compact">
+        <SettingsShellBody {...props} />
+      </SettingsDesignProvider>
     </UniversalSettingsProvider>
   );
 }

@@ -8,9 +8,7 @@ describe("settingDoorHref", () => {
         tabId: "appearance",
         controlId: "appearance.theme-mode",
       }),
-    ).toBe(
-      "/settings/preferences?tab=appearance&control=appearance.theme-mode",
-    );
+    ).toBe("/user-settings/appearance?control=appearance.theme-mode");
   });
 
   it("addresses an exact organization control and preserves non-sensitive intent", () => {
