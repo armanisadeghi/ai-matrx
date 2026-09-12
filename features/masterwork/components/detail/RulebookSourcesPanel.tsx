@@ -396,6 +396,11 @@ export function RulebookSourcesPanel({
             kind: "entity",
             token: l.token,
             id: l.resourceId,
+            // Without this the server's progress line falls back to the
+            // raw entity_types token + id fragment (e.g. "udt_document
+            // 271abcae") for a pasted document — link resources never hit
+            // this because capture_page always returns a page title.
+            title: titleFor({ token: l.token, id: l.resourceId, label: l.label }),
           })),
           ...stagedUrls.map((s) => ({
             kind: "url",
