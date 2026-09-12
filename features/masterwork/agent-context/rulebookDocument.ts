@@ -75,6 +75,25 @@ function ruleBlock(rule: RulebookRule): string[] {
   if (rule.rationale) lines.push(`Why: ${rule.rationale}`);
   if (rule.detection) lines.push(`Detection: ${rule.detection}`);
   if (rule.quote) lines.push(`Source words: ${rule.quote}`);
+  // The policy half (contract §2). The statement above already says the whole
+  // rule; these lines make the same thing machine-readable for the agent.
+  if (rule.precondition) {
+    const parts = [`When: ${rule.precondition.summary}`];
+    if (rule.precondition.known?.length)
+      parts.push(`known: ${rule.precondition.known.join(", ")}`);
+    if (rule.precondition.unknown?.length)
+      parts.push(`still unknown: ${rule.precondition.unknown.join(", ")}`);
+    lines.push(parts.join(" · "));
+  }
+  if (rule.next_action) {
+    const next = rule.next_action;
+    const parts = [`Next: ${next.kind} ${next.target}`];
+    if (next.buys) parts.push(`buys: ${next.buys}`);
+    if (next.cost !== undefined) parts.push(`cost: ${next.cost}`);
+    if (next.risk !== undefined) parts.push(`risk: ${next.risk}`);
+    if (next.urgency) parts.push(`urgency: ${next.urgency}`);
+    lines.push(parts.join(" · "));
+  }
   if (rule.relates_to?.length) {
     for (const rel of rule.relates_to) {
       lines.push(

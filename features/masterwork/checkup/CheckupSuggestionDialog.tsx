@@ -269,7 +269,10 @@ export function CheckupSuggestionDialog({
               sections={rulebook.sections}
               idPrefix="checkup-rule"
               autoFocusName={false}
-              omitFields={["quote"]}
+              // The quote is the Expert's mechanically-verified evidence,
+              // and a checkup SUGGESTION has nowhere to put the policy fields
+              // (contract §2) — rendering either would discard what is typed.
+              omitFields={["quote", "policy"]}
             />
           ) : null}
         </div>

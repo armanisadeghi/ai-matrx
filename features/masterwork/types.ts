@@ -135,6 +135,223 @@ export interface RuleRelation {
   note?: string;
 }
 
+/**
+ * THE POLICY VOCABULARY — what a practitioner DOES next, and what had to be
+ * true first. Mirrors §1 `action.kind` of the unfolding-case contract
+ * (`common-docs/systems/masterwork/unfolding-case-contract.md`) and
+ * `aidream/services/distillation/distill.py::ACTION_KINDS`; keep them
+ * byte-identical.
+ */
+export const RULE_ACTION_KINDS = [
+  "ask",
+  "examine",
+  "test",
+  "image",
+  "treat",
+  "observe",
+  "refer",
+  "wait",
+  "commit",
+] as const;
+
+export type RuleActionKind = (typeof RULE_ACTION_KINDS)[number];
+
+/** How the action reads to the Expert, in their language — never jargon. */
+export const RULE_ACTION_LABELS: Record<RuleActionKind, string> = {
+  ask: "Ask",
+  examine: "Examine",
+  test: "Test",
+  image: "Image",
+  treat: "Treat",
+  observe: "Watch and wait",
+  refer: "Refer",
+  wait: "Wait",
+  commit: "Commit to an answer",
+};
+
+/** How soon the next action has to happen. */
+export const RULE_ACTION_URGENCIES = ["now", "hours", "days", "weeks"] as const;
+
+export type RuleActionUrgency = (typeof RULE_ACTION_URGENCIES)[number];
+
+export const RULE_ACTION_URGENCY_LABELS: Record<RuleActionUrgency, string> = {
+  now: "right now",
+  hours: "within hours",
+  days: "within days",
+  weeks: "within weeks",
+};
+
+/**
+ * WHAT HAD TO BE TRUE for this rule to fire — the known set at the moment of
+ * decision, and what was still unknown. Optional: a static rule (every lane
+ * before the timeline lane) carries none, and absence means exactly that.
+ */
+export interface RulePrecondition {
+  /** The situation in one plain sentence — what the card prints after "When:". */
+  summary: string;
+  /** Facts that must already be known. */
+  known?: string[];
+  /** Facts that are still open at this moment — the reason the next step exists. */
+  unknown?: string[];
+}
+
+/**
+ * WHAT TO DO NEXT — the step the rule prescribes, with what it buys and what
+ * it costs. `cost` and `risk` are 1–5; anything outside that is not rendered
+ * as a number rather than silently clamped to a lie.
+ */
+export interface RuleNextAction {
+  kind: RuleActionKind;
+  /** The thing to do — "lumbar puncture (CT first if focal signs)". */
+  target: string;
+  /** What this step buys you — "excludes the worst thing first". */
+  buys?: string;
+  /** 1–5. */
+  cost?: number;
+  /** 1–5. */
+  risk?: number;
+  urgency?: RuleActionUrgency;
+}
+
+/** Tolerant reads — a malformed half never renders as a confident half. */
+export function parseRulePrecondition(value: unknown): RulePrecondition | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const rec = value as Record<string, unknown>;
+  const summary =
+    typeof rec.summary === "string" && rec.summary.trim()
+      ? rec.summary.trim()
+      : "";
+  if (!summary) return null;
+  const list = (raw: unknown): string[] =>
+    Array.isArray(raw)
+      ? raw.flatMap((item) =>
+          typeof item === "string" && item.trim() ? [item.trim()] : [],
+        )
+      : [];
+  const known = list(rec.known);
+  const unknown = list(rec.unknown);
+  return {
+    summary,
+    ...(known.length ? { known } : {}),
+    ...(unknown.length ? { unknown } : {}),
+  };
+}
+
+export function parseRuleNextAction(value: unknown): RuleNextAction | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const rec = value as Record<string, unknown>;
+  const kind = RULE_ACTION_KINDS.find((k) => k === rec.kind);
+  const target =
+    typeof rec.target === "string" && rec.target.trim()
+      ? rec.target.trim()
+      : "";
+  // A next action with no verb or no object is not an instruction — render
+  // nothing rather than "Next: —".
+  if (!kind || !target) return null;
+  const scale = (raw: unknown): number | undefined =>
+    typeof raw === "number" && Number.isFinite(raw) && raw >= 1 && raw <= 5
+      ? Math.round(raw)
+      : undefined;
+  const urgency = RULE_ACTION_URGENCIES.find((u) => u === rec.urgency);
+  const cost = scale(rec.cost);
+  const risk = scale(rec.risk);
+  return {
+    kind,
+    target,
+    ...(typeof rec.buys === "string" && rec.buys.trim()
+      ? { buys: rec.buys.trim() }
+      : {}),
+    ...(cost === undefined ? {} : { cost }),
+    ...(risk === undefined ? {} : { risk }),
+    ...(urgency ? { urgency } : {}),
+  };
+}
+
+/**
+ * The policy fields as the rule FORM holds them: plain strings, one list item
+ * per line. A form that held the structured objects directly would throw away
+ * a half-typed line on every keystroke; these convert at the edges through the
+ * two functions below, which are the ONE conversion — never re-derive it.
+ */
+export interface RulePolicyFieldValues {
+  preconditionSummary: string;
+  /** One fact per line. */
+  preconditionKnown: string;
+  /** One still-open question per line. */
+  preconditionUnknown: string;
+  nextActionKind: RuleActionKind | "";
+  nextActionTarget: string;
+  nextActionBuys: string;
+  /** "" or "1".."5". */
+  nextActionCost: string;
+  nextActionRisk: string;
+  nextActionUrgency: RuleActionUrgency | "";
+}
+
+export const EMPTY_RULE_POLICY_FIELDS: RulePolicyFieldValues = {
+  preconditionSummary: "",
+  preconditionKnown: "",
+  preconditionUnknown: "",
+  nextActionKind: "",
+  nextActionTarget: "",
+  nextActionBuys: "",
+  nextActionCost: "",
+  nextActionRisk: "",
+  nextActionUrgency: "",
+};
+
+export function rulePolicyFieldsFromRule(
+  rule: Pick<RulebookRule, "precondition" | "next_action"> | undefined,
+): RulePolicyFieldValues {
+  const pre = rule?.precondition;
+  const next = rule?.next_action;
+  return {
+    preconditionSummary: pre?.summary ?? "",
+    preconditionKnown: (pre?.known ?? []).join("\n"),
+    preconditionUnknown: (pre?.unknown ?? []).join("\n"),
+    nextActionKind: next?.kind ?? "",
+    nextActionTarget: next?.target ?? "",
+    nextActionBuys: next?.buys ?? "",
+    nextActionCost: next?.cost === undefined ? "" : String(next.cost),
+    nextActionRisk: next?.risk === undefined ? "" : String(next.risk),
+    nextActionUrgency: next?.urgency ?? "",
+  };
+}
+
+/**
+ * Form values → the two optional rule fields. Each half is emitted only when
+ * it is genuinely there: a precondition needs its summary, a next action needs
+ * both a kind and a target. Half-filled is the same as absent — never a rule
+ * that prints "Next: —".
+ */
+export function rulePolicyFromFields(values: RulePolicyFieldValues): {
+  precondition?: RulePrecondition;
+  next_action?: RuleNextAction;
+} {
+  const lines = (raw: string): string[] =>
+    raw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  const precondition = parseRulePrecondition({
+    summary: values.preconditionSummary,
+    known: lines(values.preconditionKnown),
+    unknown: lines(values.preconditionUnknown),
+  });
+  const next_action = parseRuleNextAction({
+    kind: values.nextActionKind,
+    target: values.nextActionTarget,
+    buys: values.nextActionBuys,
+    cost: values.nextActionCost ? Number(values.nextActionCost) : undefined,
+    risk: values.nextActionRisk ? Number(values.nextActionRisk) : undefined,
+    urgency: values.nextActionUrgency || undefined,
+  });
+  return {
+    ...(precondition ? { precondition } : {}),
+    ...(next_action ? { next_action } : {}),
+  };
+}
+
 /** One rule of the Rulebook. `id` is the citable handle every audit verdict points at. */
 export interface RulebookRule {
   id: string;
@@ -194,6 +411,17 @@ export interface RulebookRule {
    * compares, and relations are structural, not prose.
    */
   relates_to?: RuleRelation[];
+  /**
+   * THE POLICY FIELDS (the unfolding-case contract §2). Both OPTIONAL and both
+   * additive: absent = a static rule, which is every rule every other lane has
+   * ever written. `statement` still says the WHOLE rule in prose — these make
+   * the same thing machine-readable, they never carry meaning the statement
+   * lacks (THE ANTI-MISLEADING LAW). Like `relates_to` they are deliberately
+   * NOT in `RULE_CONTENT_FIELDS`: that list is the string fields a manual edit
+   * compares.
+   */
+  precondition?: RulePrecondition;
+  next_action?: RuleNextAction;
 }
 
 /**

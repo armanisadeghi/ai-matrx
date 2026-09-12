@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
+import { RulePolicy } from "./RulePolicy";
 import type { Rulebook, RulebookRule } from "../../types";
 import { ruleState, SEVERITY_LABELS } from "../../types";
 
@@ -224,6 +225,9 @@ export function RuleReviewWizard({
                       {rule.statement}
                     </p>
                   </div>
+                  {/* The policy half (contract §2) — under the statement, and
+                      part of what the Expert is approving. */}
+                  <RulePolicy rule={rule} />
                   {rule.quote ? (
                     <div className="pt-2">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">

@@ -422,6 +422,7 @@ export type FeSynthesizedBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "serial_observation_timeline"
   | "case_disclosure"
   | "unfolding_ruling"
   | "agent_result"
@@ -590,6 +591,7 @@ export type ShapeBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "serial_observation_timeline"
   | "case_disclosure"
   | "unfolding_ruling"
   | "agent_result"
@@ -1929,6 +1931,25 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.UnfoldingRulingBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (serial_observation_timeline): COMPLETE bridge — one unfolded
+  // case, drawn step by step. A sealed (held-out) case never carries its
+  // resolution into the rendered value at all. Same three-branch contract as
+  // every other kind-routed entry.
+  serial_observation_timeline: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SerialObservationTimelineBlock
           key={index}
           serverData={block.serverData}
         />

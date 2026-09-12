@@ -80,6 +80,7 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
+import { RulePolicy, rulePolicyIsEmpty } from "./RulePolicy";
 import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
@@ -411,6 +412,15 @@ function RuleRow({
           </Button>
         ) : null}
       </div>
+      {/* The policy half of the rule (contract §2) — rendered UNDER the
+          statement, never instead of it (THE ANTI-MISLEADING LAW), and on the
+          collapsed row because "when does this fire and what do I do next" is
+          the thing the Expert scans for. Renders nothing for a static rule. */}
+      {rulePolicyIsEmpty(rule) ? null : (
+        <div className="mx-3 mb-2 ml-9">
+          <RulePolicy rule={rule} />
+        </div>
+      )}
       {rule.feedback ? (
         <div className="mx-3 mb-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs">
           <span className="font-medium text-foreground">

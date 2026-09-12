@@ -30,7 +30,15 @@ import {
 } from "../../agent-context/ruleImprove";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { RuleFields } from "./RuleFields";
-import type { RulebookRule, RulebookSections, RuleSeverity } from "../../types";
+import {
+  EMPTY_RULE_POLICY_FIELDS,
+  rulePolicyFieldsFromRule,
+  rulePolicyFromFields,
+  type RulebookRule,
+  type RulebookSections,
+  type RulePolicyFieldValues,
+  type RuleSeverity,
+} from "../../types";
 
 /**
  * The plain-language rule form (Phase 4 directive): "What's the rule? Why?
@@ -148,6 +156,16 @@ function RuleEditorForm({
       sectionCodes[0] ??
       "G",
   );
+  /**
+   * The policy half (contract §2) — held as plain form strings and converted
+   * once, at save, through `rulePolicyFromFields`. Not part of the staged
+   * agent draft (`RulebookDraftSnapshot` is the prose the Conductor writes);
+   * an edit that touches only these fields still saves, because
+   * `applyManualRuleEdit` merges the whole edited rule either way.
+   */
+  const [policy, setPolicy] = useState<RulePolicyFieldValues>(() =>
+    initial ? rulePolicyFieldsFromRule(initial) : EMPTY_RULE_POLICY_FIELDS,
+  );
   const [saving, setSaving] = useState(false);
   const [beforeTidy, setBeforeTidy] =
     useState<RulebookDraftSnapshot | null>(
@@ -219,6 +237,9 @@ function RuleEditorForm({
           "G",
       );
       setBeforeTidy(persistedDraft?.beforeTidy ?? null);
+      setPolicy(
+        initial ? rulePolicyFieldsFromRule(initial) : EMPTY_RULE_POLICY_FIELDS,
+      );
     }
     wasOpen.current = open;
   }, [
@@ -278,6 +299,11 @@ function RuleEditorForm({
           quote: quote.trim() || undefined,
           severity,
           section,
+          // Absent halves are DELETED, never left behind as a stale policy the
+          // Expert thinks they cleared.
+          precondition: undefined,
+          next_action: undefined,
+          ...rulePolicyFromFields(policy),
         },
       });
       dispatch(clearWizardDraft(wizardId));
@@ -408,6 +434,7 @@ function RuleEditorForm({
               quote,
               severity,
               section,
+              ...policy,
             }}
             onChange={(patch) => {
               if (patch.name !== undefined) setName(patch.name);
@@ -417,6 +444,19 @@ function RuleEditorForm({
               if (patch.quote !== undefined) setQuote(patch.quote);
               if (patch.severity !== undefined) setSeverity(patch.severity);
               if (patch.section !== undefined) setSection(patch.section);
+              const {
+                name: _n,
+                statement: _s,
+                rationale: _r,
+                detection: _d,
+                quote: _q,
+                severity: _sev,
+                section: _sec,
+                ...policyPatch
+              } = patch;
+              if (Object.keys(policyPatch).length > 0) {
+                setPolicy((current) => ({ ...current, ...policyPatch }));
+              }
             }}
             sections={sections}
           />
