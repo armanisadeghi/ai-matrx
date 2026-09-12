@@ -149,6 +149,7 @@ export const dispatchSurfaceWrite = createAsyncThunk<
             entity: "proposed change",
             title: proposal.target.label,
             description: `${who} proposed this change. ${proposal.target.description} ${timing}`,
+            actor: proposal.actorLabel?.trim() || undefined,
             fields: [
               {
                 label: "Proposed value",
