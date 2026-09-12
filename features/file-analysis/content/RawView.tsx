@@ -17,7 +17,7 @@ import { useState } from "react";
 import { Braces, Check, Copy, Download, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 
 interface RawViewProps {
   /** What's being shown — gets stamped into copied JSON + the download filename. */
@@ -89,7 +89,7 @@ export function RawView({
         </Button>
         <span className="text-[10px] text-muted-foreground">{label}</span>
         <span className="ml-auto rounded bg-muted px-1.5 py-px text-[9px] tabular-nums text-muted-foreground">
-          {formatFileSize(jsonText.length)}
+          {formatCount(jsonText.length)} chars
         </span>
         <Button
           size="sm"

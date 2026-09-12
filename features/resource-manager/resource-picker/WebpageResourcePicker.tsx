@@ -26,7 +26,7 @@ import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -629,11 +629,13 @@ export function WebpageResourcePickerCore({
                     <ExternalLink className="w-3 h-3 flex-shrink-0" />
                     <span className="truncate">{url}</span>
                   </a>
+                  {/*
+                    ONE figure, ONE unit system. This rendered the same number
+                    twice — "1,258,291 chars" beside "1.2 MB" — and the second
+                    was a character count wearing a byte formatter's units.
+                  */}
                   <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                    {effectiveContent.length.toLocaleString()} chars
-                  </span>
-                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                    {formatFileSize(effectiveContent.length)}
+                    {formatCount(effectiveContent.length)} chars
                   </span>
                   {editedContent !== data.textContent && (
                     <span className="text-[10px] text-orange-600 dark:text-orange-500 flex-shrink-0">

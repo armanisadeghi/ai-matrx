@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Brain, Star } from "lucide-react";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 import type {
   PipelineState,
   PipelineDerived,
@@ -64,8 +64,10 @@ function AnalyzeCard({ item }: { item: WorkItem }) {
   if (item.metadata.model_id) {
     badges.push(<ModelBadge key="model" modelId={item.metadata.model_id} />);
   }
+  // CHARACTERS, not bytes — `result_length` is `len(analysis.summary_markdown)`
+  // in aidream research/analysis.py.
   const meta = item.metadata.result_length
-    ? formatFileSize(item.metadata.result_length)
+    ? `${formatCount(item.metadata.result_length)} chars`
     : null;
 
   return (

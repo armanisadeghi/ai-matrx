@@ -11,7 +11,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 import type {
   PipelineDerived,
   PipelineState,
@@ -86,7 +86,9 @@ export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
         label="content"
         value={state.stages.scrape.totals.succeeded.toLocaleString()}
         hint={
-          derived.totalCharsScraped > 0 ? `(${formatFileSize(derived.totalCharsScraped)})` : null
+          derived.totalCharsScraped > 0
+            ? `(${formatCount(derived.totalCharsScraped)} chars)`
+            : null
         }
       />
       <MetricChip

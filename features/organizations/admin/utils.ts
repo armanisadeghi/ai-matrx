@@ -43,7 +43,15 @@ export function usdToMcents(usd: string | number | null | undefined): number | n
   return Math.round(n * 100000);
 }
 
-/** GB (decimal) → bytes. Returns null for empty input. */
+/**
+ * GB (BINARY, 1 GB = 1024³ bytes) → bytes. Returns null for empty input.
+ *
+ * The comment said "decimal" while the body multiplied by 1024³ — a 7.4% lie
+ * about every storage cap typed into this form. The BODY is right and stays:
+ * it is the inverse of `bytesToGb` below and agrees with `formatFileSize`,
+ * which is binary. A doc comment that disagrees with its body is worse than
+ * none — it is what the next reader trusts instead of reading the code.
+ */
 export function gbToBytes(gb: string | number | null | undefined): number | null {
   if (gb === "" || gb == null) return null;
   const n = typeof gb === "number" ? gb : Number(gb);
@@ -51,7 +59,7 @@ export function gbToBytes(gb: string | number | null | undefined): number | null
   return Math.round(n * 1024 * 1024 * 1024);
 }
 
-/** Bytes → GB number (for prefilling a form). */
+/** Bytes → GB number, BINARY (1024³) — the exact inverse of `gbToBytes`. */
 export function bytesToGb(bytes: number | null | undefined): string {
   if (bytes == null) return "";
   return (bytes / (1024 * 1024 * 1024)).toString();

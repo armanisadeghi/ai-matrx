@@ -60,13 +60,15 @@ export async function probeUrl(
             signal: controller.signal,
           });
     if (res.ok) {
-      const length = res.headers.get("content-length");
+      // The HTTP Content-Length header is BYTES — unlike almost every other
+      // `*_length` in this fleet, which are character counts. The name carries it.
+      const contentLengthBytes = res.headers.get("content-length");
       return {
         status: "ok",
         httpStatus: res.status,
         detail:
-          mode === "head" && length
-            ? `${formatFileSize(Number(length))} reported`
+          mode === "head" && contentLengthBytes
+            ? `${formatFileSize(Number(contentLengthBytes))} reported`
             : undefined,
       };
     }

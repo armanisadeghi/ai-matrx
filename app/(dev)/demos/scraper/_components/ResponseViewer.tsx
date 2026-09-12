@@ -9,7 +9,7 @@ import React, {
   Component,
 } from "react";
 import { Button } from "@/components/ui/button";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Copy,
@@ -248,7 +248,7 @@ function RawJsonView({ data }: { data: unknown }) {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-2 border-b border-border bg-muted shrink-0">
         <span className="text-xs text-muted-foreground">
-          Raw JSON ({formatFileSize(jsonString.length)})
+          Raw JSON ({formatCount(jsonString.length)} chars)
         </span>
         <Button
           variant="ghost"

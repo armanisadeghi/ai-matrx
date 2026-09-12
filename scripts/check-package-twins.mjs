@@ -68,6 +68,10 @@
 
 import { byteShapeIn, selfTestByteShape } from "./byte-size-shape.mjs";
 import { durationShapeIn, selfTestDurationShape } from "./duration-shape.mjs";
+import {
+  formatInputShapeIn,
+  selfTestFormatInputShape,
+} from "./format-input-shape.mjs";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -160,6 +164,29 @@ const SHAPE_RULES = [
       "formatDurationSeconds / formatDurationMinutes, never a bare number. A " +
       "relative \"3m ago\" is formatRelativeTime, not a duration. Plain time " +
       "arithmetic (a timeout budget, an API field) never matches this rule",
+  },
+  {
+    id: "format-input",
+    rowName: "formatFileSize",
+    module: "scripts/format-input-shape.mjs",
+    detect: formatInputShapeIn,
+    selfTest: selfTestFormatInputShape,
+    what: "a NON-byte quantity entering formatFileSize",
+    // THE LANE THE COLLAPSE ITSELF NEEDED. The byte-size lane asks whether a
+    // byte count is becoming a unit string; once the arithmetic is collapsed
+    // onto the package it is satisfied forever and nothing asks what the
+    // number IS. matrx-frontend 738ea2ba55 collapsed five CHARACTER counts
+    // onto formatFileSize, and "1.2 MB captured" for 1,258,291 characters
+    // passed every lane. Same row, own facts — see `allowKey`.
+    allowKey: "inputAllow",
+    censusKey: "inputCensus",
+    fix:
+      "render a COUNT with formatCount from the same module plus the word it " +
+      'counts ("1,258,291 chars"), or convert to real bytes with ' +
+      'new TextEncoder().encode(s).length / Buffer.byteLength(s, "utf8"). A ' +
+      "figure already in KB/MB/GB is multiplied up first. A genuine byte " +
+      "length says so in its NAME (byteLength, contentLengthBytes), which is " +
+      "worth more than an allowlist entry",
   },
 ];
 const SHAPE_MODULES = new Set(SHAPE_RULES.map((r) => r.module));
@@ -327,6 +354,34 @@ if (SELF_TEST) {
     );
     process.exit(1);
   }
+  // ── THE NAME CENSUS RATCHET must be able to fail (added 2026-09-12) ──
+  // Mutation G8 — `if (!nameCensusHit.has(...))` → `if (false)` — left this
+  // self-test PASSED. The ratchet WAS real (a planted stale entry exits 1), but
+  // "real at run time" is not "proven", and the next refactor deletes what no
+  // fixture defends. Both legs are pinned: an entry nobody hit is stale, and an
+  // entry that WAS hit is not.
+  {
+    const rows = [
+      { name: "plantedExport", census: [{ file: "gone.ts", reason: "self-test only" }] },
+    ];
+    const unhit = staleNameCensus(rows, new Set());
+    if (unhit.length !== 1 || !unhit[0].includes("gone.ts")) {
+      console.error(
+        "SELF-TEST FAILED: a NAME `census` entry whose file no longer defines " +
+          "the registered name was NOT reported stale — the ratchet is gone, " +
+          "and the census can now only grow.",
+      );
+      process.exit(1);
+    }
+    const hit = staleNameCensus(rows, new Set(["plantedExport::gone.ts"]));
+    if (hit.length !== 0) {
+      console.error(
+        "SELF-TEST FAILED: a NAME `census` entry the scan DID hit was reported " +
+          "stale — the ratchet now fails every live census entry.",
+      );
+      process.exit(1);
+    }
+  }
   // ── every SHAPE lane must also be able to fail ──
   for (const rule of SHAPE_RULES) {
     const shape = rule.selfTest();
@@ -365,13 +420,46 @@ const LANES = SHAPE_RULES.flatMap((rule) => {
     {
       rule,
       row,
-      allow: new Set((row.shapeAllow ?? []).map((a) => a.file)),
-      census: new Set((row.shapeCensus ?? []).map((a) => a.file)),
+      // PER-LANE FACTS ON A SHARED ROW (2026-09-12). Two lanes now judge the
+      // SAME register row from opposite directions — byte-size asks what a
+      // local body computes, format-input asks what the call receives — and
+      // their allow/census lists cannot be the same list: a file provably not
+      // a byte formatter says nothing about the argument it passes, and the
+      // census RATCHET below fails any entry its own lane no longer hits. So
+      // a rule may name its own keys; default keys keep every existing row
+      // and every other repo's register working untouched.
+      allow: new Set((row[rule.allowKey ?? "shapeAllow"] ?? []).map((a) => a.file)),
+      census: new Set((row[rule.censusKey ?? "shapeCensus"] ?? []).map((a) => a.file)),
       findings: [],
       censusHit: new Set(),
     },
   ];
 });
+
+/**
+ * The NAME census entries this run did NOT hit — a file that no longer defines
+ * the registered name. Left in place, such an entry silently re-opens the hole
+ * the day someone re-grows that twin in that same file, so the ratchet fails on
+ * it and removing it is part of the collapse.
+ *
+ * A FUNCTION, NOT AN INLINE LOOP, since 2026-09-12, and that is the whole point
+ * of it. A fourth adversarial review mutated the ratchet's condition
+ * (`if (!nameCensusHit.has(...))` → `if (false)`) and `--self-test` still
+ * printed PASSED: the ratchet was real at run time — a planted stale entry
+ * exits 1 — but nothing PROVED it, and an unproven guard is one refactor away
+ * from being gone. Inline code cannot be planted against; this can.
+ */
+export function staleNameCensus(rows, hits) {
+  const stale = [];
+  for (const row of rows) {
+    for (const entry of row.census ?? []) {
+      if (!hits.has(`${row.name}::${entry.file}`)) {
+        stale.push(`${row.name} → ${entry.file}`);
+      }
+    }
+  }
+  return stale;
+}
 
 const findings = [];
 /** Every `<row>::<file>` pair the NAME census actually covered this run. */
@@ -416,14 +504,7 @@ for (const file of trackedFiles()) {
  */
 let nameCensusFailures = 0;
 {
-  const stale = [];
-  for (const row of TWINS) {
-    for (const entry of row.census ?? []) {
-      if (!nameCensusHit.has(`${row.name}::${entry.file}`)) {
-        stale.push(`${row.name} → ${entry.file}`);
-      }
-    }
-  }
+  const stale = staleNameCensus(TWINS, nameCensusHit);
   if (stale.length > 0) {
     nameCensusFailures += stale.length;
     console.error(
@@ -464,13 +545,13 @@ for (const lane of LANES) {
     shapeFailures += stale.length;
     console.error(
       `check:package-twins [SHAPE/${rule.id}]: ${stale.length} stale ` +
-        `\`shapeCensus\` entr(ies) on \`${row.name}\` — these files no longer ` +
+        `\`${rule.censusKey ?? "shapeCensus"}\` entr(ies) on \`${row.name}\` — these files no longer ` +
         `contain ${rule.what}, so the census must shrink by them:\n`,
     );
     for (const f of stale) console.error(`  ${f}`);
     console.error(
       `\n  fix: delete those entries from the \`${row.name}\` row's ` +
-        `\`shapeCensus\` list in scripts/package-twins.json.\n`,
+        `\`${rule.censusKey ?? "shapeCensus"}\` list in scripts/package-twins.json.\n`,
     );
   }
 
@@ -497,9 +578,11 @@ for (const lane of LANES) {
   console.error(
     `\n  fix: import from "${row.package}" and ${rule.fix}. If a hit is ` +
       `genuinely NOT this capability, add the file to the \`${row.name}\` ` +
-      `row's \`shapeAllow\` list in scripts/package-twins.json WITH a reason. ` +
+      `row's \`${rule.allowKey ?? "shapeAllow"}\` list in ` +
+      `scripts/package-twins.json WITH a reason. ` +
       `"We cannot reach the package from here" is NOT that reason — a body ` +
-      `that IS this capability goes in \`shapeCensus\`, loud and ratcheted.\n`,
+      `that IS this capability goes in \`${rule.censusKey ?? "shapeCensus"}\`, ` +
+      `loud and ratcheted.\n`,
   );
 }
 

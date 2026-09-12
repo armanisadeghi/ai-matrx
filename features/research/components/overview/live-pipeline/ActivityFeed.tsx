@@ -11,7 +11,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type {
   PipelineState,
@@ -112,7 +112,7 @@ function buildEntries(
         extras.push(`page ${data.page}/${data.total_pages}`);
       }
       if ("char_count" in data && typeof data.char_count === "number") {
-        extras.push(formatFileSize(data.char_count));
+        extras.push(`${formatCount(data.char_count)} chars`);
       }
       if ("agent_type" in data && typeof data.agent_type === "string") {
         extras.push(String(data.agent_type));

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download, MoreVertical, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,8 +133,12 @@ function ScrapeCard({
   topicId: string;
   onUpdated?: () => void;
 }) {
+  // A CHARACTER count, never bytes: the server sets `char_count` with Python's
+  // `len(content)` on a string (aidream research/scraper.py). It is a COUNT and
+  // is rendered as one — `formatFileSize` here printed "1.2 MB" for 1,258,291
+  // characters, and any non-ASCII page made even that approximation wrong.
   const meta: React.ReactNode = item.metadata.char_count
-    ? formatFileSize(item.metadata.char_count)
+    ? `${formatCount(item.metadata.char_count)} chars`
     : null;
 
   const badges: React.ReactNode[] = [];
@@ -239,7 +243,7 @@ export function ScrapeStageView({
           <span className="tabular-nums">
             {counts.success} good • {counts.partial} thin •{" "}
             {counts.failed + counts.dead_link + counts.gated} can&apos;t fetch •{" "}
-            {formatFileSize(totalChars)} captured
+            {formatCount(totalChars)} chars captured
           </span>
         }
         ratePerSec={ratePerSec}

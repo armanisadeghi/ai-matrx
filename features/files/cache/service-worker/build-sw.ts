@@ -47,7 +47,10 @@ async function main(): Promise<void> {
     await writeFile(OUT, stamped, "utf8");
     // eslint-disable-next-line no-console
     console.log(
-        `✓ blob-sw.js (${formatFileSize(stamped.length)}) → ${OUT}`,
+        // THE BYTES ACTUALLY WRITTEN. `stamped.length` is a CHARACTER count;
+        // the artifact on disk is UTF-8, so a single non-ASCII character in the
+        // build stamp or the bundle made the reported size smaller than the file.
+        `✓ blob-sw.js (${formatFileSize(Buffer.byteLength(stamped, "utf8"))}) → ${OUT}`,
     );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDurationMs, formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -619,7 +619,7 @@ function ResearchPanel({ local }: { local: UseMatrxLocalReturn }) {
                 })}
               </Badge>
               <Badge variant="outline" className="text-muted-foreground">
-                {formatFileSize(result.meta.content_length)} content
+                {formatCount(result.meta.content_length)} chars of content
               </Badge>
             </div>
           )}
