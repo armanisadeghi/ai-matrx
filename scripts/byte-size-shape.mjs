@@ -33,7 +33,34 @@
  * be collapsed rather than tolerated. So the base literal now covers 1000,
  * 1_000, 1e3, 1e6, 1e9, 1e12 and their long spellings alongside the binary
  * three, and EVERY arm inherits the widening because they all read one shared
- * literal pattern.
+ * literal pattern — a claim `byteBaseNames` falsified until 2026-09-12; see the
+ * note on that function.
+ *
+ * THE SPELLINGS THIS RULE CLOSES, AND THE ONES IT DELIBERATELY DOES NOT
+ * (2026-09-12, third review — none of them had a live instance anywhere in the
+ * fleet; these are hardening, not findings). CLOSED, because each is one more
+ * alternative in the ONE shared literal and nothing else: the underscore binary
+ * spellings `1_048_576` / `1_073_741_824`, the signed exponent `1e+6`, the
+ * trailing-zero decimal `1000.0` / `1024.0`, and the computed bases `2 ** 20`,
+ * `10 ** 6`, `Math.pow(2, 20)`, `Math.pow(10, 6)`. LEFT OPEN, with the reason:
+ *   · `bytes >> 20` (bit-shift division). A new OPERATOR arm, and `>> 10` is
+ *     ordinary in hashing, colour maths and bit packing, so the arm would have
+ *     to carry its own false-positive story for a spelling nobody writes.
+ *   · `Intl.NumberFormat(…, { unit: "megabyte" })` and `.toExponential()`. Not
+ *     arithmetic at all: no divisor and no unit literal, so neither the divisor
+ *     arms nor the label test can reach them. Catching them means a different
+ *     KIND of arm (an API-shape arm), which is the first step toward a parser.
+ *   · An IMPORTED divisor (`import { GIB } from "./units"; bytes / GIB`) and the
+ *     same with the label on the NEXT line. `byteBaseNames` is deliberately a
+ *     single-file read; following a divisor across modules is import resolution.
+ *   · `Math.round(gb * 1000) + unit` where the label is a VARIABLE. The multiply
+ *     arm requires a rendered unit literal on the line precisely so a capacity
+ *     ceiling cannot match; relaxing it to "any identifier might be a unit"
+ *     re-opens the `MAX_SIZE_MB * 1024 * 1024` false positive this rule fixed.
+ * Where this stops is a choice, not an oversight: the rule stays a LITERAL
+ * pattern over one line plus bounded whole-file evidence. The day a body in one
+ * of the open spellings is found live it gets collapsed and its spelling gets a
+ * fixture — not a parser.
  *
  * THE MULTIPLY-FROM-GB ARM (added 2026-09-11, same review). One live twin runs
  * the conversion the other way: `matrx-local`'s `fmtSize(gb: number)` receives
@@ -98,7 +125,8 @@
  * `InlineUploadArea` carried exactly that, printing "NaN undefined" for a NaN
  * size, and it escaped the NAME register too because it was spelled
  * `formatBytes`. So the detector first reads the file for identifiers bound to
- * a byte base (1024, 1048576, 1073741824, or `1024 ** n`) and then treats a
+ * a byte base — ANY spelling in the shared literal, binary or decimal — and
+ * then treats a
  * division by one of those names as a byte division. The EVIDENCE requirement
  * is unchanged — a unit label nearby, a unit-carrying name, or a unit-named
  * callee — so `const k = 1024; const chunks = size / k` with no unit anywhere
@@ -138,9 +166,22 @@ const UNIT_LABEL_RE = /(?:^|[\s>}'"`([,+:=])(?:[KMGT]i?B|B)(?:[^A-Za-z0-9_]|$)/;
  * four arms each started from a divisor pattern that only knew about 1024.
  */
 const BYTE_BASE_LITERAL =
-  "(?:1024(?:\\s*\\*\\*\\s*[234])?|1048576|1073741824|" +
+  "(?:" +
+  // Binary, written out — including the UNDERSCORE spellings, which a third
+  // review (2026-09-12) confirmed missing: `1_048_576` is how a formatter that
+  // wants the number readable actually writes a MiB.
+  "1_?073_?741_?824|1_?048_?576|1024(?:\\s*\\*\\*\\s*[234])?|" +
+  // …and binary COMPUTED: `2 ** 20`, `Math.pow(2, 20)`.
+  "2\\s*\\*\\*\\s*(?:10|20|30|40)|" +
+  "Math\\.pow\\(\\s*2\\s*,\\s*(?:10|20|30|40)\\s*\\)|" +
+  // Decimal (SI), every spelling the fleet used, plus the `1e+6` sign form and
+  // the `10 ** 6` / `Math.pow(10, 6)` exponent forms.
   "1_?000_?000_?000_?000|1_?000_?000_?000|1_?000_?000|1_?000|" +
-  "1e(?:12|9|6|3))(?![\\d_.])";
+  "1e\\+?(?:12|9|6|3)|10\\s*\\*\\*\\s*(?:3|6|9|12)|" +
+  "Math\\.pow\\(\\s*10\\s*,\\s*(?:3|6|9|12)\\s*\\)" +
+  // A trailing `.0` is the same number (`/ 1000.0`). `.5` is not, and the
+  // lookahead still refuses `10240` / `10000` / `1000.5`.
+  ")(?:\\.0+)?(?![\\d_.])";
 
 /**
  * A byte DIVISION or THRESHOLD COMPARISON. Multiplication never matches.
@@ -243,12 +284,26 @@ function renderedBesideUnit(source, name) {
 
 /**
  * Identifiers bound to a byte base in this file: `const k = 1024`,
- * `const MB = 1024 ** 2`, `let base = 1048576`. Returns the names, so a
- * division by one of them counts as a byte division.
+ * `const MB = 1024 ** 2`, `let base = 1_048_576`, `const MB = 1e6`. Returns the
+ * names, so a division by one of them counts as a byte division.
+ *
+ * 🚨 THIS READS THE SHARED LITERAL, AND THE THIRD REVIEW (2026-09-12) IS WHY.
+ * The header above claims "EVERY arm inherits the widening because they all
+ * read one shared literal pattern", and this one arm did not: it carried its
+ * own hardcoded binary-only alternation, so `const MB = 1e6; … / MB` beside
+ * a " MB" label was invisible while the file said in as many words that it
+ * could not be. A header claim a reader cannot check against the code is worse
+ * than no header: it tells the next agent to stop looking. The claim is now
+ * true by construction — there is exactly one place a base spelling is added,
+ * and a fixture below proves this arm sees the decimal family.
  */
 function byteBaseNames(source) {
-  const re =
-    /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::\s*number\s*)?=\s*(?:1024\s*\*\*\s*[234]|1024|1048576|1073741824)\s*(?:;|$)/gm;
+  const re = new RegExp(
+    String.raw`(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::\s*number\s*)?=\s*` +
+      BYTE_BASE_LITERAL +
+      String.raw`\s*(?:;|$)`,
+    "gm",
+  );
   const names = new Set();
   let m;
   while ((m = re.exec(source)) !== null) names.add(m[1]);
@@ -339,6 +394,16 @@ export function byteShapeIn(source) {
 
 /** Proves the rule can fail and does not fire on a capacity constant. */
 export function selfTestByteShape() {
+  // EVERY BROKEN LEG, NOT THE FIRST (2026-09-12). A self-test that returns on
+  // its first failure can name at most one arm, and this rule's arms come in
+  // PAIRS — a divisor-discovery leg and an evidence leg, both required for any
+  // single fixture. So killing the shared literal-divisor arm and killing the
+  // label window produced the SAME sentence, and a cross-arm matrix could not
+  // tell them apart. Collecting them means each arm's own message is always in
+  // the output, whichever other arm is also down.
+  const failures = [];
+  const fail = (why) => failures.push(why);
+
   const planted = [
     "export function humanSize(bytes: number): string {",
     "  if (bytes < 1024) return `${bytes} B`;",
@@ -347,7 +412,7 @@ export function selfTestByteShape() {
   ].join("\n");
   const found = byteShapeIn(planted);
   if (found.length === 0) {
-    return { ok: false, why: "a planted byte-size body was NOT reported" };
+    fail("a planted byte-size body was NOT reported");
   }
   const constants = [
     "const MAX_UPLOAD_BYTES = 80 * 1024 * 1024;",
@@ -355,14 +420,14 @@ export function selfTestByteShape() {
     "maxBuffer: 64 * 1024 * 1024,",
   ].join("\n");
   if (byteShapeIn(constants).length !== 0) {
-    return { ok: false, why: "a capacity CONSTANT was reported as a formatter" };
+    fail("a capacity CONSTANT was reported as a formatter");
   }
   const adopted = [
     'import { formatFileSize } from "@ai-matrx/kit/format";',
     "const label = formatFileSize(file.size);",
   ].join("\n");
   if (byteShapeIn(adopted).length !== 0) {
-    return { ok: false, why: "an adopted call site was reported" };
+    fail("an adopted call site was reported");
   }
   // THE SINGLE-UNIT FORM: the unit is in the NAME and the label is forty-four
   // lines away in JSX. Nothing but the identifier can catch this.
@@ -371,15 +436,12 @@ export function selfTestByteShape() {
   // caught by the windowed arm and would prove nothing about this one.
   const hoisted = ["  const sizeKb = (blob.size / 1024).toFixed(0);"].join("\n");
   if (byteShapeIn(hoisted).length === 0) {
-    return {
-      ok: false,
-      why: "the hoisted single-unit form (`const sizeKb = blob.size / 1024`) was NOT reported",
-    };
+    fail("the hoisted single-unit form (`const sizeKb = blob.size / 1024`) was NOT reported");
   }
   // …and a unit-named CONSTANT still escapes, because it multiplies.
   const namedCeiling = ["const maxUploadMb = 80 * 1024 * 1024;"].join("\n");
   if (byteShapeIn(namedCeiling).length !== 0) {
-    return { ok: false, why: "a unit-named capacity CONSTANT was reported" };
+    fail("a unit-named capacity CONSTANT was reported");
   }
   // THE NAMED-BINDING ARM: the key says nothing (`used`) and the label is
   // forty-five lines away in JSX. Only following the binding sees this.
@@ -408,10 +470,7 @@ export function selfTestByteShape() {
     "    <span>{memoryInfo.used}MB / {memoryInfo.limit}MB</span>",
   ].join("\n");
   if (byteShapeIn(boundProperty).length === 0) {
-    return {
-      ok: false,
-      why: "a byte division bound to an object property and rendered beside `MB` was NOT reported",
-    };
+    fail("a byte division bound to an object property and rendered beside `MB` was NOT reported");
   }
   // …and the fixture above must be reported ONLY by that arm. If the label ever
   // drifts back inside the window this check goes red, because a fixture whose
@@ -421,10 +480,7 @@ export function selfTestByteShape() {
     const divisionLine = lines.findIndex((l) => l.includes("usedJSHeapSize"));
     const labelLine = lines.findIndex((l) => l.includes("memoryInfo.used"));
     if (labelLine - divisionLine <= WINDOW) {
-      return {
-        ok: false,
-        why: "the named-binding fixture puts its unit label inside WINDOW, so the windowed arm catches it and the binding arm is never exercised",
-      };
+      fail("the named-binding fixture puts its unit label inside WINDOW, so the windowed arm catches it and the binding arm is never exercised");
     }
   }
   // THE CALL-ARGUMENT ARM: no adjacent label, no unit-named binding — the
@@ -433,22 +489,19 @@ export function selfTestByteShape() {
     "              ? ` · ${formatGb(lora.size_bytes / 1024 ** 3)}`",
   ].join("\n");
   if (byteShapeIn(callArgument).length === 0) {
-    return {
-      ok: false,
-      why: "a byte division handed to a unit-named callee (`formatGb(bytes / 1024 ** 3)`) was NOT reported",
-    };
+    fail("a byte division handed to a unit-named callee (`formatGb(bytes / 1024 ** 3)`) was NOT reported");
   }
   // …and the exponent spellings are covered by the divisor pattern itself.
   for (const exponent of ["1024 ** 2", "1024 ** 3", "1024 ** 4"]) {
     const line = `const label = \`\${(bytes / ${exponent}).toFixed(1)} GB\`;`;
     if (byteShapeIn(line).length === 0) {
-      return { ok: false, why: `the \`${exponent}\` spelling was NOT reported` };
+      fail(`the \`${exponent}\` spelling was NOT reported`);
     }
   }
   // A call whose name has no unit is not a formatter by this arm.
   const plainCallee = ["scheduleUpload(file.size / 1024);"].join("\n");
   if (byteShapeIn(plainCallee).length !== 0) {
-    return { ok: false, why: "a call with no unit in its name was reported" };
+    fail("a call with no unit in its name was reported");
   }
   // THE IDENTIFIER-DIVISOR ARM: the base is bound to a name first, so the
   // literal-only divisor pattern never sees the division at all.
@@ -465,10 +518,7 @@ export function selfTestByteShape() {
     "}",
   ].join("\n");
   if (byteShapeIn(identifierDivisorBody).length === 0) {
-    return {
-      ok: false,
-      why: "a body dividing by an identifier bound to 1024 was NOT reported",
-    };
+    fail("a body dividing by an identifier bound to 1024 was NOT reported");
   }
   // …and the same bound base with no unit anywhere is chunking, not display.
   const identifierDivisorChunking = [
@@ -477,10 +527,7 @@ export function selfTestByteShape() {
     "for (let i = 0; i < chunks; i += 1) upload(i);",
   ].join("\n");
   if (byteShapeIn(identifierDivisorChunking).length !== 0) {
-    return {
-      ok: false,
-      why: "an identifier divisor with no unit evidence anywhere was reported",
-    };
+    fail("an identifier divisor with no unit evidence anywhere was reported");
   }
   // …and an identifier bound to something that is NOT a byte base is not a
   // divisor at all.
@@ -489,7 +536,7 @@ export function selfTestByteShape() {
     "const rate = `${(events / perMinute).toFixed(1)} B`;",
   ].join("\n");
   if (byteShapeIn(unrelatedDivisor).length !== 0) {
-    return { ok: false, why: "a non-byte identifier divisor was reported" };
+    fail("a non-byte identifier divisor was reported");
   }
   // THE DECIMAL (SI) FAMILY: the same capability with the wrong divisor. Each
   // of these was a LIVE twin the binary-only rule returned zero findings on.
@@ -502,20 +549,61 @@ export function selfTestByteShape() {
   ];
   for (const body of decimalBodies) {
     if (byteShapeIn(body.join("\n")).length === 0) {
-      return {
-        ok: false,
-        why: `a DECIMAL byte body was NOT reported: ${body[0].trim()}`,
-      };
+      fail(`a DECIMAL byte body was NOT reported: ${body[0].trim()}`);
+    }
+  }
+  // THE IDENTIFIER-BOUND DECIMAL DIVISOR (added 2026-09-12, third review). This
+  // is the fixture the FALSE HEADER CLAIM cost us: `byteBaseNames` carried its
+  // own binary-only list, so a base bound to an SI literal was never a divisor
+  // name and `/ MB` was not a division at all — while the header two hundred
+  // lines above said every arm inherits the decimal widening. Only this arm can
+  // report it: delete the shared literal from `byteBaseNames` and this goes red
+  // on its own.
+  const decimalIdentifierDivisor = [
+    "const MB = 1e6;",
+    "const label = `${(bytes / MB).toFixed(1)} MB`;",
+  ].join("\n");
+  if (byteShapeIn(decimalIdentifierDivisor).length === 0) {
+    fail("an identifier bound to a DECIMAL base (`const MB = 1e6`) was not treated as a byte divisor — `byteBaseNames` has stopped reading BYTE_BASE_LITERAL");
+  }
+  // …and the same for the underscore-spelled binary base, which a bound name
+  // also reaches only through the shared literal.
+  const underscoreIdentifierDivisor = [
+    "const MIB = 1_048_576;",
+    "const label = `${(bytes / MIB).toFixed(1)} MiB`;",
+  ].join("\n");
+  if (byteShapeIn(underscoreIdentifierDivisor).length === 0) {
+    fail("an identifier bound to `1_048_576` was not treated as a byte divisor");
+  }
+  // THE SPELLINGS CLOSED BY THE 2026-09-12 REVIEW. Each is one alternative in
+  // the ONE shared literal; each is pinned so a future edit to that literal
+  // cannot quietly drop one.
+  const closedSpellings = [
+    'const a = `${(bytes / 1_048_576).toFixed(1)} MB`;',
+    'const b = `${(bytes / 1_073_741_824).toFixed(1)} GB`;',
+    'const c = `${(bytes / 1e+6).toFixed(1)} MB`;',
+    'const d = `${(bytes / 1000.0).toFixed(1)} KB`;',
+    'const e = `${(bytes / 1024.0).toFixed(1)} KB`;',
+    'const f = `${(bytes / 2 ** 20).toFixed(1)} MB`;',
+    'const g = `${(bytes / 10 ** 6).toFixed(1)} MB`;',
+    'const h = `${(bytes / Math.pow(2, 20)).toFixed(1)} MB`;',
+    'const i2 = `${(bytes / Math.pow(10, 6)).toFixed(1)} MB`;',
+  ];
+  for (const line of closedSpellings) {
+    if (byteShapeIn(line).length === 0) {
+      fail(`a CLOSED byte-base spelling was NOT reported: ${line}`);
     }
   }
   // …and the decimal widening must not swallow the neighbouring literals. A
-  // divisor of 10000 is not 1000, and 10240 is not 1024.
+  // divisor of 10000 is not 1000, 10240 is not 1024, and `1000.5` is neither —
+  // the optional trailing `.0` must not become "any decimal".
   const neighbouringDivisors = [
     'const pct = `${(n / 10000).toFixed(1)} B`;',
     'const blocks = `${(n / 10240).toFixed(1)} KB`;',
+    'const odd = `${(n / 1000.5).toFixed(1)} KB`;',
   ].join("\n");
   if (byteShapeIn(neighbouringDivisors).length !== 0) {
-    return { ok: false, why: "a divisor of 10000 / 10240 was read as 1000 / 1024" };
+    fail("a divisor of 10000 / 10240 / 1000.5 was read as a byte base");
   }
   // …and a COMMENT is not a division. `// 1000px` puts a slash immediately
   // before the number; a resizable-panel test comment was reported for it.
@@ -525,7 +613,7 @@ export function selfTestByteShape() {
     '  // it and must clamp. Sizes are in %, bytes are not involved. B.',
   ].join("\n");
   if (byteShapeIn(commentedNumber).length !== 0) {
-    return { ok: false, why: "a whole-line `//` comment was read as a division" };
+    fail("a whole-line `//` comment was read as a division");
   }
   // …and the same thing TRAILING a real code line, which `isCommentLine` does
   // not see because the line is code. Only the `(?<![/*])` lookbehind stops the
@@ -534,10 +622,7 @@ export function selfTestByteShape() {
     "  const half = bounds.width * 0.075; // 1000px minimum, sizes in %, not B.",
   ].join("\n");
   if (byteShapeIn(trailingComment).length !== 0) {
-    return {
-      ok: false,
-      why: "a TRAILING `//` comment's own slash was read as a division operator",
-    };
+    fail("a TRAILING `//` comment's own slash was read as a division operator");
   }
   // …and PROSE EXPLAINING A COLLAPSE is not a twin. This is verbatim the note
   // written onto matrx-local's `gbToBytes` to correct a backwards claim, and
@@ -552,10 +637,7 @@ export function selfTestByteShape() {
     " */",
   ].join("\n");
   if (byteShapeIn(explanatoryProse).length !== 0) {
-    return {
-      ok: false,
-      why: "a comment block explaining a collapse was reported as a byte formatter",
-    };
+    fail("a comment block explaining a collapse was reported as a byte formatter");
   }
 
   // THE MULTIPLY-FROM-GB ARM: the body takes GIGABYTES and scales UP, so no
@@ -567,10 +649,7 @@ export function selfTestByteShape() {
     "}",
   ].join("\n");
   if (byteShapeIn(multiplyFromGb).length === 0) {
-    return {
-      ok: false,
-      why: "a GB-input body that MULTIPLIES (`${Math.round(gb * 1024)} MB`) was NOT reported",
-    };
+    fail("a GB-input body that MULTIPLIES (`${Math.round(gb * 1024)} MB`) was NOT reported");
   }
   // …and THE ASYMMETRY THAT MAKES THE RULE USABLE still holds, in both of its
   // halves. A capacity ceiling computed from a VARIABLE fails the operand test
@@ -584,10 +663,7 @@ export function selfTestByteShape() {
     "const buffer = chunkCount * 1000;",
   ].join("\n");
   if (byteShapeIn(variableCeilings).length !== 0) {
-    return {
-      ok: false,
-      why: "a capacity ceiling scaled from a variable was reported as a formatter",
-    };
+    fail("a capacity ceiling scaled from a variable was reported as a formatter");
   }
   // …and the ADOPTED conversion feeding the package formatter is not a twin:
   // `formatFileSize(gb * 1024 ** 3)` is the collapsed form this rule asks for.
@@ -597,10 +673,7 @@ export function selfTestByteShape() {
     "  const formatRam = (mb: number) => formatFileSize(mb * 1024 * 1024);",
   ].join("\n");
   if (byteShapeIn(adoptedConversion).length !== 0) {
-    return {
-      ok: false,
-      why: "the adopted `formatFileSize(gb * 1024 ** 3)` conversion was reported as a twin",
-    };
+    fail("the adopted `formatFileSize(gb * 1024 ** 3)` conversion was reported as a twin");
   }
 
   // A bound name that is NEVER rendered beside a unit is arithmetic, not a
@@ -610,7 +683,9 @@ export function selfTestByteShape() {
     "for (let i = 0; i < chunks; i += 1) upload(i);",
   ].join("\n");
   if (byteShapeIn(boundButUnlabelled).length !== 0) {
-    return { ok: false, why: "a bound name never rendered beside a unit was reported" };
+    fail("a bound name never rendered beside a unit was reported");
   }
-  return { ok: true };
+  return failures.length > 0
+    ? { ok: false, why: failures.join("\n      ⋅ ") }
+    : { ok: true };
 }
