@@ -7,11 +7,13 @@ import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import TasksContextSidebar from "@/features/tasks/components/TasksContextSidebar";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { loadTaskUserStateThunk } from "@/features/tasks/redux/thunks";
 import { useNowMinuteTick } from "@/features/tasks/hooks/useNowMinuteTick";
 import TaskListPane from "@/features/tasks/components/TaskListPane";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
+import { TasksWorkbenchHome } from "@/features/tasks/components/TasksWorkbenchHome";
+import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
 
 const MobileTasksView = dynamic(
   () => import("@/features/tasks/components/mobile/MobileTasksView"),
@@ -45,6 +47,7 @@ export function TasksDesktopShell({
   cookieName,
 }: TasksDesktopShellProps) {
   const dispatch = useAppDispatch();
+  const selectedTaskId = useAppSelector(selectSelectedTaskId);
 
   // ~60s tick so snooze expiry / overdue windows resurface tasks without an
   // unrelated store change (D129).
@@ -102,7 +105,7 @@ export function TasksDesktopShell({
 
           <Panel id="editor" minSize="30%">
             <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-              <TaskEditor />
+              {selectedTaskId ? <TaskEditor /> : <TasksWorkbenchHome />}
             </div>
           </Panel>
         </ClientGroup>
