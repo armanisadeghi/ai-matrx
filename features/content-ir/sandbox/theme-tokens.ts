@@ -30,6 +30,27 @@
 /** Selectors whose custom properties land on the root element. */
 const ROOT_SELECTOR = /(^|[\s,])(:root|html)\b|\.dark\b|\[data-theme/;
 
+/**
+ * The custom-property names one declaration block holds.
+ *
+ * `item(i)` is the spec API and is what every browser we ship to has; some
+ * DOM implementations expose only the indexed properties. Reading both means
+ * this module states the same truth in a test environment as in a browser,
+ * rather than passing in one and silently collecting nothing in the other.
+ */
+function customPropertyNames(declaration: CSSStyleDeclaration): string[] {
+    const names: string[] = [];
+    const indexed = declaration as unknown as Record<number, string | undefined>;
+    for (let i = 0; i < declaration.length; i += 1) {
+        const name =
+            typeof declaration.item === "function"
+                ? declaration.item(i)
+                : indexed[i];
+        if (typeof name === "string" && name.startsWith("--")) names.push(name);
+    }
+    return names;
+}
+
 function collectFromRuleList(
     rules: CSSRuleList,
     into: Set<string>,
@@ -45,11 +66,7 @@ function collectFromRuleList(
         const styleRule = rule as CSSStyleRule;
         if (typeof styleRule.selectorText !== "string") continue;
         if (!ROOT_SELECTOR.test(styleRule.selectorText)) continue;
-        const declaration = styleRule.style;
-        for (let i = 0; i < declaration.length; i += 1) {
-            const name = declaration.item(i);
-            if (name.startsWith("--")) into.add(name);
-        }
+        for (const name of customPropertyNames(styleRule.style)) into.add(name);
     }
 }
 
@@ -71,10 +88,8 @@ export function collectThemeTokenNames(doc: Document): string[] {
         }
         if (rules) collectFromRuleList(rules, names, 0);
     }
-    const inline = doc.documentElement.style;
-    for (let i = 0; i < inline.length; i += 1) {
-        const name = inline.item(i);
-        if (name.startsWith("--")) names.add(name);
+    for (const name of customPropertyNames(doc.documentElement.style)) {
+        names.add(name);
     }
     return Array.from(names).sort();
 }

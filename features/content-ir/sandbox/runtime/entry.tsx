@@ -111,9 +111,19 @@ class FrameErrorBoundary extends React.Component<
  * `@layer base` declarations, so a framed component resolves every
  * `hsl(var(--…))` to the same string the unframed one does.
  *
- * `color-scheme` is set too: it is what makes the browser's own widgets (form
- * controls, scrollbars, the default caret) match the theme. Without it a dark
- * page would show light-chrome inputs inside the frame and nowhere else.
+ * `color-scheme` is set too — it is what makes the browser's own widgets (form
+ * controls, the default caret) match the theme — but it is set on the MOUNT
+ * ELEMENT, never on `<html>`.
+ *
+ * 🚨 WHY NOT ON THE ROOT. `color-scheme: dark` on the root element makes the
+ * browser paint the document's CANVAS with its own dark colour (#121212), and
+ * a canvas is opaque. The frame is deliberately transparent so whatever
+ * surface the host placed it on — a card, a chat bubble, the page — shows
+ * through and the component looks the same framed as unframed. Measured in
+ * headless Chrome 2026-09-12: with it on the root the framed column read
+ * rgb(18,18,18) where the page read rgb(39,39,42) — the one visible parity
+ * break in the whole dark-mode set. On the mount element the widgets still
+ * inherit the scheme and the canvas stays transparent.
  */
 function applyTheme(
     tokens: Record<string, string> | undefined,
@@ -127,12 +137,13 @@ function applyTheme(
             root.style.setProperty(name, value);
         }
     }
+    const mount = document.getElementById("root");
     if (colorScheme === "dark") {
         root.classList.add("dark");
-        root.style.colorScheme = "dark";
+        if (mount) mount.style.colorScheme = "dark";
     } else if (colorScheme === "light") {
         root.classList.remove("dark");
-        root.style.colorScheme = "light";
+        if (mount) mount.style.colorScheme = "light";
     }
 }
 

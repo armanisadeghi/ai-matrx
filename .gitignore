@@ -145,3 +145,6 @@ types/database.types.ts.staging
 # artifact would be a silently wrong renderer — always regenerate, never commit.
 public/kind-sandbox.js
 public/kind-sandbox.css
+
+# S3 sandbox parity witness — regenerate with `pnpm witness:kind-sandbox-parity`
+public/__kind-sandbox-*.html

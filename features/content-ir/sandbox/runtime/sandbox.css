@@ -24,7 +24,14 @@ body {
     margin: 0;
     padding: 0;
     background: transparent;
-    overflow: visible;
+    /* THE FRAME NEVER SCROLLS ITSELF (plan §1.8). It reports its content
+       height and the host makes the iframe exactly that tall, so there is
+       nothing to scroll; while a resize is in flight, or when the host is
+       holding the frame at its height ceiling, `hidden` keeps a scrollbar from
+       appearing inside a component that has none of its own. What the ceiling
+       hides is never hidden silently — the host shows a control naming the
+       real height. */
+    overflow: hidden;
 }
 
 /* A refused URL (safe-url.ts) is visible, never silent. */
