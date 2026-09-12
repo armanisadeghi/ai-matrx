@@ -57,7 +57,9 @@ DECLARE
         ELSIF v_scan_token = '''' THEN
           v_scan_pos := v_scan_pos + 1;
           WHILE v_scan_pos <= v_scan_len LOOP
-            IF substr(v_function_source, v_scan_pos, 1) = '''' THEN
+            IF ascii(substr(v_function_source, v_scan_pos, 1)) = 92 THEN
+              v_scan_pos := v_scan_pos + 2;
+            ELSIF substr(v_function_source, v_scan_pos, 1) = '''' THEN
               IF substr(v_function_source, v_scan_pos + 1, 1) = '''' THEN v_scan_pos := v_scan_pos + 2; ELSE v_scan_pos := v_scan_pos + 1; EXIT; END IF;
             ELSE
               v_scan_pos := v_scan_pos + 1;
@@ -70,7 +72,7 @@ DECLARE
             v_scan_pos := v_scan_pos + 1;
           ELSE
             v_scan_next_pos := position(v_scan_dollar_delimiter IN substr(v_function_source, v_scan_pos + length(v_scan_dollar_delimiter)));
-            v_scan_pos := CASE WHEN v_scan_next_pos = 0 THEN v_scan_len + 1 ELSE v_scan_pos + length(v_scan_dollar_delimiter) + v_scan_next_pos - 1 END;
+            v_scan_pos := CASE WHEN v_scan_next_pos = 0 THEN v_scan_len + 1 ELSE v_scan_pos + length(v_scan_dollar_delimiter) + v_scan_next_pos - 1 + length(v_scan_dollar_delimiter) END;
           END IF;
         ELSIF v_scan_token = '"' THEN
           v_scan_next_pos := v_scan_pos + 1;
@@ -81,7 +83,7 @@ DECLARE
               v_scan_next_pos := v_scan_next_pos + 1;
             END IF;
           END LOOP;
-          v_scan_tokens := array_append(v_scan_tokens, lower(replace(substr(v_function_source, v_scan_pos + 1, v_scan_next_pos - v_scan_pos - 2), '""', '"')));
+          v_scan_tokens := array_append(v_scan_tokens, replace(substr(v_function_source, v_scan_pos + 1, v_scan_next_pos - v_scan_pos - 2), '""', '"'));
           v_scan_pos := v_scan_next_pos;
         ELSIF v_scan_token ~ '[A-Za-z_]' THEN
           v_scan_next_pos := v_scan_pos + 1;

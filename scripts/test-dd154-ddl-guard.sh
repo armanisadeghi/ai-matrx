@@ -131,6 +131,15 @@ const rows=fs.readFileSync(mapfile,'utf8').trim().split('\n').map(x=>x.split('|'
 if(rows.length!==9) throw new Error('strict map count != 9');
 let sql=fs.readFileSync(src,'utf8');
 const original=sql;
+const lexicalEmitterProbes = [
+  "IF ascii(substr(v_function_source, v_scan_pos, 1)) = 92 THEN",
+  "v_scan_pos + length(v_scan_dollar_delimiter) + v_scan_next_pos - 1 + length(v_scan_dollar_delimiter)",
+  "array_append(v_scan_tokens, replace(substr(v_function_source, v_scan_pos + 1, v_scan_next_pos - v_scan_pos - 2), '\"\"', '\"'))",
+];
+for (const probe of lexicalEmitterProbes) {
+  if (!original.includes(probe)) throw new Error(`missing DD154 lexer emitter probe: ${probe}`);
+}
+console.log(`PASS lexer emitter probes: ${lexicalEmitterProbes.length} corrected lexical semantics present`);
 for(const [ref,oid] of rows){
   const from=`${old.get(ref)}::oid`, to=`${oid}::oid`;
   const count=sql.split(from).length-1;
@@ -214,6 +223,12 @@ SELECT pg_temp.record_reject('comment-separated direct assignment', 'CREATE FUNC
 SELECT pg_temp.record_allow('single-quoted assignment text', 'CREATE FUNCTION public.dd154_single_quote_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM ''NEW.organization_id := gen_random_uuid()''; RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('dollar-quoted assignment text', 'CREATE FUNCTION public.dd154_dollar_quote_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$NEW.organization_id := gen_random_uuid()$q$; RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('nested-comment assignment text', 'CREATE FUNCTION public.dd154_nested_comment_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN /* outer /* NEW.organization_id := gen_random_uuid() */ outer */ RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('assignment after dollar string', $case$CREATE FUNCTION public.dd154_after_dollar() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$ordinary text$q$; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_reject('assignment after escape string', $case$CREATE FUNCTION public.dd154_after_escape() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM E'it\'s text'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_reject('assignment after line comment', $case$CREATE FUNCTION public.dd154_after_line_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN -- an ordinary comment
+NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_allow('assignment to distinct quoted field', $case$CREATE FUNCTION public.dd154_distinct_quoted() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW."Organization_Id" := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_allow('validation equality comparison', $case$CREATE FUNCTION public.dd154_validate_equality() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN IF NEW.organization_id = OLD.organization_id THEN RETURN NEW; END IF; RAISE EXCEPTION 'organization changed'; END $b$$case$);
 SELECT pg_temp.record_allow('validation function', 'CREATE FUNCTION public.dd154_validate() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN IF NEW.organization_id IS NULL THEN RAISE EXCEPTION ''organization required''; END IF; RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('validation with explanatory assignment comment', 'CREATE FUNCTION public.dd154_validate_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN -- Never do NEW.organization_id := gen_random_uuid();
 IF NEW.organization_id IS NULL THEN RAISE EXCEPTION ''organization required''; END IF; RETURN NEW; END $b$');
@@ -245,6 +260,13 @@ SELECT pg_temp.record_allow('validation trigger explicit insert', $$INSERT INTO 
 
 TABLE review_results;
 SELECT 'TOTAL',count(*)::text,'failures',count(*) FILTER (WHERE NOT pass)::text FROM review_results;
+DO $verify$
+BEGIN
+  IF (SELECT count(*) FROM review_results) <> 28
+     OR EXISTS (SELECT 1 FROM review_results WHERE pass IS NOT TRUE) THEN
+    RAISE EXCEPTION 'DD154 executable matrix failed or did not run all 28 cases';
+  END IF;
+END $verify$;
 SQL
 
 echo "ARTIFACT_RESULTS=/tmp/dd154-review-results.txt"
