@@ -16,6 +16,13 @@ import type { ModeSignal } from "../study/dashboard/nextActions";
 import type { PlanWithDays, StudyPlanBlockRow } from "../study/planner/types";
 import type { StudyGoalRow } from "../study/types";
 
+export type EducationSnapshotLane =
+  "library" | "kits" | "plan" | "mastery" | "goals" | "streak";
+
+export interface EducationSnapshotLaneStatus {
+  state: "ready" | "unavailable";
+}
+
 /** One thing worth doing right now, with a reason and a time estimate. */
 export interface NextAction {
   key: string;
@@ -29,6 +36,8 @@ export interface NextAction {
 
 /** Everything the home knows about one learner, gathered in a single pass. */
 export interface EducationSnapshot {
+  /** A failed read is never represented as an empty collection or zero metric. */
+  availability: Record<EducationSnapshotLane, EducationSnapshotLaneStatus>;
   library: {
     /** Total artifacts the learner owns (`mine` scope). */
     total: number;

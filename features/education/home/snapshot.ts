@@ -30,7 +30,11 @@ import { planService } from "../study/service/planService";
 import { studyService } from "../study/service/studyService";
 import type { StudyPlanBlockRow } from "../study/planner/types";
 import type { StudyGoalRow } from "../study/types";
-import type { EducationSnapshot, NextAction } from "./types";
+import type {
+  EducationSnapshot,
+  EducationSnapshotLaneStatus,
+  NextAction,
+} from "./types";
 
 /** How many artifacts / kits the home shows before deferring to the library. */
 const RECENT_LIMIT = 8;
@@ -155,14 +159,30 @@ function countsFor(
   return out;
 }
 
-/** Log and swallow — one dead lane must never cost the learner the page. */
-async function lane<T>(name: string, run: () => Promise<T>, fallback: T): Promise<T> {
+interface LaneResult<T> {
+  data: T;
+  status: EducationSnapshotLaneStatus;
+}
+
+/** One dead lane must never cost the learner the page or impersonate an empty account. */
+async function lane<T>(
+  name: string,
+  run: () => Promise<T>,
+  fallback: T,
+): Promise<LaneResult<T>> {
   try {
-    return await run();
+    return { data: await run(), status: { state: "ready" } };
   } catch (error) {
     console.error(`[education/home] ${name} failed:`, error);
-    return fallback;
+    return { data: fallback, status: { state: "unavailable" } };
   }
+}
+
+function resultStatus(
+  laneStatus: EducationSnapshotLaneStatus,
+  error: unknown,
+): EducationSnapshotLaneStatus {
+  return error ? { state: "unavailable" } : laneStatus;
 }
 
 export async function loadEducationSnapshot(
@@ -174,35 +194,52 @@ export async function loadEducationSnapshot(
     page: 1,
   };
 
-  const [recentPage, facets, kits, planRes, masteryRes, goalsRes, streakRes] =
-    await Promise.all([
-      lane(
-        "library page",
-        () =>
-          fetchEducationLibraryPage(listQuery, {
-            sort: "created",
-            direction: "desc",
-            favoritesFirst: false,
-            pageSize: RECENT_LIMIT,
-          }),
-        { rows: [], total: 0 },
-      ),
-      lane("library facets", () => fetchEducationLibraryFacets(listQuery), {
-        byKind: {},
-      }),
-      lane("kits", () => listKits(), []),
-      lane("plan", () => planService.getActivePlan(), { data: null, error: null }),
-      lane("mastery", () => studyService.listAllMastery(), {
-        data: [],
-        error: null,
-      }),
-      lane("goals", () => studyService.listGoals({ status: "active" }), {
-        data: [],
-        error: null,
-      }),
-      lane("streak", () => studyService.getStreak(), { data: null, error: null }),
-    ]);
+  const [
+    recentPageLane,
+    facetsLane,
+    kitsLane,
+    planLane,
+    masteryLane,
+    goalsLane,
+    streakLane,
+  ] = await Promise.all([
+    lane(
+      "library page",
+      () =>
+        fetchEducationLibraryPage(listQuery, {
+          sort: "created",
+          direction: "desc",
+          favoritesFirst: false,
+          pageSize: RECENT_LIMIT,
+        }),
+      { rows: [], total: 0 },
+    ),
+    lane("library facets", () => fetchEducationLibraryFacets(listQuery), {
+      byKind: {},
+    }),
+    lane("kits", () => listKits(), []),
+    lane("plan", () => planService.getActivePlan(), {
+      data: null,
+      error: null,
+    }),
+    lane("mastery", () => studyService.listAllMastery(), {
+      data: [],
+      error: null,
+    }),
+    lane("goals", () => studyService.listGoals({ status: "active" }), {
+      data: [],
+      error: null,
+    }),
+    lane("streak", () => studyService.getStreak(), { data: null, error: null }),
+  ]);
 
+  const recentPage = recentPageLane.data;
+  const facets = facetsLane.data;
+  const kits = kitsLane.data;
+  const planRes = planLane.data;
+  const masteryRes = masteryLane.data;
+  const goalsRes = goalsLane.data;
+  const streakRes = streakLane.data;
   const mastery = masteryRes.data ?? [];
   const goals = goalsRes.data ?? [];
   const plan = planRes.data ?? null;
@@ -215,6 +252,18 @@ export async function loadEducationSnapshot(
     : (todayEntry?.blocks ?? []).filter((b) => b.status === "pending");
 
   return {
+    availability: {
+      library:
+        recentPageLane.status.state === "unavailable" ||
+        facetsLane.status.state === "unavailable"
+          ? { state: "unavailable" }
+          : { state: "ready" },
+      kits: kitsLane.status,
+      plan: resultStatus(planLane.status, planRes.error),
+      mastery: resultStatus(masteryLane.status, masteryRes.error),
+      goals: resultStatus(goalsLane.status, goalsRes.error),
+      streak: resultStatus(streakLane.status, streakRes.error),
+    },
     library: {
       total: recentPage.total,
       recent: recentPage.rows,
@@ -233,6 +282,12 @@ export async function loadEducationSnapshot(
       totalWeak: modes.reduce((sum, m) => sum + m.weak, 0),
       hasStudied: mastery.some((m) => (m.attempt_count ?? 0) > 0),
     },
-    nextActions: buildNextActions({ todayBlocks, isRestDay, modes, goals, now }),
+    nextActions: buildNextActions({
+      todayBlocks,
+      isRestDay,
+      modes,
+      goals,
+      now,
+    }),
   };
 }

@@ -31,9 +31,14 @@
 // Adding a block is an entry in BLOCKS below. Never a new page variant.
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
+import {
+  MetricNavigation,
+  type MetricNavigationItem,
+} from "@/components/navigation/MetricNavigation";
+import { EDU_TOOL_NAV } from "../lib/education-nav";
 import { EDU_TOOLS } from "../data/tools";
 import { eduHref } from "../constants";
 import { EducationHubSurface } from "../components/landing/EducationHubSurface";
@@ -60,7 +65,12 @@ const BLOCKS: HomeBlock[] = [
     // artifact this disappears — the permanent home for creating is the header
     // and the "Create kit" action, not a hero that never goes away.
     signal: (s) =>
-      s.library.total === 0 && s.kits.total === 0 && !s.study.hasStudied
+      s.availability.library.state === "ready" &&
+      s.availability.kits.state === "ready" &&
+      s.availability.mastery.state === "ready" &&
+      s.library.total === 0 &&
+      s.kits.total === 0 &&
+      !s.study.hasStudied
         ? 1000
         : null,
     render: () => <StartHereBlock key="start-here" />,
@@ -70,6 +80,14 @@ const BLOCKS: HomeBlock[] = [
     // A plan for today, work due, an active streak, or a goal — anything that
     // means "you are mid-effort" outranks everything else on the page.
     signal: (s) => {
+      if (
+        s.availability.plan.state !== "ready" ||
+        s.availability.mastery.state !== "ready" ||
+        s.availability.goals.state !== "ready" ||
+        s.availability.streak.state !== "ready"
+      ) {
+        return null;
+      }
       const hasCommitment =
         s.study.todayBlocks.length > 0 ||
         s.study.isRestDay ||
@@ -85,7 +103,10 @@ const BLOCKS: HomeBlock[] = [
     id: "kits",
     // The hero for a sparse account: one kit and no study history still fills
     // the page with something that is unmistakably theirs.
-    signal: (s) => (s.kits.recent.length > 0 ? 800 : null),
+    signal: (s) =>
+      s.availability.kits.state === "ready" && s.kits.recent.length > 0
+        ? 800
+        : null,
     render: (s) => (
       <KitsBlock key="kits" kits={s.kits.recent} total={s.kits.total} />
     ),
@@ -95,63 +116,84 @@ const BLOCKS: HomeBlock[] = [
     // Only once there is enough banked work that choosing between modes is a
     // real decision — below that it just restates Study Today.
     signal: (s) =>
-      s.study.totalDue + s.study.totalWeak >= 5 ? 700 : null,
+      s.availability.mastery.state === "ready" &&
+      s.study.totalDue + s.study.totalWeak >= 5
+        ? 700
+        : null,
     render: (s) => <DueByModeBlock key="due-by-mode" snapshot={s} />,
   },
   {
     id: "recent",
-    signal: (s) => (s.library.recent.length > 0 ? 600 : null),
+    signal: (s) =>
+      s.availability.library.state === "ready" && s.library.recent.length > 0
+        ? 600
+        : null,
     render: (s) => <RecentBlock key="recent" snapshot={s} />,
   },
 ];
 
 /**
- * The study tools, shown only once the learner has something to point them at.
- *
- * A brand-new account gets three doors (StartHereBlock), not sixteen tools: a
- * first-time learner cannot evaluate sixteen options, and showing them all is
- * how a first session ends in a closed tab. Data-driven off `EDU_TOOLS` — the
- * same registry the marketing hub reads — so a newly shipped tool appears here
- * the moment its entry flips to `live`, and never from a second hand-kept list.
+ * The complete tool registry. `EDU_TOOLS` remains the source of truth while
+ * `EDU_TOOL_NAV` supplies the shell-safe icon projection guarded for parity.
  */
-function ToolsStrip() {
-  const live = EDU_TOOLS.filter((tool) => tool.status === "live");
+function toolNavigation(snapshot: EducationSnapshot): MetricNavigationItem[] {
+  const toolBySlug = new Map(EDU_TOOLS.map((tool) => [tool.slug, tool]));
+  return EDU_TOOL_NAV.map((entry) => {
+    const tool = toolBySlug.get(entry.slug);
+    const isLibrary = entry.slug === "flashcards";
+    const isKits = entry.slug === "kits";
+    const laneState = isLibrary
+      ? snapshot.availability.library.state
+      : isKits
+        ? snapshot.availability.kits.state
+        : "ready";
+    const value = isLibrary
+      ? snapshot.library.byKind.fc_set
+      : isKits
+        ? snapshot.kits.total
+        : undefined;
+    return {
+      key: entry.slug,
+      label: entry.label,
+      href: eduHref(entry.slug),
+      iconName: entry.iconName,
+      description:
+        value === undefined
+          ? entry.description
+          : isLibrary
+            ? "Flashcard artifacts you own"
+            : "Study kits you own",
+      ...(value !== undefined ? { value, state: laneState } : {}),
+      availability:
+        tool?.status === "coming-soon" || tool?.status === "planned"
+          ? "coming-soon"
+          : "ready",
+    };
+  });
+}
+
+function AvailabilityNotice({
+  snapshot,
+  onRetry,
+}: {
+  snapshot: EducationSnapshot;
+  onRetry: () => void;
+}) {
+  const unavailable = Object.entries(snapshot.availability)
+    .filter(([, status]) => status.state === "unavailable")
+    .map(([lane]) => lane);
+  if (unavailable.length === 0) return null;
+
   return (
-    <section>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-foreground">Every way to study</h2>
-        <Link
-          href="/education/start"
-          className="inline-flex items-center gap-1 text-xs text-primary"
-        >
-          Create a kit
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-        {live.map((tool) => {
-          const Icon = tool.icon;
-          return (
-            <Link
-              key={tool.slug}
-              href={eduHref(tool.slug)}
-              className="group flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/40"
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <Icon className="h-4 w-4" />
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-foreground">
-                  {tool.name}
-                </span>
-                <span className="block truncate text-[11px] text-muted-foreground">
-                  {tool.tagline}
-                </span>
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm">
+      <p className="text-muted-foreground">
+        {unavailable.join(", ")} data couldn&apos;t load. Counts and empty
+        states are hidden until it is available.
+      </p>
+      <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+        <RefreshCw className="h-3.5 w-3.5" />
+        Retry
+      </Button>
     </section>
   );
 }
@@ -171,6 +213,7 @@ function HomeSkeleton() {
 
 export function EducationHome() {
   const [snapshot, setSnapshot] = useState<EducationSnapshot | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -211,20 +254,16 @@ export function EducationHome() {
       cancelled = true;
       setStudyTodaySnapshot(null);
     };
-  }, []);
+  }, [reloadKey]);
 
   const blocks = snapshot
     ? BLOCKS.map((block) => ({ block, signal: block.signal(snapshot) }))
-        .filter((entry): entry is { block: HomeBlock; signal: number } =>
-          entry.signal !== null,
+        .filter(
+          (entry): entry is { block: HomeBlock; signal: number } =>
+            entry.signal !== null,
         )
         .sort((a, b) => b.signal - a.signal)
     : [];
-
-  // Sixteen tools are noise on an empty account and useful on a full one — the
-  // same rule every block follows, applied to the strip.
-  const showTools =
-    !!snapshot && (snapshot.library.total > 0 || snapshot.kits.total > 0);
 
   return (
     <main className="h-full overflow-y-auto bg-textured pb-safe">
@@ -236,8 +275,15 @@ export function EducationHome() {
           <HomeSkeleton />
         ) : (
           <>
+            <MetricNavigation
+              label="Education tools"
+              items={toolNavigation(snapshot)}
+            />
+            <AvailabilityNotice
+              snapshot={snapshot}
+              onRetry={() => setReloadKey((key) => key + 1)}
+            />
             {blocks.map(({ block }) => block.render(snapshot))}
-            {showTools && <ToolsStrip />}
           </>
         )}
       </div>
