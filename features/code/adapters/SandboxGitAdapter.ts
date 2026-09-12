@@ -13,6 +13,25 @@
  */
 
 import type { SandboxAccessResponse } from "@/types/sandbox";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  parseDaemonGitDiff,
+  parseDaemonGitLog,
+  parseDaemonGitMutation,
+  parseDaemonGitStatus,
+  resolveSandboxClonePath,
+  sanitizeGitErrorDetail,
+  type GitDiff,
+  type GitLogEntry,
+  type GitStatusResponse,
+} from "./SandboxGitWireFormat";
+
+export type {
+  GitDiff,
+  GitFileChange,
+  GitLogEntry,
+  GitStatusResponse,
+} from "./SandboxGitWireFormat";
 
 // `cwd` is repeated on every call because the daemon scopes git operations to
 // a directory inside the sandbox. Defaults to /home/agent.
@@ -20,36 +39,6 @@ import type { SandboxAccessResponse } from "@/types/sandbox";
 // keeping more specific shapes (e.g. `{path?: string}`) intact when
 // callers pass them explicitly.
 type WithCwd<T = object> = T & { cwd?: string };
-
-export interface GitFileChange {
-  path: string;
-  status: string; // "M", "A", "D", "??", etc. — matches `git status --porcelain` codes
-}
-
-export interface GitStatusResponse {
-  branch: string;
-  ahead: number;
-  behind: number;
-  staged: GitFileChange[];
-  unstaged: GitFileChange[];
-  untracked: string[];
-  conflicted: string[];
-}
-
-export interface GitLogEntry {
-  sha: string;
-  short: string;
-  author: string;
-  date: string;
-  subject: string;
-}
-
-export interface GitDiff {
-  path: string | null;
-  /** Unified diff text. */
-  text: string;
-  staged: boolean;
-}
 
 export interface GitCloneRequest {
   url: string;
@@ -87,26 +76,54 @@ export class SandboxGitAdapter {
     this.id = `sandbox-git:${opts.instanceId}`;
   }
 
-  private async post<T>(path: string, body: unknown): Promise<T> {
-    const resp = await fetch(
-      `/api/sandbox/${this.opts.instanceId}/git/${path}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      },
-    );
-    if (!resp.ok) {
-      const txt = await resp.text().catch(() => resp.statusText);
-      throw new Error(`git ${path} failed (${resp.status}): ${txt}`);
+  private captureFailure(path: string, error: unknown, status?: number): void {
+    try {
+      const message = sanitizeGitErrorDetail(
+        error instanceof Error ? error.message : String(error),
+      );
+      captureError({
+        source: "api-http",
+        relation: `sandbox git ${path}`,
+        code: "sandbox_git_failed",
+        message,
+        status,
+        details: message,
+        raw: { path, status },
+      });
+    } catch {
+      // Diagnostics must never make a workspace action fail differently.
     }
-    return resp.json();
   }
 
-  private async get<T>(
+  private async post(path: string, body: unknown): Promise<unknown> {
+    let status: number | undefined;
+    try {
+      const resp = await fetch(
+        `/api/sandbox/${this.opts.instanceId}/git/${path}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      status = resp.status;
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => resp.statusText);
+        throw new Error(
+          `git ${path} failed (${resp.status}): ${sanitizeGitErrorDetail(txt)}`,
+        );
+      }
+      return await resp.json();
+    } catch (error) {
+      this.captureFailure(path, error, status);
+      throw error;
+    }
+  }
+
+  private async get(
     path: string,
     query?: Record<string, string | undefined>,
-  ): Promise<T> {
+  ): Promise<unknown> {
     const qs = query
       ? "?" +
         Object.entries(query)
@@ -117,51 +134,72 @@ export class SandboxGitAdapter {
           )
           .join("&")
       : "";
-    const resp = await fetch(
-      `/api/sandbox/${this.opts.instanceId}/git/${path}${qs}`,
-    );
-    if (!resp.ok) {
-      const txt = await resp.text().catch(() => resp.statusText);
-      throw new Error(`git ${path} failed (${resp.status}): ${txt}`);
+    let status: number | undefined;
+    try {
+      const resp = await fetch(
+        `/api/sandbox/${this.opts.instanceId}/git/${path}${qs}`,
+      );
+      status = resp.status;
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => resp.statusText);
+        throw new Error(
+          `git ${path} failed (${resp.status}): ${sanitizeGitErrorDetail(txt)}`,
+        );
+      }
+      return await resp.json();
+    } catch (error) {
+      this.captureFailure(path, error, status);
+      throw error;
     }
-    return resp.json();
   }
 
   // ── Repo lifecycle ─────────────────────────────────────────────────────
 
-  clone(req: GitCloneRequest): Promise<{ ok: boolean; path: string }> {
-    return this.post("clone", req);
+  async clone(req: GitCloneRequest): Promise<{ ok: true; path: string }> {
+    parseDaemonGitMutation(await this.post("clone", req), "clone");
+    return { ok: true, path: resolveSandboxClonePath(req.dest) };
   }
 
   // ── Read ───────────────────────────────────────────────────────────────
 
-  status(opts?: WithCwd): Promise<GitStatusResponse> {
-    return this.get("status", { cwd: opts?.cwd });
+  async status(opts?: WithCwd): Promise<GitStatusResponse> {
+    return parseDaemonGitStatus(await this.get("status", { cwd: opts?.cwd }));
   }
 
-  diff(opts?: WithCwd<{ path?: string; staged?: boolean }>): Promise<GitDiff> {
-    return this.get("diff", {
+  async diff(opts?: WithCwd<{ path?: string; staged?: boolean }>): Promise<GitDiff> {
+    return parseDaemonGitDiff(await this.get("diff", {
       cwd: opts?.cwd,
       path: opts?.path,
       staged: opts?.staged ? "true" : undefined,
-    });
+    }), opts ?? {});
   }
 
-  log(opts?: WithCwd<{ limit?: number }>): Promise<GitLogEntry[]> {
-    return this.get("log", {
+  async log(opts?: WithCwd<{ limit?: number }>): Promise<GitLogEntry[]> {
+    return parseDaemonGitLog(await this.get("log", {
       cwd: opts?.cwd,
       limit: opts?.limit ? String(opts.limit) : undefined,
-    });
+    }));
   }
 
   // ── Mutate ─────────────────────────────────────────────────────────────
 
-  add(opts: WithCwd<{ paths: string[] }>): Promise<{ ok: boolean }> {
-    return this.post("add", opts);
+  async add(opts: WithCwd<{ paths: string[] }>): Promise<{ ok: true; output: string }> {
+    // The daemon passes `paths` directly to `git add`; `--` prevents a
+    // filename beginning with `-` from being interpreted as a git flag.
+    return parseDaemonGitMutation(
+      await this.post("add", { ...opts, paths: ["--", ...opts.paths] }),
+      "add",
+    );
   }
 
-  commit(opts: WithCwd<GitCommitRequest>): Promise<{ sha: string }> {
-    return this.post("commit", opts);
+  async commit(opts: WithCwd<GitCommitRequest>): Promise<{ ok: true; output: string }> {
+    const author = opts.author
+      ? `${opts.author.name} <${opts.author.email}>`
+      : undefined;
+    return parseDaemonGitMutation(
+      await this.post("commit", { ...opts, author }),
+      "commit",
+    );
   }
 
   push(
@@ -170,24 +208,32 @@ export class SandboxGitAdapter {
       branch?: string;
       force_with_lease?: boolean;
     }> = {},
-  ): Promise<{ ok: boolean }> {
-    return this.post("push", opts);
+  ): Promise<{ ok: true; output: string }> {
+    return this.post("push", opts).then((payload) =>
+      parseDaemonGitMutation(payload, "push"),
+    );
   }
 
   pull(
     opts: WithCwd<{ remote?: string; branch?: string; rebase?: boolean }> = {},
-  ): Promise<{ ok: boolean }> {
-    return this.post("pull", opts);
+  ): Promise<{ ok: true; output: string }> {
+    return this.post("pull", opts).then((payload) =>
+      parseDaemonGitMutation(payload, "pull"),
+    );
   }
 
-  branch(opts: WithCwd<GitBranchAction>): Promise<{ ok: boolean }> {
-    return this.post("branch", opts);
+  branch(opts: WithCwd<GitBranchAction>): Promise<{ ok: true; output: string }> {
+    return this.post("branch", opts).then((payload) =>
+      parseDaemonGitMutation(payload, "branch"),
+    );
   }
 
   stash(
     opts: WithCwd<GitStashAction>,
-  ): Promise<{ ok: boolean; entries?: string[] }> {
-    return this.post("stash", opts);
+  ): Promise<{ ok: true; output: string }> {
+    return this.post("stash", opts).then((payload) =>
+      parseDaemonGitMutation(payload, "stash"),
+    );
   }
 
   // ── Credentials ────────────────────────────────────────────────────────
