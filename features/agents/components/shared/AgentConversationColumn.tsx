@@ -192,8 +192,7 @@ export function AgentConversationColumn({
     deferColdMarkdown && coldHistoryUnlockedDisplayId !== displayId;
   const isColdBottomSurface =
     deferColdMarkdown && messageCount > 0 && !showLanding;
-  const isLiveRequest =
-    streamPhase !== "idle" && streamPhase !== "complete";
+  const isLiveRequest = streamPhase !== "idle" && streamPhase !== "complete";
   const shouldPinColdScroll =
     isColdBottomSurface && isColdHistoryRevealLocked && !isLiveRequest;
 
@@ -244,7 +243,10 @@ export function AgentConversationColumn({
   // transcript; it must never reassert itself after the request settles.
   useEffect(() => {
     if (!deferColdMarkdown || !hasMessages || !isLiveRequest) return;
-    setColdHistoryUnlockedDisplayId(displayId);
+    const release = window.setTimeout(() => {
+      setColdHistoryUnlockedDisplayId(displayId);
+    }, 0);
+    return () => window.clearTimeout(release);
   }, [deferColdMarkdown, displayId, hasMessages, isLiveRequest]);
 
   useLayoutEffect(() => {
@@ -274,7 +276,11 @@ export function AgentConversationColumn({
     };
     const releaseOnUpwardTouch = (event: TouchEvent) => {
       const currentY = event.touches[0]?.clientY;
-      if (touchStartY !== null && currentY !== undefined && currentY > touchStartY) {
+      if (
+        touchStartY !== null &&
+        currentY !== undefined &&
+        currentY > touchStartY
+      ) {
         release();
       }
     };
@@ -289,8 +295,12 @@ export function AgentConversationColumn({
       }
     };
     scrollEl.addEventListener("wheel", releaseOnUpwardWheel, { passive: true });
-    scrollEl.addEventListener("touchstart", rememberTouchStart, { passive: true });
-    scrollEl.addEventListener("touchmove", releaseOnUpwardTouch, { passive: true });
+    scrollEl.addEventListener("touchstart", rememberTouchStart, {
+      passive: true,
+    });
+    scrollEl.addEventListener("touchmove", releaseOnUpwardTouch, {
+      passive: true,
+    });
     scrollEl.addEventListener("keydown", releaseOnUpwardKey);
     // Any pointerdown inside the transcript is a deliberate interaction —
     // scrollbar drag, text selection, or clicking a "Worked for 26s" fold open.

@@ -149,6 +149,9 @@ export function AgentConversationDisplay({
   // prepends, or the initial load of an existing conversation.
   const prevLastUserKeyRef = useRef<string | undefined>(undefined);
   const didMountRef = useRef(false);
+  const lastUserIsPending = messages.some(
+    (message) => message.id === lastUserKey && message._clientStatus === "pending",
+  );
   useEffect(() => {
     const prev = prevLastUserKeyRef.current;
     prevLastUserKeyRef.current = lastUserKey;
@@ -158,13 +161,15 @@ export function AgentConversationDisplay({
       didMountRef.current = true;
       return;
     }
-    if (lastUserKey && lastUserKey !== prev) {
+    // A user record discovered by an older-page fetch is history, not a
+    // submission. Only the optimistic user message may move this anchor.
+    if (lastUserIsPending && lastUserKey && lastUserKey !== prev) {
       lastUserRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
     }
-  }, [lastUserKey]);
+  }, [lastUserKey, lastUserIsPending]);
 
   const scrollSnapshotRef = useRef<{
     firstKey: string | undefined;
