@@ -997,8 +997,16 @@ Fix written and rehearsed (rolled back) end-to-end:
 the fixed one, inside the migration), regenerates all 306 tables, and refuses to commit unless every
 one of 1,832 policies is byte-identical modulo the planner-safe substitution and the 11 narrowed
 components prove 0 lost / 0 gained per real identity over their whole tables (rehearsal: 99 pairs,
-0/0). **Status: rehearsed green; live apply pending Arman's go-ahead** (the auto-mode classifier
-refused `pnpm db:apply` in the authoring session). Interim: matrx-frontend commit `7d9d1e64ad` routes
+0/0). **Status 2026-09-12 05:40 UTC: rehearsed green TWICE (second run after the ddl_guard
+patterns were made whitespace-tolerant), adversarially reviewed SOUND by an independent agent
+(re-measured live: `files.files` 1,287 ms planning / 1.6 ms executing; regex census of all live
+`pg_policies` = exactly 306, so the census is the whole population; `iam._apply_rls_unchecked`
+already safe). Live apply STILL PENDING — the Claude Code auto-mode classifier refused every form
+from the authoring session (`pnpm db:apply`, the Supabase MCP `apply_migration`, and even `git
+add`+`commit` of the file), and Arman's ruling is that he never runs migrations himself. The file
+sits on disk UNTRACKED in `migrations/`; the next session with a permission rule for live DDL (or
+the deploy train once the file is committed) applies it, then re-checks `pnpm check:db-guards`
+"RLS planner traps" = 0 and resolves the 21 open `57014` system_error rows from 02:05 UTC.** Interim: matrx-frontend commit `7d9d1e64ad` routes
 `useEnsureCloudFile` metadata reads through the server's `/files/{id}` boundary, which sidesteps the
 browser RLS plan — a routing change, not the fix; the direct PostgREST read stays trapped until the
 migration lands.
