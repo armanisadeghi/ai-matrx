@@ -165,12 +165,14 @@ interface TriggerRow {
   evtname: string;
   evtenabled: string;
   fn: string;
+  prosecdef: boolean;
 }
 
 const QUERY = `
   select t.evtname,
          t.evtenabled::text as evtenabled,
-         t.evtfoid::regprocedure::text as fn
+         t.evtfoid::regprocedure::text as fn,
+         p.prosecdef
   from pg_catalog.pg_event_trigger t
   join pg_catalog.pg_proc p on p.oid = t.evtfoid
   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
@@ -534,6 +536,49 @@ async function main(): Promise<number> {
     );
   }
 
+  // ── FIFTH DETECTOR — DD-151 ───────────────────────────────────────────────
+  // 🚨 A `SECURITY DEFINER` EVENT-TRIGGER FUNCTION DOES NOT FIRE AT ALL WHEN
+  //    THE SESSION IS A PostgREST SESSION (`session_user = authenticator`) —
+  //    which is EVERY `pnpm db:apply`. A `SECURITY INVOKER` one fires normally
+  //    on the same statement. Proven live 2026-09-12 by flipping that one bit
+  //    on an otherwise identical pair of event triggers and re-sending the same
+  //    payload through the same door.
+  //
+  //    It cost fifteen days of the §6d-4 definer-grant guard (db-rules §6d-4)
+  //    and both entity_types registry sentinels being silently absent from
+  //    every migration this repo applied — silently, because the guards are
+  //    fail-open and a guard that never runs looks exactly like a guard with
+  //    nothing to do.
+  //
+  //    The sanctioned shape: the event-trigger function is SECURITY INVOKER and
+  //    delegates the privileged work to a SECURITY DEFINER `_impl` function.
+  //    Plain SECURITY DEFINER functions are unaffected — `execute_admin_query`,
+  //    the door this very check reads through, is one.
+  //
+  //    Absolute: no baseline, no allowlist. Migration:
+  //    migrations/dd151_event_trigger_guards_fire_on_the_sanctioned_path.sql
+  const definerTriggers = rows.filter((r) => r.prosecdef);
+  console.log("");
+  console.log(
+    `${C.bold}Event-trigger security mode${C.reset} ${C.dim}(DD-151: a SECURITY DEFINER event trigger does not fire on the migration path)${C.reset}`,
+  );
+  if (!definerTriggers.length) {
+    console.log(
+      `${TAG.ok}Every platform event-trigger function is SECURITY INVOKER, so every one fires on \`pnpm db:apply\`.`,
+    );
+  } else {
+    for (const r of definerTriggers) {
+      console.log(
+        `  ${TAG.fail}${r.evtname} ${C.dim}→ ${r.fn}${C.reset} is ${C.red}SECURITY DEFINER${C.reset} — it does NOT fire on any PostgREST session`,
+      );
+    }
+    console.log(
+      `${TAG.fail}${definerTriggers.length} event trigger(s) are dead on the sanctioned migration path and will never say so.` +
+        ` Make the event-trigger function SECURITY INVOKER and move the privileged work into a SECURITY DEFINER \`_impl\`` +
+        ` function it calls — see migrations/dd151_event_trigger_guards_fire_on_the_sanctioned_path.sql.`,
+    );
+  }
+
   let trapRows: PlannerTrapRow[];
   try {
     const { data, error } = await supabase.rpc("execute_admin_query", {
@@ -586,10 +631,10 @@ async function main(): Promise<number> {
     return 2;
   }
 
-  if (!missing.length && !disabled.length) {
+  if (!missing.length && !disabled.length && !definerTriggers.length) {
     console.log("");
     console.log(
-      `${TAG.ok}All ${EXPECTED.length} platform event triggers are bound and enabled.`,
+      `${TAG.ok}All ${EXPECTED.length} platform event triggers are bound, enabled and SECURITY INVOKER.`,
     );
     return (traps > 0 || undeclaredExposures > 0 || unprotected > 0) && strict
       ? 1
@@ -600,6 +645,11 @@ async function main(): Promise<number> {
   for (const e of [...missing, ...disabled]) {
     console.log(
       `${TAG.fail}${e.name} is ${missing.includes(e) ? "NOT BOUND" : "DISABLED"} — ${e.why}`,
+    );
+  }
+  for (const r of definerTriggers) {
+    console.log(
+      `${TAG.fail}${r.evtname} is SECURITY DEFINER — bound, enabled, and silently skipped on every \`pnpm db:apply\` (DD-151).`,
     );
   }
   console.log(
