@@ -32,6 +32,17 @@
  * That is deliberately conservative: a table failing 3 but passing 1+2 is still
  * misconfigured and one config change from live.
  *
+ * 🚨 THE BLIND SPOT THIS FILE HAD FOR 18 DAYS, closed 2026-09-12. Layer 1 reads
+ * `pg_policy`. **A table with RLS switched OFF has no policy rows at all**, so
+ * the widest-open shape in Postgres — no RLS, plus an `anon` grant — produced
+ * ZERO rows here and passed silently. It was not theoretical:
+ * `public._schema_migration_slot_grandfather` sat that way with SELECT, INSERT,
+ * UPDATE *and* DELETE granted to `anon`, 41 rows, in the PostgREST-exposed
+ * `public` schema. Deleting those rows disarms `migration_slot_guard.sql`. A
+ * detector that can only see policies cannot see a table that has none, so
+ * `UNPROTECTED_RELATION_QUERY` below is the second arm: RLS off + any client-role
+ * grant = a finding, with its own short allowlist. Fix in aidream migration 0646.
+ *
  * Full write-up: common-docs/systems/platform/access/POLICY_OVERLAP.md
  */
 
@@ -178,5 +189,103 @@ export function classifyExposures(live: LiveExposure[]): {
     undeclared: rows.filter((r) => r.status === "undeclared"),
     tracked: rows.filter((r) => r.status === "tracked"),
     stale: PUBLIC_EXPOSURE_ALLOWED.filter((e) => !liveKeys.has(exposureKey(e))),
+  };
+}
+
+/* ===========================================================================
+ * THE SECOND ARM — RELATIONS WITH NO RLS AT ALL.
+ *
+ * Everything above reasons about POLICIES. This part reasons about their
+ * ABSENCE, which is the wider hole and the one nothing was watching: a table
+ * with `relrowsecurity = false` has no `pg_policy` rows, so no amount of
+ * policy-reading finds it however open it is. If `anon` or `authenticated`
+ * holds a privilege on such a table and the schema is reachable, every row is
+ * readable — and every DELETE is executable — by whoever holds the publishable
+ * key that ships in the frontend bundle.
+ *
+ * The bar for the allowlist here is HIGHER than for a policy exposure, because
+ * there is no predicate doing any work: the grant is the whole security model.
+ * =========================================================================== */
+
+export interface UnprotectedRelation {
+  /** `schema.table` */
+  relation: string;
+  /** Comma-separated privileges the client roles hold, e.g. "anon:SELECT". */
+  client_grants: string;
+  write_open: boolean;
+}
+
+export interface UnprotectedDeclaration {
+  relation: string;
+  why: string;
+  defect?: string;
+}
+
+/**
+ * Declared "RLS off on purpose" relations. Empty is the correct steady state —
+ * a row here says a table's entire protection is its GRANT list and somebody
+ * decided that on purpose. `public._schema_migration_slot_grandfather` is NOT
+ * listed: it is being closed by aidream migration 0646, which is why this
+ * detector is red until that migration is applied.
+ */
+const UNPROTECTED_ALLOWED: ReadonlyArray<UnprotectedDeclaration> = [];
+
+/** RLS disabled + a client role holding any privilege + the schema reachable. */
+export const UNPROTECTED_RELATION_QUERY = `
+  select n.nspname || '.' || c.relname as relation,
+         (select string_agg(g.grantee || ':' || g.privilege_type, ', ' order by g.grantee, g.privilege_type)
+            from information_schema.role_table_grants g
+           where g.table_schema = n.nspname
+             and g.table_name = c.relname
+             and g.grantee in ('anon','authenticated')) as client_grants,
+         (has_table_privilege('anon', c.oid, 'INSERT')
+          or has_table_privilege('anon', c.oid, 'UPDATE')
+          or has_table_privilege('anon', c.oid, 'DELETE')) as write_open
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where c.relkind in ('r','p')
+    and not c.relrowsecurity
+    and n.nspname not in ('pg_catalog','information_schema','extensions','graphql','graphql_public',
+                          'realtime','storage','vault','auth','net','cron','pgsodium',
+                          'supabase_migrations','supabase_functions')
+    and has_schema_privilege('anon', n.nspname, 'USAGE')
+    and (has_table_privilege('anon', c.oid, 'SELECT')
+      or has_table_privilege('anon', c.oid, 'INSERT')
+      or has_table_privilege('anon', c.oid, 'UPDATE')
+      or has_table_privilege('anon', c.oid, 'DELETE'))
+  order by write_open desc, 1
+`;
+
+export interface ClassifiedUnprotected extends UnprotectedRelation {
+  status: ExposureStatus;
+  why?: string;
+  defect?: string;
+}
+
+export function classifyUnprotected(live: UnprotectedRelation[]): {
+  rows: ClassifiedUnprotected[];
+  undeclared: ClassifiedUnprotected[];
+  tracked: ClassifiedUnprotected[];
+  stale: UnprotectedDeclaration[];
+} {
+  const declared = new Map(UNPROTECTED_ALLOWED.map((d) => [d.relation, d]));
+  const liveNames = new Set(live.map((l) => l.relation));
+
+  const rows: ClassifiedUnprotected[] = live.map((l) => {
+    const d = declared.get(l.relation);
+    if (!d) return { ...l, status: "undeclared" as const };
+    return {
+      ...l,
+      status: (d.defect ? "tracked" : "declared") as ExposureStatus,
+      why: d.why,
+      defect: d.defect,
+    };
+  });
+
+  return {
+    rows,
+    undeclared: rows.filter((r) => r.status === "undeclared"),
+    tracked: rows.filter((r) => r.status === "tracked"),
+    stale: UNPROTECTED_ALLOWED.filter((d) => !liveNames.has(d.relation)),
   };
 }

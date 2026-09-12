@@ -15,7 +15,7 @@ import { PublicExposureConsole } from "@/features/admin/public-exposure/PublicEx
 export const metadata: Metadata = {
   title: "Public exposure",
   description:
-    "Every table a signed-out visitor can reach, judged against the one declaration list — undeclared exposure fails the release gate.",
+    "Every unconditional anon policy a signed-out visitor can reach, judged against the one declaration list — undeclared exposure fails the release gate. Relations with RLS switched off carry no policy and are checked by the release gate's second arm.",
 };
 
 export default function PublicExposurePage() {
