@@ -336,6 +336,15 @@ CREATE TEMP TABLE _dd136_identities ON COMMIT DROP AS
 SELECT om.user_id AS admin_user,
        (SELECT om2.user_id FROM iam.organization_member om2
          WHERE om2.organization_id = om.organization_id AND om2.role = 'member'
+           -- "Plain member" must be plain across the whole system. A member of
+           -- this organization may own/administer another one; that identity is
+           -- SUPPOSED to lose its unaudited admin-only reads there, so using it
+           -- as a bystander makes proof C reject the intended fix.
+           AND NOT EXISTS (
+             SELECT 1 FROM iam.organization_member elevated
+             WHERE elevated.user_id = om2.user_id
+               AND elevated.role IN ('owner', 'admin')
+           )
          ORDER BY om2.user_id LIMIT 1) AS member_user,
        om.organization_id AS org_id,
        (SELECT count(*) FROM chat.conversation c
