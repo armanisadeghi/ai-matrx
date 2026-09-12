@@ -363,22 +363,25 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
  * door to the vault, not a pretend editor (a control is absent or honest).
  */
 function SecretField({ knob }: { knob: ScopedKnob }) {
-  const state = knob.secret?.state ?? "not_set";
+  const state = knob.secret?.state ?? "unknown";
   const vaultKey = knob.secret?.vault_key ?? null;
   const isSet = state === "set";
+  const isUnknown = state === "unknown";
   return (
     <div className="flex w-56 flex-col items-end gap-1.5">
       <div className="flex items-center gap-2">
         <Badge variant={isSet ? "default" : "outline"} className="gap-1 text-xs">
           {isSet ? <ShieldCheck className="h-3 w-3" /> : <ShieldOff className="h-3 w-3" />}
-          {isSet ? "Set" : "Not set"}
+          {isSet ? "Set" : isUnknown ? "State unavailable" : "Not set"}
         </Badge>
         <Button size="sm" variant="outline" asChild>
-          <Link href="/vault">{isSet ? "Rotate in the vault" : "Set in the vault"}</Link>
+          <Link href="/vault">{isSet ? "Rotate in the vault" : "Check in the vault"}</Link>
         </Button>
       </div>
       <p className="text-right text-[11px] text-muted-foreground">
-        {vaultKey ? (
+        {isUnknown ? (
+          <>The platform register does not include vault state. Check Vault before changing this secret.</>
+        ) : vaultKey ? (
           <>
             Held in the vault as <code>{vaultKey}</code>. The value is never shown or stored here.
           </>
