@@ -152,3 +152,6 @@ public/__kind-sandbox-*.html
 # S5 rendering-parity sweep output (screenshots + report) — regenerate with
 # `pnpm sweep:kind-sandbox-parity`.
 .kind-sandbox-parity/
+
+# Playwright run artifacts are reproducible local output.
+/test-results/

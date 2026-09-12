@@ -155,6 +155,11 @@ sales page after signing in.
   destination. The page can resend through `auth.resend`, recover expired
   links, or change email. [`pending-signup.ts`](./pending-signup.ts) keeps the
   address in a 24-hour HttpOnly display cookie; it never grants authority.
+- **Pending auth buttons never reflow.** The shared
+  [`SubmitButton`](../../components/submit-button.tsx) keeps the original label
+  and icon in layout, hides them visually, centers one spinner, disables repeat
+  submission, maintains a 44px touch target, and exposes `pendingText` only as
+  screen-reader status copy.
 
 ## Tests
 
@@ -168,6 +173,13 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-09-12** — Auth submit buttons now preserve their idle dimensions while
+  pending, show one centered spinner instead of variable-length visible status
+  copy, disable repeat submission, maintain a 44px touch target, and retain an
+  assistive-technology status.
+  The shared primitive covers login, signup, recovery, verification resend, and
+  sign-out; its regression guard is `components/submit-button.test.tsx`.
 
 - **2026-09-11** — DD-091 fix round 1 (independent verification): the invited
   address no longer travels in any URL. `?email=` is gone from every invitation
