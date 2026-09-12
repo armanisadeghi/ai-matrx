@@ -173,10 +173,41 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - `components/masterworks/AuditionDialog.tsx` — "Compare to the original" (the Audition). Opens
   prefilled with a finished run's own output when launched from the verdict, empty from the card.
   Streams `POST /masterworks/audition`; verdict event `masterwork_audition_verdict`.
+- `components/masterworks/AuditionDialog.tsx` also hosts the second exam as a tab:
+  `components/masterworks/UnfoldingAuditionPanel.tsx` — "A case it has never seen". Up to two
+  Masterworks of this Rulebook sit sealed cases under the case oracle (`mode: "unfolding"` on the
+  same audition endpoint; terminal event `masterwork_audition_unfolding_verdict`, own durable-run
+  surface `audition_unfolding` so a tab never rejoins the other tab's run), and the per-case table
+  shows each arm's diagnosis / dangerous branch / steps / cost / risk beside the headline.
+  Parsing + the past-score read: `audition/unfoldingRuns.ts`.
+- `unfolding/` — the sealed-case lane's client half (contract:
+  `../../../common-docs/systems/masterwork/unfolding-case-contract.md` §3/§5).
+  `sealedCases.ts` detects the `masterwork.case.disclose` node in a definition (reading BOTH
+  `type` and `data.spec_type`), resolves the Rulebook from `metadata.built_from_rulebook`, and
+  lists the held-out timeline corpus rows through `readAllRows` selecting **label + source_meta
+  only** — THE WITHHOLDING LAW means the sealed timeline never enters the browser.
+  `SealedCasePicker.tsx` is the picker + its honest empty/error states; `caseDisclosures.ts` is
+  the pure reader that finds the oracle's `case_disclosure` values in a run (emissions AND stored
+  outputs) and hands the surface the latest cumulative ledger.
+- The two unfolding kinds live in the kind registry, not here:
+  `features/content-ir/kinds/masterwork-unfolding.ts` (`case_disclosure`, `unfolding_ruling`) with
+  ONE component each under `components/mardown-display/blocks/masterwork-unfolding/`. Every
+  surface that shows a ledger or a ruling renders through them.
 - `components/masterworks/MasterworkDriftDialog.tsx` — the rule-level drift answer over
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-12` — **The unfolding case reached the UI (trial 7, lane WS-D2).** A Masterwork whose
+  workflow carries a `masterwork.case.disclose` node is a DESK: `TryMasterworkBox` now offers that
+  Rulebook's sealed (held-out) cases — label and published date only, never the timeline or the
+  resolution — sends the chosen one as the `case_item_id` run input stamped `human`, and draws the
+  oracle's cumulative ledger live through the new `case_disclosure` kind component (the Expert's
+  own answers still arrive through the ONE existing interrupt path; no spinner-only state). The
+  desk's terminal `unfolding_ruling` has its own component. The Audition gained the "A case it has
+  never seen" tab: desks × sealed cases × an optional vanilla arm told everything at once, scored
+  into a per-case table plus the desk-beats-vanilla headline. Guards: `TryMasterworkBox.test.tsx`
+  (the picker appears with the node and never without it; the W15 and W33 tests stay green).
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
 
