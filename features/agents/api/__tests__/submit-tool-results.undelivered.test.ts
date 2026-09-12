@@ -73,7 +73,7 @@ function state() {
  */
 function harness(outcomes: Array<{ data?: unknown; error?: unknown }>) {
   const sent: unknown[] = [];
-  const dispatch = ((action: unknown): unknown => {
+  const dispatch = (action: unknown): unknown => {
     if (typeof action === "function") {
       return (action as (d: unknown, g: unknown, e: unknown) => unknown)(
         dispatch,
@@ -89,7 +89,7 @@ function harness(outcomes: Array<{ data?: unknown; error?: unknown }>) {
       );
     }
     return action;
-  }) as never;
+  };
   return { dispatch, sent };
 }
 
