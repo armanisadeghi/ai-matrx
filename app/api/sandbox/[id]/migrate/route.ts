@@ -12,6 +12,40 @@ import {
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
 
+type BusyDeferredMigration = {
+  status: "busy_deferred";
+  sandbox_id: string;
+  reason: string;
+};
+
+function busyDeferredMigration(
+  payload: unknown,
+  sandboxId: string,
+): BusyDeferredMigration | null {
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("detail" in payload)
+  ) {
+    return null;
+  }
+  const detail = payload.detail;
+  if (
+    typeof detail !== "object" ||
+    detail === null ||
+    detail.status !== "busy_deferred" ||
+    detail.sandbox_id !== sandboxId ||
+    typeof detail.reason !== "string"
+  ) {
+    return null;
+  }
+  return {
+    status: "busy_deferred",
+    sandbox_id: sandboxId,
+    reason: detail.reason,
+  };
+}
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -57,6 +91,21 @@ export async function POST(
     return NextResponse.json(
       { error: "This sandbox manager does not support in-place image updates yet." },
       { status: 501 },
+    );
+  }
+  const busyDeferred =
+    response.status === 409
+      ? busyDeferredMigration(payload, lookup.sandboxId)
+      : null;
+  if (busyDeferred) {
+    return NextResponse.json(
+      {
+        error:
+          "Sandbox is still in use. Wait for an idle gap before retrying. No update was made.",
+        status: busyDeferred.status,
+        details: busyDeferred,
+      },
+      { status: 409 },
     );
   }
   if (!response.ok) {
