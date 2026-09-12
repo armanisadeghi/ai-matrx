@@ -27,25 +27,12 @@ export interface ReferencePick {
 }
 
 /**
- * The common tier — the types shown first, by the names users know. This is
- * an opinion, so it is the CODE DEFAULT of an org knob (feature-knobs), not a
- * ceiling: "All types" always exposes the whole DB-driven pickable set.
- * Order is display order. Tokens the registry cannot list are skipped at
- * render time, never shown broken.
+ * The common tier — the types shown first, by the names users know — is an
+ * ORG OPINION, so it is not in this file: it is the knob
+ * `platform.reference_picker.common_types`, read through
+ * `useCommonReferenceTypes()`. "All types" always exposes the whole DB-driven
+ * pickable set, so the knob curates a shortcut and can never hide a type.
  */
-export const COMMON_REFERENCE_TYPES: readonly string[] = [
-  "conversation",
-  "note",
-  "task",
-  "project",
-  "file",
-  "udt_document",
-  "agent",
-  "dataset",
-  "workbook",
-  "transcript",
-  "url",
-];
 
 /**
  * Friendly names for the common tier where the registry label is not the
