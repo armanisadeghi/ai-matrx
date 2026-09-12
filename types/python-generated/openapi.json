@@ -739,6 +739,27 @@
         }
       }
     },
+    "/communications/voice/conversation-relay/readiness": {
+      "get": {
+        "tags": [
+          "Voice"
+        ],
+        "summary": "Conversation Relay Readiness",
+        "operationId": "conversation_relay_readiness_communications_voice_conversation_relay_readiness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationRelayRuntimeReadiness"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/agents/{agent_id}/warm": {
       "post": {
         "tags": [
@@ -122319,6 +122340,51 @@
           "expires_at"
         ],
         "title": "ConversationRelayPreparationResponse"
+      },
+      "ConversationRelayRuntimeReadiness": {
+        "properties": {
+          "public_route_mounted": {
+            "type": "boolean",
+            "title": "Public Route Mounted",
+            "default": true
+          },
+          "code_switch_enabled": {
+            "type": "boolean",
+            "title": "Code Switch Enabled"
+          },
+          "provider_switch_enabled": {
+            "type": "boolean",
+            "title": "Provider Switch Enabled"
+          },
+          "program_switch_enabled": {
+            "type": "boolean",
+            "title": "Program Switch Enabled"
+          },
+          "owned_number_routed": {
+            "type": "boolean",
+            "title": "Owned Number Routed"
+          },
+          "routing_configuration_ready": {
+            "type": "boolean",
+            "title": "Routing Configuration Ready"
+          },
+          "owner_beta_ready": {
+            "type": "boolean",
+            "title": "Owner Beta Ready"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code_switch_enabled",
+          "provider_switch_enabled",
+          "program_switch_enabled",
+          "owned_number_routed",
+          "routing_configuration_ready",
+          "owner_beta_ready"
+        ],
+        "title": "ConversationRelayRuntimeReadiness",
+        "description": "Secret-free runtime facts for the public owner-beta relay edge."
       },
       "ConversationWarmResponse": {
         "properties": {

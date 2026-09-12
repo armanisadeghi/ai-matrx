@@ -460,6 +460,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communications/voice/conversation-relay/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Conversation Relay Readiness */
+        get: operations["conversation_relay_readiness_communications_voice_conversation_relay_readiness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agents/{agent_id}/warm": {
         parameters: {
             query?: never;
@@ -53722,6 +53739,29 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /**
+         * ConversationRelayRuntimeReadiness
+         * @description Secret-free runtime facts for the public owner-beta relay edge.
+         */
+        ConversationRelayRuntimeReadiness: {
+            /**
+             * Public Route Mounted
+             * @default true
+             */
+            public_route_mounted?: boolean;
+            /** Code Switch Enabled */
+            code_switch_enabled: boolean;
+            /** Provider Switch Enabled */
+            provider_switch_enabled: boolean;
+            /** Program Switch Enabled */
+            program_switch_enabled: boolean;
+            /** Owned Number Routed */
+            owned_number_routed: boolean;
+            /** Routing Configuration Ready */
+            routing_configuration_ready: boolean;
+            /** Owner Beta Ready */
+            owner_beta_ready: boolean;
         };
         /**
          * ConversationWarmResponse
@@ -116304,6 +116344,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    conversation_relay_readiness_communications_voice_conversation_relay_readiness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRelayRuntimeReadiness"];
                 };
             };
         };
