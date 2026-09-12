@@ -18,8 +18,7 @@
 //     this row never decides what a control looks like, only what it says.
 
 import { useEffect, useState } from "react";
-import { Gavel, Lock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -251,49 +250,14 @@ export function KnobOverrideRow(props: {
         label={knob.label}
         description={knob.description}
         helpText={knob.ui.help}
-        error={inlineError ?? stateOnly?.reason ?? (!canWrite ? ladder?.cannotWriteBecause ?? "This setting cannot be changed here." : undefined)}
+        error={inlineError ?? (!canWrite ? ladder?.cannotWriteBecause ?? "This setting cannot be changed here." : undefined)}
         modified={system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere}
         controlLayout="wide"
         variant="inline"
       >
-      <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          {!hideKey && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Details</summary><code>{knob.full_key}</code></details>}
-          {isSetHere ? (
-            <Badge variant="default" className="text-xs">
-              Set here
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-xs">
-              Inherited from {inheritedFrom}
-            </Badge>
-          )}
-          {knob.out_of_range && (
-            <Badge variant="destructive" className="text-xs">
-              outside current range — clamped
-            </Badge>
-          )}
-          {knob.override_direction !== "any" && (
-            <Badge variant="outline" className="gap-1 text-xs">
-              <Lock className="h-3 w-3" />
-              {knob.override_direction.replace("_", " ")}
-            </Badge>
-          )}
-          {knob.bound_value !== null && knob.bound_value !== undefined && (
-            <Badge variant="outline" className="gap-1 text-xs">
-              <Gavel className="h-3 w-3" />
-              floor {formatKnobValue(knob.bound_value, knob.unit)}
-            </Badge>
-          )}
-        </div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          {system ? "Registered default" : "Platform default"} {formatKnobValue(system?.registeredDefault ?? knob.platform_default, knob.unit)}
-          <details className="mt-1"><summary className="cursor-pointer">Details</summary><span>{stateOnly ? `Current stored value: ${formatKnobValue(ladder?.value ?? knob.effective_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{knob.override_direction !== "any" ? `Policy: ${knob.override_direction.replace(/_/g, " ")}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}</span></details>
-        </div>
-      </div>
+      <div className="flex w-full max-w-60 flex-col items-end gap-1">
       {stateOnly ? (
-        <div className="text-sm text-muted-foreground">Not connected yet</div>
+        <div className="text-sm text-muted-foreground">This preference is not available yet.</div>
       ) : lockedForMe ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
@@ -307,9 +271,11 @@ export function KnobOverrideRow(props: {
           <KnobFieldControl
             knob={knob}
             ladder={fieldLadder}
+            identityKey={`${knob.full_key}:${organizationId}:${scopeKind}:${scopeId}`}
             disabled={busy || !canWrite}
             onCommit={(value) => write(value)}
           />
+          {(system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere) && (
           <Button
             size="sm"
             variant="ghost"
@@ -319,6 +285,7 @@ export function KnobOverrideRow(props: {
           >
             {system ? "Restore registered default" : "Inherit"}
           </Button>
+          )}
         </div>
       ) : (
       <div className="flex items-start gap-2">
@@ -354,6 +321,7 @@ export function KnobOverrideRow(props: {
         <Button size="sm" disabled={busy || draft.trim() === "" || !canWrite} onClick={() => void save()}>
           Save
         </Button>
+        {(system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere) && (
         <Button
           size="sm"
           variant="ghost"
@@ -363,8 +331,16 @@ export function KnobOverrideRow(props: {
         >
           {system ? "Restore registered default" : "Inherit"}
         </Button>
+        )}
       </div>
       )}
+      <p className="text-right text-[11px] text-muted-foreground">
+        {stateOnly ? "Not connected yet" : isSetHere ? "Set here" : `Inherited from ${inheritedFrom}`}
+      </p>
+      <details className="w-full text-right text-[11px] text-muted-foreground">
+        <summary className="cursor-pointer">Details</summary>
+        <p className="mt-1">{!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}</p>
+      </details>
     </div>
     </SettingsRow>
     </SettingAnchor>

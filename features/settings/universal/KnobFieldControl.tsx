@@ -69,6 +69,8 @@ export type KnobFieldControlProps = {
   disabled?: boolean;
   /** Commit a chosen value at this rung. `null` is never sent from here. */
   onCommit: (value: unknown) => void | boolean | Promise<void | boolean>;
+  /** Changes whenever this control points at a different persistence destination. */
+  identityKey?: string;
 };
 
 /** "not_set" → "Not set", "auto_apply" → "Auto apply". Never a raw slug. */
@@ -94,7 +96,7 @@ export function KnobFieldControl(props: KnobFieldControlProps) {
     case "secret":
       return <SecretField knob={knob} />;
     case "json":
-      return <JsonField {...props} />;
+      return <JsonField key={props.identityKey ?? knob.full_key} {...props} />;
     default:
       return null;
   }
@@ -181,13 +183,14 @@ function SegmentedField({ knob, ladder, disabled, onCommit }: KnobFieldControlPr
   const current = String(ladder.value ?? "");
 
   return (
-    <div className={cn("flex h-9 items-center", disabled && "pointer-events-none opacity-50")}>
+    <div className={cn("flex h-9 items-center", disabled && "opacity-50")}>
       <SegmentedControl
         aria-label={knob.label}
         size="sm"
         value={current}
         data={choices.map((choice) => ({ value: choice.value, label: choice.label }))}
         onValueChange={(next) => {
+          if (disabled) return;
           const chosen = choices.find((choice) => choice.value === next);
           if (chosen) void onCommit(chosen.raw);
         }}
@@ -213,13 +216,6 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
   const [dragging, setDragging] = useState<number | null>(null);
   const shown = dragging ?? settled;
 
-  const platformDefault =
-    typeof knob.platform_default === "number" ? knob.platform_default : null;
-  const defaultPct =
-    platformDefault !== null && span > 0 && platformDefault >= min && platformDefault <= max
-      ? ((platformDefault - min) / span) * 100
-      : null;
-
   return (
     <div className="w-56 space-y-1.5 py-1">
       <div className="flex items-baseline justify-between gap-2">
@@ -230,8 +226,7 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
           {formatKnobValue(min, knob.unit)} – {formatKnobValue(max, knob.unit)}
         </span>
       </div>
-      <div className="relative">
-        <Slider
+      <Slider
           aria-label={knob.label}
           size="sm"
           min={min}
@@ -244,21 +239,7 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
             setDragging(null);
             void onCommit(next[0]);
           }}
-        />
-        {defaultPct !== null && (
-          <span
-            aria-hidden
-            title={`Platform default ${formatKnobValue(platformDefault, knob.unit)}`}
-            className="pointer-events-none absolute -bottom-1 h-1.5 w-0.5 -translate-x-1/2 rounded-full bg-muted-foreground/70"
-            style={{ left: `${defaultPct}%` }}
-          />
-        )}
-      </div>
-      {defaultPct !== null && (
-        <p className="text-[11px] text-muted-foreground">
-          Platform default {formatKnobValue(platformDefault, knob.unit)} is marked on the track.
-        </p>
-      )}
+      />
     </div>
   );
 }

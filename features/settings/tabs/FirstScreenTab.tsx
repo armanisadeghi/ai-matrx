@@ -31,7 +31,6 @@ import { useSetting } from "../hooks/useSetting";
 import { THEME_MODE_OPTIONS, type ThemeMode } from "../agent-writable-settings";
 import { useUniversalSettings } from "../universal/UniversalSettingsContext";
 import {
-  OrganizationRungSection,
   RegistryCoverage,
   SettingsContextControls,
   UniversalSettingsRows,
@@ -127,7 +126,6 @@ export default function FirstScreenTab() {
 
       {ladderKnobs.length > 0 && <UniversalSettingsRows knobs={ladderKnobs} hideKey />}
 
-      {settings.editingContext !== "system" && <OrganizationRungSection />}
     </>
   );
 }
