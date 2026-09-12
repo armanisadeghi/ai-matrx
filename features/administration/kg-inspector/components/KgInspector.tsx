@@ -431,7 +431,8 @@ function EntitiesTab({
       ) : null}
 
       <div className="overflow-x-auto rounded-md border border-border">
-        <Table>
+        {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
+        <Table wrapperClassName="phone-stack">
           <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow>
               <TableHead className="min-w-[140px]">
@@ -574,10 +575,13 @@ function EntitiesTab({
                       })
                     }
                   >
-                    <TableCell>
+                    <TableCell data-phone="inline">
                       <KindChip kind={row.kind} />
                     </TableCell>
-                    <TableCell className="font-medium text-foreground">
+                    <TableCell
+                      className="font-medium text-foreground"
+                      data-phone="lead"
+                    >
                       {/* The entity has no route of its own (no `hrefFor` for a
                           kg entity — see the sweep handoff), but it DOES have a
                           destination inside this console: its mentions. The row
@@ -599,7 +603,11 @@ function EntitiesTab({
                         {row.canonical_name}
                       </button>
                     </TableCell>
-                    <TableCell className="text-sm text-foreground">
+                    <TableCell
+                      className="text-sm text-foreground"
+                      data-label="Organization"
+                      data-phone="inline"
+                    >
                       {!row.organization_id ? (
                         "—"
                       ) : orgNamesLoading &&
@@ -623,19 +631,31 @@ function EntitiesTab({
                         />
                       )}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell
+                      className="text-right tabular-nums"
+                      data-label="Mentions"
+                      data-phone="inline"
+                    >
                       {row.mention_count}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell
+                      className="text-right tabular-nums"
+                      data-label="Sources"
+                      data-phone="inline"
+                    >
                       {row.source_count}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label="Confidence" data-phone="inline">
                       <ConfidenceBar value={row.confidence_avg} />
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                    <TableCell
+                      className="whitespace-nowrap text-xs text-muted-foreground"
+                      data-label="Created"
+                      data-phone="inline"
+                    >
                       {new Date(row.created_at).toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" data-phone="actions">
                       <AppLink
                         href="/knowledge/graph"
                         onClick={(e) => e.stopPropagation()}
@@ -949,7 +969,8 @@ function EdgesTab({
       ) : null}
 
       <div className="overflow-x-auto rounded-md border border-border">
-        <Table>
+        {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
+        <Table wrapperClassName="phone-stack">
           <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow>
               <TableHead className="min-w-[220px]">
@@ -1026,7 +1047,7 @@ function EdgesTab({
               ) : (
                 displayRows.map((e) => (
                   <TableRow key={e.id}>
-                    <TableCell>
+                    <TableCell data-phone="lead">
                       <div className="flex items-center gap-2">
                         <KindChip kind={e.src_kind} />
                         <EdgeEndpointButton
@@ -1037,12 +1058,12 @@ function EdgesTab({
                         />
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label="Edge" data-phone="inline">
                       <Badge variant="outline" className="font-mono">
                         {e.kind}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label="Target" data-phone="inline">
                       <div className="flex items-center gap-2">
                         <KindChip kind={e.dst_kind} />
                         <EdgeEndpointButton
@@ -1053,7 +1074,11 @@ function EdgesTab({
                         />
                       </div>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell
+                      className="text-right tabular-nums"
+                      data-label="Weight"
+                      data-phone="inline"
+                    >
                       {e.weight === null ? "—" : e.weight.toFixed(2)}
                     </TableCell>
                   </TableRow>

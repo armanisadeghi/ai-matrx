@@ -234,7 +234,8 @@ export default function FeatureDocsTable({
       )}
 
       <ScrollArea className="flex-1">
-        <Table>
+        {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
+        <Table wrapperClassName="phone-stack">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               <TableHead className="min-w-[220px] align-top">
@@ -417,13 +418,20 @@ export default function FeatureDocsTable({
           <TableBody>
             {filtered.map((row) => (
               <TableRow key={row.id}>
-                <TableCell className="font-mono text-xs max-w-[280px] truncate">
+                <TableCell
+                  className="font-mono text-xs max-w-[280px] truncate"
+                  data-phone="lead"
+                >
                   {row.path}
                 </TableCell>
-                <TableCell className="text-sm max-w-[200px] truncate">
+                <TableCell
+                  className="text-sm max-w-[200px] truncate"
+                  data-label="Title"
+                  data-phone="inline"
+                >
                   {row.title ?? "—"}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="text-xs" data-label="Area" data-phone="inline">
                   {row.area ? (
                     <Badge variant="outline" className="text-[10px]">
                       {row.area}
@@ -432,10 +440,18 @@ export default function FeatureDocsTable({
                     "—"
                   )}
                 </TableCell>
-                <TableCell className="font-mono text-xs">
+                <TableCell
+                  className="font-mono text-xs"
+                  data-label="Slug"
+                  data-phone="inline"
+                >
                   {row.slug ?? "—"}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                <TableCell
+                  className="text-xs text-muted-foreground whitespace-nowrap"
+                  data-label="Synced"
+                  data-phone="inline"
+                >
                   {row.synced_at ? (
                     <span title={formatAbsoluteDate(row.synced_at)}>
                       {formatRelativeTime(row.synced_at)}
@@ -444,10 +460,14 @@ export default function FeatureDocsTable({
                     "—"
                   )}
                 </TableCell>
-                <TableCell className="text-xs tabular-nums">
+                <TableCell
+                  className="text-xs tabular-nums"
+                  data-label="Ver"
+                  data-phone="inline"
+                >
                   {row.version}
                 </TableCell>
-                <TableCell>
+                <TableCell data-phone="actions">
                   <Link
                     href={featureDocViewHref(row.path)}
                     target="_blank"

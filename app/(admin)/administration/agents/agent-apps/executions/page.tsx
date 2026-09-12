@@ -274,7 +274,7 @@ function ExecutionsTable({ active }: { active: boolean }) {
       <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="grid grid-cols-3 gap-3 min-w-[300px]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-[300px]">
               <Card>
                 <CardContent className="p-2">
                   <div className="text-xl font-bold">{stats.total}</div>
@@ -642,7 +642,7 @@ function ErrorsTable({ active }: { active: boolean }) {
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="grid grid-cols-3 gap-3 min-w-[300px]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-[300px]">
             <Card>
               <CardContent className="p-2">
                 <div className="text-xl font-bold">{stats.total}</div>

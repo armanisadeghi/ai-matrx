@@ -163,7 +163,7 @@ export function LeaveAdjustDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto">
+        <div className="max-h-[60dvh] space-y-4 overflow-y-auto">
           {/*
             §5's ONE balance component, so the admin sees the same five figures the employee
             sees before they change one of them.

@@ -98,7 +98,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
         </Card>
       ) : (
         <Card className="overflow-hidden p-0">
-          <Table>
+          <Table wrapperClassName="phone-stack">
             <TableHeader>
               <TableRow>
                 <TableHead>Resource type</TableHead>
@@ -109,11 +109,11 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
             <TableBody>
               {member.resources.map((r) => (
                 <TableRow key={r.resourceType}>
-                  <TableCell className="font-medium text-foreground">{r.displayLabel}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
+                  <TableCell data-phone="lead" className="font-medium text-foreground">{r.displayLabel}</TableCell>
+                  <TableCell data-label="Location" data-phone="inline" className="font-mono text-xs text-muted-foreground">
                     {r.schemaName}.{r.tableName}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell data-label="Count" data-phone="inline" className="text-right">
                     <Badge variant="secondary">{r.count}</Badge>
                   </TableCell>
                 </TableRow>

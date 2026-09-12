@@ -79,7 +79,7 @@ export default function SqlFunctionsList({
   return (
     <div className="border rounded-md">
       <div className="relative w-full overflow-auto">
-        <Table>
+        <Table wrapperClassName="phone-stack">
           <TableHeader className="bg-slate-50 dark:bg-slate-800">
             <TableRow>
               <TableHead 
@@ -165,7 +165,10 @@ export default function SqlFunctionsList({
                   onClick={() => handleRowClick(func)}
                   aria-selected={isSelected}
                 >
-                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">
+                  <TableCell
+                    className="font-medium text-slate-800 dark:text-slate-200"
+                    data-phone="lead"
+                  >
                     {/* THE DOOR LAW: the name IS the door. A real button, so
                         the detail is reachable by keyboard and announced as an
                         action — the row-level click stays a mouse shortcut. */}
@@ -181,8 +184,14 @@ export default function SqlFunctionsList({
                       {func.name}
                     </button>
                   </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400">{func.schema}</TableCell>
-                  <TableCell>
+                  <TableCell
+                    className="text-slate-600 dark:text-slate-400"
+                    data-label="Schema"
+                    data-phone="inline"
+                  >
+                    {func.schema}
+                  </TableCell>
+                  <TableCell data-phone="inline">
                     {func.security_type === 'SECURITY DEFINER' ? (
                       <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
                         <ShieldAlert className="h-4 w-4" /> Definer
@@ -193,13 +202,25 @@ export default function SqlFunctionsList({
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400 max-w-[200px] truncate" title={func.arguments}>
+                  <TableCell
+                    className="text-slate-600 dark:text-slate-400 max-w-[200px] truncate"
+                    title={func.arguments}
+                    data-label="Arguments"
+                  >
                     {func.arguments}
                   </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400 max-w-[200px] truncate" title={func.returns}>
+                  <TableCell
+                    className="text-slate-600 dark:text-slate-400 max-w-[200px] truncate"
+                    title={func.returns}
+                    data-label="Returns"
+                  >
                     {func.returns}
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="text-right whitespace-nowrap"
+                    data-phone="actions"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-end space-x-1">
                       <Button 
                         variant="ghost" 

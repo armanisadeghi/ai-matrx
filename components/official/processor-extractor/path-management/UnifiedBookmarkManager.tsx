@@ -296,7 +296,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                   </div>
                 </div>
                 
-                <Table>
+                <Table wrapperClassName="phone-stack">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[280px]">Name</TableHead>
@@ -312,7 +312,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                           className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"
                           onClick={() => toggleExpand(bookmark.id)}
                         >
-                          <TableCell>
+                          <TableCell data-phone="lead">
                             <div className="flex items-start gap-2">
                               <BookmarkIcon className="h-4 w-4 text-blue-500 mt-1" />
                               <div>
@@ -328,15 +328,18 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell data-label="Type" data-phone="inline">
                             <div className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
                               {bookmark.readibleType || bookmark.type}
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-xs truncate max-w-[300px]">
+                          <TableCell
+                            className="font-mono text-xs truncate max-w-[300px]"
+                            data-label="Path"
+                          >
                             {bookmark.path}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right" data-phone="actions">
                             <div className="flex justify-end space-x-1">
                               {onJumpToBookmark && (
                                 <Button

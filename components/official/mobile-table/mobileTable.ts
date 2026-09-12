@@ -16,11 +16,15 @@
  *
  * The two CSS traps these constants encode — do not rediscover them:
  *
- * 1. `app/globals.css` has an UNLAYERED `@media (max-width: 768px)` block with
- *    `* { max-width: 100% }` and `table { display: block; overflow-x: auto }`.
- *    Unlayered CSS beats Tailwind's layered utilities, so a plain `max-w-none`
- *    class cannot win — and the TABLE element (not its container) is the
- *    scroller below 768px.
+ * 1. `app/globals.css` has an `@layer base` `@media (max-width: 768px)` block
+ *    with `* { max-width: 100% }` and, for RAW `<table>` elements only,
+ *    `table:not([data-slot="table"]) { display: block; overflow-x: auto }` —
+ *    so a raw table is its own scroller below 768px, while a design-system
+ *    `<Table>` (data-slot="table") is scrolled by its own wrapper. Since
+ *    2026-09-12 a record LIST on a phone should not scroll sideways at all:
+ *    `<Table wrapperClassName="phone-stack">` reflows it into cards (THE
+ *    PHONE-STACK TABLE in globals.css; guard `pnpm check:phone-layout`). The
+ *    constants here remain the recipe for genuine matrices and grids.
  * 2. A base `w-full` outranks `max-sm:w-max`, so the width rule must be written
  *    MOBILE-FIRST (`w-max` base + `sm:w-full`), never as a `max-sm:` override.
  * Usage — ONE class on the `<table>` does the whole treatment:

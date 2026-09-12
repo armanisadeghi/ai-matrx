@@ -102,7 +102,7 @@ function preview(v: unknown, chars = 400): string {
 
 function JsonPanel({ value }: { value: unknown }) {
   return (
-    <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted/30 p-3 text-[11px] leading-relaxed">
+    <pre className="max-h-[70dvh] overflow-auto rounded-md border border-border bg-muted/30 p-3 text-[11px] leading-relaxed">
       {JSON.stringify(value, null, 2)}
     </pre>
   );

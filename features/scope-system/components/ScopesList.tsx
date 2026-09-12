@@ -440,7 +440,11 @@ export function ScopesList({
           <Card className="overflow-hidden">
             {/* Scroll container: vertical + horizontal, with frozen name column + header */}
             <div className="overflow-auto max-h-[65dvh]">
-              <Table className="w-full border-separate border-spacing-0">
+              {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
+              <Table
+                className="w-full border-separate border-spacing-0"
+                wrapperClassName="phone-stack"
+              >
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="sticky left-0 top-0 z-30 bg-card px-3 w-[200px] min-w-[200px] border-b border-border whitespace-nowrap">
@@ -836,7 +840,10 @@ function ScopeTableRow({
 
   return (
     <TableRow onClick={onClick} className="cursor-pointer group">
-      <TableCell className="sticky left-0 z-10 bg-card group-hover:bg-accent/40 px-3 font-medium w-[200px] min-w-[200px] border-b border-border">
+      <TableCell
+        className="sticky left-0 z-10 bg-card group-hover:bg-accent/40 px-3 font-medium w-[200px] min-w-[200px] border-b border-border"
+        data-phone="lead"
+      >
         <span className="flex items-center gap-1.5 w-full min-w-0">
           <Link
             href={href}
@@ -891,6 +898,8 @@ function ScopeTableRow({
             <TableCell
               key={col.id}
               className="px-3 text-muted-foreground w-[200px] min-w-[200px] border-b border-border group-hover:bg-accent/40"
+              data-label={col.display_name}
+              data-phone="inline"
             >
               <Loader2 className="h-3 w-3 animate-spin" />
             </TableCell>
@@ -901,6 +910,8 @@ function ScopeTableRow({
           <TableCell
             key={col.id}
             className={`px-3 w-[200px] min-w-[200px] max-w-[200px] border-b border-border group-hover:bg-accent/40 ${isEmpty ? "text-muted-foreground" : ""}`}
+            data-label={col.display_name}
+            data-phone="inline"
           >
             <span className="flex items-center gap-1.5 min-w-0">
               {isEmpty ? (

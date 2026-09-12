@@ -196,7 +196,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
       </div>
 
       <div className="rounded-lg border border-border">
-        <Table>
+        <Table wrapperClassName="phone-stack">
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
@@ -226,7 +226,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                 onClick={() => go(m.userId)}
                 className="group/row cursor-pointer"
               >
-                <TableCell>
+                <TableCell data-phone="lead">
                   <div className="flex items-center gap-2.5">
                     <Avatar className="h-7 w-7">
                       {m.avatarUrl && <AvatarImage src={m.avatarUrl} alt="" />}
@@ -246,7 +246,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell data-phone="inline">
                   <Badge
                     variant={ROLE_BADGE[m.role] ?? "outline"}
                     className="gap-1 capitalize"
@@ -255,7 +255,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                     {m.role}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell data-label="Status" data-phone="inline">
                   {m.status === "suspended" ? (
                     <Badge variant="destructive">Suspended</Badge>
                   ) : (
@@ -265,19 +265,19 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell data-label="Last active" data-phone="inline" className="text-sm text-muted-foreground">
                   {formatRelativeTime(m.lastOrgActivityAt)}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell data-label="Files (org)" data-phone="inline" className="text-sm text-muted-foreground">
                   <span className="text-foreground">{m.orgFilesCount}</span>{" "}
                   <span className="text-xs">
                     ({formatBytes(m.orgBytesUsed)})
                   </span>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell data-label="Spend 24h" data-phone="inline" className="text-sm text-muted-foreground">
                   {formatMcents(m.cost24hMcents)}
                 </TableCell>
-                <TableCell className="text-sm">
+                <TableCell data-label="Tier" data-phone="inline" className="text-sm">
                   {m.memberLevel ? (
                     <Badge variant="info" className="capitalize">
                       {m.memberLevel}
@@ -288,7 +288,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                     </span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell data-phone="actions">
                   <div className="flex items-center justify-end gap-1 text-muted-foreground">
                     {/* The row navigates on click — CopyButtons stops
                         propagation so copying never opens the member. */}

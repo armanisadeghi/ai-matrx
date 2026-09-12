@@ -133,14 +133,16 @@ export function UnsplashPickDialog({
         </Button>
       </form>
 
-      <div className="max-h-[45vh] overflow-y-auto">
+      <div className="max-h-[45dvh] overflow-y-auto">
         {searching && results.length === 0 ? (
+          // phone-ok: photo thumbnail grid, browsable at 3-up
           <div className="grid grid-cols-3 gap-2">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="aspect-video animate-pulse rounded-sm bg-muted" />
             ))}
           </div>
         ) : results.length > 0 ? (
+          // phone-ok: photo thumbnail grid, browsable at 3-up
           <div className="grid grid-cols-3 gap-2">
             {results.map((photo) => (
               <button

@@ -70,7 +70,7 @@ import AppLink from "@/components/navigation/AppLink";
 
 // The result pane is this tall from first paint, empty state included, so the
 // page geometry never changes when a run starts (see the floating-law note).
-const RESULT_PANE_H = "h-[clamp(24rem,68vh,44rem)]";
+const RESULT_PANE_H = "h-[clamp(24rem,68dvh,44rem)]";
 
 // ---------------------------------------------------------------- form parts
 

@@ -150,7 +150,7 @@ export function PunchCorrectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {result

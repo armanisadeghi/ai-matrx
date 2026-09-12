@@ -54,7 +54,7 @@ import {
 /** Byte budget for one monospace block. Above this we still render everything
  * — a payload preview that silently truncates would repeat the original sin —
  * but the block scrolls inside its own box instead of the sheet. */
-const BLOCK_MAX_HEIGHT = "max-h-[52vh]";
+const BLOCK_MAX_HEIGHT = "max-h-[52dvh]";
 
 function bytes(text: string): string {
   const n = new TextEncoder().encode(text).length;

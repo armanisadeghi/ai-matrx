@@ -189,6 +189,7 @@ export default function ColorInput(
                 )}
 
                 <div className="flex flex-wrap gap-2">
+                    {/* phone-ok: 64px color swatches */}
                     <div className="grid grid-cols-6 gap-1">
                         {tailwindColors.map((colorGroup) => (
                             <div key={colorGroup.name} className="text-center">
@@ -233,6 +234,7 @@ export default function ColorInput(
                     </div>
 
                     <div>
+                        {/* phone-ok: 24px color swatches */}
                         <div className="grid grid-cols-10 gap-1">
                             {predefinedColors.map((colorHex, index) => (
                                 <div

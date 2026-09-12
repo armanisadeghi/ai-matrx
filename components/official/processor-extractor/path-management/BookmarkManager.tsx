@@ -98,7 +98,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                     No bookmarks saved yet. Create bookmarks by navigating to a location and clicking "Save".
                                 </div>
                             ) : (
-                                <Table>
+                                <Table wrapperClassName="phone-stack">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-[200px]">Name</TableHead>
@@ -114,21 +114,24 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                                     className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                                     onClick={() => toggleExpand(bookmark.id)}
                                                 >
-                                                    <TableCell>
+                                                    <TableCell data-phone="lead">
                                                         <div className="font-medium">{bookmark.name}</div>
                                                         <div className="text-xs text-gray-500 dark:text-gray-400">
                                                             Created {formatDate(bookmark.createdAt)}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell data-label="Type" data-phone="inline">
                                                         <div className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
                                                             {bookmark.readibleType || bookmark.type}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="font-mono text-xs truncate hidden md:table-cell max-w-[300px]">
+                                                    <TableCell
+                                                        className="font-mono text-xs truncate hidden md:table-cell max-w-[300px]"
+                                                        data-phone="hidden"
+                                                    >
                                                         {bookmark.path}
                                                     </TableCell>
-                                                    <TableCell className="text-right">
+                                                    <TableCell className="text-right" data-phone="actions">
                                                         <div className="flex justify-end space-x-1">
                                                             <IconButton
                                                                 size="sm"

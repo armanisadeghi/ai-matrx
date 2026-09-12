@@ -140,7 +140,7 @@ export function IndustryUpgradeModal({
               </p>
 
               {/* Industry proof points — compact strip */}
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {cfg.proof.map((p) => (
                   <div
                     key={p.label}

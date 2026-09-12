@@ -90,7 +90,7 @@ export default function EnumsList({
   return (
     <div className="border rounded-md">
       <div className="relative w-full overflow-auto">
-        <Table>
+        <Table wrapperClassName="phone-stack">
           <TableHeader className="bg-slate-50 dark:bg-slate-800">
             <TableRow>
               <TableHead 
@@ -161,7 +161,10 @@ export default function EnumsList({
                   className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
                   onClick={() => handleRowClick(enumType)}
                 >
-                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">
+                  <TableCell
+                    className="font-medium text-slate-800 dark:text-slate-200"
+                    data-phone="lead"
+                  >
                     {/* The name is the door — as a real button, so it is
                         keyboard-reachable and announced. The row-level click
                         stays as a mouse convenience. */}
@@ -178,23 +181,37 @@ export default function EnumsList({
                       {enumType.name}
                     </button>
                   </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400">
+                  <TableCell
+                    className="text-slate-600 dark:text-slate-400"
+                    data-label="Schema"
+                    data-phone="inline"
+                  >
                     <div className="flex items-center gap-1">
                       <Database className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                       {enumType.schema}
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400">
+                  <TableCell
+                    className="text-slate-600 dark:text-slate-400"
+                    data-label="Values Count"
+                    data-phone="inline"
+                  >
                     <Badge variant="outline" className="text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700">
                       {enumType.values.length}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400 max-w-[300px]">
+                  <TableCell
+                    className="text-slate-600 dark:text-slate-400 max-w-[300px]"
+                    data-label="Values"
+                  >
                     <div className="truncate" title={enumType.values.join(', ')}>
                       {formatValues(enumType.values)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-600 dark:text-slate-400">
+                  <TableCell
+                    className="text-slate-600 dark:text-slate-400"
+                    data-phone="inline"
+                  >
                     {enumType.usage_count !== undefined ? (
                       // A COUNT IS A DOOR: open the detail's Usage tab, which
                       // lists exactly these tables and columns. A count above
@@ -227,7 +244,11 @@ export default function EnumsList({
                       <span className="text-slate-400 dark:text-slate-500">Unknown</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="text-right whitespace-nowrap"
+                    data-phone="actions"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-end space-x-1">
                       <Button 
                         variant="ghost" 

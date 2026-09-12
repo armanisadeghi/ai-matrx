@@ -122,7 +122,7 @@ export default function AiTasksPage() {
             </Alert>
           ) : (
             <div className="border rounded-lg overflow-hidden bg-card">
-              <Table>
+              <Table wrapperClassName="phone-stack">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[100px]">ID</TableHead>
@@ -137,7 +137,11 @@ export default function AiTasksPage() {
                 <TableBody>
                   {tasks.map((task) => (
                     <TableRow key={task.id}>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell
+                        className="font-mono text-xs"
+                        data-label="ID"
+                        data-phone="inline"
+                      >
                         <EntityRef
                           token="task"
                           id={task.id}
@@ -147,28 +151,36 @@ export default function AiTasksPage() {
                           {task.id.slice(0, 8)}...
                         </EntityRef>
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium" data-phone="lead">
                         {task.task_name || "-"}
                       </TableCell>
-                      <TableCell className="max-w-md">
+                      <TableCell className="max-w-md" data-label="Description">
                         <div className="truncate text-sm text-muted-foreground">
                           {task.response_text
                             ? task.response_text.slice(0, 100) + "..."
                             : "-"}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-phone="inline">
                         <Badge variant={getStatusBadgeVariant(task.status)}>
                           {task.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell
+                        className="text-sm text-muted-foreground"
+                        data-label="Created At"
+                        data-phone="inline"
+                      >
                         {formatDate(task.created_at)}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell
+                        className="text-sm text-muted-foreground"
+                        data-label="Updated At"
+                        data-phone="inline"
+                      >
                         {formatDate(task.updated_at)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" data-phone="actions">
                         <CopyButtons
                           size="icon"
                           label={`Task ${task.id.slice(0, 8)}`}

@@ -260,7 +260,7 @@ function MediaAssetBody({
           rounded="md"
           alt={data.file_name ?? data.source_label ?? "Image"}
           fallback={skeleton ?? "icon"}
-          className="max-h-[70vh] w-full"
+          className="max-h-[70dvh] w-full"
         />
         <MediaAssetLink data={data} label="Open image" />
       </div>

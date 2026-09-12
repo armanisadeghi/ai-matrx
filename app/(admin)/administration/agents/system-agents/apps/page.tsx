@@ -327,7 +327,7 @@ export default function AdminSystemAppsListPage() {
           ) : (
             <Card>
               <CardContent className="p-0">
-                <Table>
+                <Table wrapperClassName="phone-stack">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
@@ -349,7 +349,7 @@ export default function AdminSystemAppsListPage() {
                       const isBusy = busyIds.has(a.id);
                       return (
                         <TableRow key={a.id} className="hover:bg-accent/30">
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium" data-phone="lead">
                             {/*
                               Was an onClick-only <button>: no href meant no
                               cmd-click, no new tab, no peek. AgentAppRef is the
@@ -362,10 +362,14 @@ export default function AdminSystemAppsListPage() {
                               slug={a.slug}
                             />
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
+                          <TableCell
+                            className="text-muted-foreground text-xs"
+                            data-label="Slug"
+                            data-phone="inline"
+                          >
                             {a.slug}
                           </TableCell>
-                          <TableCell>
+                          <TableCell data-label="Status" data-phone="inline">
                             <Select
                               value={a.status}
                               disabled={isBusy}
@@ -404,7 +408,11 @@ export default function AdminSystemAppsListPage() {
                               </SelectContent>
                             </Select>
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell
+                            className="text-center"
+                            data-label="Public"
+                            data-phone="inline"
+                          >
                             <Switch
                               checked={isPubliclyVisible(a.visibility)}
                               disabled={isBusy}
@@ -426,11 +434,19 @@ export default function AdminSystemAppsListPage() {
                               }
                             />
                           </TableCell>
-                          <TableCell className="text-xs">
+                          <TableCell
+                            className="text-xs"
+                            data-label="Category"
+                            data-phone="inline"
+                          >
                             {a.category ?? "—"}
                           </TableCell>
                           {/* A count is a door: the runs total reaches those runs. */}
-                          <TableCell className="text-right text-xs">
+                          <TableCell
+                            className="text-right text-xs"
+                            data-label="Runs"
+                            data-phone="inline"
+                          >
                             <AppLink
                               href={agentAppExecutionsHref(a.id)}
                               title={`Open the runs and errors for ${a.name}`}
@@ -439,12 +455,16 @@ export default function AdminSystemAppsListPage() {
                               {a.total_executions ?? 0}
                             </AppLink>
                           </TableCell>
-                          <TableCell className="text-right text-xs text-muted-foreground">
+                          <TableCell
+                            className="text-right text-xs text-muted-foreground"
+                            data-label="Updated"
+                            data-phone="inline"
+                          >
                             {a.updated_at
                               ? new Date(a.updated_at).toLocaleDateString()
                               : "—"}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right" data-phone="actions">
                             <div className="flex items-center justify-end gap-0.5">
                               <CopyButtons
                                 size="xs"

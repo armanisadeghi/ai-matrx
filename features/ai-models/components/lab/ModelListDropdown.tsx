@@ -1195,6 +1195,7 @@ function FiltersPanel({
           >
             Any
           </ChipToggle>
+          {/* phone-ok: small truncating maker filter chips with icon */}
           <div className="grid grid-cols-4 gap-1">
             {makerOptions.map((maker) => (
               <MakerFilterButton
@@ -1217,6 +1218,7 @@ function FiltersPanel({
           >
             Any
           </ChipToggle>
+          {/* phone-ok: small truncating service filter chips with icon */}
           <div className="grid grid-cols-4 gap-1">
             {serviceOptions.map((service) => (
               <ServiceFilterButton

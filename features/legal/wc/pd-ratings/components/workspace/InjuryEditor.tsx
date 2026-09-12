@@ -158,7 +158,7 @@ function InjuryEditorBody({
 
       {attributeAccepts(attrs, "side") && (
         <Field label="Side" required={Boolean(attrs?.side)}>
-          <div className="grid grid-cols-3 gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
             {SIDES.map((opt) => (
               <button
                 key={opt.value}

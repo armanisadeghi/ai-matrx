@@ -495,7 +495,7 @@ export function RateLimitsClient() {
 
         {/* Table */}
         <ScrollArea className="flex-1 pr-4">
-          <Table>
+          <Table wrapperClassName="phone-stack">
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 {/* Blocked Status Column */}
@@ -669,7 +669,7 @@ export function RateLimitsClient() {
             <TableBody>
               {filteredAndSortedRateLimits.map((limit) => (
                 <TableRow key={limit.id}>
-                  <TableCell>
+                  <TableCell data-phone="inline">
                     {limit.is_blocked ? (
                       <Badge variant="destructive">
                         <ShieldOff className="w-3 h-3 mr-1" />
@@ -682,7 +682,7 @@ export function RateLimitsClient() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-phone="lead">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{limit.app_name}</span>
                       <Tooltip>
@@ -700,19 +700,23 @@ export function RateLimitsClient() {
                       </Tooltip>
                     </div>
                   </TableCell>
-                  <TableCell>{getIdentifierDisplay(limit)}</TableCell>
-                  <TableCell className="text-right">{limit.execution_count}</TableCell>
-                  <TableCell>
+                  <TableCell data-label="Identifier" data-phone="inline">
+                    {getIdentifierDisplay(limit)}
+                  </TableCell>
+                  <TableCell className="text-right" data-label="Executions" data-phone="inline">
+                    {limit.execution_count}
+                  </TableCell>
+                  <TableCell data-label="First Execution" data-phone="inline">
                     <span className="text-xs text-muted-foreground">
                       {new Date(limit.first_execution_at).toLocaleString()}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Last Execution" data-phone="inline">
                     <span className="text-xs text-muted-foreground">
                       {new Date(limit.last_execution_at).toLocaleString()}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" data-phone="actions">
                     <div className="flex items-center justify-end gap-1">
                       {limit.is_blocked ? (
                         <Tooltip>

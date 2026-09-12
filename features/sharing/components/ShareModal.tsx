@@ -299,6 +299,7 @@ export function ShareModal({
             onValueChange={(value) => setActiveTab(value as typeof activeTab)}
             className="flex-1 flex flex-col min-h-0"
           >
+            {/* phone-ok: labels are hidden below sm, icon-only tabs on phone */}
             <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />

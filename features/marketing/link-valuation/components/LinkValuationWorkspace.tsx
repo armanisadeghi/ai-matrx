@@ -290,7 +290,7 @@ export function LinkValuationWorkspace() {
               <Textarea
                 readOnly
                 value={JSON.stringify(config, null, 2)}
-                className="h-[60vh] font-mono text-[11px]"
+                className="h-[60dvh] font-mono text-[11px]"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -301,7 +301,7 @@ export function LinkValuationWorkspace() {
                 value={importText}
                 onChange={(event) => setImportText(event.target.value)}
                 placeholder="Paste a config JSON here"
-                className="h-[60vh] font-mono text-[11px]"
+                className="h-[60dvh] font-mono text-[11px]"
               />
               <Button
                 size="sm"

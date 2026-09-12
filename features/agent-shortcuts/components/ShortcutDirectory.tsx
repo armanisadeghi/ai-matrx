@@ -67,9 +67,6 @@ import {
   shortcutDirectoryRowSummary,
 } from "../format";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE,
-} from "@/components/official/mobile-table/mobileTable";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
@@ -427,10 +424,7 @@ export function ShortcutDirectory({
       className="group/x cursor-pointer bg-card sm:bg-transparent sm:hover:bg-muted/50"
       onClick={() => navigateToShortcut(row)}
     >
-      <TableCell
-        className="max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit max-sm:whitespace-nowrap"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <TableCell onClick={(e) => e.stopPropagation()} data-phone="hidden">
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -468,7 +462,7 @@ export function ShortcutDirectory({
           />
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell data-phone="lead">
         <div className="flex items-center gap-2 min-w-0">
           <MousePointerClick className="h-4 w-4 text-primary shrink-0" />
           <div className="min-w-0">
@@ -481,7 +475,11 @@ export function ShortcutDirectory({
           </div>
         </div>
       </TableCell>
-      <TableCell onClick={(e) => e.stopPropagation()}>
+      <TableCell
+        onClick={(e) => e.stopPropagation()}
+        data-label="Agent"
+        data-phone="inline"
+      >
         {/* This column printed `agentName ?? agentId` — so a shortcut whose
             agent name had not resolved rendered a bare UUID you could not
             click, the Door Law's named worst case. `EntityRef` opens the
@@ -504,7 +502,7 @@ export function ShortcutDirectory({
           <span className="text-xs text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Scope" data-phone="inline">
         <div className="space-y-0.5">
           <Badge variant="outline" className="text-xs">
             {scopeTypeLabel(row.scopeType)}
@@ -514,7 +512,7 @@ export function ShortcutDirectory({
           </div>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Placement" data-phone="inline">
         {row.placementType ? (
           <Badge variant="outline">
             {getPlacementTypeMeta(row.placementType).label}
@@ -523,10 +521,10 @@ export function ShortcutDirectory({
           <span className="text-xs text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Category" data-phone="inline">
         <span className="text-sm">{row.categoryLabel}</span>
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Surface" data-phone="inline">
         {row.surfaceName ? (
           <span className="text-xs truncate block max-w-[160px]">
             {row.surfaceName}
@@ -535,12 +533,12 @@ export function ShortcutDirectory({
           <span className="text-xs text-muted-foreground">All</span>
         )}
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center" data-phone="inline">
         <Badge variant={row.isActive ? "default" : "secondary"}>
           {row.isActive ? "Active" : "Inactive"}
         </Badge>
       </TableCell>
-      <TableCell onClick={(e) => e.stopPropagation()}>
+      <TableCell onClick={(e) => e.stopPropagation()} data-phone="actions">
         <Link
           href={resolveShortcutEditUrl(row, mode)}
           onClick={(e) => e.stopPropagation()}
@@ -822,10 +820,6 @@ export function ShortcutDirectory({
               overflow-auto div avoids that indirection, matching the
               MatrxDataTable reference pattern. */}
           <div className="h-full overflow-auto">
-            {/* Mobile-first: below `sm` the table sizes to its CONTENT (w-max)
-                so this container scrolls it horizontally, and the first
-                column freezes so a row stays identifiable while scrolling.
-                `sm:` restores the exact desktop rendering. */}
             <NonEditableContextMenu
               sourceFeature="admin"
               contentSource={{ type: "raw" }}
@@ -833,12 +827,15 @@ export function ShortcutDirectory({
               resolveContextOnOpen={resolveMenuTarget}
               extraSections={menuSections}
             >
-            <Table className={MOBILE_TABLE}>
+            {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css) — each
+                row becomes a card below 768px, so the earlier frozen-ID-column
+                sideways scroller is gone. Desktop is unchanged. */}
+            <Table wrapperClassName="phone-stack">
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
-                  <TableHead className="w-[260px] max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-background max-sm:whitespace-nowrap">ID</TableHead>
+                  <TableHead className="w-[260px]">ID</TableHead>
                   <TableHead
-                    className="min-w-[200px] max-sm:whitespace-nowrap"
+                    className="min-w-[200px]"
                     onClick={() => handleSort("label")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -852,7 +849,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[140px] max-sm:whitespace-nowrap"
+                    className="min-w-[140px]"
                     onClick={() => handleSort("agent")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -865,7 +862,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[140px] max-sm:whitespace-nowrap"
+                    className="min-w-[140px]"
                     onClick={() => handleSort("scope")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -878,7 +875,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[120px] max-sm:whitespace-nowrap"
+                    className="min-w-[120px]"
                     onClick={() => handleSort("placement")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -891,7 +888,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[120px] max-sm:whitespace-nowrap"
+                    className="min-w-[120px]"
                     onClick={() => handleSort("category")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -904,7 +901,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[120px] max-sm:whitespace-nowrap"
+                    className="min-w-[120px]"
                     onClick={() => handleSort("surface")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">

@@ -520,7 +520,7 @@ function BulkAcknowledgeDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : (setOutcomes(null), onOpenChange(false)))}>
-      <DialogContent className="max-h-[85vh] max-w-xl overflow-y-auto">
+      <DialogContent className="max-h-[85dvh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {outcomes ? "What happened" : `Acknowledge ${pluralize(eligible.length, "exception")}`}

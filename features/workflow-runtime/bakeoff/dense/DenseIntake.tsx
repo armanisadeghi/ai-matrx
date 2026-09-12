@@ -214,7 +214,7 @@ export function DenseIntake({
                   This workflow has no steps yet.
                 </p>
               ) : (
-                <ol className="max-h-[40vh] overflow-y-auto py-1 scrollbar-thin">
+                <ol className="max-h-[40dvh] overflow-y-auto py-1 scrollbar-thin">
                   {steps.map((step, index) => {
                     const style = FAMILY_STYLE[step.family];
                     return (
