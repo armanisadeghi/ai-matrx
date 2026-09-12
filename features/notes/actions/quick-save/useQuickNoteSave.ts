@@ -136,9 +136,16 @@ export function useQuickNoteSave({
     const selectedNoteForUpdate = mode === "update" ? selectedNote : undefined;
 
     const requestId = `note_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-    const organizationId = await ensureOrganizationContext({ organizationId: selectedOrganizationId });
     const trimmedContent = workingContent.trim();
     const isCreate = mode === "create";
+    // Existing notes keep their authorized stored organization; an unrelated
+    // active selection must never block an update or open a destination picker.
+    if (!isCreate && !selectedNoteForUpdate?.organization_id) {
+      throw new Error("The selected note has no persisted organization.");
+    }
+    const organizationId = isCreate
+      ? await ensureOrganizationContext({ organizationId: selectedOrganizationId })
+      : selectedNoteForUpdate.organization_id;
     const label = isCreate
       ? `Note: ${noteName.trim() || "Quick Note"}`
       : `Note update: ${selectedNote?.label || "note"}`;
@@ -151,7 +158,7 @@ export function useQuickNoteSave({
           label: noteName.trim() || "Quick Note",
           content: trimmedContent,
           folder_name: folder,
-          organization_id: organizationId,
+          organization_id: organizationId ?? "",
         }
       : {
           op: "update" as const,
@@ -203,7 +210,7 @@ export function useQuickNoteSave({
 
           await dispatch(
             saveNoteField({
-              noteId: selectedNoteId,
+              noteId: selectedNoteForUpdate.id,
               field: "content",
               value: finalContent,
             }),
