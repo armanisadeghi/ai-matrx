@@ -88,6 +88,14 @@ if $STRICT; then
         # feedback 11b0a90c reported live on the provider-sync policy dialog.
         # `pnpm check:browser-dialogs:self-test` proves the guard can still fail.
         "Browser dialogs (window.confirm/alert/prompt)|pnpm check:browser-dialogs:strict"
+        # A toast that NAMES a record must carry that record's identity
+        # (`recordToast`, lib/toast.ts). Sonner pauses every dismiss timer while
+        # document.hidden is true, so a bare record-naming toast can sit on
+        # screen after the SPA navigated to a different record, or after that
+        # record was renamed or deleted — a screen stating a false sentence.
+        # Baselined at the existing population, so this only refuses NEW ones.
+        # `pnpm check:record-toasts:self-test` proves the guard can still fail.
+        "Record-naming toasts carry their record|pnpm check:record-toasts:strict"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
@@ -428,6 +436,9 @@ else
         # a dead control, not a style nit. Zero backlog, so the report is
         # the whole finding.
         "Browser dialogs (window.confirm/alert/prompt)|pnpm check:browser-dialogs"
+        # Record-naming toasts — see the strict lane above. Baselined, so the
+        # report names the whole remaining population every run.
+        "Record-naming toasts carry their record|pnpm check:record-toasts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
