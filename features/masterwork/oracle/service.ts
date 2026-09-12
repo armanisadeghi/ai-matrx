@@ -123,6 +123,31 @@ export function invalidateHasRulebookCache(): void {
   hasRulebookCache = null;
 }
 
+/**
+ * The question this answer answered — ONE implementation, used by both chat
+ * surfaces' menus and nudges. The Oracle tap's whole premise is *"the question
+ * maps which judgment is scarce, and the answer is already written in their
+ * voice"*, so a draft that keeps only the answer throws away the half that
+ * makes it a rule. Walks back from the message to the nearest user turn.
+ *
+ * Takes the minimum shape both stores already have, so neither surface needs a
+ * store-specific helper of its own.
+ */
+export function precedingQuestion(
+  messages: ReadonlyArray<{ id: string; role: string; content?: string | null }>,
+  messageId: string | null,
+): string | null {
+  if (!messageId) return null;
+  const index = messages.findIndex((m) => m.id === messageId);
+  if (index <= 0) return null;
+  for (let i = index - 1; i >= 0; i--) {
+    if (messages[i].role !== "user") continue;
+    const text = (messages[i].content ?? "").trim();
+    return text.length > 0 ? text : null;
+  }
+  return null;
+}
+
 export interface AppendDraftRuleResult {
   rulebook: Rulebook;
   rule: RulebookRule;
@@ -138,12 +163,20 @@ export async function appendDraftRuleFromMessage(opts: {
   rulebookId: string;
   content: string;
   conversationId: string | null;
+  /** The message the draft came from — the draft's provenance, always recorded. */
+  messageId?: string | null;
+  /** The user's question, when this message is an answer to one. */
+  question?: string | null;
 }): Promise<AppendDraftRuleResult> {
+  const question = (opts.question ?? "").trim() || null;
   const statement =
     opts.content.length > STATEMENT_MAX_CHARS
       ? `${opts.content.slice(0, STATEMENT_MAX_CHARS).trimEnd()}…`
       : opts.content;
-  const name = deriveRuleNameFromContent(opts.content);
+  // The name reads best as the QUESTION when there is one — that is the shape
+  // the Expert recognises in their review queue ("what do I do if…"), not the
+  // first line of the answer.
+  const name = deriveRuleNameFromContent(question ?? opts.content);
 
   let lastError: unknown = null;
   for (let attempt = 0; attempt < CAS_RETRIES; attempt++) {
@@ -167,12 +200,24 @@ export async function appendDraftRuleFromMessage(opts: {
       statement,
       severity: "major",
       draft: true,
+      // The verbatim span this draft came from. There is no server-side Oracle
+      // distiller today (no mandate turns a chat turn into quote/statement/
+      // rationale), so the honest minimum is the message itself, kept whole and
+      // attributed — never a silently paraphrased "rule" nobody said.
+      quote: statement,
+      ...(question ? { rationale: `The question this answered: “${question}”` } : {}),
       source_ref: {
         approach: "oracle_tap",
-        note: "Saved from a conversation",
+        note: question
+          ? "Saved from a conversation — a question a colleague asked"
+          : "Saved from a conversation",
         ...(opts.conversationId
           ? { conversation_id: opts.conversationId }
           : {}),
+        // Provenance is not optional: a draft in "Waiting on you" must be able
+        // to point back at the exact message it came from.
+        ...(opts.messageId ? { message_id: opts.messageId } : {}),
+        ...(question ? { question } : {}),
       },
     };
 

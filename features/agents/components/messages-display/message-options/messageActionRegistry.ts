@@ -72,8 +72,11 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import {
   extractFlatText,
+  selectMessageById,
   selectMessagePosition,
+  selectOrderedMessageIds,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { precedingQuestion } from "@/features/masterwork/oracle/service";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
@@ -361,6 +364,33 @@ function copyItems(ctx: MessageActionContext): MenuItem[] {
   ];
 }
 
+/**
+ * THE ORACLE TAP's question half: for an ASSISTANT message, the user turn it
+ * answered. A saved answer with no question is half a rule — "what do I do if
+ * a customer wants a refund past 30 days" is the shape the Expert recognises in
+ * their review queue, not the first line of the reply.
+ *
+ * Null for a user message (the message IS the question), for an opening turn,
+ * and whenever the thread is not in the store.
+ */
+function resolveAnsweredQuestion(ctx: MessageActionContext): string | null {
+  const { conversationId, messageId } = ctx;
+  if (!conversationId || !messageId) return null;
+  const state = ctx.getState();
+  const self = selectMessageById(conversationId, messageId)(state);
+  if (!self || self.role === "user") return null;
+  const thread = selectOrderedMessageIds(conversationId)(state).map((id) => {
+    const record = selectMessageById(conversationId, id)(state);
+    const content = record?.content;
+    return {
+      id,
+      role: String(record?.role ?? ""),
+      content: typeof content === "string" ? content : extractFlatText(record),
+    };
+  });
+  return precedingQuestion(thread, messageId);
+}
+
 function actionsItems(ctx: MessageActionContext): MenuItem[] {
   const {
     content,
@@ -468,6 +498,12 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
             data: {
               initialContent: turnText,
               initialConversationId: conversationId ?? null,
+              // Provenance: the exact turn the draft came from, so a rule
+              // waiting in review can point back at what was actually said.
+              initialMessageId: messageId ?? null,
+              // And the QUESTION it answered — the Oracle tap's whole premise
+              // is that the question maps which judgment is scarce.
+              initialQuestion: resolveAnsweredQuestion(ctx),
             },
           }),
         );
