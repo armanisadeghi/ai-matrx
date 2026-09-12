@@ -12,6 +12,8 @@ import { selectUserInputText } from "@/features/agents/redux/execution-system/in
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
+import { ConversationRecordsChip } from "./ConversationRecordsChip";
+import { ConversationRoomNotice } from "./ConversationRoomNotice";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 
@@ -106,6 +108,20 @@ export function ChatRunHeader({
         />
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {/* "Inside a shared room — members can see this" (DD-137b, V-33 §9.1).
+            A `personal` conversation dropped into a war room or a thread is
+            readable by that room's members — Rule 9's union, and correct — but
+            until now nothing on this screen said so while the chat still called
+            itself private. The chip renders for the OWNER and only when the
+            conversation really is inside a room someone else can reach. */}
+        <ConversationRoomNotice conversationId={conversationId} />
+        {/* What this chat PRODUCED — the reverse view of the record chrome
+            drawn under a kind block. Only an existing conversation can have
+            produced anything, so `/chat/new` shows nothing rather than an
+            empty control. */}
+        {conversationId && (
+          <ConversationRecordsChip conversationId={conversationId} />
+        )}
         {/* Canvas — the unified live workspace, one click away at the top. */}
         <ChatCanvasButton conversationId={conversationId} />
       </div>

@@ -67408,6 +67408,15 @@ export type Database = {
           metadata: Json
         }[]
       }
+      conversation_shared_room_notice: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          in_shared_room: boolean
+          room_count: number
+          room_label: string
+          room_type: string
+        }[]
+      }
       conversations_exist: {
         Args: { p_ids: string[] }
         Returns: {
