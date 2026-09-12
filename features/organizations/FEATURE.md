@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-09-10`
+**Last updated:** `2026-09-11`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -29,7 +29,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `app/(core)/organizations/[orgId]/resources/[kind]/page.tsx` — **catalogue-driven per-resource org page.** One page for every scopeable kind (`kind` = catalogue key), reached from the workspace tiles. Two halves: "Shared with {org}" (team view — org-owned + member-contributed) and "Yours to share" (your own items, one click from sharing). Renders `OrgResourceDetail`; links to the dedicated legacy route as "Full view" when one exists.
 - `app/(authenticated)/organizations/[orgId]/{projects,tasks,notes,files,tables,workflows,shortcuts,templates,prompt-apps,prompts,agent-apps}/` — org-scoped resource views sharing `OrgResourceLayout.tsx`
 - `app/(authenticated)/organizations/[orgId]/projects/[projectId]/` — project-scoped view within an org; `[projectId]` also accepts UUID or slug
-- `app/(authenticated)/organizations/[orgId]/settings/page.tsx` — the **Manage** experience. Renders `OrgManage` — a single scrollable, sectioned page (identity header + sticky jump-nav, **no tabs**) that reuses the existing settings sub-components (General, Members, Invitations, Scopes link, Privacy, Email, Organization Vault, Danger). All members may inspect masked vault metadata and contribute independent copies from their personal vault; owner/admin roles manage values and restrictions. Exact setting-door hashes are first-class targets; admin-only controls replace themselves with contextual access requests for ordinary members.
+- `app/(core)/organizations/[orgId]/settings/page.tsx` — the **Manage** experience. Renders `OrgManage` — a single scrollable, sectioned page (identity header + sticky jump-nav, **no tabs**) that reuses the existing settings sub-components (General, Members, Invitations, Scopes link, Privacy, Email, Organization Vault, Danger). All members may inspect masked vault metadata and contribute independent copies from their personal vault; owner/admin roles manage values and restrictions. Exact setting-door hashes are first-class targets; admin-only controls replace themselves with contextual access requests for ordinary members.
 - `app/(authenticated)/organizations/[orgId]/settings/scopes/` — scope config (see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md))
 - `app/(core)/organizations/[orgId]/performance-reviews/` — organization-context
   performance-review workspace. The organization home exposes the canonical
@@ -217,6 +217,8 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
 
 ## Invariants & gotchas
 
+- **Settings navigation stays below the shell fade.** `OrgManage` uses `--shell-header-clearance` for its sticky navigation and `useAnchoredSections` for measured section clearance, active links, and URL restoration. Section clicks push a hash; manual scrolling replaces the current URL with the section hash and `sectionOffset` within it. Reload and Back/Forward restore that position while preceding sections load; user scroll intent releases alignment. Narrow-screen links keep their width inside the horizontal navigation scroller.
+
 - **Slug is globally unique, URL-safe, and lowercase.** `isSlugAvailable()` runs before insert; DB also has a unique constraint. Slug is not in `UpdateOrganizationOptions` — treat as immutable.
 - **Abbreviation is compact identity, not a key.** It is always 2–3 uppercase ASCII letters and is deliberately not unique. Shared/system orgs start with deterministic initials and owners/admins may edit them. Personal organizations are fixed to `ME`; the database trigger normalizes every insert/update path and constraints enforce both rules.
 
@@ -281,6 +283,8 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ---
 
 ## Change log
+
+- `2026-09-11` — Fixed settings navigation hidden beneath the shell glass fade; section links and within-section scroll offsets now persist in the URL and restore on reload and history navigation. Reuses the shell scroller, shared geometry tokens, and existing settings cards; added `useAnchoredSections` after finding no existing section-position hook.
 
 - `2026-09-11` — **DD-091 fix round 1** (from independent verification).
   (1) The honest banner could CRASH in the exact failure it reports: `sendEmail`

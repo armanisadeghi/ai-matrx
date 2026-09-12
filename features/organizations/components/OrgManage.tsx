@@ -283,7 +283,7 @@ export function OrgManage({
                       ?.focus({ preventScroll: true });
                   }}
                   aria-current={activeSection === s.id ? "location" : undefined}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  className={`inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                     activeSection === s.id
                       ? "bg-primary text-primary-foreground"
                       : s.danger

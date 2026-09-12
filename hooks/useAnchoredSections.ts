@@ -9,11 +9,13 @@ export function useAnchoredSections(pageKey: string) {
   const [activeSection, setActiveSection] = useState("");
 
   useEffect(() => {
-    const content = contentRef.current;
-    const nav = navRef.current;
-    if (!content || !nav) return;
-    const scroller = content.closest<HTMLElement>(".shell-main");
-    if (!scroller) return;
+    const currentContent = contentRef.current;
+    const currentNav = navRef.current;
+    const currentScroller = currentContent?.closest<HTMLElement>(".shell-main");
+    if (!currentContent || !currentNav || !currentScroller) return;
+    const content = currentContent;
+    const nav = currentNav;
+    const scroller = currentScroller;
 
     let restoring = false;
     let frame = 0;
@@ -30,16 +32,16 @@ export function useAnchoredSections(pageKey: string) {
       );
       restoring = true;
       if (!target) {
-        scroller!.scrollTo({ top: 0, behavior: "instant" });
+        scroller.scrollTo({ top: 0, behavior: "instant" });
         setActiveSection("");
         return;
       }
       const offset = Number(url.searchParams.get("sectionOffset") ?? 0);
-      scroller!.scrollTo({
+      scroller.scrollTo({
         top:
-          scroller!.scrollTop +
+          scroller.scrollTop +
           target.getBoundingClientRect().top -
-          scroller!.getBoundingClientRect().top -
+          scroller.getBoundingClientRect().top -
           clearance() +
           (Number.isFinite(offset) ? Math.max(0, offset) : 0),
         behavior: "instant",
@@ -49,7 +51,7 @@ export function useAnchoredSections(pageKey: string) {
 
     function remember() {
       if (restoring) return;
-      const line = scroller!.getBoundingClientRect().top + clearance();
+      const line = scroller.getBoundingClientRect().top + clearance();
       const all = sections();
       const target = all.findLast(
         (section) => section.getBoundingClientRect().top <= line + 1,
@@ -96,7 +98,7 @@ export function useAnchoredSections(pageKey: string) {
         onInput();
     }
     function onResize() {
-      content!.style.setProperty(
+      content.style.setProperty(
         "--section-scroll-clearance",
         `${clearance()}px`,
       );

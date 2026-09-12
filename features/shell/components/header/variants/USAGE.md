@@ -40,6 +40,8 @@ Audit: `pnpm check:page-headers` (strict: `pnpm check:page-headers:strict`).
 | Resizable panels (`/tasks`, agent build) | `h-full overflow-hidden` | Per-panel `pt-[var(--shell-header-h)]` only where static top UI must clear the header (file tabs, titles) |
 | Single full-page editor (`/tasks/[id]`) | `h-full overflow-hidden` + `paddingTop: var(--shell-header-h)` on wrapper | Whole surface starts below the header |
 
+Sticky sub-toolbars that must remain outside the glass fade use `top: var(--shell-header-clearance)`. This shared geometry includes `--shell-header-h` plus `--shell-header-fade-h`; section jump offsets also include the measured toolbar height.
+
 Sub-toolbars **below** the header zone (filters, search) are fine. Forbidden: a **page title bar** in the body.
 
 **Exceptions:** `/administration/*` and `(transitional)`/`(legacy)` `ResponsiveLayout` — content sits below the header, not behind it. There, `.h-page` / `calc(100dvh - var(--header-height))` is correct. Do not apply those wrappers to `(core)` routes.
