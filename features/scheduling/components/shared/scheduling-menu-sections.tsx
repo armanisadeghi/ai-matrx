@@ -31,7 +31,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraItem,
@@ -131,7 +131,10 @@ export function useScheduledTaskMenuSection<T extends ScheduledTaskMenuRow>(opts
     if (!ok) return;
     try {
       await disableTaskAdmin(row.id);
-      toast.success(`${row.title} disabled`);
+      recordToast.success(
+        { type: "sch_task", id: row.id, title: row.title },
+        `${row.title} disabled`,
+      );
       opts.onDisabled?.(row);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));

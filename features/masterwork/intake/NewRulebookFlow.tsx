@@ -57,7 +57,7 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -551,9 +551,11 @@ export function NewRulebookFlow() {
       // {"interview":"1"} so the Scout opens on arrival).
       const params = new URLSearchParams(approach.intakeQuery);
       const href = `/masterwork/${rulebook.id}${params.size > 0 ? `?${params.toString()}` : ""}`;
-      toast.success(`"${rulebook.name}" started`, {
-        description: approach.costTimeShape,
-      });
+      recordToast.success(
+        { type: "rulebook", id: rulebook.id, title: rulebook.name },
+        `"${rulebook.name}" started`,
+        { description: approach.costTimeShape },
+      );
       startTransition(() => router.push(href));
     } catch (err) {
       toast.error(

@@ -47,7 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import {
   listServers,
   listServerConfigs,
@@ -988,7 +988,10 @@ function ConfigsTab({
     try {
       await updateServerConfig(config.id, { is_default: true });
       await load();
-      toast.success(`${config.label} set as default`);
+      recordToast.success(
+        { type: "mcp_server_config", id: config.id, title: config.label },
+        `${config.label} set as default`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
     }
@@ -1008,6 +1011,7 @@ function ConfigsTab({
     if (!ok) return;
     try {
       await deleteServerConfig(config.id);
+      dismissRecordToasts({ type: "mcp_server_config", id: config.id });
       await load();
       toast.success(`Config ${config.label} deleted`);
     } catch (e) {
@@ -1241,6 +1245,7 @@ function ConfigDialog({
 
     setBusy(true);
     try {
+      let savedId: string;
       if (isEdit && config) {
         await updateServerConfig(config.id, {
           label: label.trim(),
@@ -1255,8 +1260,12 @@ function ConfigDialog({
           requires_docker: requiresDocker,
           notes: notes.trim() || null,
         });
+        // The label may have just changed: withdraw any toast still naming
+        // this config under its old text before raising the new sentence.
+        dismissRecordToasts({ type: "mcp_server_config", id: config.id });
+        savedId = config.id;
       } else {
-        await createServerConfig({
+        const created = await createServerConfig({
           serverId,
           label: label.trim(),
           configType,
@@ -1270,8 +1279,12 @@ function ConfigDialog({
           requiresDocker,
           notes: notes.trim() || null,
         });
+        savedId = created.id;
       }
-      toast.success(`Config "${label}" ${isEdit ? "saved" : "created"}`);
+      recordToast.success(
+        { type: "mcp_server_config", id: savedId, title: label.trim() },
+        `Config "${label}" ${isEdit ? "saved" : "created"}`,
+      );
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");

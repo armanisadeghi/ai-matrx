@@ -155,28 +155,7 @@
       "why": "THE UNIT LAW: the fleet's ~35 duration twins variously took milliseconds, seconds and minutes behind an identical `formatDuration(n)` signature, so kit ships formatDurationMs / formatDurationSeconds / formatDurationMinutes and NO bare `formatDuration`. Two host copies had already re-grown under this exact name (observational-memory format.ts, marketing crawl-session-panels.tsx) and were deleted 2026-09-07. A local `formatDuration` that BINDS unit+style+fallback and delegates is an adapter, not a twin; a local `formatDurationMs` is always a twin.",
       "shapeWhy": "A millisecond count becoming a unit string is this capability whatever it is called. The name lane read GREEN on all four formatDuration* exports while aidream's dashboard carried SEVEN bodies under the private names fmtMs and fmtMsSummary, each with its own rounding, and 115 more files in this repo turned ms into `2.3s` / `1.5m` / `3m ago` inline. Pattern and its proof: scripts/duration-shape.mjs. Plain time arithmetic can never match — the rule requires a DIVISION, MODULO or THRESHOLD COMPARISON against a time base PAIRED with a duration unit label, so a timeout budget (30 * 1000), an API seconds field and a rate denominator all stay untouched. `shapeCensus` below is the pre-existing census, not an exemption: it is reported every run and is ratcheted shrink-only — a stale entry FAILS the guard.",
       "allow": [],
-      "shapeCensus": [
-        {
-          "file": "features/agent-connections/coding-sessions/captureGap.ts",
-          "reason": "Duration shard 1, 2026-09-11: this one IS a duration formatter and is DELIBERATELY left censused rather than collapsed or exempted. `formatGap` speaks a LONG-FORM ENGLISH voice — \"1 minute\", \"45 minutes\", \"23 hours\", \"3 days\" — and its output is embedded in prose the user reads (\"Nothing has been delivered for 3 days.\"). @ai-matrx/kit/format ships no long duration voice: `coarse` would render 3 days as \"72h\" and 45 minutes as \"45 min\" inside those sentences, which is a visible regression of user-facing copy (and would break the exact-string unit test in __tests__/captureGap.test.ts). THE FIX IS IN THE PACKAGE: add a `\"long\" DurationStyle (\"45 minutes\", \"3 hours\", \"3 days\") to @ai-matrx/kit/format, then collapse this file and delete this entry. Left loud on purpose so it cannot be forgotten."
-        },
-        {
-          "file": "features/organizations/types.ts",
-          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: `getExpiryDisplay` renders an invite countdown in DAYS (\"Expires in 3 days\", \"Expires in 5 hours\"), and @ai-matrx/kit/format has no day-scale voice — `coarse` would print \"72h\" for three days. Blocked on a kit `format` voice that speaks days; collapse the moment one exists."
-        },
-        {
-          "file": "features/pricing/components/UsageLimitDialog.tsx",
-          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: `formatCountdown` renders the billing-meter reset in days (\"2 days\", \"1 day, 5h\", then \"3h 20m\", \"5m\", \"<1m\"). @ai-matrx/kit/format's `coarse` voice has no day scale and would print \"48h\". Blocked on a kit day-scale voice."
-        },
-        {
-          "file": "features/projects/types.ts",
-          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: same day-scale `getExpiryDisplay` (\"Expires in 3 days\") as features/organizations/types.ts. @ai-matrx/kit/format's `coarse` voice stops at hours (\"72h\"), so collapsing would visibly degrade the screen. Blocked on a kit day-scale voice."
-        },
-        {
-          "file": "features/workflow-runtime/interrupt/interrupt-view.ts",
-          "reason": "Shard 3, 2026-09-11. NOT collapsed and NOT exempt: `humanRemaining` speaks \"45 sec\" / \"12 min\" / \"3 hr\" / \"2 days\" — a spelled-out voice @ai-matrx/kit/format does not have (`coarse` rounds 45 sec to \"1 min\", prints \"3h\" not \"3 hr\", and has no days). __tests__/interrupt-view.test.ts asserts that exact copy. Blocked on a kit spelled-out/day-scale voice."
-        }
-      ],
+      "shapeCensus": [],
       "shapeAllow": [
         {
           "file": "features/agent-apps/format.ts",
@@ -240,7 +219,7 @@
       "package": "@ai-matrx/kit/format",
       "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative — NEVER a confident '0 B'). 2026-09-11: the name lane read GREEN while 134 byte-size bodies lived in 67 files under OTHER names — this row now also carries the SHAPE rule below, which is what actually closed the class.",
       "shapeRule": "byte-size",
-      "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant (80 * 1024 * 1024) can never match — the rule requires a DIVISION or THRESHOLD COMPARISON against 1024, and this repo has ~60 legitimate byte ceilings that must stay untouched.",
+      "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. A second review the same day proved the rule was blind to the DECIMAL (SI) family — 1000 / 1e6 / 1_000_000 — and to a GB-input body that MULTIPLIES; five live twins were returning zero findings. Both are covered now. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant can never match: the division arms require a DIVISION or THRESHOLD COMPARISON against a byte base, and the multiply arm requires BOTH a non-literal operand (so 80 * 1024 * 1024 is out) AND the unit label on the same line outside any comment (so `limitMb * 1024 * 1024; // 25 MB` is out). This repo has ~60 legitimate byte ceilings that must stay untouched.",
       "shapeAllow": [
         {
           "file": "features/organizations/admin/utils.ts",
@@ -251,6 +230,10 @@
           "file": "utils/stream-profiler.ts",
           "reason": "NOT a display formatter: memoryGrowthMB is a NUMBER written into a machine-readable profiler report whose unit lives in the COLUMN NAME (MemoryGrowthMB), consumed by console.table and by whoever reads the dump - there is no unit label and no human rounding decision. It is also signed: memory that SHRANK is a negative growth, and formatFileSize deliberately returns an em-dash for a negative size.",
           "why": "memoryGrowthMB is a diagnostic REPORT FIELD whose unit lives in the key name (MemoryGrowthMB), pinned to MB on purpose so two runs are comparable. It is a number in a console table, never a unit string on a screen."
+        },
+        {
+          "file": "features/research/format.ts",
+          "reason": "NOT bytes: fmtCount is the research UI's compact COUNT abbreviator — the 'B' it prints is BILLION, beside 'M' for million and 'k' for thousand (1234 -> '1.2k', 6234393 -> '6.2M'). It divides by the SI base because a count of sources or characters is genuinely decimal. It became visible the day the byte rule learned the decimal family (2026-09-11) and is the one true collision between the two: the letter B means different things in the two vocabularies. formatFileSize would render '6.0 MB' for six million sources."
         }
       ],
       "allow": []

@@ -14,6 +14,7 @@
 import React from "react";
 import Link from "next/link";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import { avatarPaletteIndex } from "@ai-matrx/kit/format";
 import { readAllRows } from "@ai-matrx/data/db";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { useRouter } from "next/navigation";
@@ -195,20 +196,15 @@ const ORGANIZATION_ACCENTS = [
   "bg-rose-500",
 ] as const;
 
-// NOT swapped to `@ai-matrx/kit/format`'s `avatarPaletteIndex` (census H1
-// 2026-09-07): that function's default is 8 buckets and this palette has 5,
-// AND the overflow handling differs (`>>> 0` unsigned vs. the package's
-// `Math.abs` on a signed accumulator) — negative intermediate hashes land on
-// different indices under the two schemes. Swapping would silently reshuffle
-// which accent color every existing organization gets; that is a visible
-// product decision, not a mechanical one, so this hash is left as-is.
+// Swapped to `@ai-matrx/kit/format`'s `avatarPaletteIndex` (census H1
+// 2026-09-07), passing this palette's own length (5) as the bucket count —
+// the package's hash differs from this file's old one (`Math.abs` on a
+// signed accumulator vs. `>>> 0` unsigned), so this is a one-time, accepted
+// reshuffle of which accent color each organization gets. Pre-launch,
+// nobody outside the team depends on today's assignment.
 function organizationAccent(organizationId: string | null): string {
   if (!organizationId) return "bg-muted-foreground";
-  let hash = 0;
-  for (const character of organizationId) {
-    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  }
-  return ORGANIZATION_ACCENTS[hash % ORGANIZATION_ACCENTS.length];
+  return ORGANIZATION_ACCENTS[avatarPaletteIndex(organizationId, ORGANIZATION_ACCENTS.length)];
 }
 
 export function ProjectsHub({

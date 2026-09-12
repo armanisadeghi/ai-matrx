@@ -18,7 +18,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -234,6 +234,7 @@ export function SystemContextConsole() {
         toast.error(`Delete failed: ${error}`);
         return;
       }
+      dismissRecordToasts({ type: "system_context_item", id: item.id });
       toast.success(`Deleted ${item.key}.`);
       await fetchData();
     },

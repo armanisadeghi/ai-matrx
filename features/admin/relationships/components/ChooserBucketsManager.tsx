@@ -286,6 +286,8 @@ export function ChooserBucketsManager() {
       p_is_active: row.is_active,
     });
     if (error) throw error;
+    // Deliberately NOT a recordToast: the key is a bare vocabulary word
+    // ("status", "crm") that would match unrelated route segments.
     toast.success(`Category "${row.key}" saved — run pnpm gen:entity-types`);
     await reload();
   }
@@ -298,6 +300,8 @@ export function ChooserBucketsManager() {
       p_is_active: row.is_active,
     });
     if (error) throw error;
+    // Deliberately NOT a recordToast: a schema name ("crm", "hr") is also a
+    // top-level route segment and would falsely keep the toast alive there.
     toast.success(`Schema "${row.key}" saved — run pnpm gen:entity-types`);
     await reload();
   }

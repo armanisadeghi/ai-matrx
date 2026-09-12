@@ -225,7 +225,8 @@ function HistoryEntry({ entry }: { entry: AutoSuspendedBlock }) {
         </p>
       ) : (
         <p className="text-muted-foreground">
-          Superseded by a later suspension; no restore was recorded for this one.
+          No restore was recorded for this one — it was superseded by a later
+          suspension, or it was put back outside this page.
         </p>
       )}
     </li>

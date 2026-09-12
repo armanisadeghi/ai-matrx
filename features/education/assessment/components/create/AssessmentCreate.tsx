@@ -15,7 +15,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import {
   ArrowLeft,
   BrainCircuit,
@@ -311,7 +311,12 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
       // practice_test_generate per `config.capability`). Failed branches return
       // first, so a failed generation never burns quota.
       await entitlement.commit();
-      toast.success(
+      recordToast.success(
+        {
+          type: "assessment",
+          id: created.data.assessment.id,
+          title: created.data.assessment.title,
+        },
         `Created "${created.data.assessment.title}" with ${items.length} question${items.length === 1 ? "" : "s"}`,
       );
       startNavigation(() =>

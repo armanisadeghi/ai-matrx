@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   listTemplates,
@@ -219,7 +219,10 @@ export function TemplateGalleryDrawer({
       ).unwrap();
       dispatch(fetchScopeTypes(orgId));
       dispatch(fetchScopes({ org_id: orgId }));
-      toast.success(`Applied "${template.name}"`);
+      recordToast.success(
+        { type: "scope_template", id: template.id, title: template.name },
+        `Applied "${template.name}"`,
+      );
       setSelectedId(null);
       onOpenChange(false);
       onApplied?.();
@@ -266,7 +269,11 @@ export function TemplateGalleryDrawer({
       dispatch(listScopeTypeItems(newType.id));
       dispatch(fetchScopeTypes(orgId));
       dispatch(fetchScopes({ org_id: orgId }));
-      toast.success(`Added "${item.label_plural}" from ${item.template_name}`);
+      recordToast.success(
+        // The record the sentence names is the scope type just created.
+        { type: "scope_type", id: newType.id, title: item.label_plural },
+        `Added "${item.label_plural}" from ${item.template_name}`,
+      );
       onApplied?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to add");

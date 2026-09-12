@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { toast } from "@/lib/toast";
+import { recordToast } from "@/lib/toast";
 import { defineChannelNamespace } from "@ai-matrx/realtime";
 import { supabase } from "@/utils/supabase/client";
 import { useRealtimeManager } from "@ai-matrx/realtime/react";
@@ -93,10 +93,14 @@ export function useTabRealtimeWatcher(): void {
           const warnKey = `${tabId}:${updatedAt}`;
           if (warnedDirtyKeys.has(warnKey)) return;
           warnedDirtyKeys.add(warnKey);
-          toast.warning(`"${liveTab.name}" was updated remotely`, {
-            description:
-              "Reload the tab to see the latest, or save to keep your local edits and overwrite.",
-          });
+          recordToast.warning(
+            { type: table, id: rowId, title: liveTab.name },
+            `"${liveTab.name}" was updated remotely`,
+            {
+              description:
+                "Reload the tab to see the latest, or save to keep your local edits and overwrite.",
+            },
+          );
         }
       };
 

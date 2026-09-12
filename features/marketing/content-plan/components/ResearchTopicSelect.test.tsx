@@ -48,7 +48,7 @@ jest.mock("@/features/research/hooks/useResearchState", () => ({
 }));
 jest.mock("@/lib/toast");
 
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
 
 Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
@@ -269,11 +269,17 @@ describe("ResearchTopicSelect", () => {
     expect(jest.mocked(onChange).mock.calls).toEqual([[NEW_TOPIC]]);
     expect(mockRefresh).toHaveBeenCalledTimes(1);
 
-    const successCalls = jest.mocked(toast.success).mock.calls;
-    expect(successCalls.map(([message]) => message)).toEqual([
-      "Research topic “Fresh topic” created in Research.",
+    // The toast names the new topic, so it carries the topic's identity
+    // (recordToast): it follows the record and cannot outlive it on screen.
+    const successCalls = jest.mocked(recordToast.success).mock.calls;
+    expect(successCalls.map(([ref, message]) => [ref, message])).toEqual([
+      [
+        { type: "research_topic", id: NEW_TOPIC, title: "Fresh topic" },
+        "Research topic “Fresh topic” created in Research.",
+      ],
     ]);
-    const action = successCalls[0]?.[1]?.action;
+    expect(jest.mocked(toast.success)).not.toHaveBeenCalled();
+    const action = successCalls[0]?.[2]?.action;
     if (!isValidElement(action)) throw new Error("the toast offers no door");
     const doorHost = document.createElement("div");
     const doorRoot = createRoot(doorHost);
@@ -322,6 +328,7 @@ describe("ResearchTopicSelect", () => {
       ],
     ]);
     expect(jest.mocked(toast.success)).not.toHaveBeenCalled();
+    expect(jest.mocked(recordToast.success)).not.toHaveBeenCalled();
   });
 
   it("refetches the topic list only when the caller bumps refreshKey", async () => {

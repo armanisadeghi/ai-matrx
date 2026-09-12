@@ -143,3 +143,26 @@ lines by relocating trial-specific detail into the trial's register.
   to examine") — give it the book's rule, not the fix; it finds the dependency (source waits on
   provenance) on its own.
 - 2026-09-12 — Cost of one desk run on a real case: about $1.50 (15 model calls). Quote it.
+- 2026-09-12 — (trial 3) A cloud container has no product checkout: drive the LIVE build headless (Chromium
+  needs `--ssl-version-max=tls1.2` through the agent proxy; the proxy also refuses websockets, so live
+  streams and run boxes go quiet — read `workflow.run` / `chat.request` for truth, and never charge a
+  lost live view as a platform wall without ruling the proxy out). Log it as a cheat.
+- 2026-09-12 — (trial 3) Attach guides by LINK; when a site refuses the reader (Substack did), paste into
+  a New document — the document editor is a canvas, so type into it and reload to prove it persisted.
+- 2026-09-12 — (trial 3) Review every draft rule yourself and REJECT with a reason; "Approve all" hands
+  the Conductor housekeeping rules that pull the desk toward the source's own world (Wikipedia patrol
+  steps in a blog editor). The coherence questions the Rulebook raises are real Expert calls — answer
+  every one before building; the Conductor reads the answers.
+- 2026-09-12 — (trial 3) Give the Conductor the rule, not the fix: told "the editor asks the writer instead
+  of inventing", it noticed the rule was missing from the Rulebook and staged it itself; told "three or
+  more tells", it asked whether that bar governs craft rules too (it must not) — answer the second
+  question, it is the one that decides how aggressive the desk is.
+- 2026-09-12 — (trial 3) When the agent builder dies on a retired model, tell the Conductor to run the
+  step as a plain model call with the same instructions and keep going; the platform fix rides the
+  branch in parallel. Never wait on a deploy while a product-side route-around exists.
+- 2026-09-12 — (trial 3) A blind pairwise judge (fresh Opus, randomised A/B, key sealed) is cheap
+  (~$0.10) and honest; it found the exact eight word-level differences on its own. Seal the key BEFORE
+  reading the verdict.
+- 2026-09-12 — (trial 3) The Conductor infers approvals from version bumps ("your Rulebook moved to 158,
+  so you've approved it") — check the draft flag in the database before believing any state it reports
+  about your rules.

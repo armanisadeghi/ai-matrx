@@ -42,7 +42,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@ai-matrx/design-system";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -409,7 +409,14 @@ function ComposerBody({
         const result = await updateSavedRequest(saved.id, saved.version, input);
         if (result.status === "saved") {
           setSaved(result.request);
-          toast.success(`Saved "${result.request.label}".`);
+          recordToast.success(
+            {
+              type: "saved_request",
+              id: result.request.id,
+              title: result.request.label,
+            },
+            `Saved "${result.request.label}".`,
+          );
         } else if (result.status === "conflict") {
           setSaved(result.current);
           toast.error(
@@ -421,7 +428,10 @@ function ComposerBody({
       } else {
         const created = await createSavedRequest(input);
         setSaved(created);
-        toast.success(`Saved "${created.label}". Find it in Saved requests.`);
+        recordToast.success(
+          { type: "saved_request", id: created.id, title: created.label },
+          `Saved "${created.label}". Find it in Saved requests.`,
+        );
       }
     } catch (error) {
       console.error("[ai-work/new] save failed", error);

@@ -65,6 +65,11 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatNumber } from "@/features/agent-apps/format";
+import {
+  formatPercentFromFraction,
+  formatUsd,
+  isKnownNumber,
+} from "@/lib/format/honest";
 
 interface AgentAppOverviewContentProps {
   appId: string;
@@ -191,10 +196,10 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const variableCount = agentVariables?.length ?? 0;
   const contextPolicyCount = agentContextPolicies?.length ?? 0;
-  const successPct =
-    typeof app.success_rate === "number"
-      ? `${Math.round(app.success_rate * 100)}%`
-      : "—";
+  // `typeof === "number"` lets NaN through and prints "NaN%"; the honest
+  // formatter treats every unmeasurable value the same and still prints a
+  // real 0% as 0%.
+  const successPct = formatPercentFromFraction(app.success_rate);
 
   const codeLines =
     typeof app.component_code === "string"
@@ -452,11 +457,14 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
             value={formatRelative(app.last_execution_at)}
             accent="text-muted-foreground"
           />
-          {typeof app.total_cost === "number" && app.total_cost > 0 && (
+          {/* A MEASURED $0 belongs on the strip; only an UNMEASURED cost is
+              omitted. Mirrors `agentAppKpis`, which this strip must match
+              verbatim per the page-KPI rule. */}
+          {isKnownNumber(app.total_cost) && (
             <StatChip
               icon={Zap}
               label="cost"
-              value={`$${app.total_cost.toFixed(2)}`}
+              value={formatUsd(app.total_cost)}
               accent="text-amber-500"
             />
           )}

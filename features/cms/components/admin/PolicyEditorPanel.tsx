@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, ShieldAlert, ShieldCheck, ShieldOff } from 'lucide-react';
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 
 const POLICY_META: Record<AgentWritePolicy, { label: string; icon: typeof ShieldOff; className: string }> = {
     blocked: { label: 'Blocked', icon: ShieldOff, className: 'text-muted-foreground border-border' },
@@ -37,7 +37,10 @@ export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
             // The write returns a FULL row; the list holds summaries. Narrow through
             // the one canonical converter so the two shapes can never diverge.
             onSiteUpdated(toClientSiteSummary(updated));
-            toast.success(`"${site.name}" agent policy set to ${POLICY_META[policy].label}`);
+            recordToast.success(
+                { type: 'cms_site', id: site.id, title: site.name },
+                `"${site.name}" agent policy set to ${POLICY_META[policy].label}`,
+            );
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to update policy');
         } finally {

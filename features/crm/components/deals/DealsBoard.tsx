@@ -28,7 +28,7 @@ import {
 } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { Building2, CalendarClock, User } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import {
@@ -269,7 +269,11 @@ export function DealsBoard({
     onMoved(dealId, overStageId);
     try {
       await moveDealToStage({ dealId, stageId: overStageId });
-      if (target.outcome === "won") toast.success(`"${deal.name}" won`);
+      if (target.outcome === "won")
+        recordToast.success(
+          { type: "deal", id: deal.id, title: deal.name },
+          `"${deal.name}" won`,
+        );
       else if (target.outcome === "lost") toast(`"${deal.name}" marked lost`);
     } catch (e) {
       onRevert();

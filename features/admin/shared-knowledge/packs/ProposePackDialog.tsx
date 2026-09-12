@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BrainCircuit, Loader2, Plus, Search, X } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { useIndustries } from "@/features/industries/hooks";
 import { upsertIndustry } from "@/features/industries/service";
@@ -106,7 +106,10 @@ export function ProposePackDialog({
       const created = await upsertIndustry({ slug: slugify(name), name, facet: "domain", description: hint.trim() || null });
       refreshIndustries();
       setIndustryId(created.id);
-      toast.success(`Industry “${created.name}” created`);
+      recordToast.success(
+        { type: "industry", id: created.id, title: created.name },
+        `Industry “${created.name}” created`,
+      );
       return created.id;
     } catch (e) {
       toast.error(extractErrorMessage(e));
@@ -129,7 +132,10 @@ export function ProposePackDialog({
       expertRulings: rulings,
     });
     if (pack) {
-      toast.success(`Draft “${pack.name}” is ready to review.`);
+      recordToast.success(
+        { type: "starter_pack", id: pack.id, title: pack.name },
+        `Draft “${pack.name}” is ready to review.`,
+      );
       await onProposed(pack);
       reset();
       onOpenChange(false);

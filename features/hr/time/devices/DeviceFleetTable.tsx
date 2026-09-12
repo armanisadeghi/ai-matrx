@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import type { KioskDeviceRow, KioskTrustState } from "@/features/hr/time/api/types";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
@@ -120,7 +120,10 @@ export function DeviceFleetTable({
         trustState: "trusted",
         reason: "Approved from device management",
       });
-      toast.success(`${row.deviceName} can now record time`);
+      recordToast.success(
+        { type: "hr_kiosk_device", id: row.id, title: row.deviceName },
+        `${row.deviceName} can now record time`,
+      );
       onChanged();
     } catch (cause: unknown) {
       toast.error(cause instanceof Error ? cause.message : "That did not go through.");

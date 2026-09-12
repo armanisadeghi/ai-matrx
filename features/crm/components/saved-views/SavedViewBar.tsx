@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from "react";
 import { Bookmark, Check, Loader2, MoreVertical, Plus, Users } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -174,7 +174,10 @@ export function SavedViewBar<TDef>({
     setViews((prev) => [created, ...prev]);
     onActiveViewIdChange(created.id);
     onActiveViewChange?.({ id: created.id, name: created.name });
-    toast.success(`"${created.name}" saved`);
+    recordToast.success(
+      { type: "saved_view", id: created.id, title: created.name },
+      `"${created.name}" saved`,
+    );
   };
 
   const updateDefinition = async (view: SavedView<TDef>) => {
@@ -185,7 +188,10 @@ export function SavedViewBar<TDef>({
       setViews((prev) =>
         prev.map((v) => (v.id === view.id ? { ...v, definition: next } : v)),
       );
-      toast.success(`"${view.name}" now matches what you are looking at`);
+      recordToast.success(
+        { type: "saved_view", id: view.id, title: view.name },
+        `"${view.name}" now matches what you are looking at`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
     }
@@ -193,6 +199,7 @@ export function SavedViewBar<TDef>({
 
   const rename = async (view: SavedView<TDef>, name: string) => {
     await updateSavedView(view.id, { name });
+    dismissRecordToasts({ type: "saved_view", id: view.id });
     setViews((prev) =>
       prev.map((v) => (v.id === view.id ? { ...v, name: name.trim() } : v)),
     );
@@ -278,6 +285,7 @@ export function SavedViewBar<TDef>({
               if (!ok) return;
               try {
                 await deleteSavedView(view.id);
+                dismissRecordToasts({ type: "saved_view", id: view.id });
                 setViews((prev) => prev.filter((v) => v.id !== view.id));
                 if (activeViewId === view.id) {
                   onActiveViewIdChange(null);

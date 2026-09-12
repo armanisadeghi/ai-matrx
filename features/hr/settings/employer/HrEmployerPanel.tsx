@@ -53,7 +53,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 
 import { upsertHrStructure } from "../../service";
 import { isHrDenied } from "../../types";
@@ -558,7 +558,10 @@ function ApplicabilityRow({
     }
     setDeclaring(false);
     setReason("");
-    toast.success(`${flag.label} is now declared for this employer.`);
+    recordToast.success(
+      { type: "hr_employer_profile_applicability", id: profile.id },
+      `${flag.label} is now declared for this employer.`,
+    );
     onSaved();
   };
 

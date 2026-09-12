@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { Network, Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   Dialog,
@@ -47,7 +47,10 @@ export function AddToOrchestraDialog({
     );
     setBusyId(null);
     if (res.ok) {
-      toast.success(`Added to "${name}"`);
+      recordToast.success(
+        { type: "orchestra", id: conductorId, title: name },
+        `Added to "${name}"`,
+      );
       onClose();
     } else {
       toast.error(res.error ?? "Could not add to Orchestra");

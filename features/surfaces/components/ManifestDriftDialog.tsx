@@ -36,7 +36,7 @@ import {
   RECENT_ROW_WINDOW_HOURS,
   type MirrorTable,
 } from "@/features/surfaces/services/surfaces.service";
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
 import type {
   SurfaceDriftReport,
@@ -62,10 +62,12 @@ const GLOBAL_SWEEP_NOTE = `Rows written in the last ${RECENT_ROW_WINDOW_HOURS}h 
 
 /**
  * The age of ONE stale mirror row: relative in the line (what an operator
- * actually reasons with — "12 minutes ago" is a branch still running), exact
- * timestamp in the tooltip (what they quote when they ask whose it is). Rows
- * inside the recency window are toned to say so, matching the guard that will
- * refuse the first delete click.
+ * actually reasons with — "12m ago" is a branch still running, "3mo ago" is
+ * dead), exact timestamp in the tooltip (what they quote when they ask whose
+ * it is). Rows inside the recency window are toned to say so, matching the
+ * guard that refuses the first delete click. The voice is the fleet's shared
+ * `formatRelativeTime` short style, never a hand-rolled elapsed string — a
+ * month-old row must not read as "728h 55m".
  *
  * Only `db_only` drift entries carry `updatedAt`; anything else renders
  * nothing rather than an invented age.
@@ -85,7 +87,7 @@ function RowAge({ updatedAt }: { updatedAt?: string }) {
           : "text-[10px] text-muted-foreground"
       }
     >
-      {formatDurationMs(Math.max(60_000, ageMs), { style: "coarse" })} ago
+      {formatRelativeTime(updatedAt, { style: "short" })}
       {recent ? " · in-flight window" : ""}
     </span>
   );

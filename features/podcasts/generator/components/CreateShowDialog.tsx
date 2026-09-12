@@ -7,7 +7,7 @@
 // caller receives the created show to select it immediately.
 
 import { useState } from "react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Loader2, Mic } from "lucide-react";
 import {
@@ -76,11 +76,18 @@ export function CreateShowDialog({
       // Registering an id-shaped route here would bake in the wrong-token trap,
       // so the call site passes the slug href explicitly — `resolveEntityDoors`
       // honours an override exactly. Logged as a registry gap in the handoff.
-      toast.success(`Created "${show.title}"`, {
-        action: toastDoor("pc_show", show.id, {
-          href: `/podcast/${show.slug}`,
-        }),
-      });
+      recordToast.success(
+        // The show's route is keyed by SLUG, so the slug is what the toast
+        // must recognise as "still on this record's page" (the id never
+        // appears in `/podcast/[slug]`).
+        { type: "pc_show", id: show.id, title: show.slug },
+        `Created "${show.title}"`,
+        {
+          action: toastDoor("pc_show", show.id, {
+            href: `/podcast/${show.slug}`,
+          }),
+        },
+      );
       onCreated(show);
       reset();
       onOpenChange(false);

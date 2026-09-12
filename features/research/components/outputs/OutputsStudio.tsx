@@ -20,7 +20,7 @@ import {
   ChevronDown,
   ListTree,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -494,7 +494,12 @@ function PodcastOutputCard({
         meta: media as unknown as Record<string, unknown>,
       };
       onPersisted(asset)
-        .then(() => toast.success(`Podcast “${asset.title}” saved to outputs`))
+        .then(() =>
+          recordToast.success(
+            { type: "output_asset", id: asset.id, title: asset.title },
+            `Podcast “${asset.title}” saved to outputs`,
+          ),
+        )
         .catch((e) =>
           toast.error(
             `Generated, but couldn't save to outputs: ${

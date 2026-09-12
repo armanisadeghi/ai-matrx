@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Plus, Check, Loader2, BrainCircuit, X } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useResearchTags, useSourceTags } from "../../hooks/useResearchState";
@@ -157,7 +157,10 @@ export function SourceTagPicker({
       setSuggestions((prev) =>
         prev.filter((x) => x.name.toLowerCase() !== s.name.toLowerCase()),
       );
-      toast.success(`Tagged with “${s.name}”`);
+      recordToast.success(
+        { type: "research_tag", id: tagId, title: s.name },
+        `Tagged with “${s.name}”`,
+      );
     } catch (err) {
       toast.error(
         `Couldn't apply tag: ${

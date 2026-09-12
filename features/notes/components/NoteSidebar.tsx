@@ -104,7 +104,7 @@ import {
   assignHomelessNotesToPersonalOrg,
 } from "../service/notesService";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { getFolderIconAndColor, isDefaultFolder } from "../utils/folderUtils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
@@ -830,7 +830,10 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             folder: folderName,
           }),
         ).unwrap();
-        toast.success(`Created ${folderName} and moved the note`);
+        recordToast.success(
+          { type: "note", id: createFolderIntent.noteId },
+          `Created ${folderName} and moved the note`,
+        );
       } else {
         handleNewNote(folderName);
       }

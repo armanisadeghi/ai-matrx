@@ -121,16 +121,23 @@ export interface SaveKindComponentCodeArgs {
  * exfiltration class and the iframe origin boundary has not shipped yet. That
  * refusal is a SENTENCE written for the person, so it must reach them
  * verbatim instead of being wrapped in "We couldn't save ...".
+ *
+ * The trigger raises it with a HINT that carries the remedy ("Ask AI Matrx to
+ * author or change this component for you..."). PostgREST returns that hint as
+ * its own field, and dropping it leaves the reader told they may not do this
+ * and not told what to do instead — a refusal without a remedy. Both halves
+ * travel (V-23 finding 2).
  */
 const SHAPE_AUTHORING_REFUSAL_HEAD =
   "Only AI Matrx staff can write shape component code right now";
 
 function shapeAuthoringRefusal(error: unknown): string | null {
-  const message =
-    typeof error === "object" && error !== null && "message" in error
-      ? String((error as { message: unknown }).message)
-      : "";
-  return message.startsWith(SHAPE_AUTHORING_REFUSAL_HEAD) ? message : null;
+  if (typeof error !== "object" || error === null) return null;
+  const fields = error as { message?: unknown; hint?: unknown };
+  const message = "message" in fields ? String(fields.message ?? "") : "";
+  if (!message.startsWith(SHAPE_AUTHORING_REFUSAL_HEAD)) return null;
+  const hint = "hint" in fields ? String(fields.hint ?? "").trim() : "";
+  return hint ? `${message} ${hint}` : message;
 }
 
 export async function saveKindComponentCode(

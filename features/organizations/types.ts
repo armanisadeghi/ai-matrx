@@ -6,6 +6,7 @@
  */
 
 import type { JsonObject } from "@/types/json";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ============================================================================
 // Core Types
@@ -480,5 +481,5 @@ export function getExpiryDisplay(expiresAt: string): string {
   const diff = new Date(expiresAt).getTime() - Date.now();
   if (Number.isNaN(diff)) return "Expired";
   if (diff < 0) return "Expired";
-  return `Expires in ${formatDurationMs(diff, { style: "long" })}`;
+  return `Expires in ${formatDurationMs(diff, { style: "coarse" })}`;
 }

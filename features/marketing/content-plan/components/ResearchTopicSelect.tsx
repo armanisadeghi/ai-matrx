@@ -12,7 +12,7 @@ import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useAllTopics } from "@/features/research/hooks/useResearchState";
 import { createTopic } from "@/features/research/service";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 
 const NO_TOPIC = "__none__";
 
@@ -83,9 +83,11 @@ export function ResearchTopicSelect({
       const { topic } = await createTopic(organizationId, { name });
       setCreatedTopic({ id: topic.id, name: topic.name });
       refresh();
-      toast.success(`Research topic “${topic.name}” created in Research.`, {
-        action: toastDoor("research_topic", topic.id),
-      });
+      recordToast.success(
+        { type: "research_topic", id: topic.id, title: topic.name },
+        `Research topic “${topic.name}” created in Research.`,
+        { action: toastDoor("research_topic", topic.id) },
+      );
       return topic.id;
     } catch (error) {
       toast.error(

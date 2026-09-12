@@ -45,7 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 
 import { blindAnonLabel, shuffleIds } from "@/features/agent-comparison/shared/blind";
@@ -516,7 +516,10 @@ function ComparisonView({
       setBlindOrder(null);
       const fresh = await fetchComparison(row.id);
       if (fresh) onRowChange(fresh);
-      toast.success(`Verdict recorded: ${arm.label}`);
+      recordToast.success(
+        { type: "workflow_comparison", id: row.id, title: arm.label },
+        `Verdict recorded: ${arm.label}`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     } finally {

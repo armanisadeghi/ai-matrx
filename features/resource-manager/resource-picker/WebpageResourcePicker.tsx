@@ -26,6 +26,7 @@ import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -632,7 +633,7 @@ export function WebpageResourcePickerCore({
                     {effectiveContent.length.toLocaleString()} chars
                   </span>
                   <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                    {Math.ceil(effectiveContent.length / 1000)} KB
+                    {formatFileSize(effectiveContent.length)}
                   </span>
                   {editedContent !== data.textContent && (
                     <span className="text-[10px] text-orange-600 dark:text-orange-500 flex-shrink-0">

@@ -22,7 +22,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Layers, BrainCircuit, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -181,7 +181,8 @@ export function CreateFromTopic() {
       // the meter decrements (honest even while enforced:false). Failed
       // branches above return first, so a failed generation never burns quota.
       await cardGen.commit();
-      toast.success(
+      recordToast.success(
+        { type: "flashcard_set", id: set.id, title: set.name },
         `Created "${set.name}" with ${cards.length} ${cards.length === 1 ? "card" : "cards"}`,
       );
       startNavigation(() => router.push(`${EDU_BASE}/${set.id}`));

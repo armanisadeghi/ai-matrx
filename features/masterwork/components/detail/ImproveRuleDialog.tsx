@@ -17,7 +17,7 @@
 
 import { useRef, useState } from "react";
 import { ArrowRight, Zap } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AgentCredit } from "../AgentCredit";
@@ -175,10 +175,14 @@ export function ImproveRuleDialog({
         setReview({ original: target, revised });
         setFeedback("");
       } else {
-        toast.success(`"${revised.name}" was rewritten`, {
-          description:
-            "It's back in your review queue as a draft — approve it when you're happy.",
-        });
+        recordToast.success(
+          { type: "rulebook_rule", id: revised.id, title: revised.name },
+          `"${revised.name}" was rewritten`,
+          {
+            description:
+              "It's back in your review queue as a draft — approve it when you're happy.",
+          },
+        );
       }
     } catch (error) {
       toast.error(

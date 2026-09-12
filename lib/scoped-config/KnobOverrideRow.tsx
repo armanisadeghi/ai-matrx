@@ -11,7 +11,11 @@
 //   * "use the platform's value" CLEARS the row — never writes a copy, never
 //     writes null — behind a confirmation naming the value it falls back to;
 //   * the blast radius is said before saving (rule 9);
-//   * a refusal envelope from the door renders as the reason it carries.
+//   * a refusal envelope from the door renders as the reason it carries;
+//   * the CONTROL itself comes from the ONE renderer
+//     (features/settings/universal/KnobFieldControl.tsx), so a model key gets
+//     the model picker and a voice key gets the voice picker at every rung —
+//     this row never decides what a control looks like, only what it says.
 
 import { useEffect, useState } from "react";
 import { Gavel, Lock } from "lucide-react";
@@ -21,6 +25,10 @@ import { Input } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
+import {
+  KnobFieldControl,
+  hasFieldControl,
+} from "@/features/settings/universal/KnobFieldControl";
 import { formatKnobValue, type KnobLadder } from "./ladder";
 import { setKnobOverride, setKnobRungLock } from "./service";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
@@ -218,6 +226,10 @@ export function KnobOverrideRow(props: {
   // decided members don't steer this one, and the door would refuse anyway.
   const lockedForMe = scopeKind === "user" && knob.user_override_locked;
 
+  // The ladder is what names the control. Without one (the flat HR callers)
+  // there is no `control` to honour, so the by-type editor below still runs.
+  const fieldLadder = ladder && hasFieldControl(ladder.control) ? ladder : null;
+
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"
       ? knob.value_type === "boolean"
@@ -293,6 +305,27 @@ export function KnobOverrideRow(props: {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
           Your organization manages this setting.
+        </div>
+      ) : fieldLadder ? (
+        // A picker IS the choice: it writes the moment a person chooses, so
+        // there is no Save beside it. "Inherit" stays — clearing is a
+        // different action from choosing, at every rung (rule 4).
+        <div className="flex items-start gap-2">
+          <KnobFieldControl
+            knob={knob}
+            ladder={fieldLadder}
+            disabled={busy || !fieldLadder.canWrite}
+            onCommit={(value) => write(value)}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy || !isSetHere}
+            title={`Remove the override and inherit from ${inheritedFrom}`}
+            onClick={() => void clear()}
+          >
+            Inherit
+          </Button>
         </div>
       ) : (
       <div className="flex items-start gap-2">
