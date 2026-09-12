@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-09-08`
+**Last updated:** `2026-09-11`
 
 ---
 
@@ -46,7 +46,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 ### Navigate on mobile
 
 1. The existing `#shell-mobile-menu` control opens the canonical `BottomSheet` with `surface="solid"` and a fixed 92dvh height.
-2. A top-level group opens one child screen; Back returns to the root without changing routes.
+2. A group label/icon opens its module home; its separate arrow opens one child screen, and Back returns to the root without changing routes.
 3. Search filters parent and child destinations from the same viewer-filtered `nav-data.ts` tree.
 4. Selecting a destination starts navigation, then closes the drawer; route changes also close it through `MobileMenuPathSync`.
 
@@ -61,7 +61,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - **Never depend on animation events for the view flip.** Hidden pages may not emit them.
 - **Do not force every route menu into one row component.** Consumers use different elements, state, groupings, and specialized rows; share the visual contract unless behavior also becomes identical.
 - **Keep Admin Launchpad directly reachable.** It is a real new-tab anchor in the admin-only footer, not another level inside the Administration cascade.
-- **Mobile navigation is a solid bottom drawer.** Do not restore glass, a left sheet, inline primary-group accordions, or an adaptive-height panel.
+- **Phone navigation is a solid bottom drawer.** Tablet widths use the same drawer primitive as a bounded left edge panel, while phones retain the fixed-height bottom drawer. Do not restore glass, inline primary-group accordions, or an adaptive-height panel.
 - **Keep one mobile scroll area.** `BottomSheetBody` owns scrolling; drill-in screens and search results flow inside it.
 - **Keep iOS interaction minimums.** Rows are at least 48px and the search input is 16px.
 - **Every first-party `ShellIcon` name is compile-time registered.** Persisted or external names must pass through `resolveShellIconName`; an invalid value renders `CircleHelp` and emits one structured `shell-navigation` diagnostic.
@@ -84,6 +84,8 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - `route-menu-style.ts` names the already-shared visual contract so consumers stop copying literals.
 
 ## Change log
+
+- `2026-09-11` — Codex: made every global parent label/icon a real module-home link and moved submenu opening to a separate disclosure control; restored portaled route-menu labels and 48px touch rows; tablet navigation now presents as a bounded edge panel rather than a phone-height drawer.
 
 - `2026-09-08` — Codex: made the Administration Large Route consume one
   persistent icon-led tree at both sidebar widths, eliminating mode-specific

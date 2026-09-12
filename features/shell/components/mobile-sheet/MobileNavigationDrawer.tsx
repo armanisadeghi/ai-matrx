@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { usePathname } from "next/navigation";
-import {
-  BottomSheet,
-  BottomSheetBody,
-} from "@ai-matrx/design-system";
+import AppLink from "@/components/navigation/AppLink";
+import { BottomSheet, BottomSheetBody } from "@ai-matrx/design-system";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type {
   ShellNavChild,
@@ -17,6 +15,8 @@ import {
   partitionNavChildren,
 } from "@/features/shell/constants/nav-data";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
+import { useNavActions } from "@/features/shell/navigation/navActions";
+import { useNavPanelActions } from "@/features/shell/navigation/navPanelActions";
 import ShellIcon from "../ShellIcon";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
@@ -80,25 +80,60 @@ function GroupButton({
   const pathname = usePathname();
   const isActive =
     pathname === item.href || pathname?.startsWith(`${item.href}/`) === true;
-  return (
-    <button
-      type="button"
-      className="shell-mobile-nav-item w-full"
-      onClick={onOpen}
-      aria-label={`Open ${item.label} menu`}
-      data-active={isActive ? "true" : undefined}
-    >
+  const closeAfterNavigationStarts = () => {
+    window.setTimeout(closeShellMobileMenu, 0);
+  };
+  const className = "shell-mobile-nav-item shell-mobile-group-link";
+  const content = (
+    <>
       <span className="shell-nav-icon">
         <ShellIcon name={item.iconName} size={20} strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
-      <ShellIcon
-        name="ChevronRight"
-        size={18}
-        strokeWidth={1.75}
-        className="shrink-0 text-muted-foreground"
-      />
-    </button>
+    </>
+  );
+
+  return (
+    <div
+      className="shell-mobile-nav-group"
+      data-active={isActive ? "true" : undefined}
+    >
+      {item.external || item.openInNewTab ? (
+        <a
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={className}
+          onClick={closeAfterNavigationStarts}
+        >
+          {content}
+        </a>
+      ) : (
+        <AppLink
+          href={item.href}
+          className={className}
+          data-nav-href={item.href}
+          data-active={isActive ? "true" : undefined}
+          aria-current={isActive ? "page" : undefined}
+          onClick={closeAfterNavigationStarts}
+        >
+          {content}
+        </AppLink>
+      )}
+      <button
+        type="button"
+        className="shell-mobile-group-disclosure"
+        onClick={onOpen}
+        aria-label={`Open ${item.label} menu`}
+      >
+        <ShellIcon
+          name="ChevronRight"
+          size={18}
+          strokeWidth={1.75}
+          className="shrink-0 text-muted-foreground"
+        />
+      </button>
+    </div>
   );
 }
 
@@ -109,6 +144,8 @@ export default function MobileNavigationDrawer({
   const [open, setOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const navActions = useNavActions();
+  const navPanelActions = useNavPanelActions();
 
   const allItems = [...items, settingsItem];
   const activeGroup = allItems.find(
@@ -157,15 +194,46 @@ export default function MobileNavigationDrawer({
     }
   };
 
-  const renderChild = (child: ShellNavChild) => (
-    <MobileSheetNavLink
-      key={navChildIdentity(child)}
-      href={child.href}
-      iconName={child.panelAction ? NAV_WINDOW_PANEL_ICON : child.iconName}
-      label={child.label}
-      external={child.external}
-    />
-  );
+  const renderChild = (child: ShellNavChild) => {
+    const handler = child.panelAction
+      ? navPanelActions[child.panelAction]
+      : child.action
+        ? navActions[child.action]
+        : undefined;
+    if (handler) {
+      return (
+        <button
+          key={navChildIdentity(child)}
+          type="button"
+          className="shell-mobile-nav-item w-full"
+          onClick={() => {
+            handler();
+            closeShellMobileMenu();
+          }}
+        >
+          <span className="shell-nav-icon">
+            <ShellIcon
+              name={child.panelAction ? NAV_WINDOW_PANEL_ICON : child.iconName}
+              size={20}
+              strokeWidth={1.75}
+            />
+          </span>
+          <span className="min-w-0 flex-1 truncate text-left">
+            {child.label}
+          </span>
+        </button>
+      );
+    }
+    return (
+      <MobileSheetNavLink
+        key={navChildIdentity(child)}
+        href={child.href}
+        iconName={child.iconName}
+        label={child.label}
+        external={child.external}
+      />
+    );
+  };
 
   const renderRoot = () => (
     <div className="shell-mobile-main-nav" key="root">
@@ -248,17 +316,21 @@ export default function MobileNavigationDrawer({
   const renderSearch = () => (
     <div className="shell-mobile-main-nav" key="search-results">
       {results.length ? (
-        results.map(({ item, groupLabel }) => (
-          <MobileSheetNavLink
-            key={`${groupLabel ?? "root"}-${item.href}-${item.label}`}
-            href={item.href}
-            iconName={item.iconName}
-            label={item.label}
-            contextLabel={groupLabel}
-            external={item.external}
-            openInNewTab={"openInNewTab" in item ? item.openInNewTab : false}
-          />
-        ))
+        results.map(({ item, groupLabel }) =>
+          "panelAction" in item || "action" in item ? (
+            renderChild(item as ShellNavChild)
+          ) : (
+            <MobileSheetNavLink
+              key={`${groupLabel ?? "root"}-${item.href}-${item.label}`}
+              href={item.href}
+              iconName={item.iconName}
+              label={item.label}
+              contextLabel={groupLabel}
+              external={item.external}
+              openInNewTab={"openInNewTab" in item ? item.openInNewTab : false}
+            />
+          ),
+        )
       ) : (
         <div className="px-4 py-12 text-center text-sm text-muted-foreground">
           No destinations match “{query.trim()}”.

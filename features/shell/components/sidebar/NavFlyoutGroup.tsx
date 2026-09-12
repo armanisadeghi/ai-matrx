@@ -2,10 +2,9 @@
 
 // NavFlyoutGroup — Client island for a nav item with nested children.
 //
-// Collapsed sidebar:  parent is a plain icon Link → clicking navigates to the
-//                     main route. Hovering opens the submenu flyout.
-// Expanded sidebar:   parent is a row with a caret → hovering OR clicking opens
-//                     the submenu flyout beside the rail (click pins it open).
+// The parent label/icon is always a route link. Its separate disclosure button
+// opens the submenu flyout, so the same route is reachable at either rail
+// width without stealing native link behavior (new tab, keyboard activation).
 //
 // The submenu is a glass panel portaled to <body> and positioned to the right
 // of the trigger (clamped to the viewport). Because it lives outside
@@ -17,7 +16,6 @@ import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
-import { useSidebarExpanded } from "../../hooks/useSidebarExpanded";
 import {
   NAV_WINDOW_PANEL_ICON,
   partitionNavChildren,
@@ -26,7 +24,6 @@ import {
 } from "../../constants/nav-data";
 import { useNavActions } from "../../navigation/navActions";
 import { useNavPanelActions } from "../../navigation/navPanelActions";
-import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
@@ -50,7 +47,6 @@ export default function NavFlyoutGroup({
   suppressActive = false,
 }: NavFlyoutGroupProps) {
   const children = item.children ?? [];
-  const expanded = useSidebarExpanded();
   const pathname = usePathname() ?? "";
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
@@ -243,12 +239,7 @@ export default function NavFlyoutGroup({
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  // Expanded: clicking toggles/pins the flyout instead of navigating.
-  // Collapsed: let the Link navigate to the main route.
-  const handleParentClick = (e: React.MouseEvent) => {
-    if (allowNativeNewTab(e)) return; // allow new-tab via href
-    if (!expanded) return;
-    e.preventDefault();
+  const toggleFlyout = () => {
     position();
     setPinned((prev) => {
       const next = !prev;
@@ -270,23 +261,31 @@ export default function NavFlyoutGroup({
         href={item.href}
         data-nav-href={suppressActive ? undefined : item.href}
         data-nav-active={isGroupActive ? "true" : undefined}
-        className="shell-nav-item shell-tactile-subtle"
-        aria-haspopup="menu"
-        aria-expanded={showPanel}
-        onClick={handleParentClick}
+        aria-current={isGroupActive ? "page" : undefined}
+        className="shell-nav-item shell-nav-group-link shell-tactile-subtle"
         onFocus={scheduleOpen}
       >
         <span className="shell-nav-icon">
           <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
         </span>
         <span className="shell-nav-label">{item.label}</span>
+      </AppLink>
+      <button
+        type="button"
+        className="shell-nav-group-disclosure shell-tactile-subtle"
+        aria-label={`Open ${item.label} menu`}
+        aria-haspopup="menu"
+        aria-expanded={showPanel}
+        onClick={toggleFlyout}
+        onFocus={scheduleOpen}
+      >
         <ShellIcon
           name="ChevronRight"
           size={14}
           strokeWidth={2}
           className="shell-nav-flyout-caret"
         />
-      </AppLink>
+      </button>
 
       {showPanel &&
         typeof document !== "undefined" &&

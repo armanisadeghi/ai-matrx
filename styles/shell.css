@@ -824,6 +824,33 @@ button.shell-nav-item {
    not the CSS data-pathname matching used elsewhere. */
 .shell-nav-flyout-group {
   position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.shell-nav-group-link {
+  min-width: 0;
+  flex: 1;
+}
+
+.shell-nav-group-disclosure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  flex: 0 0 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--shell-nav-icon);
+}
+
+.shell-nav-group-disclosure:hover {
+  color: var(--shell-nav-icon-hover);
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked))
+  .shell-nav-group-disclosure {
+  display: none;
 }
 
 /* Caret on the expanded parent row, hinting at the submenu. */
@@ -1807,6 +1834,39 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   color: var(--accent-foreground);
 }
 
+.shell-mobile-nav-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.shell-mobile-nav-group[data-active="true"] .shell-mobile-group-link {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.shell-mobile-group-link {
+  min-width: 0;
+  flex: 1;
+}
+
+.shell-mobile-group-disclosure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  flex: 0 0 3rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--shell-nav-icon);
+}
+
+.shell-mobile-group-disclosure:hover,
+.shell-mobile-group-disclosure:active {
+  background: var(--muted);
+  color: var(--shell-nav-text-hover);
+}
+
 /* ── 3. Mobile sheet nav items (.shell-mobile-nav-item) ─────────────────────── */
 
 :where(
@@ -1951,7 +2011,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
    `#shell-sidebar-toggle`, but the mobile sheet has no collapsed rail —
    always show labels and expanded row spacing here. Desktop is unaffected:
    `.shell-mobile-sheet-wrapper` is hidden at lg+. */
-.shell-root:not(:has(#shell-sidebar-toggle:checked))
+body:has(.shell-root:not(:has(#shell-sidebar-toggle:checked)))
   .shell-mobile-route-nav
   .shell-nav-label {
   opacity: 1;
@@ -1960,17 +2020,35 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   width: auto;
 }
 
-.shell-root:not(:has(#shell-sidebar-toggle:checked))
+body:has(.shell-root:not(:has(#shell-sidebar-toggle:checked)))
   .shell-mobile-route-nav
   .shell-nav-item {
   gap: 0.75rem;
   justify-content: flex-start;
+  min-height: 3rem;
+  padding: 0.625rem 0.75rem;
 }
 
-.shell-root:not(:has(#shell-sidebar-toggle:checked))
+body:has(.shell-root:not(:has(#shell-sidebar-toggle:checked)))
   .shell-mobile-route-nav
   .shell-nav-item[title]:hover::after {
   content: none;
+}
+
+/* Tablet keeps the same navigation tree but uses a bounded edge panel. The
+   BottomSheet portal remains the one ownership/lifecycle primitive; only its
+   presentation changes once there is room beside the current workspace. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .shell-mobile-sheet {
+    top: 0;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    width: min(22rem, calc(100vw - 3rem));
+    height: 100dvh;
+    border-width: 0 1px 0 0;
+    border-radius: 0;
+  }
 }
 
 .shell-mobile-switch {
