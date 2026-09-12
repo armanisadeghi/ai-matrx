@@ -51975,6 +51975,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
       }
+      token_is_parented_component: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       unnest_uuids: { Args: { p_ids: string[] }; Returns: string[] }
       verify_canonical: {
         Args: {

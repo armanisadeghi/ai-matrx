@@ -57764,7 +57764,7 @@
           "Legal Admin"
         ],
         "summary": "Version",
-        "description": "Confirm which build of matrx-legal is loaded in the running process.\n\nNo auth required beyond authenticated session — this is a diagnostic.\nHit /legal/admin/version after deploying to verify the new code is live.\nMismatch with the latest commit on the branch ⇒ the API server didn't\nrestart and is still serving stale Python imports.",
+        "description": "Confirm which build of matrx-legal is loaded in the running process.\n\nADMIN-ONLY, like its siblings (2026-09-12): it reports the platform's\nloaded package internals, and an authenticated-only route under an\n``/…/admin`` prefix was the single reason this whole mount still had to\ndemand an ambient organization. A non-admin build probe is\n``/health/version``; nothing here is a public diagnostic.\n\nHit /legal/admin/version after deploying to verify the new code is live.\nMismatch with the latest commit on the branch ⇒ the API server didn't\nrestart and is still serving stale Python imports.",
         "operationId": "version_legal_admin_version_get",
         "responses": {
           "200": {
@@ -86553,50 +86553,127 @@
             "title": "Schema Ok"
           },
           "total_chunks": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Total Chunks"
           },
           "chunks_by_source_kind": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Chunks By Source Kind"
           },
           "chunks_by_section_kind": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Chunks By Section Kind"
           },
           "distinct_sources": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Distinct Sources"
           },
           "distinct_owners": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Distinct Owners"
           },
           "library_doc_count": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Library Doc Count"
           },
           "library_chunk_count": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Library Chunk Count"
           },
           "embeddings_oai_count": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Embeddings Oai Count"
           },
           "embeddings_voyage_count": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Embeddings Voyage Count"
           },
           "audit_rows_24h": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Audit Rows 24H"
+          },
+          "degraded": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Degraded"
           }
         },
         "additionalProperties": false,
@@ -86614,7 +86691,8 @@
           "embeddings_voyage_count",
           "audit_rows_24h"
         ],
-        "title": "AdminOverview"
+        "title": "AdminOverview",
+        "description": "One screen's worth of RAG inventory.\n\nEvery count is ``int | None``: ``None`` means *this number could not be\ncomputed*, and ``degraded`` says which section failed and why. A zero here\nis therefore always a real zero — the screen never shows a lying 0 because\none query died, and one dead section never 500s the other ten (the whole\nroute was hard-500 until 2026-09-12 because a single probe query threw)."
       },
       "AdminSearchHit": {
         "properties": {
@@ -157287,6 +157365,16 @@
             "title": "Source Ref Extra",
             "description": "Extra provenance keys merged into every rule's source_ref — how a delegating lane anchors rules to the piece they came from. Never overrides the lane's own keys."
           },
+          "standing": {
+            "type": "string",
+            "enum": [
+              "evidence",
+              "rule"
+            ],
+            "title": "Standing",
+            "description": "The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.",
+            "default": "rule"
+          },
           "redistill": {
             "type": "string",
             "enum": [
@@ -157637,6 +157725,16 @@
             ],
             "title": "Source Ref Extra",
             "description": "Extra provenance keys merged into every rule's source_ref — how a delegating lane (the corpus lane) anchors rules to the piece they came from ({url, corpus_item_id}). Never overrides the lane's own keys."
+          },
+          "standing": {
+            "type": "string",
+            "enum": [
+              "evidence",
+              "rule"
+            ],
+            "title": "Standing",
+            "description": "The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.",
+            "default": "rule"
           },
           "redistill": {
             "type": "string",
@@ -174731,7 +174829,9 @@
           },
           "attendees": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -174739,7 +174839,9 @@
           },
           "notes": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -174747,7 +174849,9 @@
           },
           "transcript": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -174755,7 +174859,9 @@
           },
           "recordings": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -187071,6 +187177,11 @@
               }
             ],
             "title": "Backlink Id"
+          },
+          "full_page": {
+            "type": "boolean",
+            "title": "Full Page",
+            "default": false
           }
         },
         "type": "object",
@@ -187178,6 +187289,15 @@
             "type": "boolean",
             "title": "Content Truncated",
             "default": false
+          },
+          "content_scope": {
+            "type": "string",
+            "enum": [
+              "full",
+              "main"
+            ],
+            "title": "Content Scope",
+            "default": "full"
           },
           "links_to_target": {
             "items": {
