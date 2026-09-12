@@ -238,16 +238,28 @@ export function OlderMessagesSentinel({
       // unrelated layout/programmatic jump much later in the conversation.
       if (upward && scrollEl.scrollTop > PREFETCH_BAND_PX) {
         gestureFrame = window.requestAnimationFrame(() => {
-          if (scrollEl.scrollTop > PREFETCH_BAND_PX) upwardIntentRef.current = false;
+          if (scrollEl.scrollTop > PREFETCH_BAND_PX)
+            upwardIntentRef.current = false;
         });
       }
     };
-    const nestedScrollerConsumes = (target: EventTarget | null, upward: boolean) => {
+    const nestedScrollerConsumes = (
+      target: EventTarget | null,
+      upward: boolean,
+    ) => {
       let element = target instanceof Element ? target : null;
       while (element && element !== scrollEl) {
         const overflow = window.getComputedStyle(element).overflowY;
-        if ((overflow === "auto" || overflow === "scroll") && element.scrollHeight > element.clientHeight) {
-          if (upward ? element.scrollTop > 0 : element.scrollTop + element.clientHeight < element.scrollHeight) return true;
+        if (
+          (overflow === "auto" || overflow === "scroll") &&
+          element.scrollHeight > element.clientHeight
+        ) {
+          if (
+            upward
+              ? element.scrollTop > 0
+              : element.scrollTop + element.clientHeight < element.scrollHeight
+          )
+            return true;
         }
         element = element.parentElement;
       }
@@ -257,21 +269,41 @@ export function OlderMessagesSentinel({
       if (nestedScrollerConsumes(event.target, event.deltaY < 0)) return;
       if (event.deltaY !== 0) direction(event.deltaY < 0);
     };
-    const touchStart = (event: TouchEvent) => { touchY = event.touches[0]?.clientY; };
+    const touchStart = (event: TouchEvent) => {
+      touchY = event.touches[0]?.clientY;
+    };
     const touchMove = (event: TouchEvent) => {
       const nextY = event.touches[0]?.clientY;
       if (nextY !== undefined && touchY !== undefined && nextY !== touchY) {
-        if (!nestedScrollerConsumes(event.target, nextY > touchY)) direction(nextY > touchY);
+        if (!nestedScrollerConsumes(event.target, nextY > touchY))
+          direction(nextY > touchY);
       }
       touchY = nextY;
     };
     const keyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof Element && event.target.closest("input, textarea, [contenteditable='true']")) return;
-      if (["ArrowUp", "PageUp", "Home"].includes(event.key) || (event.key === " " && event.shiftKey)) direction(true);
-      if (["ArrowDown", "PageDown", "End"].includes(event.key) || (event.key === " " && !event.shiftKey)) direction(false);
+      if (
+        event.target instanceof Element &&
+        event.target.closest("input, textarea, [contenteditable='true']")
+      )
+        return;
+      if (
+        ["ArrowUp", "PageUp", "Home"].includes(event.key) ||
+        (event.key === " " && event.shiftKey)
+      )
+        direction(true);
+      if (
+        ["ArrowDown", "PageDown", "End"].includes(event.key) ||
+        (event.key === " " && !event.shiftKey)
+      )
+        direction(false);
     };
-    const pointerStart = () => { pointerDown = true; previousTop = scrollEl.scrollTop; };
-    const pointerEnd = () => { pointerDown = false; };
+    const pointerStart = () => {
+      pointerDown = true;
+      previousTop = scrollEl.scrollTop;
+    };
+    const pointerEnd = () => {
+      pointerDown = false;
+    };
     const scroll = () => {
       // Native scrollbar dragging is intent; layout/scrollTo events are not.
       if (pointerDown && scrollEl.scrollTop !== previousTop) {
