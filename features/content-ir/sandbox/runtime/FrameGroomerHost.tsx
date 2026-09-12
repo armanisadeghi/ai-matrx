@@ -10,21 +10,26 @@
  * subtree is `WindowPanel` → the window-panel registry → every feature in the
  * app: jspdf, toast-ui, codemirror, prosemirror, univer, the Supabase client.
  * Measured 2026-09-12: bundling `CopyButtons` alone costs 16.6 MB and drags in
- * `XMLHttpRequest` and `fetch`. That is the whole app inside the sandbox, which
- * is the opposite of a sandbox.
+ * `XMLHttpRequest` and `fetch`. That is the whole app inside the sandbox,
+ * which is the opposite of a sandbox.
  *
- * And the Groomer genuinely CANNOT run here: it opens a draggable window in
- * the host page's own layout. A frame can only paint its own box (plan §1.8).
- * So this is not a size trick — it is the correct boundary, drawn at the seam
- * the app already built for it.
+ * And the Groomer genuinely cannot RUN here: it opens a draggable window in
+ * the host page's own layout, and a frame can only paint its own box
+ * (plan §1.8).
  *
- * NOTHING SILENT (Law 4). Closed, this renders exactly what the real host
- * renders: nothing. Opened, it renders a visible sentence saying the action
- * lives in the main page and is not wired through the sandbox yet. It never
- * pretends to have worked. S2's message protocol is where the open request
- * gets relayed to the parent for real.
+ * WHAT S2 CHANGED (chair ruling 7). Opening it no longer dead-ends. The
+ * request is RELAYED to the host page through the ONE action bridge
+ * (`matrx:sandbox:action` → `runAction`) — the same door the component's own
+ * actions use — so the window opens where windows live. The frame gains no
+ * capability and there is no second door.
+ *
+ * NOTHING SILENT (Law 4): while the request is in flight this says so, and if
+ * the host refuses (no handler registered, or the host said no) it shows the
+ * host's own sentence. It never pretends the window opened.
  */
 import React from "react";
+import { HOST_RELAY_ACTION_KEYS } from "../protocol";
+import { requestHostAction } from "./host-action-relay";
 
 export interface AgentCopyGroomerHostProps {
     open: boolean;
@@ -37,24 +42,69 @@ export function AgentCopyGroomerHost({
     config,
     onClose,
 }: AgentCopyGroomerHostProps): React.ReactElement | null {
+    const [status, setStatus] = React.useState<
+        { state: "idle" } | { state: "sending" } | { state: "failed"; message: string }
+    >({ state: "idle" });
+
+    React.useEffect(() => {
+        if (!open || !config) {
+            setStatus({ state: "idle" });
+            return;
+        }
+        let live = true;
+        setStatus({ state: "sending" });
+        void requestHostAction(HOST_RELAY_ACTION_KEYS.groomWithAgent, {
+            config,
+        }).then((result) => {
+            if (!live) return;
+            if (result.ok) {
+                // The window opened in the host page; this frame has nothing
+                // left to show, and the caller's own state closes the menu.
+                setStatus({ state: "idle" });
+                onClose();
+                return;
+            }
+            setStatus({
+                state: "failed",
+                message:
+                    result.error ??
+                    "The page could not open the grooming window, and gave no reason.",
+            });
+        });
+        return () => {
+            live = false;
+        };
+    }, [open, config, onClose]);
+
     if (!open || !config) return null;
+
+    if (status.state === "failed") {
+        return (
+            <div
+                role="alert"
+                className="matrx-sandbox-error"
+                data-matrx-sandbox-unavailable="agent-copy-groomer"
+            >
+                <strong>Grooming this copy with an agent did not start.</strong>
+                <span>{status.message}</span>
+                <button type="button" onClick={onClose}>
+                    Close
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div
-            role="alert"
+            role="status"
             className="matrx-sandbox-error"
-            data-matrx-sandbox-unavailable="agent-copy-groomer"
+            data-matrx-sandbox-relay="agent-copy-groomer"
         >
-            <strong>
-                Grooming this copy with an agent opens a window in the main
-                page.
-            </strong>
+            <strong>Opening the grooming window in the main page…</strong>
             <span>
-                Components rendered in the Shape sandbox cannot open that window
-                yet. Copy and Copy-for-AI still work here.
+                This component renders inside the Shape sandbox, so the agent
+                window opens outside it.
             </span>
-            <button type="button" onClick={onClose}>
-                Close
-            </button>
         </div>
     );
 }

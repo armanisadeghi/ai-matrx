@@ -45,6 +45,17 @@ export interface FrameMarkdownProps {
 /** Marker class the parity/screenshot pass can assert on. */
 const REFUSED_CLASS = "matrx-sandbox-refused-url";
 
+/**
+ * The sentence a reader sees MUST be the rule that actually refused the value
+ * — a link and an image are governed by different allowlists, and quoting the
+ * link rule on a blocked image sends the author to fix the wrong thing
+ * (V-27 finding C, 2026-09-12).
+ */
+const REFUSAL_SENTENCE: Record<string, string> = {
+    link: "This link was blocked: inside a Shape component a link may only be an ordinary web address (http or https), an email address, or a phone number.",
+    image: "This image was blocked: inside a Shape component an image may only come from an ordinary web address (http or https), the page's own data, or an embedded image — and the sandbox itself will only load embedded images and images from the platform's image door.",
+};
+
 function RefusedUrl({
     label,
     children,
@@ -56,7 +67,10 @@ function RefusedUrl({
         <span
             className={REFUSED_CLASS}
             data-matrx-refused={label}
-            title={`This ${label} was blocked: only http, https, mailto and tel links are allowed inside a Shape component.`}
+            title={
+                REFUSAL_SENTENCE[label] ??
+                `This ${label} was blocked because the sandbox does not allow that kind of address.`
+            }
         >
             {children}
         </span>

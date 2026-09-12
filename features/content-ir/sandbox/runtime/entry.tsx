@@ -6,10 +6,13 @@
  * one cacheable script, because the frame's CSP is `connect-src 'none'` and
  * therefore nothing can be fetched at runtime.
  *
- * WHAT IS DELIBERATELY ABSENT (S1 scope, DD-123 §2):
- *  - no `postMessage`, no `window.top`, no `parent` — the message protocol is
- *    S2. Until then the runtime is driven through the global below, which is
- *    exactly what the bare-HTML acceptance harness does.
+ * WHAT IS DELIBERATELY ABSENT:
+ *  - no `window.top`, no `parent`, no reference to another document of any
+ *    kind. S2 added the host protocol, and it is a TRANSFERRED MessagePort
+ *    (`frame-bridge.ts`): the host posts one init message carrying the port,
+ *    the frame checks `event.origin`, takes the port and drops its window
+ *    listener. The global below still exists and is still what the bare-HTML
+ *    acceptance harness drives.
  *  - no network of any kind. Nothing in this bundle may reach `fetch`,
  *    `XMLHttpRequest`, `WebSocket` or `EventSource`; the build script greps
  *    its own output and FAILS if one appears (that is the real guard, not this
@@ -21,6 +24,7 @@
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { executeKindBody } from "./execute-kind-body";
+import { frameRefusals, installFrameBridge } from "./frame-bridge";
 import type { SandboxBodyPayload } from "../transform/transform-kind-body";
 
 /** Bumped whenever the mount contract changes. The host asserts on it. */
@@ -192,13 +196,20 @@ export interface MatrxKindSandboxGlobal {
     version: number;
     mount: typeof mountKindComponent;
     applyTheme: typeof applyTheme;
+    /** Named refusals the bridge has counted (acceptance + support). */
+    refusals: typeof frameRefusals;
 }
 
 const api: MatrxKindSandboxGlobal = {
     version: SANDBOX_RUNTIME_VERSION,
     mount: mountKindComponent,
     applyTheme,
+    refusals: frameRefusals,
 };
+
+// S2: open the ONE door to the host page. Harmless in the bare harness — with
+// no host there is no init message and nothing ever arrives.
+installFrameBridge(mountKindComponent);
 
 // The frame's only entry point. `globalThis` (not `window`) so nothing in this
 // bundle names a cross-document object.

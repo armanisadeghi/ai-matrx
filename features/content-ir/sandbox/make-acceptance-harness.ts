@@ -23,6 +23,7 @@ import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformKindComponentBody } from "./transform/transform-kind-body";
 import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
+import { inlineJson } from "./inline-json";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "../../..");
@@ -165,7 +166,7 @@ Every component body and every data payload below was read live from the databas
 <div id="cases"></div>
 <script src="kind-sandbox.js"></script>
 <script>
-  window.__HARNESS__ = ${JSON.stringify(items)};
+  window.__HARNESS__ = ${inlineJson(items)};
   window.__RESULTS__ = [];
   var host = document.getElementById("cases");
   window.__HARNESS__.forEach(function (item) {

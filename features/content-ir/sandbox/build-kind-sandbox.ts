@@ -39,7 +39,7 @@
 import { build, type Metafile } from "esbuild";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import postcss from "postcss";
 import tailwindcss from "@tailwindcss/postcss";
@@ -77,7 +77,14 @@ const FORBIDDEN_MODULES: ReadonlyArray<readonly [RegExp, string]> = [
     [/^features\/[^/]+\/redux\//, "a feature's Redux slice"],
 ];
 
-/** Call shapes that can reach the network or another document. */
+/**
+ * Call shapes that can reach the network, another document, or durable
+ * browser state. The storage and dynamic-import shapes were added 2026-09-12
+ * (V-27 finding D): the frame has NO legitimate use for persistence — its
+ * whole state is the props the host sends — and `import(` would fetch, which
+ * `connect-src 'none'` refuses at run time but which must never be in the
+ * bundle in the first place.
+ */
 const FORBIDDEN_CALLS: ReadonlyArray<readonly [RegExp, string]> = [
     [/(^|[^.\w$"'`])fetch\s*\(/, "a fetch() call"],
     [/new\s+XMLHttpRequest/, "an XMLHttpRequest"],
@@ -88,6 +95,18 @@ const FORBIDDEN_CALLS: ReadonlyArray<readonly [RegExp, string]> = [
     [/window\s*\.\s*parent\b/, "a window.parent reference"],
     [/parent\s*\.\s*postMessage\s*\(/, "a parent.postMessage() call"],
     [/next\/dist/, "a Next.js internal path"],
+    [/(^|[^.\w$"'`])localStorage\b/, "a localStorage access"],
+    [/(^|[^.\w$"'`])sessionStorage\b/, "a sessionStorage access"],
+    [/\.\s*localStorage\b/, "a localStorage access"],
+    [/\.\s*sessionStorage\b/, "a sessionStorage access"],
+    [/indexedDB\s*\./, "an IndexedDB access"],
+    // READ only. Writing the clipboard IS the copy bar — the one capability
+    // an author is explicitly given — and it cannot leak anything: the value
+    // is the content the reader is already looking at. READING the clipboard
+    // is the exfiltration shape (whatever the user last copied, anywhere),
+    // and nothing in the frame has any business doing it.
+    [/clipboard\s*\.\s*read/, "a navigator.clipboard READ"],
+    [/(^|[^.\w$"'`])import\s*\(/, "a dynamic import()"],
 ];
 
 function formatBytes(n: number): string {
@@ -133,10 +152,20 @@ async function buildJs(): Promise<{ code: string; meta: Metafile }> {
         absWorkingDir: ROOT,
         tsconfig: resolve(ROOT, "tsconfig.json"),
         loader: { ".css": "empty", ".svg": "dataurl", ".png": "dataurl" },
+        alias: ALIAS,
+        // THE FRAME HAS NO STORAGE (V-27 finding D). Both globals are
+        // replaced with the announcing stand-in: on an opaque origin the real
+        // ones throw a SecurityError, and durable state in an invisible place
+        // is not something a Shape component may have. After this the audit
+        // below can refuse the real names outright.
+        inject: [resolve(__dirname, "runtime/frame-storage.ts")],
         define: {
             "process.env.NODE_ENV": '"production"',
+            localStorage: "__matrxFrameStorage",
+            sessionStorage: "__matrxFrameStorage",
+            "window.localStorage": "__matrxFrameStorage",
+            "window.sessionStorage": "__matrxFrameStorage",
         },
-        alias: ALIAS,
         logLevel: "info",
     });
 
@@ -193,6 +222,13 @@ async function main(): Promise<void> {
 
     const failures = [...auditGraph(meta), ...auditArtifact(code)];
     if (failures.length > 0) {
+        // A REJECTED ARTIFACT NEVER SURVIVES THE RUN (V-27 finding B,
+        // 2026-09-12). esbuild has already written `public/kind-sandbox.js` by
+        // the time the audits run, so without this the next `pnpm dev` serves
+        // the very bundle the build refused — a failing build that silently
+        // ships is worse than no audit at all.
+        await rm(JS_OUT, { force: true });
+        await rm(CSS_OUT, { force: true });
         throw new Error(
             "The kind sandbox bundle contains things the frame may not have.\n\n" +
                 failures.join("\n\n") +
