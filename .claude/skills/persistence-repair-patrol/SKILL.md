@@ -296,6 +296,12 @@ watchdog/system-error start→finish and flow/age/recurrence, app-log coverage/c
 gaps, exact resolved count/IDs or evidence pointer, commits/proof, and selected open
 continuations. Distinguish new repairs, verified prior repairs, unverified historical
 leads, and actual human gates. Never claim clean with an unavailable/incomplete lane.
+Completing a recurring patrol run does not require every agent-owned deployment,
+canary, or recurrence continuation to finish in that same run. Report the run as
+completed and name those continuations as agent-owned next work. Use task-incomplete
+or blocking language only when the requested run itself could not execute or a
+freshly verified human-only action is required; in that case state the exact action
+the human must take and what the agent will do immediately afterward.
 For recurring runs, notify on meaningful repairs, new actionable failures, completion,
 or required human action; unchanged non-actionable state stays quiet. Only when at
 least one freshly verified human-only gate exists, finish with

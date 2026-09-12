@@ -8,6 +8,10 @@ timestamp: 2026-09-10T00:00:00Z
 
 # persistence-repair-patrol — changelog
 
+- 2026-09-11 - Separated recurring-run completion from agent-owned deployment,
+  canary, and recurrence continuations after a completed patrol was misleadingly
+  labeled incomplete without any action the owner could take.
+
 - 2026-09-10 - Investigators follow the shared `diagnose` method (loop before theory, boundary
   localization, one-variable hypotheses, three-failed-fix stop); harnesses are never proof.
 
