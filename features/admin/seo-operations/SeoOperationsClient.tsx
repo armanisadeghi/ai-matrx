@@ -22,6 +22,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import MarkdownStream from "@/components/MarkdownStream";
 import {
   Select,
   SelectContent,
@@ -33,7 +34,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { toast } from "@/lib/toast";
-import { runNow } from "@/features/scheduling/service/schedulerClient";
+import { runSystemTaskNow } from "@/features/scheduling/service/schedulerClient";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import {
   fetchEvidenceValues,
   fetchSeoMandates,
@@ -54,7 +56,7 @@ import { useScheduledTaskMenuSection } from "@/features/scheduling/components/sh
 
 // ── Automations panel ───────────────────────────────────────────────────────
 
-function AutomationsPanel() {
+export function AutomationsPanel() {
   const [rows, setRows] = useState<SeoTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningId, setRunningId] = useState<string | null>(null);
@@ -69,7 +71,7 @@ function AutomationsPanel() {
   const trigger = useCallback(async (task: SeoTaskRow) => {
     setRunningId(task.id);
     try {
-      const response = await runNow(task.id);
+      const response = await runSystemTaskNow(task.id);
       toast.success(
         `"${task.title}" queued — run ${response.run_id.slice(0, 8)}. Watch it under Scheduling › Runs.`,
       );
@@ -376,7 +378,142 @@ function MandatesPanel() {
 
 // ── Workbench panel ─────────────────────────────────────────────────────────
 
-function WorkbenchPanel() {
+const EVIDENCE_WORKBENCH_PATH = "/seo/evidence-workbench";
+
+interface EvidenceWorkbenchResult {
+  question: string;
+  values_used: string[];
+  evidence_sizes: Record<string, number>;
+  evidence: Record<string, string>;
+  answer: string;
+  model_id: string | null;
+  agent_id: string;
+  usage: Record<string, unknown>;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRecordOf<T>(
+  value: unknown,
+  matchesValue: (entry: unknown) => entry is T,
+): value is Record<string, T> {
+  return isRecord(value) && Object.values(value).every(matchesValue);
+}
+
+function parseWorkbenchResult(raw: unknown): EvidenceWorkbenchResult | null {
+  if (!isRecord(raw)) return null;
+  const {
+    question,
+    values_used,
+    evidence_sizes,
+    evidence,
+    answer,
+    model_id,
+    agent_id,
+    usage,
+  } = raw;
+  if (
+    typeof question !== "string" ||
+    !Array.isArray(values_used) ||
+    !values_used.every((value) => typeof value === "string") ||
+    !isRecordOf(evidence_sizes, (value): value is number => typeof value === "number") ||
+    !isRecordOf(evidence, (value): value is string => typeof value === "string") ||
+    typeof answer !== "string" ||
+    (model_id !== null && typeof model_id !== "string") ||
+    typeof agent_id !== "string" ||
+    !isRecord(usage)
+  ) {
+    return null;
+  }
+  return {
+    question,
+    values_used,
+    evidence_sizes,
+    evidence,
+    answer,
+    model_id,
+    agent_id,
+    usage,
+  };
+}
+
+function EvidenceValue({
+  value,
+  depth = 0,
+  preserveWhitespace = false,
+}: {
+  value: unknown;
+  depth?: number;
+  preserveWhitespace?: boolean;
+}) {
+  if (value === null) return <span className="text-muted-foreground">none</span>;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return (
+      <span className={preserveWhitespace ? "whitespace-pre-wrap font-mono text-xs" : ""}>
+        {String(value)}
+      </span>
+    );
+  }
+  if (Array.isArray(value)) {
+    return (
+      <ul className="grid gap-1 pl-4">
+        {value.map((item, index) => (
+          <li key={index} className="list-disc">
+            <EvidenceValue
+              value={item}
+              depth={depth + 1}
+              preserveWhitespace={preserveWhitespace}
+            />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (isRecord(value)) {
+    return (
+      <dl className="grid gap-1">
+        {Object.entries(value).map(([key, nested]) => (
+          <div key={key} className={depth ? "pl-3" : ""}>
+            <dt className="inline font-medium text-foreground">{key}: </dt>
+            <dd className="inline text-foreground/85">
+              <EvidenceValue
+                value={nested}
+                depth={depth + 1}
+                preserveWhitespace={preserveWhitespace}
+              />
+            </dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
+  return <span className="text-muted-foreground">unavailable</span>;
+}
+
+function EvidenceSection({
+  title,
+  value,
+  preserveWhitespace = false,
+}: {
+  title: string;
+  value: unknown;
+  preserveWhitespace?: boolean;
+}) {
+  return (
+    <section className="grid gap-1 border-t border-border pt-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h3>
+      <div className="text-sm leading-relaxed text-foreground/90">
+        <EvidenceValue value={value} preserveWhitespace={preserveWhitespace} />
+      </div>
+    </section>
+  );
+}
+
+export function WorkbenchPanel() {
   const [sites, setSites] = useState<SeoSiteOption[]>([]);
   const [valueSpecs, setValueSpecs] = useState<EvidenceValueSpec[]>([]);
   const [siteId, setSiteId] = useState<string>("");
@@ -384,6 +521,19 @@ function WorkbenchPanel() {
     () => new Set(["gsc_summary", "pages_summary", "findings_open"]),
   );
   const [question, setQuestion] = useState("");
+
+  const command = useSeoCommandRun<EvidenceWorkbenchResult>({
+    key: "evidence-workbench",
+    path: EVIDENCE_WORKBENCH_PATH,
+    finalKind: "seo.workbench_completed",
+    stageLabels: {
+      "seo.evidence_materializing": "Materializing the selected evidence…",
+      "seo.evidence_ready": "Evidence is ready for the workbench agent…",
+      "seo.workbench_completed": "Evidence workbench complete",
+    },
+    parseResult: parseWorkbenchResult,
+    live: { label: "SEO Evidence Workbench" },
+  });
 
   useEffect(() => {
     fetchSeoSites()
@@ -418,8 +568,18 @@ function WorkbenchPanel() {
       toast.error("Select at least one evidence value.");
       return;
     }
-    toast.error(
-      "Evidence Workbench execution is not available in the live API yet.",
+    const site = sites.find((candidate) => candidate.id === siteId);
+    if (!site) {
+      toast.error("The selected site is no longer available. Pick it again.");
+      return;
+    }
+    void command.launch(
+      {
+        site_id: siteId,
+        question: question.trim(),
+        values: [...selected],
+      },
+      site.domain,
     );
   };
 
@@ -490,15 +650,62 @@ function WorkbenchPanel() {
           />
         </div>
 
-        <Button onClick={launch}>Run the workbench</Button>
+        <Button disabled={command.running} onClick={launch}>
+          {command.running ? "Running the workbench…" : "Run the workbench"}
+        </Button>
+        {command.running && (command.waitMessage ?? command.stage) ? (
+          <p className="text-xs text-muted-foreground">
+            {command.waitMessage ?? command.stage}
+          </p>
+        ) : null}
+        {command.error ? (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-destructive">
+            <span>{command.error}</span>
+            {command.retry ? (
+              <Button size="sm" variant="outline" onClick={() => void command.retry?.()}>
+                Retry this workbench run
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="min-w-0 space-y-3">
-        <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-          Pick a site, choose which evidence the agent may see, and draft the
-          question here. Execution becomes available when the live API exposes
-          the evidence-workbench contract.
-        </div>
+        {command.result ? (
+          <div className="grid gap-4 rounded-md border border-border p-4">
+            <section className="grid gap-1">
+              <h2 className="text-sm font-semibold text-foreground">Answer</h2>
+              <MarkdownStream
+                content={command.result.answer}
+                isStreamActive={false}
+                hideCopyButton
+              />
+            </section>
+            <EvidenceSection title="Question" value={command.result.question} />
+            <EvidenceSection title="Values used" value={command.result.values_used} />
+            <EvidenceSection title="Evidence sizes" value={command.result.evidence_sizes} />
+            <EvidenceSection
+              title="Evidence"
+              value={command.result.evidence}
+              preserveWhitespace
+            />
+            <EvidenceSection
+              title="Run details"
+              value={{
+                model_id: command.result.model_id,
+                agent_id: command.result.agent_id,
+                usage: command.result.usage,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+            Pick a site, choose which evidence the agent may see, and ask a
+            question. The live run opens in a floating window and can be
+            rejoined after a reload; the completed answer remains here with
+            the exact evidence the agent was shown.
+          </div>
+        )}
       </div>
     </div>
   );
