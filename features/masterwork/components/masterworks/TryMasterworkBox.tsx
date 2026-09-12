@@ -92,6 +92,21 @@ import {
   type RunFailureExplanation,
 } from "@/features/workflow-runtime/run-failure-explanation";
 
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { CASE_DISCLOSURE_KIND } from "@/features/content-ir/kinds/masterwork-unfolding";
+import {
+  latestCaseDisclosure,
+  readCaseDisclosures,
+} from "../../unfolding/caseDisclosures";
+import {
+  CASE_ITEM_INPUT_NAME,
+  findCaseDiscloseNodeId,
+} from "../../unfolding/sealedCases";
+import {
+  SealedCasePicker,
+  useSealedCases,
+} from "../../unfolding/SealedCasePicker";
+
 import {
   getMasterworkDefinition,
   getMasterworkRunVerdict,
@@ -217,6 +232,12 @@ export function TryMasterworkBox({
   const [definition, setDefinition] = useState<WorkflowDefinitionLike | null>(
     null,
   );
+  /**
+   * THE SEALED CASE this run should unfold, when this Masterwork is a DESK.
+   * Null on every ordinary Masterwork — `discloseNodeId` below is the
+   * definition's own answer to whether the question even applies.
+   */
+  const [caseItemId, setCaseItemId] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
   /** Where the run on screen came from — said out loud beside it. */
   const [runOrigin, setRunOrigin] = useState<"fresh" | "rejoined" | null>(null);
@@ -337,12 +358,46 @@ export function TryMasterworkBox({
     [visibleSteps, definition],
   );
 
+  // ── IS THIS A DESK? The DEFINITION answers, never the caller ────────────
+  // A Masterwork carrying a `masterwork.case.disclose` node unfolds a sealed
+  // case: it is started with `case_item_id` and its oracle's ledger is the
+  // thing to watch. Everything below is inert on every other Masterwork.
+  const discloseNodeId = useMemo(
+    () => findCaseDiscloseNodeId(definition),
+    [definition],
+  );
+  const sealedCases = useSealedCases(masterworkId, discloseNodeId !== null);
+  /** A desk with no case to point at cannot be run — say so, never pretend. */
+  const noSealedCases =
+    discloseNodeId !== null &&
+    sealedCases.status === "ready" &&
+    sealedCases.cases.length === 0;
+
   const finalAggregate = useAppSelector(
     selectNodeAggregate(runId ?? "", finalStep?.nodeId ?? ""),
   );
   const finalInvocation = finalAggregate.invocations[0] ?? null;
   /** What the run's nodes PRESENTED — live SSE and durable replay alike. */
   const emissions = useAppSelector(selectRunEmissions(runId ?? ""));
+
+  // ── THE GROWING LEDGER, through the ONE pipeline ────────────────────────
+  // The oracle's disclosures render through the `case_disclosure` kind
+  // component — this box owns no renderer for them. The ledger is cumulative,
+  // so the latest disclosure IS the whole path so far, live and on replay.
+  const discloseAggregate = useAppSelector(
+    selectNodeAggregate(runId ?? "", discloseNodeId ?? ""),
+  );
+  const disclosure = useMemo(
+    () =>
+      latestCaseDisclosure(
+        readCaseDisclosures({
+          nodeId: discloseNodeId,
+          emissions,
+          invocations: discloseAggregate.invocations,
+        }),
+      ),
+    [discloseNodeId, emissions, discloseAggregate.invocations],
+  );
 
   // ── Terminal handling: tell the caller once, explain a failure once ──────
   useEffect(() => {
@@ -386,6 +441,17 @@ export function TryMasterworkBox({
   const { kinds, error: kindError } = useServedInputKinds(inputs);
 
   const start = useCallback(async () => {
+    // A DESK IS NOT RUNNABLE WITHOUT A CASE. The picker is right there, so the
+    // refusal names the thing to do rather than letting a run start against
+    // nothing and fail three steps in.
+    if (discloseNodeId !== null && !caseItemId) {
+      toast.error(
+        noSealedCases
+          ? "This Rulebook holds no sealed cases yet — add one from Sources and mark it held-out."
+          : "Choose the sealed case this should work on first.",
+      );
+      return;
+    }
     const gaps = unsatisfiedServedInputs(inputs, values, touched);
     if (gaps.length > 0) {
       toast.error(
@@ -411,10 +477,15 @@ export function TryMasterworkBox({
     // the surface's own law, not a rule this box keeps for itself:
     // `buildSubmission` sends exactly what a person typed, and the server
     // lands its own declared default for everything else.
-    const outcome = await startServedRun(
-      masterworkId,
-      buildSubmission(inputs, values, touched),
-    );
+    const submission = buildSubmission(inputs, values, touched);
+    // THE SEALED CASE travels as a named run input, stamped `human` like every
+    // other value this form carries: the Expert chose it, and the oracle node
+    // reads `case_item_id` to know which row it may unseal.
+    if (discloseNodeId !== null && caseItemId) {
+      submission.inputs[CASE_ITEM_INPUT_NAME] = caseItemId;
+      submission.inputSources[CASE_ITEM_INPUT_NAME] = "human";
+    }
+    const outcome = await startServedRun(masterworkId, submission);
     if (outcome.status === "gaps") {
       toast.error(
         outcome.gaps.length > 0
@@ -432,7 +503,16 @@ export function TryMasterworkBox({
     rememberRun(masterworkId, outcome.runId);
     setRunId(outcome.runId);
     setRunOrigin("fresh");
-  }, [inputs, values, touched, masterworkId, startServedRun]);
+  }, [
+    inputs,
+    values,
+    touched,
+    masterworkId,
+    startServedRun,
+    discloseNodeId,
+    caseItemId,
+    noSealedCases,
+  ]);
 
   // The Audition judges the WORK, so it wants the deliverable when there is a
   // separable one (generate) and the ruling when the work and the reasoning
@@ -511,6 +591,13 @@ export function TryMasterworkBox({
         </p>
       ) : null}
 
+      {/* ── THE SEALED CASE, when this Masterwork is a desk ─────────────── */}
+      <SealedCasePicker
+        state={sealedCases}
+        value={caseItemId}
+        onChange={setCaseItemId}
+      />
+
       {/* ── The builder's own fields ────────────────────────────────────── */}
       {inputs.map((input) => (
         <div
@@ -542,7 +629,9 @@ export function TryMasterworkBox({
         <Button
           size="sm"
           onClick={() => void start()}
-          disabled={starting || running || servedLoading || rejoining}
+          disabled={
+            starting || running || servedLoading || rejoining || noSealedCases
+          }
           aria-label={submitLabel ?? `Run ${whatItRuns}`}
           title={submitLabel ?? `Run ${whatItRuns}`}
         >
@@ -613,7 +702,25 @@ export function TryMasterworkBox({
         </div>
       ) : null}
 
-      {/* Pause & Ask, if this Masterwork ever interrupts. */}
+      {/* ── THE CASE, UNFOLDING. Rendered through the `case_disclosure` kind
+          component — one component for this shape everywhere, and never a
+          spinner while the desk is working: the ledger IS the progress. ── */}
+      {runId && disclosure ? (
+        <div
+          className="rounded-md border border-border bg-card p-3"
+          data-masterwork-sealed-case="ledger"
+        >
+          <KindInstanceRender
+            kind={CASE_DISCLOSURE_KIND}
+            value={disclosure}
+            variant="bare"
+          />
+        </div>
+      ) : null}
+
+      {/* Pause & Ask, if this Masterwork ever interrupts. The desk's own human
+          pause — "the case does not say, so the Expert answers" — arrives
+          through exactly this one interrupt path, never a second prompt. */}
       {runId ? <InterruptCard runId={runId} /> : null}
 
       {/* ── THE RESULT — the canonical renderer. Typed partial kinds render
