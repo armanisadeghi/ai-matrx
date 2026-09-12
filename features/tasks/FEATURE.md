@@ -151,6 +151,11 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-09-12` — **Task list and table copy actions stay on the current shared
+  menu contract.** Their redundant legacy `primarySource` hint is removed: the
+  unified `CopyButtons` API already selects the shared menu behavior, keeping
+  both task surfaces type-compatible without a task-local copy fork.
+
 - `2026-09-12` — **Terminal task content has one scroll owner.** The desktop
   editor body and mobile task-detail body scroll above their bottom action bars,
   which remain in normal flex flow rather than fixed overlays. The responsive
