@@ -68,6 +68,8 @@ export interface GitStashAction {
 export interface GitAdapterOptions {
   /** sandbox_instances.id (the UUID used by the /api/sandbox/[id] route). */
   instanceId: string;
+  /** The daemon's WORKSPACE_ROOT (normally the active sandbox hot path). */
+  workspaceRoot?: string;
 }
 
 export class SandboxGitAdapter {
@@ -157,7 +159,10 @@ export class SandboxGitAdapter {
 
   async clone(req: GitCloneRequest): Promise<{ ok: true; path: string }> {
     parseDaemonGitMutation(await this.post("clone", req), "clone");
-    return { ok: true, path: resolveSandboxClonePath(req.dest) };
+    return {
+      ok: true,
+      path: resolveSandboxClonePath(req.dest, this.opts.workspaceRoot),
+    };
   }
 
   // ── Read ───────────────────────────────────────────────────────────────

@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server'
 import { resolveProxyContext, forwardToOrchestrator } from '@/lib/sandbox/proxy-helpers'
 
+export const maxDuration = 180
+
 /**
  * Catchall proxy for the sandbox git API.
  *

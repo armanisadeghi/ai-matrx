@@ -187,8 +187,11 @@ export function parseDaemonGitMutation(payload: unknown, operation: string): {
   return { ok: true, output: requiredString(response, "output", operation) };
 }
 
-export function resolveSandboxClonePath(dest: string): string {
-  const base = dest.startsWith("/") ? dest : `/home/agent/${dest}`;
+export function resolveSandboxClonePath(
+  dest: string,
+  workspaceRoot = "/home/agent",
+): string {
+  const base = dest.startsWith("/") ? dest : `${workspaceRoot}/${dest}`;
   const parts: string[] = [];
   for (const part of base.split("/")) {
     if (!part || part === ".") continue;

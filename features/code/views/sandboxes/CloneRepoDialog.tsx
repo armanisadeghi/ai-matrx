@@ -10,7 +10,7 @@
  * sandbox row id.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ExternalLink, GitBranch, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -31,6 +31,8 @@ interface CloneRepoDialogProps {
   instanceId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The daemon's workspace root. Defaults to the standard sandbox home. */
+  workspaceRoot?: string;
   /** Called with the cloned path on success. */
   onCloned?: (path: string) => void;
 }
@@ -42,16 +44,45 @@ function repoNameFromUrl(url: string): string {
   return last || "repo";
 }
 
+function validateCloneRequest(input: {
+  url: string;
+  branch: string;
+  dest: string;
+}): string | null {
+  if (!input.url) return "Choose a GitHub repository or enter its HTTPS URL.";
+  if (input.url.startsWith("-")) return "Repository URLs cannot start with a dash.";
+  try {
+    const parsed = new URL(input.url);
+    if (parsed.protocol !== "https:") {
+      return "Use an HTTPS repository URL.";
+    }
+    if (parsed.username || parsed.password || parsed.search || parsed.hash) {
+      return "Use a repository URL without embedded credentials, query parameters, or fragments.";
+    }
+  } catch {
+    return "Enter a valid HTTPS repository URL.";
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(input.dest)) {
+    return "Folder must be one safe name containing letters, numbers, dots, underscores, or dashes.";
+  }
+  if (input.branch.startsWith("-")) return "Branch names cannot start with a dash.";
+  return null;
+}
+
 export function CloneRepoDialog({
   instanceId,
   open,
   onOpenChange,
+  workspaceRoot = "/home/agent",
   onCloned,
 }: CloneRepoDialogProps) {
   const [url, setUrl] = useState("");
   const [branch, setBranch] = useState("");
   const [dest, setDest] = useState("");
   const [cloning, setCloning] = useState(false);
+  const [cloneError, setCloneError] = useState<string | null>(null);
+  const currentInstanceId = useRef(instanceId);
+  currentInstanceId.current = instanceId;
   const github = useGitHubConnection();
   const selectedRepository = github.inventory.repositories.find(
     (repository) => repository.cloneUrl === url,
@@ -65,20 +96,34 @@ export function CloneRepoDialog({
       return;
     }
     const repoUrl = url.trim();
-    if (!repoUrl) {
-      toast.error("Enter a repository URL");
+    const requestedBranch = branch.trim();
+    const validationError = validateCloneRequest({
+      url: repoUrl,
+      branch: requestedBranch,
+      dest: effectiveDest,
+    });
+    if (validationError) {
+      setCloneError(validationError);
+      toast.error(validationError);
       return;
     }
+    setCloneError(null);
+    const cloneInstanceId = instanceId;
     setCloning(true);
     try {
-      const adapter = new SandboxGitAdapter({ instanceId });
+      const adapter = new SandboxGitAdapter({
+        instanceId: cloneInstanceId,
+        workspaceRoot,
+      });
       const res = await adapter.clone({
         url: repoUrl,
         dest: effectiveDest,
-        branch: branch.trim() || undefined,
+        branch: requestedBranch || undefined,
       });
-      if (!res.ok) {
-        toast.error("Clone failed");
+      if (currentInstanceId.current !== cloneInstanceId) {
+        setCloneError(
+          `Repository cloned into ${res.path}, but the selected sandbox changed before it finished. Reconnect that sandbox to open it.`,
+        );
         return;
       }
       toast.success(`Cloned into ${res.path}`);
@@ -88,14 +133,21 @@ export function CloneRepoDialog({
       setBranch("");
       setDest("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Clone failed");
+      const message = err instanceof Error ? err.message : "Clone failed";
+      setCloneError(message);
+      toast.error(message);
     } finally {
       setCloning(false);
     }
   };
 
+  const handleOpenChange = (next: boolean) => {
+    if (cloning && !next) return;
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -103,8 +155,9 @@ export function CloneRepoDialog({
             Clone a repository
           </DialogTitle>
           <DialogDescription>
-            Clone a git repo into this sandbox so the agent can read, edit, and
-            run it. Private repos use the sandbox&apos;s configured credentials.
+            Clone a GitHub repository into this sandbox. It will be placed in a
+            folder under <code>{workspaceRoot}</code>; private repositories use
+            your existing GitHub connection.
           </DialogDescription>
         </DialogHeader>
 
@@ -112,7 +165,7 @@ export function CloneRepoDialog({
           {github.inventory.connection?.status === "connected" ? (
             <div className="space-y-1.5 rounded-md border bg-muted/20 p-3">
               <div className="flex items-center justify-between gap-2">
-                <label className="flex items-center gap-1.5 text-xs font-medium">
+                <label htmlFor="github-repository" className="flex items-center gap-1.5 text-xs font-medium">
                   <GitBranch className="h-3.5 w-3.5" /> Your GitHub repositories
                 </label>
                 <span className="text-[11px] text-muted-foreground">
@@ -120,6 +173,7 @@ export function CloneRepoDialog({
                 </span>
               </div>
               <select
+                id="github-repository"
                 value={selectedRepository?.cloneUrl ?? ""}
                 onChange={(event) => {
                   const repository = github.inventory.repositories.find(
@@ -161,17 +215,19 @@ export function CloneRepoDialog({
                   Choose private or public repositories without copying URLs or tokens.
                 </p>
               </div>
-              <Button size="sm" onClick={() => github.connect("/code")}>
+              <Button size="sm" onClick={() => github.connect("/code")} disabled={github.loading}>
                 Connect
               </Button>
             </div>
           )}
-          {github.error && <p className="text-xs text-destructive">{github.error}</p>}
+          {github.error && <p role="alert" className="text-xs text-destructive">GitHub: {github.error}</p>}
+          {cloneError && <p role="alert" className="text-xs text-destructive">{cloneError}</p>}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="clone-repository-url" className="text-xs font-medium text-muted-foreground">
               Repository URL {github.inventory.connection ? "(or paste another)" : ""}
             </label>
             <Input
+              id="clone-repository-url"
               autoFocus
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -181,10 +237,11 @@ export function CloneRepoDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label htmlFor="clone-repository-branch" className="text-xs font-medium text-muted-foreground">
                 Branch (optional)
               </label>
               <Input
+                id="clone-repository-branch"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
                 placeholder="main"
@@ -192,10 +249,11 @@ export function CloneRepoDialog({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Folder
+              <label htmlFor="clone-repository-folder" className="text-xs font-medium text-muted-foreground">
+                Folder in {workspaceRoot}
               </label>
               <Input
+                id="clone-repository-folder"
                 value={dest}
                 onChange={(e) => setDest(e.target.value)}
                 placeholder={effectiveDest || "repo"}
@@ -208,7 +266,7 @@ export function CloneRepoDialog({
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             disabled={cloning}
           >
             Cancel

@@ -100,10 +100,13 @@ describe("SandboxGitAdapter daemon translation", () => {
         json: async () => ({ status: "success", output: "" }),
       }) as unknown as typeof fetch;
 
-    const adapter = new SandboxGitAdapter({ instanceId: "sandbox-row" });
+    const adapter = new SandboxGitAdapter({
+      instanceId: "sandbox-row",
+      workspaceRoot: "/workspace",
+    });
     await expect(adapter.clone({ url: "https://example.invalid/demo.git", dest: "demo" })).resolves.toEqual({
       ok: true,
-      path: "/home/agent/demo",
+      path: "/workspace/demo",
     });
     await expect(adapter.diff({ cwd: "/home/agent/demo", path: "a", staged: true })).resolves.toEqual({
       path: "a",
