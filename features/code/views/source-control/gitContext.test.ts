@@ -28,10 +28,11 @@ describe("buildRepositoryContextSnapshot", () => {
         maxDiffCharacters: 100,
         maxUntrackedFileCharacters: 100,
         maxUntrackedTotalCharacters: 100,
+        maxUntrackedFiles: 2,
       },
       untrackedFiles: [
         { path: "new.ts", content: "export const newFile = true;" },
-        { path: "unreadable.ts", error: "permission denied" },
+        { path: "unreadable.ts", omission: "could not read untracked content" },
       ],
       capturedAt: "2026-09-12T00:00:00.000Z",
     });

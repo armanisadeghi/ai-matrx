@@ -26,6 +26,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { knobInts } from "@/lib/knobs/featureKnobs";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -69,11 +70,13 @@ import {
   GIT_REPOSITORY_CONTEXT_KEY,
 } from "./gitContext";
 
-const GIT_CONTEXT_ATTACHMENT_LIMITS = {
-  maxDiffCharacters: 120_000,
-  maxUntrackedFileCharacters: 32_000,
-  maxUntrackedTotalCharacters: 120_000,
-} as const;
+const GIT_CONTEXT_KNOB_FEATURE = "code.source_control";
+const GIT_CONTEXT_KNOB_KEYS = [
+  "attachment_diff_characters",
+  "attachment_untracked_file_characters",
+  "attachment_untracked_total_characters",
+  "attachment_untracked_file_count",
+] as const;
 
 export function SourceControlPanel({ className }: { className?: string }) {
   const sandboxId = useAppSelector(selectActiveSandboxId);
@@ -417,6 +420,18 @@ function RepositoryPanel({
     setError(null);
     setNotice(null);
     try {
+      const knobValues = await knobInts(
+        GIT_CONTEXT_KNOB_FEATURE,
+        GIT_CONTEXT_KNOB_KEYS,
+      );
+      const limits = {
+        maxDiffCharacters: knobValues.attachment_diff_characters,
+        maxUntrackedFileCharacters:
+          knobValues.attachment_untracked_file_characters,
+        maxUntrackedTotalCharacters:
+          knobValues.attachment_untracked_total_characters,
+        maxUntrackedFiles: knobValues.attachment_untracked_file_count,
+      };
       const [latestRepository, latestStatus, stagedDiff, unstagedDiff] =
         await Promise.all([
           inspectRepository(process, cwd),
@@ -427,28 +442,69 @@ function RepositoryPanel({
       if (!latestRepository) {
         throw new Error("The selected folder is no longer a Git repository.");
       }
-      const untrackedFiles = await Promise.all(
-        latestStatus.untracked.map(async (path) => {
-          try {
-            return {
+      const untrackedFiles: Array<{
+        path: string;
+        content?: string;
+        omission?: string;
+      }> = [];
+      let remainingUntrackedCharacters = limits.maxUntrackedTotalCharacters;
+      for (const [index, path] of latestStatus.untracked.entries()) {
+        if (index >= limits.maxUntrackedFiles) {
+          untrackedFiles.push({
+            path,
+            omission:
+              "omitted before read because the untracked file-count limit was reached",
+          });
+          continue;
+        }
+        const maximumFileCharacters = Math.min(
+          limits.maxUntrackedFileCharacters,
+          remainingUntrackedCharacters,
+        );
+        if (maximumFileCharacters <= 0) {
+          untrackedFiles.push({
+            path,
+            omission:
+              "omitted before read because the total untracked-content limit was reached",
+          });
+          continue;
+        }
+        try {
+          const stat = filesystem.stat
+            ? await filesystem.stat(`${cwd}/${path}`)
+            : null;
+          if (!stat || stat.kind !== "file") {
+            untrackedFiles.push({
               path,
-              content: await filesystem.readFile(`${cwd}/${path}`),
-            };
-          } catch {
-            return {
-              path,
-              error: "Unable to read untracked file",
-            };
+              omission:
+                "omitted before read because its bounded file size could not be verified",
+            });
+            continue;
           }
-        }),
-      );
+          if (stat.size > maximumFileCharacters) {
+            untrackedFiles.push({
+              path,
+              omission: `omitted before read because its ${stat.size}-byte size exceeds the ${maximumFileCharacters}-character remaining limit`,
+            });
+            continue;
+          }
+          const content = await filesystem.readFile(`${cwd}/${path}`);
+          remainingUntrackedCharacters -= content.length;
+          untrackedFiles.push({ path, content });
+        } catch {
+          untrackedFiles.push({
+            path,
+            omission: "could not read bounded untracked content",
+          });
+        }
+      }
       const snapshot = buildRepositoryContextSnapshot({
         repository: latestRepository,
         status: latestStatus,
         stagedDiff: stagedDiff.text,
         unstagedDiff: unstagedDiff.text,
         untrackedFiles,
-        limits: GIT_CONTEXT_ATTACHMENT_LIMITS,
+        limits,
       });
       dispatch(
         setContextEntries({

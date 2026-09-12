@@ -8,12 +8,13 @@ export interface GitContextAttachmentLimits {
   maxDiffCharacters: number;
   maxUntrackedFileCharacters: number;
   maxUntrackedTotalCharacters: number;
+  maxUntrackedFiles: number;
 }
 
 export interface UntrackedFileContextInput {
   path: string;
   content?: string;
-  error?: string;
+  omission?: string;
 }
 
 interface CapturedText {
@@ -80,34 +81,36 @@ export function buildRepositoryContextSnapshot({
 }): RepositoryContextSnapshot {
   const omissions: string[] = [];
   let untrackedRemaining = limits.maxUntrackedTotalCharacters;
-  const untracked = untrackedFiles.map(({ path, content, error }) => {
-    if (error) {
-      const omission = `${path}: could not read untracked content`;
-      omissions.push(omission);
-      return { path, omission };
-    }
-    if (content === undefined) {
-      const omission = `${path}: untracked content was unavailable`;
-      omissions.push(omission);
-      return { path, omission };
-    }
-    const captured = captureText(
-      content,
-      Math.min(limits.maxUntrackedFileCharacters, untrackedRemaining),
-    );
-    untrackedRemaining -= captured.content.length;
-    if (captured.truncated) {
-      omissions.push(
-        `${path}: omitted ${captured.omittedCharacters} untracked characters due to attachment limits`,
+  const untracked = untrackedFiles.map(
+    ({ path, content, omission: suppliedOmission }) => {
+      if (suppliedOmission) {
+        const omission = `${path}: ${suppliedOmission}`;
+        omissions.push(omission);
+        return { path, omission };
+      }
+      if (content === undefined) {
+        const omission = `${path}: untracked content was unavailable`;
+        omissions.push(omission);
+        return { path, omission };
+      }
+      const captured = captureText(
+        content,
+        Math.min(limits.maxUntrackedFileCharacters, untrackedRemaining),
       );
-    }
-    return {
-      path,
-      content: captured.content,
-      truncated: captured.truncated,
-      omittedCharacters: captured.omittedCharacters,
-    };
-  });
+      untrackedRemaining -= captured.content.length;
+      if (captured.truncated) {
+        omissions.push(
+          `${path}: omitted ${captured.omittedCharacters} untracked characters due to attachment limits`,
+        );
+      }
+      return {
+        path,
+        content: captured.content,
+        truncated: captured.truncated,
+        omittedCharacters: captured.omittedCharacters,
+      };
+    },
+  );
   const staged = captureText(stagedDiff, limits.maxDiffCharacters);
   const unstaged = captureText(unstagedDiff, limits.maxDiffCharacters);
   if (staged.truncated) {
