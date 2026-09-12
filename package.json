@@ -401,7 +401,9 @@
     "test:kind-sandbox:browser": "playwright test -c playwright.kind-sandbox.config.ts",
     "check:kind-sandbox-protocol": "tsx scripts/check-kind-sandbox-protocol.ts",
     "check:kind-sandbox-protocol:self-test": "tsx scripts/check-kind-sandbox-protocol.ts --self-test",
-    "test:kind-sandbox": "jest features/content-ir/sandbox/__tests__ --no-coverage"
+    "test:kind-sandbox": "jest features/content-ir/sandbox/__tests__ --no-coverage",
+    "check:unregistered-client-readable": "tsx scripts/check-unregistered-client-readable.ts",
+    "check:unregistered-client-readable:self-test": "tsx scripts/check-unregistered-client-readable.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
