@@ -22,11 +22,20 @@
  * The lists are DATA, in `component-source-gate.json`, so three runtimes can
  * compare them. Never inline a name here.
  *
- * WHAT THIS IS NOT: a sandbox. A string check cannot stop every escape — an
- * author can still reach the page through `window[...]` computed access or
- * property chains this file does not name, and the runtime stubs in
- * `compile-slot.ts` shadow bare identifiers only. Real isolation is an
- * iframe/worker boundary; see the B-17 report's follow-up proposal.
+ * WHAT THIS IS NOT: a sandbox. A string check cannot stop every escape, and
+ * the runtime stubs in `compile-slot.ts` shadow bare identifiers only. Real
+ * isolation is an iframe/worker boundary; see the B-17 report's follow-up
+ * proposal.
+ *
+ * DD-124 (2026-09-11) closed three live holes V-17 found: dynamic `import()`
+ * reached the table because only this file checked it (the DB trigger and the
+ * aidream twin both accepted it, measured); `.constructor(` on a function
+ * object is the `Function` evaluator under another name; and
+ * `window["fet"+"ch"]` cannot be caught by ANY string rule, because the banned
+ * name never appears in the source — so bracket access on `window`,
+ * `globalThis` and `self` is refused outright instead. That last one is a
+ * blunt instrument standing in for the origin boundary, not a substitute for
+ * it: a property chain this file does not name is still reachable.
  */
 
 import gate from "./component-source-gate.json";
@@ -61,8 +70,36 @@ export const COMPONENT_BANNED_CALLABLES: readonly string[] = gate.bannedCallable
 export const COMPONENT_BANNED_MEMBER_ACCESS: readonly string[] =
   gate.bannedMemberAccess;
 
+/**
+ * Names banned as a METHOD CALL on any object — `(()=>{}).constructor(...)`,
+ * `[].constructor`, `"".constructor("return 1")`. Reaching `constructor` on a
+ * function object hands the author the `Function` evaluator without ever
+ * naming `Function` or `eval`, which reconstitutes every other banned
+ * primitive (V-17 F3, live probe 2026-09-11). Banned as a CALL only, because
+ * reading `x.constructor.name` for a type label is honest code.
+ */
+export const COMPONENT_BANNED_MEMBER_CALLS: readonly string[] =
+  gate.bannedMemberCalls;
+
+/**
+ * Roots on which computed (bracket) property access is refused outright:
+ * `window["fet" + "ch"]` is not catchable by any name rule, because the name
+ * never appears in the source. No string rule can close that class — only an
+ * origin boundary can — so the roots themselves lose bracket access. Verified
+ * against all 162 live `content_ir.kind_component` bodies on 2026-09-11: zero
+ * use bracket access on any of these roots, so this bans nothing that works.
+ */
+export const COMPONENT_BANNED_COMPUTED_ACCESS: readonly string[] =
+  gate.bannedComputedAccess;
+
+/**
+ * Syntax rules (not name lists) every runtime must implement, named so the
+ * three enforcement points can be compared. `dynamicImport` = `import(...)`.
+ */
+export const COMPONENT_BANNED_SYNTAX: readonly string[] = gate.bannedSyntax;
+
 const IMPORT_RE = /^\s*import\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/gm;
-const DYNAMIC_IMPORT_RE = /\bimport\s*\(/;
+const DYNAMIC_IMPORT_RE = /(?<![.\w$])import\s*\(/;
 
 function escapeForRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -131,6 +168,19 @@ export function componentGlobalsLint(source: string): string | null {
       return bannedGlobalMessage(name);
     }
   }
+  for (const name of COMPONENT_BANNED_MEMBER_CALLS) {
+    if (new RegExp(`\\.\\s*${escapeForRegExp(name)}\\s*\\(`).test(code)) {
+      return bannedMemberCallMessage(name);
+    }
+  }
+  for (const name of COMPONENT_BANNED_COMPUTED_ACCESS) {
+    if (
+      new RegExp(`(?<![.\\w$])${escapeForRegExp(name)}\\s*\\[`).test(code) ||
+      new RegExp(`\\.\\s*${escapeForRegExp(name)}\\s*\\[`).test(code)
+    ) {
+      return bannedComputedAccessMessage(name);
+    }
+  }
   return null;
 }
 
@@ -141,6 +191,25 @@ function bannedGlobalMessage(name: string): string {
     "network, browser storage, or the JavaScript evaluator could read or send " +
     "the reader's data. Render what the Shape hands you in props.data and use " +
     "a Shape action for anything the component needs from the server."
+  );
+}
+
+function bannedMemberCallMessage(name: string): string {
+  return (
+    `This component uses ".${name}(", which components stored in the database ` +
+    "may not use. Calling a value's constructor reaches the JavaScript " +
+    "evaluator, so it could run code nobody reviewed inside the signed-in " +
+    "page. Write the logic out directly instead."
+  );
+}
+
+function bannedComputedAccessMessage(name: string): string {
+  return (
+    `This component uses "${name}[", which components stored in the database ` +
+    "may not use. Looking a property up by a computed name hides which " +
+    "browser capability the component reaches, so no review can tell whether " +
+    `it is safe. Name what you need directly, or use props.data and a Shape ` +
+    "action for anything the component needs from the server."
   );
 }
 
