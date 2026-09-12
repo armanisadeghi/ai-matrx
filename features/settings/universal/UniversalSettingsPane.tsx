@@ -21,8 +21,8 @@ import { SettingsCallout } from "@/components/official/settings/layout/SettingsC
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
-import { SettingsSegmented } from "@/components/official/settings/primitives/SettingsSegmented";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
+import { SettingsNavigationRow } from "@/components/official/settings/SettingsNavigationRow";
+import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { blastRadiusFor, compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
@@ -30,6 +30,7 @@ import type { KnobScopeKindName, ScopedKnob } from "@/lib/scoped-config/types";
 import { useActiveSettingsTabId } from "../components/SettingsTabHost";
 import { resolveConfigSection } from "./configTree";
 import { useUniversalSettings } from "./UniversalSettingsContext";
+import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 import { auditedSettingsDispositions, dispositionFor } from "./disposition";
 import {
   isSubOrgScopeKind,
@@ -91,6 +92,7 @@ export function UniversalSettingsRows({
       scopeId:
         settings.editingContext === "system" ? "platform" : rung.kind === "user" ? userId! : (rung.scopeId ?? organizationId ?? ""),
       ladder: resolveKnobLadder(knob, rung.kind, { isOrgAdmin: canManageOrganization }),
+      group: knob.ui.group ?? knob.taxonomy?.feature_name ?? readableGroupName(knob.feature),
     };
   });
   const visible = settings.changedOnly
@@ -98,11 +100,19 @@ export function UniversalSettingsRows({
       ? JSON.stringify(knob.platform_default) !== JSON.stringify(knob.shipped_default)
       : ladder.setHere)
     : resolved;
+  if (settings.changedOnly && knobs.length > 0 && visible.length === 0) {
+    return (
+      <SettingsCallout tone="info" title="No changed settings in this section">
+        No value is set at this level here. Turn off Changed only to view the
+        settings that inherit their current values.
+      </SettingsCallout>
+    );
+  }
   const groups = new Map<string, typeof resolved>();
   for (const row of visible) {
-    const list = groups.get(row.ladder.group) ?? [];
+    const list = groups.get(row.group) ?? [];
     list.push(row);
-    groups.set(row.ladder.group, list);
+    groups.set(row.group, list);
   }
 
   return (
@@ -136,22 +146,25 @@ export function UniversalSettingsRows({
   );
 }
 
+function readableGroupName(feature: string): string {
+  return feature
+    .split(/[._-]/g)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 /** The organization the values belong to, when the person has several. */
 export function OrganizationRungSection() {
   const { organizations, organizationId, selectOrganization } = useUniversalSettings();
   return (
-    <SettingsSection title="Looking at" icon={Building2}>
-      <SettingsSelect
-        label="Organization"
-        description={organizations.length <= 1
-          ? "Personal and organization values are always qualified to this organization."
-          : "Personal and organization values are qualified to the organization you pick."}
-        value={organizationId ?? ""}
-        options={organizations.map((org) => ({ value: org.id, label: org.name }))}
-        onValueChange={selectOrganization}
-        last
-      />
-    </SettingsSection>
+    <div className="flex min-w-0 items-center gap-2 text-sm">
+      <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <label htmlFor="settings-organization" className="shrink-0 text-muted-foreground">Organization</label>
+      <select id="settings-organization" className="h-8 min-w-0 max-w-56 rounded-md border border-border bg-background px-2" value={organizationId ?? ""} onChange={(event) => selectOrganization(event.target.value)}>
+        {organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
+      </select>
+    </div>
   );
 }
 
@@ -164,28 +177,16 @@ export function SettingsContextControls() {
     ...(canManageSystem ? [{ value: "system", label: "System" }] : []),
   ];
   return (
-    <SettingsSection title="Editing" icon={editingContext === "system" ? ShieldCheck : UserRound}>
-      <SettingsSegmented
-        label="Settings level"
-        description={editingContext === "system"
-          ? "Platform defaults apply wherever a lower level has not set a value."
-          : editingContext === "organization"
-            ? `Organization values apply in ${organizationName ?? "the selected organization"} unless a person sets their own.`
-            : `Personal values apply only to you in ${organizationName ?? "the selected organization"}.`}
-        value={editingContext}
-        options={options}
-        onValueChange={(value) => selectEditingContext(value as "user" | "organization" | "system")}
-      />
-      <SettingsSwitch
-        label="Changed only"
-        description={editingContext === "system"
-          ? "Show only platform values that differ from their registered default."
-          : "Show only settings with an override saved at this level."}
-        checked={changedOnly}
-        onCheckedChange={setChangedOnly}
-        last
-      />
-    </SettingsSection>
+    <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-border/60 bg-muted/20 px-3 py-2 text-sm">
+      {editingContext === "system" ? <ShieldCheck className="h-4 w-4 text-muted-foreground" /> : <UserRound className="h-4 w-4 text-muted-foreground" />}
+      <label htmlFor="settings-context" className="text-muted-foreground">Editing</label>
+      <select id="settings-context" className="h-8 rounded-md border border-border bg-background px-2" value={editingContext} onChange={(event) => selectEditingContext(event.target.value as "user" | "organization" | "system")}>
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+      {editingContext !== "system" && <OrganizationRungSection />}
+      <label className="ml-auto flex items-center gap-2 text-muted-foreground"><input type="checkbox" checked={changedOnly} onChange={(event) => setChangedOnly(event.target.checked)} /> Changed only</label>
+      <span className="basis-full text-xs text-muted-foreground">{editingContext === "system" ? "Platform defaults apply where no lower-level value exists." : `${editingContext === "user" ? "Personal" : "Organization"} values apply in ${organizationName ?? "the selected organization"}.`}</span>
+    </div>
   );
 }
 
@@ -284,7 +285,14 @@ export default function UniversalSettingsPane() {
     return (
       <div className="p-4">
         <SettingsCallout tone="error" title="Configuration could not be read">
-          {settings.error}
+          <p>{settings.error}</p>
+          <div className="mt-3">
+            <SettingsButton
+              label="Configuration"
+              actionLabel="Try again"
+              onClick={settings.refresh}
+            />
+          </div>
         </SettingsCallout>
       </div>
     );
@@ -302,6 +310,7 @@ export default function UniversalSettingsPane() {
   }
 
   const missingHere = section.knobs.filter((knob) => knob.origin === "missing");
+  const hasNoRegisteredControls = section.knobs.length === 0;
 
   return (
     <>
@@ -315,8 +324,15 @@ export default function UniversalSettingsPane() {
       />
       <SettingsContextControls />
       {settings.editingContext === "system" && <RegistryCoverage />}
-      {settings.editingContext !== "system" && <OrganizationRungSection />}
       {settings.editingContext !== "system" && <SubOrgRungSection knobs={section.knobs} />}
+      {section.feature === null && <DomainChildNavigation section={section} />}
+      {hasNoRegisteredControls && (
+        <SettingsCallout tone="info" title="No controls are registered yet">
+          This category is part of the product structure, but it does not have
+          configurable controls yet. It remains here so the settings map stays
+          complete as controls are added.
+        </SettingsCallout>
+      )}
       {missingHere.length > 0 && (
         <SettingsCallout tone="error" title="Some settings resolved to nothing">
           {missingHere.map((knob) => knob.full_key).join(", ")} — the register and the
@@ -325,5 +341,31 @@ export default function UniversalSettingsPane() {
       )}
       <UniversalSettingsRows knobs={section.knobs} />
     </>
+  );
+}
+
+function DomainChildNavigation({
+  section,
+}: {
+  section: NonNullable<ReturnType<typeof resolveConfigSection>>;
+}) {
+  if (section.domain.features.length === 0) return null;
+  return (
+    <SettingsSection
+      title="Categories"
+      description="Choose a product area to view its configurable controls and coverage."
+    >
+      {section.domain.features.map((feature, index) => (
+        <SettingsNavigationRow
+          key={feature.id}
+          href={tabIdToHref(SETTINGS_BASE, feature.id)}
+          label={feature.name}
+          description={feature.knobs.length === 0
+            ? "No controls registered yet"
+            : `${feature.knobs.length} setting${feature.knobs.length === 1 ? "" : "s"}`}
+          last={index === section.domain.features.length - 1}
+        />
+      ))}
+    </SettingsSection>
   );
 }

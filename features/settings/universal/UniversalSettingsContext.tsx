@@ -30,6 +30,7 @@ import { isJsonObject } from "@/types/json";
 import {
   fetchTaxonomyIndex,
   resolveKnobTaxonomy,
+  taxonomyForNodeId,
   UNFILED_DOMAIN_NAME,
   UNFILED_DOMAIN_SLUG,
   type TaxonomyIndex,
@@ -138,24 +139,36 @@ const EMPTY: UniversalSettingsValue = {
   refresh: () => {},
 };
 
-function systemKnob(row: FeatureKnob): ScopedKnob {
+export function systemKnob(
+  row: FeatureKnob,
+  taxonomy: TaxonomyIndex,
+): ScopedKnob {
   const ui: KnobUiHints = isJsonObject(row.ui) ? row.ui : {};
+  const valueType = row.value_type as ScopedKnob["value_type"];
+  const isSecret = valueType === "secret";
   return {
     feature: row.feature, key: row.key, full_key: `${row.feature}.${row.key}`,
-    label: row.label, description: row.description, value_type: row.value_type,
+    label: row.label, description: row.description, value_type: valueType,
     unit: row.unit, allowed_values: row.allowed_values, min_value: row.min_value,
     max_value: row.max_value, basis: row.basis, set_by: row.set_by, review_due: row.review_due,
     overridable_by: row.overridable_by as ScopedKnob["overridable_by"],
     override_direction: row.override_direction, bound_value: row.bound_value,
     platform_locked: false, org_locked_kinds: [], user_override_locked: false,
-    platform_default: row.value, shipped_default: row.default_value, org_override: null,
-    user_override: null, effective_value: row.value, origin: "platform_default",
+    platform_default: isSecret ? null : row.value,
+    shipped_default: isSecret ? null : row.default_value,
+    org_override: null, user_override: null,
+    effective_value: isSecret ? null : row.value, origin: "platform_default",
     origin_scope_id: null, origin_precedence: null,
-    is_overridden: JSON.stringify(row.value) !== JSON.stringify(row.default_value),
-    out_of_range: false, ui, taxonomy: null, propagation: row.propagation,
+    is_overridden: !isSecret && JSON.stringify(row.value) !== JSON.stringify(row.default_value),
+    out_of_range: false, ui,
+    taxonomy: taxonomyForNodeId(row.taxonomy_node_id, taxonomy),
+    propagation: row.propagation,
     // Platform is intentionally absent: it is not a knob_scope_kind.
     scope_chain: [], locked: null, write_rung: { kind: "platform", scope_id: null },
-    can_write: true, can_write_reason: null, secret: null,
+    can_write: true, can_write_reason: null,
+    // feature_knob deliberately holds no vault state. Do not manufacture a
+    // “Not set” answer (or expose a raw secret) for the system register.
+    secret: isSecret ? { state: "unknown", vault_key: null } : null,
   };
 }
 
@@ -165,12 +178,40 @@ export function useUniversalSettings(): UniversalSettingsValue {
   return useContext(UniversalSettingsContext);
 }
 
-function groupDomains(
+export function groupDomains(
   knobs: ScopedKnob[],
   taxonomy: TaxonomyIndex,
   includePlatformOnly = false,
 ): SettingsDomain[] {
   const groups = new Map<string, SettingsDomain>();
+  // Start with the full canonical taxonomy. A setting registry is incomplete
+  // product coverage, not permission to erase a domain or feature from nav.
+  for (const node of taxonomy.byId.values()) {
+    if (node.level !== "domain") continue;
+    groups.set(node.slug, {
+      id: `${CONFIG_TAB_ROOT}.${slugToTabSegment(node.slug)}`,
+      slug: node.slug,
+      name: node.name,
+      knobs: [],
+      features: [],
+      // This existing id is retained for direct links and now acts as the
+      // domain overview, whether or not it currently has domain-level knobs.
+      domainLeafId: `${CONFIG_TAB_ROOT}.${slugToTabSegment(node.slug)}.${slugToTabSegment(node.slug)}`,
+    });
+  }
+  for (const node of taxonomy.byId.values()) {
+    if (node.level !== "feature") continue;
+    const filed = taxonomyForNodeId(node.id, taxonomy);
+    if (!filed?.domain_slug) continue;
+    const domain = groups.get(filed.domain_slug);
+    if (!domain || domain.features.some((feature) => feature.slug === node.slug)) continue;
+    domain.features.push({
+      id: `${domain.id}.${slugToTabSegment(node.slug)}`,
+      slug: node.slug,
+      name: node.name,
+      knobs: [],
+    });
+  }
   for (const knob of knobs) {
     // The personal surface shows what a person or organization may actually
     // steer. A key nobody below the platform may touch belongs on the admin
@@ -186,7 +227,7 @@ function groupDomains(
       name,
       knobs: [],
       features: [],
-      domainLeafId: null,
+      domainLeafId: `${id}.${slugToTabSegment(slug)}`,
     };
     if (filed?.feature_slug) {
       let feature = domain.features.find((f) => f.slug === filed.feature_slug);
@@ -205,19 +246,6 @@ function groupDomains(
       domain.domainLeafId = `${id}.${slugToTabSegment(slug)}`;
     }
     groups.set(slug, domain);
-  }
-  // Taxonomy is navigation, not an accidental by-product of existing knobs:
-  // registered empty domains remain visible and truthfully say what is missing.
-  for (const node of taxonomy.byId.values()) {
-    if (node.level !== "domain" || groups.has(node.slug)) continue;
-    groups.set(node.slug, {
-      id: `${CONFIG_TAB_ROOT}.${slugToTabSegment(node.slug)}`,
-      slug: node.slug,
-      name: node.name,
-      knobs: [],
-      features: [],
-      domainLeafId: `${CONFIG_TAB_ROOT}.${slugToTabSegment(node.slug)}.${slugToTabSegment(node.slug)}`,
-    });
   }
   for (const domain of groups.values()) {
     domain.features.sort((a, b) => a.name.localeCompare(b.name));
@@ -298,11 +326,38 @@ export function UniversalSettingsProvider({
     taxonomy: TaxonomyIndex;
     error: string | null;
   } | null>(null);
+  // Navigation must not disappear while a different editing context is
+  // loading. This independent complete read supplies the canonical empty
+  // domains/features until the context-specific registry answer arrives.
+  const [taxonomyState, setTaxonomyState] = useState<{
+    generation: number;
+    taxonomy: TaxonomyIndex;
+    error: string | null;
+  } | null>(null);
   const [systemRows, setSystemRows] = useState<{
     generation: number;
     rows: ScopedKnob[];
+    taxonomy: TaxonomyIndex;
     error: string | null;
   } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchTaxonomyIndex()
+      .then((taxonomy) => {
+        if (!cancelled) setTaxonomyState({ generation, taxonomy, error: null });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setTaxonomyState({
+            generation,
+            taxonomy: { byId: new Map(), bySlug: new Map() },
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      });
+    return () => { cancelled = true; };
+  }, [generation]);
 
   useEffect(() => {
     if (!organizationId || !userId) return;
@@ -338,12 +393,17 @@ export function UniversalSettingsProvider({
   useEffect(() => {
     if (editingContext !== "system" || !canManageSystem) return;
     let cancelled = false;
-    void fetchFeatureKnobs()
-      .then((rows) => {
-        if (!cancelled) setSystemRows({ generation, rows: rows.map(systemKnob), error: null });
+    void Promise.all([fetchFeatureKnobs(), fetchTaxonomyIndex()])
+      .then(([rows, taxonomy]) => {
+        if (!cancelled) setSystemRows({ generation, rows: rows.map((row) => systemKnob(row, taxonomy)), taxonomy, error: null });
       })
       .catch((err: unknown) => {
-        if (!cancelled) setSystemRows({ generation, rows: [], error: err instanceof Error ? err.message : String(err) });
+        if (!cancelled) setSystemRows({
+          generation,
+          rows: [],
+          taxonomy: { byId: new Map(), bySlug: new Map() },
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
     return () => { cancelled = true; };
   }, [editingContext, canManageSystem, generation]);
@@ -387,7 +447,10 @@ export function UniversalSettingsProvider({
     };
   }, [organizationId, neededKey, neededKinds.length]);
   const scopeRows = rowsState?.key === neededKey ? rowsState.rows : {};
-  const taxonomy = current?.taxonomy ?? { byId: new Map(), bySlug: new Map() };
+  const taxonomy = system?.taxonomy ?? current?.taxonomy ?? taxonomyState?.taxonomy ?? {
+    byId: new Map(),
+    bySlug: new Map(),
+  };
   const domains = groupDomains(knobs, taxonomy, editingContext === "system");
   const byKey = new Map(knobs.map((knob) => [knob.full_key, knob]));
 
@@ -418,7 +481,7 @@ export function UniversalSettingsProvider({
     isLoading: editingContext === "system"
       ? canManageSystem && !system
       : Boolean(organizationId && userId) && !current,
-    error: editingContext === "system" ? system?.error ?? null : current?.error ?? null,
+    error: editingContext === "system" ? system?.error ?? null : current?.error ?? taxonomyState?.error ?? null,
     missing: knobs.filter((knob) => knob.origin === "missing"),
     refresh,
   };
