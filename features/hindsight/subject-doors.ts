@@ -12,6 +12,7 @@
  * the exact conversations it read, and each one opens.
  */
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import { runHref } from "@/features/workflow-runtime/run-doors";
 import { agentPathFor } from "@/features/agents/addressing/agentAddress";
 
 import type { Enrollment } from "./types";
@@ -72,8 +73,14 @@ export function workflowHref(definitionId: string): string {
   return `${WORKFLOWS_APP_URL}/workflows/${definitionId}`;
 }
 
+/**
+ * A run is read in THIS app (wall W36, 2026-09-12): `/workflows/runs/{id}`
+ * rebuilds a finished run from its durable event log — the showcase, the
+ * deliverables and the honest failure card — so a reviewer's example never
+ * bounces the reader into the author's Studio on another host.
+ */
 export function workflowRunHref(runId: string): string {
-  return `${WORKFLOWS_APP_URL}/runs/${runId}`;
+  return runHref(runId);
 }
 
 export interface Door {
@@ -124,7 +131,7 @@ export function exampleDoor(
     };
   }
   if (kind === "wf_run") {
-    return { href: workflowRunHref(id), label: "Open run", external: true };
+    return { href: workflowRunHref(id), label: "Open run", external: false };
   }
   return null;
 }
