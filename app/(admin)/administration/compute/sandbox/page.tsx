@@ -388,7 +388,7 @@ export default function AdminSandboxManagementPage() {
     >
     <div className="min-h-dvh bg-textured">
       <div className="p-4 border-b border-border bg-textured">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex max-w-7xl mx-auto flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Container className="w-6 h-6 text-orange-500" />
             <div>
@@ -398,10 +398,10 @@ export default function AdminSandboxManagementPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
             <AppLink
               href="/administration/compute/sandbox-infra"
-              className="flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+              className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent sm:w-auto"
             >
               <Activity className="w-4 h-4" />
               Fleet health
