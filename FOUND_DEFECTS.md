@@ -3702,6 +3702,23 @@ failed; 220.6s**. Before: 32 suites / 56 tests red. `pnpm type-check` clean.
 ### D310 — Four fixed-interval aidream pollers have no jitter, backoff, or Retry-After handling (2026-09-12)
 Same alignment class as the 2026-09-12 change-feed pool storms (43 sandbox pollers in one second exhausted aidream's 10-slot pool; server now sheds with 503 + Retry-After, sandbox SDK honours it). These client pollers still poll in lockstep: `features/cloud-browser/hooks/useScreenshotSession.ts:117` (2s/15s), `features/workflow-runtime/redux/adopt-workflow-run.thunk.ts:578` (3s, SSE-fallback only), `features/cms/hooks/useCmsAdminActivity.ts:41` (8s), `features/research/components/agents/GoogleBackgroundAgentCard.tsx:89` (5s). Fix: one shared poll helper (jitter ±20%, exponential backoff on 5xx, honour `Retry-After`) and adopt it in all four; per-tab fleets are small today, so this is preventive. Decides: nobody — do it.
 
+### UNVERIFIED — the org-less screens were proven by test, never by a live browser (2026-09-12)
+The organization-refusal class fix (8 surfaces + the shared Vault wrapper + 4 message-template
+sites + the `useOrganizationRequired` gate) is proven by jest and the
+`check-org-refusal-honesty` guard, and the fixed screens were loaded in a browser WITH an org
+selected. The state they exist for — `orgBootstrapResolved = true` AND `organization_id = null` —
+was **never rendered in a real browser**, for a concrete reason: bootstrap now auto-selects (the
+root-cause fix landed the same night), `admin@admin.com` has nine memberships, and there is no
+"clear organization" control to force the empty state from the page.
+So the honest refusal copy, the picker affordance and the non-dead controls are asserted at the
+React/selector level only. That is the ONE claim in this class resting on tests rather than a
+screen, and tests written by the same author who wrote the code are exactly what our first law
+distrusts. **To close it:** a session with a second account that has ZERO org memberships (or a
+temporary way to null `organization_id` post-bootstrap) should load `/workflows/waiting`,
+`/agents/[id]/run`, `/vault`, `/administration/compute/proof-runs` and the Google OAuth return,
+and confirm each states the condition and offers a way to choose — no permanent spinner, no dead
+Retry, no message blaming Google or the API. Decides: nobody — do it.
+
 ### D311 — `@ai-matrx/kit/format` is a stale publish: 42 type errors across 7 files (2026-09-12)
 Found while type-checking the organization-refusal class fix. `pnpm type-check` reports 42 errors
 with a single cause: the installed `@ai-matrx/kit/format` does not export `safeRatio`, `sumKnown`,
