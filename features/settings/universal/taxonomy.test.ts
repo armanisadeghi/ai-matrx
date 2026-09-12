@@ -24,7 +24,7 @@ jest.mock("@ai-matrx/data/db", () => ({
 jest.mock("./UniversalSettingsPane", () => ({ __esModule: true, default: () => null }));
 
 import { buildConfigTreeNodes } from "./configTree";
-import { filterKnobsForTarget, groupDomains, systemKnob } from "./UniversalSettingsContext";
+import { filterKnobsForTarget, groupDomains, resolverRequestForTarget, systemKnob } from "./UniversalSettingsContext";
 import {
   fetchTaxonomyIndex,
   taxonomyForNodeId,
@@ -104,5 +104,10 @@ describe("universal settings taxonomy", () => {
     const organizationOnly: ScopedKnob = { ...userKnob(), overridable_by: ["organization"] };
     expect(filterKnobsForTarget([userKnob(), organizationOnly], "user")).toEqual([userKnob()]);
     expect(filterKnobsForTarget([userKnob(), organizationOnly], "organization")).toEqual([organizationOnly]);
+  });
+
+  it("does not send a personal or device rung to an organization destination", () => {
+    expect(resolverRequestForTarget({ target: "organization", organizationId: "org", userId: "user", deviceId: "device" })).toEqual({ organizationId: "org", userId: undefined, deviceId: undefined, scopes: undefined });
+    expect(resolverRequestForTarget({ target: "user", organizationId: "org", userId: "user", deviceId: "device" })).toEqual({ organizationId: "org", userId: "user", deviceId: "device", scopes: undefined });
   });
 });

@@ -16,7 +16,7 @@
 // Outside the provider the value is empty and not loading, so a tab rendered
 // somewhere unexpected degrades to "no configuration here" and says so.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -73,6 +73,23 @@ export function filterKnobsForTarget(
   return knobs.filter((knob) =>
     target === "system" || knob.overridable_by.includes(target),
   );
+}
+
+export function resolverRequestForTarget({
+  target, organizationId, userId, deviceId, scopes,
+}: {
+  target: "user" | "organization";
+  organizationId: string | null | undefined;
+  userId: string;
+  deviceId: string | null;
+  scopes?: KnobScopeRef[];
+}) {
+  return {
+    organizationId: organizationId!,
+    userId: target === "user" ? userId : undefined,
+    deviceId: target === "user" ? deviceId ?? undefined : undefined,
+    scopes,
+  };
 }
 
 export type UniversalSettingsValue = {
@@ -272,7 +289,9 @@ export function UniversalSettingsProvider({
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const editingContext = target;
   const [changedOnly, setChangedOnly] = useState(false);
-  const organizationId = fixedOrganizationId ?? activeOrganizationId;
+  const organizationId = target === "organization"
+    ? fixedOrganizationId ?? null
+    : activeOrganizationId;
   const organization = organizations.find((org) => org.id === organizationId) ?? null;
   const [deviceId, setDeviceId] = useState<string | null>(null);
   useEffect(() => {
@@ -280,7 +299,7 @@ export function UniversalSettingsProvider({
   }, []);
 
   const [generation, setGeneration] = useState(0);
-  const refresh = () => setGeneration((n) => n + 1);
+  const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
   // A host may supply inherited scope/device read context. This surface never
   // fabricates scope choices or probes picker rows: its destination is fixed.
@@ -334,16 +353,17 @@ export function UniversalSettingsProvider({
   }, [requestKey, generation]);
 
   useEffect(() => {
-    if (!organizationId || !userId) return;
+    if (editingContext === "system" || !organizationId || !userId) return;
     let cancelled = false;
     const parsedScopes = JSON.parse(scopesKey) as KnobScopeRef[] | null;
     void Promise.all([
-      fetchKnobIndex({
+      fetchKnobIndex(resolverRequestForTarget({
+        target: editingContext,
         organizationId,
-        userId: resolverUserId,
-        deviceId: resolverDeviceId,
+        userId,
+        deviceId: resolverDeviceId ?? null,
         scopes: parsedScopes ?? undefined,
-      }),
+      })),
       fetchTaxonomyIndex(),
     ])
       .then(([knobs, taxonomy]) => {
