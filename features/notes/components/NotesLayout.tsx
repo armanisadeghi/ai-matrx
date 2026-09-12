@@ -223,7 +223,6 @@ export function NotesLayout({
         await updateNote(activeNote.id, {
           label: activeNote.label,
           content: activeNote.content,
-          folder_name: activeNote.folder_name,
           tags: activeNote.tags,
           metadata: activeNote.metadata,
         });

@@ -32,6 +32,7 @@ import {
   findOrCreateEmptyNote as findOrCreateEmptyNoteThunk,
   saveNoteField,
   moveNoteToFolder,
+  moveNoteToNewFolder as moveNoteToNewFolderThunk,
 } from "../redux/thunks";
 
 /**
@@ -136,13 +137,12 @@ export function useNotesRedux() {
         dispatch(setNoteField({ id, field: "tags", value: updates.tags }));
       }
 
-      // Moving a note must update both folder_name and folder_id. The move
-      // thunk resolves/materializes the folder and saves every field edited
-      // above in the same write; ordinary updates use the standard save.
+      // This compatibility path has only a display name, so it is limited to
+      // creating a new folder. Persisted choices call `moveNote` with identity.
       if (updates.folder_name !== undefined) {
         const folder = updates.folder_name?.trim();
         if (folder) {
-          await dispatch(moveNoteToFolder({ noteId: id, folder })).unwrap();
+          await dispatch(moveNoteToNewFolderThunk({ noteId: id, folderName: folder })).unwrap();
         } else {
           dispatch(setNoteField({ id, field: "folder_name", value: null }));
           dispatch(setNoteField({ id, field: "folder_id", value: null }));
@@ -191,9 +191,7 @@ export function useNotesRedux() {
       await dispatch(
         moveNoteToFolder({
           noteId,
-          folder: folder.name,
-          folderId: folder.id,
-          organizationId: folder.organizationId,
+          folder,
         }),
       ).unwrap();
     },
@@ -203,7 +201,7 @@ export function useNotesRedux() {
   /** A name is accepted only while creating a folder that is not persisted yet. */
   const moveNoteToNewFolder = useCallback(
     async (noteId: string, folderName: string): Promise<void> => {
-      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
+      await dispatch(moveNoteToNewFolderThunk({ noteId, folderName })).unwrap();
     },
     [dispatch],
   );

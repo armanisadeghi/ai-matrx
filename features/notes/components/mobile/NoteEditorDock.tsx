@@ -32,8 +32,9 @@ import {
 import MobileNoteToolbar from "./MobileNoteToolbar";
 import { NoteContextSection } from "../NoteContextSection";
 import { CreateFolderDialog } from "../CreateFolderDialog";
-import { selectAllFolders } from "../../redux/selectors";
+import { selectFolderReferences } from "../../redux/selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
+import type { FolderReference } from "../../types";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
@@ -45,9 +46,11 @@ interface NoteEditorDockProps {
   noteId: string;
   noteLabel?: string;
   folder: string;
+  organizationId: string;
   tags: string[];
   content: string;
-  onFolderChange: (folder: string) => void;
+  onFolderChange: (folder: FolderReference) => void;
+  onCreateFolder: (folderName: string) => void;
   onTagsChange: (tags: string[]) => void;
   onDuplicate: () => void;
   onExport: () => void;
@@ -69,9 +72,11 @@ export function NoteEditorDock({
   noteId,
   noteLabel = "Note",
   folder,
+  organizationId,
   tags,
   content,
   onFolderChange,
+  onCreateFolder,
   onTagsChange,
   onDuplicate,
   onExport,
@@ -82,7 +87,10 @@ export function NoteEditorDock({
   const toast = useToastManager("notes");
   const openKnowledge = useOpenNoteKnowledgePanel();
   const ingest = useNoteIngestStatus(noteId);
-  const availableFolders = useAppSelector(selectAllFolders);
+  const folderReferences = useAppSelector(selectFolderReferences);
+  const availableFolders = folderReferences.filter(
+    (candidate) => candidate.organizationId === organizationId,
+  );
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -299,9 +307,9 @@ export function NoteEditorDock({
       <CreateFolderDialog
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
-        existingFolders={availableFolders}
+        existingFolders={availableFolders.map((folder) => folder.name)}
         onConfirm={async (folderName) => {
-          onFolderChange(folderName);
+          onCreateFolder(folderName);
         }}
         description="Create a folder and move this note into it immediately."
         confirmLabel="Create & Move"

@@ -42,7 +42,7 @@ import {
   reportNoteSaveFailure,
   NOTE_READONLY_DELETE_MESSAGE,
 } from "../utils/writeErrors";
-import type { Note, CreateNoteInput } from "../types";
+import type { FolderReference, Note, CreateNoteInput } from "../types";
 import type {
   NoteRecord,
   NoteScopeAssignment,
@@ -433,20 +433,6 @@ export const saveNote = createAsyncThunk<void, string>(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a folder_name to a folder_id by looking up (or creating) a note_folders
- * record. Returns the folder_id UUID, or null if resolution fails.
- *
- * Delegates to the ONE canonical folder get-or-create — `notesService.createFolder`
- * — which is atomic (ON CONFLICT DO NOTHING against the (created_by, name) unique
- * index, never a 23505/409). The folder is always the current user's
- * (createFolder uses requireUserId(); RLS forbids creating one for anyone else),
- * so no user id is threaded here.
- */
-async function resolveFolderId(folderName: string, organizationId: string): Promise<string> {
-  return createFolder(folderName, organizationId);
-}
-
-/**
  * Create a new note in the database.
  * Resolves folder_name to folder_id via note_folders table.
  * Dispatches upsertNoteFromServer with "full", addTab, setActiveNote.
@@ -658,41 +644,75 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
  */
 export const moveNoteToFolder = createAsyncThunk<
   void,
-  { noteId: string; folder: string; folderId?: string; organizationId?: string }
+  { noteId: string; folder: FolderReference }
 >(
   "notes/moveNoteToFolder",
-  async ({ noteId, folder, folderId: suppliedFolderId, organizationId: targetOrganizationId }, { dispatch, getState }) => {
+  async ({ noteId, folder }, { dispatch, getState }) => {
     const state = getState() as RootState;
     getUserId(getState);
     const note = state.notes.notes[noteId] as NoteRecord | undefined;
     if (!note) throw new Error("Note not found in state");
     const organizationId = requireOrganizationContext(note.organization_id);
-    if (targetOrganizationId && targetOrganizationId !== organizationId) {
+    if (folder.organizationId !== organizationId) {
       throw new Error("A note can only move to a folder in its own organization.");
     }
 
-    // Resolve folder_id for the target folder
-    const folderId = suppliedFolderId ?? (await resolveFolderId(folder, organizationId));
+    // Treat caller input as a request, not admission. RLS must admit this
+    // exact ID in the note's captured organization before optimistic state or
+    // any note write can happen.
+    const { data: admittedFolder, error } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id, organization_id, name")
+      .eq("id", folder.id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw error;
+    if (!admittedFolder || admittedFolder.organization_id !== organizationId) {
+      throw new Error("That folder is unavailable in this note's organization.");
+    }
 
     dispatch(
       setNoteField({
         id: noteId,
         field: "folder_name",
-        value: folder,
+        value: admittedFolder.name,
       }),
     );
 
-    if (folderId) {
-      dispatch(
-        setNoteField({
-          id: noteId,
-          field: "folder_id",
-          value: folderId,
-        }),
-      );
-    }
+    dispatch(
+      setNoteField({
+        id: noteId,
+        field: "folder_id",
+        value: admittedFolder.id,
+      }),
+    );
 
     await dispatch(saveNote(noteId)).unwrap();
+  },
+);
+
+/** A folder name is accepted only while materializing a new folder. */
+export const moveNoteToNewFolder = createAsyncThunk<
+  void,
+  { noteId: string; folderName: string }
+>(
+  "notes/moveNoteToNewFolder",
+  async ({ noteId, folderName }, { dispatch, getState }) => {
+    const state = getState() as RootState;
+    getUserId(getState);
+    const note = state.notes.notes[noteId] as NoteRecord | undefined;
+    if (!note) throw new Error("Note not found in state");
+    // Capture the note organization before awaiting folder creation. The
+    // active organization picker can change while a dialog is open.
+    const organizationId = requireOrganizationContext(note.organization_id);
+    const name = folderName.trim();
+    if (!name) throw new Error("Folder name is required.");
+    const id = await createFolder(name, organizationId);
+    await dispatch(
+      moveNoteToFolder({ noteId, folder: { id, organizationId, name } }),
+    ).unwrap();
   },
 );
 

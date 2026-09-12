@@ -50,6 +50,7 @@ import {
   copyNote,
   deleteNote,
   moveNoteToFolder,
+  moveNoteToNewFolder,
 } from "../redux/thunks";
 import { useNotesInstanceId } from "../context/NotesInstanceContext";
 import { useNoteAccess } from "../hooks/useNoteAccess";
@@ -501,9 +502,7 @@ export function NoteContentEditor({
       await dispatch(
         moveNoteToFolder({
           noteId,
-          folder: targetFolder.name,
-          folderId: targetFolder.id,
-          organizationId: targetFolder.organizationId,
+          folder: targetFolder,
         }),
       ).unwrap();
     },
@@ -527,7 +526,7 @@ export function NoteContentEditor({
 
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
+      await dispatch(moveNoteToNewFolder({ noteId, folderName })).unwrap();
     },
     [dispatch, noteId],
   );

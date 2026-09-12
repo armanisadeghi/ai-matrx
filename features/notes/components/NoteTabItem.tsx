@@ -66,7 +66,7 @@ import {
   normalizeNoteEditorMode,
   usePreferredDefaultEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
-import { saveNote, copyNote, moveNoteToFolder } from "../redux/thunks";
+import { saveNote, copyNote, moveNoteToFolder, moveNoteToNewFolder } from "../redux/thunks";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
@@ -345,7 +345,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const handleMoveToFolder = useCallback(
     async (folder: FolderReference) => {
       bumpTabInteraction();
-      await dispatch(moveNoteToFolder({ noteId, folder: folder.name, folderId: folder.id, organizationId: folder.organizationId })).unwrap();
+      await dispatch(moveNoteToFolder({ noteId, folder })).unwrap();
       toast.success(`Moved to ${folder.name}`);
     },
     [bumpTabInteraction, dispatch, noteId],
@@ -354,7 +354,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const handleCreateFolder = useCallback(
     async (folder: string) => {
       bumpTabInteraction();
-      await dispatch(moveNoteToFolder({ noteId, folder })).unwrap();
+      await dispatch(moveNoteToNewFolder({ noteId, folderName: folder })).unwrap();
       toast.success(`Moved to ${folder}`);
     },
     [bumpTabInteraction, dispatch, noteId],

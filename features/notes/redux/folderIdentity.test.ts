@@ -1,3 +1,18 @@
+const maybeSingle = jest.fn();
+const folderQuery = {
+  select: jest.fn(),
+  eq: jest.fn(),
+  is: jest.fn(),
+  maybeSingle,
+};
+for (const method of ["select", "eq", "is"] as const) {
+  folderQuery[method].mockReturnValue(folderQuery);
+}
+
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: { schema: jest.fn(() => ({ from: jest.fn(() => folderQuery) })) },
+}));
+
 import { selectFolderReferences, selectNotesGroupedBy } from "./selectors";
 import { moveNoteToFolder } from "./thunks";
 
@@ -16,6 +31,12 @@ function stateWithHomonyms() {
 }
 
 describe("notes folder identity", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    for (const method of ["select", "eq", "is"] as const) {
+      folderQuery[method].mockReturnValue(folderQuery);
+    }
+  });
   it("keeps same-name folders from different organizations as separate action targets", () => {
     const state = stateWithHomonyms() as never;
     expect(selectFolderReferences(state)).toEqual(expect.arrayContaining([
@@ -39,9 +60,7 @@ describe("notes folder identity", () => {
 
     const action = await moveNoteToFolder({
       noteId: "a",
-      folder: "Research",
-      folderId: "folder-b",
-      organizationId: orgB,
+      folder: { id: "folder-b", organizationId: orgB, name: "Research" },
     })(dispatch, () => state, undefined);
 
     if (!moveNoteToFolder.rejected.match(action)) {
@@ -51,6 +70,35 @@ describe("notes folder identity", () => {
     expect(action.error.message).toBe(
       "A note can only move to a folder in its own organization.",
     );
+    expect(dispatch.mock.calls.map(([dispatched]) => dispatched.type)).toEqual([
+      "notes/moveNoteToFolder/pending",
+      "notes/moveNoteToFolder/rejected",
+    ]);
+    expect(maybeSingle).not.toHaveBeenCalled();
+  });
+
+  it("rejects a mismatched ID and claimed organization before optimistic state or save", async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    const dispatch = jest.fn();
+    const state = {
+      ...stateWithHomonyms(),
+      userAuth: { id: "user-1" },
+    } as never;
+
+    const action = await moveNoteToFolder({
+      noteId: "a",
+      // This claims org A while naming the homonymous folder ID from org B.
+      folder: { id: "folder-b", organizationId: orgA, name: "Research" },
+    })(dispatch, () => state, undefined);
+
+    if (!moveNoteToFolder.rejected.match(action)) {
+      throw new Error("Expected the mismatched folder identity to be rejected.");
+    }
+    expect(action.error.message).toBe(
+      "That folder is unavailable in this note's organization.",
+    );
+    expect(folderQuery.eq).toHaveBeenCalledWith("id", "folder-b");
+    expect(folderQuery.eq).toHaveBeenCalledWith("organization_id", orgA);
     expect(dispatch.mock.calls.map(([dispatched]) => dispatched.type)).toEqual([
       "notes/moveNoteToFolder/pending",
       "notes/moveNoteToFolder/rejected",

@@ -46,16 +46,17 @@ import { isNoteContentEmpty } from "../../utils/noteUtils";
 import { downloadNoteAsMarkdown } from "../../utils/exportNotesMarkdown";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { FolderReference } from "../../types";
 
 export interface NoteMenuContext {
   instanceId: string;
   noteId: string;
   label: string;
   content: string | null | undefined;
-  /** Current folder — excluded from the "Move to Folder" submenu. */
-  folder: string;
+  /** Current persisted folder identity, excluded from the move submenu. */
+  folder: FolderReference | null;
   /** All known folders, used to build the "Move to Folder" submenu. */
-  allFolders: string[];
+  allFolders: FolderReference[];
   /** Opens the note's knowledge-base (Knowledge) side panel. */
   openKnowledge: (opts: { noteId: string; title?: string }) => void;
   /** Creates a folder, then moves this note into it. */
@@ -155,7 +156,9 @@ async function deleteNoteAction(ctx: NoteMenuContext): Promise<void> {
 export function buildNoteContextSections(
   ctx: NoteMenuContext & { onOpen: () => void },
 ): ContextMenuExtraSection[] {
-  const moveTargets = ctx.allFolders.filter((f) => f !== ctx.folder);
+  const moveTargets = ctx.allFolders.filter(
+    (candidate) => candidate.organizationId === ctx.folder?.organizationId && candidate.id !== ctx.folder?.id,
+  );
 
   const items: ContextMenuExtraItem[] = [
     {
@@ -184,8 +187,8 @@ export function buildNoteContextSections(
 
   const moveChildren: ContextMenuExtraItem[] = moveTargets.map((folder) => ({
     kind: "item" as const,
-    id: `move-${folder}`,
-    label: folder,
+    id: `move-${folder.organizationId}-${folder.id}`,
+    label: folder.name,
     onSelect: () => {
       ctx.dispatch(moveNoteToFolder({ noteId: ctx.noteId, folder }));
     },
@@ -224,7 +227,9 @@ export function buildNoteContextSections(
 }
 
 export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
-  const moveTargets = ctx.allFolders.filter((f) => f !== ctx.folder);
+  const moveTargets = ctx.allFolders.filter(
+    (candidate) => candidate.organizationId === ctx.folder?.organizationId && candidate.id !== ctx.folder?.id,
+  );
 
   return {
     header: { title: displayLabel(ctx.label) },
@@ -294,8 +299,8 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
                 id: "folders",
                 items: [
                   ...moveTargets.map((folder) => ({
-                    id: `move-${folder}`,
-                    label: folder,
+                    id: `move-${folder.organizationId}-${folder.id}`,
+                    label: folder.name,
                     onSelect: () => {
                       ctx.dispatch(
                         moveNoteToFolder({ noteId: ctx.noteId, folder }),

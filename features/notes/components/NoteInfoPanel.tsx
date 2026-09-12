@@ -31,13 +31,14 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchNoteContent, moveNoteToFolder } from "../redux/thunks";
+import { fetchNoteContent, moveNoteToFolder, moveNoteToNewFolder } from "../redux/thunks";
 import {
   selectNoteById,
   selectNoteContent,
   selectNoteTags,
-  selectAllFolders,
+  selectFolderReferences,
 } from "../redux/selectors";
+import type { FolderReference } from "../types";
 import { cn } from "@/lib/utils";
 import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
 import { NoteContextSection } from "./NoteContextSection";
@@ -174,7 +175,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   const note = useAppSelector(selectNoteById(noteId));
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const tags = useAppSelector(selectNoteTags(noteId));
-  const allFolders = useAppSelector(selectAllFolders);
+  const folderReferences = useAppSelector(selectFolderReferences);
 
   // Self-hydrate: this panel is opened from surfaces that never load the
   // notes list (a reference chip in a direct message, a search hit), so the
@@ -197,7 +198,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   const isPublic = note?.visibility === "public";
 
   const handleFolderChange = useCallback(
-    (f: string) => {
+    (f: FolderReference) => {
       dispatch(moveNoteToFolder({ noteId, folder: f }));
       setFolderOpen(false);
     },
@@ -206,7 +207,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
 
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
+      await dispatch(moveNoteToNewFolder({ noteId, folderName })).unwrap();
     },
     [dispatch, noteId],
   );
@@ -291,20 +292,22 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
               <FolderPlus className="h-3.5 w-3.5" />
               New folder…
             </button>
-            {allFolders.map((f) => (
+            {folderReferences
+              .filter((candidate) => candidate.organizationId === note.organization_id)
+              .map((f) => (
               <button
-                key={f}
+                key={`${f.organizationId}:${f.id}`}
                 className={cn(
                   "w-full text-left px-3 py-1.5 text-xs cursor-pointer transition-colors",
-                  f === folder
+                  f.id === note.folder_id
                     ? "bg-primary/10 text-primary font-medium"
                     : "text-foreground hover:bg-accent",
                 )}
                 onClick={() => handleFolderChange(f)}
               >
-                {f}
+                {f.name}
               </button>
-            ))}
+              ))}
           </div>
         )}
       </div>
@@ -390,7 +393,9 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         onConfirm={handleCreateFolder}
-        existingFolders={allFolders}
+        existingFolders={folderReferences
+          .filter((candidate) => candidate.organizationId === note.organization_id)
+          .map((candidate) => candidate.name)}
         description="Create a folder and assign this note to it immediately."
         confirmLabel="Create & Assign"
       />
