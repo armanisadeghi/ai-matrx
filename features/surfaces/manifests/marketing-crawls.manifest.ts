@@ -259,7 +259,7 @@ export const marketingCrawlsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-crawls",
   readiness: "verified",
   label: "Marketing Crawls",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/crawls",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/crawls",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the crawl operations desk of a managed website: the list of frozen crawl sessions (web.crawl_session) and the workspace that configures and starts a new crawl. Read the inherited brand_context and site_context first for who the client is and how the site is set up; recent_sessions carries the loaded session rows when bound.

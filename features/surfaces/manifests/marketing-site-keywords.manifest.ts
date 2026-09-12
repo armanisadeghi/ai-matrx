@@ -168,7 +168,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingSiteKeywordsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-keywords",
   label: "Organic Keyword Performance",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/keywords",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/keywords",
   inheritsFrom: "matrx-user/marketing-site",
   readiness: "verified",
   readinessNote:

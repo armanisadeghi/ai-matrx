@@ -254,7 +254,7 @@ export const marketingCoverageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-coverage",
   readiness: "verified",
   label: "Marketing Coverage Matrix",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/coverage",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/coverage",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the coverage matrix of a managed website: where the evidence sources — sitemaps, crawls, first-source provenance, and Google Search Console — agree and disagree about the canonical page registry. The brand_context and site_context values give you the client and website framing; read them first.

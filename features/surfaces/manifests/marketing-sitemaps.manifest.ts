@@ -175,7 +175,7 @@ export const marketingSitemapsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-sitemaps",
   readiness: "verified",
   label: "Marketing Sitemaps",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/sitemaps",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/sitemaps",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the sitemaps workspace of a managed website: every sitemap document the site publishes (indexes and URL sets, with HTTP status, URL counts, fetch errors, and freshness) and the rollup of how those listed URLs flow into the canonical page registry. The user comes here to check sitemap health, run a sync, and spot listed-but-never-crawled pages.

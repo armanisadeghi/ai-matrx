@@ -140,7 +140,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingSiteMediaManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-media",
   label: "Site Media Workspace",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/media",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/media",
   inheritsFrom: "matrx-user/marketing-site",
   readiness: "partial",
   readinessNote:

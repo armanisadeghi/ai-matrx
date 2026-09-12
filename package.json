@@ -83,6 +83,7 @@
     "check:thinking-leak:self-test": "tsx scripts/check-thinking-leak.ts --self-test",
     "check:picker-add:strict": "tsx scripts/check-picker-custom-entry.ts --strict",
     "check:surface-routes": "tsx scripts/check-surface-routes.ts",
+    "check:surface-routes:self-test": "tsx scripts/check-surface-routes.ts --self-test",
     "check:surface-overlays": "tsx scripts/check-surface-overlays.ts",
     "check:surface-interactive-roots": "tsx scripts/check-surface-interactive-roots.ts",
     "check:source-attribution": "tsx scripts/check-source-attribution.ts",

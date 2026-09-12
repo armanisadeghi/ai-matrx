@@ -981,7 +981,7 @@ export const marketingPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-page",
   readiness: "verified",
   label: "Marketing Page Workspace",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/pages/[pageId]",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 The inherited brand_context and site_context values give you the client and website this page belongs to — read them for framing before working on the page itself.

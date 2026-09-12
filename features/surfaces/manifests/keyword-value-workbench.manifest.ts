@@ -231,7 +231,7 @@ const surfaceSpecific: SurfaceValue[] = [
 export const keywordValueWorkbenchManifest: SurfaceManifest = {
   surfaceName: KEYWORD_VALUE_WORKBENCH_SURFACE_NAME,
   label: "Keyword Value Workbench",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/value",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/keywords/value",
   inheritsFrom: "matrx-user/marketing-site",
   readiness: "verified",
   readinessNote:
