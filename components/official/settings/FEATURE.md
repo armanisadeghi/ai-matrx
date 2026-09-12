@@ -26,7 +26,9 @@ need; do not add a barrel or a page-local substitute.
   query state and may supply exact-control results from their route adapter;
   results include their destination location and must suppress a competing
   no-results message. Both navigation primitives own their Tailwind structural
-  and semantic styling, so they remain correct outside a route shell.
+  and semantic styling, so they remain correct outside a route shell. Its
+  `renderItem` callback returns one native `a` or `button` root; the primitive
+  supplies the compact row inset and active state through that direct child.
 
 ## Row and control rules
 

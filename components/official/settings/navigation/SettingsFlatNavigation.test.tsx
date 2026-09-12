@@ -1,4 +1,9 @@
-import { settingsNavigationSections } from "./SettingsFlatNavigation";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import {
+  SettingsFlatNavigation,
+  settingsNavigationSections,
+} from "./SettingsFlatNavigation";
 
 describe("settingsNavigationSections", () => {
   it("keeps root links together and maps configuration folders to their Overview leaf", () => {
@@ -45,5 +50,32 @@ describe("settingsNavigationSections", () => {
         ],
       },
     ]);
+  });
+});
+
+
+describe("SettingsFlatNavigation rendering", () => {
+  it("styles native link and button roots without shell navigation classes", () => {
+    const markup = renderToStaticMarkup(
+      <SettingsFlatNavigation
+        activeId="button"
+        sections={[{
+          id: "general",
+          label: "General",
+          items: [
+            { id: "link", label: "Link", location: "Settings", node: { id: "link", label: "Link" } },
+            { id: "button", label: "Button", location: "Settings", node: { id: "button", label: "Button" } },
+          ],
+        }]}
+        renderItem={(item) => item.id === "link"
+          ? createElement("a", { href: "/settings/link" }, item.label)
+          : createElement("button", { type: "button" }, item.label)}
+      />,
+    );
+
+    expect(markup).toContain("[&amp;&gt;a]:min-h-[1.875rem]");
+    expect(markup).toContain("[&amp;&gt;button]:min-h-[1.875rem]");
+    expect(markup).toContain("[&amp;&gt;button]:bg-muted");
+    expect(markup).not.toContain("shell-nav-item");
   });
 });

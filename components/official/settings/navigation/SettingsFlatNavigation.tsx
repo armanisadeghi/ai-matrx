@@ -119,6 +119,7 @@ export function SettingsFlatNavigation({
 }: {
   sections: SettingsNavigationSection[];
   activeId: string | null;
+  /** Return one native interactive root (`a` or `button`); this primitive owns its row styling. */
   renderItem: (item: SettingsNavigationItem, active: boolean) => ReactNode;
   empty?: ReactNode;
 }) {
@@ -134,7 +135,10 @@ export function SettingsFlatNavigation({
             {section.items.map((item) => (
               <div
                 key={item.id}
-                className={cn("[&_.shell-nav-item]:min-h-[1.875rem] [&_.shell-nav-item]:pl-2 [&_.shell-nav-item]:text-[0.8125rem]", item.id === activeId && "[&_.shell-nav-item]:bg-muted [&_.shell-nav-item]:text-foreground")}
+                className={cn(
+                  "[&>a]:flex [&>a]:min-h-[1.875rem] [&>a]:w-full [&>a]:items-center [&>a]:rounded-sm [&>a]:pl-2 [&>a]:text-[0.8125rem] [&>button]:flex [&>button]:min-h-[1.875rem] [&>button]:w-full [&>button]:items-center [&>button]:rounded-sm [&>button]:pl-2 [&>button]:text-[0.8125rem]",
+                  item.id === activeId && "[&>a]:bg-muted [&>a]:text-foreground [&>button]:bg-muted [&>button]:text-foreground",
+                )}
               >
                 {renderItem(item, item.id === activeId)}
               </div>
