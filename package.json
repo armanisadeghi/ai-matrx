@@ -288,6 +288,8 @@
     "check:soft-delete-cascade:strict": "tsx scripts/check-soft-delete-cascade.ts --strict",
     "check:keyword-placement-tenancy": "tsx scripts/check-keyword-placement-tenancy.ts",
     "check:keyword-placement-tenancy:strict": "tsx scripts/check-keyword-placement-tenancy.ts --strict",
+    "check:mandate-fallback-pin": "tsx scripts/check-mandate-fallback-pin.ts",
+    "check:mandate-fallback-pin:strict": "tsx scripts/check-mandate-fallback-pin.ts --strict",
     "check:migration-slot-guard": "tsx scripts/check-migration-slot-guard.ts",
     "check:migration-slot-guard:strict": "tsx scripts/check-migration-slot-guard.ts --strict",
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
