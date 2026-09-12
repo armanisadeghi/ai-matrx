@@ -81,7 +81,8 @@ const MODE_OPTIONS: {
 export interface IngestSummary {
   added: number;
   duplicatesSkipped: number;
-  quotesUnverified: number;
+  /** Null when the lane did not report the word-for-word check at all. */
+  quotesUnverified: number | null;
   /**
    * Pieces of the source the distiller could not read even after retrying
    * them smaller, and the words they held. Non-zero = rules are MISSING and
@@ -106,7 +107,12 @@ export function parseIngestSummary(raw: unknown): IngestSummary | null {
   return {
     added: Number(data.added ?? 0),
     duplicatesSkipped: Number(data.duplicates_skipped ?? 0),
-    quotesUnverified: Number(data.quotes_unverified ?? 0),
+    // ABSENT is not ZERO: a lane that never ran the word-for-word check must
+    // not read as "every quote verified" (Bugbot, 2026-09-12).
+    quotesUnverified:
+      data.quotes_unverified === undefined || data.quotes_unverified === null
+        ? null
+        : Number(data.quotes_unverified),
     failedChunks: Number(data.failed_chunks ?? 0),
     skippedWords: Number(data.skipped_words ?? 0),
     followupSeed:
@@ -128,9 +134,11 @@ export function describeIngest({
     (missing ? `${missing} ` : "") +
     `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
     (duplicatesSkipped ? `, ${duplicatesSkipped} duplicates skipped` : "") +
-    (quotesUnverified
-      ? `. ${quotesUnverified} ${quotesUnverified === 1 ? "quote" : "quotes"} could not be verified word-for-word — those rules are flagged for your review.`
-      : ". Every quote verified word-for-word against your source.")
+    (quotesUnverified === null
+      ? "."
+      : quotesUnverified
+        ? `. ${quotesUnverified} ${quotesUnverified === 1 ? "quote" : "quotes"} could not be verified word-for-word — those rules are flagged for your review.`
+        : ". Every quote verified word-for-word against your source.")
   );
 }
 

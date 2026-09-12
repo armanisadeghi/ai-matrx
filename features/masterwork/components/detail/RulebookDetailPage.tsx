@@ -1005,6 +1005,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         editor_open: editorOpen,
         interview_open: interviewOpen,
         ingest_open: ingestOpen,
+        timeline_open: timelineOpen,
+        triage_open: triageOpen,
         corpus_open: corpusOpen,
         chat_import_open: chatImportOpen,
         build_open: buildOpen,
@@ -1035,7 +1037,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     search,
     visibleRules,
     wizardOpen,
-  ]);
+      timelineOpen,
+    triageOpen,
+]);
 
   const getPageApplicationScope = useCallback(
     () =>
