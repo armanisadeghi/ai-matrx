@@ -65,8 +65,71 @@ fail() { printf '[preview] ERROR: %s\n' "$1" >&2; exit 1; }
 alive() { [[ "${1:-}" =~ ^[0-9]+$ ]] && kill -0 "$1" 2>/dev/null; }
 meta_value() { sed -n "s/^$1=//p" "$META" 2>/dev/null | head -1; }
 server_cwd() { lsof -a -p "$1" -d cwd -Fn 2>/dev/null | awk '/^n/{print substr($0,2); exit}'; }
+# `stat` speaks two dialects and they disagree about `-f`. On BSD/macOS `-f` is
+# the format flag; on GNU coreutils it means "filesystem status", so
+# `stat -f %m FILE` on Linux prints FILE's *filesystem* stats — free blocks and
+# free inodes included — on STDOUT and exits 1. Every `stat -f … || stat -c …`
+# chain therefore captured BOTH halves on Linux: the value carried the disk's
+# free-block count and changed between any two readings. That is what made
+# `pnpm check:install-gate:self-test` fail on every CI run (2026-09-12) — two
+# fingerprints of an UNCHANGED node_modules never matched, so the preview
+# accused an install that never ran — and it silently broke the log-size cap and
+# `mtime` on Linux too. Decide the dialect once, then ask for one dialect only.
+stat_fmt() { # stat_fmt <gnu-format> <bsd-format> <path>
+  if [[ -z "${STAT_DIALECT:-}" ]]; then
+    if stat -c %i . >/dev/null 2>&1; then STAT_DIALECT=gnu; else STAT_DIALECT=bsd; fi
+  fi
+  if [[ "$STAT_DIALECT" == "gnu" ]]; then
+    stat -c "$1" "$3" 2>/dev/null
+  else
+    stat -f "$2" "$3" 2>/dev/null
+  fi
+}
+
 mtime() {
-  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
+  stat_fmt %Y %m "$1" || echo 0
+}
+
+# node_modules fingerprint. The 2026-09-12 preview deaths all had the same
+# invisible cause: an install relinked node_modules under the running server
+# and the server died minutes later with a stack that said nothing about it.
+# The server must name its own killer, so we stamp a fingerprint at start and
+# re-read it when the process dies. Cheap on purpose — three stat calls, not a
+# tree walk: `.modules.yaml` is rewritten by every pnpm install, and the native
+# swc binding lives under `@next`, whose relinking produced the
+# module-not-found storm in the first place (that limb named the darwin arm64
+# binary by path until 2026-09-12, so on Linux it read "missing" forever).
+nm_fingerprint() {
+  local nm="$REPO_ROOT/node_modules"
+  local parts=""
+  local target one
+  for target in "$nm/.modules.yaml" "$nm/@next" "$nm/.pnpm"; do
+    one="$(stat_fmt '%i:%Y:%s' '%i:%m:%z' "$target")"
+    parts+="${one:-missing}|"
+  done
+  printf '%s\n' "$parts"
+}
+
+# Called when the server process is gone. If node_modules moved underneath it,
+# say so in the log, in the lease file, and in `pnpm preview:status` — one line,
+# in plain words, naming the cause instead of leaving a RangeError stack.
+announce_node_modules_change() {
+  local expected_pid="$1" recorded current when
+  # A deliberate `pnpm preview:stop` removes the lease first; only an
+  # unexplained death still has one.
+  [[ -f "$META" ]] || return 0
+  [[ "$(meta_value PID)" == "$expected_pid" ]] || return 0
+  recorded="$(meta_value NM_FINGERPRINT)"
+  [[ -n "$recorded" ]] || return 0
+  current="$(nm_fingerprint)"
+  [[ "$current" != "$recorded" ]] || return 0
+
+  when="$(date '+%Y-%m-%d %H:%M:%S')"
+  local line="node_modules changed under the running server at $when — an install ran while the preview was live"
+  printf '[preview] %s\n' "$line" >>"$LOG"
+  printf '[preview] That is what killed this server. Whoever installs next: pnpm preview:stop first.\n' >>"$LOG"
+  printf 'NODE_MODULES_CHANGED=%s\n' "$line" >>"$META"
+  printf '%s\n' "$line" >"$FAILED"
 }
 
 report_previous_failure() {
@@ -80,19 +143,16 @@ report_previous_failure() {
   printf '\n' >&2
 }
 
-load_token() {
-  [[ -n "${DEV_LOGIN_TOKEN:-}" ]] && return 0
-  local f value
-  for f in "$REPO_ROOT/.env.local" "$REPO_ROOT/.env.development.local" "$REPO_ROOT/.env.development" "$REPO_ROOT/.env"; do
-    [[ -f "$f" ]] || continue
-    value="$(sed -n 's/^[[:space:]]*DEV_LOGIN_TOKEN[[:space:]]*=[[:space:]]*//p' "$f" | head -1 | tr -d '\r')"
-    value="${value#\"}"; value="${value%\"}"
-    value="${value#\'}"; value="${value%\'}"
-    if [[ -n "$value" ]]; then
-      DEV_LOGIN_TOKEN="$value"
-      return 0
-    fi
-  done
+# Mint the single-use nonce /api/dev-login accepts. This used to scrape
+# DEV_LOGIN_TOKEN out of .env* and put it in the warm-up URL — a durable
+# credential written into the dev-server's own request log on every start,
+# which is one of the two ways it leaked (2026-08-31, again 2026-09-11). The
+# nonce is generated here, consumed by the first request, and worthless after.
+mint_nonce() {
+  NONCE=""
+  command -v openssl >/dev/null 2>&1 || return 0
+  NONCE="$(openssl rand -hex 16)"
+  printf '%s\n' "$NONCE" > "$REPO_ROOT/.dev-login-nonce" || NONCE=""
 }
 
 killtree() {
@@ -245,6 +305,7 @@ PY
     echo "LOG=$LOG"
     echo "ROOT=$REPO_ROOT"
     echo "MAX_RSS_GB=$MAX_RSS_GB"
+    echo "NM_FINGERPRINT=$(nm_fingerprint)"
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
 
@@ -277,17 +338,17 @@ PY
 cmd_warm() {
   local expected_pid="${1:-}"
   alive "$expected_pid" || exit 0
-  load_token
 
   local attempt
   for attempt in $(seq 1 90); do
     if curl --max-time 5 -fsS -o /dev/null "http://localhost:$PORT/" 2>/dev/null; then
-      if [[ -n "${DEV_LOGIN_TOKEN:-}" ]]; then
+      mint_nonce
+      if [[ -n "${NONCE:-}" ]]; then
         curl -fsS -L -c "$JAR" -b "$JAR" -o /dev/null \
-          "http://localhost:$PORT/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/dashboard" \
+          "http://localhost:$PORT/api/dev-login?nonce=$NONCE&next=/dashboard" \
           2>/dev/null || true
       fi
-      rm -f "$JAR"
+      rm -f "$JAR" "$REPO_ROOT/.dev-login-nonce"
       touch "$READY"
       exit 0
     fi
@@ -325,7 +386,7 @@ rotate_oversized_log() {
   local size_bytes cap_bytes tail_file
   [[ -f "$LOG" ]] || return 0
   cap_bytes="$(awk -v gb="$MAX_LOG_GB" 'BEGIN { printf "%d", gb * 1073741824 }')"
-  size_bytes="$(stat -f %z "$LOG" 2>/dev/null || stat -c %s "$LOG" 2>/dev/null || echo 0)"
+  size_bytes="$(stat_fmt %s %z "$LOG" || echo 0)"
   (( size_bytes >= cap_bytes )) || return 0
 
   tail_file="$LOG.tail"
@@ -375,6 +436,9 @@ cmd_monitor() {
     fi
     sleep 2
   done
+
+  # The loop only ends when the process is gone and no watchdog limit fired.
+  announce_node_modules_change "$expected_pid"
 }
 
 cmd_status() {
@@ -385,6 +449,9 @@ cmd_status() {
     rss_kb="$(group_rss_kb "$pid")"
     log "RUNNING pid=$pid port=$port rss=$(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }')GB owner=$owner"
     [[ "$owner" == "$REPO_ROOT" ]] || log "LEASE OCCUPIED — this checkout does not own that preview"
+    local changed
+    changed="$(meta_value NODE_MODULES_CHANGED)"
+    [[ -z "$changed" ]] || log "$changed"
     return 0
   fi
   local running pid port owner
