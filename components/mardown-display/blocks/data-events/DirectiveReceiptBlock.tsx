@@ -21,6 +21,16 @@ import { AlertTriangle, Check, CircleSlash, Clock, RotateCcw } from "lucide-reac
  * card ever reads wrong, the fix is in that module — not here.
  *
  * The outcome only chooses the icon and the tone.
+ *
+ * 🚨 AND NOTHING ELSE IS COMPOSED HERE EITHER (V-19, 2026-09-12). The first cut
+ * of this card printed a second line — "{N} {resource_kind}s affected" — from
+ * `resource_ids.length`. For the real `create_project_with_tasks` receipt that
+ * reads **"5 projects affected"** for one project and four tasks, because the
+ * five ids all ride under `resource_kind: "project"`. That is the exact
+ * derivation the server-side design rejected as a confident lie, reintroduced
+ * on the client, under a sentence that was already correct. A screen never
+ * lies: the sentence is the whole card. `resourceIds` is kept only as data on
+ * the element, for linking later.
  */
 
 export type DirectiveReceiptOutcome =
@@ -34,8 +44,9 @@ export interface DirectiveReceiptBlockProps {
   /** The directive SLUG — the one identity. */
   directive: string;
   outcome: DirectiveReceiptOutcome;
-  /** The server's own sentence. Rendered verbatim. */
+  /** The server's own sentence. Rendered verbatim, and it is the ONLY prose. */
   message: string;
+  /** Carried for linking/diagnostics — NEVER counted into a sentence. */
   resourceKind?: string;
   resourceIds?: string[];
 }
@@ -64,13 +75,14 @@ const DirectiveReceiptBlock: React.FC<DirectiveReceiptBlockProps> = ({
 }) => {
   const style = OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.applied;
   const { Icon } = style;
-  const count = resourceIds?.length ?? 0;
 
   return (
     <div
       className="my-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
       data-directive={directive}
       data-outcome={outcome}
+      data-resource-kind={resourceKind || undefined}
+      data-resource-count={resourceIds?.length ?? undefined}
     >
       <div className="flex items-start gap-2">
         <Icon className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${style.tone}`} />
@@ -78,12 +90,6 @@ const DirectiveReceiptBlock: React.FC<DirectiveReceiptBlockProps> = ({
         <span className="min-w-0 flex-1 text-foreground">{message}</span>
         <span className={`shrink-0 text-xs ${style.tone}`}>{style.label}</span>
       </div>
-      {count > 0 && (
-        <div className="mt-1 pl-5 text-xs text-muted-foreground">
-          {count} {resourceKind || "record"}
-          {count === 1 ? "" : "s"} affected
-        </div>
-      )}
     </div>
   );
 };
