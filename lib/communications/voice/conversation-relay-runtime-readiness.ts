@@ -3,18 +3,15 @@
 import "server-only";
 
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import type { components } from "@/types/python-generated/api-types";
 
 const READINESS_PATH = "/communications/voice/conversation-relay/readiness";
 
-export interface ConversationRelayRuntimeReadiness {
-  public_route_mounted: boolean;
-  code_switch_enabled: boolean;
-  provider_switch_enabled: boolean;
-  program_switch_enabled: boolean;
-  owned_number_routed: boolean;
-  routing_configuration_ready: boolean;
-  owner_beta_ready: boolean;
-}
+type GeneratedConversationRelayRuntimeReadiness =
+  components["schemas"]["ConversationRelayRuntimeReadiness"];
+
+export type ConversationRelayRuntimeReadiness =
+  Required<GeneratedConversationRelayRuntimeReadiness>;
 
 function isRuntimeReadiness(
   value: unknown,
