@@ -17,16 +17,27 @@
 // full scope through one and an empty scope through the other. Every lane now
 // gets the scope, the client tool, and the gate from this one scaffold; a lane
 // that adds a route must not hand-roll any of the three.
+//
+// It carries the surface's WRITE half too (2026-09-12). The surface declares
+// `rule_draft`, but only the detail page registered a handler for it, so a
+// Conductor running on `/conduct` was told by the server it could stage a rule
+// and then found no handler — a declared door with nothing behind it (live
+// defect, conversation 2546a1d2-61fc-49af-b894-9577235bec12). The lane now
+// mounts the SAME `RuleEditorDialog` the detail page uses and lands the save
+// through the SAME canonical CAS upsert (`saveEditedRule`), so a staged rule
+// behaves identically through either door and the Expert still presses Save.
 
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { toast } from "@/lib/toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -35,12 +46,23 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   SurfaceRuntimeProvider,
   useSurfaceClientTools,
+  useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import { useAdoptRecordOrganization } from "@/features/organizations/useAdoptRecordOrganization";
-import { buildRulebookSurfaceScope } from "../agent-context/rulebookSurfaceScope";
+import {
+  buildRulebookSurfaceScope,
+  CLOSED_RULEBOOK_WORKSPACE_STATE,
+  type RulebookDraftSnapshot,
+} from "../agent-context/rulebookSurfaceScope";
+import { requireRuleDraftInput } from "../agent-context/ruleDraftInput";
+import { saveEditedRule } from "../ruleSave";
 import { getRulebook, listMasterworksForRulebook } from "../service";
-import type { Masterwork, Rulebook } from "../types";
+import {
+  RuleEditorDialog,
+  type RuleEditorResult,
+} from "./detail/RuleEditorDialog";
+import type { Masterwork, Rulebook, RulebookRule } from "../types";
 
 export interface RulebookLaneRenderArgs {
   rulebook: Rulebook;
@@ -140,6 +162,66 @@ export function RulebookLaneRoute({
     "Rulebook",
   );
 
+  // ── The `rule_draft` write target ────────────────────────────────────────
+  // A declared target MUST have a handler wherever its surface is mounted:
+  // the client offers `apply_surface_write` only for handler-backed targets,
+  // and the server now advertises only the targets that offer names — so an
+  // unwired mount silently costs the agent a capability the page promises.
+  // The lane stages into the same editor the detail page opens; the Expert
+  // still presses Save.
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<RulebookRule | undefined>(undefined);
+  const [editorSection, setEditorSection] = useState<string | undefined>(
+    undefined,
+  );
+  const [stagedRuleDraft, setStagedRuleDraft] = useState<
+    Partial<RulebookDraftSnapshot> | undefined
+  >(undefined);
+  const [draftRevision, setDraftRevision] = useState(0);
+  const [activeRuleDraft, setActiveRuleDraft] =
+    useState<RulebookDraftSnapshot | null>(null);
+
+  const existingIds = useMemo(
+    () => new Set((rulebook?.rules ?? []).map((rule) => rule.id)),
+    [rulebook?.rules],
+  );
+
+  useSurfaceWriteHandlers(MASTERWORK_RULEBOOK_SURFACE_NAME, {
+    // Validate-then-apply: every throw reaches the agent verbatim and nothing
+    // half-opens the editor.
+    rule_draft: (value: unknown) => {
+      if (!rulebook) throw new Error("The Rulebook is still loading.");
+      if (!canEdit) throw new Error("You cannot edit this Rulebook.");
+      const next = requireRuleDraftInput(value, rulebook);
+      setEditing(next.initial);
+      setEditorSection(next.draft.section);
+      setStagedRuleDraft(next.draft);
+      setActiveRuleDraft(null);
+      setDraftRevision((revision) => revision + 1);
+      setEditorOpen(true);
+    },
+  });
+
+  const handleEditorOpenChange = useCallback((open: boolean) => {
+    setEditorOpen(open);
+    if (!open) {
+      setStagedRuleDraft(undefined);
+      setActiveRuleDraft(null);
+    }
+  }, []);
+
+  const saveStagedRule = useCallback(
+    async ({ rule, isNew }: RuleEditorResult) => {
+      if (!rulebook) return;
+      const saved = await saveEditedRule({ rulebook, rule, isNew });
+      setRulebook(saved);
+      toast.success(isNew ? "Rule added" : "Rule saved", {
+        description: `Rulebook is now version ${saved.version}.`,
+      });
+    },
+    [rulebook],
+  );
+
   // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
   // 2026-09-09). This frame renders no Masterwork list of its own — it is the
   // lane's data provider and the agent's surface scope — so it takes the law's
@@ -156,8 +238,23 @@ export function RulebookLaneRoute({
       canEdit,
       masterworks,
       lane,
+      // The read twin of the `rule_draft` write target, and the honest
+      // workspace state: an agent that staged a rule here can read back
+      // exactly what is sitting in the editor.
+      activeRuleDraft,
+      workspaceState: {
+        ...CLOSED_RULEBOOK_WORKSPACE_STATE,
+        editor_open: editorOpen,
+      },
     });
-  }, [canEdit, lane, masterworks, rulebook]);
+  }, [
+    activeRuleDraft,
+    canEdit,
+    editorOpen,
+    lane,
+    masterworks,
+    rulebook,
+  ]);
 
   // The one client tool every lane can honestly service: refetch this
   // workspace's Rulebook + Masterworks through the canonical loaders.
@@ -304,6 +401,25 @@ export function RulebookLaneRoute({
           </div>
         )}
       </div>
+      {canEdit ? (
+        <RuleEditorDialog
+          open={editorOpen}
+          onOpenChange={handleEditorOpenChange}
+          sections={rulebook.sections}
+          existingIds={existingIds}
+          initial={editing}
+          defaultSection={editorSection}
+          onSave={saveStagedRule}
+          surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
+          getSurfaceScope={buildSurfaceScope}
+          rulebookId={rulebook.id}
+          rulebookVersion={rulebook.version}
+          organizationId={rulebook.organization_id}
+          stagedDraft={stagedRuleDraft}
+          draftRevision={draftRevision}
+          onDraftChange={setActiveRuleDraft}
+        />
+      ) : null}
     </SurfaceRuntimeProvider>
   );
 }

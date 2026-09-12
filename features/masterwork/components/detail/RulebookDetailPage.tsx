@@ -118,6 +118,7 @@ import {
   buildRulebookSurfaceScope,
   type RulebookDraftSnapshot,
 } from "../../agent-context/rulebookSurfaceScope";
+import { requireRuleDraftInput } from "../../agent-context/ruleDraftInput";
 // The Final Checkup window (features/masterwork/checkup/) — its one entry point.
 import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/masterworkCheckupWindow";
 // "Add rule" is a WindowPanel (With AI default + Manually) — never a blocking
@@ -180,75 +181,6 @@ function formatClock(seconds: number): string {
   const m = Math.floor((s % 3600) / 60);
   const sec = String(s % 60).padStart(2, "0");
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
-}
-
-function requireRuleDraftInput(
-  value: unknown,
-  rulebook: Rulebook,
-): {
-  draft: Partial<RulebookDraftSnapshot>;
-  initial: RulebookRule | undefined;
-} {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Rule draft must be an object.");
-  }
-  const input = value as Record<string, unknown>;
-  if (input.mode !== "new" && input.mode !== "edit") {
-    throw new Error('Rule draft mode must be "new" or "edit".');
-  }
-
-  const initial =
-    input.mode === "edit"
-      ? rulebook.rules.find(
-          (rule) => rule.id === String(input.rule_id ?? "").trim(),
-        )
-      : undefined;
-  if (input.mode === "edit" && !initial) {
-    throw new Error(
-      "Edit mode needs a rule_id that exists in the open Rulebook.",
-    );
-  }
-
-  const draft: Partial<RulebookDraftSnapshot> = {
-    mode: input.mode,
-    rule_id: initial?.id ?? null,
-  };
-  for (const key of [
-    "name",
-    "statement",
-    "rationale",
-    "detection",
-    "quote",
-  ] as const) {
-    const field = input[key];
-    if (field === undefined) continue;
-    if (typeof field !== "string") {
-      throw new Error(`Rule draft ${key} must be text.`);
-    }
-    draft[key] = field;
-  }
-  if (input.severity !== undefined) {
-    if (
-      input.severity !== "critical" &&
-      input.severity !== "major" &&
-      input.severity !== "minor"
-    ) {
-      throw new Error("Rule draft severity must be critical, major, or minor.");
-    }
-    draft.severity = input.severity;
-  }
-  if (input.section !== undefined) {
-    if (
-      typeof input.section !== "string" ||
-      !Object.hasOwn(rulebook.sections, input.section)
-    ) {
-      throw new Error(
-        "Rule draft section must be one of the section codes in this Rulebook.",
-      );
-    }
-    draft.section = input.section;
-  }
-  return { draft, initial };
 }
 
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
