@@ -3754,8 +3754,7 @@ export interface paths {
          *     Like `/token`, this route takes NO authentication dependency: a guest holding
          *     the meeting link is a first-class participant (D6), and it is the SERVICE
          *     that decides what a guest may do — `authorize_meeting_question` mirrors the
-         *     admission decision, including a verified room pass and the org's
-         *     `meet.guest_join_enabled` knob. The pass rides `x-meet-room-token`, never a URL.
+         *     join decision exactly, including the org's `meet.guest_join_enabled` knob.
          *
          *     The body is `{meeting_id, question}` and nothing else. No transcript, no
          *     context, no agent id crosses the wire — the answer is built server-side from
@@ -123368,9 +123367,7 @@ export interface operations {
     intelligence_ask_v1_meet_intelligence_ask_post: {
         parameters: {
             query?: never;
-            header?: {
-                "x-meet-room-token"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
