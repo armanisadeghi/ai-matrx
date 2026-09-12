@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { writeDumpUrlSources } from "../../service";
 import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
+import type { PastedSourceMetadata } from "../../record/pastedSource";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 
 /**
@@ -249,6 +250,43 @@ export function RulebookSourcesPanel({
       id: l.resourceId,
       label: l.label,
     })),
+  );
+
+  /**
+   * WHAT A PASTED SOURCE SAYS ABOUT ITSELF (census D5). A note the Expert
+   * attached by hand is just a note; a note the paste lane kept carries
+   * `pasted` + `source_key` on its edge, and every rule distilled from that
+   * text carries the SAME key in `source_ref.source` — so the count below is
+   * read from the live rules, never frozen into metadata at write time.
+   */
+  const detailForLink = useCallback(
+    (metadata: unknown): string | null => {
+      const meta = (metadata ?? {}) as Partial<PastedSourceMetadata>;
+      if (!meta.pasted) return null;
+      const bits: string[] = ["Pasted"];
+      if (meta.pasted_at) {
+        const when = new Date(meta.pasted_at);
+        if (!Number.isNaN(when.getTime())) {
+          bits.push(
+            when.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            }),
+          );
+        }
+      }
+      if (meta.words) bits.push(`${meta.words.toLocaleString()} words`);
+      if (meta.source_key) {
+        const produced = (rulebook.rules ?? []).filter(
+          (rule) => rule.source_ref?.source === meta.source_key,
+        ).length;
+        bits.push(
+          produced === 1 ? "1 rule so far" : `${produced} rules so far`,
+        );
+      }
+      return bits.join(" · ");
+    },
+    [rulebook.rules],
   );
 
   const stagedUrls = useMemo(() => dumpUrlSources(rulebook), [rulebook]);
@@ -502,6 +540,7 @@ export function RulebookSourcesPanel({
                     titleFor={(token, id, label) =>
                       titleFor({ token, id, label })
                     }
+                    detailFor={detailForLink}
                     status={links.status}
                     error={links.error}
                     busyKey={busyKey}
@@ -722,6 +761,7 @@ function SourceRows({
   sourceLinks,
   stagedUrls,
   titleFor,
+  detailFor,
   status,
   error,
   busyKey,
@@ -733,9 +773,12 @@ function SourceRows({
     token: string;
     resourceId: string;
     label: string | null;
+    metadata?: unknown;
   }[];
   stagedUrls: DumpUrlSource[];
   titleFor: (token: string, id: string, label: string | null) => string;
+  /** The second line of a row — what a pasted source says about itself. */
+  detailFor?: (metadata: unknown) => string | null;
   status: string;
   error: string | null;
   busyKey: string | null;
@@ -772,6 +815,7 @@ function SourceRows({
         const info = tryGetEntityInfo(link.token);
         const key = attachedKey(link.token, link.resourceId);
         const unsupported = UNSUPPORTED_TOKENS.has(link.token);
+        const detail = detailFor?.(link.metadata) ?? null;
         return (
           <li
             key={key}
@@ -794,7 +838,11 @@ function SourceRows({
                 className="text-sm text-foreground"
               />
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
-                {info ? (
+                {detail ? (
+                  <span className="text-[10px] text-muted-foreground">
+                    {detail}
+                  </span>
+                ) : info ? (
                   <span className="text-[10px] text-muted-foreground">
                     {info.labelPlural}
                   </span>

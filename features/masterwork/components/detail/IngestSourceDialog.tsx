@@ -25,6 +25,7 @@ import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { recordPastedSource } from "../../record/pastedSource";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -253,6 +254,17 @@ export function IngestSourceDialog({
       );
       return;
     }
+    // WHAT YOU PASTE IS A SOURCE (census D5) — kept BEFORE the run, so the
+    // Expert's own words are listed in Sources whether the distillation
+    // succeeds, fails, or is rejoined after a reload that took `text` with it.
+    await recordPastedSource({
+      rulebookId: rulebook.id,
+      orgId: rulebook.organization_id,
+      text,
+      sourceNote,
+      // `instructional` is this dialog's word for the `source` Approach.
+      approach: mode === "exemplar" ? "exemplar" : "source",
+    });
     await run.launch(
       {
         rulebook_id: rulebook.id,
