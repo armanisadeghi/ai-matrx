@@ -31,6 +31,10 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/camera", favicon: { color: "#166534", letter: "CA" } },
   { href: "/chat", favicon: { color: "#2563eb", letter: "C" } },
   { href: "/organizations", favicon: { color: "#b91c1c", letter: "O" } },
+  // DD-137a — the emergency door's two surfaces. Both paths are load-bearing:
+  // the database writes them as the deep link of every emergency-access notice.
+  { href: "/organizations/emergency-access", favicon: { color: "#b91c1c", letter: "EA" } },
+  { href: "/me/access-log", favicon: { color: "#0f766e", letter: "AL" } },
   { href: "/notes", favicon: { color: "#d97706", letter: "N" } },
   { href: "/tasks", favicon: { color: "#16a34a", letter: "T" } },
   { href: "/meetings", favicon: { color: "#0ea5e9", letter: "MG" } },
