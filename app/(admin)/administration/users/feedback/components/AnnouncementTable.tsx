@@ -25,7 +25,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import EditAnnouncementDialog from './EditAnnouncementDialog';
 import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
-import { ExportMenu } from '@/components/agent-copy/ExportMenu';
 import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
 import { announcementSummary } from '../format';
 
@@ -141,19 +140,18 @@ export default function AnnouncementTable() {
                                 data: announcements,
                                 attributes: { count: announcements.length },
                             })}
-                        />
-                        <ExportMenu
-                            label="announcements"
-                            items={[
-                                jsonExportItem(() => announcements),
-                                csvExportItem(
-                                    () =>
-                                        announcements as unknown as Array<
-                                            Record<string, unknown>
-                                        >,
-                                    'CSV',
-                                ),
-                            ]}
+                          export={{
+                            items: [
+                              jsonExportItem(() => announcements),
+                              csvExportItem(
+                                  () =>
+                                      announcements as unknown as Array<
+                                          Record<string, unknown>
+                                      >,
+                                  'CSV',
+                              ),
+                            ],
+                          }}
                         />
                         <Button
                             variant="outline"

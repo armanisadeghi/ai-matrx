@@ -50,7 +50,6 @@ import {
   AgentAppRateLimitRow,
 } from '@/lib/services/agent-apps-admin-service';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
-import { ExportMenu } from '@/components/agent-copy/ExportMenu';
 import { jsonExportItem, csvExportItem } from '@/components/agent-copy/export';
 import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
 import {
@@ -415,22 +414,21 @@ export function RateLimitsClient() {
                       data: filteredAndSortedRateLimits,
                       attributes: { count: filteredAndSortedRateLimits.length },
                     })}
-                  />
-                  <ExportMenu
-                    label="agent-app-rate-limits"
-                    items={[
-                      jsonExportItem(
-                        () => filteredAndSortedRateLimits,
-                        'JSON (this view)',
-                      ),
-                      csvExportItem(
-                        () =>
-                          filteredAndSortedRateLimits as unknown as Array<
-                            Record<string, unknown>
-                          >,
-                        'CSV (this view)',
-                      ),
-                    ]}
+                    export={{
+                      items: [
+                        jsonExportItem(
+                          () => filteredAndSortedRateLimits,
+                          'JSON (this view)',
+                        ),
+                        csvExportItem(
+                          () =>
+                            filteredAndSortedRateLimits as unknown as Array<
+                              Record<string, unknown>
+                            >,
+                          'CSV (this view)',
+                        ),
+                      ],
+                    }}
                   />
                 </>
               )}

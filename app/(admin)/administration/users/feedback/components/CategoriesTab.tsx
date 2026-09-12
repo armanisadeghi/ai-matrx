@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAllFeedback } from '@/actions/feedback.actions';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
-import { ExportMenu } from '@/components/agent-copy/ExportMenu';
 import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
 import { categorySummary, feedbackBrief, feedbackRowSummary } from '../format';
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -568,19 +567,18 @@ export default function CategoriesTab() {
                                     data: categories,
                                     attributes: { count: categories.length },
                                 })}
-                            />
-                            <ExportMenu
-                                label="feedback-categories"
-                                items={[
-                                    jsonExportItem(() => categories),
-                                    csvExportItem(
-                                        () =>
-                                            categories as unknown as Array<
-                                                Record<string, unknown>
-                                            >,
-                                        'CSV',
-                                    ),
-                                ]}
+                              export={{
+                                items: [
+                                  jsonExportItem(() => categories),
+                                  csvExportItem(
+                                      () =>
+                                          categories as unknown as Array<
+                                              Record<string, unknown>
+                                          >,
+                                      'CSV',
+                                  ),
+                                ],
+                              }}
                             />
                         </div>
                     )}

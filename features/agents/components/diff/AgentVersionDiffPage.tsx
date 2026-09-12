@@ -48,7 +48,6 @@ import { DefaultFieldAdapter } from "@ai-matrx/diff/react";
 import { formatChangeType } from "@ai-matrx/diff/structural";
 import type { DiffNode, DiffResult } from "@ai-matrx/diff/structural";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   agentVersionDiffKpis,
@@ -606,39 +605,38 @@ export function AgentVersionDiffPage({
                 }),
               },
             ]}
-          />
-          <ExportMenu
-            label={`agent-version-diff-${liveAgent?.name ?? agentId}`}
-            items={[
-              jsonExportItem(
-                () => diffView(true) ?? noSelectionData(),
-                "JSON (rendered diff)",
-              ),
-              csvExportItem(
-                () =>
-                  (diffView(true)?.changed_fields ?? []).map((change) => ({
-                    field: change.field,
-                    label: change.label,
-                    change: change.change,
-                    summary: change.summary,
-                    nested_changes: (change.changed_children ?? [])
-                      .map((c) => c.path)
-                      .join(" "),
-                  })),
-                "CSV (changed fields)",
-              ),
-              csvExportItem(
-                () => agentVersionHistoryCsvRows(historyRows()),
-                "CSV (all versions)",
-              ),
-              jsonExportItem(
-                () => ({
-                  left_snapshot: leftSnapshot ?? null,
-                  right_snapshot: rightAgent ?? null,
-                }),
-                "JSON (both snapshots)",
-              ),
-            ]}
+            export={{
+              items: [
+                jsonExportItem(
+                  () => diffView(true) ?? noSelectionData(),
+                  "JSON (rendered diff)",
+                ),
+                csvExportItem(
+                  () =>
+                    (diffView(true)?.changed_fields ?? []).map((change) => ({
+                      field: change.field,
+                      label: change.label,
+                      change: change.change,
+                      summary: change.summary,
+                      nested_changes: (change.changed_children ?? [])
+                        .map((c) => c.path)
+                        .join(" "),
+                    })),
+                  "CSV (changed fields)",
+                ),
+                csvExportItem(
+                  () => agentVersionHistoryCsvRows(historyRows()),
+                  "CSV (all versions)",
+                ),
+                jsonExportItem(
+                  () => ({
+                    left_snapshot: leftSnapshot ?? null,
+                    right_snapshot: rightAgent ?? null,
+                  }),
+                  "JSON (both snapshots)",
+                ),
+              ],
+            }}
           />
 
           {activeTab === "compare" && (
