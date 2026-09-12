@@ -108,6 +108,7 @@
     "check:split-jar-doors:self-test": "tsx scripts/check-split-jar-doors.ts --self-test",
     "check:registry-deps:strict": "tsx scripts/check-registry-deps.ts --strict",
     "check:ddl-guard-log": "tsx scripts/check-ddl-guard-log.ts",
+    "test:dd154-ddl-guard": "DD154_PG_MODE=docker bash scripts/test-dd154-ddl-guard.sh",
     "check:hatches": "tsx scripts/check-type-hatches.ts",
     "check:hatches:strict": "tsx scripts/check-type-hatches.ts --strict",
     "check:hatches:update": "tsx scripts/check-type-hatches.ts --update",

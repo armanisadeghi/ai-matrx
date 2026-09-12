@@ -1,17 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PG_BIN=/opt/homebrew/opt/postgresql@17/bin
-REPO=/Users/armanisadeghi/code/matrx-frontend
-CENSUS=/Users/armanisadeghi/code/common-docs/projects/no-db-assigned-org/census/live-2026-09-12-owner.json
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+FIXTURE="$REPO/scripts/fixtures/dd154-preapply-catalog.json"
+MIGRATION="$REPO/migrations/dd154_org_assignment_ddl_prevention.sql"
+EXPECTED_MIGRATION_SHA256=01d4323bbf7442160a67abbf2a1fc0dde2bf6e5086295c0f6d0e4f0a56fead5d
+MODE=${DD154_PG_MODE:-native}
+PG_BIN=${DD154_PG_BIN:-}
 RUN_DIR=$(mktemp -d /tmp/dd154-pg17-review.XXXXXX)
 DATA_DIR="$RUN_DIR/data"
-PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
 LOG="$RUN_DIR/postgres.log"
 RESULTS="$RUN_DIR/results.txt"
+CONTAINER=
+
+fail() {
+  echo "FAIL fixture: $*" | tee -a "$RESULTS"
+  exit 1
+}
+
+run_file() {
+  local file=$1
+  shift
+  "${PSQL[@]}" "$@" < "$file"
+}
 
 cleanup() {
-  "$PG_BIN/pg_ctl" -D "$DATA_DIR" -m fast stop >/dev/null 2>&1 || true
+  if [[ $MODE == native && -n $PG_BIN ]]; then
+    "$PG_BIN/pg_ctl" -D "$DATA_DIR" -m fast stop >/dev/null 2>&1 || true
+  fi
+  if [[ -n $CONTAINER ]]; then
+    docker logs "$CONTAINER" >"$LOG" 2>&1 || true
+    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+  fi
   cp "$RESULTS" /tmp/dd154-review-results.txt 2>/dev/null || true
   cp "$LOG" /tmp/dd154-review-postgres.log 2>/dev/null || true
   cp "$RUN_DIR/mapped.out" /tmp/dd154-review-mapped.out 2>/dev/null || true
@@ -20,23 +40,60 @@ cleanup() {
 }
 trap cleanup EXIT
 
-"$PG_BIN/initdb" -D "$DATA_DIR" -A trust --no-locale -E UTF8 >/dev/null
-"$PG_BIN/pg_ctl" -D "$DATA_DIR" -l "$LOG" -o "-h 127.0.0.1 -p $PORT -F" start >/dev/null
-PSQL=("$PG_BIN/psql" -h 127.0.0.1 -p "$PORT" -d postgres -X -v ON_ERROR_STOP=1)
+[[ -f $FIXTURE ]] || fail "checked-in pre-apply catalog fixture is missing: $FIXTURE"
+[[ -f $MIGRATION ]] || fail "applied DD154 migration is missing: $MIGRATION"
+[[ $(shasum -a 256 "$MIGRATION" | awk '{print $1}') == "$EXPECTED_MIGRATION_SHA256" ]] || fail "applied DD154 migration checksum does not match the immutable ledger subject"
+
+case "$MODE" in
+  native)
+    [[ -n $PG_BIN ]] || fail "native mode requires DD154_PG_BIN pointing to PostgreSQL 17 binaries"
+    for bin in initdb pg_ctl psql; do [[ -x "$PG_BIN/$bin" ]] || fail "native PostgreSQL binary missing: $PG_BIN/$bin"; done
+    PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+    "$PG_BIN/initdb" -D "$DATA_DIR" -A trust --no-locale -E UTF8 >/dev/null
+    "$PG_BIN/pg_ctl" -D "$DATA_DIR" -l "$LOG" -o "-h 127.0.0.1 -p $PORT -F" start >/dev/null
+    PSQL=("$PG_BIN/psql" -h 127.0.0.1 -p "$PORT" -d postgres -X -v ON_ERROR_STOP=1)
+    ;;
+  docker)
+    command -v docker >/dev/null 2>&1 || fail "Docker mode requires docker"
+    CONTAINER="dd154-pg17-${RANDOM}-${RANDOM}"
+    docker run -d --name "$CONTAINER" --network none -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17 >/dev/null || fail "could not start the isolated postgres:17 container"
+    PSQL=(docker exec -i "$CONTAINER" psql -U postgres -d postgres -X -v ON_ERROR_STOP=1)
+    ready=false
+    for _ in $(seq 1 30); do
+      if "${PSQL[@]}" -Atc 'SELECT 1' >/dev/null 2>&1; then ready=true; break; fi
+      sleep 1
+    done
+    [[ $ready == true ]] || fail "isolated postgres:17 container did not become ready within 30 seconds"
+    ;;
+  *) fail "DD154_PG_MODE must be native or docker, got: $MODE" ;;
+esac
+
+[[ $("${PSQL[@]}" -Atc 'SHOW server_version_num') == 17* ]] || fail "acceptance runtime is not PostgreSQL 17"
 
 if [[ $("${PSQL[@]}" -Atc 'SHOW server_encoding') != UTF8 ]]; then
   echo 'FAIL fixture: PostgreSQL 17 acceptance cluster is not UTF8' | tee -a "$RESULTS"; exit 1
 fi
 echo 'PASS fixture: PostgreSQL 17 acceptance cluster uses UTF8' | tee -a "$RESULTS"
 
-node - "$CENSUS" <<'NODE' | "${PSQL[@]}" >/dev/null
+node - "$FIXTURE" <<'NODE' | "${PSQL[@]}" >/dev/null
 const fs = require('fs');
-const census = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const defs = census.ddl_guard_definitions;
-const attachments = [...new Map(census.assignment_attachments.map(x => [`${x.function_schema}.${x.function_name}`, x.function_definition])).values()];
-const constant = "'39c38960-d30c-4840-b0c1-c9960de95582'::uuid";
-const defaults = census.organization_column_defaults.map(x => {
-  const expr = x.schema === 'platform' && x.table === 'output_feedback' ? 'current_personal_org_id()' : constant;
+const fixture = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const crypto = require('crypto');
+const sha256 = crypto.createHash('sha256').update(fs.readFileSync(process.argv[2])).digest('hex');
+if (fixture.fixture_version !== 1 || fixture.ddl_guard_definitions?.length !== 2 || fixture.assignment_functions?.length !== 8 || fixture.organization_column_defaults?.length !== 9) throw new Error('incomplete DD154 pre-apply catalog fixture');
+if (fixture.provenance?.captured_from !== 'common-docs/projects/no-db-assigned-org/census/live-2026-09-12-owner.json' || !/^[0-9a-f]{64}$/.test(fixture.provenance?.source_sha256 ?? '') || fixture.provenance?.migration_sha256 !== '01d4323bbf7442160a67abbf2a1fc0dde2bf6e5086295c0f6d0e4f0a56fead5d') throw new Error('fixture provenance is incomplete or mismatched');
+const md5 = (value) => crypto.createHash('md5').update(value).digest('hex');
+for (const entry of [...fixture.ddl_guard_definitions, ...fixture.assignment_functions]) {
+  if (!entry.schema || !entry.name || typeof entry.definition !== 'string' || md5(entry.definition) !== entry.definition_md5) throw new Error(`fixture function hash mismatch: ${entry.schema}.${entry.name}`);
+}
+for (const entry of fixture.organization_column_defaults) {
+  if (!entry.schema || !entry.table || !/^\d+$/.test(entry.oid ?? '') || typeof entry.expression !== 'string' || md5(entry.expression) !== entry.expression_md5) throw new Error(`fixture default hash mismatch: ${entry.schema}.${entry.table}`);
+}
+console.error(`PASS fixture: pre-apply catalog fixture ${sha256} has 2 definitions, 8 assigners, and 9 defaults`);
+const defs = fixture.ddl_guard_definitions;
+const attachments = fixture.assignment_functions.map(x => x.definition);
+const defaults = fixture.organization_column_defaults.map(x => {
+  const expr = x.expression;
   return `CREATE TABLE ${x.schema}.${x.table} (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL DEFAULT ${expr});`;
 }).join('\n');
 process.stdout.write(`
@@ -91,26 +148,18 @@ FROM pg_attrdef d JOIN pg_class c ON c.oid=d.adrelid JOIN pg_namespace n ON n.oi
 JOIN pg_attribute a ON a.attrelid=d.adrelid AND a.attnum=d.adnum
 WHERE a.attname='organization_id' ORDER BY 1" > "$RUN_DIR/defaults.tsv"
 
-node - "$RUN_DIR/defaults.tsv" <<'NODE'
+node - "$RUN_DIR/defaults.tsv" "$FIXTURE" <<'NODE'
 const fs=require('fs');
 const rows=fs.readFileSync(process.argv[2],'utf8').trim().split('\n').map(x=>x.split('|'));
-const expected=new Map([
-['admin.feature_docs','74188ac5336e8d3bf1a14eee28fc6297'],
-['context.system_context_item','74188ac5336e8d3bf1a14eee28fc6297'],
-['education.learn_doc','74188ac5336e8d3bf1a14eee28fc6297'],
-['platform.output_feedback','4f5b09b52e1a7f210b4c0d8b8bfa8cb9'],
-['seo.keyword','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.keyword_edge','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.keyword_market','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.keyword_topic','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.topic','74188ac5336e8d3bf1a14eee28fc6297']]);
+const fixture=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
+const expected=new Map(fixture.organization_column_defaults.map(x => [`${x.schema}.${x.table}`, x.expression_md5]));
 if(rows.length!==9) throw new Error(`fixture default count ${rows.length}`);
 for(const [ref,oid,hash] of rows){if(expected.get(ref)!==hash) throw new Error(`hash mismatch ${ref}: ${hash}`)}
 console.log('PASS fixture: 9 default expression hashes exactly match production freeze');
 NODE
 
 set +e
-"${PSQL[@]}" -f "$REPO/migrations/dd154_org_assignment_ddl_prevention.sql" >"$RUN_DIR/original.out" 2>&1
+run_file "$MIGRATION" >"$RUN_DIR/original.out" 2>&1
 ORIGINAL_RC=$?
 set -e
 if [[ $ORIGINAL_RC -eq 0 ]] || ! grep -q 'frozen organization-default debt changed (expected 9 exact attrdef rows, found 0)' "$RUN_DIR/original.out"; then
@@ -125,7 +174,7 @@ echo 'PASS red control: original production-OID migration refused the local clon
 "${PSQL[@]}" -c "CREATE TABLE public.preexisting_tenth_default (organization_id uuid NOT NULL DEFAULT public.current_personal_org_id())" >/dev/null
 echo 'ATTACK setup: added a tenth pre-existing organization default after the nine-row capture' | tee -a "$RESULTS"
 
-node - "$REPO/migrations/dd154_org_assignment_ddl_prevention.sql" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" <<'NODE'
+node - "$MIGRATION" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" <<'NODE'
 const fs=require('fs'),crypto=require('crypto');
 const [src,mapfile,out]=process.argv.slice(2);
 const old=new Map([
@@ -178,7 +227,7 @@ UNION ALL
 SELECT 'event',r.rolname,false,e.evtenabled::text,array_to_string(e.evttags,',') FROM pg_event_trigger e JOIN pg_roles r ON r.oid=e.evtowner WHERE e.evtname='ddl_guard'" > "$RUN_DIR/before.tsv"
 
 set +e
-"${PSQL[@]}" -f "$RUN_DIR/mapped.sql" >"$RUN_DIR/mapped.out" 2>&1
+run_file "$RUN_DIR/mapped.sql" >"$RUN_DIR/mapped.out" 2>&1
 MAPPED_RC=$?
 set -e
 if [[ $MAPPED_RC -eq 0 ]] || ! grep -q 'frozen organization-default debt changed (expected 9 exact attrdef rows, found 9)' "$RUN_DIR/mapped.out"; then
@@ -187,7 +236,7 @@ fi
 echo 'PASS freeze control: mapped migration refused the tenth organization default' | tee -a "$RESULTS"
 
 "${PSQL[@]}" -c 'DROP TABLE public.preexisting_tenth_default' >/dev/null
-"${PSQL[@]}" --single-transaction -f "$RUN_DIR/mapped.sql.with-probes.sql" >"$RUN_DIR/mapped.out" 2>&1
+run_file "$RUN_DIR/mapped.sql.with-probes.sql" --single-transaction >"$RUN_DIR/mapped.out" 2>&1
 echo 'PASS execution: production-OID-only mapped migration and rollback probes ran in one transaction' | tee -a "$RESULTS"
 
 if [[ $("${PSQL[@]}" -Atc "
@@ -203,7 +252,7 @@ fi
 echo 'PASS rollback probes: no persistent probe relation or function remains after the appended transaction' | tee -a "$RESULTS"
 
 set +e
-"${PSQL[@]}" -f "$RUN_DIR/mapped.sql.inverted-probes.sql" >"$RUN_DIR/inverted-probes.out" 2>&1
+run_file "$RUN_DIR/mapped.sql.inverted-probes.sql" >"$RUN_DIR/inverted-probes.out" 2>&1
 INVERTED_PROBES_RC=$?
 set -e
 if [[ $INVERTED_PROBES_RC -eq 0 ]] || ! grep -q 'explicit writer was not persisted in its temporary relation' "$RUN_DIR/inverted-probes.out"; then
