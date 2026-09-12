@@ -55,6 +55,7 @@ import {
   initRepository,
   unstageRepositoryPaths,
   executeRepositoryGit,
+  pushRepository,
   type RepositoryMetadata,
 } from "./repositoryService";
 
@@ -145,6 +146,9 @@ function RepositoryPanel({
   const generation = useRef(0);
   const operation = useRef(false);
   const cwd = repo?.rootPath;
+  const selectedRemote =
+    repo?.remotes.find((remote) => remote.name === remoteName)?.name ||
+    repo?.remotes[0]?.name;
   const commitDraftRepositoryRoot = cwd ?? repoRoot;
   const commitMessage = useAppSelector((state) =>
     selectGitCommitDraft(state, sandboxId, commitDraftRepositoryRoot),
@@ -254,12 +258,23 @@ function RepositoryPanel({
     try {
       await action();
       if (ticket !== generation.current) return;
-      if (cwd) await readRepository(cwd, ticket);
+      const refreshRoot = selectActiveRepositoryRoot(store.getState()) || cwd;
+      if (refreshRoot) await readRepository(refreshRoot, ticket);
       if (success) setNotice(success);
     } catch (cause) {
       if (ticket === generation.current) {
-        const message =
+        let message =
           cause instanceof Error ? cause.message : "Git operation failed.";
+        // A failed composite operation can still change the index or HEAD.
+        // Re-read before reporting the failure so retry actions use current Git state.
+        if (cwd) {
+          try {
+            await readRepository(cwd, ticket);
+          } catch (refreshError) {
+            message += ` Status could not be refreshed: ${refreshError instanceof Error ? refreshError.message : "try Refresh again"}`;
+          }
+        }
+        if (ticket !== generation.current) return;
         setError(message);
         toast.error(message);
       }
@@ -308,14 +323,22 @@ function RepositoryPanel({
       async () => {
         await adapter.commit({ cwd, message });
         setCommitMessage("");
-        if (pushAfter && isCurrentSandbox())
-          await adapter.push({
-            cwd,
-            remote:
-              repo?.remotes.find((remote) => remote.name === remoteName)
-                ?.name || repo?.remotes[0]?.name,
-            branch: repo?.branch || undefined,
+        if (pushAfter) {
+          if (
+            !isCurrentSandbox() ||
+            selectActiveRepositoryRoot(store.getState()) !== cwd
+          )
+            throw new Error(
+              "Committed successfully. Push was not started because the active repository changed.",
+            );
+          if (!selectedRemote || !repo?.branch)
+            throw new Error(
+              "Committed successfully. Choose a remote and a local branch before pushing.",
+            );
+          await pushRepository(process, cwd, selectedRemote, repo.branch, {
+            setUpstream: !repo.upstream,
           });
+        }
       },
       pushAfter
         ? "Committed and pushed."
@@ -643,8 +666,9 @@ function RepositoryPanel({
                   Add remote
                 </Button>
                 <p className="text-[11px] text-muted-foreground">
-                  Pull and push use {remoteName || "origin"}. Adding a remote
-                  does not publish files.
+                  Pull and push use{" "}
+                  {selectedRemote || "the first remote you add"}. Adding a
+                  remote does not publish files.
                 </p>
                 <label className="block text-[11px]" htmlFor="git-author-name">
                   Commit author name
@@ -754,14 +778,17 @@ function RepositoryPanel({
                   disabled={disabled || repo.remotes.length === 0}
                   onClick={() =>
                     void run(async () => {
-                      await adapter.push({
-                        cwd: repo.rootPath,
-                        remote:
-                          repo?.remotes.find(
-                            (remote) => remote.name === remoteName,
-                          )?.name || repo?.remotes[0]?.name,
-                        branch: repo.branch || undefined,
-                      });
+                      if (!selectedRemote || !repo.branch)
+                        throw new Error(
+                          "Select a remote and a local branch before pushing.",
+                        );
+                      await pushRepository(
+                        process,
+                        repo.rootPath,
+                        selectedRemote,
+                        repo.branch,
+                        { setUpstream: !repo.upstream },
+                      );
                     }, "Pushed commits.")
                   }
                 >
