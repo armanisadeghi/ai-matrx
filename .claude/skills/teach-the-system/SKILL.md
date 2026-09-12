@@ -4,7 +4,7 @@ type: Skill
 title: "teach-the-system — teach the platform one body of expertise until it breaks, fix it, continue"
 description: "Trial protocol for teaching AI Matrx a real expert's knowledge as a non-technical user, running it until the platform breaks, fixing the platform, and reporting what improved. Use when asked to distil a book, guide, or expert into a Masterwork, test whether the system can capture a human skill, or run an expertise trial. NOT for building a feature you already know is missing (use build-sub-feature)."
 tags: [masterwork, distillation, expertise, trial, platform-testing, doctrine]
-timestamp: 2026-09-11T16:30:00Z
+timestamp: 2026-09-12T16:20:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -22,6 +22,13 @@ report **what improved in the system**, not what happened to the run. The why, i
 `common-docs/projects/expert-book-challenge/PROGRAM.md` — read it once before your first trial.
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
 a subject so you inherit the fixes instead of re-hitting them.
+
+**How victory is scored (Arman, 2026-09-12): the number of things the system could not do before the
+trial and can do after.** Keep a capability ledger in the register — one row per "could not / can now" —
+and lead the morning report with its count. The best rows are bridges: a way to move a person's or a
+source's unique knowledge into an agent's instructions, a workflow step, a tool or a function. The
+built desk is a by-product; a run that succeeded without a new row is worth nothing here (PROGRAM.md
+ruling 6).
 
 **This skill improves itself.** Everything Arman teaches you during a trial, and every mistake that
 cost you an hour, goes into this file in the same session (§7). A trial that ends without a skill
@@ -42,6 +49,11 @@ three answers below. A subject that fails any of them is rejected.
 3. **Can the result be judged without you?** Prefer subjects with a judge built in: a Fable-written
    blog fed to a "sound human" masterwork; a real viral post fed to a verification desk; a
    described family situation fed to two parenting masterworks. Name the judge (AI or Arman) now.
+4. **Would a frontier model give this answer unprompted?** If yes, reject: it is common knowledge,
+   not expertise. The subject must be a highly opinionated method the best people believe in — an
+   order of operations they refuse to violate, "never X without first Y" gates, their own vocabulary,
+   a result they would recognise as theirs (Arman's examples: his own keyword-research order; an
+   agent equipped with Tony Robbins' systems — PROGRAM.md ruling 7).
 
 Prefer subjects that need **no external service**. Fancy APIs make the distillation neither harder
 nor easier — the barrier is never technology, it is whether the system captures the skill. When the
@@ -90,8 +102,9 @@ Every stop is one of these; do the matching thing and keep the trial moving:
 | The agent (Conductor) is wrong or stuck | Talk to it the way the Expert would; when it repeats a defect class, that is a platform wall (its instructions or tools), not a prompt to fix. |
 | A stream detaches / a turn hangs | Read the server-side truth (request rows, `system_errors`) before re-sending; a hung turn with no message to the person is itself a wall. |
 
-Dispatch subagents for bounded fixes (lane named: standard/opus by default) and keep driving the
-trial yourself. Two threads at once is the norm: a fix in flight, the trial advancing.
+Dispatch subagents for bounded fixes (lane named: Sonnet for recon and basic work, Opus for most
+coding, Fable only for the rare reasoning you yourself would struggle with — that is what YOU are
+here for) and keep driving the trial yourself. Two threads at once is the norm: a fix in flight, the trial advancing.
 
 ## 5. What "done for the night" means
 
@@ -102,8 +115,8 @@ morning report exists (§6). "I got tired" is not a stopping point; a blocked de
 ## 6. The morning report — what improved, in plain English
 
 Written for Arman: plain sentences, no paths, no codes, no doc pointers (law:
-`common-docs/policies/talk-to-arman-like-a-person.md`). Lead with what improved in the platform
-(each fix as a capability the next user inherits), then the trial's honest state, then the cost,
+`common-docs/policies/talk-to-arman-like-a-person.md`). Lead with the capability ledger — the count
+of "could not → can now" and each row as a capability the next user inherits — then the trial's honest state, then the cost,
 then the pending list — items only he can do, each with the prompt already written. Never ask
 him to decide something you can find out or do yourself; never send him a question without your
 recommendation.
@@ -202,3 +215,9 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
+- 2026-09-12 — Arman, launching trials 7 and 8: victory = the count of "could not → can now"; aim at
+  opinionated methods a frontier model would not produce unprompted (his keyword-research order, an
+  agent equipped with Tony Robbins' systems); Sonnet for recon, Opus for coding, Fable rarely. Folded
+  into §1 (test 4), the scoreboard paragraph, §4 and §6; the examples live in PROGRAM.md rulings 6–7.
+- 2026-09-12 — A "write two prompts for two agents" ask is not done when the files exist: either launch
+  the sessions or hand Arman the paste-ready wrapper in chat. Files in a folder read as documentation.
