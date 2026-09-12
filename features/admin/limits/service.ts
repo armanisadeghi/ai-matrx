@@ -9,11 +9,14 @@
 
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
+import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { isJsonObject } from "@/types/json";
 import type { Database } from "@/types/database.types";
 import type {
   AccountAddon,
   Capability,
   FeatureKnob,
+  FeatureKnobSetResult,
   OrganizationOption,
   OrgPlanAssignment,
   Plan,
@@ -21,6 +24,16 @@ import type {
 } from "./types";
 
 type MeterPeriod = Database["billing"]["Enums"]["meter_period"];
+
+/** 0640 returns the updated feature_knob row on success; refusals use `{ok:false}`. */
+export function parseFeatureKnobSetResult(payload: unknown, feature: string, key: string): FeatureKnobSetResult {
+  if (!isJsonObject(payload)) throw new Error("feature_knob_set returned an invalid response");
+  if (payload.ok === false && typeof payload.reason === "string") {
+    return { ok: false, reason: payload.reason, detail: typeof payload.detail === "string" ? payload.detail : undefined };
+  }
+  if (payload.feature === feature && payload.key === key && "value" in payload) return { ok: true, feature, key };
+  throw new Error("feature_knob_set returned an invalid response");
+}
 
 export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
   // The admin board treats this as the COMPLETE register (404+ rows and
@@ -33,7 +46,7 @@ export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
         .schema("platform")
         .from("feature_knob")
         .select(
-          "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value",
+          "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value, ui, taxonomy_node_id, propagation",
           { count: "exact" },
         )
         // (feature, key) is the PK, so the paginated order is stable.
@@ -72,16 +85,19 @@ export async function setFeatureKnob(
   feature: string,
   key: string,
   value: unknown,
-): Promise<void> {
+): Promise<FeatureKnobSetResult> {
   const supabase = createClient();
   // A null value is a RESET to the agent-set default, not a delete — that is
   // what makes an admin's experiment reversible without a migration.
-  const { error } = await supabase.schema("platform").rpc("feature_knob_set", {
+  const { data, error } = await supabase.schema("platform").rpc("feature_knob_set", {
     p_feature: feature,
     p_key: key,
     p_value: value ?? null,
   });
   if (error) throw error;
+  const result = parseFeatureKnobSetResult(data, feature, key);
+  if (result.ok) invalidateEffectiveKnob(`${feature}.${key}`);
+  return result;
 }
 
 export async function fetchPlans(): Promise<Plan[]> {

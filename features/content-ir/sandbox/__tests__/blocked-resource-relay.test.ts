@@ -68,6 +68,12 @@ describe("a resource the frame's CSP refuses", () => {
                     props: { data: {}, kind: "employee_card", config: {}, uiOptions: {} },
                     themeTokens: {},
                     colorScheme: "light",
+                    // S5b: a real host always says how wide the reader's
+                    // window is and how much of it this component gets; a
+                    // frame told neither says so, which would be a second
+                    // error message in every assertion below.
+                    readerViewportWidth: 1400,
+                    contentWidth: 674,
                 },
                 origin: window.location.origin,
                 ports: [channel.port2 as unknown as MessagePort],

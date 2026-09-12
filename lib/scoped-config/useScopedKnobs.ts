@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { fetchKnobIndex } from "./service";
 import type { ScopedKnob } from "./types";
+import { extractErrorMessage } from "@/utils/errors";
 
 export type ScopedKnobsValue = {
   knobs: ScopedKnob[];
@@ -51,7 +52,7 @@ export function useScopedKnobs(options: {
       })
       .catch((err: unknown) => {
         if (!cancelled) setSnapshot({ requestKey, knobs: [], isLoading: false,
-          error: err instanceof Error ? err.message : String(err) });
+          error: extractErrorMessage(err) });
       });
     return () => { cancelled = true; };
   }, [organizationId, featurePrefix, userId, overriddenOnly, requestKey, generation]);

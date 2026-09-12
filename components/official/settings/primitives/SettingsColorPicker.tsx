@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps } from "../types";
 
@@ -23,9 +23,8 @@ export function SettingsColorPicker({
   last,
   ...rowProps
 }: SettingsColorPickerProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   const [draft, setDraft] = useState(value);
 

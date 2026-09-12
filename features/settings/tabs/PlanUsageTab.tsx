@@ -12,6 +12,9 @@
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { Gauge } from "lucide-react";
+import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
+import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { PlanUsagePanel } from "@/features/entitlements/components/PlanUsagePanel";
 import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 
@@ -20,11 +23,14 @@ export function PlanUsageTab() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        What your plan includes, and how much of it you&apos;ve used. Limits
-        marked as not enforced are shown so you can plan ahead — they don&apos;t
-        stop you yet.
-      </p>
+      <SettingsSubHeader
+        title="Plan & usage"
+        description="What your plan includes and how much you have used."
+        icon={Gauge}
+      />
+      <SettingsCallout tone="info">
+        Limits marked Planning only help you plan ahead. They do not stop work.
+      </SettingsCallout>
       {/* The person's own AI budget — entitlement, the organization's
           ceiling, and the lower one they choose for themselves. */}
       <SpendBudgetCard organizationId={organizationId} mode="user" canEdit />

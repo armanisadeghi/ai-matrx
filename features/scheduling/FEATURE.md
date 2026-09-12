@@ -217,6 +217,11 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- `2026-09-12` — **Scheduling copy actions use one borderless dropdown trigger.** The
+  route header, schedule rows, detail cards, and run history compose `CopyButtons`
+  unified mode so copy, AI variants, JSON, CSV, and Sheets remain one discoverable
+  action rather than a copy/download icon trio.
+
 - **2026-09-12** — System Jobs now waits for explicit organization admission
   before calling either admin registry and reloads both registries when the
   selected organization arrives or changes. This closes the cold-boot race

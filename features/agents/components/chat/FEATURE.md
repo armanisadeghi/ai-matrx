@@ -288,6 +288,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-09-12` — claude: **the conversation now answers "what did this chat produce?" (DD-131 slice 1, item 8).** `ConversationRecordsChip` sits in `ChatRunHeader`'s right cluster on an existing conversation only, and opens the list of every `content_ir.kind_instance` this chat produced — by either route, because neither is guaranteed: a record HOMED in the conversation (`metadata.home->>'conversation_id'`) or the target of a `produced_by` `platform.associations` edge from one of its messages. Each row shows its title, its Shape, its confirmation badge (the shared `RecordConfirmationBadge`) and links to the record's permalink. THE ARCHIVED-ITEMS LAW is honoured with the canonical `ArchivedDisclosure` — archived rows hidden by default, one click away, the printed count the true one. The panel READS NOTHING until it is opened (the zero-prefetch rule), the empty state says what would fill it rather than "none", and a failed read prints the reason with a Try again rather than an empty list. The header is the home rather than the transcript: a by-product list glued above the composer would push the conversation off screen and grow without bound, and the question is asked precisely when the early blocks have scrolled out of reach. Service: `features/content-ir/records/kind-record-service.ts`.
+
 - `2026-09-12` — Pending-call recovery now uses the active authenticated
   organization, never a historical organization stored on the conversation.
   The endpoint authorizes by user plus conversation id; replaying a membership-

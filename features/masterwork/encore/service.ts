@@ -10,6 +10,7 @@ import {
   listAuditionScores,
 } from "../audition/listAuditionScores";
 import type { Masterwork, RulebookSource } from "../types";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
  * Encore — the Operator-facing invocation surface. An Operator sees only
@@ -217,12 +218,16 @@ export async function listMyEncoreRuns(
   masterworkId: string,
 ): Promise<EncoreRun[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  // DECLARED `mine` (DD-137c / §3.3): this preview is THIS Operator's own history of one
+  // Masterwork, never the whole ledger — said through the registry helper rather than assumed.
+  const ownerOnly = await scopeToOwner("workflow_run", "mine");
+  let runQuery = supabase
     .schema("workflow")
     .from("run")
     .select("id,status,created_at,started_at,completed_at")
-    .eq("definition_id", masterworkId)
-    .eq("created_by", userId)
+    .eq("definition_id", masterworkId);
+  if (ownerOnly) runQuery = runQuery.eq("created_by", userId);
+  const { data, error } = await runQuery
     .order("created_at", { ascending: false })
     .limit(ENCORE_RUN_LIMIT);
   if (error) throw error;

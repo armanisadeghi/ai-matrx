@@ -159,6 +159,11 @@ Non-obvious homes: live `/chat` → [`features/agents/components/chat/FEATURE.md
 
 - Redux RTK for ALL global state — extend existing slices, never parallel or local state. Typed hooks from `@/lib/redux/hooks.ts` only; every selector memoized via `createSelector`, one property per selector; small updates, no large object replacements. Missing action/selector → ask before creating.
 - Admin levels (`admins.level`: `developer|senior_admin|super_admin`): default gate `selectIsSuperAdmin` / `requireSuperAdmin` / `checkIsSuperAdmin`; lower deliberately via `selectAdminLevel`; hydrated once at session boot (`state.userAuth.adminLevel`) — don't refetch, don't invent a new gate primitive.
+- **Routine access refusal is repair work.** Restore only the intended admin/operator identity
+  and canonical grant, retry the failed operation, and verify it; never stop at “ask a super
+  admin.” AI Dream MCP: run `uv run python scripts/repair_mcp_access.py --check` in `../aidream`,
+  then `--repair` only when it reports the configured grant missing. Full boundary:
+  `../common-docs/policies/defect-ownership.md`.
 
 ## Dev server & browser testing
 

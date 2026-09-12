@@ -42,6 +42,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RequestAccessPanel } from "@/features/access-gate/components/RequestAccessPanel";
+// THE EMERGENCY DOOR'S ONE ENTRANCE (DD-137a). It renders NOTHING unless this
+// viewer can actually get through — see the component's header. The ordinary
+// request panel above it is unchanged and stays for everyone.
+import { EmergencyDoorAffordance } from "@/features/emergency-access/components/EmergencyDoorAffordance";
 import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import type {
@@ -373,6 +377,19 @@ export function AccessDeniedView({
               resourceId={id}
               href={selfHref}
               onChanged={onChanged}
+            />
+            {/* 🚨 THE EMERGENCY DOOR IS MET WHERE THE WALL IS. Before this, the
+                door's request dialog had zero call sites and there was no
+                screen in the app on which anybody could ask for emergency
+                access (V-38, 2026-09-12). It sits UNDER the ordinary request,
+                never instead of it: asking the owner is the normal path and
+                stays the normal path. The same absolute-door rule governs both
+                — a refusal whose ASK would itself confirm the record exists
+                gets neither affordance. */}
+            <EmergencyDoorAffordance
+              token={context.entity.token}
+              id={id}
+              subjectLabel={context.owner?.displayName ?? undefined}
             />
           </div>
         ) : null}

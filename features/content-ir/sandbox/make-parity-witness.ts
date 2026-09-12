@@ -96,6 +96,9 @@ async function main(): Promise<void> {
         const { data: instances } = await sb
             .schema("content_ir")
             .from("kind_instance")
+            // archived-items-law-exempt: fixture builder for a sandbox harness,
+            // not a user-facing list — it wants ANY real payload of this kind,
+            // and an archived row is as valid a sample as a live one.
             .select("id,data")
             .eq("kind_definition_id", row.kind_definition_id)
             .is("deleted_at", null)
@@ -146,7 +149,11 @@ async function main(): Promise<void> {
   .case > header { font: 12px ui-monospace, monospace; padding: 6px 0; color: hsl(var(--muted-foreground)); }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   .col > h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: hsl(var(--muted-foreground)); }
-  iframe { width: 100%; border: 0; display: block; }
+  /* THE CLIP — same as KindSandboxFrame and the sweep (S5b,
+     sandbox/protocol.ts, THE READER'S VIEWPORT). */
+  .col { min-width: 0; }
+  .clip { overflow: hidden; min-width: 0; width: 100%; }
+  iframe { border: 0; display: block; max-width: none; }
   .bar { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; padding: 8px 0 16px; background: hsl(var(--background)); }
   .bar button { font: 12px system-ui; padding: 6px 10px; border-radius: 6px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); cursor: pointer; }
 </style>
@@ -205,6 +212,11 @@ function scheme() {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
+/** The width the HOST page's own media queries answer against (S5b). */
+function readerViewportWidth() {
+  return document.documentElement.clientWidth || window.innerWidth;
+}
+
 var host = document.getElementById("cases");
 var ports = {};
 
@@ -217,7 +229,7 @@ window.__CASES__.forEach(function (item) {
     ' bytes of live source · data: ' + item.dataSource + '</header>' +
     '<div class="cols">' +
       '<div class="col"><h3>Gate OFF — rendered in this page</h3><div class="unframed" id="unframed-' + item.componentKey + '"></div></div>' +
-      '<div class="col"><h3>Gate ON — rendered in the sandbox frame</h3><div id="framed-' + item.componentKey + '"></div></div>' +
+      '<div class="col"><h3>Gate ON — rendered in the sandbox frame</h3><div class="clip" id="framed-' + item.componentKey + '"></div></div>' +
     '</div>';
   host.appendChild(section);
 
@@ -243,6 +255,7 @@ window.__CASES__.forEach(function (item) {
   frame.src = "/kind-sandbox";
   frame.title = item.componentKey + " — component";
   frame.style.height = "320px";
+  frame.style.width = readerViewportWidth() + "px";
   frameWrap.appendChild(frame);
 
   var record = { componentKey: item.componentKey, offErrors: offErrors, onErrors: [], heights: [] };
@@ -270,7 +283,9 @@ window.__CASES__.forEach(function (item) {
       propsTransform: null,
       props: { data: item.data, kind: item.kind, config: {}, uiOptions: {} },
       themeTokens: rootTokens(),
-      colorScheme: scheme()
+      colorScheme: scheme(),
+      readerViewportWidth: readerViewportWidth(),
+      contentWidth: frameWrap.clientWidth
     }, "*", [channel.port2]);
   });
 });

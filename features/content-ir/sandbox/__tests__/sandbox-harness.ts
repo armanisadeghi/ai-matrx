@@ -227,3 +227,17 @@ export async function settle(times = 3): Promise<void> {
         await new Promise((resolve) => setTimeout(resolve, 0));
     }
 }
+
+/**
+ * Drain the ANIMATION-FRAME queue too. The frame bridge coalesces its size
+ * reports to one per `requestAnimationFrame`, and jsdom's rAF really does wait
+ * ~16 ms — a `setTimeout(0)` drain returns before it fires, which makes a size
+ * assertion pass for the wrong reason (measured 2026-09-12: a deliberately
+ * broken zero-width guard still "passed" because no size report had happened
+ * yet).
+ */
+export async function settleFrames(frames = 4): Promise<void> {
+    for (let i = 0; i < frames; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+}

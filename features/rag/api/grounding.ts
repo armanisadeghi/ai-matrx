@@ -13,6 +13,7 @@ import type {
   TrustEnvelope,
 } from "@/features/education/trust/types";
 import { ragSearch, type RagSearchHit, type RagSearchResponse } from "./search";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 export interface GroundingSource {
   sourceKind: string;
@@ -122,13 +123,18 @@ export async function listLearnerOwnedGroundingSources(
   const completedFileIds = [
     ...new Set(jobsResult.data.map((job) => job.file_id)),
   ];
+  // DECLARED `mine` (DD-137c / §3.3): a learner's grounding inventory is the study material THEY
+  // uploaded — the file token lands on the organization, and this surface deliberately does not.
+  const filesOwnerOnly = await scopeToOwner("file", "mine");
+  const flatFilesQuery = filesDb(supabase)
+    .from("files")
+    .select("id, file_name, created_by")
+    .in("id", completedFileIds)
+    .is("deleted_at", null);
   const flatFiles = completedFileIds.length
-    ? await filesDb(supabase)
-        .from("files")
-        .select("id, file_name, created_by")
-        .in("id", completedFileIds)
-        .eq("created_by", userId)
-        .is("deleted_at", null)
+    ? await (filesOwnerOnly
+        ? flatFilesQuery.eq("created_by", userId)
+        : flatFilesQuery)
     : { data: [], error: null };
   if (flatFiles.error) {
     throw new Error("We couldn't read your indexed files.", {

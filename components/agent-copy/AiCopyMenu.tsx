@@ -195,6 +195,8 @@ export interface AiCopyMenuProps {
   disabled?: boolean;
   className?: string;
   align?: "start" | "end";
+  /** Icon shown in the trigger. Defaults to the AI copy icon. */
+  triggerIcon?: AiIconType;
 }
 
 function toText(resolved: AgentPayloadInput | string): string {
@@ -214,6 +216,7 @@ export function AiCopyMenu({
   disabled = false,
   className,
   align = "end",
+  triggerIcon: TriggerIcon = CopyForAiIcon,
 }: AiCopyMenuProps) {
   const [busy, setBusy] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -296,7 +299,7 @@ export function AiCopyMenu({
       {busy ? (
         <Loader2 className={cn(iconCls, "animate-spin")} />
       ) : (
-        <CopyForAiIcon className={iconCls} />
+        <TriggerIcon className={iconCls} />
       )}
       {!single && (
         <ChevronDown

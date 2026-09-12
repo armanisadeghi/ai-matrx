@@ -50,7 +50,6 @@ import TasksTableView from "@/features/tasks/components/TasksTableView";
 import { TaskProvenanceChip } from "@/features/tasks/components/TaskProvenanceChip";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { formatDateOnly } from "@/utils/dateOnly";
@@ -419,6 +418,7 @@ export default function TaskListPane() {
           <div className="flex shrink-0 items-center gap-0.5">
             <CopyButtons
               size="xs"
+              unified
               label="Task list"
               human={() => taskListHuman(allVisibleTasks, listView)}
               json={() => allVisibleTasks.map(taskRow)}
@@ -433,16 +433,15 @@ export default function TaskListPane() {
                   })),
                 })
               }
-            />
-            <ExportMenu
-              label="Tasks"
-              items={[
-                jsonExportItem(() => allVisibleTasks.map(taskRow)),
-                csvExportItem(
-                  () => taskCsvRows(allVisibleTasks),
-                  "CSV (every task in this view)",
-                ),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(() => allVisibleTasks.map(taskRow)),
+                  csvExportItem(
+                    () => taskCsvRows(allVisibleTasks),
+                    "CSV (every task in this view)",
+                  ),
+                ],
+              }}
             />
           </div>
         )}
@@ -590,6 +589,7 @@ function TaskRow({
           propagation so copying never changes the open task. */}
       <CopyButtons
         size="xs"
+        unified
         label={task.title}
         className="absolute right-1.5 top-1.5 z-10 rounded bg-background/90 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
         human={() => taskSummary(task)}

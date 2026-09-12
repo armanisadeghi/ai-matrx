@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import type { LucideIcon } from "lucide-react";
 import { SettingsRow } from "../SettingsRow";
 import { cn } from "@/lib/utils";
@@ -19,9 +20,9 @@ const kindStyles: Record<ButtonKind, string> = {
 };
 
 const sizeStyles: Record<SettingsControlSize, string> = {
-  sm: "h-7 px-2.5 text-xs gap-1.5",
-  md: "h-8 px-3 text-sm gap-2",
-  lg: "h-10 px-4 text-base gap-2",
+  sm: "min-h-11 px-2.5 text-xs gap-1.5 sm:min-h-7",
+  md: "min-h-11 px-3 text-sm gap-2 sm:min-h-8",
+  lg: "min-h-11 px-4 text-base gap-2 sm:min-h-10",
 };
 
 export type SettingsButtonProps = SettingsCommonProps & {
@@ -53,9 +54,8 @@ export function SettingsButton({
   last,
   ...rowProps
 }: SettingsButtonProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   return (
     <SettingsRow

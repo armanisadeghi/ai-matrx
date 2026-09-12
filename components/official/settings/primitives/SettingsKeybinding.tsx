@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { X } from "lucide-react";
 import { SettingsRow } from "../SettingsRow";
 import { cn } from "@/lib/utils";
@@ -67,14 +67,13 @@ export function SettingsKeybinding({
   last,
   ...rowProps
 }: SettingsKeybindingProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   const [recording, setRecording] = useState(false);
 
   return (
-    <SettingsRow {...rowProps} id={id} variant="inline" last={last}>
+    <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
       <div className="flex items-center gap-1.5">
         <button
           id={id}
@@ -96,7 +95,7 @@ export function SettingsKeybinding({
           }}
           disabled={rowProps.disabled}
           className={cn(
-            "min-w-32 h-8 rounded-md border px-2.5 text-sm font-mono tabular-nums text-foreground shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary/30",
+            "min-h-11 min-w-32 rounded-md border px-2.5 text-sm font-mono tabular-nums text-foreground shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary/30 sm:min-h-8",
             recording
               ? "border-primary bg-primary/5 animate-pulse"
               : "border-border bg-card hover:bg-accent/50",
@@ -114,7 +113,7 @@ export function SettingsKeybinding({
             type="button"
             aria-label="Clear keybinding"
             onClick={() => onValueChange(null)}
-            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:h-8 sm:w-8"
           >
             <X className="h-3.5 w-3.5" />
           </button>

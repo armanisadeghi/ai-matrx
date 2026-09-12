@@ -30,6 +30,11 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import {
+  DEFAULT_ARCHIVE_FILTER,
+  type ArchiveFilterValue,
+} from "@ai-matrx/design-system";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { deriveInstanceTitle } from "./instance-title";
@@ -59,6 +64,13 @@ export interface KindInstanceWriteResult {
   /** The DB trigger's derived verdict — the TRUTH, read back after write. */
   validationStatus: string;
   kindVersion: number;
+  /**
+   * The verdict `platform._stamp_actor_tier` reached from the CHANNEL this
+   * write came in on — read back, never assumed. A person saving from the
+   * browser gets `confirmed`; an agent or an undeclared server door gets
+   * `unconfirmed`. Callers show this, and must never print their own guess.
+   */
+  confirmation: "confirmed" | "unconfirmed";
 }
 
 /**
@@ -95,6 +107,13 @@ export interface SaveKindInstanceArgs {
    * title fields (e.g. wine_tasting's `wine_name`) derive a title.
    */
   titleKey?: string | null;
+  /**
+   * The row's `metadata` jsonb. The HOME of a record born in a conversation
+   * rides here — `{ home: { conversation_id, message_id } }` — which is what
+   * the chat block's record chrome and the conversation's reverse view both
+   * read to find what a chat produced.
+   */
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface SaveKindInstanceResult extends KindInstanceWriteResult {
@@ -141,7 +160,15 @@ async function fetchLiveDefinition(
 export async function saveKindInstance(
   args: SaveKindInstanceArgs,
 ): Promise<SaveKindInstanceResult> {
-  const { kindDefinitionId, kindVersion, value, organizationId, title, titleKey } = args;
+  const {
+    kindDefinitionId,
+    kindVersion,
+    value,
+    organizationId,
+    title,
+    titleKey,
+    metadata,
+  } = args;
   if (!organizationId) {
     throw new Error(
       "No active organization — cannot save the instance. Select an organization and retry.",
@@ -165,8 +192,20 @@ export async function saveKindInstance(
       title: deriveInstanceTitle(data, title, titleKey),
       organization_id: organizationId,
       created_by: userId,
+      ...(metadata ? { metadata: metadata as Json } : {}),
+      // `confirmation` is NOT NULL and carries no catalog default — deliberately,
+      // so an admitted table that loses its carrier trigger refuses the insert
+      // rather than silently minting a row claiming a person confirmed it
+      // (DD-131 slice 1). `platform._stamp_actor_tier` stamps it on every INSERT
+      // from the CHANNEL, never from the payload (DD-131 §2.2 rule 3): a
+      // signed-in browser write declares no `x-matrx-actor-tier` header, which
+      // IS the declaration "a person is typing", and the row is born `confirmed`
+      // with that person recorded. We pass nothing here — the generated Insert
+      // type marks `confirmation` optional for exactly this reason
+      // (`scripts/server-set-columns.json`), so there is no literal for the
+      // trigger to overwrite and no second write path to drift from it.
     })
-    .select("id,title,validation_status,kind_version")
+    .select("id,title,validation_status,kind_version,confirmation")
     .single();
   if (error) {
     throw new Error(`Failed to save the instance: ${error.message}`);
@@ -176,6 +215,7 @@ export async function saveKindInstance(
     title: row.title,
     validationStatus: row.validation_status,
     kindVersion: row.kind_version,
+    confirmation: row.confirmation,
     versionBumped: live.version !== kindVersion,
   };
 }
@@ -187,29 +227,51 @@ export interface KindInstanceListEntry {
   kindVersion: number;
   updatedAt: string;
   data: Json;
+  /** Non-null when the row is archived — the tab badges it rather than lying. */
+  archivedAt: string | null;
 }
 
 /**
- * MY instances of one kind — created_by = me, live rows only, newest-updated
- * first. RLS already scopes visibility; the created_by filter is the display
- * contract ("my instances"), mirroring the server `instance_list` projection
- * (+ `data`, so the tab renders without a second fetch per row).
+ * Instances of one kind — live rows, newest-updated first.
+ *
+ * 🚨 WHERE THIS LIST OPENS IS A REGISTRY WORD, NOT A LITERAL (DD-137b,
+ * VISIBILITY-BY-CLASS §3.3). This function used to be `listMyKindInstances`
+ * and hard-coded `.eq("created_by", userId)` as "the display contract". It is
+ * the site the whole design came from: four people in one organization each
+ * researched SEO keywords into `content_ir.kind_instance` and each of them saw
+ * only their own — every one of those rows readable by every one of them the
+ * whole time. The token is registered `default_list_scope = organization`, so
+ * this screen opens on the organization's rows and "just mine" is one click
+ * away (`scope`), never blocked.
+ *
+ * RLS is still the ceiling in BOTH scopes: this filter can only ever NARROW
+ * what the database already allows, which is why it is not an access decision
+ * and is kept apart from `data_class`.
  */
-export async function listMyKindInstances(
+export async function listKindInstances(
   kindDefinitionId: string,
+  archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
+  scope?: ListScopeWord,
 ): Promise<KindInstanceListEntry[]> {
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;
   if (!userId) throw new Error("Not signed in — cannot list instances.");
 
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("content_ir_kind_instance", scope);
+
+  let query = supabase
     .schema("content_ir")
     .from("kind_instance")
-    .select("id,title,validation_status,kind_version,updated_at,data")
+    .select("id,title,validation_status,kind_version,updated_at,data,archived_at")
     .eq("kind_definition_id", kindDefinitionId)
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .is("deleted_at", null);
+  if (ownerOnly) query = query.eq("created_by", userId);
+  // THE ARCHIVED-ITEMS LAW: a request the tab's own control sets, never a
+  // literal — the default hides archived rows and one click reveals them.
+  if (archiveFilter === "active") query = query.is("archived_at", null);
+  else if (archiveFilter === "archived") query = query.not("archived_at", "is", null);
+
+  const { data, error } = await query.order("updated_at", { ascending: false });
   if (error) {
     throw new Error(`Failed to list instances: ${error.message}`);
   }
@@ -220,6 +282,7 @@ export async function listMyKindInstances(
     kindVersion: row.kind_version,
     updatedAt: row.updated_at,
     data: row.data,
+    archivedAt: row.archived_at,
   }));
 }
 
@@ -273,7 +336,7 @@ export async function updateKindInstance(
       updated_by: await currentUserId(),
     })
     .eq("id", args.id)
-    .select("id,title,validation_status,kind_version")
+    .select("id,title,validation_status,kind_version,confirmation")
     .single();
   if (error) {
     throw new Error(`Failed to update the instance: ${error.message}`);
@@ -283,6 +346,10 @@ export async function updateKindInstance(
     title: row.title,
     validationStatus: row.validation_status,
     kindVersion: row.kind_version,
+    // An UPDATE never moves `confirmation` (the trigger's branch is INSERT
+    // only — DD-131 §3: every transition is a named door). Read back, so a
+    // caller shows the row's real state rather than a stale snapshot.
+    confirmation: row.confirmation,
   };
 }
 
@@ -317,7 +384,7 @@ export async function repinKindInstance(
     .from("kind_instance")
     .update({ kind_version: live.version, updated_by: await currentUserId() })
     .eq("id", args.id)
-    .select("id,title,validation_status,kind_version")
+    .select("id,title,validation_status,kind_version,confirmation")
     .single();
   if (error) {
     throw new Error(`Failed to repin the instance: ${error.message}`);
@@ -327,6 +394,7 @@ export async function repinKindInstance(
     title: row.title,
     validationStatus: row.validation_status,
     kindVersion: row.kind_version,
+    confirmation: row.confirmation,
   };
 }
 

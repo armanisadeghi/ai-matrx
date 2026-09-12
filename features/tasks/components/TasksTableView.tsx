@@ -32,7 +32,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import {
@@ -495,6 +494,7 @@ export default function TasksTableView() {
                   never told a filtered set is the whole list. */}
               <CopyButtons
                 size="xs"
+                unified
                 label="Task table"
                 human={() => taskListHuman(sorted)}
                 json={() => sorted.map(taskRow)}
@@ -526,16 +526,15 @@ export default function TasksTableView() {
                     query: filtersActive ? columnFilters : undefined,
                   }),
                 ]}
-              />
-              <ExportMenu
-                label="Tasks table"
-                items={[
-                  jsonExportItem(() => sorted.map(taskRow)),
-                  csvExportItem(
-                    () => taskCsvRows(sorted),
-                    "CSV (every row in this table)",
-                  ),
-                ]}
+                export={{
+                  items: [
+                    jsonExportItem(() => sorted.map(taskRow)),
+                    csvExportItem(
+                      () => taskCsvRows(sorted),
+                      "CSV (every row in this table)",
+                    ),
+                  ],
+                }}
               />
             </>
           )}

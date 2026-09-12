@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { SettingsRow } from "../SettingsRow";
 import { cn } from "@/lib/utils";
 import type {
@@ -35,9 +36,8 @@ export function SettingsSegmented<T extends string = string>({
   last,
   ...rowProps
 }: SettingsSegmentedProps<T>) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   return (
     <SettingsRow

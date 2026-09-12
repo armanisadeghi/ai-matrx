@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps, SettingsControlSize } from "../types";
 
@@ -47,9 +47,8 @@ export function SettingsTextInput({
   last,
   ...rowProps
 }: SettingsTextInputProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
 
   const [draft, setDraft] = useState(value);
   const [lastCommittedValue, setLastCommittedValue] = useState(value);
@@ -67,6 +66,7 @@ export function SettingsTextInput({
       {...rowProps}
       id={id}
       variant={stacked ? "stacked" : "inline"}
+      controlLayout="wide"
       last={last}
     >
       <input

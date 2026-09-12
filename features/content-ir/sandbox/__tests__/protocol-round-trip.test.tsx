@@ -43,6 +43,7 @@ import {
     recordingMount,
     setFrameLayout,
     settle,
+    settleFrames,
     type MountRecord,
     type PostedToFrame,
 } from "./sandbox-harness";
@@ -187,6 +188,13 @@ async function stand(
         });
     }
 
+    // MOUNT-TIME NOISE IS NOT THIS SUITE'S SUBJECT. The frame announces any
+    // condition it meets while starting up — a missing allotted width, say —
+    // and those announcements are the job of the suite that owns them. Each
+    // test below measures the incident IT causes, so the queue is cleared once
+    // the handshake is complete.
+    (reportKindComponentIncident as jest.Mock).mockClear();
+
     const port = (posted[0]?.transfer?.[0] ?? null) as MessagePort;
     const hostPort = (hostChannels.at(-1)?.port1 ?? null) as MessagePort;
 
@@ -283,6 +291,26 @@ describe("the handshake: one init, one port, adopted once", () => {
         hostileChannel.port1.close();
     });
 
+    it("after adoption the frame has NO window ear: a later window message is not even heard", async () => {
+        // The stronger statement, and the one that terminates. A frame that
+        // still listened would REFUSE this message — refusing is hearing. The
+        // shipped frame removed its listener on adoption, so the count does
+        // not move at all.
+        const h = await stand();
+        const before = frameRefusals().count;
+        await act(async () => {
+            window.dispatchEvent(
+                new MessageEvent("message", {
+                    data: { type: "matrx:sandbox:props", instanceId: "x", props: {} },
+                    origin: "https://evil.example",
+                }),
+            );
+            await settle();
+        });
+        expect(frameRefusals().count).toBe(before);
+        expect(h.record.calls).toBe(1);
+    });
+
     it("the HOST likewise has no window ear: a hostile window message never reaches runAction", async () => {
         const h = await stand();
         await act(async () => {
@@ -331,6 +359,23 @@ describe("instance-id binding", () => {
         });
         expect(h.record.props).toHaveLength(propsBefore);
         expect(frameRefusals().last).toContain("someone-else");
+    });
+
+    it("a valid props message reaches the mounted component with the new value", async () => {
+        const h = await stand();
+        await act(async () => {
+            h.hostPort.postMessage({
+                type: "matrx:sandbox:props",
+                instanceId: h.posted[0].data.instanceId,
+                props: { data: { title: "second" }, kind: "round_trip_kind" },
+            });
+            await settle(4);
+        });
+        const last = h.record.props.at(-1) as Record<string, unknown>;
+        expect((last.data as { title?: string })?.title).toBe("second");
+        // The two props the host cannot serialize are re-attached every time.
+        expect(typeof last.runAction).toBe("function");
+        expect(typeof last.onResolve).toBe("function");
     });
 
     it("the frame drops a host message of an unknown type, and names the allowlist", async () => {
@@ -400,7 +445,7 @@ describe("the caps", () => {
 describe("size messages", () => {
     it("the frame measures itself on adoption and the host gives the iframe exactly that", async () => {
         const h = await stand({ contentBottom: 412 });
-        await act(async () => settle());
+        await act(async () => settleFrames());
         expect(h.iframe.style.height).toBe("412px");
     });
 
@@ -411,6 +456,36 @@ describe("size messages", () => {
         const text = h.hostEl.textContent ?? "";
         expect(text).toContain(String(FRAME_HEIGHT_CEILING_PX + 1979));
         expect(text).toContain("Show all");
+    });
+
+    it("a degenerate zero-width layout is not a height: the frame reports nothing", async () => {
+        // Mid-relayout a frame can be measured at zero width, where every line
+        // wraps to one word and the content reads many times taller than it is
+        // — observed in headless Chrome on 2026-09-12, a 1,238 px body
+        // reporting 16,103 px. Reporting that flashes the host's "Show all"
+        // control on a component that fits.
+        const h = await stand({ contentBottom: 412 });
+        await act(async () => settle());
+        expect(h.iframe.style.height).toBe("412px");
+
+        Object.defineProperty(document.documentElement, "clientWidth", {
+            configurable: true,
+            get: () => 0,
+        });
+        h.frameContainer.getBoundingClientRect = () =>
+            ({ bottom: 16103, top: 0, height: 16103, width: 0, left: 0, right: 0, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+
+        await act(async () => {
+            h.hostPort.postMessage({
+                type: "matrx:sandbox:props",
+                instanceId: h.posted[0].data.instanceId,
+                props: { data: { title: "relayout" } },
+            });
+            await settleFrames();
+        });
+
+        expect(h.iframe.style.height).toBe("412px");
+        expect(h.hostEl.textContent ?? "").not.toContain("Show all");
     });
 
     it("a size message whose height is not a number is dropped, and the frame keeps the height it had", async () => {
@@ -600,7 +675,7 @@ describe("the error relay: a frame failure files on the author's own queue", () 
             await settle();
         });
         expect(reportKindComponentIncident).toHaveBeenCalledTimes(1);
-        const incident = (reportKindComponentIncident as jest.Mock).mock.calls[0][0];
+        const incident = (reportKindComponentIncident as jest.Mock).mock.calls.at(-1)![0];
         expect(incident.kind).toBe("round_trip_kind");
         expect(incident.errorType).toBe("render_throw");
         expect(incident.message).toContain("Rendered in the Shape sandbox");
@@ -619,7 +694,7 @@ describe("the error relay: a frame failure files on the author's own queue", () 
             });
             await settle();
         });
-        const incident = (reportKindComponentIncident as jest.Mock).mock.calls[0][0];
+        const incident = (reportKindComponentIncident as jest.Mock).mock.calls.at(-1)![0];
         expect(incident.errorType).toBe("transform_error");
     });
 
@@ -634,7 +709,7 @@ describe("the error relay: a frame failure files on the author's own queue", () 
             });
             await settle();
         });
-        const incident = (reportKindComponentIncident as jest.Mock).mock.calls[0][0];
+        const incident = (reportKindComponentIncident as jest.Mock).mock.calls.at(-1)![0];
         expect(incident.errorType).toBe("compile_error");
         expect(incident.message).toContain("did not compile");
     });
@@ -650,7 +725,7 @@ describe("the error relay: a frame failure files on the author's own queue", () 
             });
             await settle();
         });
-        const incident = (reportKindComponentIncident as jest.Mock).mock.calls[0][0];
+        const incident = (reportKindComponentIncident as jest.Mock).mock.calls.at(-1)![0];
         expect(incident.errorType).toBe("render_throw");
     });
 

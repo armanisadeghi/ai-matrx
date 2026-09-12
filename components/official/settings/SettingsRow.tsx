@@ -1,6 +1,8 @@
 "use client";
 
 import { AlertTriangle, AlertCircle, HelpCircle } from "lucide-react";
+import * as Popover from "@radix-ui/react-popover";
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -14,6 +16,10 @@ import type {
   SettingsRowDensity,
   SettingsBadge,
 } from "./types";
+import { useSettingsDesign } from "./SettingsDesignProvider";
+import { useSettingsSectionTitle } from "./SettingsSectionContext";
+import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
+import { settingsControlSearchId } from "./searchIdentity";
 
 type SettingsRowProps = SettingsCommonProps & {
   /** Layout variant. Defaults to "inline". */
@@ -24,6 +30,8 @@ type SettingsRowProps = SettingsCommonProps & {
   children: React.ReactNode;
   /** Whether this row is the last in a section. Removes trailing border. */
   last?: boolean;
+  /** Wide controls stack below their label on narrow screens. */
+  controlLayout?: "compact" | "wide";
 };
 
 const densityStyles: Record<SettingsRowDensity, string> = {
@@ -81,9 +89,15 @@ export function SettingsRow({
   density = "default",
   children,
   last,
+  controlLayout = "compact",
 }: SettingsRowProps) {
-  const generatedId =
-    id ?? `settings-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const { variant: designVariant } = useSettingsDesign();
+  const sectionTitle = useSettingsSectionTitle();
+  const reactId = useId().replace(/:/g, "");
+  // Input ids are React-instance ids. Search/deep-link ids intentionally use
+  // only the authored section + label, so they survive remounts and markup.
+  const inputId = id ?? `settings-input-${reactId}`;
+  const controlId = settingsControlSearchId(sectionTitle ?? "Settings", label);
 
   const labelBlock = (
     <div className="flex-1 min-w-0">
@@ -98,7 +112,7 @@ export function SettingsRow({
           <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         )}
         <label
-          htmlFor={generatedId}
+          htmlFor={inputId}
           className={cn(
             "text-sm font-medium text-foreground leading-snug",
             disabled && "opacity-50",
@@ -107,7 +121,10 @@ export function SettingsRow({
           {label}
         </label>
         {badge && <BadgePill badge={badge} />}
-        {helpText && (
+        {designVariant === "compact" && (description || helpText) && (
+          <CompactHelpPopover label={label} description={description} helpText={helpText} />
+        )}
+        {helpText && designVariant !== "compact" && (
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -126,16 +143,11 @@ export function SettingsRow({
           </TooltipProvider>
         )}
       </div>
-      {description && (
-        <div
-          className={cn(
-            "text-xs text-muted-foreground mt-0.5 leading-snug",
-            disabled && "opacity-50",
-          )}
-        >
+      {description ? (
+        <div className={cn("mt-0.5 text-xs leading-snug text-muted-foreground", designVariant === "compact" && "sm:truncate", disabled && "opacity-50")}>
           {description}
         </div>
-      )}
+      ) : null}
       {warning && (
         <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
@@ -153,46 +165,82 @@ export function SettingsRow({
 
   if (variant === "block") {
     return (
-      <div
+      <SettingAnchor id={controlId}>
+        <div
         className={cn(
           "px-4 border-b border-border/40",
-          densityStyles[density],
+          densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
           last && "border-b-0",
-          disabled && "pointer-events-none",
         )}
-      >
-        {children}
-      </div>
+        >
+          {children}
+        </div>
+      </SettingAnchor>
     );
   }
 
   if (variant === "stacked") {
     return (
-      <div
+      <SettingAnchor id={controlId}>
+        <div
         className={cn(
           "px-4 border-b border-border/40",
-          densityStyles[density],
+          densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
           last && "border-b-0",
-          disabled && "pointer-events-none",
         )}
-      >
-        <div className="mb-2.5">{labelBlock}</div>
-        <div className={cn(disabled && "opacity-50")}>{children}</div>
-      </div>
+        >
+          <div className="mb-2.5">{labelBlock}</div>
+          <div className={cn(disabled && "opacity-50")}>{children}</div>
+        </div>
+      </SettingAnchor>
     );
   }
 
   return (
-    <div
+    <SettingAnchor id={controlId}>
+      <div
       className={cn(
-        "flex items-center gap-4 px-4 border-b border-border/40",
-        densityStyles[density],
+        controlLayout === "wide"
+          ? "flex flex-col items-stretch gap-2 px-4 sm:flex-row sm:items-center sm:gap-4 border-b border-border/40"
+          : "flex items-center gap-4 px-4 border-b border-border/40",
+        densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
         last && "border-b-0",
-        disabled && "pointer-events-none",
       )}
-    >
-      {labelBlock}
-      <div className={cn("shrink-0", disabled && "opacity-50")}>{children}</div>
-    </div>
+      >
+        {labelBlock}
+        <div className={cn("min-w-0 max-w-full shrink-0 [&_button]:max-w-full [&_input]:max-w-full sm:self-auto", disabled && "opacity-50")}>{children}</div>
+      </div>
+    </SettingAnchor>
+  );
+}
+
+function CompactHelpPopover({
+  label,
+  description,
+  helpText,
+}: Pick<SettingsCommonProps, "label" | "description" | "helpText">) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          aria-label={`About ${label}`}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-6 sm:w-6"
+        >
+          <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={6}
+          className="z-50 w-72 rounded-md border border-border bg-popover p-3 text-xs leading-snug text-popover-foreground shadow-md"
+        >
+          {description && <div>{description}</div>}
+          {helpText && <div className={cn(description && "mt-2")}>{helpText}</div>}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

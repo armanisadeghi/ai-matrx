@@ -21,21 +21,28 @@ import {
   hydrateNoteContextLinks,
   syncNoteContextLinks,
 } from "./noteContextAssociations";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
- * Fetch all notes owned by the current user (excluding deleted).
- * Explicitly scoped to created_by — RLS now also grants access to shared notes
- * via hierarchy, so without this filter "my notes" would include all accessible ones.
+ * Fetch the notes this screen should open on (excluding deleted).
+ *
+ * WHERE THIS LANDS IS A REGISTRY WORD, NOT A LITERAL (DD-137c, VISIBILITY-BY-CLASS §3.3). The
+ * `note` token is registered `default_list_scope = 'organization'`, so the list opens on the
+ * organization's notes — the viewer's own included — and a caller that genuinely means "only mine"
+ * passes `"mine"` and gets exactly that. The old comment here said the filter existed so that "my
+ * notes" would not include shared ones; that is still available, it is just no longer assumed for
+ * every caller. RLS remains the ceiling either way: this only decides where the screen starts.
  */
-export async function fetchNotes(): Promise<Note[]> {
+export async function fetchNotes(scope?: ListScopeWord): Promise<Note[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let query = supabase
     .schema("workbench")
     .from("notes")
     .select("*")
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .is("deleted_at", null);
+  if (ownerOnly) query = query.eq("created_by", userId);
+  const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching notes:", error);
@@ -48,17 +55,18 @@ export async function fetchNotes(): Promise<Note[]> {
 /**
  * Fetch lightweight note list items (no content) for pickers and sidebars.
  */
-export async function fetchNoteListItems(): Promise<NoteListItem[]> {
+export async function fetchNoteListItems(scope?: ListScopeWord): Promise<NoteListItem[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let query = supabase
     .schema("workbench")
     .from("notes")
     .select(
       "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
     )
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .is("deleted_at", null);
+  if (ownerOnly) query = query.eq("created_by", userId);
+  const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching note list items:", error);
@@ -497,16 +505,19 @@ export async function copyNote(id: string): Promise<Note> {
 }
 
 /**
- * Get all unique folder names for the current user
+ * Every folder name on the notes this list opens on — the same scope as the list itself, because a
+ * filter offering folders the list will never show is a lie the user discovers by clicking.
  */
-export async function fetchFolderNames(): Promise<string[]> {
+export async function fetchFolderNames(scope?: ListScopeWord): Promise<string[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let folderQuery = supabase
     .schema("workbench")
     .from("notes")
     .select("folder_name")
-    .eq("created_by", userId)
     .is("deleted_at", null);
+  if (ownerOnly) folderQuery = folderQuery.eq("created_by", userId);
+  const { data, error } = await folderQuery;
 
   if (error) {
     console.error("Error fetching folder names:", error);
@@ -524,16 +535,18 @@ export async function fetchFolderNames(): Promise<string[]> {
 }
 
 /**
- * Get all unique tags for the current user
+ * Every tag on the notes this list opens on — same scope as the list, same reason as the folders.
  */
-export async function fetchTags(): Promise<string[]> {
+export async function fetchTags(scope?: ListScopeWord): Promise<string[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let tagQuery = supabase
     .schema("workbench")
     .from("notes")
     .select("tags")
-    .eq("created_by", userId)
     .is("deleted_at", null);
+  if (ownerOnly) tagQuery = tagQuery.eq("created_by", userId);
+  const { data, error } = await tagQuery;
 
   if (error) {
     console.error("Error fetching tags:", error);

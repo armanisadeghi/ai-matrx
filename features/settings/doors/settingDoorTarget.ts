@@ -15,10 +15,15 @@ export type SettingDoorTarget =
 export function settingDoorHref(target: SettingDoorTarget): string {
   if (target.scope === "user") {
     const query = new URLSearchParams({
-      tab: target.tabId,
       control: target.controlId,
     });
-    return `/settings/preferences?${query.toString()}`;
+    const path = target.tabId
+      .split(".")
+      .map((segment) =>
+        segment.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase(),
+      )
+      .join("/");
+    return `/user-settings/${path}?${query.toString()}`;
   }
 
   const query = new URLSearchParams();

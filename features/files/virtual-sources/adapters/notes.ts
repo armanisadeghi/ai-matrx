@@ -36,6 +36,7 @@ import type {
   VirtualNode,
   VirtualSourceAdapter,
 } from "@/features/files/virtual-sources/types";
+import { scopeToOwner } from "@/lib/list-scope";
 
 /** Sentinel id used in synthetic ids for the implicit "Unfiled" folder —
  *  notes whose `folder_name` column is null. */
@@ -96,17 +97,20 @@ const notesAdapter: VirtualSourceAdapter = {
       // Pull distinct `folder_name` values from notes plus any rows in
       // `note_folders` (the materialized list). Union avoids missing folders
       // that exist in either source.
-      const [folderRows, noteFolders] = await Promise.all([
-        supabase
-          .schema("workbench").from("note_folders")
-          .select("name")
-          .eq("created_by", userId),
-        supabase
-          .schema("workbench").from("notes")
-          .select("folder_name")
-          .eq("created_by", userId)
-          .is("deleted_at", null),
-      ]);
+      // DD-137c / §3.3: `note` and `note_folder` are both registered `organization`, so this tree
+      // opens on the organization's folders. RLS is still the ceiling; this is only where it starts.
+      const ownerOnly = await scopeToOwner("note");
+      const foldersOwnerOnly = await scopeToOwner("note_folder");
+      let folderQuery = supabase
+        .schema("workbench").from("note_folders")
+        .select("name");
+      if (foldersOwnerOnly) folderQuery = folderQuery.eq("created_by", userId);
+      let noteFolderQuery = supabase
+        .schema("workbench").from("notes")
+        .select("folder_name")
+        .is("deleted_at", null);
+      if (ownerOnly) noteFolderQuery = noteFolderQuery.eq("created_by", userId);
+      const [folderRows, noteFolders] = await Promise.all([folderQuery, noteFolderQuery]);
       const names = new Set<string>();
       let hasUnfiled = false;
       for (const row of folderRows.data ?? []) {
@@ -136,10 +140,11 @@ const notesAdapter: VirtualSourceAdapter = {
     }
     // Inside a folder — list notes whose folder_name matches.
     const folderName = folderNameFromVid(args.parentId);
+    const listOwnerOnly = await scopeToOwner("note");
     let query = supabase
       .schema("workbench").from("notes")
-      .select("id, label, updated_at, version, folder_name")
-      .eq("created_by", userId);
+      .select("id, label, updated_at, version, folder_name");
+    if (listOwnerOnly) query = query.eq("created_by", userId);
     query = args.includeDeleted
       ? query.not("deleted_at", "is", null)
       : query.is("deleted_at", null);

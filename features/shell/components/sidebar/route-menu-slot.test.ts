@@ -15,9 +15,12 @@ describe("route menu registry", () => {
     expect(match("/marketing/brands/b1/sites/s1/audit")).toBe("Marketing");
     expect(match("/chat")).toBe("Chats");
     expect(match("/administration/users")).toBe("Administration");
+    expect(match("/user-settings")).toBe("Settings");
+    expect(match("/user-settings/appearance")).toBe("Settings");
 
     // A prefix that merely starts with the word must not claim the menu.
     expect(match("/marketingxyz")).toBeNull();
+    expect(match("/user-settingsxyz")).toBeNull();
     expect(match("/seo/metadata")).toBeNull();
     expect(match("/dashboard")).toBeNull();
   });

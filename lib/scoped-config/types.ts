@@ -125,7 +125,8 @@ export type KnobCanWriteReason =
 
 /** A secret key's state. The value itself is never returned. */
 export type KnobSecretState = {
-  state: "set" | "not_set";
+  /** `unknown` means this reader has no canonical vault-state evidence. */
+  state: "set" | "not_set" | "unknown";
   vault_key: string | null;
 };
 

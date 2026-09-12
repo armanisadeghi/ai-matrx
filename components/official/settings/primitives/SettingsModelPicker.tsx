@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { SettingsRow } from "../SettingsRow";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { useModels } from "@/features/ai-models/hooks/useModels";
@@ -50,9 +51,8 @@ export function SettingsModelPicker({
   last,
   ...rowProps
 }: SettingsModelPickerProps) {
-  const id =
-    rowProps.id ??
-    `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const generatedId = useId().replace(/:/g, "");
+  const id = rowProps.id ?? `settings-${generatedId}`;
   const { models } = useModels();
   const activeIds = useSelector(
     (state: RootState) => state.userPreferences.aiModels.activeModels,
@@ -76,7 +76,7 @@ export function SettingsModelPicker({
     : "Platform default";
 
   return (
-    <SettingsRow {...rowProps} id={id} variant="inline" last={last}>
+    <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
       <ModelListDropdown
         value={value}
         onValueChange={onValueChange}

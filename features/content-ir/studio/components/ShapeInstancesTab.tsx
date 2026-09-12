@@ -31,6 +31,11 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import {
+  ArchiveFilter,
+  DEFAULT_ARCHIVE_FILTER,
+  type ArchiveFilterValue,
+} from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -41,12 +46,13 @@ import KindInstanceRender, {
 import {
   instanceDataAsRecord,
   isValidatorDrift,
-  listMyKindInstances,
+  listKindInstances,
   repinKindInstance,
   softDeleteKindInstance,
   updateKindInstance,
   type KindInstanceListEntry,
 } from "@/features/content-ir/studio/instance-service";
+import { resolveListScope, type ListScopeWord } from "@/lib/list-scope";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
@@ -134,10 +140,41 @@ export default function ShapeInstancesTab({
   const [verdictWarning, setVerdictWarning] = useState<string | null>(null);
   const [flatKeys, setFlatKeys] = useState<string[] | null>(null);
   const [converting, setConverting] = useState(false);
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md): the
+  // default hides archived instances, and the control beside the list header
+  // reveals them in one click. It is a server request, so the count beside
+  // "My instances" always describes what the list renders.
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilterValue>(
+    DEFAULT_ARCHIVE_FILTER,
+  );
+  // WHERE THIS LIST OPENS IS A REGISTRY WORD (DD-137b, VISIBILITY-BY-CLASS
+  // §3.3). `content_ir.kind_instance` is registered
+  // `default_list_scope = organization`, so this tab opens on the
+  // organization's instances — the SEO-keyword complaint was four people in
+  // one organization each seeing only their own, of rows every one of them
+  // could read the whole time. `null` means "whatever the registry says";
+  // clicking the toggle pins an explicit scope, which is always one click away
+  // and never blocked.
+  const [scope, setScope] = useState<ListScopeWord | null>(null);
+  const [resolvedScope, setResolvedScope] = useState<ListScopeWord | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void resolveListScope("content_ir_kind_instance").then((s) => {
+      if (!cancelled) setResolvedScope(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const reload = useCallback(async () => {
     try {
-      const entries = await listMyKindInstances(kindDefinitionId);
+      const entries = await listKindInstances(
+        kindDefinitionId,
+        archiveFilter,
+        scope ?? undefined,
+      );
       setList({ status: "ready", entries });
       return entries;
     } catch (error) {
@@ -145,7 +182,7 @@ export default function ShapeInstancesTab({
       setList({ status: "error", message });
       return null;
     }
-  }, [kindDefinitionId]);
+  }, [kindDefinitionId, archiveFilter, scope]);
 
   useEffect(() => {
     void (async () => {
@@ -174,6 +211,10 @@ export default function ShapeInstancesTab({
       cancelled = true;
     };
   }, [kind]);
+
+  // The scope actually in force: what the person pinned, else what the registry
+  // says. `null` only while the registry read is still in flight.
+  const effectiveScope: ListScopeWord | null = scope ?? resolvedScope;
 
   const entries = list.status === "ready" ? list.entries : [];
   const selected = entries.find((e) => e.id === selectedId) ?? null;
@@ -392,11 +433,44 @@ export default function ShapeInstancesTab({
         <section className="min-w-0">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">
-              My instances
+              {effectiveScope === "mine" ? "My instances" : "Instances"}
             </span>
             <span className="text-xs text-muted-foreground">
               {entries.length}
             </span>
+            {/* The list-scope axis (DD-137b §3.3): the screen opens where the
+                registry says, and the other scope is ONE CLICK away. The
+                control is absent until the registry has answered rather than
+                rendering a lie about which scope is active. */}
+            {effectiveScope !== null && (
+              <div
+                className="flex items-center gap-0.5 rounded-md border border-border p-0.5"
+                role="group"
+                aria-label="Whose instances to show"
+              >
+                {(["organization", "mine"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setScope(option)}
+                    aria-pressed={effectiveScope === option}
+                    className={
+                      effectiveScope === option
+                        ? "rounded px-2 py-0.5 text-xs font-medium bg-accent text-foreground"
+                        : "rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    }
+                  >
+                    {option === "mine" ? "Mine" : "Organization"}
+                  </button>
+                ))}
+              </div>
+            )}
+            <ArchiveFilter
+              value={archiveFilter}
+              onValueChange={setArchiveFilter}
+              size="sm"
+              aria-label="Archived instances"
+            />
             <button
               type="button"
               onClick={() => void reload()}
@@ -444,6 +518,14 @@ export default function ShapeInstancesTab({
                     <span className="min-w-0 flex-1 truncate text-sm text-foreground">
                       {entry.title ?? `Untitled (${entry.id.slice(0, 8)})`}
                     </span>
+                    {entry.archivedAt !== null && (
+                      <span
+                        className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground"
+                        title={`Archived ${new Date(entry.archivedAt).toLocaleString()}`}
+                      >
+                        Archived
+                      </span>
+                    )}
                     {stale && (
                       <span
                         className="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200"

@@ -123,7 +123,11 @@ export function FeatureKnobsPanel() {
             next = raw;
           }
         }
-        await setFeatureKnob(knob.feature, knob.key, next);
+        const result = await setFeatureKnob(knob.feature, knob.key, next);
+        if (!result.ok) {
+          toast.error(result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`);
+          return;
+        }
         toast.success(
           reset ? `${knob.label} reset to its default` : `${knob.label} saved`,
         );

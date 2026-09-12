@@ -168,6 +168,11 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-12` — **FastFire owns header clearance once.** The education layout is the
+  single owner of shell-header offset; the FastFire page no longer adds a second top
+  offset, eliminating the large blank runway before set selection. Card controls keep
+  icon/title on the first row and full-width content below.
+
 - 2026-09-08 — `StudyDeck` completion screen renders the settled session review through `BatchReviewBlock` (the `batch_review` kind's component) instead of a summary-only paragraph that dropped strengths, weaknesses and the score; the loading face now points at the floating run window.
 - 2026-09-02 — The authenticated `/education/flashcards/**` tool family now stops
   guests at the global route boundary before owned-deck, category, scope, or study-data

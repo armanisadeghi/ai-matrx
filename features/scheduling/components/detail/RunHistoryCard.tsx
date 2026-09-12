@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@ai-matrx/design-system";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { useTaskRuns } from "../../hooks/useTaskRuns";
 import { useRunStream } from "../../hooks/useRunStream";
@@ -41,6 +40,7 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
             <div className="flex items-center gap-1">
               <CopyButtons
                 size="icon"
+                unified
                 label="Run history"
                 human={() => runListHuman(runs, task ?? undefined)}
                 json={() => runs}
@@ -52,14 +52,13 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
                     runsError: error,
                   })
                 }
-              />
-              <ExportMenu
-                label={task ? `${task.title} runs` : "Schedule runs"}
-                items={[
-                  jsonExportItem(() => runs),
-                  csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
-                ]}
-                sheetRows={() => runCsvRows(runs)}
+                export={{
+                  items: [
+                    jsonExportItem(() => runs),
+                    csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
+                  ],
+                  sheetRows: () => runCsvRows(runs),
+                }}
               />
             </div>
           ) : null}

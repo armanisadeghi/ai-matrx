@@ -110,6 +110,72 @@ function FlagPill({ on, children }: { on: boolean; children: string }) {
   );
 }
 
+/**
+ * THE DATA CLASS, SHOWN AND NOT EDITABLE HERE — and the panel says why out loud rather than
+ * rendering a disabled-looking control with no explanation.
+ *
+ * DD-137b (VISIBILITY-BY-CLASS §3.1/§3.2). Changing `data_class` fires
+ * `platform._entity_types_class_regenerates` and rewrites this table's RLS policies IN THE SAME
+ * COMMIT. That is an expensive, security-shaped act with a real blast radius: it belongs in a
+ * migration with a per-identity access delta beside it (`iam.access_delta_snapshot` +
+ * `iam.access_delta_assert_no_widening`, which refuses any change that would let ANY principal read
+ * a row they could not read before), not behind a dropdown on an admin table. `default_list_scope`
+ * is the harmless half and rides with it for now, because a reader of this screen needs to see the
+ * two axes TOGETHER to understand that they are separate.
+ */
+function DataClassPanel({ row }: { row: EntityTypeRow }) {
+  if (!row.data_class) {
+    return (
+      <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+        {row.is_component
+          ? "This is a component: its access IS its parent's, so it holds no data class of its own."
+          : "This table has no data class yet, so nothing can generate policies for it — iam.apply_rls refuses an unclassified token."}
+      </div>
+    );
+  }
+  const meaning: Record<string, string> = {
+    private:
+      "Mine. Nobody in the organization has a standing read — Matrx staff included. The audited emergency door needs two people and tells me every time it opens.",
+    confidential:
+      "Mine. One organization admin can open it through the audited door, with a typed reason, and I am told.",
+    organization:
+      "The organization's. Every member reads it, and its admins and Matrx staff can too.",
+    public: "Off the public internet, or deliberately broadcast to it.",
+  };
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-foreground">Data class</span>
+        <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+          {row.data_class}
+        </Badge>
+        <span className="text-xs font-semibold text-foreground">· List opens on</span>
+        <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+          {row.default_list_scope ?? "unset"}
+        </Badge>
+        {row.suppress_platform_admin_lane && (
+          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+            Matrx staff closed
+          </Badge>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">{meaning[row.data_class]}</p>
+      {row.data_class_reason && (
+        <p className="text-[11px] text-muted-foreground">
+          <span className="font-medium text-foreground">Why: </span>
+          {row.data_class_reason}
+        </p>
+      )}
+      <p className="text-[11px] text-muted-foreground">
+        The class is not editable here. Changing it rewrites this table&rsquo;s access policies in
+        the same commit, so it goes through a migration with a per-identity access delta that refuses
+        any change letting somebody read a row they could not read before. Where a list opens is the
+        harmless half and is shown beside it so the two stay visibly separate.
+      </p>
+    </div>
+  );
+}
+
 interface Props {
   entityTypes: EntityTypeRow[];
 }
@@ -270,6 +336,59 @@ export function EntityTypesClient({ entityTypes }: Props) {
           </div>
         ),
         width: 260,
+      },
+      {
+        // DD-137b (VISIBILITY-BY-CLASS §3.1/§3.3): the two axes, side by side and
+        // deliberately separate. `data_class` says WHICH ACCESS LANES EXIST for
+        // this table; `default_list_scope` says only where its screen OPENS.
+        // Changing where a list lands must never change a table's security
+        // posture — that conflation is what produced the complaint the whole
+        // design came from.
+        id: "data_class",
+        header: "Class / list",
+        filter: "text",
+        accessorFn: (r) =>
+          `${r.data_class ?? "component"} ${r.default_list_scope ?? ""} ${
+            r.suppress_platform_admin_lane ? "staff-closed" : ""
+          }`,
+        cell: (row) => {
+          if (!row.data_class) {
+            return (
+              <span className="text-[10px] text-muted-foreground">
+                {row.is_component ? "inherits its parent" : "unclassified"}
+              </span>
+            );
+          }
+          const tone =
+            row.data_class === "private"
+              ? "border-red-500/40 text-red-600 dark:text-red-400"
+              : row.data_class === "confidential"
+                ? "border-amber-500/40 text-amber-600 dark:text-amber-400"
+                : row.data_class === "organization"
+                  ? "border-sky-500/40 text-sky-600 dark:text-sky-400"
+                  : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400";
+          return (
+            <div className="flex flex-wrap items-center gap-1">
+              <span
+                className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${tone}`}
+              >
+                {row.data_class}
+              </span>
+              <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                opens on {row.default_list_scope === "organization" ? "org" : "mine"}
+              </span>
+              {row.suppress_platform_admin_lane && (
+                <span
+                  className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                  title="Matrx staff have no standing read of this table — they go through the audited emergency door like anyone else."
+                >
+                  staff closed
+                </span>
+              )}
+            </div>
+          );
+        },
+        width: 230,
       },
       {
         id: "agent_writable",
@@ -669,20 +788,23 @@ export function EntityTypesClient({ entityTypes }: Props) {
             title: (row) => `Edit: ${row.label}`,
             description: (row) => `${row.schema_name}.${row.table_name}`,
             defaultWidth: 480,
-            render: () =>
+            render: (row) =>
               editor && editor.mode === "edit" ? (
-                <EntityTypeForm
-                  editor={editor}
-                  onChange={setEditor}
-                  existingTokens={existingTokens}
-                  valid={editorValid}
-                  saving={saving}
-                  onCancel={() => {
-                    setEditor(null);
-                    setSidePanelId(null);
-                  }}
-                  onSave={() => void saveEntityType()}
-                />
+                <div className="space-y-4">
+                  <DataClassPanel row={row} />
+                  <EntityTypeForm
+                    editor={editor}
+                    onChange={setEditor}
+                    existingTokens={existingTokens}
+                    valid={editorValid}
+                    saving={saving}
+                    onCancel={() => {
+                      setEditor(null);
+                      setSidePanelId(null);
+                    }}
+                    onSave={() => void saveEntityType()}
+                  />
+                </div>
               ) : null,
           }}
           rowActions={(row) => (

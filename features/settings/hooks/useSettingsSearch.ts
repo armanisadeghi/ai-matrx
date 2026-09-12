@@ -3,6 +3,13 @@
 import { useMemo } from "react";
 import { settingsRegistry, getVisibleTabs } from "../registry";
 import type { SettingsTabDef } from "../types";
+import { useUniversalSettings } from "../universal/UniversalSettingsContext";
+import { staticSettingsControlIndex } from "../static-control-index";
+import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
+import {
+  dedupeSettingsControlSearchHits,
+  type SettingsControlSearchHit,
+} from "../search/controlSearch";
 
 export type SettingsSearchHit = {
   tab: SettingsTabDef;
@@ -11,6 +18,72 @@ export type SettingsSearchHit = {
   /** The matched substring (for highlighting). */
   matchText: string;
 };
+
+/**
+ * Public exact-control search for the route shell. Static registry results are
+ * always available; registry rows add their canonical full key as the anchor
+ * once the shared settings provider has read them.
+ */
+export function useSettingsControlSearch(
+  query: string,
+  isAdmin: boolean,
+): SettingsControlSearchHit[] {
+  const { knobs, domains } = useUniversalSettings();
+  const trimmed = query.trim().toLowerCase();
+  const visible = useMemo(() => getVisibleTabs(isAdmin), [isAdmin]);
+  return useMemo(() => {
+    if (!trimmed) return [];
+    const visibleTabIds = new Set(visible.map((tab) => tab.id));
+    const staticHits: SettingsControlSearchHit[] = staticSettingsControlIndex
+      .filter((control) => visibleTabIds.has(control.tabId))
+      .filter((control) =>
+        [control.label, control.description]
+          .filter((value): value is string => typeof value === "string")
+          .some((value) => value.toLowerCase().includes(trimmed)),
+      )
+      .map((control) => ({
+        id: `static:${control.controlId}`,
+        label: control.label,
+        description: control.description,
+        tabId: control.tabId,
+        controlId: control.controlId,
+        href: `${tabIdToHref(SETTINGS_BASE, control.tabId)}?control=${encodeURIComponent(control.controlId)}`,
+      }));
+    const controls: SettingsControlSearchHit[] = knobs.flatMap((knob) => {
+      const section = domains
+        .flatMap((domain) => [
+          ...(domain.domainLeafId === null
+            ? []
+            : [{ id: domain.domainLeafId, knobs: domain.knobs }]),
+          ...domain.features,
+        ])
+        .find((candidate) =>
+          candidate.knobs.some((item) => item.full_key === knob.full_key),
+        );
+      const haystack = [
+        knob.full_key,
+        knob.label,
+        knob.description,
+        knob.ui.help,
+      ]
+        .filter((value): value is string => typeof value === "string")
+        .join(" ")
+        .toLowerCase();
+      if (!section || !haystack.includes(trimmed)) return [];
+      return [
+        {
+          id: knob.full_key,
+          label: knob.label,
+          description: knob.description || undefined,
+          tabId: section.id,
+          controlId: knob.full_key,
+          href: `${tabIdToHref(SETTINGS_BASE, section.id)}?control=${encodeURIComponent(knob.full_key)}`,
+        },
+      ];
+    });
+    return dedupeSettingsControlSearchHits([...staticHits, ...controls]);
+  }, [domains, knobs, trimmed, visible]);
+}
 
 /**
  * Searches the settings registry and returns ranked hits.
