@@ -4,6 +4,7 @@ import type {
   PtyOpenOptions,
 } from "./ProcessAdapter";
 import type { ProcessEvent, ProcessResult } from "../types";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 /** Matches the response shape of /api/sandbox/[id]/exec */
 interface RawExecResponse {
@@ -17,6 +18,63 @@ interface SandboxPtyCredential {
   token: string;
   ws_base: string;
   sandbox_id: string;
+}
+
+const MAX_PROCESS_ERROR_DETAIL = 360;
+
+function boundedText(value: string): string {
+  const normalized = value.replace(/\s+/gu, " ").trim();
+  return normalized.length > MAX_PROCESS_ERROR_DETAIL
+    ? `${normalized.slice(0, MAX_PROCESS_ERROR_DETAIL - 1)}…`
+    : normalized;
+}
+
+function structuredErrorDetail(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const record = payload as Record<string, unknown>;
+  for (const key of ["user_message", "detail", "message", "error"]) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return boundedText(value);
+  }
+  return null;
+}
+
+/** Converts a proxy error body into brief text safe for a user alert. */
+export function formatSandboxProcessErrorDetail(body: string, statusText = ""): string {
+  const trimmed = body.trim();
+  if (!trimmed) return boundedText(statusText) || "The sandbox execution service did not provide an error detail.";
+  if (/^<!doctype html|^<html\b|<body\b/i.test(trimmed)) {
+    return "The sandbox execution service returned an HTML error page.";
+  }
+  try {
+    const structured = structuredErrorDetail(JSON.parse(trimmed));
+    if (structured) return structured;
+  } catch {
+    // Plain-text FastAPI and proxy failures are still useful once bounded.
+  }
+  return boundedText(trimmed);
+}
+
+function captureProcessFailure(
+  endpoint: "exec" | "exec/stream",
+  message: string,
+  status?: number,
+  network = false,
+): void {
+  try {
+    captureError({
+      source: network ? "api-network" : "api-http",
+      relation: `POST /api/sandbox/:id/${endpoint}`,
+      code: network ? "sandbox_exec_network_error" : "sandbox_exec_http_error",
+      message,
+      userMessage: message,
+      status,
+      details: message,
+      raw: { endpoint, status },
+    });
+  } catch {
+    // Diagnostics must never change terminal execution behavior.
+  }
 }
 
 /**
@@ -59,14 +117,24 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     if (opts?.env) body.env = opts.env;
     if (opts?.stdin !== undefined) body.stdin = opts.stdin;
 
-    const resp = await fetch(`/api/sandbox/${this.instanceId}/exec`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(`/api/sandbox/${this.instanceId}/exec`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      const message = "Sandbox command request could not reach the execution service.";
+      captureProcessFailure("exec", message, undefined, true);
+      throw new Error(message);
+    }
     if (!resp.ok) {
-      const errBody = await resp.text().catch(() => resp.statusText);
-      throw new Error(`exec failed (${resp.status}): ${errBody}`);
+      const errBody = await resp.text().catch(() => "");
+      const detail = formatSandboxProcessErrorDetail(errBody, resp.statusText);
+      const message = `Sandbox command failed (${resp.status}): ${detail}`;
+      captureProcessFailure("exec", message, resp.status);
+      throw new Error(message);
     }
     const data: RawExecResponse = await resp.json();
     if (data.cwd) this.cwd = data.cwd;
@@ -100,18 +168,29 @@ export class SandboxProcessAdapter implements ProcessAdapter {
     if (opts?.env) body.env = opts.env;
     if (opts?.stdin !== undefined) body.stdin = opts.stdin;
 
-    const resp = await fetch(`/api/sandbox/${this.instanceId}/exec/stream`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-      },
-      body: JSON.stringify(body),
-      signal: opts?.signal,
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(`/api/sandbox/${this.instanceId}/exec/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify(body),
+        signal: opts?.signal,
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
+      const message = "Sandbox streaming command could not reach the execution service.";
+      captureProcessFailure("exec/stream", message, undefined, true);
+      throw new Error(message);
+    }
     if (!resp.ok || !resp.body) {
-      const errBody = await resp.text().catch(() => resp.statusText);
-      throw new Error(`exec/stream failed (${resp.status}): ${errBody}`);
+      const errBody = await resp.text().catch(() => "");
+      const detail = formatSandboxProcessErrorDetail(errBody, resp.statusText);
+      const message = `Sandbox streaming command failed (${resp.status}): ${detail}`;
+      captureProcessFailure("exec/stream", message, resp.status);
+      throw new Error(message);
     }
 
     const reader = resp.body.getReader();

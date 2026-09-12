@@ -1,5 +1,45 @@
-import { SandboxProcessAdapter } from "./SandboxProcessAdapter";
+import {
+  formatSandboxProcessErrorDetail,
+  SandboxProcessAdapter,
+} from "./SandboxProcessAdapter";
 import { TextDecoder } from "node:util";
+
+describe("SandboxProcessAdapter HTTP errors", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("keeps proxy HTML out of exec errors while preserving bounded JSON details", async () => {
+    globalThis.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        text: async () => "<!doctype html><html><body>Next error page</body></html>",
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: async () => JSON.stringify({ detail: "Repository path is not available." }),
+      }) as unknown as typeof fetch;
+
+    const adapter = new SandboxProcessAdapter("row-id");
+    await expect(adapter.exec("git status")).rejects.toThrow(
+      "Sandbox command failed (500): The sandbox execution service returned an HTML error page.",
+    );
+    await expect(adapter.exec("git status")).rejects.toThrow(
+      "Sandbox command failed (400): Repository path is not available.",
+    );
+  });
+
+  it("bounds plain-text process error details", () => {
+    expect(formatSandboxProcessErrorDetail("x".repeat(500))).toHaveLength(360);
+  });
+});
 
 describe("SandboxProcessAdapter.stream", () => {
   const originalFetch = globalThis.fetch;
