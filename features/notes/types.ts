@@ -115,18 +115,29 @@ export function noteFolderIdentityKey(note: Pick<Note, "organization_id" | "fold
         : `pending:${note.organization_id ?? "unassigned"}:${note.folder_name ?? "Uncategorized"}`;
 }
 
-export type UpdateNoteInput = Pick<
-    NoteUpdate,
-    | "label"
-    | "content"
-    | "folder_name"
-    | "folder_id"
-    | "organization_id"
-    | "tags"
-    | "metadata"
-    | "position"
-    | "visibility"
+export type NoteContentUpdate = Pick<
+  NoteUpdate,
+  | "label"
+  | "content"
+  | "tags"
+  | "metadata"
+  | "position"
+  | "visibility"
 > & Partial<NoteContextLinks>;
+
+/**
+ * A persisted folder relationship is always changed by its admitted ID. The
+ * name is display data supplied by the service after it reads that folder;
+ * callers cannot use a name to select or create a persisted relationship.
+ */
+type PersistedFolderUpdate = {
+  /** `folder_id` is the only caller-supplied persisted folder relationship. */
+  folder_id?: string | null;
+  folder_name?: never;
+  organization_id?: never;
+};
+
+export type UpdateNoteInput = NoteContentUpdate & PersistedFolderUpdate;
 
 export interface FolderGroup {
     folder_name: string;

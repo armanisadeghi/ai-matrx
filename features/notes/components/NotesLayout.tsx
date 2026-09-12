@@ -251,9 +251,18 @@ export function NotesLayout({
             updates.folder_name || "Draft",
           );
           // Apply any content/label updates from the first edit
-          const { folder_name: _f, ...restUpdates } = updates;
-          const hasPayload = Object.keys(restUpdates).some(
-            (k) => restUpdates[k as keyof typeof restUpdates] !== undefined,
+          const restUpdates = {
+            content: updates.content,
+            label: updates.label,
+            tags: updates.tags,
+            metadata: updates.metadata,
+            position: updates.position,
+            visibility: updates.visibility,
+            project_id: updates.project_id,
+            task_id: updates.task_id,
+          };
+          const hasPayload = Object.values(restUpdates).some(
+            (value) => value !== undefined,
           );
           if (hasPayload) {
             await updateNote(realNote.id, restUpdates);
@@ -268,7 +277,17 @@ export function NotesLayout({
         return;
       }
       // Context handles optimistic updates automatically
-      updateNote(noteId, updates);
+      const persistedUpdates = {
+        content: updates.content,
+        label: updates.label,
+        tags: updates.tags,
+        metadata: updates.metadata,
+        position: updates.position,
+        visibility: updates.visibility,
+        project_id: updates.project_id,
+        task_id: updates.task_id,
+      };
+      void updateNote(noteId, persistedUpdates);
     },
     [updateNote, findOrCreateEmptyNote, openNoteInTab, toast],
   );

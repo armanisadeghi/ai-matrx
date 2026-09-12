@@ -137,24 +137,12 @@ export function useNotesRedux() {
         dispatch(setNoteField({ id, field: "tags", value: updates.tags }));
       }
 
-      // This compatibility path has only a display name, so it is limited to
-      // creating a new folder. Persisted choices call `moveNote` with identity.
-      if (updates.folder_name !== undefined) {
-        const folder = updates.folder_name?.trim();
-        if (folder) {
-          await dispatch(moveNoteToNewFolderThunk({ noteId: id, folderName: folder })).unwrap();
-        } else {
-          dispatch(setNoteField({ id, field: "folder_name", value: null }));
-          dispatch(setNoteField({ id, field: "folder_id", value: null }));
-          await dispatch(saveNote(id)).unwrap();
-        }
-      } else {
-        await dispatch(saveNote(id)).unwrap();
-      }
+      await dispatch(saveNote(id)).unwrap();
 
       // Return current note state (approximate — the real note is in Redux)
       const note = notes.find((n) => n.id === id);
-      return note ? { ...note, ...updates } : ({ id, ...updates } as Note);
+      if (!note) throw new Error("Note not found after save");
+      return note;
     },
     [dispatch, notes],
   );

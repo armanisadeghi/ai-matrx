@@ -45,7 +45,7 @@ describe("createNewNote empty-note reuse integration", () => {
   });
 
   it("forwards every explicit reuse field through update, association sync, and Redux tab hydration", async () => {
-    const folder = query({ data: { id: folderId }, error: null });
+    const folder = query({ data: { id: folderId, name: "Draft" }, error: null });
     const reused = {
       id: noteId,
       label: "New Note",
@@ -141,7 +141,7 @@ describe("createNewNote empty-note reuse integration", () => {
   });
 
   it("keeps existing context links untouched when a reused create omits them", async () => {
-    const folder = query({ data: { id: folderId }, error: null });
+    const folder = query({ data: { id: folderId, name: "Draft" }, error: null });
     const reused = {
       id: noteId,
       label: "New Note",

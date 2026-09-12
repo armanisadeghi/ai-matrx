@@ -8,10 +8,12 @@ import { requireOrganizationContext } from "@/lib/api/organization-context";
 import type {
   Note,
   NoteRow,
+  NoteUpdate,
   CreateNoteInput,
   UpdateNoteInput,
   NoteListItem,
   FolderReference,
+  NoteContextLinks,
 } from "../types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { findEmptyNewNote } from "../utils/noteUtils";
@@ -127,6 +129,7 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
 export function emptyNoteReuseUpdates(
   existingNote: Note,
   input: CreateNoteInput,
+  targetFolder: { id: string; name: string },
 ): UpdateNoteInput {
   const updates: UpdateNoteInput = {};
   const requestedLabel = input.label?.trim();
@@ -137,9 +140,11 @@ export function emptyNoteReuseUpdates(
   ) {
     updates.label = requestedLabel;
   }
-  const targetFolder = input.folder_name || "Draft";
-  if (existingNote.folder_name !== targetFolder) {
-    updates.folder_name = targetFolder;
+  if (
+    existingNote.folder_id !== targetFolder.id ||
+    existingNote.folder_name !== targetFolder.name
+  ) {
+    updates.folder_id = targetFolder.id;
   }
   if (input.metadata !== undefined) updates.metadata = input.metadata;
   if (input.position !== undefined) updates.position = input.position;
@@ -156,14 +161,13 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
   const userId = requireUserId();
 
   const content = input.content || "";
-  const targetFolder = input.folder_name || "Draft";
-  const folderId = input.folder_id ?? (await createFolder(targetFolder, organizationId));
-
+  const requestedFolderName = input.folder_name?.trim() || "Draft";
+  let targetFolder: { id: string; name: string };
   if (input.folder_id) {
     const { data: folder, error: folderError } = await supabase
       .schema("workbench")
       .from("note_folders")
-      .select("id")
+      .select("id, name")
       .eq("id", input.folder_id)
       .eq("organization_id", organizationId)
       .is("deleted_at", null)
@@ -171,6 +175,12 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
     if (folderError || !folder) {
       throw folderError ?? new Error("The selected folder is unavailable in this organization. Choose another folder and try again.");
     }
+    targetFolder = folder;
+  } else {
+    targetFolder = {
+      id: await createFolder(requestedFolderName, organizationId),
+      name: requestedFolderName,
+    };
   }
 
   // CRITICAL: If creating an empty note (no content or whitespace only), check for existing empty notes
@@ -183,7 +193,7 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
       .select("*")
       .eq("created_by", userId)
       .eq("organization_id", organizationId)
-      .eq("folder_id", folderId)
+      .eq("folder_id", targetFolder.id)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false });
     if (reuseError) throw reuseError;
@@ -198,7 +208,7 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
 
       // Reuse must preserve the caller's explicit name. Returning the generic
       // empty row unchanged made the war-room "+ New" dialog ignore its input.
-      const reuseUpdates = emptyNoteReuseUpdates(existingEmptyNote, input);
+      const reuseUpdates = emptyNoteReuseUpdates(existingEmptyNote, input, targetFolder);
       if (Object.keys(reuseUpdates).length > 0) {
         return updateNote(existingEmptyNote.id, reuseUpdates);
       }
@@ -235,8 +245,8 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
       created_by: userId,
       label: finalLabel,
       content: content,
-      folder_name: targetFolder,
-      folder_id: folderId,
+      folder_name: targetFolder.name,
+      folder_id: targetFolder.id,
       tags: input.tags || [],
       metadata: input.metadata || {},
       position: input.position || 0,
@@ -295,14 +305,18 @@ export async function updateNote(
     .maybeSingle();
   if (existingError || !existing) throw existingError ?? operationFailed("save this note — it may already be gone");
   const organizationId = requireOrganizationContext(existing.organization_id);
-  if (updates.organization_id !== undefined && updates.organization_id !== organizationId) {
+  if ((updates as { organization_id?: string }).organization_id !== undefined && (updates as { organization_id?: string }).organization_id !== organizationId) {
     throw new Error("Moving a note to another organization is not available yet. Keep this note in its current organization.");
   }
+  if (updates.folder_name !== undefined && updates.folder_id === undefined) {
+    throw new Error("A persisted note can only move to an admitted folder ID. Create a new folder separately before moving this note.");
+  }
+  const normalizedUpdates: NoteUpdate & Partial<NoteContextLinks> = { ...updates };
   if (updates.folder_id !== undefined && updates.folder_id !== null) {
     const { data: folder, error: folderError } = await supabase
       .schema("workbench")
       .from("note_folders")
-      .select("id")
+      .select("id, name")
       .eq("id", updates.folder_id)
       .eq("organization_id", organizationId)
       .is("deleted_at", null)
@@ -310,18 +324,11 @@ export async function updateNote(
     if (folderError || !folder) {
       throw folderError ?? new Error("The selected folder is unavailable in this note's organization.");
     }
-  }
-  const normalizedUpdates: UpdateNoteInput = { ...updates };
-  // `folder_name` is denormalized display data; `folder_id` is the canonical
-  // relationship used for org inheritance and folder-aware queries. Legacy
-  // editors still call this service directly, so resolve both fields here
-  // instead of allowing a visually-moved note to keep its old folder_id.
-  if (updates.folder_name !== undefined && updates.folder_id === undefined) {
-    const folderName = updates.folder_name?.trim();
-    normalizedUpdates.folder_name = folderName || null;
-    normalizedUpdates.folder_id = folderName
-      ? await createFolder(folderName, organizationId)
-      : null;
+    normalizedUpdates.folder_id = folder.id;
+    normalizedUpdates.folder_name = folder.name;
+  } else if (updates.folder_id === null) {
+    normalizedUpdates.folder_id = null;
+    normalizedUpdates.folder_name = null;
   }
 
   const {
@@ -337,7 +344,8 @@ export async function updateNote(
       .schema("workbench")
       .from("notes")
       .update(databaseUpdates)
-      .eq("id", id);
+      .eq("id", id)
+      .eq("organization_id", organizationId);
 
     if (options?.expectedUpdatedAt) {
       query = query.eq("updated_at", options.expectedUpdatedAt);
@@ -352,6 +360,7 @@ export async function updateNote(
       .from("notes")
       .select("*")
       .eq("id", id)
+      .eq("organization_id", organizationId)
       .maybeSingle();
     data = result.data;
     error = result.error;
@@ -369,6 +378,7 @@ export async function updateNote(
         .from("notes")
         .select("id")
         .eq("id", id)
+        .eq("organization_id", organizationId)
         .maybeSingle();
       if (stillThere) {
         throw new Error(
@@ -499,10 +509,15 @@ export async function copyNote(id: string): Promise<Note> {
     label: copyLabel,
     content: original.content,
     folder_name: original.folder_name,
+    folder_id: original.folder_id,
     tags: original.tags || [],
     metadata: original.metadata || {},
     organization_id: requireOrganizationContext(original.organization_id),
   };
+
+  if (!copy.folder_id) {
+    throw new Error("This note has no valid persisted folder. Choose a destination folder before copying it.");
+  }
 
   return await createNote(copy);
 }

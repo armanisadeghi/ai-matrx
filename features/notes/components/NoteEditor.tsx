@@ -133,7 +133,7 @@ export function NoteEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toast = useToastManager("notes");
-  const { refreshNotes, setActiveNoteDirty, openTabs } = useNotesRedux();
+  const { refreshNotes, setActiveNoteDirty, openTabs, moveNoteToNewFolder } = useNotesRedux();
   const notesMap = useAppSelector(selectNotesMap);
 
   // Use refs to avoid callback dependencies
@@ -318,7 +318,6 @@ export function NoteEditor({
           updateWithAutoSave({
             label: localLabelRef.current,
             content: markdown,
-            folder_name: localFolderRef.current,
             tags: localTagsRef.current,
             metadata: {
               ...getNoteMetadata(currentNote),
@@ -378,7 +377,6 @@ export function NoteEditor({
         updateWithAutoSave({
           label: localLabelRef.current,
           content: currentContent,
-          folder_name: localFolderRef.current,
           tags: localTagsRef.current,
           metadata: { ...getNoteMetadata(note), lastEditorMode: currentMode },
         });
@@ -423,7 +421,6 @@ export function NoteEditor({
       updateWithAutoSave({
         label: localLabel,
         content: value,
-        folder_name: localFolder,
         tags: localTags,
         metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode },
       });
@@ -448,7 +445,6 @@ export function NoteEditor({
         updateWithAutoSave({
           label: localLabelRef.current,
           content: value,
-          folder_name: localFolderRef.current,
           tags: localTagsRef.current,
           metadata: {
             ...getNoteMetadata(currentNote),
@@ -487,23 +483,17 @@ export function NoteEditor({
     }
   }, []);
 
-  const handleFolderChange = (value: string) => {
+  const handleFolderChange = async (value: string) => {
     setLocalFolder(value);
     if (note) {
-      updateWithAutoSave({
-        label: localLabel,
-        content: localContent,
-        folder_name: value,
-        tags: localTags,
-        metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode }, // Include mode
-      });
+      await moveNoteToNewFolder(note.id, value);
       // Immediate update to parent for sidebar refresh
       onUpdate?.(note.id, { folder_name: value });
     }
   };
 
   const handleCreateFolder = async (folderName: string) => {
-    handleFolderChange(folderName);
+    await handleFolderChange(folderName);
   };
 
   const handleTagsChange = (tags: string[]) => {
@@ -512,7 +502,6 @@ export function NoteEditor({
       updateWithAutoSave({
         label: localLabel,
         content: localContent,
-        folder_name: localFolder,
         tags,
         metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode }, // Include mode
       });
@@ -548,7 +537,6 @@ export function NoteEditor({
         updateWithAutoSave({
           label: newLabel,
           content: localContent,
-          folder_name: localFolder,
           tags: localTags,
           metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode },
         });
@@ -569,7 +557,6 @@ export function NoteEditor({
       updateWithAutoSave({
         label: localLabel,
         content: localContent,
-        folder_name: localFolder,
         tags: localTags,
         metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode },
       });
