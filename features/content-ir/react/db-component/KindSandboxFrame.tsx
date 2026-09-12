@@ -142,6 +142,54 @@ export function invalidateKindSandboxTransforms(): void {
     transformCache.clear();
 }
 
+
+/**
+ * WHAT THE READER GETS WHEN A COMPONENT IS TALLER THAN THE CEILING (S3).
+ *
+ * Pure on purpose: the decision — how tall the iframe is, whether a control is
+ * offered, and the exact sentence beside it — is the part that must never go
+ * quiet, so it is testable without a browser. A component the ceiling is
+ * holding back NEVER just ends: the sentence says how tall it really is.
+ */
+export interface FrameHeightDecision {
+    height: number;
+    capped: boolean;
+    control: "none" | "show-all" | "show-less";
+    sentence: string | null;
+}
+
+export function frameHeightDecision(
+    measuredHeight: number,
+    contentHeight: number,
+    expanded: boolean,
+): FrameHeightDecision {
+    if (contentHeight <= FRAME_HEIGHT_CEILING_PX) {
+        return { height: measuredHeight, capped: false, control: "none", sentence: null };
+    }
+    if (!expanded) {
+        return {
+            height: Math.min(measuredHeight, FRAME_HEIGHT_CEILING_PX),
+            capped: true,
+            control: "show-all",
+            sentence: `This component is ${contentHeight} pixels tall; ${FRAME_HEIGHT_CEILING_PX} are shown.`,
+        };
+    }
+    if (contentHeight > EXPANDED_FRAME_HEIGHT_CEILING_PX) {
+        return {
+            height: EXPANDED_FRAME_HEIGHT_CEILING_PX,
+            capped: true,
+            control: "show-less",
+            sentence: `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${EXPANDED_FRAME_HEIGHT_CEILING_PX} pixels and the rest is cut off.`,
+        };
+    }
+    return {
+        height: contentHeight,
+        capped: true,
+        control: "show-less",
+        sentence: `Showing all ${contentHeight} pixels of this component.`,
+    };
+}
+
 /** Counted, so a refusal is a fact a test can read — not only a log line. */
 const refusalCounts = new Map<string, number>();
 
@@ -432,13 +480,9 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     }
 
     // THE HEIGHT THE IFRAME GETS. Normally the content's own height, so the
-    // frame never scrolls and the host page owns scroll. Past the cap the
+    // frame never scrolls and the host page owns scroll. Past the ceiling the
     // reader is told, in a control, how tall the thing really is (S3).
-    const capped = contentHeight > FRAME_HEIGHT_CEILING_PX;
-    const shownHeight = expanded
-        ? Math.min(contentHeight, EXPANDED_FRAME_HEIGHT_CEILING_PX)
-        : height;
-    const beyondExpanded = contentHeight > EXPANDED_FRAME_HEIGHT_CEILING_PX;
+    const decision = frameHeightDecision(height, contentHeight, expanded);
     const title = sandboxFrameTitle(kind, resolution.config as Record<string, unknown>);
 
     return (
@@ -458,24 +502,18 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                 title={title}
                 data-matrx-kind-sandbox={kind}
                 className={className ?? "w-full border-0"}
-                style={{ height: shownHeight, display: "block" }}
+                style={{ height: decision.height, display: "block" }}
             />
-            {capped ? (
+            {decision.capped ? (
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                     <button
                         type="button"
                         onClick={() => setExpanded((value) => !value)}
                         className="rounded-md border border-border px-2 py-1 font-medium text-foreground hover:bg-accent"
                     >
-                        {expanded ? "Show less" : "Show all"}
+                        {decision.control === "show-less" ? "Show less" : "Show all"}
                     </button>
-                    <span>
-                        {expanded
-                            ? beyondExpanded
-                                ? `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${EXPANDED_FRAME_HEIGHT_CEILING_PX} pixels and the rest is cut off.`
-                                : `Showing all ${contentHeight} pixels of this component.`
-                            : `This component is ${contentHeight} pixels tall; ${FRAME_HEIGHT_CEILING_PX} are shown.`}
-                    </span>
+                    <span>{decision.sentence}</span>
                 </div>
             ) : null}
             {oversize ? (

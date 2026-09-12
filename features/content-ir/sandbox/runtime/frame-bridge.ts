@@ -314,12 +314,27 @@ function startInstance(
             if (rect.bottom > bottom) bottom = rect.bottom;
         }
         // `bottom` is viewport-relative and the frame never scrolls, so it is
-        // the content height. The document's own scrollHeight is the floor for
-        // anything measured at zero during the first frame.
-        return Math.ceil(Math.max(bottom, document.documentElement.scrollHeight));
+        // the content height.
+        //
+        // 🚨 IT MUST NOT FALL BACK TO `documentElement.scrollHeight`, which is
+        // never smaller than the frame's own viewport — i.e. never smaller
+        // than the height the HOST just gave the iframe. Measured that way a
+        // short component reports the host's height back and the frame can
+        // never shrink, and any body that stretches to full height feeds the
+        // host a bigger number every round: observed 2026-09-12 in headless
+        // Chrome, one live body walked 320 → 1238 → 4000 → capped at 16103 px
+        // with no content change at all.
+        return Math.ceil(bottom);
     };
 
     const reportSize = (): void => {
+        // A DEGENERATE LAYOUT IS NOT A HEIGHT. Mid-relayout the frame can be
+        // measured at zero width, where every line of text wraps to one word
+        // and the content reads as many times taller than it is — observed
+        // once in headless Chrome on 2026-09-12, a 1,238 px body reporting
+        // 16,103 px for a single frame before settling back. Reporting that
+        // would flash the host's "Show all" control on a component that fits.
+        if (document.documentElement.clientWidth <= 0) return;
         const contentHeight = measure();
         if (contentHeight <= 0) return;
         const height = Math.min(contentHeight, FRAME_HEIGHT_CEILING_PX);
