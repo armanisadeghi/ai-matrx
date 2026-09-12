@@ -204,6 +204,7 @@ export function toCsvImportCommand(input: {
   expectedActor: VaultExpectedActor;
   rowId: string;
   limits: CsvImportLimits;
+  browserFillEnabled?: boolean;
 }): CsvImportCommand | null {
   if (input.row.issue) return null;
   const { headers } = input.preview;
@@ -274,7 +275,16 @@ export function toCsvImportCommand(input: {
       source: "system_import",
       login_urls: urls,
       uri_match_mode: "never",
-      browser_fill_enabled: false,
+      browser_fill_enabled:
+        Boolean(input.browserFillEnabled) &&
+        urls.some((url) => {
+          const parsed = new URL(url);
+          return (
+            parsed.protocol === "https:" ||
+            parsed.hostname === "localhost" ||
+            parsed.hostname === "127.0.0.1"
+          );
+        }),
       fields,
     },
   };

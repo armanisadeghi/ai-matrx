@@ -5,6 +5,7 @@ import { FileUp, Loader2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ import {
   runCsvImportCommands,
   suggestedCsvMapping,
   toCsvImportCommand,
+  safeDestination,
   type CsvColumnRole,
   type CsvImportPreview,
 } from "../csv-import";
@@ -42,6 +44,15 @@ const SOURCES = [
   ["bitwarden", "Bitwarden"],
   ["1password", "1Password"],
   ["lastpass", "LastPass"],
+  ["apple", "Apple Passwords / Safari"],
+  ["edge", "Microsoft Edge"],
+  ["firefox", "Firefox"],
+  ["dashlane", "Dashlane"],
+  ["nordpass", "NordPass"],
+  ["keeper", "Keeper"],
+  ["proton", "Proton Pass CSV"],
+  ["roboform", "RoboForm"],
+  ["keepass", "KeePass / KeePassXC CSV"],
 ] as const;
 const SOURCE_URLS: Record<string, string> = {
   chrome: "https://support.google.com/chrome/answer/13068232",
@@ -49,6 +60,15 @@ const SOURCE_URLS: Record<string, string> = {
   "1password": "https://support.1password.com/export/",
   lastpass:
     "https://support.lastpass.com/s/document-item?language=en_US&bundleId=lastpass&topicId=LastPass/export-your-vault-data.html",
+  apple: "https://support.apple.com/en-au/guide/passwords/mchl35b12625/mac",
+  dashlane:
+    "https://support.dashlane.com/hc/en-us/articles/32905278138002-Export-your-Dashlane-data-to-a-CSV",
+  nordpass:
+    "https://support.nordpass.com/hc/en-us/articles/360007646477-How-to-export-passwords-from-NordPass",
+  roboform:
+    "https://help.roboform.com/hc/en-us/articles/230425008-How-to-export-your-RoboForm-logins-into-a-CSV-file",
+  proton: "https://proton.me/support/pass-export",
+  keepass: "https://keepassxc.org/docs/KeePassXC_UserGuide",
 };
 const ROLES: CsvColumnRole[] = [
   "keep",
@@ -64,13 +84,13 @@ export function VaultCsvImportDialog({
   open,
   onOpenChange,
   principal,
-  existingNames,
+  existingItems,
   onCommitted,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   principal: VaultPrincipal;
-  existingNames: string[];
+  existingItems: { displayName: string; loginUrls: string[] }[];
   onCommitted: () => Promise<void>;
 }) {
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -85,6 +105,9 @@ export function VaultCsvImportDialog({
   const [unavailable, setUnavailable] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [enableBrowserFill, setEnableBrowserFill] = useState(false);
+  const [createPossibleDuplicates, setCreatePossibleDuplicates] =
+    useState(false);
   const [result, setResult] = useState<{
     imported: number;
     skipped: number;
@@ -163,10 +186,17 @@ export function VaultCsvImportDialog({
               expectedActor: actor,
               rowId: crypto.randomUUID(),
               limits,
+              browserFillEnabled: enableBrowserFill,
             });
-            return command && !existingNames.includes(command.body.display_name)
-              ? command
-              : null;
+            if (!command) return null;
+            const duplicate = existingItems.some(
+              (item) =>
+                item.displayName === command.body.display_name &&
+                item.loginUrls.some((url) =>
+                  command.body.login_urls?.includes(url),
+                ),
+            );
+            return duplicate && !createPossibleDuplicates ? null : command;
           });
       if (!retry) frozenCommands.current = commands;
       const outcome = await runCsvImportCommands(
@@ -319,15 +349,12 @@ export function VaultCsvImportDialog({
                 ))}
               </div>
               <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-                Preview is masked:{" "}
-                {preview.rows
-                  .filter((row) => !row.issue)
-                  .slice(0, 5)
-                  .map((row) => (
-                    <div key={row.rowNumber}>
-                      Row {row.rowNumber}: credential detected
-                    </div>
-                  ))}
+                Masked preview:
+                {preview.rows.slice(0, 5).map((row) => (
+                  <div key={row.rowNumber}>
+                    {maskedRowSummary(row, preview, mapping)}
+                  </div>
+                ))}
               </div>
               <p className="text-xs text-muted-foreground">
                 Possible duplicates use matching title and URL metadata. They
@@ -335,6 +362,30 @@ export function VaultCsvImportDialog({
                 overwritten. OTP data is preserved inactive and requires
                 explicit Authenticator setup later.
               </p>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <Switch
+                  checked={enableBrowserFill}
+                  onCheckedChange={setEnableBrowserFill}
+                  aria-label="Enable browser fill for eligible imported logins"
+                />
+                <span>
+                  Enable browser fill only for eligible HTTPS or local
+                  destinations. Matching destinations become visible credential
+                  metadata.
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <Switch
+                  checked={createPossibleDuplicates}
+                  onCheckedChange={setCreatePossibleDuplicates}
+                  aria-label="Create possible duplicates separately"
+                />
+                <span>
+                  Create possible duplicates separately. By default matching
+                  title and destination records are skipped; imports never
+                  overwrite.
+                </span>
+              </label>
             </div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -378,4 +429,28 @@ export function VaultCsvImportDialog({
       </CredenzaContent>
     </Credenza>
   );
+}
+
+function maskedRowSummary(
+  row: CsvImportPreview["rows"][number],
+  preview: CsvImportPreview,
+  mapping: CsvColumnRole[],
+): string {
+  if (row.issue) return `Row ${row.rowNumber}: invalid — skipped`;
+  const value = (role: CsvColumnRole) =>
+    row.cells[mapping.findIndex((entry) => entry === role)] ?? "";
+  const hosts = row.cells
+    .filter((_, index) => mapping[index] === "url")
+    .map(safeDestination)
+    .flatMap((destination) => (destination.host ? [destination.host] : []));
+  const title = value("title") || `Imported credential ${row.rowNumber}`;
+  const presence =
+    [
+      value("username") && "username",
+      value("password") && "password",
+      value("otp") && "OTP",
+    ]
+      .filter(Boolean)
+      .join(", ") || "no mapped credential fields";
+  return `Row ${row.rowNumber}: ${title} · Website login · ${hosts.join(", ") || "no destination"} · ${presence}`;
 }

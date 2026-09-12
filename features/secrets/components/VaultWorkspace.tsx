@@ -682,7 +682,10 @@ export function VaultWorkspace({
             open={csvImportOpen}
             onOpenChange={setCsvImportOpen}
             principal={viewedPrincipal}
-            existingNames={vault.items.map((item) => item.display_name)}
+            existingItems={vault.items.map((item) => ({
+              displayName: item.display_name,
+              loginUrls: item.login_urls,
+            }))}
             onCommitted={vault.refresh}
           />
         )}
@@ -975,7 +978,10 @@ export function VaultWorkspace({
           open={csvImportOpen}
           onOpenChange={setCsvImportOpen}
           principal={viewedPrincipal}
-          existingNames={vault.items.map((item) => item.display_name)}
+          existingItems={vault.items.map((item) => ({
+            displayName: item.display_name,
+            loginUrls: item.login_urls,
+          }))}
           onCommitted={vault.refresh}
         />
       )}
