@@ -166,3 +166,23 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 3) The Conductor infers approvals from version bumps ("your Rulebook moved to 158,
   so you've approved it") — check the draft flag in the database before believing any state it reports
   about your rules.
+- 2026-09-12 — (trial 9, the newsroom exam) The body-of-work lane distilled the SITE (sponsor lines, staff
+  bios, tag order) as craft because the page reader handed it the whole page; fixed at the one scraper
+  door (THE MAIN-CONTENT LAW). Before distilling any corpus of links, spot-check what text the platform
+  actually read.
+- 2026-09-12 — (trial 9) 20 pieces → 416 drafts is not a review, it is a defect: per-piece rules are
+  EVIDENCE for the synthesis (now `standing: evidence`, promoted at a knob's threshold). Never Approve-all
+  a corpus run; if you must, log the cheat and give the Conductor the classes to set aside.
+- 2026-09-12 — (trial 9) A multi-document case breaks a one-call step twice: first the reply is cut at the
+  output ceiling (the engine used to call it a parse failure — now `output_truncated` with the remedy),
+  then a For-Each gather hands the next step whole transcripts (a million tokens). Tell the Conductor
+  "one document per call, merge after, map from the gather's structured outputs" — and read
+  `chat.request.finish_reason` before believing any "could not be parsed".
+- 2026-09-12 — (trial 9) When every Rulebook page 500s, read the PostgREST log before touching the trial:
+  `42P17 infinite recursion in policy` means another lane's migration regenerated RLS through a generator
+  that reads its own table — a class fixed twice in August with no guard. The repair is a generator
+  patch + regeneration + a release-gate guard, and a policy ARM that calls a SECURITY DEFINER door
+  needs EXECUTE for the calling role plus a `client_callable_door` row (the second 403 half).
+- 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
+  newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
+  the run; never let the desk or the vanilla arm see anything dated after the sources.
