@@ -30,6 +30,7 @@ import type { KnobScopeKindName, ScopedKnob } from "@/lib/scoped-config/types";
 import { useActiveSettingsTabId } from "../components/SettingsTabHost";
 import { resolveConfigSection } from "./configTree";
 import { useUniversalSettings } from "./UniversalSettingsContext";
+import { auditedSettingsDispositions, dispositionFor } from "./disposition";
 import {
   isSubOrgScopeKind,
   scopeKindNoun,
@@ -124,9 +125,7 @@ export function UniversalSettingsRows({
                 canWrite: settings.canManageSystem,
                 registeredDefault: knob.shipped_default,
               } : undefined}
-              showUserLockControl={
-                scopeKind === "organization" && canManageOrganization
-              }
+              stateOnly={dispositionFor(knob.full_key, settings.editingContext)}
               hideKey={hideKey}
               onChanged={settings.refresh}
             />
@@ -203,7 +202,7 @@ export function RegistryCoverage() {
         {missingTaxonomy} need taxonomy filing; {missingUi} rely on their typed control because they have no presentation metadata; {unsupported} secret value{unsupported === 1 ? " is" : "s are"} state-only and link to Vault. Older account, session, and device preferences remain outside this registry and are labeled at their own controls.
       </SettingsCallout>
       <SettingsCallout tone="warning" title="Known consumer gaps">
-        `batch.deadline` currently reads platform values directly, so its lower-level overrides are not honored. Table pagination and commerce labels do use the shared resolver. The model, voice, and confirmation keys shown on the first screen have no verified active consumer beyond that screen; this is an incomplete census, not a claim that clients do not use them.
+        {Object.keys(auditedSettingsDispositions).length} audited settings have state-only lower-level rows until their runtime consumer is connected. Table pagination and commerce labels do use the shared resolver.
       </SettingsCallout>
     </SettingsSection>
   );
@@ -314,7 +313,7 @@ export default function UniversalSettingsPane() {
             : `Settings that apply across ${section.domain.name}.`
         }
       />
-      {settings.editingContext !== "system" && <SettingsContextControls />}
+      <SettingsContextControls />
       {settings.editingContext === "system" && <RegistryCoverage />}
       {settings.editingContext !== "system" && <OrganizationRungSection />}
       {settings.editingContext !== "system" && <SubOrgRungSection knobs={section.knobs} />}

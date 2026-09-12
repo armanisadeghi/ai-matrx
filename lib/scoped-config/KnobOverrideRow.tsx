@@ -30,7 +30,7 @@ import {
   hasFieldControl,
 } from "@/features/settings/universal/KnobFieldControl";
 import { formatKnobValue, type KnobLadder } from "./ladder";
-import { setKnobOverride, setKnobRungLock } from "./service";
+import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
 import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
@@ -90,9 +90,11 @@ export function KnobOverrideRow(props: {
    * scfg_50 rung lock — the org turning off user-level control of this one
    * setting even though the platform allows it). Owner/admin gated in SQL.
    */
-  showUserLockControl?: boolean;
   /** Platform defaults use feature_knob_set; platform is not a scoped rung. */
   system?: { canWrite: boolean; registeredDefault: unknown };
+  /** Retained for existing callers; user-preference locks have no mutable UI. */
+  showUserLockControl?: boolean;
+  stateOnly?: { reason: string; consumerEvidence: string } | null;
   onChanged: () => void;
 }) {
   const {
@@ -103,8 +105,8 @@ export function KnobOverrideRow(props: {
     blastRadius,
     hideKey = false,
     ladder,
-    showUserLockControl,
     system,
+    stateOnly,
     onChanged,
   } = props;
   const flatOverride = scopeKind === "user" ? knob.user_override : knob.org_override;
@@ -155,11 +157,11 @@ export function KnobOverrideRow(props: {
           const detail = result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
           setInlineError(detail);
           toast.error(detail);
-          return;
+          return false;
         }
         toast.success(value === null ? `${knob.label} restored to its registered default.` : `${knob.label} saved for the platform.`);
         onChanged();
-        return;
+        return true;
       }
       const result = await setKnobOverride({
         feature: knob.feature,
@@ -170,8 +172,10 @@ export function KnobOverrideRow(props: {
         value,
       });
       if (!result.ok) {
-        toast.error(result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`);
-        return;
+        const detail = result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
+        setInlineError(detail);
+        toast.error(detail);
+        return false;
       }
       toast.success(
         value === null
@@ -179,8 +183,12 @@ export function KnobOverrideRow(props: {
           : `${knob.label} saved. ${blastRadius}`,
       );
       onChanged();
+      return true;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      const detail = err instanceof Error ? err.message : String(err);
+      setInlineError(detail);
+      toast.error(detail);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -190,44 +198,9 @@ export function KnobOverrideRow(props: {
     const parsed = parseDraft(knob, draft);
     if (parsed.error) {
       toast.error(parsed.error);
-      return;
+      return false;
     }
-    await write(parsed.value);
-  };
-
-  const setUserLock = async (lock: boolean) => {
-    if (lock) {
-      const confirmed = await confirm({
-        title: `Turn off personal overrides for ${knob.label}?`,
-        description:
-          "Members can no longer set their own value for this setting, and any personal values they already saved stop applying (they are kept, and come back if you turn personal overrides on again).",
-        confirmLabel: "Turn them off",
-      });
-      if (!confirmed) return;
-    }
-    setBusy(true);
-    try {
-      const result = await setKnobRungLock({
-        feature: knob.feature,
-        key: knob.key,
-        organizationId,
-        lockedKinds: lock ? ["user"] : [],
-      });
-      if (!result.ok) {
-        toast.error(result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`);
-        return;
-      }
-      toast.success(
-        lock
-          ? `Personal overrides are off for ${knob.label}.`
-          : `Personal overrides are allowed again for ${knob.label}.`,
-      );
-      onChanged();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    return write(parsed.value);
   };
 
   const clear = async () => {
@@ -262,6 +235,7 @@ export function KnobOverrideRow(props: {
       ? { ...ladder, value: knob.platform_default, canWrite: system.canWrite, cannotWriteBecause: null }
       : ladder
     : null;
+  const canWrite = system ? system.canWrite : ladder?.canWrite ?? !lockedForMe;
 
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"
@@ -277,10 +251,10 @@ export function KnobOverrideRow(props: {
         label={knob.label}
         description={knob.description}
         helpText={knob.ui.help}
-        error={inlineError ?? undefined}
+        error={inlineError ?? stateOnly?.reason ?? (!canWrite ? ladder?.cannotWriteBecause ?? "This setting cannot be changed here." : undefined)}
         modified={system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere}
         controlLayout="wide"
-        variant="stacked"
+        variant="inline"
       >
       <div className="grid gap-3 md:grid-cols-[1fr_auto]">
       <div className="min-w-0">
@@ -313,35 +287,14 @@ export function KnobOverrideRow(props: {
             </Badge>
           )}
         </div>
-        {showUserLockControl && knob.overridable_by.includes("user") && (
-          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            Personal overrides{" "}
-            <span className="font-medium">
-              {knob.user_override_locked ? "off for this organization" : "allowed"}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-xs"
-              disabled={busy}
-              onClick={() => void setUserLock(!knob.user_override_locked)}
-            >
-              {knob.user_override_locked ? "Allow" : "Turn off"}
-            </Button>
-          </p>
-        )}
-        <p className="mt-1 text-xs text-muted-foreground">
+        <div className="mt-1 text-xs text-muted-foreground">
           {system ? "Registered default" : "Platform default"} {formatKnobValue(system?.registeredDefault ?? knob.platform_default, knob.unit)}
-          {knob.basis ? (
-            <>
-              {" · "}
-              <span className="font-medium">Because: </span>
-              {knob.basis}
-            </>
-          ) : null}
-        </p>
+          <details className="mt-1"><summary className="cursor-pointer">Details</summary><span>{stateOnly ? `Current stored value: ${formatKnobValue(ladder?.value ?? knob.effective_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{knob.override_direction !== "any" ? `Policy: ${knob.override_direction.replace(/_/g, " ")}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}</span></details>
+        </div>
       </div>
-      {lockedForMe ? (
+      {stateOnly ? (
+        <div className="text-sm text-muted-foreground">Not connected yet</div>
+      ) : lockedForMe ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
           Your organization manages this setting.
@@ -354,14 +307,14 @@ export function KnobOverrideRow(props: {
           <KnobFieldControl
             knob={knob}
             ladder={fieldLadder}
-            disabled={busy || !fieldLadder.canWrite || !system?.canWrite && Boolean(system)}
+            disabled={busy || !canWrite}
             onCommit={(value) => write(value)}
           />
           <Button
             size="sm"
             variant="ghost"
-            disabled={busy || !isSetHere}
-            title={`Remove the override and inherit from ${inheritedFrom}`}
+            disabled={busy || !canWrite || (system ? JSON.stringify(knob.platform_default) === JSON.stringify(system.registeredDefault) : !isSetHere)}
+            title={system ? "Restore the registered default" : `Remove the override and inherit from ${inheritedFrom}`}
             onClick={() => void clear()}
           >
             {system ? "Restore registered default" : "Inherit"}
@@ -372,8 +325,10 @@ export function KnobOverrideRow(props: {
         {enumOptions ? (
           <select
             className="h-9 w-40 rounded-md border border-border bg-background px-2 text-sm"
+            id={knob.full_key}
+            aria-label={knob.label}
             value={draft}
-            disabled={busy || !system?.canWrite && Boolean(system)}
+            disabled={busy || !canWrite}
             onChange={(event) => setDraft(event.target.value)}
           >
             <option value="" disabled>
@@ -388,19 +343,21 @@ export function KnobOverrideRow(props: {
         ) : (
           <Input
             className="w-40"
+            id={knob.full_key}
+            aria-label={knob.label}
             placeholder={formatKnobValue(knob.effective_value, knob.unit)}
             value={draft}
-            disabled={busy || !system?.canWrite && Boolean(system)}
+            disabled={busy || !canWrite}
             onChange={(event) => setDraft(event.target.value)}
           />
         )}
-        <Button size="sm" disabled={busy || draft.trim() === "" || !system?.canWrite && Boolean(system)} onClick={() => void save()}>
+        <Button size="sm" disabled={busy || draft.trim() === "" || !canWrite} onClick={() => void save()}>
           Save
         </Button>
         <Button
           size="sm"
           variant="ghost"
-          disabled={busy || (system ? JSON.stringify(knob.platform_default) === JSON.stringify(system.registeredDefault) : !isSetHere)}
+          disabled={busy || !canWrite || (system ? JSON.stringify(knob.platform_default) === JSON.stringify(system.registeredDefault) : !isSetHere)}
           title={system ? "Restore the registered default" : `Remove the override and inherit from ${inheritedFrom}`}
           onClick={() => void clear()}
         >

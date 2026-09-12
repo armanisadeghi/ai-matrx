@@ -68,7 +68,7 @@ export type KnobFieldControlProps = {
   /** A write is in flight, or this caller may not write here. */
   disabled?: boolean;
   /** Commit a chosen value at this rung. `null` is never sent from here. */
-  onCommit: (value: unknown) => void | Promise<void>;
+  onCommit: (value: unknown) => void | boolean | Promise<void | boolean>;
 };
 
 /** "not_set" → "Not set", "auto_apply" → "Auto apply". Never a raw slug. */
@@ -132,7 +132,9 @@ function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
           try {
             const parsed: unknown = JSON.parse(raw);
             setError(null);
-            void Promise.resolve(onCommit(parsed)).then(() => setEditing(false));
+            void Promise.resolve(onCommit(parsed)).then((saved) => {
+              if (saved !== false) setEditing(false);
+            });
           } catch {
             setError("Enter valid JSON before saving.");
           }
@@ -143,10 +145,11 @@ function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
   );
 }
 
-function SwitchField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
+function SwitchField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
   return (
     <div className="flex h-9 items-center">
       <Switch
+        aria-label={knob.label}
         checked={ladder.value === true}
         disabled={disabled}
         onCheckedChange={(next) => void onCommit(next)}
@@ -180,6 +183,7 @@ function SegmentedField({ knob, ladder, disabled, onCommit }: KnobFieldControlPr
   return (
     <div className={cn("flex h-9 items-center", disabled && "pointer-events-none opacity-50")}>
       <SegmentedControl
+        aria-label={knob.label}
         size="sm"
         value={current}
         data={choices.map((choice) => ({ value: choice.value, label: choice.label }))}
@@ -228,6 +232,7 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
       </div>
       <div className="relative">
         <Slider
+          aria-label={knob.label}
           size="sm"
           min={min}
           max={max}
@@ -264,10 +269,11 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
  * (chat, the lab, every settings tab go through it); a second one here would
  * be a second catalogue to drift.
  */
-function ModelField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
+function ModelField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
   const value = typeof ladder.value === "string" && ladder.value !== "" ? ladder.value : null;
   return (
     <ModelListDropdown
+      aria-label={knob.label}
       value={value}
       onValueChange={(next) => {
         if (next) void onCommit(next);
@@ -291,7 +297,7 @@ const VOICE_SAMPLE_LINE =
  * `useCartesia` — the SAME TTS path `VoiceSelectionModal` uses. A second audio
  * path is how two surfaces start sounding different.
  */
-function VoiceField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
+function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
   const current = typeof ladder.value === "string" ? ladder.value : "";
   const { sendMessage, stopPlayback, isConnected, error } = useCartesia();
   const [playing, setPlaying] = useState(false);
@@ -326,7 +332,7 @@ function VoiceField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
           disabled={disabled}
           onValueChange={(next) => void onCommit(next)}
         >
-          <SelectTrigger className="h-9 w-40">
+        <SelectTrigger className="h-9 w-40">
             <SelectValue placeholder="Choose a voice" />
           </SelectTrigger>
           <SelectContent>
