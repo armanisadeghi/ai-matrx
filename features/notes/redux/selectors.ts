@@ -15,6 +15,7 @@ import type {
   FindReplaceState,
 } from "./notes.types";
 import { DEFAULT_FOLDER_NAMES } from "../constants/defaultFolders";
+import { noteFolderIdentityKey, type FolderReference } from "../types";
 
 // ── Selector cache to prevent re-creation on every render ───────────────────
 
@@ -84,6 +85,20 @@ export const selectAllFolders = createSelector(
       if (bIdx !== -1) return 1;
       return a.localeCompare(b);
     });
+  },
+);
+
+/** Folder identity for mutations. `selectAllFolders` remains display-only. */
+export const selectFolderReferences = createSelector(
+  [selectAllNotesList],
+  (notes): FolderReference[] => {
+    const folders = new Map<string, FolderReference>();
+    for (const note of notes) {
+      if (!note.folder_id || !note.organization_id) continue;
+      const folder = { id: note.folder_id, organizationId: note.organization_id, name: note.folder_name ?? "Uncategorized" };
+      folders.set(`${folder.organizationId}:${folder.id}`, folder);
+    }
+    return Array.from(folders.values());
   },
 );
 
@@ -484,7 +499,7 @@ export const selectNotesGroupedBy = createSelector(
     byFolder: () => {
       const map = new Map<string, NoteRecord[]>();
       for (const n of notes) {
-        const key = n.folder_name || "Draft";
+        const key = noteFolderIdentityKey(n);
         let bucket = map.get(key);
         if (!bucket) {
           bucket = [];
