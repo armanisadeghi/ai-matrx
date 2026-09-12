@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import {
   type SettingsTreeNode,
   findNodeById,
+  getDrawerPathForActiveId,
   searchTree,
   flattenLeaves,
 } from "./types";
@@ -58,7 +59,9 @@ export function SettingsDrawerNav({
   // - [] = root list
   // - [catId] = sub-list of catId (which must be a folder)
   // - [..., leafId] = leaf content (last is leaf)
-  const [path, setPath] = useState<string[]>([]);
+  const [path, setPath] = useState<string[]>(() =>
+    getDrawerPathForActiveId(nodes, activeId),
+  );
   const [query, setQuery] = useState("");
 
   const handleOpenChange = (next: boolean) => {

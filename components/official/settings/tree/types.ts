@@ -55,6 +55,21 @@ export function findAncestorPath(
   return path;
 }
 
+/**
+ * Build the mobile drawer stack for an externally selected setting.
+ *
+ * Deep links activate a leaf before the drawer mounts. The drawer must start
+ * on that leaf, including every ancestor screen, rather than discarding the
+ * active id and showing its root list.
+ */
+export function getDrawerPathForActiveId(
+  nodes: SettingsTreeNode[],
+  activeId: string | null,
+): string[] {
+  if (!activeId || !findNodeById(nodes, activeId)) return [];
+  return [...findAncestorPath(nodes, activeId), activeId];
+}
+
 /** Find a single node by id anywhere in the tree. */
 export function findNodeById(
   nodes: SettingsTreeNode[],

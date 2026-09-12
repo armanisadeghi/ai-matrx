@@ -104,7 +104,7 @@ Path:
 - The resolved component is `SettingsShellOverlay` (Phase 8), which ignores the passed props and reads `overlaySlice` directly so it also catches the legacy `userPreferences` modal id.
 - The overlay adapter computes `initialTabId` (remapping legacy tab ids when needed) and renders `<SettingsShell isOpen initialTabId isAdmin onClose />`.
 - On desktop: `SettingsShell` renders a `WindowPanel` with `<SettingsTree>` in the sidebar and `<SettingsTabHost>` in the body.
-- On mobile (`useIsMobile()` → true): `SettingsShell` mounts `<SettingsDrawerNav>` instead — iOS-style push-nav.
+- On mobile (`useIsMobile()` → true): `SettingsShell` mounts `<SettingsDrawerNav>` instead — iOS-style push-nav. When `initialTabId` comes from a setting door or legacy deep link, the drawer initializes its stack to the leaf's full ancestor path so the requested control opens directly instead of stopping at the Settings root.
 
 Exit: `SettingsShell.onClose` dispatches `closeOverlay` for both ids; the controller unmounts the closed shell; lazy-loaded tabs stay in the React.lazy module cache for fast reopen.
 
@@ -263,6 +263,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- **2026-09-11 — Mobile setting doors open the requested leaf.** The mobile drawer now derives its initial navigation stack from `activeId`, so `/settings/preferences?tab=general.notifications` opens Notifications directly at 390px instead of requiring General → Notifications taps. The pure path helper is guarded for valid leaves, missing ids, and root fallback.
 
 - **2026-09-11 — Settings deep links round-trip through the canonical registry key.** The Settings window no longer publishes the unregistered `userPreferencesWindow` token over its `user_preferences` metadata key. `/?panels=user_preferences` now opens and remains shareable, and the exact Notifications review door is `/settings/preferences?tab=general.notifications`.
 
