@@ -51,8 +51,10 @@ context plus the controls. Everything else is table.
 Inherited placements now carry a compact information marker beside the Offering.
 It names whether the brand, organization, or platform supplied the ruling and
 offers one explicit action to adopt the same Offering as this site's own ruling.
-The marker reads the canonical `seo.keyword_placement_resolve` ladder and writes
-through the existing placement mutation; it is not a second placement system.
+The rung comes back on the Offering read itself — `seo.gsc_keyword_topics_for`
+takes its candidates from the canonical `seo.keyword_placement_resolve` ladder
+inside the database — and the marker writes through the existing placement
+mutation; it is not a second placement system.
 
 > 🚨 **Renamed 2026-08-24 (KI-047).** This column and its components were
 > called "Service" through 2026-08-24; every user-visible label and the
@@ -114,7 +116,7 @@ Two deliberate choices worth knowing:
 | `components/OfferingAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write. |
 | `components/ServiceFilterControl.tsx` | The Offering filter chip and picker (the shared bar cannot name a topic). |
 | `hooks/useSiteServices.ts` | The site's topic tree, flattened parent → child for a picker. Shares the topic screen's query keys. |
-| `data.ts` | The stamp/service RPC callers — `getKeywordServices` reads `gsc_keyword_topics_for` (what the placement is) and `keyword_placement_resolve` (which rung decided it) over the SAME ≤2,000 ids. **No write path of its own** — see below. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
+| `data.ts` | The stamp/service RPC callers — `getKeywordServices` makes ONE read, `gsc_keyword_topics_for`, which answers what the placement is AND which rung decided it (`scope_tier`, `scope_organization_id`) over the same ≤2,000 ids. **No write path of its own** — see below. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
 
 > Deleted 2026-08-25 (dead since the 2026-08-24 grid extraction): this
 > folder's own `state.ts` and `components/ColumnChooser.tsx` — both were
@@ -190,16 +192,21 @@ write for a PLACEMENT is `seo.gsc_set_keyword_topic`, the same way.
 | `seo.gsc_quick_add_value` | P23 (via `quickAddDimensionValue`). |
 | `seo.gsc_set_keyword_stamps` | P24. Human stamps are pinned. |
 | `seo.gsc_saved_views` / `gsc_save_view` / `gsc_delete_saved_view` | Saved views (site-editor guarded). |
-| `seo.gsc_keyword_topics_for` | THE OFFERING COLUMN's data — name, root, lineage, who placed it, which ancestor its worth comes from. THE SCOPE RULE: ≤2,000 ids. |
+| `seo.gsc_keyword_topics_for` | THE OFFERING COLUMN's data — name, root, lineage, who placed it, which ancestor its worth comes from, plus `scope_tier` / `scope_organization_id`. Its candidates come from `seo.keyword_placement_resolve`, so WHAT and WHO are one answer from one ladder. THE SCOPE RULE: ≤2,000 ids. |
+| `seo.keyword_placement_resolve` | THE ONE LADDER — site > brand > organization > system, nearest primary row wins. Called by `gsc_keyword_topics_for` inside the database, never a second read from the client. |
 | `seo.gsc_topic_keyword_set` | Every keyword placed anywhere in a topic's subtree — what the offering filter means. |
 | `seo.gsc_set_keyword_topic` | THE placement write, now carrying `p_notes` (P24). Answers with the band each keyword lands in AFTER the change, from the resolver. |
 
 Migrations: `migrations/seo_keyword_workbench_c14.sql` (builds on C13's
 `seo_stamp_assignment_layer.sql`) and
 `migrations/seo_keyword_workbench_service_column.sql` (the Offering column:
-`keyword_topic.notes`, the two reads above, `p_notes`, and the `topic` filter
-key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
+`keyword_topic.notes`, the Offering reads above, `p_notes`, and the `topic`
+filter key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 `gsc_breakdown_keyword_ids`).
+
+**Guard: `pnpm check:keyword-placement-tenancy`** (`:strict` in a credentialed
+lane; UNMEASURED is not passed). Its DB self-test plants a two-organization
+placement case, reads it back through both RPCs, and rolls the plant back.
 
 ## Traps this surface already fell into
 
@@ -249,10 +256,26 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 
 ## Change log
 
+- **2026-09-12** — **ONE READ, ONE LADDER — the Offering column was cross-tenant.**
+  `seo.gsc_keyword_topics_for` selected every primary `keyword_topic` row for the
+  ids with no scope ladder and no organization filter, so a site was handed other
+  organizations' placements (1,317 organization-tier primaries had no system row
+  behind them). Its candidate set now comes from `seo.keyword_placement_resolve`
+  and it returns `scope_tier` / `scope_organization_id` itself. `getKeywordServices`
+  makes ONE rpc call and reads the rung off the row; the second client read and the
+  topic-match reconciliation that tried to repair the first read's answer are
+  deleted. New guard: `pnpm check:keyword-placement-tenancy`. Same day, same
+  reader: `getKeywordServices` and `getKeywordStamps` now page through
+  `readAllRows` (`@ai-matrx/data/db`) — PostgREST caps an RPC answer at 1,000
+  rows; the stamps read returns one row per keyword PER DIMENSION (~7.4 per
+  keyword live), so a 200-row page was silently cut. The services read is one
+  row per keyword and pages ≤200 ids, so its paging is headroom, not a repair.
+  Siblings still bare: FOUND_DEFECTS D315.
+
 - **2026-09-12** — WHO DECIDED THE OFFERING is now on screen. `getKeywordServices`
-  calls `seo.keyword_placement_resolve` beside `gsc_keyword_topics_for` over the
-  same page of ids (THE SCOPE RULE, ≤2,000 both), so every placement carries its
-  governing rung; `ServiceCell` marks an INHERITED one with a single tiny (i)
+  read `seo.keyword_placement_resolve` beside `gsc_keyword_topics_for` over the
+  same page of ids so every placement carried its governing rung (superseded the
+  same day by the one-read entry above); `ServiceCell` marks an INHERITED one with a single tiny (i)
   (Arman's ruling — never a column of tier badges) whose popover names the rung,
   says what it means, and offers "Make it this site's own" through the SAME one
   placement write. A site's own ruling wears nothing. Live-verified on Data

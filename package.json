@@ -280,6 +280,8 @@
     "check:soft-delete-unique": "tsx scripts/check-soft-delete-unique.ts",
     "check:soft-delete-unique:strict": "tsx scripts/check-soft-delete-unique.ts --strict",
     "check:soft-delete-cascade:strict": "tsx scripts/check-soft-delete-cascade.ts --strict",
+    "check:keyword-placement-tenancy": "tsx scripts/check-keyword-placement-tenancy.ts",
+    "check:keyword-placement-tenancy:strict": "tsx scripts/check-keyword-placement-tenancy.ts --strict",
     "check:migration-slot-guard": "tsx scripts/check-migration-slot-guard.ts",
     "check:migration-slot-guard:strict": "tsx scripts/check-migration-slot-guard.ts --strict",
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
