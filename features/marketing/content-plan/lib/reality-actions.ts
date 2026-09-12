@@ -20,10 +20,17 @@ import type { NodeReality } from "../hooks/useNodeReality";
  * confirmed wherever it is offered.
  */
 export async function confirmRewritePage(reality: NodeReality): Promise<void> {
+    // A LIVE page is rewritten into its draft only — say so, or "replaces the
+    // current draft" reads as "replaces the live page" to a non-technical user.
+    const live =
+        reality.verdict.state === "stale" ||
+        reality.verdict.state === "draft-pending" ||
+        reality.verdict.state === "live";
     const ok = await confirm({
         title: "Rewrite this page from the brief?",
-        description:
-            "The AI replaces the current draft with a fresh version written from this page's brief. Anything unsaved in the CMS editor is lost.",
+        description: live
+            ? "The AI writes a fresh version from this page's brief into its draft. The live page stays exactly as it is until you publish the new version. Any draft edits made since the last publish are replaced."
+            : "The AI replaces the current draft with a fresh version written from this page's brief. Anything unsaved in the CMS editor is lost.",
         confirmLabel: "Rewrite it",
     });
     if (ok) void reality.write();
