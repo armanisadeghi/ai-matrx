@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 const replace = jest.fn();
 const create = jest.fn();
 let organizationId: string | null = null;
+let organizationBootstrapResolved = false;
 
 const reduxState = () =>
   ({
@@ -18,7 +19,7 @@ const reduxState = () =>
       task_id: null,
       task_name: null,
       conversation_id: null,
-      orgBootstrapResolved: false,
+      orgBootstrapResolved: organizationBootstrapResolved,
     },
     scopesTree: {
       organizations: {},
@@ -51,6 +52,7 @@ describe("EduNoteNew organization hydration", () => {
 
   beforeEach(() => {
     organizationId = null;
+    organizationBootstrapResolved = false;
     replace.mockReset();
     create.mockReset().mockResolvedValue({ id: "note-after-hydration" });
     host = document.createElement("div");
@@ -87,5 +89,17 @@ describe("EduNoteNew organization hydration", () => {
       root.render(<EduNoteNew />);
     });
     expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the organization remedy and sends no create after settled absence", async () => {
+    organizationBootstrapResolved = true;
+
+    await act(async () => {
+      root.render(<EduNoteNew />);
+    });
+
+    expect(host.querySelector('[data-testid="organization-required-notice"]')).not.toBeNull();
+    expect(host.textContent).toContain("new education note need an organization");
+    expect(create).not.toHaveBeenCalled();
   });
 });
