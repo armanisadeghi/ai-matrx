@@ -242,6 +242,43 @@ check("two concurrent installs are serialised by the gate", () => {
   );
 });
 
+// pnpm's version-manager launcher loads the pnpmfile and then starts its core
+// CLI as a child. The child must be allowed through the parent's lock: it is
+// the same synchronous install, while a sibling pnpm process must still wait
+// (the preceding test proves that). This is a real nested pnpm invocation, not
+// a direct call to the gate and not an environment-variable bypass.
+check("a pnpm child can re-enter its parent's install lock", () => {
+  const { dir, stateDir } = makeFixture({
+    mode: "pnpmfile",
+    extraPnpmfile: `
+if (!process.env.GATE_NESTED_INSTALL) {
+  const __fs = require('fs');
+  const { spawnSync } = require('child_process');
+  const __child = spawnSync('pnpm', ['install', '--prefer-offline'], {
+    cwd: __dirname,
+    env: { ...process.env, GATE_NESTED_INSTALL: '1', MATRX_INSTALL_LOCK_WAIT_SEC: '2' },
+    encoding: 'utf8',
+  });
+  __fs.writeFileSync(process.env.GATE_NESTED_RESULT, JSON.stringify({
+    status: __child.status,
+    output: String(__child.stdout || '') + String(__child.stderr || ''),
+  }));
+}
+`,
+  });
+  const result = join(dir, "nested-result.json");
+  try {
+    const { status, output } = runInstall(dir, stateDir, { GATE_NESTED_RESULT: result });
+    assert.equal(status, 0, `the outer install must complete; got:\n${output}`);
+    assert.ok(existsSync(result), "the fixture must record the nested pnpm result");
+    const nested = JSON.parse(readFileSync(result, "utf8"));
+    assert.equal(nested.status, 0, `the child must not wait on its own parent lock; got:\n${nested.output}`);
+    assert.ok(nested.output.includes("RE-ENTERING"), "the child must report that it recognised its parent-held lock");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // The preview must name its own killer.
 // ---------------------------------------------------------------------------

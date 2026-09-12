@@ -56,6 +56,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const STATE_DIR =
@@ -135,6 +136,41 @@ function alive(pid) {
   } catch (error) {
     return error.code === 'EPERM';
   }
+}
+
+// pnpm's version-manager launcher loads .pnpmfile.cjs, claims this lock, then
+// starts the actual pnpm CLI as its child. That child loads .pnpmfile.cjs again
+// before the launcher can release the lock. It is one install, not a competing
+// install: the launcher is synchronously waiting for its child. Recognise that
+// process-tree re-entry without transferring ownership; only the original
+// holder may release the lock.
+function parentPid(pid) {
+  if (pid === process.pid) return process.ppid;
+  if (process.platform === 'win32') return null;
+  try {
+    const output = execFileSync('ps', ['-o', 'ppid=', '-p', String(pid)], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    const parent = Number(output);
+    return Number.isInteger(parent) && parent > 0 ? parent : null;
+  } catch {
+    return null;
+  }
+}
+
+function holderIsAncestor(holderPid) {
+  const holder = Number(holderPid);
+  if (!Number.isInteger(holder) || holder <= 0) return false;
+
+  let pid = process.ppid;
+  const visited = new Set();
+  while (Number.isInteger(pid) && pid > 0 && !visited.has(pid)) {
+    if (pid === holder) return true;
+    visited.add(pid);
+    pid = parentPid(pid);
+  }
+  return false;
 }
 
 function refuse(lines) {
@@ -272,6 +308,11 @@ function serialiseInstall(command) {
     }
     unreadableSince = 0;
 
+    if (holderIsAncestor(held.pid)) {
+      say(`RE-ENTERING — pid ${process.pid} is a child of lock holder ${held.pid}; continuing the same pnpm install.`);
+      return;
+    }
+
     if (!announced) {
       announced = true;
       say(`WAITING — another install is running in this checkout: pid ${held.pid} ("pnpm ${held.command}", started ${held.startedAt}).`);
@@ -312,4 +353,4 @@ function run() {
   serialiseInstall(command);
 }
 
-module.exports = { run, mutatingCommand, LOCK_FILE, LOCK_DIR, PREVIEW_META, REPO_ROOT };
+module.exports = { run, mutatingCommand, LOCK_FILE, LOCK_DIR, PREVIEW_META, REPO_ROOT, holderIsAncestor };
