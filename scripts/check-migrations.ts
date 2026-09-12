@@ -76,6 +76,14 @@ import { tryReadAllRowsRest } from "@ai-matrx/data/db";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
 const MIGRATIONS_DIR = resolve(ROOT, "migrations");
+const DD137B13_HISTORICAL_GATE = resolve(
+  MIGRATIONS_DIR,
+  "iam_component_regeneration_dd137b13_gate.sql",
+);
+const DD137B13_SOURCE_REPAIR = resolve(
+  ROOT,
+  "docs/db_changes/dd137b13_access_delta_gate_source_repair.sql",
+);
 const C = {
   reset: "\x1b[0m",
   bold: "\x1b[1m",
@@ -107,6 +115,46 @@ function skipReason(sql: string): string | null {
 
 function sha256(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
+}
+
+/**
+ * DD-137b13 was already ledgered before its unpinnable-baseline branch was found
+ * unsound. The historical file must stay byte-for-byte intact; this guard holds
+ * the corrected, non-runnable source record to the safety property instead.
+ *
+ * A policy-name/end-state check cannot establish an access delta, and deleting
+ * probes before the common gate turns an unmeasured pair into an absent pair.
+ * The only valid response to an unpinnable BEFORE run is to refuse and re-baseline
+ * before an authorized regeneration. Keep this source-only so a correction cannot
+ * quietly be mistaken for a live migration.
+ */
+function dd137b13SourceRepairErrors(): string[] {
+  const errors: string[] = [];
+  if (!existsSync(DD137B13_HISTORICAL_GATE)) {
+    errors.push("the applied DD-137b13 historical gate is missing");
+  }
+  if (!existsSync(DD137B13_SOURCE_REPAIR)) {
+    errors.push("the DD-137b13 source-record repair SQL is missing");
+    return errors;
+  }
+
+  const repair = readFileSync(DD137B13_SOURCE_REPAIR, "utf8").toLowerCase();
+  const required = [
+    "do not apply this file as a migration",
+    "where pr.run_id = v_before",
+    "raise exception",
+    "access_delta_assert_no_widening(v_before, v_after)",
+  ];
+  for (const text of required) {
+    if (!repair.includes(text)) errors.push(`source repair is missing required proof clause: ${text}`);
+  }
+  if (repair.includes("delete from iam.access_delta_probe")) {
+    errors.push("source repair deletes access-delta probes before the common gate");
+  }
+  if (repair.includes("from pg_policy") || repair.includes("polname = 'platform_admin_all'")) {
+    errors.push("source repair substitutes a platform_admin_all policy-name check for a per-principal delta");
+  }
+  return errors;
 }
 
 /** Resolve Supabase URL + a key. There is exactly ONE name for the URL —
@@ -315,8 +363,20 @@ function loadDriftOkSet(): Set<string> {
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
 
+  const dd137b13Errors = dd137b13SourceRepairErrors();
+  if (dd137b13Errors.length) {
+    console.log();
+    console.log(
+      `${TAG.fail}DD-137b13 SOURCE-RECORD REPAIR — ${dd137b13Errors.length} safety property failure(s). ` +
+        `${strict ? "(--strict: blocking)" : "(non-blocking)"}`,
+    );
+    for (const error of dd137b13Errors) console.log(`  ${C.white}- ${error}${C.reset}`);
+  } else {
+    console.log(`${TAG.info}DD-137b13 source-record repair preserves the complete per-principal gate.`);
+  }
+
   const files = listSql(MIGRATIONS_DIR);
-  if (files.length === 0) return 0; // nothing to check — stay quiet
+  if (files.length === 0) return dd137b13Errors.length && strict ? 1 : 0;
 
   // Classify local files: skip-marked vs trackable, with checksums.
   const skipped: string[] = [];
@@ -443,7 +503,7 @@ async function main(): Promise<number> {
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
-    return (actionable.length || selfLedgering.length) && strict ? 1 : 0;
+    return (actionable.length || selfLedgering.length || dd137b13Errors.length) && strict ? 1 : 0;
 
   // ONE fix for BOTH states below. White, not dim — it's an instruction the user
   // acts on, not a footnote. Never suggest hand-applying and self-ledgering: that
@@ -514,7 +574,7 @@ async function main(): Promise<number> {
     );
   }
 
-  return (pending.length || actionable.length || selfLedgering.length) && strict
+  return (pending.length || actionable.length || selfLedgering.length || dd137b13Errors.length) && strict
     ? 1
     : 0;
 }
