@@ -51971,6 +51971,10 @@ export type Database = {
         Args: { p_uid: string }
         Returns: string[]
       }
+      table_has_visibility: {
+        Args: { p_schema: string; p_table: string }
+        Returns: boolean
+      }
       unnest_uuids: { Args: { p_ids: string[] }; Returns: string[] }
       verify_canonical: {
         Args: {
@@ -57402,6 +57406,30 @@ export type Database = {
         }
         Relationships: []
       }
+      client_excluded_column_unregistered: {
+        Row: {
+          column_name: string
+          declared_at: string
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          declared_at?: string
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          declared_at?: string
+          reason?: string
+          schema_name?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           body: string
@@ -61947,6 +61975,16 @@ export type Database = {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
       }
+      client_excluded_column_report: {
+        Args: never
+        Returns: {
+          column_name: string
+          schema_name: string
+          source: string
+          still_readable: boolean
+          table_name: string
+        }[]
+      }
       continued_access_allows: {
         Args: { p_feature_key: string; p_org: string; p_user: string }
         Returns: boolean
@@ -64630,6 +64668,18 @@ export type Database = {
       admin_delete_schema_template: {
         Args: { p_id: string }
         Returns: undefined
+      }
+      admin_door_probe: {
+        Args: { p_limit?: number; p_user: string }
+        Returns: {
+          by_role: number
+          considered: number
+          conveyable: boolean
+          no_ticket: number
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
       }
       admin_entity_types_list: {
         Args: never
@@ -72150,6 +72200,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      std_select_count_as: {
+        Args: { p_schema: string; p_table: string; p_user: string }
+        Returns: number
       }
       studio_session_metrics: {
         Args: { p_session_ids: string[] }
