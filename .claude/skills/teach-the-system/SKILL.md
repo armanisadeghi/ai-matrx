@@ -346,3 +346,29 @@ lines by relocating trial-specific detail into the trial's register.
   Treat every bot finding as a bug report and fix the class before the morning report.
 
 - **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.
+- 2026-09-12 — (trial 8) The Conductor does not read the catalog's worked example unless told; eight turns
+  went on invented step types, fields under config, and "platform bug" claims that the `definition_shape`
+  action answers in one call. Open every build conversation with: "call definition_shape and get_node_type
+  for every step type before your first save". Its "read it back" claims were false three times in one
+  night — verify every save with get_workflow yourself, and check the id: it created a NEW workflow twice
+  while reporting a patch.
+- 2026-09-12 — (trial 8) The engine's shape facts an author needs, all learned by dying: fields go under
+  `data.inputs` (Collect and Pause settings under `config`); the Collect step is `io.user_input`; values move
+  ONLY on `kind: data` edges with `mappings` (`$FULL_PAYLOAD` = the whole upstream output); a control edge
+  carries nothing; a reviewer's approval answer lands under `extras.note` / `extras.approved`, not `answer`;
+  a resume needs the interrupt payload's `checkpoint_id`. All are now save-time refusals or notes on the
+  branch — the next Conductor inherits them.
+- 2026-09-12 — (trial 8) An agent step re-entered by a loop edge starts amnesiac: it gets the reviewer's
+  note as its only message and has lost the case. Until the engine continues a step's own conversation
+  across a pause, the Expert's note must restate the identity (the case id) in its first sentence and the
+  step must be told to read its ledger first. Say so in the system instruction the Conductor writes.
+- 2026-09-12 — (trial 8) A silent model swap is a PROVIDER CREDIT REROUTE: read `chat.request` (which model
+  ran) against the step's declared model, and look for `provider_credit_reroute` info events on any stream.
+  Every "Sonnet 5" run of the night ran on gpt-4.1 because the Anthropic account was refusing on billing —
+  an Arman-only item, reported in the morning report, never a mystery to chase in code.
+- 2026-09-12 — (trial 8) A sealed source is sealed at the RESOLUTION, not at the desk's step: the oracle answers
+  "was she intubated?" from the future. Before trusting any outcome score, read the ledger for answers that
+  leak the course; the next primitive is an oracle that answers only up to the desk's current step.
+- 2026-09-12 — (trial 8) Seed knob weights by running the real path once: the path-score weights I chose from
+  arithmetic on eight questions zeroed every real workup (seventeen cheap questions). A starting value is
+  a guess until one live run has been scored with it.
