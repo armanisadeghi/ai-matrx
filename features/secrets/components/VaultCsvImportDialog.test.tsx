@@ -1,6 +1,6 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { TextDecoder } from "util";
+import { TextDecoder, TextEncoder } from "util";
 
 jest.mock("lossless-json", () => ({
   LosslessNumber: class LosslessNumber {},
@@ -10,7 +10,7 @@ jest.mock("lossless-json", () => ({
 
 import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultWorkspace } from "./VaultWorkspace";
-import { fetchCsvImportLimits } from "../csv-import-limits";
+import { fetchBitwardenJsonImportLimits, fetchCsvImportLimits } from "../csv-import-limits";
 import { createVaultItem } from "../vault-service";
 
 let mockAuthStateListener: ((event: string) => void) | undefined;
@@ -66,6 +66,21 @@ jest.mock("../csv-import-limits", () => ({
     maxPlaintextFieldBytes: 1_000,
     maxRequestBodyBytes: 10_000,
   })),
+  fetchBitwardenJsonImportLimits: jest.fn(async () => ({
+    maxFileBytes: 10_000, maxRecords: 20, maxColumns: 20, maxCellBytes: 1_000,
+    maxFields: 202, maxPlaintextFieldBytes: 1_000, maxRequestBodyBytes: 10_000,
+    maxJsonDepth: 64, jsonWorkerTimeoutMs: 50,
+  })),
+}));
+
+type ControlledWorker = { terminated: boolean; onmessage: ((event: MessageEvent<{ ok: boolean; records?: unknown[]; error?: string }>) => void) | null; onerror: (() => void) | null; onmessageerror: (() => void) | null; postMessage: jest.Mock; terminate: jest.Mock };
+let workers: ControlledWorker[] = [];
+jest.mock("../bitwarden-json-worker-client", () => ({
+  createBitwardenJsonWorker: () => {
+    const worker: ControlledWorker = { terminated: false, onmessage: null, onerror: null, onmessageerror: null, postMessage: jest.fn(), terminate: jest.fn(() => { worker.terminated = true; }) };
+    workers.push(worker);
+    return worker;
+  },
 }));
 
 jest.mock("../vault-service", () => ({
@@ -86,9 +101,14 @@ if (typeof globalThis.TextDecoder === "undefined") {
     value: TextDecoder,
   });
 }
+if (typeof globalThis.TextEncoder === "undefined") Object.defineProperty(globalThis, "TextEncoder", { configurable: true, value: TextEncoder });
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = jest.fn();
+}
 
 const createVaultItemMock = jest.mocked(createVaultItem);
 const fetchCsvImportLimitsMock = jest.mocked(fetchCsvImportLimits);
+const fetchBitwardenJsonImportLimitsMock = jest.mocked(fetchBitwardenJsonImportLimits);
 
 function csvFile(text: string): File {
   const file = new File([text], "passwords.csv", { type: "text/csv" });
@@ -98,6 +118,27 @@ function csvFile(text: string): File {
         .buffer,
   });
   return file;
+}
+
+function jsonFile(text: string, size = text.length): File {
+  const file = new File([text], "vault.json", { type: "application/json" });
+  Object.defineProperty(file, "size", { configurable: true, value: size });
+  Object.defineProperty(file, "arrayBuffer", { value: jest.fn(async () => new TextEncoder().encode(text).buffer) });
+  return file;
+}
+
+async function chooseBitwardenJson(): Promise<HTMLInputElement> {
+  const trigger = [...document.querySelectorAll("button")].find((button) => button.textContent?.includes("CSV export"));
+  if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+  await act(async () => trigger.click());
+  const option = [...document.querySelectorAll('[role="option"]')].find((node) => node.textContent?.includes("Bitwarden JSON"));
+  if (!(option instanceof HTMLElement)) throw new Error("JSON source option missing");
+  await act(async () => option.click());
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+  const input = document.body.querySelector('input[type="file"]');
+  if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+  if (!input.accept.includes("application/json")) throw new Error(`JSON source was not selected: ${input.accept}`);
+  return input;
 }
 
 describe("VaultCsvImportDialog", () => {
@@ -110,6 +151,7 @@ describe("VaultCsvImportDialog", () => {
     root = createRoot(host);
     createVaultItemMock.mockReset();
     mockAuthStateListener = undefined;
+    workers = [];
   });
 
   afterEach(() => {
@@ -279,4 +321,21 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).toContain("Import passwords");
     expect(document.body.textContent).toContain("Choose import file");
   });
+
+  it("terminates a mounted JSON worker and rejects its late reply after account change", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    const input = await chooseBitwardenJson();
+    const file = jsonFile("{}");
+    Object.defineProperty(input, "files", { configurable: true, value: [file] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    expect(fetchBitwardenJsonImportLimitsMock).toHaveBeenCalled();
+    expect(file.arrayBuffer).toHaveBeenCalled();
+    expect(workers).toHaveLength(1);
+    if (!mockAuthStateListener) throw new Error("auth listener missing");
+    await act(async () => mockAuthStateListener?.("SIGNED_OUT"));
+    expect(workers[0]?.terminate).toHaveBeenCalled();
+    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [{ ordinal: 0, title: "late" }] } } as MessageEvent));
+    expect(document.body.textContent).not.toContain("late");
+  });
+
 });
