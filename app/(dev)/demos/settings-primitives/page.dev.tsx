@@ -69,7 +69,7 @@ export default function SettingsPrimitivesDemoPage() {
   return (
     <div
       className={cn(
-        "min-h-dvh bg-background transition-colors",
+        "min-h-dvh bg-background text-foreground transition-colors",
         previewTheme === "dark" && "dark",
       )}
     >
