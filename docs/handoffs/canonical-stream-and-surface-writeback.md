@@ -56,7 +56,7 @@ him. State at start: 371 targets / 109 manifests / 173 structured
 | WP | Lane | Scope | Status |
 |---|---|---|---|
 | WP1 value contracts | standard/opus | `SurfaceWriteTarget.valueKind` (registered Kind slug — THE contract; no inline schemas, One-Type Law) → drift ratchet (advisory count of structured targets lacking a kind; unknown slug = error) → per-target kind schema in the `apply_surface_write` inline spec where aidream forwards it → `applySurfaceWrite` validates via `validateAgainstKind` BEFORE approval and handler → mirror column `ui.ui_surface_write_target.kind_key` (migration via `pnpm db:apply`, `pnpm db-types`, manifest-sync + SQL emitter) → aidream resolver + `<surface_write_targets>` print `kind=` → adopt on targets an existing Kind already fits → census of the rest | open |
-| WP2 trap guard | standard/opus | code guard for the "structured-output mandate + write targets pauses forever" trap: no `apply_surface_write` / surface client-tool injection for a run whose agent carries an output contract; loud info line with remedy; forcing-function test; RUNTIME.md note | open |
+| WP2 trap guard | standard/opus | code guard for the "structured-output mandate + write targets pauses forever" trap: no `apply_surface_write` / surface client-tool injection for a run whose agent carries an output contract; loud info line with remedy; forcing-function test; RUNTIME.md note | **done 2026-09-11** — `features/agents/redux/execution-system/utils/output-contract-guard.ts` (`resolveRunOutputContract`), consumed by `buildToolInjection`; keyed on `agent.definition.output_schema` (Redux when loaded, else the module-cached by-id read — no execution RPC returns that column, so a slice-only guard would have guarded nothing) and on the mandate's declared `output_kind` when the catalogue is warm; one `console.info` per conversation naming the agent, the evidence and the remedy; forcing test `utils/__tests__/structured-output-write-tool-guard.test.tsx` (4 cases, proven red before the guard). Server kill switch `auto_tools_disabled` untouched. NOT done: no run-UI signal — see the note below. |
 | WP3 handler guard | standard/opus | `pnpm check:surface-write-handlers`: every declared target has a registered handler (AST over `getWriteHandlers` / `useSurfaceWriteHandlers`), self-test failing-then-passing, advisory in release gates; wire every fixable gap | open |
 | WP4 platform skills | standard/opus (aidream) | `scripts/ingest_skills.py` across all repos (platform `skill.definition` reference skills frozen at 2026-07-16); delete merged `surface-registration` stub (dir + row); make ingest part of the existing doctrine sync path, never a new schedule | open |
 | WP5 mirror hygiene | standard/opus | stale-row age in drift report; recency guard on global `deleteStale`; `synced_by`/`synced_from` provenance on the 4 mirror tables; unify `errorResponse` across `app/api/admin/surfaces/*` | open |
@@ -66,6 +66,19 @@ him. State at start: 371 targets / 109 manifests / 173 structured
 Rules for every WP: shared checkout — `git add <own files>` + `git commit -m … -- <own files>`, push `main`, never stash/reset; `pnpm type-check` before done; docs (FEATURE.md change log, this table) in the same commit; live verification only on the ONE dev server (`pnpm preview:start`, port 3001), one lane at a time.
 
 ## Remaining work
+
+0. **WP2 left no run-UI signal, deliberately (2026-09-11).** The brief asked
+   whether a cheap honest signal exists in the existing lifecycle UI. It does
+   not: `SurfaceContextWindow` answers "what could an agent write here" per
+   SURFACE and knows no conversation, and `WritePolicyEditor` /
+   `AgentAccessColumn` describe the surface's own policy per TARGET and never
+   read `output_schema`. The suppression itself breaks no on-screen promise —
+   the agent is never offered the tool, and user-origin writes plus every
+   non-structured agent are untouched. Making the binding UI say "this agent
+   returns a structured result, so it cannot write this page" needs an
+   `output_schema` read in the bind panel; that is a real (small) build, filed
+   here rather than smuggled into the guard. The honest signal today is the
+   `console.info` from `announceWithheldSurfaceWriteTools`.
 
 1. **aidream `block_stream.py` stays PARKED** — pipeline runs still stream
    bare chunks, not `render_block` envelopes. Four documented blockers at the

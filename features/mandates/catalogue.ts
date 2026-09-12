@@ -89,6 +89,20 @@ export async function fetchMandateCatalogue(
 }
 
 /**
+ * SYNCHRONOUS read of one declaration from the page-lifetime catalogue —
+ * `null` when the catalogue was never fetched (or holds no such key). Never
+ * triggers a request: this is for callers that can use the answer when it is
+ * already free and must not pay for it otherwise (the structured-output write
+ * guard, `features/agents/redux/execution-system/utils/output-contract-guard.ts`).
+ * A caller that MUST have the answer awaits `fetchMandateCatalogue`.
+ */
+export function peekMandateCatalogueEntry(
+  mandateKey: string,
+): MandateCatalogueEntry | null {
+  return cached?.[mandateKey] ?? null;
+}
+
+/**
  * DROP THE PAGE-LIFETIME CATALOGUE.
  *
  * 🚨 A GOAL WRITE STALES THIS CACHE (FIX-Q9, 2026-09-11). `cached` lives for
