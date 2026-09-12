@@ -204,10 +204,10 @@ function Row({
     <div className="flex items-center gap-3 px-4 py-2.5">
       <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="text-sm text-foreground">{label}</span>
           {binding ? (
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">binding</span>
+            <span className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">binding</span>
           ) : null}
         </div>
         {hint ? <p className="truncate text-xs text-muted-foreground">{hint}</p> : null}
