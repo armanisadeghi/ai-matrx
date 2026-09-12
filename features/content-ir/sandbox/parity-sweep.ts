@@ -225,7 +225,15 @@ function pageHtml(cases: Case[]): string {
   .case { margin: 0 0 24px; }
   .case > header { font: 11px/1.4 ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  iframe { width: 100%; border: 0; display: block; }
+  /* THE CLIP — what KindSandboxFrame does, and for the same reason (S5b,
+     sandbox/protocol.ts, THE READER'S VIEWPORT): the iframe is as wide as the
+     READER'S window so viewport media queries inside the frame answer the same
+     question they answer in the page, and this element is the component's real
+     column. A sweep whose host page did not do this would measure the host's
+     bug, not the frame's parity. */
+  .col { min-width: 0; }
+  .clip { overflow: hidden; min-width: 0; width: 100%; }
+  iframe { border: 0; display: block; max-width: none; }
 </style>
 </head>
 <body>
@@ -271,6 +279,8 @@ function rootTokens() {
   return out;
 }
 function scheme() { return document.documentElement.classList.contains("dark") ? "dark" : "light"; }
+/** The width the HOST page's own media queries answer against. */
+function readerViewportWidth() { return document.documentElement.clientWidth || window.innerWidth; }
 
 var host = document.getElementById("cases");
 var ports = {};
@@ -282,7 +292,7 @@ window.__CASES__.forEach(function (item, index) {
     '<header>' + item.componentKey + ' · kind=' + item.kind + ' · ' + item.sourceBytes + ' bytes · ' + item.dataSource + '</header>' +
     '<div class="cols">' +
       '<div class="col"><div class="unframed" id="off-' + index + '"></div></div>' +
-      '<div class="col"><div id="on-' + index + '"></div></div>' +
+      '<div class="col"><div class="clip" id="on-' + index + '"></div></div>' +
     '</div>';
   host.appendChild(section);
 
@@ -306,6 +316,7 @@ window.__CASES__.forEach(function (item, index) {
   frame.src = "/kind-sandbox";
   frame.title = item.componentKey + " — component";
   frame.style.height = "200px";
+  frame.style.width = readerViewportWidth() + "px";
   frameWrap.appendChild(frame);
 
   frame.addEventListener("load", function () {
@@ -330,7 +341,9 @@ window.__CASES__.forEach(function (item, index) {
       propsTransform: null,
       props: { data: item.data, kind: item.kind, config: {}, uiOptions: {} },
       themeTokens: rootTokens(),
-      colorScheme: scheme()
+      colorScheme: scheme(),
+      readerViewportWidth: readerViewportWidth(),
+      contentWidth: frameWrap.clientWidth
     }, "*", [channel.port2]);
   });
 });
@@ -358,7 +371,9 @@ window.__RECTS__ = function (index) {
     var r = el.getBoundingClientRect();
     return { x: r.x + window.scrollX, y: r.y + window.scrollY, width: r.width, height: r.height };
   }
-  return { off: box(document.getElementById('off-' + index)), on: box(document.querySelector('#on-' + index + ' iframe')) };
+  // The CLIP is the component's column; the iframe inside it is deliberately
+  // as wide as the whole window, so shooting the iframe would shoot the page.
+  return { off: box(document.getElementById('off-' + index)), on: box(document.getElementById('on-' + index)) };
 };
 window.__READY__ = true;
 </script>
