@@ -1175,7 +1175,7 @@ function EvidenceCard({
         </div>
         <StatusPill value={value.verdict} />
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <EvidenceValue
           label="Baseline"
           value={number(value.baselineValue, 2)}

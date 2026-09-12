@@ -291,7 +291,7 @@ export default function CategoriesTab() {
     return (
         <div className="space-y-4">
             <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'grouped' | 'manage')}>
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
                     <TabsList>
                         <TabsTrigger value="grouped" className="gap-1.5 text-xs">
                             <LayoutGrid className="w-3.5 h-3.5" />
@@ -440,7 +440,7 @@ export default function CategoriesTab() {
                                     <CopyButtons
                                         size="xs"
                                         label={`Category ${category?.name ?? 'Uncategorized'}`}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/cat:opacity-100 focus-within:opacity-100"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/cat:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                                         human={() =>
                                             [
                                                 `${category?.name ?? 'Uncategorized'} (${items.length})`,
@@ -510,7 +510,7 @@ export default function CategoriesTab() {
                                                             <CopyButtons
                                                                 size="xs"
                                                                 label={`Feedback ${item.id.slice(0, 8)}`}
-                                                                className="absolute right-3 top-2 opacity-0 group-hover/fbitem:opacity-100 focus-within:opacity-100"
+                                                                className="absolute right-3 top-2 opacity-0 group-hover/fbitem:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                                                                 human={() => feedbackRowSummary(item)}
                                                                 json={() => item}
                                                                 agent={() => ({

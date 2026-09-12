@@ -150,7 +150,7 @@ const FunctionDetails = ({
             }
             className="flex flex-col flex-1"
           >
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full h-auto grid-cols-2 sm:h-9 sm:grid-cols-4 mb-4">
               <TabsTrigger
                 value="definition"
                 className="flex items-center gap-2"

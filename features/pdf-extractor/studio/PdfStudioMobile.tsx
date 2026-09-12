@@ -342,6 +342,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
 
       {/* Tab strip — only when a doc is open */}
       {activeDoc && (
+        // phone-ok: 3 short icon+word tab buttons already sized for phone
         <div className="shrink-0 grid grid-cols-3 border-b border-border">
           <TabBtn
             active={tab === "pdf"}

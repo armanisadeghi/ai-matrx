@@ -158,7 +158,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                             // The glass panel is pinned to the bottom of a
                             // full-bleed video, so the list gets a hard cap and
                             // its own scroller — the transport never moves.
-                            <div className="mt-3 max-h-[22vh] overflow-y-auto overscroll-contain border-t border-white/10 pt-2.5">
+                            <div className="mt-3 max-h-[22dvh] overflow-y-auto overscroll-contain border-t border-white/10 pt-2.5">
                                 <MediaChaptersBlock
                                     className="my-0"
                                     dark
@@ -322,7 +322,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                         // The audio-only shell is a centered, non-scrolling
                         // column, so the list gets its own bounded scroller
                         // rather than pushing the transport off-screen.
-                        <div className="mt-2 max-h-[30vh] overflow-y-auto overscroll-contain border-t border-border pt-2">
+                        <div className="mt-2 max-h-[30dvh] overflow-y-auto overscroll-contain border-t border-border pt-2">
                             <MediaChaptersBlock
                                 className="my-0"
                                 serverData={{ chapters, isComplete: true }}

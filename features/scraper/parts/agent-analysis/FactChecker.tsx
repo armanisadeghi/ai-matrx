@@ -135,7 +135,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
       conversationId={conversationId}
       label={label}
       pending={isRunning}
-      bodyClassName="max-h-[70vh] overflow-y-auto px-3 py-3 text-sm"
+      bodyClassName="max-h-[70dvh] overflow-y-auto px-3 py-3 text-sm"
     />
   );
 

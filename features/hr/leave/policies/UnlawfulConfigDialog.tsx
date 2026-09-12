@@ -300,7 +300,7 @@ export function UnlawfulConfigDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[55vh] space-y-3 overflow-y-auto">
+        <div className="max-h-[55dvh] space-y-3 overflow-y-auto">
           {isOwnerGate ? (
             <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
               <p className="text-sm leading-relaxed text-foreground">

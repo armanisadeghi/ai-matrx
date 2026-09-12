@@ -359,7 +359,7 @@ export function InlineBindingEditor({
               </p>
             </div>
           )}
-          <div className="max-h-[70vh] overflow-y-auto p-3">
+          <div className="max-h-[70dvh] overflow-y-auto p-3">
             {advancedContent ?? (
               <SurfaceVariableBinding
                 target={target}

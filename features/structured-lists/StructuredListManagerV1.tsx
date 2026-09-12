@@ -1334,6 +1334,7 @@ function IconPicker({
           className="mb-2 h-8 text-sm"
           autoFocus
         />
+        {/* phone-ok: 28px icon picker buttons */}
         <div className="grid max-h-[200px] grid-cols-8 gap-0.5 overflow-y-auto">
           {filtered.map((n) => {
             const Cmp = ICONS[n];

@@ -890,7 +890,7 @@ function ToolsTab({
         className="rounded-md border border-border bg-card overflow-hidden"
         data-surface-value="server_tools"
       >
-        <Table>
+        <Table wrapperClassName="phone-stack">
           <TableHeader>
             <TableRow>
               <TableHead>Canonical name</TableHead>
@@ -905,7 +905,7 @@ function ToolsTab({
                 key={t.id}
                 className={`group/tool ${t.is_active === false ? "opacity-60" : ""}`}
               >
-                <TableCell className="font-mono text-xs">
+                <TableCell data-phone="lead" className="font-mono text-xs">
                   {/* Was a raw <a> — a full page load, no new-tab control and
                       no preview. EntityRef adds both from the registries
                       (`tool` → tool.definition, title column `name`). */}
@@ -918,8 +918,8 @@ function ToolsTab({
                     className="font-mono"
                   />
                 </TableCell>
-                <TableCell className="text-xs">{t.description}</TableCell>
-                <TableCell>
+                <TableCell data-label="Description" data-phone="inline" className="text-xs">{t.description}</TableCell>
+                <TableCell data-label="Active" data-phone="inline">
                   <Badge
                     variant={t.is_active ? "default" : "secondary"}
                     className="text-[10px]"
@@ -927,11 +927,11 @@ function ToolsTab({
                     {t.is_active ? "active" : "inactive"}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell data-phone="actions">
                   <CopyButtons
                     size="xs"
                     label={`Tool ${t.name}`}
-                    className="opacity-0 group-hover/tool:opacity-100 focus-within:opacity-100"
+                    className="opacity-0 group-hover/tool:opacity-100 focus-within:opacity-100 max-md:opacity-100"
                     human={() => serverToolSummary(t)}
                     json={() => t}
                     agent={() => ({

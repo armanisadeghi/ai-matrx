@@ -126,7 +126,8 @@ const PermissionsList = ({
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
+              <Table wrapperClassName="phone-stack">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Object Name</TableHead>
@@ -143,17 +144,24 @@ const PermissionsList = ({
                 <TableBody>
                   {filteredPermissions.map((perm, i) => (
                     <TableRow key={i}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium" data-phone="lead">
                         {String(perm.object_name)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-phone="inline">
                         <Badge variant="outline">
                           {String(perm.object_type)}
                         </Badge>
                       </TableCell>
-                      <TableCell>{String(perm.role)}</TableCell>
+                      <TableCell data-label="Role" data-phone="inline">
+                        {String(perm.role)}
+                      </TableCell>
                       {privilegeTypes.map((priv, j) => (
-                        <TableCell key={j} className="text-center">
+                        <TableCell
+                          key={j}
+                          className="text-center"
+                          data-label={priv}
+                          data-phone="inline"
+                        >
                           <Checkbox
                             checked={
                               Array.isArray(perm.privileges) &&
@@ -163,7 +171,7 @@ const PermissionsList = ({
                           />
                         </TableCell>
                       ))}
-                      <TableCell>
+                      <TableCell data-phone="actions">
                         <Button
                           variant="ghost"
                           size="sm"

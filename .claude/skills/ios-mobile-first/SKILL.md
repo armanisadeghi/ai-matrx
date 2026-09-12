@@ -24,6 +24,7 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 7. **Never tabs on mobile** — stack vertically
 8. **Never nested scrolling** — single scroll area per view
 9. **Always test iOS Safari** — on real device
+10. **A data table reflows on a phone** — `<Table wrapperClassName="phone-stack">` (see *Tables on phones*); a fixed-width table with no reflow fails `pnpm check:phone-layout`
 
 ---
 
@@ -131,6 +132,34 @@ function MyComponent() {
 | Scroll | `overflow-y-auto overscroll-contain` | `overflow-y-auto` |
 | Safe area | `pb-safe` | Not needed |
 | Layout | Natural flow | `flex flex-col overflow-hidden` |
+
+---
+
+## Tables on phones — THE PHONE-STACK TABLE
+
+A hand-rolled `<Table>` with `TableHead className="w-[120px]"` columns is a 1,200px sideways scroller on a 390px phone: every value an admin needs is off-screen and the row is un-tappable without pinch-zoom (the 2026-09-12 feedback-console report). Do not build a second card list for it, and do not hide it behind `md:`. Opt the SAME markup into the reflow that `app/globals.css` ships (search **THE PHONE-STACK TABLE**):
+
+```tsx
+<Table wrapperClassName="phone-stack">
+  <TableHeader>…unchanged…</TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell data-phone="lead">{row.title}</TableCell>                 {/* headline: first, full width — exactly one */}
+      <TableCell data-phone="inline">{statusBadge}</TableCell>             {/* self-naming chip, no label */}
+      <TableCell data-label="Owner" data-phone="inline">{row.owner}</TableCell>
+      <TableCell data-label="Created" data-phone="inline">{ago}</TableCell> {/* a bare date needs its label */}
+      <TableCell data-phone="hidden">{row.id}</TableCell>                  {/* desktop-only detail */}
+      <TableCell data-phone="actions">{buttons}</TableCell>                {/* last, right-aligned */}
+    </TableRow>
+  </TableBody>
+</Table>
+```
+
+Below 768px the `<thead>` hides, each row becomes a flex-wrapped card, and `data-label` prints a small-caps label above the value. Desktop is untouched. Header-borne sort controls are not reachable on the card list — a table whose ordering matters on a phone puts its sort in a toolbar. `MatrxDataTable` callers use its `mobileCards` prop instead; the two are the same breakpoint.
+
+**Guard:** `pnpm check:phone-layout` (`--strict` in the release gates; `--self-test` proves it can fail) reports every fixed-width table with no reflow (`phone-stack` / `mobileCards` / `useIsMobile` branch), every `h-screen` / `*-[Nvh]` unit, and every ≥3-column grid inside a dialog or sheet with no `sm:` variant (mark a grid that is right N-up — swatches, icons — with a `phone-ok: <reason>` comment on the line above).
+
+**Also in `globals.css`:** the base mobile rule that turned every `<table>` into `display:block` now excludes design-system tables (`data-slot="table"`), which own their scroll wrapper; the block rule made them shrink-to-fit and double-scroll.
 
 ---
 

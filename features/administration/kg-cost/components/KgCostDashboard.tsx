@@ -677,7 +677,7 @@ function OrgDetailDialog({
           <ScrollArea className="max-h-[70dvh]">
             <div className="space-y-5 pr-3">
               {/* Header stats */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-md border border-border bg-card p-3">
                   <div className="text-xs text-muted-foreground">
                     Used today

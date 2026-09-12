@@ -180,9 +180,17 @@ export default function GenericDataTable<T>({
     }, [defaultPageSize]);
 
     // Apply hidden columns to the columns config
-    const visibleColumns = columns.filter(col => 
+    const visibleColumns = columns.filter(col =>
         !col.hidden && !hiddenColumns.includes(col.key)
     );
+
+    // Phone-stack cards print `data-label` above a value that isn't
+    // self-evident on its own — derive it from the column's own header so a
+    // caller never has to declare it twice. Only a plain-string header can be
+    // stamped into an HTML attribute; a ReactNode header (icons, custom
+    // markup) gets no label rather than "[object Object]".
+    const getColumnLabel = (column: ColumnConfig<T>): string | undefined =>
+        typeof column.header === 'string' ? column.header : undefined;
 
     // Render status badge
     const renderStatusBadge = (item: T) => {
@@ -409,7 +417,10 @@ export default function GenericDataTable<T>({
                 </div>
             ) : (
                 <div className="overflow-auto">
-                    <Table className={customSettings?.tableClassName || ''}>
+                    <Table
+                        className={customSettings?.tableClassName || ''}
+                        wrapperClassName="phone-stack"
+                    >
                         {!hideTableHeader && (
                             <TableHeader className={customSettings?.tableHeaderClassName || ''}>
                                 {renderHeader ? (
@@ -446,27 +457,32 @@ export default function GenericDataTable<T>({
                                         onClick={() => onRowClick && onRowClick(item)}
                                     >
                                         {showIconColumn && (
-                                            <TableCell className="font-medium">
+                                            <TableCell className="font-medium" data-phone="inline">
                                                 <div className="flex items-center justify-center">
                                                     {iconField.renderIcon(item)}
                                                 </div>
                                             </TableCell>
                                         )}
-                                        
-                                        {visibleColumns.map((column) => (
-                                            <TableCell key={column.key} className={column.className}>
+
+                                        {visibleColumns.map((column, columnIndex) => (
+                                            <TableCell
+                                                key={column.key}
+                                                className={column.className}
+                                                data-phone={columnIndex === 0 ? "lead" : "inline"}
+                                                data-label={columnIndex === 0 ? undefined : getColumnLabel(column)}
+                                            >
                                                 {renderCellContent(item, column, index)}
                                             </TableCell>
                                         ))}
-                                        
+
                                         {showStatusColumn && (
-                                            <TableCell className="text-center">
+                                            <TableCell className="text-center" data-label="Status" data-phone="inline">
                                                 {renderStatusBadge(item)}
                                             </TableCell>
                                         )}
-                                        
+
                                         {showActionsColumn && (
-                                            <TableCell className="text-right p-0 pr-2">
+                                            <TableCell className="text-right p-0 pr-2" data-phone="actions">
                                                 {renderActionButtons(item)}
                                             </TableCell>
                                         )}

@@ -551,7 +551,7 @@ function RuleSnapshotDialog({
         </DialogHeader>
 
         {entry ? (
-          <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
+          <div className="flex max-h-[60dvh] flex-col gap-3 overflow-y-auto">
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="text-muted-foreground">Snapshot</dt>
               <dd className="break-all font-mono text-xs text-foreground">

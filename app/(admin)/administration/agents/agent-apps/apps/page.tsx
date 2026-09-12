@@ -565,7 +565,7 @@ export default function AgentAppsAdminListPage() {
         </div>
 
         <ScrollArea className="flex-1">
-          <Table>
+          <Table wrapperClassName="phone-stack">
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 <TableHead className="min-w-[200px]">
@@ -896,7 +896,7 @@ export default function AgentAppsAdminListPage() {
                   className="cursor-pointer hover:bg-accent/40"
                   onClick={() => handleOpenEdit(app.id)}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium" data-phone="lead">
                     {/*
                       A real anchor, not just the row's onClick: cmd-click, a
                       new tab, and a peek all have to work from the name — THE
@@ -908,12 +908,16 @@ export default function AgentAppsAdminListPage() {
                       slug={app.slug}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Slug" data-phone="inline">
                     <code className="text-xs bg-muted px-2 py-1 rounded">
                       {app.slug}
                     </code>
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    data-label="Mandate"
+                    data-phone="inline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {app.mandate_key ? (
                       <AppLink
                         href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
@@ -926,8 +930,10 @@ export default function AgentAppsAdminListPage() {
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell>{getStatusBadge(app.status)}</TableCell>
-                  <TableCell>
+                  <TableCell data-phone="inline">
+                    {getStatusBadge(app.status)}
+                  </TableCell>
+                  <TableCell data-label="Category" data-phone="inline">
                     {app.category ? (
                       <Badge variant="outline" className="text-xs">
                         {app.category}
@@ -936,12 +942,12 @@ export default function AgentAppsAdminListPage() {
                       <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Creator" data-phone="inline">
                     <span className="text-sm text-muted-foreground">
                       {app.creator_email ?? "—"}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Featured" data-phone="inline">
                     <Button
                       variant={app.is_featured ? "default" : "outline"}
                       size="sm"
@@ -965,7 +971,7 @@ export default function AgentAppsAdminListPage() {
                       {app.is_featured ? "Yes" : "No"}
                     </Button>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Verified" data-phone="inline">
                     <Button
                       variant={app.is_verified ? "default" : "outline"}
                       size="sm"
@@ -988,6 +994,8 @@ export default function AgentAppsAdminListPage() {
                   {/* A count is a door: the runs total reaches those runs. */}
                   <TableCell
                     className="text-right"
+                    data-label="Runs"
+                    data-phone="inline"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <AppLink
@@ -998,17 +1006,30 @@ export default function AgentAppsAdminListPage() {
                       {app.total_executions?.toLocaleString() || 0}
                     </AppLink>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell
+                    className="text-right"
+                    data-label="Users"
+                    data-phone="inline"
+                  >
                     {app.unique_users_count?.toLocaleString() || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell
+                    className="text-right"
+                    data-label="Success"
+                    data-phone="inline"
+                  >
                     {((app.success_rate || 0) * 100).toFixed(0)}%
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell
+                    className="text-right"
+                    data-label="Cost"
+                    data-phone="inline"
+                  >
                     ${app.total_cost?.toFixed(4) ?? "0.0000"}
                   </TableCell>
                   <TableCell
                     className="text-right"
+                    data-phone="actions"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-end gap-1">

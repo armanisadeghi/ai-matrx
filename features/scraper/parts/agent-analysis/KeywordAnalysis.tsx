@@ -154,7 +154,7 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
         conversationId={conversationId}
         label="Keyword analysis"
         pending={isRunning}
-        bodyClassName="max-h-[70vh] overflow-y-auto px-3 py-3 text-sm"
+        bodyClassName="max-h-[70dvh] overflow-y-auto px-3 py-3 text-sm"
       />
     );
   };

@@ -369,6 +369,7 @@ export default function ExportTableModal({
             onValueChange={setExportTab}
             className="w-full"
           >
+            {/* phone-ok: three icon+word segments fit a 390px strip */}
             <TabsList className="grid grid-cols-3 mb-4">
               <TabsTrigger value="download" className="flex items-center gap-1">
                 <Download className="h-4 w-4" />

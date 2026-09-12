@@ -239,7 +239,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
       )}
       {rows.length > 0 && (
         <div className="rounded-md border border-border bg-card overflow-hidden">
-          <Table>
+          <Table wrapperClassName="phone-stack">
             <TableHeader>
               <TableRow>
                 <TableHead>Executor</TableHead>
@@ -253,19 +253,19 @@ function BindingsSection({ toolId }: { toolId: string }) {
                   key={`${row.tool_id}-${row.executor_name}`}
                   className={row.is_active ? "" : "opacity-50"}
                 >
-                  <TableCell className="font-mono text-xs">
+                  <TableCell data-phone="lead" className="font-mono text-xs">
                     <div className="flex items-center gap-2">
                       <Server className="h-3 w-3 text-muted-foreground" />
                       {row.executor_name}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Active" data-phone="inline">
                     <Switch
                       checked={row.is_active}
                       onCheckedChange={(v) => void onToggleActive(row, v)}
                     />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell data-phone="actions">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -537,7 +537,7 @@ function BundlesSection({ toolId }: { toolId: string }) {
       )}
       {rows.length > 0 && (
         <div className="rounded-md border border-border bg-card overflow-hidden">
-          <Table>
+          <Table wrapperClassName="phone-stack">
             <TableHeader>
               <TableRow>
                 <TableHead>Bundle</TableHead>
@@ -549,7 +549,7 @@ function BundlesSection({ toolId }: { toolId: string }) {
             <TableBody>
               {rows.map(({ member, bundle }) => (
                 <TableRow key={`${member.bundle_id}-${member.tool_id}`}>
-                  <TableCell className="text-xs">
+                  <TableCell data-phone="lead" className="text-xs">
                     <a
                       href={`/administration/agents/bundles?b=${bundle.id}`}
                       className="font-mono text-foreground hover:text-primary "
@@ -562,13 +562,13 @@ function BundlesSection({ toolId }: { toolId: string }) {
                       </p>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-phone="inline">
                     <Badge variant={bundle.is_system ? "default" : "secondary"} className="text-[10px]">
                       {bundle.is_system ? "system" : "personal"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{member.local_alias}</TableCell>
-                  <TableCell className="text-right text-xs tabular-nums">
+                  <TableCell data-label="Local alias" data-phone="inline" className="font-mono text-xs">{member.local_alias}</TableCell>
+                  <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">
                     {member.sort_order}
                   </TableCell>
                 </TableRow>

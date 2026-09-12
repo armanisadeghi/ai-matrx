@@ -472,7 +472,8 @@ export function ScopeBatchImportBody({
         </div>
       ) : (
         <ScrollArea className="flex-1 min-h-0">
-          <Table>
+          {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
+          <Table wrapperClassName="phone-stack">
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 <TableHead>Context item</TableHead>
@@ -536,7 +537,7 @@ export function ScopeBatchImportBody({
                 const hasSlot = rowHasSlot(item.id);
                 return (
                   <TableRow key={item.id}>
-                    <TableCell>
+                    <TableCell data-phone="lead">
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="text-sm font-medium truncate">
                           {item.display_name}
@@ -546,7 +547,7 @@ export function ScopeBatchImportBody({
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label="Variable" data-phone="inline">
                       <RowCheckbox
                         checked={variableBound || row.variable}
                         disabled={variableBound}
@@ -554,7 +555,7 @@ export function ScopeBatchImportBody({
                         onCheckedChange={() => toggle(item.id, "variable")}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label="Context policy" data-phone="inline">
                       <RowCheckbox
                         checked={slotBound || row.contextPolicy}
                         disabled={slotBound}
@@ -562,7 +563,7 @@ export function ScopeBatchImportBody({
                         onCheckedChange={() => toggle(item.id, "contextPolicy")}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label="Agent access" data-phone="inline">
                       <AgentEditAccessToggle
                         value={accessForItem(item.id)}
                         onChange={(access) => setAccess(item.id, access)}

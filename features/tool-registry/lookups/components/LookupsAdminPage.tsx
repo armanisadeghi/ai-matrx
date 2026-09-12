@@ -280,7 +280,7 @@ function UiClientCrud() {
         error={error}
         onCreate={() => setCreating(true)}
       >
-        <Table>
+        <Table wrapperClassName="phone-stack">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">Name (PK)</TableHead>
@@ -300,16 +300,16 @@ function UiClientCrud() {
             )}
             {rows.map((row) => (
               <TableRow key={row.name} className={row.is_active ? "" : "opacity-50"}>
-                <TableCell className="font-mono text-xs">{row.name}</TableCell>
-                <TableCell className="text-xs">{row.description ?? <span className="text-muted-foreground italic">—</span>}</TableCell>
-                <TableCell className="text-right text-xs tabular-nums">{row.sort_order}</TableCell>
-                <TableCell>
+                <TableCell data-phone="lead" className="font-mono text-xs">{row.name}</TableCell>
+                <TableCell data-label="Description" data-phone="inline" className="text-xs">{row.description ?? <span className="text-muted-foreground italic">—</span>}</TableCell>
+                <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">{row.sort_order}</TableCell>
+                <TableCell data-label="Active" data-phone="inline">
                   <ActiveToggle
                     active={row.is_active ?? true}
                     onToggle={(next) => void onToggleActive(row, next)}
                   />
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell data-phone="actions">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -560,7 +560,7 @@ function UiSurfaceCrud() {
           </div>
         )}
         <div className="rounded-md border border-border bg-card overflow-hidden">
-          <Table>
+          <Table wrapperClassName="phone-stack">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[280px]">Name (PK)</TableHead>
@@ -581,21 +581,21 @@ function UiSurfaceCrud() {
               )}
               {visible.map((row) => (
                 <TableRow key={row.name} className={row.is_active ? "" : "opacity-50"}>
-                  <TableCell className="font-mono text-xs">{row.name}</TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-phone="lead" className="font-mono text-xs">{row.name}</TableCell>
+                  <TableCell data-phone="inline" className="text-xs">
                     <Badge variant="secondary" className="text-[10px] font-mono">{row.client_name}</Badge>
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell data-label="Description" data-phone="inline" className="text-xs">
                     {row.description ?? <span className="text-muted-foreground italic">—</span>}
                   </TableCell>
-                  <TableCell className="text-right text-xs tabular-nums">{row.sort_order}</TableCell>
-                  <TableCell>
+                  <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">{row.sort_order}</TableCell>
+                  <TableCell data-label="Active" data-phone="inline">
                     <ActiveToggle
                       active={row.is_active ?? true}
                       onToggle={(next) => void onToggleActive(row, next)}
                     />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell data-phone="actions">
                     <Button variant="ghost" size="sm" onClick={() => setEditing(row)} className="text-xs h-7">
                       Edit
                     </Button>
@@ -819,7 +819,7 @@ function ToolExecutorCrud() {
         error={error}
         onCreate={() => setCreating(true)}
       >
-        <Table>
+        <Table wrapperClassName="phone-stack">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[260px]">Name (PK)</TableHead>
@@ -840,14 +840,14 @@ function ToolExecutorCrud() {
             )}
             {rows.map((row) => (
               <TableRow key={row.name} className={row.is_active ? "" : "opacity-50"}>
-                <TableCell className="font-mono text-xs">{row.name}</TableCell>
-                <TableCell className="text-xs">
+                <TableCell data-phone="lead" className="font-mono text-xs">{row.name}</TableCell>
+                <TableCell data-label="Description" data-phone="inline" className="text-xs">
                   {row.description ?? <span className="text-muted-foreground italic">—</span>}
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
+                <TableCell data-label="Parent" data-phone="inline" className="font-mono text-xs text-muted-foreground">
                   {row.parent_executor_name ?? "—"}
                 </TableCell>
-                <TableCell>
+                <TableCell data-label="MCP server" data-phone="inline">
                   {row.mcp_server_id ? (
                     <Badge variant="outline" className="text-[10px] gap-0.5">
                       MCP
@@ -856,13 +856,13 @@ function ToolExecutorCrud() {
                     <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell data-label="Active" data-phone="inline">
                   <ActiveToggle
                     active={row.is_active}
                     onToggle={(next) => void onToggleActive(row, next)}
                   />
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell data-phone="actions">
                   <Button variant="ghost" size="sm" onClick={() => setEditing(row)} className="text-xs h-7">
                     Edit
                   </Button>

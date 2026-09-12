@@ -1919,8 +1919,15 @@
       overflow-wrap: break-word;
     }
 
-    /* Ensure tables are scrollable within their container */
-    table {
+    /* Ensure RAW tables are scrollable within their container. A design-system
+       `<Table>` (`data-slot="table"`) is excluded on purpose: it already ships
+       its own `overflow-auto` wrapper, and turning the inner <table> into a
+       block on top of that (a) made it shrink-to-fit instead of `w-full` and
+       (b) produced two nested horizontal scrollers — the feedback console's
+       11-column table was unreadable on a phone because of it (2026-09-12).
+       Phone reflow for those tables is THE PHONE-STACK TABLE at the end of
+       this file. */
+    table:not([data-slot="table"]) {
       display: block;
       overflow-x: auto;
       max-width: 100%;
@@ -2296,4 +2303,108 @@
 
 [data-public-layout]:has([data-public-immersive-surface]) > [data-public-main] {
   overflow: hidden;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   THE PHONE-STACK TABLE — a hand-rolled data table reflowed into a card
+   list below the mobile breakpoint, from the SAME markup.
+
+   THE DEFECT CLASS (live, 2026-09-12, /administration/users/feedback): an
+   admin table authored desktop-first — eleven `TableHead className="w-[90px]"`
+   columns — is a 1,200px-wide sideways scroller on a 390px phone. Every value
+   an admin needs (status, decision, who, when, the actions) sits off-screen,
+   the row is un-tappable without pinch-zoom, and nothing anywhere throws.
+   Twenty-two sibling tables in this repo were built the same way.
+
+   THE FIX IS A PRIMITIVE, NOT 22 CARD RENDERERS: the design-system `<Table>`
+   exposes `wrapperClassName`; passing `phone-stack` there opts a table into
+   this reflow. Below 768px the <thead> is hidden, every <tr> becomes a
+   flex-wrapped card, and every <td> becomes a block. Per-cell hints, all
+   optional, all plain HTML attributes on `<TableCell>`:
+
+     data-label="Status"     prints a small caps label above the value —
+                             every cell whose value is not self-evident
+                             carries one (a date alone is not).
+     data-phone="lead"       the card's headline: first, full width.
+     data-phone="inline"     a short chip/value that sits beside its
+                             siblings instead of taking a whole line.
+     data-phone="hidden"     desktop-only detail (a redundant id, a column
+                             the card's lead already carries).
+     data-phone="actions"    the row's action cluster: last, right-aligned.
+
+   Desktop is untouched: nothing here applies at ≥768px, which is the same
+   breakpoint as `useIsMobile()` and MatrxDataTable's `mobileCards`. The
+   header-borne sort controls are not reachable on the phone card list — a
+   table whose ordering matters on a phone puts its sort in a toolbar.
+
+   Deliberately UNLAYERED (same reason as THE iOS ZOOM FLOOR above): the
+   design-system cell utilities (`p-2`, `align-middle`, `h-10`) live in
+   `@layer utilities`, and only unlayered CSS out-ranks them.
+
+   Guard: `pnpm check:phone-layout` fails any fixed-width hand-rolled table
+   that has no phone reflow (this class, `useIsMobile`, or `mobileCards`).
+   ──────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .phone-stack > table,
+  .phone-stack > table > tbody {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+  .phone-stack > table > thead {
+    display: none;
+  }
+  .phone-stack > table > tbody > tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem 0.75rem;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .phone-stack > table > tbody > tr:last-child {
+    border-bottom: 0;
+  }
+  .phone-stack > table > tbody > tr > td {
+    display: block;
+    flex: 1 1 100%;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+  .phone-stack > table > tbody > tr > td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.125rem;
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+  .phone-stack > table > tbody > tr > td[data-phone="lead"] {
+    order: -1;
+    font-size: 0.875rem;
+  }
+  .phone-stack > table > tbody > tr > td[data-phone="inline"] {
+    flex: 0 1 auto;
+  }
+  .phone-stack > table > tbody > tr > td[data-phone="hidden"] {
+    display: none;
+  }
+  .phone-stack > table > tbody > tr > td[data-phone="actions"] {
+    order: 1;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+  /* The "no rows" / loading placeholder row stays a centered block. */
+  .phone-stack > table > tbody > tr > td[colspan] {
+    flex: 1 1 100%;
+    text-align: center;
+  }
 }

@@ -166,7 +166,8 @@ export default function AnnouncementTable() {
                 </div>
 
                 <div className="border rounded-lg">
-                    <Table>
+                    {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
+                    <Table wrapperClassName="phone-stack">
                         <TableHeader>
                             <TableRow className="bg-gray-50 dark:bg-gray-900">
                                 <TableHead className="w-[80px]">Type</TableHead>
@@ -184,12 +185,12 @@ export default function AnnouncementTable() {
                                     className="hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
                                     onClick={() => handleEdit(announcement)}
                                 >
-                                    <TableCell>
+                                    <TableCell data-phone="inline">
                                         <div className="flex items-center justify-center">
                                             {announcementIcons[announcement.announcement_type]}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell data-phone="lead">
                                         <div>
                                             <div className="font-medium line-clamp-1">
                                                 {announcement.title}
@@ -199,7 +200,7 @@ export default function AnnouncementTable() {
                                             </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <TableCell data-phone="inline" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center gap-2">
                                             <Switch
                                                 checked={announcement.is_active}
@@ -210,13 +211,13 @@ export default function AnnouncementTable() {
                                             </span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                                    <TableCell data-label="Display" data-phone="inline" className="text-sm text-gray-600 dark:text-gray-400">
                                         {announcement.min_display_seconds}s
                                     </TableCell>
-                                    <TableCell className="text-xs text-gray-600 dark:text-gray-400">
+                                    <TableCell data-label="Created" data-phone="inline" className="text-xs text-gray-600 dark:text-gray-400">
                                         {formatDistanceToNow(new Date(announcement.created_at), { addSuffix: true })}
                                     </TableCell>
-                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <TableCell data-phone="actions" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center gap-2">
                                             <Badge className={announcementTypeColors[announcement.announcement_type]}>
                                                 {announcement.announcement_type}

@@ -722,7 +722,7 @@ function BundleDetail({
         )}
         {members.length > 0 && (
           <div className="rounded-md border border-border bg-card overflow-hidden">
-            <Table>
+            <Table wrapperClassName="phone-stack">
               <TableHeader>
                 <TableRow>
                   <TableHead>Tool</TableHead>
@@ -773,7 +773,7 @@ function MemberRow({
   const [dirty, setDirty] = useState(false);
   return (
     <TableRow className={item.tool?.is_active === false ? "opacity-60" : ""}>
-      <TableCell className="text-xs">
+      <TableCell data-phone="lead" className="text-xs">
         {/* A bundle member IS a tool. It was rendered as plain text next to the
             alias editor, so the console that manages membership could not open
             a single thing it managed. */}
@@ -798,7 +798,7 @@ function MemberRow({
           </p>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Local alias" data-phone="inline">
         <div className="flex items-center gap-1.5">
           <Input
             value={alias}
@@ -824,10 +824,10 @@ function MemberRow({
           )}
         </div>
       </TableCell>
-      <TableCell className="text-right text-xs tabular-nums">
+      <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">
         {item.member.sort_order}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell data-phone="actions">
         <Button
           variant="ghost"
           size="sm"
