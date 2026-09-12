@@ -5,6 +5,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import type {
   Note,
   NoteRow,
@@ -14,6 +15,7 @@ import type {
   NoteListItem,
   FolderReference,
   NoteContextLinks,
+  UpdateNoteOptions,
 } from "../types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { findEmptyNewNote } from "../utils/noteUtils";
@@ -21,6 +23,11 @@ import {
   hydrateNoteContextLinks,
   syncNoteContextLinks,
 } from "./noteContextAssociations";
+import {
+  NoteContextLinkPartialError,
+  NoteContextPartialSaveError,
+  NoteUpdateConflictError,
+} from "./noteSaveErrors";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
@@ -284,33 +291,53 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
 /**
  * Update an existing note.
  *
- * Optional `expectedUpdatedAt` enables atomic optimistic locking
- * (`.eq("updated_at", expected)`). The BEFORE UPDATE `_touch_row` trigger
- * only mutates NEW — the WHERE still matches the OLD row. Prefer the Redux
- * autosave / `saveNote` path for the live `/notes` UI; this helper remains
- * for legacy surfaces (NotesLayout, useAutoSave, mobile dock).
+ * An expected version uses the platform CAS primitive. The organization is
+ * always derived from the authorized persisted row, never from active UI
+ * context. Legacy callers without an edit-base version retain LWW behavior.
  */
 export async function updateNote(
   id: string,
   updates: UpdateNoteInput,
-  options?: { expectedUpdatedAt?: string | null },
+  options?: UpdateNoteOptions,
 ): Promise<Note> {
+  const untypedUpdates = updates as Record<string, unknown>;
+  if (untypedUpdates.organization_id !== undefined) {
+    throw new Error("Moving a note to another organization is not available yet. Keep this note in its current organization.");
+  }
+  if (untypedUpdates.folder_name !== undefined) {
+    throw new Error("A persisted note can only move to an admitted folder ID. Create a new folder separately before moving this note.");
+  }
+  if (
+    options?.expectedVersion !== undefined &&
+    (!Number.isSafeInteger(options.expectedVersion) || options.expectedVersion < 1)
+  ) {
+    throw new Error("The note revision must be a positive integer.");
+  }
+  if (options?.expectedOrganizationId !== undefined) {
+    requireOrganizationContext(options.expectedOrganizationId);
+  }
+
   // Existing-resource mutations bind to the resource's organization, never the
   // mutable organization picker. Read it before resolving a requested folder.
   const { data: existing, error: existingError } = await supabase
     .schema("workbench")
     .from("notes")
-    .select("organization_id")
+    .select("*")
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (existingError || !existing) throw existingError ?? operationFailed("save this note — it may already be gone");
   const organizationId = requireOrganizationContext(existing.organization_id);
-  if ((updates as { organization_id?: string }).organization_id !== undefined && (updates as { organization_id?: string }).organization_id !== organizationId) {
-    throw new Error("Moving a note to another organization is not available yet. Keep this note in its current organization.");
+  if (
+    options?.expectedOrganizationId !== undefined &&
+    options.expectedOrganizationId !== organizationId
+  ) {
+    throw new Error("This note belongs to a different organization than the editor snapshot. Reload the note before saving.");
   }
-  if (updates.folder_name !== undefined && updates.folder_id === undefined) {
-    throw new Error("A persisted note can only move to an admitted folder ID. Create a new folder separately before moving this note.");
-  }
+  // Retain the canonical association projection before any write. It lets a
+  // partial context settlement return the acknowledged row without pretending
+  // the note write rolled back when a later association read cannot hydrate.
+  const [priorStoredNote] = await hydrateNoteContextLinks([existing]);
   const normalizedUpdates: NoteUpdate & Partial<NoteContextLinks> = { ...updates };
   if (updates.folder_id !== undefined && updates.folder_id !== null) {
     const { data: folder, error: folderError } = await supabase
@@ -338,22 +365,58 @@ export async function updateNote(
   } = normalizedUpdates;
 
   let data: NoteRow | null = null;
-  let error: { message: string } | null = null;
+  const databaseWrite = Object.keys(databaseUpdates).length > 0 ? "saved" : "unchanged";
   if (Object.keys(databaseUpdates).length > 0) {
-    let query = supabase
-      .schema("workbench")
-      .from("notes")
-      .update(databaseUpdates)
-      .eq("id", id)
-      .eq("organization_id", organizationId);
-
-    if (options?.expectedUpdatedAt) {
-      query = query.eq("updated_at", options.expectedUpdatedAt);
+    if (options?.expectedVersion !== undefined) {
+      const result = await guardedUpdate<NoteRow>({
+        expectedVersion: options.expectedVersion,
+        applyUpdate: ({ expectedVersion, nextVersion }) =>
+          supabase
+            .schema("workbench")
+            .from("notes")
+            .update({ ...databaseUpdates, version: nextVersion })
+            .eq("id", id)
+            .eq("organization_id", organizationId)
+            .eq("version", expectedVersion)
+            .is("deleted_at", null)
+            .select("*")
+            .maybeSingle(),
+        fetchCurrent: () =>
+          supabase
+            .schema("workbench")
+            .from("notes")
+            .select("*")
+            .eq("id", id)
+            .eq("organization_id", organizationId)
+            .is("deleted_at", null)
+            .maybeSingle(),
+      });
+      if (result.status === "conflict") {
+        throw new NoteUpdateConflictError({
+          expectedVersion: options.expectedVersion,
+          actualStoredNote: result.currentRow,
+        });
+      }
+      if (result.status === "not_found") {
+        throw operationFailed("save this note — it may already be gone or you no longer have access");
+      }
+      data = result.row;
+    } else {
+      const { data: updated, error } = await supabase
+        .schema("workbench")
+        .from("notes")
+        .update(databaseUpdates)
+        .eq("id", id)
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle();
+      if (error) {
+        console.error("Error updating note:", error);
+        throw error;
+      }
+      data = updated;
     }
-
-    const result = await query.select().maybeSingle();
-    data = result.data;
-    error = result.error;
   } else {
     const result = await supabase
       .schema("workbench")
@@ -361,44 +424,41 @@ export async function updateNote(
       .select("*")
       .eq("id", id)
       .eq("organization_id", organizationId)
+      .is("deleted_at", null)
       .maybeSingle();
     data = result.data;
-    error = result.error;
-  }
-
-  if (error) {
-    console.error("Error updating note:", error);
-    throw error;
+    if (result.error) {
+      console.error("Error reading note after context update:", result.error);
+      throw result.error;
+    }
   }
 
   if (!data) {
-    if (options?.expectedUpdatedAt) {
-      const { data: stillThere } = await supabase
-        .schema("workbench")
-        .from("notes")
-        .select("id")
-        .eq("id", id)
-        .eq("organization_id", organizationId)
-        .maybeSingle();
-      if (stillThere) {
-        throw new Error(
-          "Conflict: note was modified on another device or tab. Please refresh.",
-        );
-      }
-    }
     throw operationFailed(
       "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
     );
   }
 
-  await syncNoteContextLinks({
-    noteId: id,
-    organizationId,
-    projectId,
-    taskId,
-  });
-  const [note] = await hydrateNoteContextLinks([data]);
-  return note;
+  const storedNote: Note = {
+    ...data,
+    project_id: projectId === undefined ? priorStoredNote.project_id : projectId,
+    task_id: taskId === undefined ? priorStoredNote.task_id : taskId,
+  };
+  try {
+    await syncNoteContextLinks({ noteId: id, organizationId, projectId, taskId });
+  } catch (error) {
+    if (error instanceof NoteContextLinkPartialError) {
+      throw new NoteContextPartialSaveError({
+        databaseWrite,
+        actualStoredNote: storedNote,
+        succeededFields: error.succeededFields,
+        failedFields: error.failedFields,
+        safeCauses: error.safeCauses,
+      });
+    }
+    throw error;
+  }
+  return storedNote;
 }
 
 /**

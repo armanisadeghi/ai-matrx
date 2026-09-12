@@ -78,7 +78,7 @@ describe("notesService persisted-folder boundary", () => {
     const untypedUpdate = JSON.parse('{"folder_name":"Same name"}');
     await expect(updateNote(NOTE_ID, untypedUpdate)).rejects.toThrow(/admitted folder ID/i);
 
-    expect(from).toHaveBeenCalledTimes(1);
+    expect(from).not.toHaveBeenCalled();
     expect(existing.update).not.toHaveBeenCalled();
   });
 

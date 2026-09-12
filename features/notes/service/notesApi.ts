@@ -17,6 +17,7 @@ import {
 import type {
   CreateNoteInput,
   UpdateNoteInput,
+  UpdateNoteOptions,
   Note,
   NoteListItem,
 } from "../types";
@@ -50,8 +51,9 @@ export async function create(input: CreateNoteInput): Promise<Note> {
 export async function update(
   noteId: string,
   updates: UpdateNoteInput,
+  options?: UpdateNoteOptions,
 ): Promise<Note> {
-  return updateNoteService(noteId, updates);
+  return updateNoteService(noteId, updates, options);
 }
 
 /**

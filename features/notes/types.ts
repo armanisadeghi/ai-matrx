@@ -139,6 +139,16 @@ type PersistedFolderUpdate = {
 
 export type UpdateNoteInput = NoteContentUpdate & PersistedFolderUpdate;
 
+/**
+ * Captured identity at the editor boundary. A version turns the write into a
+ * compare-and-swap; the organization guards against saving a stale record
+ * snapshot into a different tenant.
+ */
+export interface UpdateNoteOptions {
+  expectedVersion?: number;
+  expectedOrganizationId?: string;
+}
+
 export interface FolderGroup {
     folder_name: string;
     notes: Note[];
