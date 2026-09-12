@@ -14,6 +14,7 @@
 import React from "react";
 import Link from "next/link";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import { readAllRows } from "@ai-matrx/data/db";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { useRouter } from "next/navigation";
 import {
@@ -54,6 +55,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  MetricNavigation,
+  type MetricNavigationItem,
+} from "@/components/navigation/MetricNavigation";
+import { primaryNavItems } from "@/features/shell/constants/nav-data";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
@@ -128,6 +134,62 @@ type Stat = {
 type SortKey = "name" | "org" | "open" | "done" | "updated";
 type OrgMap = Map<string, { name: string; slug: string; isPersonal: boolean }>;
 
+type ProjectListRow = {
+  id: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  organization_id: string | null;
+  created_by: string | null;
+  updated_at: string | null;
+  status: ProjectStatus | null;
+  priority: ProjectPriority | null;
+  start_date: string | null;
+  target_date: string | null;
+};
+
+type TaskSummaryRow = {
+  id: string;
+  project_id: string;
+  status: string;
+  parent_task_id: string | null;
+  title: string;
+};
+
+function workspaceDestinations(): MetricNavigationItem[] {
+  const workspaces = primaryNavItems.find((item) => item.label === "Workspaces");
+  return (workspaces?.children ?? [])
+    .filter((item) => !item.action && !item.actionItem && !item.panelAction)
+    .map((item) => ({
+      key: item.href,
+      label: item.label,
+      href: item.href,
+      iconName: item.iconName,
+      color: item.color ?? workspaces?.color,
+      description: item.description,
+      external: item.external,
+    }));
+}
+
+const WORKSPACE_DESTINATIONS = workspaceDestinations();
+
+const ORGANIZATION_ACCENTS = [
+  "bg-violet-500",
+  "bg-sky-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+] as const;
+
+function organizationAccent(organizationId: string | null): string {
+  if (!organizationId) return "bg-muted-foreground";
+  let hash = 0;
+  for (const character of organizationId) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return ORGANIZATION_ACCENTS[hash % ORGANIZATION_ACCENTS.length];
+}
+
 export function ProjectsHub({
   orgParam,
   scopeParam,
@@ -193,33 +255,24 @@ export function ProjectsHub({
     (async () => {
       setLoading(true);
       setProjectsReadFailed(false);
-      const { data, error } = await workspaceDb(supabase)
-        .from("projects")
-        .select(
-          "id, name, slug, description, organization_id, created_by, updated_at, status, priority, start_date, target_date",
-        )
-        .is("deleted_at", null)
-        .order("updated_at", { ascending: false });
-      if (cancelled) return;
-      if (error) {
-        console.error("[ProjectsHub] load failed:", error);
-        setProjectsReadFailed(true);
-      } else {
-        type Row = {
-          id: string;
-          name: string;
-          slug: string | null;
-          description: string | null;
-          organization_id: string | null;
-          created_by: string | null;
-          updated_at: string | null;
-          status: ProjectStatus | null;
-          priority: ProjectPriority | null;
-          start_date: string | null;
-          target_date: string | null;
-        };
+      try {
+        const data = await readAllRows<ProjectListRow>(
+          ({ from, to }) =>
+            workspaceDb(supabase)
+              .from("projects")
+              .select(
+                "id, name, slug, description, organization_id, created_by, updated_at, status, priority, start_date, target_date",
+                { count: "exact" },
+              )
+              .is("deleted_at", null)
+              .order("updated_at", { ascending: false })
+              .order("id", { ascending: true })
+              .range(from, to),
+          { label: "workspace.projects" },
+        );
+        if (cancelled) return;
         setProjects(
-          ((data as Row[]) ?? []).map((r) => ({
+          data.map((r) => ({
             id: r.id,
             name: r.name,
             slug: r.slug ?? null,
@@ -229,16 +282,20 @@ export function ProjectsHub({
             // Personal-ness is org-derived (see isPersonalProject); the project
             // row no longer carries is_personal. Resolved against orgMap at render.
             isPersonal: false,
-            status: (r.status ?? "active") as ProjectStatus,
+            status: r.status ?? "active",
             priority: r.priority ?? null,
             startDate: r.start_date ?? null,
             targetDate: r.target_date ?? null,
             settings: {},
             createdAt: "",
             updatedAt: r.updated_at ?? "",
-            role: "member" as const,
+            role: "member",
           })),
         );
+      } catch (error) {
+      if (cancelled) return;
+        console.error("[ProjectsHub] load failed:", error);
+        setProjectsReadFailed(true);
       }
       setLoading(false);
     })();
@@ -250,45 +307,54 @@ export function ProjectsHub({
   // Batched task stats for every visible project — one query, not N.
   const [stats, setStats] = React.useState<Map<string, Stat>>(new Map());
   const [statsReadFailed, setStatsReadFailed] = React.useState(false);
+  const [statsLoading, setStatsLoading] = React.useState(false);
   React.useEffect(() => {
     let cancelled = false;
     const ids = projects.map((p) => p.id);
     if (ids.length === 0) {
+      setStats(new Map());
+      setStatsLoading(false);
       return undefined;
     }
     (async () => {
       setStatsReadFailed(false);
-      const { data, error } = await workspaceDb(supabase)
-        .from("tasks")
-        .select("id, project_id, status, parent_task_id, title")
-        .is("deleted_at", null)
-        .in("project_id", ids);
-      if (cancelled) return;
-      if (error) {
+      setStatsLoading(true);
+      try {
+        const data = await readAllRows<TaskSummaryRow>(
+          ({ from, to }) =>
+            workspaceDb(supabase)
+              .from("tasks")
+              .select("id, project_id, status, parent_task_id, title", {
+                count: "exact",
+              })
+              .is("deleted_at", null)
+              .in("project_id", ids)
+              .order("id", { ascending: true })
+              .range(from, to),
+          { label: "workspace.tasks project summaries" },
+        );
+        if (cancelled) return;
+        const m = new Map<string, Stat>();
+        for (const id of ids) m.set(id, { open: 0, done: 0, preview: [] });
+        for (const row of data) {
+          if (row.parent_task_id) continue; // top-level only
+          const s = m.get(row.project_id);
+          if (!s) continue;
+          if (row.status === "completed") s.done += 1;
+          else {
+            s.open += 1;
+            if (s.preview.length < 4)
+              s.preview.push({ id: row.id, title: row.title });
+          }
+        }
+        setStats(m);
+      } catch (error) {
+        if (cancelled) return;
         console.error("[ProjectsHub] task summary load failed:", error);
         setStatsReadFailed(true);
-        return;
+      } finally {
+        if (!cancelled) setStatsLoading(false);
       }
-      const m = new Map<string, Stat>();
-      for (const id of ids) m.set(id, { open: 0, done: 0, preview: [] });
-      for (const row of (data ?? []) as Array<{
-        id: string;
-        project_id: string;
-        status: string;
-        parent_task_id: string | null;
-        title: string;
-      }>) {
-        if (row.parent_task_id) continue; // top-level only
-        const s = m.get(row.project_id);
-        if (!s) continue;
-        if (row.status === "completed") s.done += 1;
-        else {
-          s.open += 1;
-          if (s.preview.length < 4)
-            s.preview.push({ id: row.id, title: row.title });
-        }
-      }
-      setStats(m);
     })();
     return () => {
       cancelled = true;
@@ -382,6 +448,45 @@ export function ProjectsHub({
   // org, so org-less is no longer the signal.
   const personal = filtered.filter((p) => isPersonalProject(p.organizationId));
   const teams = filtered.filter((p) => !isPersonalProject(p.organizationId));
+  const teamGroups = new Map<string, ProjectWithRole[]>();
+  for (const project of teams) {
+    const key = project.organizationId ?? "unassigned";
+    const group = teamGroups.get(key) ?? [];
+    group.push(project);
+    teamGroups.set(key, group);
+  }
+  const groupedTeams = [...teamGroups.entries()].sort(([a], [b]) => {
+    const aName = a === "unassigned" ? "Other projects" : orgMap.get(a)?.name ?? a;
+    const bName = b === "unassigned" ? "Other projects" : orgMap.get(b)?.name ?? b;
+    return aName.localeCompare(bName);
+  });
+  const topLevelTaskCount = filtered.reduce((total, project) => {
+    const stat = stats.get(project.id);
+    return total + (stat?.open ?? 0) + (stat?.done ?? 0);
+  }, 0);
+  const workspaceNavigationItems = WORKSPACE_DESTINATIONS.map((item) => {
+    if (item.href === "/projects") {
+      return {
+        ...item,
+        value: filtered.length,
+        state: projectsReadFailed ? "unavailable" : loading ? "loading" : "ready",
+        description: "Projects in this view",
+      } satisfies MetricNavigationItem;
+    }
+    if (item.href === "/tasks") {
+      return {
+        ...item,
+        value: topLevelTaskCount,
+        state: statsReadFailed
+          ? "unavailable"
+          : statsLoading
+            ? "loading"
+            : "ready",
+        description: "Top-level tasks in these projects",
+      } satisfies MetricNavigationItem;
+    }
+    return item;
+  });
   const subtitle = orgFilterId
     ? `Projects in ${orgMap.get(orgFilterId)?.name ?? "this organization"}`
     : scopeParam
