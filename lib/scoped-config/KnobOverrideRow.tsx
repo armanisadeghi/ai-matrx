@@ -335,7 +335,15 @@ export function KnobOverrideRow(props: {
       </div>
       )}
       <div className="flex w-full items-center justify-end gap-2 text-[11px] text-muted-foreground">
-        <span>{stateOnly ? "Not connected yet" : isSetHere ? "Set here" : `Inherited from ${inheritedFrom}`}</span>
+        <span>{stateOnly
+          ? "Not connected yet"
+          : system
+            ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault)
+              ? "Set for the platform"
+              : "Registered default"
+            : isSetHere
+              ? "Set here"
+              : `Inherited from ${inheritedFrom}`}</span>
         <details className="relative">
           <summary aria-label={`Details for ${knob.label}`} className="cursor-pointer">Details</summary>
           <div className="absolute right-0 z-20 mt-1 w-72 rounded-md border border-border bg-popover p-3 text-left text-xs leading-snug text-popover-foreground shadow-md">
