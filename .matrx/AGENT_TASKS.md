@@ -56,7 +56,7 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 ## Active
 
 ### TASK-015: Regenerate database types after the keyword-placement migration applies
-- **Status:** ready
+- **Status:** ready (three of four subtasks done 2026-09-12; the browser pass remains)
 - **Created:** 2026-09-12
 - **Source:** PR #217 (keyword placement reads through the ONE ladder) merged with its migration unapplied — the cloud session that built it had no working Supabase key.
 
@@ -64,13 +64,13 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 `pnpm type-check` is green on main again and the inherited-placement markers on the five keyword surfaces show the governing rung, because `types/database.types.ts` carries the two columns `seo.gsc_keyword_topics_for` now returns.
 
 **Subtasks**
-- [ ] Confirm `migrations/seo_keyword_placement_one_resolver.sql` is applied (`pnpm check:migrations`; the release script applies pending files itself on the next release, or run `pnpm db:apply migrations/seo_keyword_placement_one_resolver.sql` from a checkout whose `.env` the project accepts).
-- [ ] `pnpm check:keyword-placement-tenancy:strict` — nine checks, all ok (it plants a two-organization case and rolls it back).
-- [ ] `pnpm db-types`, then `pnpm type-check` — the three `TS2339` errors in `features/marketing/seo/keyword-workbench/data.ts` (`scope_tier`, `scope_organization_id`) must be gone; commit the regenerated types.
+- [x] Applied 2026-09-12 16:08:45 UTC by the release automation through the one apply path (`public._schema_migrations` row, source `matrx-frontend`); both functions carry their door rows and the new return shapes live.
+- [x] `public.__keyword_placement_tenancy_conformance()` run live after the apply: 9 of 9 ok, zero residue (the `pnpm check:keyword-placement-tenancy:strict` wrapper reads the same rows; run it once from a keyed checkout to prove the script half).
+- [x] Types regenerated on main (`d7b43371` and the post-release repair); `pnpm type-check` on main reports zero errors in `features/marketing/seo/keyword-workbench/` (the remaining errors on main are the content-ir sandbox lane's).
 - [ ] In the in-app browser on All Green Recycling and Data Destruction, walk the keyword workbench, keyword table, Search Console dimension table, value workbench and keyword dossier: Offering cells present, inherited-rung markers present, no cross-organization topic.
 
 **Notes**
-Until the types are regenerated the reader sees `scope_tier` as undefined and every inherited-placement marker is absent — degraded, not broken. Sibling tier-blind readers are `FOUND_DEFECTS.md` D314; the 1,000-row RPC cap class is D315. Common-docs SEO handoff task 11 carries the same step.
+Data-layer proof after the apply, read as the admin user over the real RPC path for the top-2,000 window: All Green Recycling 897 rows = 897 governing (was 917 with 20 foreign), Data Destruction 955 = 955 (was 1,077 with 122 foreign), every row carrying its rung. Only the browser pass is left. Sibling tier-blind readers are `FOUND_DEFECTS.md` D314; the 1,000-row RPC cap class is D315. Common-docs SEO handoff task 11 carries the same step.
 
 
 ### TASK-014: Verify cloud-files realtime ownership repair
