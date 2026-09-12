@@ -33,6 +33,9 @@ function busyDeferredMigration(
   if (
     typeof detail !== "object" ||
     detail === null ||
+    !("status" in detail) ||
+    !("sandbox_id" in detail) ||
+    !("reason" in detail) ||
     detail.status !== "busy_deferred" ||
     detail.sandbox_id !== sandboxId ||
     typeof detail.reason !== "string"
