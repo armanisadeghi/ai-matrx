@@ -60,7 +60,13 @@ export function MetricNavigation({
   className,
 }: MetricNavigationProps) {
   return (
-    <section aria-label={label} className={cn("flex flex-wrap gap-2", className)}>
+    <section
+      aria-label={label}
+      className={cn(
+        "grid max-w-full grid-flow-col auto-cols-max grid-rows-2 gap-2 overflow-x-auto pb-1 sm:flex sm:flex-wrap sm:overflow-visible sm:pb-0",
+        className,
+      )}
+    >
       {items.map((item) => {
         const state = item.state ?? "ready";
         const metricDescription =
