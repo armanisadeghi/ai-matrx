@@ -243,6 +243,7 @@ export function KnobOverrideRow(props: {
       : ladder
     : null;
   const canWrite = system ? system.canWrite : ladder?.canWrite ?? !lockedForMe;
+  const reviewOverdue = knob.set_by === "agent" && knob.review_due !== null && new Date(knob.review_due) < new Date();
 
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"
@@ -356,10 +357,13 @@ export function KnobOverrideRow(props: {
             : isSetHere
               ? "Set here"
               : `Inherited from ${inheritedFrom}`}</span>
+        {system && <span className={reviewOverdue ? "font-medium text-amber-600" : undefined}>
+          {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}{knob.review_due ? ` · review ${knob.review_due}` : ""}
+        </span>}
         <details className="relative">
           <summary aria-label={`Details for ${knob.label}`} className="cursor-pointer">Details</summary>
           <div className="absolute right-0 z-20 mt-1 w-72 rounded-md border border-border bg-popover p-3 text-left text-xs leading-snug text-popover-foreground shadow-md">
-            {!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
+            {!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ${knob.set_by === "agent" ? "Agent-set." : "Reviewed."} ${knob.review_due ? `Review due: ${knob.review_due}. ` : ""}` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
           </div>
         </details>
       </div>

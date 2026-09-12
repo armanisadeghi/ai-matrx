@@ -34,9 +34,11 @@ import { auditedSettingsDispositions, dispositionFor } from "./disposition";
 export function UniversalSettingsRows({
   knobs,
   hideKey = false,
+  onChanged,
 }: {
   knobs: ScopedKnob[];
   hideKey?: boolean;
+  onChanged?: () => void;
 }) {
   const settings = useUniversalSettings();
   const {
@@ -103,7 +105,7 @@ export function UniversalSettingsRows({
               } : undefined}
               stateOnly={dispositionFor(knob.full_key, settings.editingContext)}
               hideKey={hideKey}
-              onChanged={settings.refresh}
+              onChanged={onChanged ?? settings.refresh}
             />
           ))}
         </SettingsSection>
