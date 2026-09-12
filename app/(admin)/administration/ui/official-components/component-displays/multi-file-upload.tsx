@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
 import { MultiFileUpload } from '@/components/ui/file-upload/file-upload';
+import { formatFileSize } from '@ai-matrx/kit/format';
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -65,7 +66,7 @@ function MyComponent() {
             <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
               {selectedFiles.map((file, idx) => (
                 <li key={idx}>
-                  {file.name} - {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  {file.name} - {formatFileSize(file.size)}
                 </li>
               ))}
             </ul>

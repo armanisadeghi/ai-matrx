@@ -19,6 +19,7 @@ import { ApiTestConfigPanel } from "@/components/api-test-config/ApiTestConfigPa
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { TEST_ADMIN_TOKEN } from "../sample-prompt";
 import { streamPdfExtractText } from "@/features/pdf-extractor/service/streamPdf";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type {
   PdfExtractCompleteData,
   PdfPageExtractedData,
@@ -162,7 +163,7 @@ export default function PdfExtractClient() {
                       {selectedFile.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {(selectedFile.size / 1024).toFixed(1)} KB
+                      {formatFileSize(selectedFile.size)}
                     </span>
                     <Button
                       type="button"

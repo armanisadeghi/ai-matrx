@@ -34,6 +34,7 @@ import { DocumentTab } from "@/features/files/components/surfaces/DocumentTab";
 import { AnalysisTab } from "@/features/file-analysis/tab/AnalysisTab";
 import { FileShareTab } from "@/features/files/components/surfaces/FileShareTab";
 import { FileInfoTab } from "@/features/files/components/surfaces/FileInfoTab";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface PdfRow {
   id: string;
@@ -145,9 +146,7 @@ export default function PdfComponentsBenchPage() {
             {pdfs.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.file_name}
-                {p.size_bytes
-                  ? ` · ${(p.size_bytes / 1024 / 1024).toFixed(1)}MB`
-                  : ""}
+                {p.size_bytes ? ` · ${formatFileSize(p.size_bytes)}` : ""}
               </option>
             ))}
           </select>

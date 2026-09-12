@@ -11,6 +11,7 @@ import {
   type CaptureMethod,
 } from "@/hooks/useScreenCapture";
 import { toast } from "@/lib/toast";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 // ─── Shared preview card ─────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ function PreviewCard({
         </button>
       </div>
       <p className="px-3 py-1.5 text-[10px] text-muted-foreground font-mono">
-        {result.file.name} · {(result.file.size / 1024).toFixed(0)} KB ·{" "}
+        {result.file.name} · {formatFileSize(result.file.size)} ·{" "}
         {result.dataUrl.length > 0 ? "ready" : ""}
       </p>
     </div>

@@ -7,7 +7,8 @@ import {
   buildAgentPayload,
   type AgentPayloadInput,
 } from "@/components/agent-copy/buildAgentPayload";
-import { approxTokens, fmtBytes } from "@/components/agent-copy/clipboard";
+import { approxTokens } from "@/components/agent-copy/clipboard";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   rowsToCsvFromColumns,
   rowsToMarkdownTable,
@@ -144,6 +145,6 @@ export function copySubsetSize(text: string): CopySubsetSize {
     chars: text.length,
     bytes,
     tokens: approxTokens(text),
-    bytesLabel: fmtBytes(bytes),
+    bytesLabel: formatFileSize(bytes),
   };
 }

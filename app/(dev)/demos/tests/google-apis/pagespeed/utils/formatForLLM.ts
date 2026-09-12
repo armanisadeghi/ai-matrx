@@ -1,4 +1,5 @@
 import type { PageSpeedResponse, LighthouseAuditResultV5, AuditRef } from "../types";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface LLMAnalysisData {
     url: string;
@@ -111,7 +112,7 @@ function extractRecommendations(audit: LighthouseAuditResultV5): string | undefi
             return `Potential savings: ${Math.round(details.overallSavingsMs)}ms`;
         }
         if (details.overallSavingsBytes) {
-            return `Potential savings: ${Math.round(details.overallSavingsBytes / 1024)}KB`;
+            return `Potential savings: ${formatFileSize(details.overallSavingsBytes)}`;
         }
     }
 

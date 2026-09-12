@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { extractErrorMessage } from "@/utils/errors";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   Tooltip,
   TooltipContent,
@@ -794,7 +795,7 @@ export default function AgentDemoClient() {
                   {(stats.events > 0 || isRunning) && (
                     <>
                       <span>{stats.events} evt</span>
-                      <span>{(stats.bytes / 1024).toFixed(1)} KB</span>
+                      <span>{formatFileSize(stats.bytes)}</span>
                       <span>{(stats.ms / 1000).toFixed(1)}s</span>
                     </>
                   )}
