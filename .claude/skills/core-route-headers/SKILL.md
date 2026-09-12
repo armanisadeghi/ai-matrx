@@ -7,6 +7,11 @@ description: "(core) route header and body-height conformance via PageHeader. Us
 
 **Read `features/shell/components/header/variants/USAGE.md` first** — it is the canonical spec for the injection zone, variants, and body-height table. This skill is the *fix workflow*: how to classify a broken route, which exemplar to copy, and how to verify in the browser on desktop AND mobile.
 
+For the cross-page composition rules that accompany this header contract (one
+coherent control, icon/title rows, intentional spacing, tap targets, and no
+competing route menus), also read the shared policy at
+`/policies/ui-surface-rules.md`.
+
 ## The mental model (one paragraph)
 
 The shell header is a **transparent glass strip** over the page. The shell owns the far edges (hamburger left, org/canvas/avatar right); the route owns ONLY the center zone via `<PageHeader>` (`features/shell/components/header/PageHeader.tsx` — Server Component, portals into `#shell-header-center`; `desktop=` / `mobile=` props for per-breakpoint content). `.shell-main` is pulled up under the header with a negative margin, so the page body **already fills the viewport** and content scrolls *behind* the glass. Everything broken in this repo is one of two sins: rendering header chrome **in the body**, or **subtracting the header height** from the body.
