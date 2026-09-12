@@ -399,21 +399,15 @@ export function SpendDashboard() {
                   {gaps.map((gap) => (
                     <div
                       key={gap.ledgerKey}
-                      className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2"
+                      className="flex items-baseline justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-1.5"
+                      title={gap.note}
                     >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-sm font-medium text-foreground">
-                          {gap.label}
-                        </span>
-                        <span className="shrink-0 text-[11px] text-destructive">
-                          {gap.tableRef
-                            ? staleness(gap.lastWrite)
-                            : "no ledger"}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {gap.note}
-                      </p>
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {gap.label}
+                      </span>
+                      <span className="shrink-0 text-[11px] text-destructive">
+                        {gap.tableRef ? staleness(gap.lastWrite) : "no ledger"}
+                      </span>
                     </div>
                   ))}
                 </div>
