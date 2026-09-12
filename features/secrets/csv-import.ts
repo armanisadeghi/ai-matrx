@@ -195,6 +195,28 @@ export function hasAmbiguousCsvMapping(mapping: CsvColumnRole[]): boolean {
   );
 }
 
+export function isPossibleDuplicateRow(
+  row: CsvImportRow,
+  preview: CsvImportPreview,
+  mapping: CsvColumnRole[],
+  existingItems: { displayName: string; loginUrls: string[] }[],
+): boolean {
+  if (row.issue) return false;
+  const title =
+    roleValue(row, mapping, "title") || `Imported credential ${row.rowNumber}`;
+  const urls = row.cells
+    .filter((_, index) => mapping[index] === "url")
+    .map(safeDestination)
+    .flatMap((destination) =>
+      destination.metadata ? [destination.metadata] : [],
+    );
+  return existingItems.some(
+    (item) =>
+      item.displayName === title &&
+      item.loginUrls.some((url) => urls.includes(url)),
+  );
+}
+
 export function toCsvImportCommand(input: {
   source: string;
   preview: CsvImportPreview;
