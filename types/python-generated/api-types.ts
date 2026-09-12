@@ -7237,13 +7237,16 @@ export interface paths {
         };
         /**
          * Payment Mode
-         * @description What this server's print lane actually is — test or live, and whether the
-         *     two money integrations agree.
+         * @description What this server's print lane actually is — test or live, whether the two
+         *     money integrations agree, and what the two commerce settings currently say.
          *
          *     A surface that offers ordering MUST badge this rather than infer a mode from
          *     its own hostname: a local page talks to whichever backend the server toggle
          *     names, so "I am on localhost" says nothing about whose money is at stake.
-         *     Carries no secret — only the derived mode.
+         *     Carries no secret — only the derived mode and the resolved settings.
+         *
+         *     The settings are resolved for the caller's organization, so two orgs can get
+         *     two honest answers from one server.
          */
         get: operations["payment_mode_lulu_payment_mode_get"];
         put?: never;
@@ -31951,6 +31954,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plans/{plan_id}/emit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Emit From Plan
+         * @description Emit ONE real, wired step from a plan that keeps working. Until
+         *     2026-09-12 this move was reachable only through the Steward's tool —
+         *     an agent-only capability, which the design law forbids.
+         */
+        post: operations["emit_from_plan_plans__plan_id__emit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle Plan
+         * @description Close a plan that emitted its way to empty: 1 plan → N real steps,
+         *     settled into a record that points at all of them. No receipt — the
+         *     anchor is no longer server-owned once the plan is settled.
+         */
+        post: operations["settle_plan_plans__plan_id__settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/plans/{plan_id}/dissolve": {
         parameters: {
             query?: never;
@@ -50427,6 +50474,11 @@ export interface components {
              * @default false
              */
             write?: boolean;
+            /**
+             * Include Published
+             * @default false
+             */
+            include_published?: boolean;
         };
         /** CmsFillStartBody */
         CmsFillStartBody: {
@@ -59906,6 +59958,95 @@ export interface components {
             vectors: number[][];
         };
         /**
+         * EmitFromPlanRequest
+         * @description `emit` — a real step comes out, the plan KEEPS WORKING (FEATURE.md
+         *     § Emission). Same target fields as resolve plus the wiring contract's
+         *     anchors; the service refuses unknown ids and bad configs before any write.
+         */
+        EmitFromPlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Target Spec Type */
+            target_spec_type: string;
+            /** Target Config */
+            target_config?: {
+                [key: string]: unknown;
+            } | null;
+            /** Target Input */
+            target_input?: {
+                [key: string]: unknown;
+            } | null;
+            /** Label */
+            label?: string | null;
+            /**
+             * Rationale
+             * @default
+             */
+            rationale?: string;
+            /** Upstream Node Ids */
+            upstream_node_ids?: string[] | null;
+            /** Downstream Node Ids */
+            downstream_node_ids?: string[] | null;
+            /**
+             * Parallel
+             * @default false
+             */
+            parallel?: boolean;
+        };
+        /** EmitFromPlanResponse */
+        EmitFromPlanResponse: {
+            /** Emitted Node Id */
+            emitted_node_id: string;
+            /** Spec Type */
+            spec_type: string;
+            /** Plan Id */
+            plan_id: string;
+            /** Definition Id */
+            definition_id: string;
+            /**
+             * Plan Still Active
+             * @default true
+             */
+            plan_still_active?: boolean;
+            /** Emitted So Far */
+            emitted_so_far: number;
+            wired: components["schemas"]["EmittedWiring"];
+            /**
+             * Wiring Mode
+             * @enum {string}
+             */
+            wiring_mode: "explicit" | "chained" | "parallel" | "default" | "unwired";
+            /** Chained From */
+            chained_from?: {
+                [key: string]: string;
+            };
+            /** Wired Note */
+            wired_note: string;
+            /** Handshake Warnings */
+            handshake_warnings?: components["schemas"]["HandshakeWarning"][];
+            anchor?: components["schemas"]["PlanAnchorState"] | null;
+        };
+        /** EmittedWiring */
+        EmittedWiring: {
+            /** Upstream */
+            upstream?: string[];
+            /** Downstream */
+            downstream?: string[];
+        };
+        /**
          * EmplifiServiceStatus
          * @description Safe aggregate status projection for Emplifi's fixed status page.
          */
@@ -66843,6 +66984,33 @@ export interface components {
              * @default false
              */
             handled?: boolean;
+        };
+        /**
+         * HandshakeWarning
+         * @description One certain interface break at the placed step's joints (handshake.py).
+         */
+        HandshakeWarning: {
+            /** Kind */
+            kind: string;
+            /** Node Id */
+            node_id: string;
+            /**
+             * Node Label
+             * @default
+             */
+            node_label?: string;
+            /**
+             * Spec Type
+             * @default
+             */
+            spec_type?: string;
+            /**
+             * Field
+             * @default
+             */
+            field?: string;
+            /** Message */
+            message: string;
         };
         /** HappeoServiceStatus */
         HappeoServiceStatus: {
@@ -87388,6 +87556,26 @@ export interface components {
              * @description One human sentence naming the mode and, when refused, the remedy.
              */
             message: string;
+            /**
+             * Require Mode Pairing
+             * @description The commerce.print_orders.require_mode_pairing setting as it resolves for this organization. True = a mismatched pairing refuses the order.
+             */
+            require_mode_pairing: boolean;
+            /**
+             * Allow Dev Origin Live Charges
+             * @description The commerce.print_orders.allow_dev_origin_live_charges setting as it resolves for this organization. True = a localhost-origin request may open a live charge, and every such order is recorded.
+             */
+            allow_dev_origin_live_charges: boolean;
+            /**
+             * Ordering Allowed
+             * @description The server's own answer for a request from a DEPLOYED surface: whether ordering is open right now, once the settings above are applied. A dev-origin surface must also consult allow_dev_origin_live_charges.
+             */
+            ordering_allowed: boolean;
+            /**
+             * Settings Note
+             * @description Plain words naming what each setting is currently doing, for the badge.
+             */
+            settings_note: string;
         };
         /**
          * PrintShippingAddress
@@ -97240,6 +97428,43 @@ export interface components {
              */
             op: "set_variable";
             variable: components["schemas"]["VariableSpec"];
+        };
+        /** SettlePlanRequest */
+        SettlePlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rationale
+             * @default
+             */
+            rationale?: string;
+        };
+        /** SettlePlanResponse */
+        SettlePlanResponse: {
+            plan: components["schemas"]["PlanRecord"];
+            /** Node Ids */
+            node_ids: string[];
+            /** Emitted Count */
+            emitted_count: number;
+            /** Detached Edges */
+            detached_edges: number;
+            /** Needs Wiring */
+            needs_wiring: string[];
+            /** Note */
+            note: string;
         };
         /** SetupAgentBody */
         SetupAgentBody: {
@@ -165744,6 +165969,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    emit_from_plan_plans__plan_id__emit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmitFromPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmitFromPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_plan_plans__plan_id__settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettlePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettlePlanResponse"];
                 };
             };
             /** @description Validation Error */

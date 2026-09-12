@@ -504,12 +504,72 @@ export function listAgentWritableTargets(): ReadonlyArray<{
     policy: Exclude<SurfaceWritePolicy, "manual">;
   }> = [];
   for (const live of listLiveWriteTargets()) {
-    if (!live.hasHandler) continue;
     const policy = resolveApplyPolicy(live.target, live.surfaceName);
     if (policy === "manual") continue;
+    if (!live.hasHandler) {
+      // A DECLARED DOOR WITH NOTHING BEHIND IT. Dropping it from the offer is
+      // right — the model is never handed a write it cannot make — but doing
+      // it silently is how the Masterwork Conductor spent a turn planning a
+      // `rule_draft` write on a mount that had no handler (2026-09-12). The
+      // drop announces itself with the remedy.
+      reportUnwiredTarget(live.surfaceName, live.target);
+      continue;
+    }
     out.push({ surfaceName: live.surfaceName, target: live.target, policy });
   }
   return out;
+}
+
+/**
+ * Every declared-but-unwired agent target on the live stack, for authoring and
+ * debug chrome (and the reason the offer is smaller than the declaration).
+ */
+export function listUnwiredAgentTargets(): ReadonlyArray<{
+  surfaceName: string;
+  target: SurfaceWriteTarget;
+}> {
+  return listLiveWriteTargets()
+    .filter(
+      (live) =>
+        !live.hasHandler &&
+        resolveApplyPolicy(live.target, live.surfaceName) !== "manual",
+    )
+    .map((live) => ({ surfaceName: live.surfaceName, target: live.target }));
+}
+
+/**
+ * One report per surface+target per page load: the offer is rebuilt on every
+ * turn, and a line per turn would train everyone to ignore the channel.
+ */
+const reportedUnwiredTargets = new Set<string>();
+
+function reportUnwiredTarget(
+  surfaceName: string,
+  target: SurfaceWriteTarget,
+): void {
+  const key = `${surfaceName}:${target.name}`;
+  if (reportedUnwiredTargets.has(key)) return;
+  reportedUnwiredTargets.add(key);
+  const message =
+    `[surface-writeback] Surface "${surfaceName}" declares agent-writable ` +
+    `target "${target.name}", but the mounted page registered no handler for ` +
+    `it — agents are not offered it here. Register it with ` +
+    `useSurfaceWriteHandlers (or getWriteHandlers) on the component that owns ` +
+    `that state, or drop the declaration from the manifest.`;
+  // Deliberately the DEVELOPER channel, not `captureError`: a surface can be
+  // mounted by several components and a mount that legitimately cannot service
+  // every declared target is not a user-visible fault — the agent is told
+  // plainly by the server's <surface_write_targets> block that the target is
+  // declared but not writable this turn. A capture per page load here would be
+  // a recovery that always fires, which trains everyone to ignore the channel.
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(message);
+  }
+}
+
+/** Test seam — the dedupe set is per page load, and a test IS one load. */
+export function __resetUnwiredTargetReports(): void {
+  reportedUnwiredTargets.clear();
 }
 
 /**

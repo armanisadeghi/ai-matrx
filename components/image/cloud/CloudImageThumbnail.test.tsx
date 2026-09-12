@@ -3,13 +3,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CloudImageThumbnail } from "@/components/image/cloud/CloudImageThumbnail";
 
 jest.mock("@ai-matrx/media/react", () => ({
-  MediaThumbnail: ({ thumbnailUrl }: { thumbnailUrl?: string | null }) => (
-    <div data-thumbnail-url={thumbnailUrl ?? ""} />
+  MediaThumbnail: ({ mediaRef }: { mediaRef: { file_id?: string } }) => (
+    <div data-file-id={mediaRef.file_id ?? ""} />
   ),
 }));
 
 describe("CloudImageThumbnail", () => {
-  it("passes the durable backend thumbnail to the shared media renderer", () => {
+  it("resolves through durable file identity without a stored URL bypass", () => {
     const html = renderToStaticMarkup(
       <CloudImageThumbnail
         file={{
@@ -17,14 +17,11 @@ describe("CloudImageThumbnail", () => {
           fileName: "cover.png",
           mimeType: "image/png",
           fileSize: 1024,
-          thumbnailUrl: "https://cdn.example/cover-thumb.webp",
         }}
         iconSize={48}
       />,
     );
 
-    expect(html).toContain(
-      'data-thumbnail-url="https://cdn.example/cover-thumb.webp"',
-    );
+    expect(html).toContain('data-file-id="image-1"');
   });
 });

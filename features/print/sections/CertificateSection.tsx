@@ -21,6 +21,7 @@ import {
     type WorkbookSpec,
 } from "@ai-matrx/print/certificate";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/lib/toast";
 import { Field, SectionShell, StatusChip, announcePrintOutcome, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_CERTIFICATE, SAMPLE_WORKBOOK_SECTIONS } from "./sample-data";
@@ -201,18 +202,16 @@ export function CertificateSection() {
 
                     <div className="flex flex-col gap-1.5 text-xs">
                         <label className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 checked={includeToc}
-                                onChange={(e) => setIncludeToc(e.target.checked)}
+                                onCheckedChange={(checked) => setIncludeToc(checked === true)}
                             />
                             <span className="text-foreground">Include table of contents</span>
                         </label>
                         <label className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 checked={endOnCertificate}
-                                onChange={(e) => setEndOnCertificate(e.target.checked)}
+                                onCheckedChange={(checked) => setEndOnCertificate(checked === true)}
                             />
                             <span className="text-foreground">End on the certificate above</span>
                         </label>
