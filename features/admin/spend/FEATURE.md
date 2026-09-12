@@ -63,6 +63,20 @@ request row) are attributed from the execution's own context and link kind —
 never dropped, never invented — and the totals strip says how much of the
 window that is ("Explained by a request").
 
+**One request can own several ledger rows** (one request in the 2026-09-10/11
+window owned 71). Cost is summed over all of them; the request-level facts
+(token totals, iterations, tool calls, unpriced calls) sit on ONE row — the
+earliest execution, `is_request_head` — so nothing per-request is counted once
+per execution. Every signal and the costliest-requests table group by request.
+The first cut of this function counted failed requests per execution (18 on
+screen for 10 requests); the independent review caught it the same day.
+
+**The trigger rule is deliberately about the request's origin, not the
+execution's kind.** An `internal_agent_run` whose request carries
+`origin_class = 'api'` (an API caller asked the server to run an agent) reads
+as manual. If that ever misleads, it is a ruling to change in one place
+(`trigger` in the fact build), not a bug.
+
 ## Where the numbers come from
 
 Three super-admin-gated `SECURITY DEFINER` RPCs:
@@ -113,7 +127,7 @@ Reading order on the page: headline → explorer → the folded honesty tail.
 | Dig here | `explorer/DigHerePanel.tsx` | seven signal cards ordered by money — see below. |
 | 80/20 | `explorer/ParetoPanel.tsx` | per dimension: the fewest rows reaching 80% of the window, then ONE "everything else" row (`paretoCut`). |
 | Every dimension | `explorer/DimensionTables.tsx` | one `MatrxDataTable` per dimension, same columns everywhere (cost, share bar, manual, automated, requests, per request, tokens in/cached/out, last activity). |
-| Costliest requests | `explorer/TopRequestsTable.tsx` | 40 rows with every dimension; a request opens its conversation. |
+| Costliest requests | `explorer/TopRequestsTable.tsx` | 40 rows with every dimension, one per request (its ledger rows summed); a request opens its conversation. |
 | Names, hrefs, wording | `explorer/labels.ts` | plain-English dimension names, per-dimension "empty" wording, where each identity opens. |
 
 **Drill = click.** Every name in the 80/20 cards, the dimension tables, the
@@ -135,7 +149,8 @@ person → `/administration/users?focus=<id>`, agent →
 | Repeat bursts | `repeat_burst` (5) | same person + agent + feature ≥ N requests in one ten-minute bucket |
 | Unpriced calls | — | `chat.request.cost IS NULL`: the ledger under-counts by an unknown amount |
 
-A signal that found nothing says "none" — it never disappears. Cards over 25% of
+A signal that found nothing says "none" — it never disappears (the unpriced
+line included). Cards over 25% of
 the window turn destructive-toned.
 
 ## Gating
@@ -190,6 +205,11 @@ storage access is wrapped: a private window or blocked storage degrades to "not
 shown yet", never a throw.
 
 ## Scrolling — one scroller, never two
+
+The subtraction is scoped to `.shell-root` (the AppShell) on purpose: only
+`.shell-main` reserves the banner's height as padding-top; a `(transitional)`
+route under `ResponsiveLayout` would otherwise shrink without the matching
+reservation.
 
 The page is scrolled by `ClientAdminLayout`'s inner `<main>`; every table lays
 out at its content height (no bounded-height wrapper). The outer `.shell-main`
@@ -257,6 +277,16 @@ Registered in `features/admin/constants/admin-categories.ts` +
   outer admin shell structurally non-scrollable; `ClientAdminLayout` is now the
   sole page scroller regardless of alarm height, while tables retain horizontal
   overflow only. Browser-verified on the real spend data at localhost.
+- **2026-09-12 (evening, round 2)** — Independent review (Opus, adversarial):
+  every money number reconciled to the ledger exactly, filters exact, gating
+  and injection probes refused. Fixed from its findings: per-request
+  granularity for failed spend, looped requests, tokens, unpriced calls and
+  the costliest-requests table (`is_request_head`); the Person link now uses
+  the `user` param the accounts page reads; the unpriced line never
+  disappears; the 92-day cap is said in words before the round trip; the
+  `.h-page` subtraction is scoped to `.shell-root`; `anon` lost EXECUTE;
+  the temp-table drop is `pg_temp`-qualified; a hog's trigger is the
+  majority of its cost, not `min()`.
 - **2026-09-12 (evening)** — THE EXPLORER. `admin_spend_breakdown` (any window,
   eleven dimensions, filters that compose, seven signals, top requests), five
   `platform.spend_explorer.*` knobs, the page rebuilt as headline → explorer →

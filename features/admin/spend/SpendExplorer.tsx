@@ -44,6 +44,9 @@ import {
   type ExplorerUrlState,
 } from "./windows";
 
+/** Mirrors the database's cap in `admin_spend_breakdown`. */
+const MAX_WINDOW_DAYS = 92;
+
 function Section({
   icon: Icon,
   title,
@@ -77,6 +80,10 @@ export function SpendExplorer() {
   const urlState = readExplorerUrlState(new URLSearchParams(searchParams.toString()));
   const window = resolveWindow(urlState.preset, new Date(), urlState.fromDay, urlState.toDay);
   const filters = urlState.filters;
+  // The database caps a window at 92 days; say so here in words rather than
+  // surfacing its refusal as a raw error after a round trip.
+  const windowDays = (window.to.getTime() - window.from.getTime()) / 86_400_000;
+  const windowTooWide = windowDays > MAX_WINDOW_DAYS;
 
   const [data, setData] = useState<SpendBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,7 +101,7 @@ export function SpendExplorer() {
   });
 
   useEffect(() => {
-    if (!knobs.thresholds) return;
+    if (!knobs.thresholds || windowTooWide) return;
     const thresholds = knobs.thresholds;
     const parsed = JSON.parse(readKey) as {
       from: string;
@@ -128,7 +135,7 @@ export function SpendExplorer() {
     return () => {
       cancelled = true;
     };
-  }, [readKey, knobs.thresholds, timezone]);
+  }, [readKey, knobs.thresholds, timezone, windowTooWide]);
 
   const pushState = (next: ExplorerUrlState) => {
     const params = writeExplorerUrlState(new URLSearchParams(searchParams.toString()), next);
@@ -191,6 +198,13 @@ export function SpendExplorer() {
           below is computed — the breakdown refuses to guess where a line sits. Seed the five
           <span className="font-mono"> platform.spend_explorer.* </span>
           knobs to restore it.
+        </div>
+      ) : null}
+
+      {windowTooWide ? (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+          That range is {Math.round(windowDays)} days; the explorer reads at most {MAX_WINDOW_DAYS} days
+          at a time. Pick a shorter range — the numbers below are from the previous window until you do.
         </div>
       ) : null}
 

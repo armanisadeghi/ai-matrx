@@ -65,7 +65,7 @@ export function identityHref(dim: SpendDimension, key: string): string | null {
     case "organization":
       return `/organizations/${key}`;
     case "user":
-      return `/administration/users?focus=${key}`;
+      return `/administration/users?user=${key}`;
     case "agent":
       return `/administration/agents/system-agents/agents/${key}`;
     case "conversation":

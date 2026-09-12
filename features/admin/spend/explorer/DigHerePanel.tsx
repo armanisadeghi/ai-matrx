@@ -342,10 +342,16 @@ export function DigHerePanel({
       {s.unpriced.n > 0 ? (
         <p className="flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-1.5 text-[11px] text-destructive">
           <Tag className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          {s.unpriced.n} model calls across {s.unpriced.requests} requests have no price on file, so
-          this window is under-counted by an unknown amount. The model needs a price in the AI catalog.
+          Unpriced calls: {s.unpriced.n} model calls across {s.unpriced.requests} requests have no
+          price on file, so this window is under-counted by an unknown amount. The model needs a
+          price in the AI catalog.
         </p>
-      ) : null}
+      ) : (
+        <p className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[11px] text-muted-foreground">
+          <Tag className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Unpriced calls: none — every model call in this window had a price on file.
+        </p>
+      )}
     </div>
   );
 }

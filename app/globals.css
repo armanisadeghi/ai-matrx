@@ -1646,18 +1646,36 @@
      banner's height and the page scrolled twice (the outer shell by 166px,
      the inner main by the rest; measured on /administration/billing/spend,
      2026-09-12). The variable is absent without a banner, so `0px` is what
-     every page resolves to then.
+     every page resolves to then. The bare utilities keep the old value; the
+     `.shell-root`-scoped ones below carry the subtraction.
      Use ONLY on /administration/* and (transitional)/(legacy) ResponsiveLayout.
      (core) AppShell routes: use h-full — .shell-main is already full viewport. */
   .h-page {
-    height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
+    height: calc(100dvh - var(--header-height));
   }
 
   .min-h-page {
-    min-height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
+    min-height: calc(100dvh - var(--header-height));
   }
 
   .max-h-page {
+    max-height: calc(100dvh - var(--header-height));
+  }
+
+  /* Only INSIDE the app shell: `.shell-main` is the scroller that reserves the
+     banner's height as padding-top, so only there is the subtraction matched
+     by a reservation. A `(transitional)` route under ResponsiveLayout gets no
+     such padding, and shortening it would leave a dead strip at the bottom
+     with the banner still covering the top. */
+  .shell-root .h-page {
+    height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
+  }
+
+  .shell-root .min-h-page {
+    min-height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
+  }
+
+  .shell-root .max-h-page {
     max-height: calc(100dvh - var(--header-height) - var(--shell-alarm-h, 0px));
   }
 

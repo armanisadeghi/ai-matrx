@@ -152,7 +152,7 @@ BEGIN
   WHERE created_at >= p_from AND created_at < p_to;
 
   -- ── The fact set: one row per execution, every dimension resolved ──────────
-  DROP TABLE IF EXISTS spend_fact;
+  DROP TABLE IF EXISTS pg_temp.spend_fact;
   CREATE TEMP TABLE spend_fact ON COMMIT DROP AS
   WITH g AS (
     SELECT
@@ -166,7 +166,14 @@ BEGIN
       CASE WHEN e.link_kind = 'conversation' AND e.link_id ~ '^[0-9a-f-]{36}$'
            THEN e.link_id::uuid
            WHEN (e.context->>'conversation_id') ~ '^[0-9a-f-]{36}$'
-           THEN (e.context->>'conversation_id')::uuid END      AS ctx_conversation_id
+           THEN (e.context->>'conversation_id')::uuid END      AS ctx_conversation_id,
+      -- A request can own SEVERAL ledger rows (one request in the 2026-09-10/11
+      -- window owned 71). The request-level facts — its token totals, its
+      -- iteration count, its unpriced-call count — belong to ONE of them, or
+      -- every per-request signal counts them once per execution. The earliest
+      -- execution is the head; the rest carry cost only.
+      (e.request_id IS NULL OR row_number() OVER (
+         PARTITION BY e.request_id ORDER BY e.created_at, e.id) = 1) AS is_request_head
     FROM runtime.global_execution e
     WHERE e.created_at >= p_from AND e.created_at < p_to
   )
@@ -174,9 +181,13 @@ BEGIN
     g.id                                                        AS execution_id,
     g.created_at,
     g.cost,
-    coalesce(ur.total_input_tokens,  (g.meters->>'input_tokens')::bigint,  0) AS tokens_in,
-    coalesce(ur.total_cached_tokens, (g.meters->>'cached_tokens')::bigint, 0) AS tokens_cached,
-    coalesce(ur.total_output_tokens, (g.meters->>'output_tokens')::bigint, 0) AS tokens_out,
+    CASE WHEN ur.id IS NULL THEN coalesce((g.meters->>'input_tokens')::bigint, 0)
+         WHEN g.is_request_head THEN coalesce(ur.total_input_tokens, 0) ELSE 0 END  AS tokens_in,
+    CASE WHEN ur.id IS NULL THEN coalesce((g.meters->>'cached_tokens')::bigint, 0)
+         WHEN g.is_request_head THEN coalesce(ur.total_cached_tokens, 0) ELSE 0 END AS tokens_cached,
+    CASE WHEN ur.id IS NULL THEN coalesce((g.meters->>'output_tokens')::bigint, 0)
+         WHEN g.is_request_head THEN coalesce(ur.total_output_tokens, 0) ELSE 0 END AS tokens_out,
+    g.is_request_head,
     g.organization_id,
     coalesce(o.name, 'Unattributed')                            AS organization_name,
     coalesce(ur.created_by, g.ctx_user_id)                      AS user_id,
@@ -200,11 +211,11 @@ BEGIN
     ur.id                                                       AS request_id,
     ur.status                                                   AS request_status,
     ur.finish_reason,
-    coalesce(ur.iterations, 0)                                  AS iterations,
-    coalesce(ur.total_tool_calls, 0)                            AS tool_calls,
+    CASE WHEN g.is_request_head THEN coalesce(ur.iterations, 0) ELSE 0 END       AS iterations,
+    CASE WHEN g.is_request_head THEN coalesce(ur.total_tool_calls, 0) ELSE 0 END AS tool_calls,
     m.model,
     m.provider,
-    m.unpriced_calls,
+    CASE WHEN g.is_request_head THEN m.unpriced_calls ELSE 0 END AS unpriced_calls,
     to_char(g.created_at AT TIME ZONE v_tz, 'YYYY-MM-DD')       AS local_day,
     date_trunc('hour', g.created_at AT TIME ZONE v_tz)          AS local_hour
   FROM g
@@ -411,25 +422,33 @@ BEGIN
   -- ── Signals: where to dig ──────────────────────────────────────────────────
 
   -- 1. Money spent on requests that failed, were abandoned, or were cut off
-  --    at the output limit. Spent, and nothing usable came back.
+  --    at the output limit. Spent, and nothing usable came back. Counted per
+  --    REQUEST (a request may own several ledger rows).
+  WITH failed AS (
+    SELECT request_id, sum(cost) AS cost,
+           min(request_status) AS status, min(finish_reason) AS finish_reason,
+           min(feature) AS feature, min(agent_name) AS agent,
+           min(coalesce(user_email, user_id::text)) AS who,
+           min(conversation_id::text) AS conversation_id, min(conversation_title) AS conversation,
+           min(created_at) AS at
+    FROM spend_fact
+    WHERE request_id IS NOT NULL
+      AND (request_status IN ('failed', 'abandoned') OR finish_reason = 'max_tokens')
+    GROUP BY request_id
+  )
   SELECT jsonb_build_object(
     'cost', coalesce(sum(cost), 0),
     'n',    count(*),
     'rows', coalesce((
       SELECT jsonb_agg(jsonb_build_object(
-               'request_id', request_id, 'cost', cost, 'status', request_status,
+               'request_id', request_id, 'cost', cost, 'status', status,
                'finish_reason', finish_reason, 'feature', feature,
-               'agent', agent_name, 'user', coalesce(user_email, user_id::text),
-               'conversation_id', conversation_id, 'conversation', conversation_title,
-               'at', created_at) ORDER BY cost DESC)
-      FROM (SELECT * FROM spend_fact
-            WHERE request_id IS NOT NULL
-              AND (request_status IN ('failed', 'abandoned') OR finish_reason = 'max_tokens')
-            ORDER BY cost DESC LIMIT 25) t), '[]'::jsonb))
+               'agent', agent, 'user', who,
+               'conversation_id', conversation_id, 'conversation', conversation,
+               'at', at) ORDER BY cost DESC)
+      FROM (SELECT * FROM failed ORDER BY cost DESC LIMIT 25) t), '[]'::jsonb))
   INTO v_row
-  FROM spend_fact
-  WHERE request_id IS NOT NULL
-    AND (request_status IN ('failed', 'abandoned') OR finish_reason = 'max_tokens');
+  FROM failed;
   v_signals := v_signals || jsonb_build_object('failed_spend', v_row);
 
   -- 2. Context-heavy: conversations whose average context per API call
@@ -465,22 +484,31 @@ BEGIN
 
   -- 3. Iteration-heavy: single requests that looped through the model many
   --    times (tool loops). Legitimate for agentic work; suspicious past the knob.
+  --    Per REQUEST: cost is the sum of every ledger row the request owns.
+  WITH heavy AS (
+    SELECT request_id, sum(cost) AS cost, max(iterations) AS iterations,
+           max(tool_calls) AS tool_calls, min(feature) AS feature, min(agent_name) AS agent,
+           min(coalesce(user_email, user_id::text)) AS who,
+           min(conversation_id::text) AS conversation_id, min(conversation_title) AS conversation,
+           min(created_at) AS at
+    FROM spend_fact
+    WHERE request_id IS NOT NULL
+    GROUP BY request_id
+    HAVING max(iterations) >= v_iteration_heavy
+  )
   SELECT jsonb_build_object(
-    'cost', coalesce(sum(cost) FILTER (WHERE iterations >= v_iteration_heavy), 0),
-    'n',    count(*) FILTER (WHERE iterations >= v_iteration_heavy),
+    'cost', coalesce(sum(cost), 0),
+    'n',    count(*),
     'threshold', v_iteration_heavy,
     'rows', coalesce((
       SELECT jsonb_agg(jsonb_build_object(
                'request_id', request_id, 'cost', cost, 'iterations', iterations,
-               'tool_calls', tool_calls, 'feature', feature, 'agent', agent_name,
-               'user', coalesce(user_email, user_id::text),
-               'conversation_id', conversation_id, 'conversation', conversation_title,
-               'at', created_at) ORDER BY cost DESC)
-      FROM (SELECT * FROM spend_fact WHERE request_id IS NOT NULL AND iterations >= v_iteration_heavy
-            ORDER BY cost DESC LIMIT 25) t), '[]'::jsonb))
+               'tool_calls', tool_calls, 'feature', feature, 'agent', agent,
+               'user', who, 'conversation_id', conversation_id, 'conversation', conversation,
+               'at', at) ORDER BY cost DESC)
+      FROM (SELECT * FROM heavy ORDER BY cost DESC LIMIT 25) t), '[]'::jsonb))
   INTO v_row
-  FROM spend_fact
-  WHERE request_id IS NOT NULL;
+  FROM heavy;
   v_signals := v_signals || jsonb_build_object('iteration_heavy', v_row);
 
   -- 4. Hogs: a single conversation that alone is more than hog_share_pct of
@@ -488,7 +516,10 @@ BEGIN
   WITH per_conv AS (
     SELECT conversation_id, min(conversation_title) AS title, sum(cost) AS cost,
            count(DISTINCT request_id) AS requests, min(user_email) AS user_email,
-           min(agent_name) AS agent, min(feature) AS feature, min(trigger) AS trigger,
+           min(agent_name) AS agent, min(feature) AS feature,
+           CASE WHEN coalesce(sum(cost) FILTER (WHERE trigger = 'manual'), 0)
+                     >= coalesce(sum(cost) FILTER (WHERE trigger = 'automated'), 0)
+                THEN 'manual' ELSE 'automated' END AS trigger,
            min(created_at) AS first_at, max(created_at) AS last_at
     FROM spend_fact
     WHERE conversation_id IS NOT NULL
@@ -595,16 +626,18 @@ BEGIN
   v_signals := v_signals || jsonb_build_object('unpriced', v_row);
 
   -- ── The most expensive individual requests, every dimension on the row ─────
+  -- One row per REQUEST (its ledger rows summed); a ledger row no request
+  -- explains stands on its own.
   SELECT coalesce(jsonb_agg(jsonb_build_object(
            'request_id',       request_id,
            'execution_id',     execution_id,
-           'at',               created_at,
+           'at',               at,
            'cost',             cost,
            'share',            CASE WHEN v_total_cost > 0 THEN cost / v_total_cost ELSE 0 END,
            'organization_id',  organization_id,
            'organization',     organization_name,
            'user_id',          user_id,
-           'user',             coalesce(user_email, user_id::text),
+           'user',             who,
            'agent_id',         agent_id,
            'agent',            agent_name,
            'app',              app,
@@ -625,7 +658,24 @@ BEGIN
            'tokens_out',       tokens_out
          ) ORDER BY cost DESC), '[]'::jsonb)
   INTO v_top_requests
-  FROM (SELECT * FROM spend_fact ORDER BY cost DESC NULLS LAST LIMIT 40) t;
+  FROM (
+    SELECT request_id,
+           min(execution_id::text)::uuid AS execution_id,
+           min(created_at) AS at, sum(cost) AS cost,
+           min(organization_id::text)::uuid AS organization_id, min(organization_name) AS organization_name,
+           min(user_id::text)::uuid AS user_id, min(coalesce(user_email, user_id::text)) AS who,
+           min(agent_id::text)::uuid AS agent_id, min(agent_name) AS agent_name,
+           min(app) AS app, min(feature) AS feature, min(origin_class) AS origin_class,
+           min(trigger) AS trigger, min(source) AS source, min(model) AS model, min(provider) AS provider,
+           min(conversation_id::text)::uuid AS conversation_id, min(conversation_title) AS conversation_title,
+           min(request_status) AS request_status, min(finish_reason) AS finish_reason,
+           max(iterations) AS iterations, max(tool_calls) AS tool_calls,
+           sum(tokens_in) AS tokens_in, sum(tokens_cached) AS tokens_cached, sum(tokens_out) AS tokens_out
+    FROM spend_fact
+    GROUP BY coalesce(request_id::text, execution_id::text), request_id
+    ORDER BY sum(cost) DESC NULLS LAST
+    LIMIT 40
+  ) t;
 
   RETURN jsonb_build_object(
     'generated_at',       now(),
@@ -828,5 +878,6 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 REVOKE ALL ON FUNCTION public.admin_spend_breakdown(timestamptz, timestamptz, text, jsonb, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_spend_breakdown(timestamptz, timestamptz, text, jsonb, jsonb) FROM anon;
 GRANT EXECUTE ON FUNCTION public.admin_spend_breakdown(timestamptz, timestamptz, text, jsonb, jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_spend_breakdown(timestamptz, timestamptz, text, jsonb, jsonb) TO service_role;

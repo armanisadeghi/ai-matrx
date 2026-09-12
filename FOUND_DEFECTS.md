@@ -15,6 +15,27 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D311 — the admin shell fires ~30 no-argument RPC probes on every page load and each one 400s (2026-09-12)
+
+Seen on `/administration/billing/spend` in the preview: on every load the page's network log
+carries `assoc_add`, `assoc_remove`, `assoc_set_targets`, `assoc_for_entity`, `cat_create`,
+`cat_update`, `cat_delete`, `conversation_file_add`, `agent_resource_add`, `ues_set`,
+`ues_get_bulk`, `cmt_add`, `cmt_edit`, `cmt_delete`, `reference_search_candidates` … each a
+POST to `/rest/v1/rpc/<name>` answered **400** (PostgREST: required argument missing), ~25
+errors in the console before the page's own reads. They come from the shell, not the page (a
+capability probe that calls every write RPC with no body?). Fix: find the caller (grep the
+`rpc(` names above in `features/shell` / `lib`) and probe existence through `pg_proc` or a
+HEAD/`OPTIONS`, never by invoking a write RPC. Owner: whoever owns the shell's RPC catalogue.
+
+### D312 — `CREATE INDEX CONCURRENTLY` is refused by BOTH appliers when the file carries a second statement (2026-09-12)
+
+CLAUDE.md says an autocommit file is "refused by `pnpm db:apply` by name — apply it from
+aidream", and aidream's `db/apply_migrations.py` says it "runs such files in autocommit
+automatically". A two-statement file (`CREATE INDEX CONCURRENTLY …; COMMENT ON INDEX …;`) was
+refused there too: `CREATE INDEX CONCURRENTLY cannot run inside a transaction block`. Either
+the autocommit lane only fires for a single-statement file (then say so in both docs) or it
+does not fire at all (then fix the applier). Not chased — the index turned out unnecessary.
+
 ### D309 — deleting an `auth.users` row takes MINUTES and cannot finish inside an HTTP request
 
 Found 2026-09-11 while sweeping the DD-048 guard's leaked fixtures. Deleting 19 throwaway users
