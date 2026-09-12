@@ -1,0 +1,84 @@
+{
+  "_law": "Arman, 2026-09-10: \"Never an env var. Env values are only for secrets, not for controlling behavior.\"",
+  "_rule": "THIS LIST ONLY SHRINKS. These are the behavioural env toggles that existed when the guard was written. LANE D of the Unified Settings Platform is converting each one into a platform.feature_knob row (register USP-035 / USP-085). A NEW behavioural env toggle fails the guard and must never be added here.",
+  "_how": "`pnpm check:settings-env-toggles --write` removes entries that no longer exist in the tree. It cannot add one.",
+  "_baselined": "2026-09-11",
+  "entries": [
+    {
+      "name": "APPLY",
+      "file": "aidream/scripts/relocate_transcript_recordings.py",
+      "reason": "found at seed: dry-run/apply switch on two one-off aidream scripts \u2014 a CLI flag wearing an env var"
+    },
+    {
+      "name": "MATRX_ALLOW_ARCHIVED_REGENERATOR",
+      "file": "aidream/scripts/generate_impairment_aliases.py",
+      "reason": "register USP-035: a safety gate relaxed by env in two generators (frontend + aidream) \u2014 one of the six; LANE D"
+    },
+    {
+      "name": "MATRX_BROWSER_PROOF_SERVER",
+      "file": "aidream/packages/matrx-scraper/matrx_scraper/cloud_browser/streaming/proof_server.py",
+      "reason": "found at seed: cloud-browser proof server armed by env"
+    },
+    {
+      "name": "MATRX_DEBUG",
+      "file": "aidream/packages/matrx-orm/matrx_orm/schema_builder/common.py",
+      "reason": "found at seed: matrx-orm schema_builder verbosity switch"
+    },
+    {
+      "name": "MATRX_INFO",
+      "file": "aidream/packages/matrx-orm/matrx_orm/schema_builder/common.py",
+      "reason": "found at seed: matrx-orm schema_builder verbosity switch"
+    },
+    {
+      "name": "MATRX_PARITY_REQUIRE_FRONTEND",
+      "file": "aidream/scripts/generate_variable_kind_fixture.py",
+      "reason": "found at seed: generate_variable_kind_fixture strictness switch"
+    },
+    {
+      "name": "MATRX_PARITY_SHADOW",
+      "file": "aidream/packages/matrx-ai/matrx_ai/config/_parity.py",
+      "reason": "found at seed: matrx-ai config parity shadow mode"
+    },
+    {
+      "name": "MATRX_SEO_LOCAL_DEV",
+      "file": "aidream/packages/matrx-seo/matrx_seo/standalone/app.py",
+      "reason": "found at seed: matrx-seo standalone app local-dev behaviour"
+    },
+    {
+      "name": "MATRX_VERBOSE",
+      "file": "aidream/packages/matrx-orm/matrx_orm/schema_builder/common.py",
+      "reason": "found at seed: matrx-orm schema_builder verbosity switch"
+    },
+    {
+      "name": "NEXT_PUBLIC_HR_MOCK",
+      "file": "matrx-frontend/features/hr/mock/transport.ts",
+      "reason": "register USP-035: the HR mock lane armed by env \u2014 one of the six the census named; LANE D converts it"
+    },
+    {
+      "name": "P6_BENCHMARK_MODE",
+      "file": "aidream/packages/matrx-scraper/matrx_scraper/cloud_browser/worker/p6_benchmark.py",
+      "reason": "found at seed: cloud-browser worker benchmark mode"
+    },
+    {
+      "name": "P6_IMAGE_BENCHMARK_CONTRACT",
+      "file": "aidream/packages/matrx-scraper/proofs/cloud_browser/p6_capacity/harness/workloads/streaming.py",
+      "reason": "found at seed: p6 capacity harness contract switch"
+    },
+    {
+      "name": "PODCAST_E2E_FULL",
+      "file": "aidream/scripts/podcast_e2e_matrix.py",
+      "reason": "found at seed: podcast e2e matrix depth switch"
+    },
+    {
+      "name": "SSR_TIMING",
+      "file": "matrx-frontend/utils/performance/serverTiming.ts",
+      "reason": "found at seed (not in the census's six): Server-Timing headers switched on per machine"
+    },
+    {
+      "name": "UNWIRED_DEBUG",
+      "file": "matrx-frontend/scripts/unwired/scan.ts",
+      "reason": "register USP-035: debug lane in scripts/unwired/scan.ts \u2014 one of the six; LANE D"
+    }
+  ],
+  "_note": "Three of the census's six (NEXT_PUBLIC_ENABLE_CONTENT_BLOCKS_ADMIN, NEXT_PUBLIC_USE_DATABASE_CONTENT_BLOCKS, TWILIO_SKIP_VALIDATION) were already gone from the tree when this was seeded on 2026-09-11 and were never baselined."
+}

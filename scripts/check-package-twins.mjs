@@ -24,24 +24,40 @@
  * import. Copy it plus its JSON register into matrx-extend / matrx-local /
  * matrx-games unchanged.
  *
- * THE SHAPE LANE (added 2026-09-11). The name register has a hole its own
+ * THE SHAPE LANES (added 2026-09-11). The name register has a hole its own
  * census named: a twin under an UNREGISTERED name is invisible. Byte-size
  * formatting proved it — `formatFileSize` was registered and clean, while 134
  * live byte-size bodies sat in 67 files under `formatBytes`, `fmtBytes`,
  * `humanSize`, `bytesHuman`, `formatSize`, and as bare inline JSX that is not a
- * definition at all. So a second lane matches the SHAPE of the capability
- * rather than its spelling: see `scripts/byte-size-shape.mjs` for the pattern
- * and why a capacity constant (`80 * 1024 * 1024`) can never match it.
- * Shape-lane exemptions live in `shapeAllow` on the row, same rules as `allow`.
+ * definition at all. Durations proved it a second time the same day — all four
+ * `formatDuration*` exports registered and clean, while aidream's dashboard
+ * carried seven `fmtMs` / `fmtMsSummary` bodies. So a second KIND of lane
+ * matches the SHAPE of a capability rather than its spelling. Each lane is a
+ * module beside this one (`scripts/byte-size-shape.mjs`,
+ * `scripts/duration-shape.mjs`) carrying the pattern, the reason a lookalike
+ * (`80 * 1024 * 1024`, `TIMEOUT_MS = 30 * 1000`) can never match it, and a
+ * self-test that plants a body. Adding a shape rule is one entry in
+ * `SHAPE_RULES` below plus its module — never a new lane of copied code.
+ *
+ * TWO LISTS, TWO MEANINGS, on the shape rule's register row:
+ *   `shapeAllow`  — provably NOT this capability (byte arithmetic feeding a
+ *                   form field, say). Silent. Same rule as `allow`: never
+ *                   "we know, we will fix it later".
+ *   `shapeCensus` — pre-existing bodies that ARE this capability and have not
+ *                   been collapsed yet. NOT an exemption: reported loudly every
+ *                   run, and RATCHETED — a census entry whose file no longer
+ *                   has a finding FAILS, so the list can only shrink. Same
+ *                   contract as `scripts/client-hard-delete-allowlist.json`.
  *
  * Modes:
  *   default     — advisory: loud report, exit 0
  *   --strict    — exit 1 on any re-grown twin (the release-gate mode)
  *   --self-test — plant a twin in memory and prove this guard reports it
- *                 (a guard that cannot fail is not a guard) — both lanes
+ *                 (a guard that cannot fail is not a guard) — every lane
  */
 
 import { byteShapeIn, selfTestByteShape } from "./byte-size-shape.mjs";
+import { durationShapeIn, selfTestDurationShape } from "./duration-shape.mjs";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -57,6 +73,43 @@ const register = JSON.parse(
 );
 const TWINS = register.twins;
 const BY_NAME = new Map(TWINS.map((t) => [t.name, t]));
+
+/**
+ * THE SHAPE RULES. One row each: the register row that owns the capability,
+ * the detector, its self-test, and the sentence the report prints. The
+ * detector modules are never scanned — each one carries the pattern it hunts
+ * in its own source and would report itself forever.
+ */
+const SHAPE_RULES = [
+  {
+    id: "byte-size",
+    rowName: "formatFileSize",
+    module: "scripts/byte-size-shape.mjs",
+    detect: byteShapeIn,
+    selfTest: selfTestByteShape,
+    what: "a byte count becoming a unit string",
+    fix:
+      "delete the arithmetic — including the \" KB\"/\" MB\" literal beside " +
+      "it, because formatFileSize returns the unit. A capacity CONSTANT never " +
+      "matches this rule (it multiplies)",
+  },
+  {
+    id: "duration",
+    rowName: "formatDurationMs",
+    module: "scripts/duration-shape.mjs",
+    detect: durationShapeIn,
+    selfTest: selfTestDurationShape,
+    what: "a millisecond count becoming a unit string",
+    fix:
+      "delete the arithmetic and pick the voice the site rendered — " +
+      '`style: "clock"` (9:04), `"compact"` (5.2s, 5m 30s) or `"coarse"` ' +
+      "(45 min). THE UNIT LAW: the unit is in the NAME — formatDurationMs / " +
+      "formatDurationSeconds / formatDurationMinutes, never a bare number. A " +
+      "relative \"3m ago\" is formatRelativeTime, not a duration. Plain time " +
+      "arithmetic (a timeout budget, an API field) never matches this rule",
+  },
+];
+const SHAPE_MODULES = new Set(SHAPE_RULES.map((r) => r.module));
 
 /**
  * Top-level (column-zero) value definitions only. An inner helper inside a
@@ -123,16 +176,19 @@ if (SELF_TEST) {
     console.error("SELF-TEST FAILED: an inner helper was reported as a twin.");
     process.exit(1);
   }
-  // ── the SHAPE lane must also be able to fail ──
-  const shape = selfTestByteShape();
-  if (!shape.ok) {
-    console.error(`SELF-TEST FAILED (shape lane): ${shape.why}.`);
-    process.exit(1);
+  // ── every SHAPE lane must also be able to fail ──
+  for (const rule of SHAPE_RULES) {
+    const shape = rule.selfTest();
+    if (!shape.ok) {
+      console.error(`SELF-TEST FAILED (${rule.id} shape lane): ${shape.why}.`);
+      process.exit(1);
+    }
   }
   console.log(
-    `check:package-twins self-test PASSED (both lanes can fail) — ` +
-      `${TWINS.length} collapsed export(s) registered, plus the byte-size ` +
-      `SHAPE rule.`,
+    `check:package-twins self-test PASSED (every lane can fail) — ` +
+      `${TWINS.length} collapsed export(s) registered, plus ` +
+      `${SHAPE_RULES.length} SHAPE rule(s): ` +
+      `${SHAPE_RULES.map((r) => r.id).join(", ")}.`,
   );
   process.exit(0);
 }
@@ -147,23 +203,31 @@ function trackedFiles() {
 }
 
 /**
- * The byte-size SHAPE row: which package owns it, and the files whose byte
- * arithmetic is provably NOT a display formatter (a numeric converter feeding a
- * form field, say). `scripts/byte-size-shape.mjs` itself carries the pattern in
- * its own source and must never be scanned.
+ * Each live shape lane, resolved against the register: the row that owns the
+ * capability, the files provably NOT it (`shapeAllow`, silent) and the
+ * pre-existing bodies awaiting collapse (`shapeCensus`, loud and ratcheted).
  */
-const BYTE_ROW = BY_NAME.get("formatFileSize");
-const BYTE_SHAPE_ALLOW = new Map(
-  (BYTE_ROW?.shapeAllow ?? []).map((a) => [a.file, a.reason]),
-);
+const LANES = SHAPE_RULES.flatMap((rule) => {
+  const row = BY_NAME.get(rule.rowName);
+  if (!row) return [];
+  return [
+    {
+      rule,
+      row,
+      allow: new Set((row.shapeAllow ?? []).map((a) => a.file)),
+      census: new Set((row.shapeCensus ?? []).map((a) => a.file)),
+      findings: [],
+      censusHit: new Set(),
+    },
+  ];
+});
 
 const findings = [];
-const shapeFindings = [];
 let scanned = 0;
 for (const file of trackedFiles()) {
   if (file.startsWith("scripts/package-twins.json")) continue;
-  if (file === "scripts/byte-size-shape.mjs") continue;
   if (file === "scripts/check-package-twins.mjs") continue;
+  if (SHAPE_MODULES.has(file)) continue;
   let source;
   try {
     source = readFileSync(resolve(ROOT, file), "utf8");
@@ -172,36 +236,71 @@ for (const file of trackedFiles()) {
   }
   scanned++;
   for (const f of twinsIn(file, source)) findings.push({ file, ...f });
-  if (BYTE_ROW && !BYTE_SHAPE_ALLOW.has(file)) {
-    for (const h of byteShapeIn(source)) shapeFindings.push({ file, ...h });
+  for (const lane of LANES) {
+    if (lane.allow.has(file)) continue;
+    const hits = lane.rule.detect(source);
+    if (hits.length === 0) continue;
+    if (lane.census.has(file)) {
+      lane.censusHit.add(file);
+      continue;
+    }
+    for (const h of hits) lane.findings.push({ file, ...h });
   }
 }
 
-if (shapeFindings.length > 0) {
+let shapeFailures = 0;
+for (const lane of LANES) {
+  const { rule, row } = lane;
+  // THE RATCHET: a census entry that no longer has a finding is stale. Left
+  // alone it would silently re-open the hole the day someone re-grows a body
+  // in that same file, so removing it is part of the collapse.
+  const stale = [...lane.census].filter((f) => !lane.censusHit.has(f));
+  if (stale.length > 0) {
+    shapeFailures += stale.length;
+    console.error(
+      `check:package-twins [SHAPE/${rule.id}]: ${stale.length} stale ` +
+        `\`shapeCensus\` entr(ies) on \`${row.name}\` — these files no longer ` +
+        `contain ${rule.what}, so the census must shrink by them:\n`,
+    );
+    for (const f of stale) console.error(`  ${f}`);
+    console.error(
+      `\n  fix: delete those entries from the \`${row.name}\` row's ` +
+        `\`shapeCensus\` list in scripts/package-twins.json.\n`,
+    );
+  }
+
+  if (lane.censusHit.size > 0) {
+    console.log(
+      `check:package-twins [SHAPE/${rule.id}] CENSUS: ${lane.censusHit.size} ` +
+        `pre-existing file(s) still carry ${rule.what} and belong to ` +
+        `${row.package}'s \`${row.name}\`. Not exempt — collapse pending. ` +
+        `This list may only shrink.`,
+    );
+  }
+
+  if (lane.findings.length === 0) continue;
+  shapeFailures += lane.findings.length;
   console.error(
-    `check:package-twins [SHAPE]: ${shapeFindings.length} byte-size ` +
-      `formatter(s) outside the package — a byte count becoming a unit ` +
-      `string is ${BYTE_ROW.package}'s \`formatFileSize\`, whatever the local ` +
-      `name is (or even with no name at all, inlined into JSX):\n`,
+    `check:package-twins [SHAPE/${rule.id}]: ${lane.findings.length} ` +
+      `body/bodies outside the package — ${rule.what} is ${row.package}'s ` +
+      `\`${row.name}\`, whatever the local name is (or even with no name at ` +
+      `all, inlined into JSX):\n`,
   );
-  for (const f of shapeFindings) {
+  for (const f of lane.findings) {
     console.error(`  ${f.file}:${f.line}  ${f.text}`);
   }
   console.error(
-    `\n  fix: import { formatFileSize } from "${BYTE_ROW.package}" and delete ` +
-      `the arithmetic — including the " KB"/" MB" literal beside it, because ` +
-      `formatFileSize returns the unit. A capacity CONSTANT never matches this ` +
-      `rule (it multiplies); if you have a byte division that is genuinely NOT ` +
-      `a display formatter, add the file to the row's \`shapeAllow\` list in ` +
-      `scripts/package-twins.json WITH a reason.\n`,
+    `\n  fix: import from "${row.package}" and ${rule.fix}. If a hit is ` +
+      `genuinely NOT this capability, add the file to the \`${row.name}\` ` +
+      `row's \`shapeAllow\` list in scripts/package-twins.json WITH a reason.\n`,
   );
 }
 
-if (findings.length === 0 && shapeFindings.length === 0) {
+if (findings.length === 0 && shapeFailures === 0) {
   console.log(
     `check:package-twins OK — ${scanned} file(s) scanned, zero local ` +
       `definitions of the ${TWINS.length} collapsed @ai-matrx export(s), and ` +
-      `zero byte-size formatter bodies outside the package.`,
+      `zero un-censused bodies across ${LANES.length} SHAPE rule(s).`,
   );
   process.exit(0);
 }

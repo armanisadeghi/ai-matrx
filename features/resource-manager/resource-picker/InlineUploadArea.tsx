@@ -34,6 +34,12 @@ import {
   getFileDetailsByUrl,
   EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
+// THE ONE byte-size formatter (@ai-matrx/media 0.5.0 moved it to kit). The
+// local `formatBytes` that stood here divided by a `const k = 1024` binding, so
+// the shape detector in `scripts/byte-size-shape.mjs` — which looks for a
+// literal 1024/1048576/1073741824 divisor — could not see it. Same output for
+// every real size, plus the em-dash guard for null/NaN/negative.
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface UploadedFile {
   /** Original local filename, retained even when the durable URL is opaque. */
@@ -88,14 +94,6 @@ interface FileStatus {
   compressionNote?: string;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
-
 async function compressImageFile(
   file: File,
 ): Promise<{ file: File; note: string } | null> {
@@ -139,7 +137,7 @@ async function compressImageFile(
             );
             resolve({
               file: compressed,
-              note: `Compressed from ${formatBytes(file.size)} → ${formatBytes(compressed.size)}`,
+              note: `Compressed from ${formatFileSize(file.size)} → ${formatFileSize(compressed.size)}`,
             });
           },
           "image/jpeg",
@@ -172,7 +170,7 @@ async function compressPdfFile(
     });
     return {
       file: compressed,
-      note: `Compressed from ${formatBytes(file.size)} → ${formatBytes(compressed.size)}`,
+      note: `Compressed from ${formatFileSize(file.size)} → ${formatFileSize(compressed.size)}`,
     };
   } catch {
     return null;
@@ -357,7 +355,7 @@ export function InlineUploadArea({
               updatedStatuses[i] = {
                 ...updatedStatuses[i],
                 status: "uploading",
-                compressionNote: `Could not compress — uploading original (${formatBytes(file.size)})`,
+                compressionNote: `Could not compress — uploading original (${formatFileSize(file.size)})`,
               };
               filesToUpload.push(candidate);
             }
@@ -607,7 +605,7 @@ export function InlineUploadArea({
                     ? "Compressing…"
                     : fs.status === "uploading"
                       ? "Uploading…"
-                      : formatBytes(fs.file.size)}
+                      : formatFileSize(fs.file.size)}
                 </span>
               </div>
             ))}

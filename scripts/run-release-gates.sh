@@ -398,6 +398,19 @@ if $STRICT; then
         # shadows are baselined by declaration; any NEW shadow hard-fails the
         # strict lane, while direct generated aliases remain legal.
         "Generated API type shadow ratchet|pnpm check:generated-contracts"
+        # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
+        # settings screen that accepts a value the system does not honour
+        # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
+        # and ladder-ui carry a real tracked backlog (registry rows seeded ahead
+        # of their consumers; sub-org rungs the universal UI does not address
+        # yet), so they are advisory in both lanes; unregistered + env-toggles
+        # also run in CI. Every one exits 2 UNMEASURED when it cannot read the
+        # live registry — never a warn that reads as a pass.
+        "Settings: registry rows no code reads|pnpm check:settings-orphans"
+        "Settings: knob reads with no registry row|pnpm check:settings-unregistered"
+        "Settings: NEW knob-shaped constants (ratchet)|pnpm check:settings-hardcoded"
+        "Settings: behavioural env toggles (ratchet)|pnpm check:settings-env-toggles"
+        "Settings: every rung reachable in the universal UI|pnpm check:settings-ladder-ui"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -668,6 +681,19 @@ else
         # Loud here and blocking in --strict: a new handwritten API mirror
         # suppresses the generated-contract drift errors we need to see.
         "Generated API type shadow ratchet|pnpm check:generated-contracts"
+        # UNIFIED SETTINGS PLATFORM — five guards for ONE defect class: a
+        # settings screen that accepts a value the system does not honour
+        # (common-docs/projects/unified-settings-platform/REGISTER.md). Orphans
+        # and ladder-ui carry a real tracked backlog (registry rows seeded ahead
+        # of their consumers; sub-org rungs the universal UI does not address
+        # yet), so they are advisory in both lanes; unregistered + env-toggles
+        # also run in CI. Every one exits 2 UNMEASURED when it cannot read the
+        # live registry — never a warn that reads as a pass.
+        "Settings: registry rows no code reads|pnpm check:settings-orphans"
+        "Settings: knob reads with no registry row|pnpm check:settings-unregistered"
+        "Settings: NEW knob-shaped constants (ratchet)|pnpm check:settings-hardcoded"
+        "Settings: behavioural env toggles (ratchet)|pnpm check:settings-env-toggles"
+        "Settings: every rung reachable in the universal UI|pnpm check:settings-ladder-ui"
     )
 fi
 
