@@ -2,6 +2,7 @@
 
 import { Layers, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type {
   PipelineState,
   WorkItem,
@@ -61,7 +62,7 @@ function SynthCard({ item }: { item: WorkItem }) {
         )}
         {item.metadata.result_length != null && (
           <span className="text-[10px] text-muted-foreground tabular-nums">
-            {(item.metadata.result_length / 1024).toFixed(1)} KB
+            {formatFileSize(item.metadata.result_length)}
           </span>
         )}
         {item.metadata.version != null && (

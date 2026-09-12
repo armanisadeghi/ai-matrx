@@ -11,6 +11,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type {
   PipelineDerived,
   PipelineState,
@@ -21,13 +22,6 @@ interface Props {
   derived: PipelineDerived;
   /** Authoritative cost from backend cost_summary, when available. */
   authoritativeCostUsd: number | null;
-}
-
-function formatBytes(chars: number): string {
-  // Approximate "chars ≈ bytes" for English text. Good enough for a metrics strip.
-  if (chars < 1024) return `${chars} B`;
-  if (chars < 1024 * 1024) return `${(chars / 1024).toFixed(1)} KB`;
-  return `${(chars / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 function formatCost(usd: number): string {
@@ -92,7 +86,7 @@ export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
         label="content"
         value={state.stages.scrape.totals.succeeded.toLocaleString()}
         hint={
-          derived.totalCharsScraped > 0 ? `(${formatBytes(derived.totalCharsScraped)})` : null
+          derived.totalCharsScraped > 0 ? `(${formatFileSize(derived.totalCharsScraped)})` : null
         }
       />
       <MetricChip

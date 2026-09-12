@@ -32,6 +32,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -520,7 +521,7 @@ function NewExtractionContent({
                     {file.name}
                   </p>
                   <p className="text-[9px] text-muted-foreground">
-                    {(file.size / 1024).toFixed(1)} KB
+                    {formatFileSize(file.size)}
                   </p>
                 </div>
                 <button

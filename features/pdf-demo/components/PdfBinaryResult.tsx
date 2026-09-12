@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Download, ExternalLink, FileArchive, FileText, Image as ImageIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type { BinaryResult } from "../hooks/usePdfDemoApi";
 
 interface Props {
@@ -51,7 +52,7 @@ export function PdfBinaryResult({ result }: Props) {
             {result.filename}
           </span>
           <span className="text-xs text-muted-foreground">
-            {(result.blob.size / 1024).toFixed(1)} KB · {result.contentType}
+            {formatFileSize(result.blob.size)} · {result.contentType}
           </span>
         </div>
         <div className="flex items-center gap-2">

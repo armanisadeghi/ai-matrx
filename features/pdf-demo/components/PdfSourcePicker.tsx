@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import dynamic from "next/dynamic";
 import { toast } from "@/lib/toast";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 // THE one canonical file picker. Lazy — WindowPanel must never be parsed in
 // a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
@@ -89,7 +90,7 @@ export function PdfSourcePicker({ value, onChange }: Props) {
       }
       onChange({
         payload: { media: { file_id: normalized.fileId } },
-        label: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+        label: `${file.name} (${formatFileSize(file.size)})`,
       });
       toast.success("Uploaded — ready to send to the API.");
     } catch (err) {

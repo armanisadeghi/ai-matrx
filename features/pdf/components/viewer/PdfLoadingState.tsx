@@ -12,6 +12,7 @@
 
 import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface PdfLoadingStateProps {
   fileName?: string | null;
@@ -20,12 +21,6 @@ export interface PdfLoadingStateProps {
   /** Total bytes when known — enables the determinate progress bar. */
   bytesTotal?: number | null;
   className?: string;
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function PdfLoadingState({
@@ -112,9 +107,9 @@ export function PdfLoadingState({
         </div>
         <p className="text-xs tabular-nums text-muted-foreground">
           {pct !== null
-            ? `${formatBytes(bytesLoaded)} of ${formatBytes(bytesTotal ?? 0)} · ${pct}%`
+            ? `${formatFileSize(bytesLoaded)} of ${formatFileSize(bytesTotal ?? 0)} · ${pct}%`
             : bytesLoaded > 0
-              ? `${formatBytes(bytesLoaded)} loaded…`
+              ? `${formatFileSize(bytesLoaded)} loaded…`
               : "Preparing document…"}
         </p>
       </div>

@@ -28,20 +28,13 @@ import { StatusBadge } from "@/features/rag/components/library/StatusBadge";
 import type { DocStatus } from "@/features/rag/types/library";
 import type { RichMember } from "@/features/rag/hooks/useDataStores";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   MOBILE_TABLE,
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
-
-const FORMAT_BYTES = (n: number | null): string => {
-  if (n == null) return "—";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
-};
 
 function statusToDocStatus(s: RichMember["status"]): DocStatus {
   if (s === "no_processing") return "pending";
@@ -210,7 +203,7 @@ export function RichMemberTable({
                   )}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums text-xs text-muted-foreground">
-                  {FORMAT_BYTES(m.fileSize)}
+                  {formatFileSize(m.fileSize)}
                 </td>
                 <td className="px-3 py-2 text-[10px] text-muted-foreground tabular-nums">
                   {new Date(m.addedAt).toLocaleString()}
