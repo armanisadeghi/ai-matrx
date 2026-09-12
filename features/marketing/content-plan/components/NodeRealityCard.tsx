@@ -80,6 +80,7 @@ export function NodeRealityCard({
     reality,
     variant = "build",
     onGoToBuild,
+    keywordGap,
 }: {
     node: PlanNodeRow;
     /** Owned by NodePanel so the same run also backs the agent write targets. */
@@ -98,6 +99,13 @@ export function NodeRealityCard({
     variant?: "build" | "publish";
     /** Publish variant only: door back to the tab that owns the missing step. */
     onGoToBuild?: () => void;
+    /**
+     * Does this page still lack a keyword assignment? Computed by the panel
+     * from THE one SEO-plan store (`web.page.desired_values.keyword_plan`,
+     * Arman's ruling 2026-08-16) — never from `plan.node.primary_keyword_id`,
+     * which is no longer written and would make this warning fire forever.
+     */
+    keywordGap: boolean;
 }) {
     const { setView } = usePlanWorkspaceParams();
     const { verdict, busy } = reality;
@@ -114,9 +122,7 @@ export function NodeRealityCard({
     // against a guess. Surfaced ONLY when the next action spends money, so the
     // caution lands where it costs something rather than nagging on every node.
     const missingKeyword =
-        !publishHalf &&
-        !node.primary_keyword_id &&
-        verdict.action === "write-content";
+        !publishHalf && keywordGap && verdict.action === "write-content";
 
     /**
      * Rewriting overwrites the CMS draft — human work included — so it is

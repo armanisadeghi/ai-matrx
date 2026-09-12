@@ -1375,6 +1375,7 @@ export function NodePanel({
                   cmsPage={cmsPage ?? null}
                   cmsSiteId={cmsSiteId ?? null}
                   reality={reality}
+                  keywordGap={keywordGap}
                 />
               </PanelSection>
             ) : null}
@@ -1390,6 +1391,7 @@ export function NodePanel({
                   cmsPage={cmsPage ?? null}
                   cmsSiteId={cmsSiteId ?? null}
                   reality={reality}
+                  keywordGap={keywordGap}
                   variant="publish"
                   onGoToBuild={() => setActiveTab("p6_build")}
                 />
