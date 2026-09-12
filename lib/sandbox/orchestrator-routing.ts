@@ -35,7 +35,8 @@ const EC2_URL_PROVIDED = !!process.env.MATRX_ORCHESTRATOR_URL;
 const HOSTED_URL_PROVIDED = !!process.env.MATRX_HOSTED_ORCHESTRATOR_URL;
 
 const EC2_URL =
-  process.env.MATRX_ORCHESTRATOR_URL || "http://54.144.86.132:8000";
+  process.env.MATRX_ORCHESTRATOR_URL ||
+  "https://sandbox-orchestrator.matrxserver.com";
 // MATRX-EXCEPTION: "" is the deliberate sentinel for "not configured" — the
 // assertSandboxEnvLoudly() boot scream below checks exactly this and fails
 // loudly, so this is not silently masking anything.

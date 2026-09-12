@@ -4,7 +4,8 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 
 const ORCHESTRATOR_URL =
-  process.env.MATRX_ORCHESTRATOR_URL || "http://54.144.86.132:8000";
+  process.env.MATRX_ORCHESTRATOR_URL ||
+  "https://sandbox-orchestrator.matrxserver.com";
 const ORCHESTRATOR_API_KEY = process.env.MATRX_ORCHESTRATOR_API_KEY || "";
 
 function orchestratorHeaders(): Record<string, string> {

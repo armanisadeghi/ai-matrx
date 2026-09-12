@@ -43,6 +43,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -645,14 +650,21 @@ export default function AdminSandboxManagementPage() {
                                 },
                               })}
                             />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteTarget(instance)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  aria-label="Delete sandbox"
+                                  title="Delete sandbox"
+                                  onClick={() => setDeleteTarget(instance)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete sandbox</TooltipContent>
+                            </Tooltip>
                           </div>
                         </TableCell>
                       </TableRow>
