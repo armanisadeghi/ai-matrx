@@ -310,11 +310,21 @@ export function readUnfoldingRuling(
 
 export const caseDisclosureServerData = makeCompleteEnvelopeBridge<
   CaseDisclosureData & Record<string, unknown>
->(CASE_DISCLOSURE_KIND, (value) => readCaseDisclosure(value));
+>(
+  CASE_DISCLOSURE_KIND,
+  (value) =>
+    readCaseDisclosure(value) as CaseDisclosureData & Record<string, unknown>,
+);
 
 export const unfoldingRulingServerData = makeCompleteEnvelopeBridge<
   UnfoldingRulingData & Record<string, unknown>
->(UNFOLDING_RULING_KIND, (value) => readUnfoldingRuling(value));
+>(
+  UNFOLDING_RULING_KIND,
+  (value) =>
+    readUnfoldingRuling(value) as
+      | (UnfoldingRulingData & Record<string, unknown>)
+      | undefined,
+);
 
 // ---------------------------------------------------------------------------
 // toMarkdown — the same ledger, in prose

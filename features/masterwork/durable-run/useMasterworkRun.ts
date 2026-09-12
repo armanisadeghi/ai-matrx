@@ -65,7 +65,9 @@ export type MasterworkRunSurface =
   | "chat"
   | "dump"
   | "corpus"
+  | "timeline"
   | "audition"
+  | "audition_unfolding"
   | "checkup"
   | "clean_corpus";
 
@@ -83,7 +85,18 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // (`/masterworks/ingest-corpus`) — its own surface + pointer for the same
   // reason, even though its terminal event type matches the ingest lanes'.
   corpus: "masterwork_ingest_complete",
+  // The unfolding TIMELINE Approach (`/masterworks/ingest-timeline`) — a
+  // narrative unfolded into a `serial_observation_timeline` and then either
+  // distilled (teaching) or sealed (held-out). Its own surface + pointer so a
+  // timeline never rejoins the single-source ingest dialog or vice versa,
+  // even though its terminal event type matches the other ingest lanes'.
+  timeline: "masterwork_ingest_complete",
   audition: "masterwork_audition_verdict",
+  // The UNFOLDING audition (mode `unfolding`) — sealed cases worked under the
+  // case oracle. Its own surface and pointer: a desk-vs-vanilla case table is
+  // not the text-vs-reference verdict, and one dialog tab must never rejoin
+  // the other's run.
+  audition_unfolding: "masterwork_audition_unfolding_verdict",
   checkup: "masterwork_checkup_complete",
   // The manual "clean up what I said" pass (`/masterworks/clean-corpus`) — a
   // paid pass the Expert asks for, so it gets its own surface and pointer and

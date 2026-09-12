@@ -44,6 +44,7 @@ import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { RulebookRule } from "../../types";
 import { ruleAnchorId } from "../detail/RuleRelations";
+import { UnfoldingAuditionPanel } from "./UnfoldingAuditionPanel";
 import {
   EXPERT_CALLS,
   listAuditionRuns,
@@ -181,6 +182,13 @@ export function AuditionDialog({
   /** Fired when gap drafts landed on the Rulebook (refresh rule counts). */
   onGapsCaptured?: () => void;
 }) {
+  /**
+   * TWO EXAMS, ONE DIALOG. "Against the original" judges a finished piece of
+   * work against the real published one; "Unfolding" puts the desk in front of
+   * a case nobody here has seen and scores the path it took. They share
+   * nothing but the door, so they are tabs rather than one confused form.
+   */
+  const [mode, setMode] = useState<"reference" | "unfolding">("reference");
   const [candidate, setCandidate] = useState(initialCandidate ?? "");
   const [reference, setReference] = useState("");
   const [contextNote, setContextNote] = useState("");
@@ -310,6 +318,32 @@ export function AuditionDialog({
             original does that your Rulebook misses becomes a draft rule.
           </DialogDescription>
         </DialogHeader>
+        <div className="flex gap-1 border-b border-border">
+          {(
+            [
+              ["reference", "Against the original"],
+              ["unfolding", "A case it has never seen"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setMode(id)}
+              className={cn(
+                "-mb-px border-b-2 px-2 py-1.5 text-xs font-medium",
+                mode === id
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {mode === "unfolding" ? (
+          <UnfoldingAuditionPanel rulebookId={rulebookId} />
+        ) : (
         <div className="space-y-3">
           <HistoryStrip runs={history} />
           <div className="space-y-1.5">
@@ -537,6 +571,7 @@ export function AuditionDialog({
             </div>
           ) : null}
         </div>
+        )}
       </DialogContent>
     </Dialog>
     </MasterworkDictationOrigin>
