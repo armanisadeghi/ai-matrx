@@ -54,6 +54,8 @@ export type KnobUiHints = {
   /** Explicit control choice. Omitted → derived from `value_type`. */
   control?:
     | "switch"
+    /** Live registry spelling of `switch` (agent_directives.auto_apply_allowed). */
+    | "toggle"
     | "select"
     | "segmented"
     | "radio"

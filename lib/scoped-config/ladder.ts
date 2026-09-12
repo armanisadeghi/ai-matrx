@@ -124,8 +124,12 @@ export function rungTitle(kind: string): string {
 
 function deriveControl(knob: ScopedKnob, ui: KnobUiHints): KnobControl {
   if (ui.control) {
-    // "radio" is presented by the segmented primitive; the rest map 1:1.
+    // "radio" is presented by the segmented primitive, and "toggle" is what
+    // the live register spells a switch (agent_directives.auto_apply_allowed);
+    // the rest map 1:1. A hint nobody normalises is a hint that falls through
+    // to the free-text box, which is the whole defect this file answers.
     if (ui.control === "radio") return "segmented";
+    if (ui.control === "toggle") return "switch";
     return ui.control;
   }
   switch (knob.value_type) {
