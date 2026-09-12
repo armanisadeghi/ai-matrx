@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePaginatedData } from "@ai-matrx/data/react";
+import { useTablePaginationPolicy } from "@/lib/data-table/useTablePaginationPolicy";
 import {
   File,
   FileImage,
@@ -12,8 +14,8 @@ import {
   StickyNote,
   Users,
 } from "lucide-react";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +35,7 @@ import { isEntityTypeToken } from "@ai-matrx/associations";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ExposureAuditRow, ExposureAuditSummary } from "../types";
-import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import {
   booleanUrlCodec,
   enumUrlCodec,
@@ -311,7 +313,6 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
 
 export function ExposureAuditClient() {
   const [summaries, setSummaries] = useState<ExposureAuditSummary[]>([]);
-  const [rows, setRows] = useState<ExposureAuditRow[]>([]);
   // Right-clicked row — STATE (not a ref) so the menu resolves the row that
   // was actually clicked, not a stale capture.
   const [clickedRow, setClickedRow] = useState<ExposureAuditRow | null>(null);
@@ -343,9 +344,6 @@ export function ExposureAuditClient() {
     defaultPageSize: 50,
   });
   const query = table.queryState;
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
   const [refreshNonce, setRefreshNonce] = useState(0);
 
   useEffect(() => {
@@ -370,57 +368,34 @@ export function ExposureAuditClient() {
     };
   }, [refreshNonce]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const supabase = createClient();
-    const timer = window.setTimeout(
-      () => {
-        async function loadRows() {
-          setIsFetching(true);
-          const { data, error } = await supabase.rpc(
-            "admin_exposure_audit_rows",
-            {
-              p_resource_type:
-                resourceFilter === "all" ? undefined : resourceFilter,
-              p_exposure: exposureFilter,
-              p_search: query.search.trim() || undefined,
-              p_include_deleted: includeDeleted,
-              p_limit: query.pageSize,
-              p_offset: (query.page - 1) * query.pageSize,
-            },
-          );
-          if (cancelled) return;
-          if (error) {
-            setRows([]);
-            setTotal(0);
-            toast.error(`Exposure audit failed: ${error.message}`);
-          } else {
-            const nextRows = data ?? [];
-            setRows(nextRows);
-            setTotal(nextRows[0]?.total_count ?? 0);
-          }
-          setIsLoading(false);
-          setIsFetching(false);
-        }
-
-        void loadRows();
-      },
-      query.search ? 300 : 0,
-    );
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [
-    exposureFilter,
-    includeDeleted,
-    query.page,
-    query.pageSize,
-    query.search,
-    refreshNonce,
-    resourceFilter,
-  ]);
+  const policy = useTablePaginationPolicy();
+  const pagination = usePaginatedData<ExposureAuditRow, number>({
+    queryKey: JSON.stringify(["exposure-audit", policy.userId, policy.organizationId,
+      resourceFilter, exposureFilter, includeDeleted, query.search.trim(), query.pageSize, refreshNonce]),
+    initialCursor: 0,
+    getRowId: (row) => `${row.resource_type}:${row.resource_id}`,
+    loadPage: async ({ cursor, signal }) => {
+      const { data, error } = await createClient().rpc("admin_exposure_audit_rows", {
+        p_resource_type: resourceFilter === "all" ? undefined : resourceFilter,
+        p_exposure: exposureFilter,
+        p_search: query.search.trim() || undefined,
+        p_include_deleted: includeDeleted,
+        p_limit: query.pageSize,
+        p_offset: cursor,
+      }).abortSignal(signal);
+      if (error) throw new Error(`Exposure audit failed: ${error.message}`);
+      const rows = data ?? [];
+      const totalItems = rows[0]?.total_count;
+      const nextOffset = cursor + rows.length;
+      return { rows,
+        nextCursor: rows.length === 0 || (totalItems !== undefined && nextOffset >= totalItems) ? null : nextOffset,
+        ...(totalItems === undefined ? {} : { totalItems }),
+      };
+    },
+  });
+  const rows = pagination.rows;
+  const total = pagination.totalItems;
+  const isFetching = pagination.loading || pagination.isFetchingNextPage;
 
   function selectExposure(next: ExposureFilter) {
     setExposureFilter(next);
@@ -597,6 +572,10 @@ export function ExposureAuditClient() {
         </label>
       </div>
 
+      {policy.notice ? <div role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>{policy.notice}</span>
+        {policy.organizationId ? <Button size="sm" variant="ghost" onClick={policy.refresh}>Retry preferences</Button> : null}
+      </div> : null}
       <div className="min-h-0 flex-1 overflow-hidden">
         <NonEditableContextMenu
           sourceFeature="admin"
@@ -607,12 +586,11 @@ export function ExposureAuditClient() {
           data={rows}
           columns={COLUMNS}
           getRowId={(row) => `${row.resource_type}:${row.resource_id}`}
-          isLoading={isLoading}
-          isFetching={isFetching}
           query={{
-            mode: "controlled",
+            mode: "controlled-append",
             state: table.state,
-            totalItems: total,
+            pagination,
+            scroll: policy.scroll,
             onStateChange: table.onStateChange,
           }}
           toolbar={{ searchPlaceholder: "Search name, path, folder, or UUID…" }}
@@ -647,9 +625,10 @@ export function ExposureAuditClient() {
           }}
           window={{ enabled: true, title: (row) => row.display_name }}
           emptyState={{
-            title: "No matching exposure",
-            description:
-              "No files or notes match this exposure, resource, and search combination.",
+            title: pagination.error ? "Exposure rows could not load" : "No matching exposure",
+            description: pagination.error
+              ? "Use Retry below to load the exposure rows."
+              : "No files or notes match this exposure, resource, and search combination.",
           }}
         />
         </NonEditableContextMenu>

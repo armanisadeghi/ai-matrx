@@ -69,6 +69,17 @@ state transitions, so refresh, copied links, and Back/Forward reproduce the exac
 view. Overview deep links (`?edit=<ruleKey>`, `?register=<token>`) normalize into
 the same durable selected-row params instead of wiping unrelated query state.
 
+### Exposure Audit pagination
+
+Exposure Audit consumes `@ai-matrx/design-system/data-table` in `controlled-append`
+mode, with `usePaginatedData` from `@ai-matrx/data/react` owning requests, stale-response
+rejection, and stable-id deduplication. Its query identity includes user, organization,
+resource/exposure/deleted filters, debounced search, page size, and refresh generation.
+The existing super-admin RPC owns ordering and access; the table does not locally
+filter or sort an incomplete source. Scrolling uses the organization/user
+`tables.pagination` policy, with an explicit Load more/Retry control and an announced
+manual recovery when configuration is unavailable. Initial rendering never drains the source.
+
 ## Data model (all via `public.` SECURITY DEFINER RPCs, each re-checks `is_super_admin()`)
 
 `platform.*` has **no client grants** — supabase-js can only reach the exposed
@@ -300,6 +311,8 @@ used by the per-row **Link policy** side panel).
   a half-empty control plane.
 
 ## Change log
+
+- 2026-09-11 — Connected Exposure Audit to the packaged table and abortable append receipt; guarded scrolling follows scoped pagination policy. Existing exact-page table consumers retain their contracts.
 
 - **2026-09-10** — Doc fix (DC-007): corrected the Structure section — the
   layout renders the shared `AdminSectionShell` (introduced in commit

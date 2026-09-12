@@ -26,6 +26,6 @@ export function useTablePaginationPolicy() {
     : !valid ? "Scrolling preferences are missing or invalid. Use Load more and review table pagination in configuration."
     : null;
   // Manual is the explicitly announced recovery state, never a frozen config default.
-  const scroll = valid ? { mode, thresholdPx, intentTimeoutMs } : { mode: "manual" as const };
+  const scroll: { mode: "scroll" | "manual"; thresholdPx?: number; intentTimeoutMs?: number } = valid ? { mode, thresholdPx, intentTimeoutMs } : { mode: "manual" as const };
   return { scroll, notice, isLoading, refresh, organizationId, userId };
 }

@@ -76,6 +76,7 @@ import { AssociationsHost } from "@/features/scopes/host/AssociationsHost";
 // StoreProvider because the catalog's identity and transport ports read Redux.
 // See providers/AgentCatalogHost.tsx + lib/agents/catalog.ts.
 import { AgentCatalogHost } from "@/providers/AgentCatalogHost";
+import { MatrxDataTableHost } from "@/components/official/MatrxDataTableHost";
 // The live host for `openAgentPeek(agentId)` — the app service bound to the
 // picker's `openPeek` port. Slim shell; the WindowPanel body is lazy.
 import { AgentPeekHost } from "@/providers/AgentPeekHost";
@@ -162,6 +163,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
       <StoreProvider initialState={initialReduxState}>
         <AssociationsHost>
         <AgentCatalogHost>
+        <MatrxDataTableHost>
         <WindowPersistenceManager>
           <PersistentComponentProvider>
             <ToastProvider>
@@ -270,6 +272,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
             </ToastProvider>
           </PersistentComponentProvider>
         </WindowPersistenceManager>
+        </MatrxDataTableHost>
         </AgentCatalogHost>
         </AssociationsHost>
       </StoreProvider>
