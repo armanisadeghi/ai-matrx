@@ -6,6 +6,7 @@ import {
 const hit = (tabId: string, controlId: string): SettingsControlSearchHit => ({
   id: `static:${controlId}`,
   label: "Color mode",
+  location: tabId,
   tabId,
   controlId,
   href: `/user-settings/${tabId}?control=${controlId}`,

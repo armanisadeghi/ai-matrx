@@ -34,7 +34,7 @@ describe("resolveMaterializedFolderId", () => {
     maybeSingle.mockResolvedValue({ data: null, error: null });
 
     await expect(
-      resolveMaterializedFolderId("user-1", "Draft"),
+      resolveMaterializedFolderId("user-1", "Draft", "11111111-1111-4111-8111-111111111111"),
     ).resolves.toBeNull();
     expect(maybeSingle).toHaveBeenCalledTimes(1);
   });
@@ -43,7 +43,7 @@ describe("resolveMaterializedFolderId", () => {
     maybeSingle.mockResolvedValue({ data: { id: "folder-1" }, error: null });
 
     await expect(
-      resolveMaterializedFolderId("user-1", "Projects"),
+      resolveMaterializedFolderId("user-1", "Projects", "11111111-1111-4111-8111-111111111111"),
     ).resolves.toBe("folder-1");
   });
 
@@ -52,7 +52,7 @@ describe("resolveMaterializedFolderId", () => {
     maybeSingle.mockResolvedValue({ data: null, error: failure });
 
     await expect(
-      resolveMaterializedFolderId("user-1", "Draft"),
+      resolveMaterializedFolderId("user-1", "Draft", "11111111-1111-4111-8111-111111111111"),
     ).rejects.toBe(failure);
   });
 });

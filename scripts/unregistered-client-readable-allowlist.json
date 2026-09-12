@@ -1,0 +1,618 @@
+{
+  "_": "DD-159 allowlist: client-readable relations that are NOT registered in platform.entity_types, each with the reason it is still outside and the person who owes the decision. An entry is a DEBT with a name on it, not an exemption. Partitions are never listed: a partition inherits its parent's grants and RLS, so the guard folds it into the parent's registration.",
+  "as_of": "2026-09-12",
+  "entries": [
+    {
+      "relation": "agent.review_queue",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "assignment.attempt",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "assignment.item",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "billing.account_addon",
+      "anon_readable": false,
+      "reason": "Org-scoped billing record. `organization_id` is present, so the class is `organization`, but the write lane and the processor-webhook lane need reading before registration states anything.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "billing.class_purchase",
+      "anon_readable": false,
+      "reason": "Org-scoped billing record. `organization_id` is present, so the class is `organization`, but the write lane and the processor-webhook lane need reading before registration states anything.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "billing.org_plan",
+      "anon_readable": false,
+      "reason": "Org-scoped billing record. `organization_id` is present, so the class is `organization`, but the write lane and the processor-webhook lane need reading before registration states anything.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "billing.stripe_event",
+      "anon_readable": false,
+      "reason": "Org-scoped billing record. `organization_id` is present, so the class is `organization`, but the write lane and the processor-webhook lane need reading before registration states anything.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "communication.emails",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "communication.sms_rate_limits",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "communication.sms_webhook_logs",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "content_ir.admission_config",
+      "anon_readable": false,
+      "reason": "Context / content-IR template or contract store, read by signed-in members. A component of a template or a contract; needs its composition parent declared.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "content_ir.io_contract",
+      "anon_readable": false,
+      "reason": "Context / content-IR template or contract store, read by signed-in members. A component of a template or a contract; needs its composition parent declared.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "context.context_value_refs",
+      "anon_readable": false,
+      "reason": "Context / content-IR template or contract store, read by signed-in members. A component of a template or a contract; needs its composition parent declared.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "context.template_context_items",
+      "anon_readable": true,
+      "reason": "Context / content-IR template or contract store, read by signed-in members. A component of a template or a contract; needs its composition parent declared.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "context.template_scope_types",
+      "anon_readable": true,
+      "reason": "Context / content-IR template or contract store, read by signed-in members. A component of a template or a contract; needs its composition parent declared.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "context.templates",
+      "anon_readable": true,
+      "reason": "Context / content-IR template or contract store, read by signed-in members. A component of a template or a contract; needs its composition parent declared.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "crm.outreach_acceptance",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "crm.unsubscribe_token",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "dictionary.dict_provider_publication",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "docproc.page_extraction_results",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "docproc.page_extraction_runs",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "education.deck_suggestion",
+      "anon_readable": false,
+      "reason": "Education content or study store. Several of these have 0 rows and an unclear owner; the education access model is its own ruling.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "education.math_course_structure",
+      "anon_readable": true,
+      "reason": "Education content or study store. Several of these have 0 rows and an unclear owner; the education access model is its own ruling.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "education.study_source_chunk",
+      "anon_readable": true,
+      "reason": "Education content or study store. Several of these have 0 rows and an unclear owner; the education access model is its own ruling.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "education.study_structured_section",
+      "anon_readable": true,
+      "reason": "Education content or study store. Several of these have 0 rows and an unclear owner; the education access model is its own ruling.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.analysis_result",
+      "anon_readable": true,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.idempotency",
+      "anon_readable": true,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.rate_limit_buckets",
+      "anon_readable": true,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.structure",
+      "anon_readable": true,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.uploads_inflight",
+      "anon_readable": true,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.webhook_deliveries",
+      "anon_readable": true,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.webhook_dispatch_state",
+      "anon_readable": false,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "files.webhooks",
+      "anon_readable": true,
+      "reason": "File-subsystem operating table (webhooks, rate limits, idempotency, inflight uploads). Server-written machinery in shape, but several carry a real client read lane; each needs its own reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "iam.membership_grant",
+      "anon_readable": false,
+      "reason": "An organization-identity table where `organization_id` IS the subject of the row, not its tenant scope (the same four db-rules \u00a71 names as correctly un-backstopped). Registering one as a normal org-scoped entity would assert the wrong thing.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "iam.org_industries",
+      "anon_readable": true,
+      "reason": "An organization-identity table where `organization_id` IS the subject of the row, not its tenant scope (the same four db-rules \u00a71 names as correctly un-backstopped). Registering one as a normal org-scoped entity would assert the wrong thing.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "iam.organization_preferences",
+      "anon_readable": true,
+      "reason": "An organization-identity table where `organization_id` IS the subject of the row, not its tenant scope (the same four db-rules \u00a71 names as correctly un-backstopped). Registering one as a normal org-scoped entity would assert the wrong thing.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "iam.system_orgs",
+      "anon_readable": true,
+      "reason": "An organization-identity table where `organization_id` IS the subject of the row, not its tenant scope (the same four db-rules \u00a71 names as correctly un-backstopped). Registering one as a normal org-scoped entity would assert the wrong thing.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "legal._stage_dockets_966c18eca7",
+      "anon_readable": false,
+      "reason": "A hash-suffixed staging table from a legal ingest run, 0 rows. RETIREMENT CANDIDATE \u2014 list, do not move.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "legal.citations",
+      "anon_readable": false,
+      "reason": "Public-record legal corpus (court dockets and opinions). Whether a public corpus is `public` or `organization` is a product ruling, not a shape reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "legal.courts",
+      "anon_readable": false,
+      "reason": "Public-record legal corpus (court dockets and opinions). Whether a public corpus is `public` or `organization` is a product ruling, not a shape reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "legal.dockets",
+      "anon_readable": false,
+      "reason": "Public-record legal corpus (court dockets and opinions). Whether a public corpus is `public` or `organization` is a product ruling, not a shape reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "legal.ingest_runs",
+      "anon_readable": false,
+      "reason": "Public-record legal corpus (court dockets and opinions). Whether a public corpus is `public` or `organization` is a product ruling, not a shape reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "legal.opinion_clusters",
+      "anon_readable": false,
+      "reason": "Public-record legal corpus (court dockets and opinions). Whether a public corpus is `public` or `organization` is a product ruling, not a shape reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "legal.opinions",
+      "anon_readable": false,
+      "reason": "Public-record legal corpus (court dockets and opinions). Whether a public corpus is `public` or `organization` is a product ruling, not a shape reading.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "ops.ops_issue_class",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "pdf.pdf_consolidation_log",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "pdf.pdf_redaction_key_escrow",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform._bak_assoc_file_processed_document_20260812",
+      "anon_readable": false,
+      "reason": "A dated `_bak_` copy taken 2026-08-12. Censused across all five repos: no reader, no writer, only generated schema snapshots and org-null baselines. RETIREMENT CANDIDATE \u2014 the Doctrine says list, do not move.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform._bak_assoc_type_file_processed_document_20260812",
+      "anon_readable": false,
+      "reason": "A dated `_bak_` copy taken 2026-08-12, sibling of the row above. RETIREMENT CANDIDATE \u2014 list, do not move.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform.assist_producer_policy_history",
+      "anon_readable": false,
+      "reason": "Platform configuration or per-org override. The Unified Settings Platform owns the knob tables and the class question belongs with it.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform.feature_knob",
+      "anon_readable": true,
+      "reason": "Returns all 517 rows to an ANONYMOUS client (measured 2026-09-12). Unlike a price list this is the platform-wide settings registry, so whether that door stays open is a RULING, not a classification.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform.knob_override",
+      "anon_readable": false,
+      "reason": "Platform configuration or per-org override. The Unified Settings Platform owns the knob tables and the class question belongs with it.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform.knob_rung_lock",
+      "anon_readable": false,
+      "reason": "Platform configuration or per-org override. The Unified Settings Platform owns the knob tables and the class question belongs with it.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform.mtx_media_heal_queue",
+      "anon_readable": true,
+      "reason": "Platform configuration or per-org override. The Unified Settings Platform owns the knob tables and the class question belongs with it.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform.org_change_policy",
+      "anon_readable": false,
+      "reason": "Platform configuration or per-org override. The Unified Settings Platform owns the knob tables and the class question belongs with it.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "platform.org_module_config",
+      "anon_readable": false,
+      "reason": "Platform configuration or per-org override. The Unified Settings Platform owns the knob tables and the class question belongs with it.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "public.app_config_history",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "public.catalog_entries_history",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.data_store_members",
+      "anon_readable": false,
+      "reason": "Not yet classified by DD-159; needs a shape reading before registration states anything.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.embedding_cache",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.embeddings_google_gemini_2_1536",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.embeddings_oai_3_small_1536",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.embeddings_voyage_4_large_1024",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.embeddings_voyage_code_3_1024",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.kg_chunk_entities",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.kg_chunks",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.kg_clusters",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.kg_edges",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.kg_entities",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "rag.kg_entity_aliases",
+      "anon_readable": false,
+      "reason": "Org-scoped knowledge-graph / embedding store. It is a component of a RAG library and needs its composition parent declared before a class means anything; declaring 12 of those edges is its own batch.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "research.research_intent",
+      "anon_readable": false,
+      "reason": "RLS is OFF entirely and there is no owner column: a preset catalog. B-41b established that RLS-off with a read grant is correct for a catalog. Its class still needs stating.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "research.youtube_quota_day",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "runtime._org_repair_0253_backup",
+      "anon_readable": false,
+      "reason": "A one-off repair backup left behind by migration 0253. RETIREMENT CANDIDATE \u2014 list, do not move.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "runtime.global_execution_control",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scheduler.agent_schedule",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scheduler.agent_schedule_claim",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scraper.scrape_domain",
+      "anon_readable": false,
+      "reason": "Scraper operating configuration and queues. Server-written; the variant is `system` or `ledger` depending on whether a client ever writes it, which this lane did not measure per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scraper.scrape_domain_settings",
+      "anon_readable": false,
+      "reason": "Scraper operating configuration and queues. Server-written; the variant is `system` or `ledger` depending on whether a client ever writes it, which this lane did not measure per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scraper.scrape_failure_log",
+      "anon_readable": false,
+      "reason": "Scraper operating configuration and queues. Server-written; the variant is `system` or `ledger` depending on whether a client ever writes it, which this lane did not measure per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scraper.scrape_path_override",
+      "anon_readable": false,
+      "reason": "Scraper operating configuration and queues. Server-written; the variant is `system` or `ledger` depending on whether a client ever writes it, which this lane did not measure per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scraper.scrape_path_pattern",
+      "anon_readable": false,
+      "reason": "Scraper operating configuration and queues. Server-written; the variant is `system` or `ledger` depending on whether a client ever writes it, which this lane did not measure per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "scraper.scrape_retry_queue",
+      "anon_readable": false,
+      "reason": "Scraper operating configuration and queues. Server-written; the variant is `system` or `ledger` depending on whether a client ever writes it, which this lane did not measure per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "seo.keyword_classification_queue",
+      "anon_readable": false,
+      "reason": "SEO work queue / reference. Server-written; needs the same system-vs-ledger reading as the scraper tables.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "seo.location",
+      "anon_readable": false,
+      "reason": "SEO work queue / reference. Server-written; needs the same system-vs-ledger reading as the scraper tables.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "seo.topic_placement_queue",
+      "anon_readable": false,
+      "reason": "SEO work queue / reference. Server-written; needs the same system-vs-ledger reading as the scraper tables.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "transcripts.studio_cleaned_segments",
+      "anon_readable": true,
+      "reason": "Studio transcript segments, readable by signed-in members. They are components of a transcript and need their composition parent declared first.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "transcripts.studio_concept_items",
+      "anon_readable": true,
+      "reason": "Studio transcript segments, readable by signed-in members. They are components of a transcript and need their composition parent declared first.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "transcripts.studio_module_segments",
+      "anon_readable": true,
+      "reason": "Studio transcript segments, readable by signed-in members. They are components of a transcript and need their composition parent declared first.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "transcripts.studio_raw_segments",
+      "anon_readable": true,
+      "reason": "Studio transcript segments, readable by signed-in members. They are components of a transcript and need their composition parent declared first.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "users.feedback_comments",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "users.feedback_user_messages",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "users.guest_execution_log",
+      "anon_readable": true,
+      "reason": "The log beside users.guest_executions; same ruling.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "users.guest_executions",
+      "anon_readable": true,
+      "reason": "117,039 rows of guest execution records with no signed-in owner. The guest identity model is its own ruling and this table is its store.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "users.integration_connection_resources",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "users.user_follows",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "web.endpoint_family_sweep_state",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "workbench.schema_templates",
+      "anon_readable": false,
+      "reason": "RLS is OFF entirely and there is no owner column: a template catalog, the sibling of research.research_intent.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "workbench.udt_dataset_row_versions",
+      "anon_readable": true,
+      "reason": "Anon reads 16 of 7,502 rows through the parent dataset's is_public flag. It is a component of `dataset`, but the parent-public conveyance for VERSION HISTORY needs a ruling before the edge is declared.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "workbench.udt_dataset_template_fields",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "workflow.trigger_event",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "workflow.work_item",
+      "anon_readable": true,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    },
+    {
+      "relation": "workflow.worker_heartbeat",
+      "anon_readable": false,
+      "reason": "Server-written operating table with a client read lane. Its variant is `system` or `ledger` depending on whether a client ever writes it, and this lane did not measure the write lane per table.",
+      "owner": "the Data Doctrine chair (DD-159)"
+    }
+  ]
+}

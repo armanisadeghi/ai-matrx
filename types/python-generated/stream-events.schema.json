@@ -7238,6 +7238,98 @@
     "title": "MasterworkIngestProgressData",
     "type": "object"
   },
+  "MasterworkSealedCaseDisclosureData": {
+    "additionalProperties": false,
+    "description": "ONE fact a sealed case released, as it happens.\n\nTHE POINT OF THE EVENT: a run that asks a sealed source for facts is doing\nits real work between the spinner and the answer, and nobody could see it.\nA run box renders these as \"Question 3: … → …\", so an Expert watches the\nMasterwork investigate instead of watching it think.\n\nA ``commit`` disclosure carries ``question``/``answer`` as the committed\nconclusion and NO correctness of any kind — the sealed source never grades.",
+    "properties": {
+      "type": {
+        "const": "masterwork_sealed_case_disclosure",
+        "default": "masterwork_sealed_case_disclosure",
+        "title": "Type",
+        "type": "string"
+      },
+      "case_id": {
+        "title": "Case Id",
+        "type": "string"
+      },
+      "run_scope": {
+        "title": "Run Scope",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "event": {
+        "default": "ask",
+        "title": "Event",
+        "type": "string"
+      },
+      "question": {
+        "default": "",
+        "title": "Question",
+        "type": "string"
+      },
+      "answer": {
+        "default": "",
+        "title": "Answer",
+        "type": "string"
+      },
+      "found": {
+        "default": true,
+        "title": "Found",
+        "type": "boolean"
+      },
+      "cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Cost"
+      },
+      "risk": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Risk"
+      },
+      "asked_kind": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Asked Kind"
+      },
+      "disclosures_so_far": {
+        "default": 0,
+        "title": "Disclosures So Far",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "case_id",
+      "run_scope",
+      "seq"
+    ],
+    "title": "MasterworkSealedCaseDisclosureData",
+    "type": "object"
+  },
   "MasterworkIngestCompleteData": {
     "$defs": {
       "MasterworkSourceAlreadyDistilled": {
@@ -7423,6 +7515,187 @@
       }
     },
     "title": "MasterworkShortlistData",
+    "type": "object"
+  },
+  "MasterworkTriageProgressData": {
+    "additionalProperties": false,
+    "description": "One batch of the draft-triage pass (POST /masterworks/triage).\n\nCounts are CUMULATIVE across the run so a run box can show the pile\nshrinking instead of a spinner — the wall this closes (W59/W61) was a run\nthat showed nothing for minutes and then died.",
+    "properties": {
+      "type": {
+        "const": "masterwork_triage_progress",
+        "default": "masterwork_triage_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "batch_index": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Batch Index"
+      },
+      "batch_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Batch Count"
+      },
+      "drafts_total": {
+        "default": 0,
+        "title": "Drafts Total",
+        "type": "integer"
+      },
+      "retired": {
+        "default": 0,
+        "title": "Retired",
+        "type": "integer"
+      },
+      "kept": {
+        "default": 0,
+        "title": "Kept",
+        "type": "integer"
+      },
+      "rewritten": {
+        "default": 0,
+        "title": "Rewritten",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "MasterworkTriageProgressData",
+    "type": "object"
+  },
+  "MasterworkTriageCompleteData": {
+    "$defs": {
+      "MasterworkTriageDecision": {
+        "description": "What the triage pass decided about ONE draft rule, and why.\n\nThe unit of the dry-run PLAN. ``verdict`` is ``retire`` | ``keep`` |\n``rewrite``; ``statement`` carries the generalised wording on a ``rewrite``\nand is empty otherwise. A decision always names the rule it is about — a\nplan the Expert cannot check rule by rule is prose again.",
+        "properties": {
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "verdict": {
+            "default": "keep",
+            "title": "Verdict",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          },
+          "statement": {
+            "default": "",
+            "title": "Statement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id"
+        ],
+        "title": "MasterworkTriageDecision",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/triage.",
+    "properties": {
+      "type": {
+        "const": "masterwork_triage_complete",
+        "default": "masterwork_triage_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "rulebook_version": {
+        "title": "Rulebook Version",
+        "type": "integer"
+      },
+      "drafts_considered": {
+        "default": 0,
+        "title": "Drafts Considered",
+        "type": "integer"
+      },
+      "retired": {
+        "default": 0,
+        "title": "Retired",
+        "type": "integer"
+      },
+      "kept": {
+        "default": 0,
+        "title": "Kept",
+        "type": "integer"
+      },
+      "rewritten": {
+        "default": 0,
+        "title": "Rewritten",
+        "type": "integer"
+      },
+      "refused": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Refused",
+        "type": "array"
+      },
+      "failed_batches": {
+        "default": 0,
+        "title": "Failed Batches",
+        "type": "integer"
+      },
+      "drafts_unreviewed": {
+        "default": 0,
+        "title": "Drafts Unreviewed",
+        "type": "integer"
+      },
+      "dry_run": {
+        "default": false,
+        "title": "Dry Run",
+        "type": "boolean"
+      },
+      "decisions": {
+        "items": {
+          "$ref": "#/$defs/MasterworkTriageDecision"
+        },
+        "title": "Decisions",
+        "type": "array"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "rulebook_version"
+    ],
+    "title": "MasterworkTriageCompleteData",
     "type": "object"
   },
   "MasterworkDumpProgressData": {
@@ -8027,6 +8300,220 @@
       "summary"
     ],
     "title": "MasterworkAuditionVerdictData",
+    "type": "object"
+  },
+  "MasterworkAuditionOutcomeVerdictData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/audition-outcome — the OUTCOME mode:\na Masterwork run over a SEALED CASE judged by the fact the case only reveals\nat the bottom, plus the path it took to get there.\n\nThe judge returned the enumerated ``verdict`` (match | partial | miss) and\nthe ``dangerous_branch`` finding and NOTHING numeric. Every number here is\nderived mechanically from the case's own disclosure ledger and the\n``masterwork.outcome_weights`` knob (echoed in ``weights`` so a reader can\nreproduce ``quality_score`` exactly):\n\n    quality_score = outcome_points - cost_weight * cost_points\n                    - risk_weight * risk_points - dangerous_branch_penalty,\n    floored at 0.\n\nThe ``vanilla_*`` fields exist only for ``compare_vanilla`` runs: the same\nmodel tier handed the WHOLE case (resolution stripped) in one call, with\nzero disclosures by construction, judged by the same judge.",
+    "properties": {
+      "type": {
+        "const": "masterwork_audition_outcome_verdict",
+        "default": "masterwork_audition_outcome_verdict",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "case_id": {
+        "title": "Case Id",
+        "type": "string"
+      },
+      "run_scope": {
+        "title": "Run Scope",
+        "type": "string"
+      },
+      "verdict": {
+        "title": "Verdict",
+        "type": "string"
+      },
+      "why": {
+        "default": "",
+        "title": "Why",
+        "type": "string"
+      },
+      "summary": {
+        "default": "",
+        "title": "Summary",
+        "type": "string"
+      },
+      "judge_confidence": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Judge Confidence"
+      },
+      "dangerous_branch": {
+        "default": false,
+        "title": "Dangerous Branch",
+        "type": "boolean"
+      },
+      "dangerous_branch_quote": {
+        "default": "",
+        "title": "Dangerous Branch Quote",
+        "type": "string"
+      },
+      "decisive_question_seq": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Decisive Question Seq"
+      },
+      "missed_cheaper_question": {
+        "default": "",
+        "title": "Missed Cheaper Question",
+        "type": "string"
+      },
+      "disclosures": {
+        "default": 0,
+        "title": "Disclosures",
+        "type": "integer"
+      },
+      "asks": {
+        "default": 0,
+        "title": "Asks",
+        "type": "integer"
+      },
+      "cost_points": {
+        "default": 0,
+        "title": "Cost Points",
+        "type": "integer"
+      },
+      "risk_points": {
+        "default": 0,
+        "title": "Risk Points",
+        "type": "integer"
+      },
+      "quality_score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quality Score"
+      },
+      "weights": {
+        "additionalProperties": {
+          "type": "number"
+        },
+        "default": {},
+        "title": "Weights",
+        "type": "object"
+      },
+      "vanilla_compared": {
+        "default": false,
+        "title": "Vanilla Compared",
+        "type": "boolean"
+      },
+      "vanilla_verdict": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Verdict"
+      },
+      "vanilla_answer": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Answer"
+      },
+      "vanilla_score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Score"
+      },
+      "vanilla_model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Model"
+      },
+      "vanilla_error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Error"
+      },
+      "beat_vanilla": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Beat Vanilla"
+      },
+      "verdict_sentence": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Sentence"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "case_id",
+      "run_scope",
+      "verdict"
+    ],
+    "title": "MasterworkAuditionOutcomeVerdictData",
     "type": "object"
   },
   "MasterworkCorpusProgressData": {

@@ -16,7 +16,8 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { setMode, toggleMode } from "@/styles/themes/themeSlice";
+import { setMode } from "@/styles/themes/themeSlice";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import type { IdentityKey } from "@/lib/sync/types";
 
 interface BroadcastEvent {
@@ -28,6 +29,7 @@ export function ThemeDemoClient() {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const mode = useAppSelector((s) => s.theme.mode);
+  const resolvedMode = useThemeMode();
   const [storageRaw, setStorageRaw] = useState<string | null>(null);
   const [events, setEvents] = useState<BroadcastEvent[]>([]);
   // Mount gate + live observer for `<html>` class so the debug field stays
@@ -197,7 +199,7 @@ export function ThemeDemoClient() {
           </button>
           <button
             className="rounded-md border border-border px-3 py-1 text-sm hover:bg-accent"
-            onClick={() => dispatch(toggleMode())}
+            onClick={() => dispatch(setMode(resolvedMode === "dark" ? "light" : "dark"))}
           >
             toggleMode()
           </button>

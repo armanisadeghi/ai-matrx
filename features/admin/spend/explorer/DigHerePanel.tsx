@@ -301,7 +301,7 @@ export function DigHerePanel({
               primary={`${shortLocal(r.hour)} — ${r.multiple !== null ? `${r.multiple}× the median` : ""}`}
               secondary={`${r.topUser ?? "no person"} · ${r.topFeature ?? "no feature"} · ${r.n} executions`}
               cost={r.cost}
-              onDrill={() => onDrill("day", r.hour.slice(0, 10))}
+              onDrill={() => onDrill("hour", r.hour)}
             />
           ))}
         />

@@ -24,6 +24,13 @@ interface Props {
   onSynced: () => void;
 }
 
+function formatRecentAge(ageMs: number): string {
+  const minutes = Math.round(ageMs / 60_000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  return `${hours}h`;
+}
+
 export function ManifestSyncDialog({ onClose, onSynced }: Props) {
   const [deleteStale, setDeleteStale] = useState(true);
   const [createMissingSurfaces, setCreateMissingSurfaces] = useState(false);
@@ -50,8 +57,27 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
       if (changeCount === 0) {
         toast.success("Already in sync — no changes applied.");
       } else {
+        const upsertedCount =
+          res.upserted.length +
+          res.roleUpserted.length +
+          res.writeTargetUpserted.length +
+          res.clientToolUpserted.length;
+        const deletedCount =
+          res.deleted.length +
+          res.roleDeleted.length +
+          res.writeTargetDeleted.length +
+          res.clientToolDeleted.length;
+        const urlPatternSuffix =
+          res.urlPatternsUpdated.length > 0
+            ? `, ${res.urlPatternsUpdated.length} URL pattern${res.urlPatternsUpdated.length === 1 ? "" : "s"} updated`
+            : "";
         toast.success(
-          `Sync applied: ${res.upserted.length + res.roleUpserted.length + res.writeTargetUpserted.length + res.clientToolUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length + res.writeTargetDeleted.length + res.clientToolDeleted.length} deleted`,
+          `Sync applied: ${upsertedCount} upserted, ${deletedCount} deleted${urlPatternSuffix}`,
+        );
+      }
+      if (res.skippedRecentRows.length > 0) {
+        toast.warning(
+          `${res.skippedRecentRows.length} recent row${res.skippedRecentRows.length === 1 ? "" : "s"} skipped — likely another lane's in-flight work.`,
         );
       }
     } catch (e) {
@@ -177,6 +203,12 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <span className="tabular-nums font-mono">
                 {result.urlPatternsUpdated.length}
               </span>
+              <span className="text-muted-foreground">
+                Recent rows skipped:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.skippedRecentRows.length}
+              </span>
               <span className="text-muted-foreground">Remaining drift:</span>
               {/* Counted by the ONE shared helper. This line used to sum a
                   hand-picked subset — no label, value-group, write-target or
@@ -203,6 +235,34 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 <p className="mt-1 text-muted-foreground">
                   Enable &ldquo;Create missing surfaces&rdquo; or create them
                   manually.
+                </p>
+              </div>
+            )}
+            {result.skippedRecentRows.length > 0 && (
+              <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-2 text-[11px]">
+                <div className="flex items-center gap-1 mb-1 font-medium text-amber-700 dark:text-amber-300">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Recent rows skipped (touched too recently to be safely
+                  stale)
+                </div>
+                <div className="space-y-1">
+                  {result.skippedRecentRows.map((row, i) => (
+                    <div
+                      key={`${row.table}-${row.surfaceName}-${row.name}-${i}`}
+                      className="flex items-center justify-between gap-2 font-mono"
+                    >
+                      <span className="truncate">
+                        {row.table} · {row.surfaceName} · {row.name}
+                      </span>
+                      <span className="shrink-0 text-muted-foreground">
+                        {formatRecentAge(row.ageMs)} ago
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-1 text-muted-foreground">
+                  Likely another lane&apos;s in-flight work — leave these
+                  alone or re-run once they age out.
                 </p>
               </div>
             )}

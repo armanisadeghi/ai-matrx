@@ -8,6 +8,7 @@
 
 import { __internal } from "../components/SyncBootScript";
 import { definePolicy } from "../policies/define";
+import { themePolicy } from "@/styles/themes/themeSlice";
 
 const { buildPrePaintScript } = __internal;
 
@@ -135,6 +136,21 @@ describeIfDom("buildPrePaintScript (jsdom)", () => {
         const first = document.documentElement.outerHTML;
         runScript(script);
         expect(document.documentElement.outerHTML).toBe(first);
+    });
+
+    it.each([
+        [true, "dark"],
+        [false, "light"],
+    ])("resolves stored system to %s in the inline pre-paint script", (prefersDark, expected) => {
+        window.localStorage.setItem(
+            "matrx:theme",
+            JSON.stringify({ version: 1, identityKey: "i", body: { mode: "system" } }),
+        );
+        stubMatchMedia(prefersDark);
+        runScript(buildPrePaintScript([themePolicy]));
+
+        expect(document.documentElement.classList.contains("dark")).toBe(prefersDark);
+        expect(document.documentElement.getAttribute("data-theme")).toBe(expected);
     });
 
     it("returns empty string when no boot-critical policies declare prePaint", () => {

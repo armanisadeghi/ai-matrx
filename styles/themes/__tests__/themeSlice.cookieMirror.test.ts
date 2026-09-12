@@ -33,6 +33,7 @@ import {
   setMode,
   toggleMode,
   writeThemeCookie,
+  type ResolvedThemeMode,
   type ThemeMode,
 } from "../themeSlice";
 
@@ -40,6 +41,7 @@ Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
 
 type FetchArgs = Parameters<typeof fetch>;
 const originalFetch = globalThis.fetch;
+const originalMatchMedia = window.matchMedia;
 
 /** Replace the network. Default: a request that never settles (the writer never reads it). */
 function stubFetch(
@@ -67,10 +69,15 @@ const unmounts: Array<() => Promise<void>> = [];
 afterEach(async () => {
   while (unmounts.length) await unmounts.pop()?.();
   globalThis.fetch = originalFetch;
+  Object.defineProperty(window, "matchMedia", {
+    value: originalMatchMedia,
+    configurable: true,
+    writable: true,
+  });
 });
 
 describe("writeThemeCookie", () => {
-  it.each<ThemeMode>(["dark", "light"])(
+  it.each<ResolvedThemeMode>(["dark", "light"])(
     "POSTs %s as JSON to /api/set-theme",
     (mode) => {
       const fetchMock = stubFetch();
@@ -181,10 +188,10 @@ describe("StoreProvider theme-cookie subscription", () => {
     const store = await mountStoreProvider();
 
     await act(async () => {
-      store.dispatch(toggleMode());
+      store.dispatch(toggleMode("dark"));
     });
     await act(async () => {
-      store.dispatch(toggleMode());
+      store.dispatch(toggleMode("light"));
     });
 
     expect(themeCookieWrites(fetchMock)).toEqual([
@@ -226,6 +233,61 @@ describe("StoreProvider theme-cookie subscription", () => {
     expect(themeCookieWrites(fetchMock)).toEqual([{ theme: "light" }]);
   });
 
+  it("preserves system through rehydration while mirroring its resolved color", async () => {
+    Object.defineProperty(window, "matchMedia", {
+      value: () => ({ matches: false, addEventListener: jest.fn() } as unknown as MediaQueryList),
+      configurable: true,
+      writable: true,
+    });
+    const fetchMock = stubFetch();
+    const store = await mountStoreProvider();
+
+    await act(async () => {
+      store.dispatch(rehydrateTheme("system"));
+    });
+
+    expect(store.getState().theme.mode).toBe("system");
+    expect(themeCookieWrites(fetchMock)).toEqual([{ theme: "light" }]);
+  });
+
+  it("repaints and mirrors a system preference when the OS changes", async () => {
+    let onChange: ((event: MediaQueryListEvent) => void) | undefined;
+    const media: {
+      matches: boolean;
+      addEventListener: jest.Mock<void, [string, (event: MediaQueryListEvent) => void]>;
+    } = {
+      matches: true,
+      addEventListener: jest.fn((_type: string, listener: (event: MediaQueryListEvent) => void) => {
+        onChange = listener;
+      }),
+    };
+    Object.defineProperty(window, "matchMedia", {
+      value: () => media as unknown as MediaQueryList,
+      configurable: true,
+      writable: true,
+    });
+    const fetchMock = stubFetch();
+    const store = await mountStoreProvider();
+
+    await act(async () => {
+      store.dispatch(setMode("system"));
+    });
+    expect(store.getState().theme.mode).toBe("system");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(themeCookieWrites(fetchMock)).toEqual([{ theme: "dark" }]);
+
+    media.matches = false;
+    await act(async () => {
+      onChange?.({ matches: false } as MediaQueryListEvent);
+    });
+    expect(store.getState().theme.mode).toBe("system");
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    expect(themeCookieWrites(fetchMock)).toEqual([
+      { theme: "dark" },
+      { theme: "light" },
+    ]);
+  });
+
   it("writes once per distinct change across a burst of dispatches", async () => {
     const fetchMock = stubFetch();
     const store = await mountStoreProvider();
@@ -233,7 +295,7 @@ describe("StoreProvider theme-cookie subscription", () => {
     await act(async () => {
       store.dispatch(setMode("light"));
       store.dispatch(setMode("light"));
-      store.dispatch(toggleMode());
+      store.dispatch(toggleMode("light"));
       store.dispatch(setMode("dark"));
     });
 

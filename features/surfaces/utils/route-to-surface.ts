@@ -305,27 +305,44 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
 ] as const;
 
 /**
- * Marketing routes nest dynamic ids (`/marketing/brands/[brandId]/sites/
- * [siteId]/<vertical>/...`), so plain prefix matching can't tell the site
- * verticals apart. First path segment AFTER the site id → surface; the
- * page/crawl detail branches are special-cased because their children
- * (snapshots, reports, urls, logs) belong to the detail surface.
+ * Marketing routes nest dynamic segments under a BRAND key
+ * (`/marketing/[brandId]/<branch>/[siteId]/<vertical>/...`), so plain prefix
+ * matching can't tell the site verticals apart. First path segment AFTER the
+ * site id → surface; the page/crawl detail branches are special-cased because
+ * their children (snapshots, reports, urls, logs) belong to the detail
+ * surface.
+ *
+ * 🚨 THE LIVE SHAPE IS THE BRAND-KEY TREE. Until 2026-09-12 this resolver
+ * matched `/marketing/brands/[brandId]/sites/[siteId]/…` — the pre-agency-model
+ * addresses, which have been nothing but a redirector
+ * (`app/(core)/marketing/brands/[brandId]/[[...rest]]`) since the restructure.
+ * Every branch below was therefore unreachable, so the page workspace and the
+ * other 22 marketing surfaces never resolved; the header popover fell through
+ * to the hub (`matrx-user/marketing`) and every marketing write target was
+ * invisible to agents. Route shapes come from `app/(core)/marketing/[brandId]`;
+ * the old→new section table is `MARKETING_SITE_SECTION_HOMES` in
+ * `features/marketing/lib/routes.ts` (the spine). The guard that now refuses a
+ * manifest `urlPattern` addressing no live route is
+ * `pnpm check:surface-routes`.
  */
 const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
+  // `websites/` branch — what the site IS.
   pages: "matrx-user/marketing-site-pages",
   crawls: "matrx-user/marketing-crawls",
+  sitemaps: "matrx-user/marketing-sitemaps",
+  settings: "matrx-user/marketing-site-settings",
+  media: "matrx-user/marketing-site-media",
+  // `seo/` branch — the practice on it.
   audit: "matrx-user/marketing-audit",
   analysis: "matrx-user/marketing-analysis",
   findings: "matrx-user/marketing-findings",
   links: "matrx-user/marketing-links",
   backlinks: "matrx-user/marketing-backlinks",
-  reputation: "matrx-user/marketing-reputation",
-  ranks: "matrx-user/marketing-ranks",
+  authority: "matrx-user/marketing-authority",
   coverage: "matrx-user/marketing-coverage",
-  sitemaps: "matrx-user/marketing-sitemaps",
-  settings: "matrx-user/marketing-site-settings",
   keywords: "matrx-user/marketing-site-keywords",
-  media: "matrx-user/marketing-site-media",
+  // `ranks` became `rankings` in the agency-model tree.
+  rankings: "matrx-user/marketing-ranks",
   // The run console at the BRAND tier — same component, same vocabulary, one
   // brand's blast radius (`matrx-user/marketing-automations`).
   automations: "matrx-user/marketing-automations",
@@ -334,6 +351,75 @@ const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
   // list on 2026-08-11: it is agent-WRITABLE (crawl policy), which is a
   // capability the parent surface cannot carry.
 };
+
+/**
+ * `/marketing/<segment>` segments that are AGENCY-PLANE routes, not a brand
+ * key. Everything else in that position addresses one brand's workspace.
+ * Derived from the static directories under `app/(core)/marketing`.
+ */
+const MARKETING_AGENCY_SEGMENTS: ReadonlySet<string> = new Set([
+  "admin",
+  "ads",
+  "ai-visibility",
+  "analytics",
+  "approvals",
+  "audience",
+  "automations",
+  "backlink-valuation",
+  "brands",
+  "calendar",
+  "capabilities",
+  "changes",
+  "competitors",
+  "connections",
+  "content-plan",
+  "content-studio",
+  "cost",
+  "discovery",
+  "email",
+  "growth-loop",
+  "initiatives",
+  "keyword-intelligence",
+  "keyword-research",
+  "local",
+  "monitoring",
+  "operations",
+  "outreach",
+  "pages",
+  "pr",
+  "properties",
+  "ranks",
+  "reports",
+  "screenshots",
+  "search-console",
+  "sites",
+  "snapshots",
+  "social",
+  "tools",
+]);
+
+/** Brand-level sections that carry their own surface. */
+function resolveMarketingBrandSection(
+  section: string,
+  sub: readonly string[],
+): string | null {
+  // The brand's asset desk — Library / Research / Sources / Generate — is the
+  // Identity section's media room since 2026-08-28.
+  if (section === "identity" && sub[0] === "media") {
+    return "matrx-user/marketing-brand-assets";
+  }
+  // The discovery review desk became the brand inbox.
+  if (section === "inbox") return "matrx-user/marketing-discovery";
+  // Reputation left the site tree for brand intelligence, keeping the site id.
+  if (
+    section === "intelligence" &&
+    sub[0] === "reputation" &&
+    sub.length >= 2
+  ) {
+    return "matrx-user/marketing-reputation";
+  }
+  return null;
+}
 
 function resolveMarketingSurface(stripped: string): string | null {
   if (stripped !== "/marketing" && !stripped.startsWith("/marketing/")) {
@@ -361,47 +447,49 @@ function resolveMarketingSurface(stripped: string): string | null {
   // per-brand mount resolves through the site-vertical map below).
   if (segments[1] === "automations") return "matrx-user/marketing-automations";
 
-  // /marketing/brands/[brandId][...]
-  if (segments[1] === "brands" && segments.length >= 3) {
-    if (segments[3] === "discovery") {
-      return "matrx-user/marketing-discovery";
-    }
-    // The brand's asset desk — library / research / sources / generate, split
-    // out of the site's media section on 2026-08-15.
-    if (segments[3] === "assets") {
-      return "matrx-user/marketing-brand-assets";
-    }
-    // /marketing/brands/[brandId]/sites/[siteId][...]
-    if (segments[3] === "sites" && segments.length >= 5) {
-      const vertical = segments[5];
+  // /marketing/[brandId][...] — the client workspace. Anything in that
+  // position that is not an agency-plane route is a brand key.
+  const brandSeg = segments[1];
+  if (brandSeg && !MARKETING_AGENCY_SEGMENTS.has(brandSeg)) {
+    const section = segments[2] ?? "";
+    const sub = segments.slice(3);
+
+    // /marketing/[brandId]/<websites|seo>/[siteId][...]
+    if ((section === "websites" || section === "seo") && sub.length >= 1) {
+      const vertical = sub[1];
       if (!vertical) return "matrx-user/marketing-site";
       // Page detail (+ snapshots subtree) is the page workspace surface.
-      if (vertical === "pages" && segments.length >= 7) {
+      if (vertical === "pages" && sub.length >= 3) {
         return "matrx-user/marketing-page";
       }
       // Crawl detail (+ urls/logs/snapshots/links/reports subtree).
-      if (
-        vertical === "crawls" &&
-        segments.length >= 7 &&
-        segments[6] !== "new"
-      ) {
+      if (vertical === "crawls" && sub.length >= 3 && sub[2] !== "new") {
         return "matrx-user/marketing-crawl";
       }
-      // The value LEAF is the Keyword Value Workbench; the family beside it
-      // (`value/offerings`, `value/rules`, `value/dimensions`, `value/packs`)
-      // defines the machinery rather than listing keywords and stays on the
-      // site surface until each earns its own.
-      if (vertical === "value") {
-        return segments.length === 6
+      // The keywords/value LEAF is the Keyword Value Workbench; the family
+      // beside it (`value/rules`, `value/dimensions`, `value/packs`,
+      // `value/settings`) defines the machinery rather than listing keywords
+      // and stays on the site surface until each earns its own.
+      if (vertical === "keywords" && sub[2] === "value") {
+        return sub.length === 3
           ? "matrx-user/keyword-value-workbench"
           : "matrx-user/marketing-site";
+      }
+      // `settings/integrations` is its own surface (provider connections);
+      // the other settings tabs belong to the site-settings surface.
+      if (vertical === "settings" && sub[2] === "integrations") {
+        return "matrx-user/marketing-integrations";
       }
       return (
         MARKETING_SITE_VERTICAL_SURFACES[vertical] ??
         "matrx-user/marketing-site"
       );
     }
-    return "matrx-user/marketing-brand";
+
+    return (
+      resolveMarketingBrandSection(section, sub) ??
+      "matrx-user/marketing-brand"
+    );
   }
 
   // Hub-level routes: /marketing, /brands list, /sites list + legacy shims,

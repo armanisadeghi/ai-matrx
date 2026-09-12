@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 513 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 516 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "ce24b4c88da0";
+export const KIND_REGISTRY_FINGERPRINT = "b8484b1dc330";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -10961,6 +10961,82 @@ export interface MediaListRankingResult {
 }
 
 /**
+ * What one Meet minuting pass — a live window, or the wrap-up — did.
+ *  *
+ *  * Kind `meet_intelligence_result` (registry v2).
+ */
+export interface MeetIntelligenceResult {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "meet_intelligence_result";
+  /**
+   * Why nothing was written, when status is 'skipped'. Empty otherwise.
+   */
+  reason?: string;
+  /**
+   * 'written' when meet_notes rows were upserted; 'skipped' when the pass found no speech to minute. A skip is a normal outcome, never a failure.
+   */
+  status: "written" | "skipped";
+  /**
+   * communication.meet_meetings id this pass covered.
+   */
+  meeting_id: string;
+  /**
+   * How many meet_notes rows this pass upserted.
+   */
+  rows_written?: number;
+  /**
+   * Final transcript segments the pass actually read.
+   */
+  segment_count?: number;
+}
+
+/**
+ * What one attempt to land a finished meeting recording actually did.
+ *  *
+ *  * Kind `meet_recording_landing_result` (registry v2).
+ */
+export interface MeetRecordingLandingResult {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "meet_recording_landing_result";
+  /**
+   * Why, in a sentence. Never empty on anything but a plain landing.
+   */
+  detail?: string;
+  /**
+   * files.files id the recording became. Empty when nothing landed.
+   */
+  file_id?: string;
+  /**
+   * landed — the S3 object became a platform file on this pass; already_available — it was already landed; not_processing — the row was not awaiting a landing; raced — another worker landed it first. The terminal outcomes (failed, missing_row) end the run, and `retryable` re-queues, so none of the three ever reaches this field.
+   */
+  outcome: "landed" | "already_available" | "not_processing" | "raced";
+  /**
+   * communication.meet_recordings id this pass covered.
+   */
+  recording_id: string;
+}
+
+/**
+ * Durable transcription outcome for one landed recording.
+ *  *
+ *  * Kind `meet_recording_transcription_result` (registry v2).
+ */
+export interface MeetRecordingTranscriptionResult {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "meet_recording_transcription_result";
+  reason?: string;
+  status: "written" | "skipped";
+  recording_id: string;
+  segment_count?: number;
+}
+
+/**
  * Kind `memory_aid` (registry v4).
  */
 export interface MemoryAid {
@@ -21084,7 +21160,7 @@ export interface WebViewportMetaV1 {
 }
 
 /**
- * Kind `wine_tasting` (registry v7).
+ * Kind `wine_tasting` (registry v8).
  */
 export interface WineTasting {
   notes?: string;
@@ -21406,6 +21482,9 @@ export type GeneratedKindSlug =
   | "media_candidate_verdict"
   | "media_chapters"
   | "media_list_ranking_result"
+  | "meet_intelligence_result"
+  | "meet_recording_landing_result"
+  | "meet_recording_transcription_result"
   | "memory_aid"
   | "memory_hint"
   | "mermaid_diagram"
@@ -21922,6 +22001,9 @@ export interface KindPayloadBySlug {
   "media_candidate_verdict": MediaCandidateVerdict;
   "media_chapters": MediaChapters;
   "media_list_ranking_result": MediaListRankingResult;
+  "meet_intelligence_result": MeetIntelligenceResult;
+  "meet_recording_landing_result": MeetRecordingLandingResult;
+  "meet_recording_transcription_result": MeetRecordingTranscriptionResult;
   "memory_aid": MemoryAid;
   "memory_hint": MemoryHint;
   "mermaid_diagram": MermaidDiagram;
@@ -22442,6 +22524,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "media_candidate_verdict",
   "media_chapters",
   "media_list_ranking_result",
+  "meet_intelligence_result",
+  "meet_recording_landing_result",
+  "meet_recording_transcription_result",
   "memory_aid",
   "memory_hint",
   "mermaid_diagram",

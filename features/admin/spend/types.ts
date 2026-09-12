@@ -112,11 +112,14 @@ export type SpendDimension =
   | "source"
   | "model"
   | "conversation"
-  | "day";
+  | "session"
+  | "day"
+  | "hour";
 
 export const SPEND_DIMENSIONS: readonly SpendDimension[] = [
   "organization",
   "user",
+  "session",
   "agent",
   "feature",
   "conversation",
@@ -126,6 +129,7 @@ export const SPEND_DIMENSIONS: readonly SpendDimension[] = [
   "app",
   "source",
   "day",
+  "hour",
 ];
 
 /** Active drill-down filters: dimension → the row key that was clicked. */

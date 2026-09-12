@@ -4,16 +4,14 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import {
-  resolvePersonalOrgId,
-  ensureOrgId,
-} from "@/lib/organizations/personalOrg";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import type {
   Note,
   NoteRow,
   CreateNoteInput,
   UpdateNoteInput,
   NoteListItem,
+  FolderReference,
 } from "../types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { findEmptyNewNote } from "../utils/noteUtils";
@@ -122,38 +120,6 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
 }
 
 /**
- * Assign the caller's personal organization to all of their notes that have no
- * organization ("homeless" notes). Resolves the personal org via the canonical
- * session-cached `resolvePersonalOrgId`, so it works regardless of Redux
- * hydration and without a per-call RPC.
- *
- * Returns the personal org id and the ids of the notes that were re-homed.
- */
-export async function assignHomelessNotesToPersonalOrg(): Promise<{
-  organizationId: string;
-  noteIds: string[];
-}> {
-  const userId = requireUserId();
-
-  const organizationId = await resolvePersonalOrgId();
-
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("notes")
-    .update({ organization_id: organizationId })
-    .eq("created_by", userId)
-    .is("organization_id", null)
-    .is("deleted_at", null)
-    .select("id");
-  if (error) throw error;
-
-  return {
-    organizationId,
-    noteIds: (data ?? []).map((r) => r.id as string),
-  };
-}
-
-/**
  * Create a new note
  * Automatically generates label from content if label is missing or is "New Note"
  * IMPORTANT: Checks for existing empty notes and reuses them to prevent duplicates
@@ -178,18 +144,45 @@ export function emptyNoteReuseUpdates(
   return updates;
 }
 
-export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
+export async function createNote(input: CreateNoteInput): Promise<Note> {
+  // This must be the first tenant operation: even an empty-note reuse is a
+  // cross-organization read unless the captured destination is admitted first.
+  const organizationId = requireOrganizationContext(input.organization_id);
   const userId = requireUserId();
 
   const content = input.content || "";
   const targetFolder = input.folder_name || "Draft";
+  const folderId = input.folder_id ?? (await createFolder(targetFolder, organizationId));
+
+  if (input.folder_id) {
+    const { data: folder, error: folderError } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id")
+      .eq("id", input.folder_id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (folderError || !folder) {
+      throw folderError ?? new Error("The selected folder is unavailable in this organization. Choose another folder and try again.");
+    }
+  }
 
   // CRITICAL: If creating an empty note (no content or whitespace only), check for existing empty notes
   const isCreatingEmptyNote = !content || content.trim() === "";
 
   if (isCreatingEmptyNote) {
-    // Fetch all user's notes to check for existing empty ones
-    const existingNotes = await fetchNotes();
+    const { data: existingRows, error: reuseError } = await supabase
+      .schema("workbench")
+      .from("notes")
+      .select("*")
+      .eq("created_by", userId)
+      .eq("organization_id", organizationId)
+      .eq("folder_id", folderId)
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false });
+    if (reuseError) throw reuseError;
+    const existingNotes = await hydrateNoteContextLinks(existingRows ?? []);
     const existingEmptyNote = findEmptyNewNote(existingNotes);
 
     if (existingEmptyNote) {
@@ -226,29 +219,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
     }
   }
 
-  // Resolve a home org so notes are never created homeless. If the caller
-  // didn't pass one, ride the user's ACTIVE org (header selection, else their
-  // personal org) via the canonical resolver — every write follows the org the
-  // user is currently working in.
-  let organizationId = input.organization_id ?? null;
-  if (!organizationId) {
-    try {
-      organizationId = await ensureOrgId(undefined);
-    } catch (orgError) {
-      // Don't block note creation on org resolution — log loudly and fall back
-      // to homeless (the sidebar's "add to my organization" action recovers it).
-      console.error("Could not resolve organization for note:", orgError);
-    }
-  }
-
-  if (!organizationId) {
-    throw new Error(
-      "Cannot create note: no organization could be resolved for the current user.",
-    );
-  }
-
   // No existing empty note found, create a new one
-  const folderId = input.folder_id ?? (await createFolder(targetFolder));
   const { data, error } = await supabase
     .schema("workbench")
     .from("notes")
@@ -309,6 +280,32 @@ export async function updateNote(
   updates: UpdateNoteInput,
   options?: { expectedUpdatedAt?: string | null },
 ): Promise<Note> {
+  // Existing-resource mutations bind to the resource's organization, never the
+  // mutable organization picker. Read it before resolving a requested folder.
+  const { data: existing, error: existingError } = await supabase
+    .schema("workbench")
+    .from("notes")
+    .select("organization_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (existingError || !existing) throw existingError ?? operationFailed("save this note — it may already be gone");
+  const organizationId = requireOrganizationContext(existing.organization_id);
+  if (updates.organization_id !== undefined && updates.organization_id !== organizationId) {
+    throw new Error("Moving a note to another organization is not available yet. Keep this note in its current organization.");
+  }
+  if (updates.folder_id !== undefined && updates.folder_id !== null) {
+    const { data: folder, error: folderError } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id")
+      .eq("id", updates.folder_id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (folderError || !folder) {
+      throw folderError ?? new Error("The selected folder is unavailable in this note's organization.");
+    }
+  }
   const normalizedUpdates: UpdateNoteInput = { ...updates };
   // `folder_name` is denormalized display data; `folder_id` is the canonical
   // relationship used for org inheritance and folder-aware queries. Legacy
@@ -318,7 +315,7 @@ export async function updateNote(
     const folderName = updates.folder_name?.trim();
     normalizedUpdates.folder_name = folderName || null;
     normalizedUpdates.folder_id = folderName
-      ? await createFolder(folderName)
+      ? await createFolder(folderName, organizationId)
       : null;
   }
 
@@ -381,7 +378,7 @@ export async function updateNote(
 
   await syncNoteContextLinks({
     noteId: id,
-    organizationId: data.organization_id,
+    organizationId,
     projectId,
     taskId,
   });
@@ -499,6 +496,7 @@ export async function copyNote(id: string): Promise<Note> {
     folder_name: original.folder_name,
     tags: original.tags || [],
     metadata: original.metadata || {},
+    organization_id: requireOrganizationContext(original.organization_id),
   };
 
   return await createNote(copy);
@@ -562,7 +560,8 @@ export async function fetchTags(scope?: ListScopeWord): Promise<string[]> {
  * Create a folder record in note_folders.
  * Returns the new folder ID.
  */
-export async function createFolder(name: string): Promise<string> {
+export async function createFolder(name: string, capturedOrganizationId: string): Promise<string> {
+  const organizationId = requireOrganizationContext(capturedOrganizationId);
   const userId = requireUserId();
 
   // Atomic get-or-create on the (created_by, name) natural key, backed by the
@@ -579,15 +578,14 @@ export async function createFolder(name: string): Promise<string> {
         name,
         path: name,
         position: 0,
-        // Root entity (no org-inherit trigger) — org is NOT NULL; ride active org.
-        organization_id: await ensureOrgId(undefined),
+        organization_id: organizationId,
       },
       { onConflict: "created_by,name", ignoreDuplicates: true },
     )
     .select("id, deleted_at")
     .maybeSingle();
 
-  if (insertError) {
+  if (insertError && insertError.code !== "23505") {
     console.error("Error creating folder:", insertError);
     throw insertError;
   }
@@ -604,6 +602,7 @@ export async function createFolder(name: string): Promise<string> {
     .select("id")
     .eq("created_by", userId)
     .eq("name", name)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -612,6 +611,22 @@ export async function createFolder(name: string): Promise<string> {
     throw selError;
   }
   if (existing?.id) return existing.id;
+
+  // The legacy unique key still overlaps organizations. Never return a folder
+  // from another org while it exists; the owner must activate the composite key.
+  const { data: conflicting } = await supabase
+    .schema("workbench")
+    .from("note_folders")
+    .select("id, organization_id")
+    .eq("created_by", userId)
+    .eq("name", name)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (conflicting && conflicting.organization_id !== organizationId) {
+    throw new Error("notes_folder_cross_org_legacy_key: this folder name is reserved in another organization until the folder-key cutover is activated.");
+  }
+
+  if (insertError) throw insertError;
 
   // Vanishingly rare: the conflicting row was hard-deleted between the upsert
   // and this re-read (concurrent create + delete of the same name). Create fresh.
@@ -623,7 +638,7 @@ export async function createFolder(name: string): Promise<string> {
       name,
       path: name,
       position: 0,
-      organization_id: await ensureOrgId(undefined),
+      organization_id: organizationId,
     })
     .select("id")
     .single();
@@ -639,9 +654,10 @@ export async function createFolder(name: string): Promise<string> {
  * AND the denormalized folder_name on all notes in that folder.
  */
 export async function renameFolder(
-  oldName: string,
+  folder: FolderReference,
   newName: string,
 ): Promise<void> {
+  const organizationId = requireOrganizationContext(folder.organizationId);
   const userId = requireUserId();
 
   // Update the note_folders record
@@ -650,7 +666,8 @@ export async function renameFolder(
     .from("note_folders")
     .update({ name: newName, path: newName })
     .eq("created_by", userId)
-    .eq("name", oldName)
+    .eq("id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   // Update the denormalized folder_name on all notes
@@ -659,7 +676,8 @@ export async function renameFolder(
     .from("notes")
     .update({ folder_name: newName })
     .eq("created_by", userId)
-    .eq("folder_name", oldName)
+    .eq("folder_id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   if (error) {
@@ -672,7 +690,8 @@ export async function renameFolder(
  * Bulk soft-delete all notes in a folder (current user only).
  * Also soft-deletes the note_folders record.
  */
-export async function deleteFolderNotes(folderName: string): Promise<number> {
+export async function deleteFolderNotes(folder: FolderReference): Promise<number> {
+  const organizationId = requireOrganizationContext(folder.organizationId);
   const userId = requireUserId();
 
   const { data: notesToDelete } = await supabase
@@ -680,7 +699,8 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
     .from("notes")
     .select("id")
     .eq("created_by", userId)
-    .eq("folder_name", folderName)
+    .eq("folder_id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   const count = notesToDelete?.length || 0;
@@ -692,7 +712,8 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
     .from("notes")
     .update({ deleted_at: deletedAt })
     .eq("created_by", userId)
-    .eq("folder_name", folderName)
+    .eq("folder_id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   if (error) {
@@ -714,7 +735,8 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
     .from("note_folders")
     .delete()
     .eq("created_by", userId)
-    .eq("name", folderName);
+    .eq("id", folder.id)
+    .eq("organization_id", organizationId);
 
   return count;
 }
@@ -726,10 +748,11 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
  */
 export async function ensureFolderMaterialized(
   folderName: string,
+  organizationId: string,
 ): Promise<void> {
   const trimmed = folderName.trim();
   if (!trimmed) return;
 
   // createFolder already handles "exists? return id : insert" logic
-  await createFolder(trimmed);
+  await createFolder(trimmed, organizationId);
 }

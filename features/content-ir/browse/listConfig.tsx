@@ -21,6 +21,8 @@ function titleCase(value: string): string {
 
 export const shapeListConfig: EntityListConfig<ShapeBrowseRow> = {
   surfaceKey: "shapes-browse",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "content_ir_kind",
   entityLabel: { singular: "shape", plural: "shapes" },
   sourceFeature: "udt",
   scopes: SHAPE_LIST_SCOPES,

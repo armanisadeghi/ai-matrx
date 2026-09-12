@@ -23,8 +23,11 @@
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { create as createNote } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 export interface UseWorkingDocPublishArgs {
   /** Current working-document content to publish. */
@@ -52,6 +55,7 @@ export function useWorkingDocPublish({
   clearDraft,
 }: UseWorkingDocPublishArgs): UseWorkingDocPublish {
   const dispatch = useAppDispatch();
+  const organizationId = useAppSelector(selectOrganizationId);
   const [publishing, setPublishing] = useState(false);
 
   const publishAndClear = useCallback(async (): Promise<boolean> => {
@@ -61,12 +65,14 @@ export function useWorkingDocPublish({
       return false;
     }
     if (publishing) return false;
+    const capturedOrganizationId = requireOrganizationContext(organizationId);
     setPublishing(true);
     try {
       // 1) Persist durably to a note the user owns + sees in their notes list.
       const note = await createNote({
         content: text,
         label: title?.trim() || "Published draft",
+        organization_id: capturedOrganizationId,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
 
@@ -96,7 +102,7 @@ export function useWorkingDocPublish({
     } finally {
       setPublishing(false);
     }
-  }, [content, title, clearDraft, publishing, dispatch]);
+  }, [content, title, clearDraft, publishing, dispatch, organizationId]);
 
   return { publishing, publishAndClear };
 }

@@ -165,7 +165,7 @@ export const marketingAnalysisManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-analysis",
   readiness: "verified",
   label: "Marketing Analysis Queue",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/analysis",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/analysis",
   inheritsFrom: "matrx-user/marketing-site",
   groups,
   intro: `<surface_intro>

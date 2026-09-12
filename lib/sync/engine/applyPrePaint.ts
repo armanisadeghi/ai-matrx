@@ -42,7 +42,7 @@ export function applyPrePaintDescriptors(
             data && typeof data === "object" ? (data as Record<string, unknown>)[d.fromKey] : undefined;
 
         if (d.kind === "attribute") {
-            if (typeof value === "string" && d.allowed.includes(value)) {
+            if (typeof value === "string" && value !== d.systemValue && d.allowed.includes(value)) {
                 target.setAttribute(d.attribute, value);
                 continue;
             }
@@ -54,6 +54,10 @@ export function applyPrePaintDescriptors(
                     d.systemFallback.whenMatchesValue
                 ) {
                     target.setAttribute(d.attribute, d.systemFallback.whenMatchesValue);
+                    continue;
+                }
+                if (!matches && d.systemFallback.whenDoesNotMatchValue) {
+                    target.setAttribute(d.attribute, d.systemFallback.whenDoesNotMatchValue);
                     continue;
                 }
             }
@@ -70,7 +74,7 @@ export function applyPrePaintDescriptors(
             // semantics). Pin: apply-prePaint.test.ts has a regression test
             // covering this case.
             let add: boolean;
-            if (typeof value === "string") {
+            if (typeof value === "string" && value !== d.systemValue) {
                 add = value === d.whenEquals;
             } else if (d.systemFallback) {
                 const mq = evalSystemMedia(d.systemFallback.mediaQuery);

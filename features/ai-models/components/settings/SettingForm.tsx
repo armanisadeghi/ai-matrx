@@ -326,9 +326,8 @@ export default function SettingForm({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Setting?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete <strong>{data.key}</strong>{" "}
-                  from the canonical settings vocabulary. This action cannot
-                  be undone.
+                  This will remove <strong>{data.key}</strong>{" "}
+                  from the active settings vocabulary.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

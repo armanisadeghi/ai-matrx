@@ -39,11 +39,13 @@
 
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { isServiceFailure } from "@/features/data-tables/types";
 import type { ShellNavActionId } from "../constants/nav-data";
@@ -52,6 +54,7 @@ export type ShellNavActionHandlers = Record<ShellNavActionId, () => void>;
 
 export function useNavActions(): ShellNavActionHandlers {
   const dispatch = useAppDispatch();
+  const organizationId = useAppSelector(selectOrganizationId);
   const router = useRouter();
   const openCreateProject = useOpenCreateProjectWindow();
   const openPicklistManager = useOpenStructuredListManagerV2Window();
@@ -81,9 +84,10 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
+          const capturedOrganizationId = requireOrganizationContext(organizationId);
           const { createNewNote } =
             await import("@/features/notes/redux/thunks");
-          const note = await dispatch(createNewNote({})).unwrap();
+          const note = await dispatch(createNewNote({ organization_id: capturedOrganizationId })).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
         } catch {
           toast.error("Couldn't create the note");

@@ -224,7 +224,7 @@ export const marketingSiteManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site",
   readiness: "verified",
   label: "Marketing Site Workspace",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]",
   inheritsFrom: "matrx-user/marketing-brand",
   intro: `<surface_intro>
 You are on the Marketing site workspace: the overview cockpit for one managed website of a client brand — its identity, the five connection statuses (Init, Google Search Console, GA4, PageSpeed, CMS), initialization results, and registry counts. The user comes here to judge the site's health at a glance and to launch setup or crawl work.

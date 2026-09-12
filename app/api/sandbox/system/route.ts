@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { checkIsSuperAdmin } from '@/utils/supabase/userSessionData'
 import {
     resolveOrchestratorByTier,
     orchestratorJsonHeaders,
@@ -15,9 +16,8 @@ import type { SandboxTier } from '@/types/sandbox'
  * - Without `tier`: returns both tiers in a single response.
  * - With `tier`: returns just that tier.
  *
- * Auth: requires a Supabase session (any authenticated user). The orchestrator
- * itself enforces an API key — that's added server-side from env, never exposed
- * to the browser.
+ * Auth: requires a super-admin session. The orchestrator itself enforces an API
+ * key — that's added server-side from env, never exposed to the browser.
  */
 
 interface OrchestratorSystemInfo {
@@ -28,24 +28,50 @@ interface OrchestratorSystemInfo {
     error?: string
     /** Raw payload from {orchestrator}/system when ok */
     system?: Record<string, unknown>
-    /** Raw payload from {orchestrator}/ when ok */
-    info?: Record<string, unknown>
-    /** Raw /api-surface route count when ok */
+    /** Release identity reported by the running orchestrator. */
+    release?: {
+        version?: string
+        sourceSha?: string
+    }
+    /** Authoritative /api-surface route count when available. */
     routeCount?: number
     fetchedAt: string
 }
 
-async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSystemInfo> {
+function stringField(payload: unknown, field: string): string | undefined {
+    if (!payload || typeof payload !== 'object') return undefined
+    const value = (payload as Record<string, unknown>)[field]
+    return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function sourceShaField(payload: unknown): string | undefined {
+    const sourceSha = stringField(payload, 'source_sha')
+    return sourceSha && /^[0-9a-f]{40}$/i.test(sourceSha) ? sourceSha : undefined
+}
+
+function routeCountFromSurface(payload: unknown): number | undefined {
+    if (!payload || typeof payload !== 'object') return undefined
+    const routes = (payload as Record<string, unknown>).routes
+    return Array.isArray(routes) ? routes.length : undefined
+}
+
+function isSandboxTier(value: string): value is SandboxTier {
+    return value === 'ec2' || value === 'hosted'
+}
+
+export async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSystemInfo> {
     const target = resolveOrchestratorByTier(tier)
     const fetchedAt = new Date().toISOString()
     const headers = orchestratorJsonHeaders(target)
 
     try {
-        // Three reads in parallel: /system (auth) + / (no auth) + /api-surface (no auth)
+        // All three endpoints are protected by the per-tier API key. Metadata
+        // without that key used to be silently omitted while the system card
+        // still looked healthy.
         const [systemResp, rootResp, surfaceResp] = await Promise.allSettled([
             fetch(`${target.url}/system`, { headers, signal: AbortSignal.timeout(8000) }),
-            fetch(`${target.url}/`, { signal: AbortSignal.timeout(5000) }),
-            fetch(`${target.url}/api-surface`, { signal: AbortSignal.timeout(5000) }),
+            fetch(`${target.url}/`, { headers, signal: AbortSignal.timeout(5000) }),
+            fetch(`${target.url}/api-surface`, { headers, signal: AbortSignal.timeout(5000) }),
         ])
 
         const sys =
@@ -79,8 +105,11 @@ async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSystemInfo>
             ok: true,
             status: 'healthy',
             system: sys,
-            info,
-            routeCount: surface?.routes?.length,
+            release: {
+                version: stringField(info, 'version') ?? stringField(surface, 'version'),
+                sourceSha: sourceShaField(info) ?? sourceShaField(surface),
+            },
+            routeCount: routeCountFromSurface(surface),
             fetchedAt,
         }
     } catch (err) {
@@ -107,8 +136,20 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
         }
 
-        const tierParam = request.nextUrl.searchParams.get('tier') as SandboxTier | null
-        const tiers: SandboxTier[] = tierParam ? [tierParam] : ['ec2', 'hosted']
+        const isAdmin = await checkIsSuperAdmin(supabase, user.id)
+        if (!isAdmin) {
+            return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+        }
+
+        const tierParam = request.nextUrl.searchParams.get('tier')
+        if (tierParam !== null && !isSandboxTier(tierParam)) {
+            return NextResponse.json(
+                { error: 'Invalid tier. Expected ec2 or hosted.' },
+                { status: 400 }
+            )
+        }
+
+        const tiers: SandboxTier[] = tierParam === null ? ['ec2', 'hosted'] : [tierParam]
 
         const results = await Promise.all(tiers.map(fetchTierInfo))
         return NextResponse.json({ tiers: results })

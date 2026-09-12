@@ -12,7 +12,16 @@ import {
     type RehydrateAction,
 } from "@/lib/sync/engine/rehydrate";
 
-export type ThemeMode = "light" | "dark";
+/** Stored preference. Consumers that paint UI use ResolvedThemeMode instead. */
+export type ThemeMode = "light" | "dark" | "system";
+export type ResolvedThemeMode = "light" | "dark";
+
+export function resolveThemeMode(mode: ThemeMode): ResolvedThemeMode {
+    if (mode !== "system") return mode;
+    return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+}
 
 export interface ThemeState {
     mode: ThemeMode;
@@ -26,8 +35,11 @@ const themeSlice = createSlice({
     name: "theme",
     initialState,
     reducers: {
-        toggleMode: (state) => {
-            state.mode = state.mode === "light" ? "dark" : "light";
+        // The caller supplies the current painted mode. A reducer cannot read
+        // the DOM, and deriving from the stored preference would make System
+        // ambiguous. The result is always an explicit user override.
+        toggleMode: (state, action: PayloadAction<ResolvedThemeMode>) => {
+            state.mode = action.payload === "dark" ? "light" : "dark";
         },
         setMode: (state, action: PayloadAction<ThemeMode>) => {
             state.mode = action.payload;
@@ -38,7 +50,7 @@ const themeSlice = createSlice({
         b.addCase(REHYDRATE_ACTION_TYPE, (state, action: RehydrateAction) => {
             if (action.payload.sliceName !== "theme") return;
             const next = action.payload.state as Partial<ThemeState> | undefined;
-            if (next?.mode === "light" || next?.mode === "dark") {
+            if (next?.mode === "light" || next?.mode === "dark" || next?.mode === "system") {
                 state.mode = next.mode;
             }
         });
@@ -52,7 +64,7 @@ export default themeSlice.reducer;
 //
 // `themePolicy` makes the slice a first-class participant in the unified sync
 // engine. It:
-//   - broadcasts setMode/toggleMode across tabs in <20ms
+//   - broadcasts setMode/toggleMode (with its resolved source) across tabs in <20ms
 //   - persists `mode` to localStorage (key `matrx:theme`) synchronously
 //   - pre-paints `.dark` class + `data-theme` attribute before first paint via
 //     `<SyncBootScript />`, honouring OS `prefers-color-scheme` on first visit
@@ -75,10 +87,8 @@ export const themePolicy = definePolicy<ThemeState>({
     partialize: ["mode"],
     serialize: (state) => ({ mode: state.mode }),
     deserialize: (raw) => {
-        if (raw && typeof raw === "object" && (raw as { mode?: unknown }).mode === "light") {
-            return { mode: "light" };
-        }
-        return { mode: "dark" };
+        const mode = raw && typeof raw === "object" ? (raw as { mode?: unknown }).mode : undefined;
+        return { mode: mode === "light" || mode === "dark" || mode === "system" ? mode : "dark" };
     },
     prePaint: [
         {
@@ -87,6 +97,7 @@ export const themePolicy = definePolicy<ThemeState>({
             className: "dark",
             fromKey: "mode",
             whenEquals: "dark",
+            systemValue: "system",
             systemFallback: {
                 mediaQuery: "(prefers-color-scheme: dark)",
                 applyWhenMatches: true,
@@ -97,12 +108,14 @@ export const themePolicy = definePolicy<ThemeState>({
             target: "html",
             attribute: "data-theme",
             fromKey: "mode",
-            allowed: ["light", "dark"],
+            allowed: ["light", "dark", "system"],
             default: "dark",
+            systemValue: "system",
             systemFallback: {
                 mediaQuery: "(prefers-color-scheme: dark)",
                 applyWhenMatches: true,
                 whenMatchesValue: "dark",
+                whenDoesNotMatchValue: "light",
             },
         },
     ],
@@ -122,7 +135,7 @@ export const themePolicy = definePolicy<ThemeState>({
 // Fire-and-forget: cookie write failing is not a user-visible error — the
 // localStorage mirror still paints correctly next boot via the existing
 // `SyncBootScript` fallback path (see `app/layout.tsx` comments).
-export function writeThemeCookie(mode: ThemeMode): void {
+export function writeThemeCookie(mode: ResolvedThemeMode): void {
     if (typeof window === "undefined") return;
     void fetch("/api/set-theme", {
         method: "POST",

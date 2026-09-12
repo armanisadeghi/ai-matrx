@@ -189,7 +189,7 @@ export const marketingSiteSettingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-settings",
   readiness: "verified",
   label: "Marketing Site Settings",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/settings",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/settings",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the settings page of a managed website: its identity and lifecycle, the default crawl policy every crawl inherits, and the health of every data source feeding it. Read brand_context and site_context first for the client and site framing.

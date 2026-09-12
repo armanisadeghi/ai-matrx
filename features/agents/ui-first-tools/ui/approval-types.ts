@@ -44,6 +44,14 @@ export interface ApprovalChange {
   fields: ApprovalFieldDiff[];
   /** Optional concise explanation of effect/timing shown above the diff. */
   description?: string;
+  /**
+   * Who is proposing the change (the agent's display name). When set, the
+   * card's always-visible header names them — a user deciding whether to
+   * apply a change needs to see who wants it without opening Details.
+   * Omit when the producer has no distinct actor (e.g. a tile's own tools);
+   * the header falls back to its actor-less form unchanged.
+   */
+  actor?: string;
   /** When set, the card offers an "always approve {noun}" affordance. */
   autoApprove?: ApprovalAutoApprove;
 }

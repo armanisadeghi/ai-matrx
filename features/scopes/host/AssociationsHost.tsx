@@ -29,9 +29,20 @@
 // this file used to hand-write. The doors are light shells (EntityRef's peek
 // machinery is already behind its own lazy front door) and stay static.
 //
-// The demanded-schema dev probe is ALSO the package's job now (it runs inside
-// AssociationsProvider in a development build) — the ~30-line boot effect
-// that used to live here is gone.
+// D311 — MOUNTING IS INERT, AND THE CLASS IS CLOSED IN THE PACKAGE.
+//
+// `AssociationsProvider` used to run the package's `assertDemandedSchema` on
+// mount, which asked whether each of the 26 demanded RPCs existed by CALLING
+// it with sentinel args — fourteen of them WRITES. Measured here on
+// `/administration/billing/spend`: 25 POSTs to `/rest/v1/rpc/<name>` answered
+// 400 on EVERY page load, ahead of the page's own reads, in production too
+// (the package's "dev only" gate was `process.env.NODE_ENV`, which its own
+// esbuild build baked to `true`). This host turned it off first; the probe and
+// its `probeSchema` knob are DELETED from @ai-matrx/associations 0.9.0, so
+// every consumer inherits the fix and there is nothing left to switch on here.
+//
+// A wrong database still announces itself: PGRST202 at any real call site
+// raises `demanded_schema_violation` with a remedy through the bound errorSink.
 
 "use client";
 

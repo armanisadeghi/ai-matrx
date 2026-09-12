@@ -650,6 +650,8 @@ describe("workflow-runs slice", () => {
         kind: null,
         kind_ok: null,
         metadata: null,
+        empty_values: [],
+        empty_notice: null,
         ts: `t${i}`,
       } as WorkflowRunEvent);
     }
@@ -678,6 +680,8 @@ describe("workflow-runs slice", () => {
         kind: null,
         kind_ok: null,
         metadata: null,
+        empty_values: [],
+        empty_notice: null,
         ts: title,
       }) as WorkflowRunEvent;
 
@@ -721,6 +725,8 @@ describe("workflow-runs slice", () => {
         kind: "study_pack",
         kind_ok: true,
         metadata: { __ir: { verified: true, kind: "study_pack" }, source: "node" },
+        empty_values: [],
+        empty_notice: null,
         ts: "t-kinded",
       } as WorkflowRunEvent,
       { seq: 42 },

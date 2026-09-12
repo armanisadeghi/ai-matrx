@@ -21,7 +21,7 @@ export function SettingsRouteProvider({
   if (!active) return children;
 
   return (
-    <UniversalSettingsProvider>
+    <UniversalSettingsProvider target="user">
       <SettingsDesignProvider variant="compact">
         {children}
       </SettingsDesignProvider>

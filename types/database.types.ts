@@ -197,7 +197,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string
+          organization_id: string
           path: string
           slug?: string | null
           sync_base_commit?: string | null
@@ -51027,6 +51027,63 @@ export type Database = {
           },
         ]
       }
+      dd171_containment_baseline: {
+        Row: {
+          axis: string
+          measured_at: string
+          phase: string
+          principal: string
+          reads_others_personal: number
+          token: string
+        }
+        Insert: {
+          axis: string
+          measured_at?: string
+          phase: string
+          principal: string
+          reads_others_personal: number
+          token: string
+        }
+        Update: {
+          axis?: string
+          measured_at?: string
+          phase?: string
+          principal?: string
+          reads_others_personal?: number
+          token?: string
+        }
+        Relationships: []
+      }
+      definer_class_exemption: {
+        Row: {
+          declared_at: string
+          declared_by: string
+          function_name: string
+          id: string
+          identity_args: string
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          declared_at?: string
+          declared_by: string
+          function_name: string
+          id?: string
+          identity_args?: string
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          declared_at?: string
+          declared_by?: string
+          function_name?: string
+          id?: string
+          identity_args?: string
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
       emergency_door_request: {
         Row: {
           created_at: string
@@ -51678,6 +51735,36 @@ export type Database = {
           },
         ]
       }
+      superseded_policy: {
+        Row: {
+          id: string
+          policy_name: string
+          reason: string
+          schema_name: string
+          superseded_at: string
+          superseded_by: string
+          table_name: string
+        }
+        Insert: {
+          id?: string
+          policy_name: string
+          reason: string
+          schema_name: string
+          superseded_at?: string
+          superseded_by?: string
+          table_name: string
+        }
+        Update: {
+          id?: string
+          policy_name?: string
+          reason?: string
+          schema_name?: string
+          superseded_at?: string
+          superseded_by?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       system_orgs: {
         Row: {
           created_at: string
@@ -51757,6 +51844,25 @@ export type Database = {
       }
     }
     Views: {
+      definer_class_census: {
+        Row: {
+          asks_an_admin: boolean | null
+          asks_the_gate: boolean | null
+          classed_tokens: string | null
+          declared: boolean | null
+          exempt_reason: string | null
+          function_name: unknown
+          identity_args: string | null
+          is_trigger: boolean | null
+          narrows_to_caller: boolean | null
+          org_scoped: boolean | null
+          reachable_by: string | null
+          reads_classed: boolean | null
+          schema_name: unknown
+          writes_identity: boolean | null
+        }
+        Relationships: []
+      }
       fk_coverage_gaps: {
         Row: {
           column_name: unknown
@@ -51837,6 +51943,10 @@ export type Database = {
       _door_target: {
         Args: { p_id: string; p_token: string }
         Returns: Record<string, unknown>
+      }
+      _door_target_lock: {
+        Args: { p_id: string; p_token: string }
+        Returns: boolean
       }
       _door_ttl_minutes: { Args: { p_org: string }; Returns: number }
       _fk_check13: {
@@ -52063,6 +52173,25 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_variant?: string }
         Returns: undefined
       }
+      assert_class_allows: {
+        Args: { p_action: string; p_row_org?: string; p_token: string }
+        Returns: undefined
+      }
+      assert_class_read: {
+        Args: { p_row_org?: string; p_token: string }
+        Returns: undefined
+      }
+      assert_may_transfer: {
+        Args: {
+          p_container_id?: string
+          p_container_type?: string
+          p_row_org?: string
+          p_row_owner: string
+          p_target_owner: string
+          p_token: string
+        }
+        Returns: undefined
+      }
       auto_organization_name: {
         Args: { p_email: string; p_meta: Json }
         Returns: string
@@ -52092,6 +52221,10 @@ export type Database = {
       }
       canonical_certify_ok: {
         Args: { p_schema: string; p_table: string; p_token: string }
+        Returns: boolean
+      }
+      class_allows: {
+        Args: { p_action: string; p_row_org?: string; p_token: string }
         Returns: boolean
       }
       class_lanes: {
@@ -52241,6 +52374,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      generated_policy_names: { Args: never; Returns: string[] }
       governance_columns: { Args: { p_token: string }; Returns: string[] }
       has_access: {
         Args: {
@@ -52423,6 +52557,15 @@ export type Database = {
       starter_pack_ids_curated_by: {
         Args: { p_uid: string }
         Returns: string[]
+      }
+      supersede_bespoke_policies: {
+        Args: {
+          p_policy_names: string[]
+          p_reason: string
+          p_schema: string
+          p_table: string
+        }
+        Returns: undefined
       }
       table_has_visibility: {
         Args: { p_schema: string; p_table: string }
@@ -56686,10 +56829,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "_base_entity_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "_base_entity_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "_base_entity_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -56873,10 +57030,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "actor_session_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "actor_session_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_session_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -57015,8 +57186,29 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "actor_token_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "actor_token_issued_by_fkey"
             columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
             referencedColumns: ["id"]
@@ -57025,7 +57217,7 @@ export type Database = {
             foreignKeyName: "actor_token_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "admin_auth_user"
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -57098,6 +57290,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "actor_token_event_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "actor_token_event_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -57109,6 +57308,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_event_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -57192,10 +57398,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "approach_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "approach_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approach_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -57276,10 +57496,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "assist_producer_policy_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "assist_producer_policy_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assist_producer_policy_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -57483,6 +57717,13 @@ export type Database = {
             foreignKeyName: "association_types_source_type_fkey"
             columns: ["source_type"]
             isOneToOne: false
+            referencedRelation: "list_scope_registry"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "association_types_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["id"]
           },
@@ -57505,6 +57746,13 @@ export type Database = {
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "association_types_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -57603,6 +57851,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "associations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "associations_payload_kind_fkey"
             columns: ["payload_kind"]
             isOneToOne: false
@@ -57614,6 +57869,13 @@ export type Database = {
             columns: ["source_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -57642,6 +57904,13 @@ export type Database = {
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -57773,6 +58042,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "categories_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "categories_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
@@ -57784,6 +58060,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -57945,6 +58228,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
@@ -57956,6 +58246,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -58039,10 +58336,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "continued_access_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "continued_access_revoked_by_fkey"
             columns: ["revoked_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "continued_access_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
           {
@@ -58053,10 +58364,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "continued_access_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "continued_access_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "continued_access_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -58161,10 +58486,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "custom_entity_definition_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "custom_entity_definition_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_entity_definition_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -58290,6 +58629,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "custom_field_definition_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "custom_field_definition_reference_target_definition_id_fkey"
             columns: ["reference_target_definition_id"]
             isOneToOne: false
@@ -58308,6 +58654,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_definition_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -58382,10 +58735,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "custom_field_target_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "custom_field_target_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_target_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -58448,6 +58815,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "custom_record_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "custom_record_entity_definition_id_fkey"
             columns: ["entity_definition_id"]
             isOneToOne: false
@@ -58459,6 +58833,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_record_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -58626,10 +59007,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "domain_classification_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "domain_classification_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "domain_classification_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -58734,6 +59129,13 @@ export type Database = {
             foreignKeyName: "entity_relationships_child_type_fkey"
             columns: ["child_type"]
             isOneToOne: false
+            referencedRelation: "list_scope_registry"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_relationships_child_type_fkey"
+            columns: ["child_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["id"]
           },
@@ -58756,6 +59158,13 @@ export type Database = {
             columns: ["parent_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_relationships_parent_type_fkey"
+            columns: ["parent_type"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -58952,6 +59361,13 @@ export type Database = {
             foreignKeyName: "entity_types_projects_token_fkey"
             columns: ["projects_token"]
             isOneToOne: false
+            referencedRelation: "list_scope_registry"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "entity_types_projects_token_fkey"
+            columns: ["projects_token"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["id"]
           },
@@ -59136,10 +59552,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "flexible_data_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "flexible_data_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flexible_data_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -59205,10 +59635,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "guided_checklist_run_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "guided_checklist_run_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guided_checklist_run_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -59337,10 +59781,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "judge_verdict_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "judge_verdict_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "judge_verdict_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -59504,6 +59962,7 @@ export type Database = {
           description: string
           kind: string
           precedence: number
+          scope_row_identity: string
           scope_schema: string | null
           scope_table: string | null
         }
@@ -59511,6 +59970,7 @@ export type Database = {
           description: string
           kind: string
           precedence: number
+          scope_row_identity?: string
           scope_schema?: string | null
           scope_table?: string | null
         }
@@ -59518,6 +59978,7 @@ export type Database = {
           description?: string
           kind?: string
           precedence?: number
+          scope_row_identity?: string
           scope_schema?: string | null
           scope_table?: string | null
         }
@@ -59620,6 +60081,13 @@ export type Database = {
             columns: ["entity_token"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_archive_row_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -59759,6 +60227,13 @@ export type Database = {
             columns: ["entity_token"]
             isOneToOne: true
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -60037,6 +60512,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "masterwork_corpus_item_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "masterwork_corpus_item_rulebook_id_fkey"
             columns: ["rulebook_id"]
             isOneToOne: false
@@ -60048,6 +60530,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "masterwork_corpus_item_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -60404,6 +60893,13 @@ export type Database = {
             foreignKeyName: "org_module_config_module_token_fkey"
             columns: ["module_token"]
             isOneToOne: false
+            referencedRelation: "list_scope_registry"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "org_module_config_module_token_fkey"
+            columns: ["module_token"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["id"]
           },
@@ -60529,10 +61025,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "outcome_event_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "outcome_event_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outcome_event_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -60619,6 +61129,13 @@ export type Database = {
             foreignKeyName: "output_feedback_corrected_ref_type_fkey"
             columns: ["corrected_ref_type"]
             isOneToOne: false
+            referencedRelation: "list_scope_registry"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "output_feedback_corrected_ref_type_fkey"
+            columns: ["corrected_ref_type"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["id"]
           },
@@ -60644,10 +61161,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "output_feedback_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "output_feedback_subject_type_fkey"
             columns: ["subject_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "output_feedback_subject_type_fkey"
+            columns: ["subject_type"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -60676,6 +61207,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "output_feedback_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -60777,10 +61315,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "outsider_consumer_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "outsider_consumer_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsider_consumer_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -60849,10 +61401,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "purpose_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "purpose_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purpose_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -60942,6 +61508,13 @@ export type Database = {
             columns: ["parent_token"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "reference_declaration_parent_token_fkey"
+            columns: ["parent_token"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -61085,6 +61658,13 @@ export type Database = {
             foreignKeyName: "retention_policy_entity_token_fkey"
             columns: ["entity_token"]
             isOneToOne: false
+            referencedRelation: "list_scope_registry"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "retention_policy_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: false
             referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["id"]
           },
@@ -61172,10 +61752,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "route_manifest_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "route_manifest_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_manifest_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -61272,6 +61866,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rulebook_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rulebook_source_authority_fkey"
             columns: ["source_authority"]
             isOneToOne: false
@@ -61290,6 +61891,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rulebook_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -61367,10 +61975,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "saved_view_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "saved_view_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_view_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -61457,6 +62079,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "share_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -61579,10 +62208,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "short_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "short_links_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_links_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -61766,6 +62409,13 @@ export type Database = {
             referencedRelation: "admin_auth_user"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_entity_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -61873,6 +62523,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "associations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "associations_payload_kind_fkey"
             columns: ["payload_kind"]
             isOneToOne: false
@@ -61884,6 +62541,13 @@ export type Database = {
             columns: ["source_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -61912,6 +62576,13 @@ export type Database = {
             columns: ["target_type"]
             isOneToOne: false
             referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "associations_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "list_scope_registry"
             referencedColumns: ["token"]
           },
           {
@@ -62006,6 +62677,25 @@ export type Database = {
           severity: string | null
           unacked_objects: number | null
           unacked_rows: number | null
+        }
+        Relationships: []
+      }
+      list_scope_registry: {
+        Row: {
+          default_list_scope: Database["platform"]["Enums"]["list_scope"] | null
+          token: string | null
+        }
+        Insert: {
+          default_list_scope?:
+            | Database["platform"]["Enums"]["list_scope"]
+            | null
+          token?: string | null
+        }
+        Update: {
+          default_list_scope?:
+            | Database["platform"]["Enums"]["list_scope"]
+            | null
+          token?: string | null
         }
         Relationships: []
       }
@@ -62168,6 +62858,13 @@ export type Database = {
             foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
             columns: ["entity_token"]
             isOneToOne: true
+            referencedRelation: "list_scope_registry"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "lifecycle_entity_plan_entity_token_fkey"
+            columns: ["entity_token"]
+            isOneToOne: true
             referencedRelation: "v_lifecycle_enlisted"
             referencedColumns: ["id"]
           },
@@ -62287,6 +62984,21 @@ export type Database = {
           organization_id: string | null
           unit_id: string | null
           unit_type: string | null
+        }
+        Relationships: []
+      }
+      visible_user_identity: {
+        Row: {
+          email: string | null
+          id: string | null
+        }
+        Insert: {
+          email?: never
+          id?: string | null
+        }
+        Update: {
+          email?: never
+          id?: string | null
         }
         Relationships: []
       }
@@ -62543,6 +63255,8 @@ export type Database = {
       create_entity_table: {
         Args: {
           p_category: boolean
+          p_data_class?: Database["platform"]["Enums"]["data_class"]
+          p_default_list_scope?: Database["platform"]["Enums"]["list_scope"]
           p_fields: string[]
           p_gin_jsonb: boolean
           p_label: string
@@ -62678,6 +63392,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      declared_actor_system: { Args: never; Returns: string }
       declared_actor_tier: { Args: never; Returns: string }
       definer_guard_revoke_notice: {
         Args: {
@@ -62730,6 +63445,7 @@ export type Database = {
         Args: { p_token: string }
         Returns: Database["platform"]["Enums"]["visibility"]
       }
+      entity_link_shareable: { Args: { p_token: string }; Returns: boolean }
       entity_row_access_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: Record<string, unknown>
@@ -65818,6 +66534,16 @@ export type Database = {
           p_status?: string
         }
         Returns: string
+      }
+      admin_tool_refetch_all_time: {
+        Args: never
+        Returns: unknown[]
+        SetofOptions: {
+          from: "*"
+          to: "mv_tool_refetch_summary"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       admin_unregistered_pairs: {
         Args: never
@@ -91403,6 +92129,72 @@ export type Database = {
           updated_by?: string | null
           uri_match_mode?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      credential_mutation_receipts: {
+        Row: {
+          actor_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          mutation_id: string
+          operation: string
+          organization_id: string
+          principal_id: string
+          principal_type: string
+          result_field_id: string | null
+          result_item_id: string | null
+          result_value_version: number | null
+          target_field_id: string | null
+          target_item_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          mutation_id: string
+          operation: string
+          organization_id: string
+          principal_id: string
+          principal_type: string
+          result_field_id?: string | null
+          result_item_id?: string | null
+          result_value_version?: number | null
+          target_field_id?: string | null
+          target_item_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          mutation_id?: string
+          operation?: string
+          organization_id?: string
+          principal_id?: string
+          principal_type?: string
+          result_field_id?: string | null
+          result_item_id?: string | null
+          result_value_version?: number | null
+          target_field_id?: string | null
+          target_item_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: []
       }

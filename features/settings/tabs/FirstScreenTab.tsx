@@ -23,7 +23,6 @@ import type { SettingsTabDef } from "../types";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
-import { SettingsSegmented } from "@/components/official/settings/primitives/SettingsSegmented";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
@@ -32,7 +31,6 @@ import { THEME_MODE_OPTIONS, type ThemeMode } from "../agent-writable-settings";
 import { useUniversalSettings } from "../universal/UniversalSettingsContext";
 import {
   RegistryCoverage,
-  SettingsContextControls,
   UniversalSettingsRows,
 } from "../universal/UniversalSettingsPane";
 
@@ -78,13 +76,12 @@ export default function FirstScreenTab() {
         icon={SlidersHorizontal}
       />
 
-      <SettingsContextControls />
       {settings.editingContext === "system" && <RegistryCoverage />}
 
       {settings.editingContext === "user" && <SettingsSection title="Appearance" icon={Palette}>
-        <SettingsSegmented<ThemeMode>
+        <SettingsSelect<ThemeMode>
           label="Theme"
-          description="Light or dark. Applies before first paint and syncs across your tabs."
+          description="Use your device setting, light, or dark. Applies before first paint and syncs across your tabs."
           value={mode}
           onValueChange={setMode}
           options={THEME_MODE_OPTIONS}

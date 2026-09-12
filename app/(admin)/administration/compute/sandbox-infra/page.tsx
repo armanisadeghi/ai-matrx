@@ -76,7 +76,7 @@ interface TierStatus {
     status: "healthy" | "unreachable" | "error";
     error?: string;
     system?: OrchestratorSystem;
-    info?: { version?: string; tier?: string };
+    release?: { version?: string; sourceSha?: string };
     routeCount?: number;
     fetchedAt: string;
 }
@@ -190,9 +190,9 @@ function TierCard({ tier }: { tier: TierStatus }) {
                     </a>
                 </div>
                 <div className="text-right">
-                    <div className="text-xs text-muted-foreground">version</div>
+                    <div className="text-xs text-muted-foreground">source SHA</div>
                     <div className="text-sm font-mono">
-                        {tier.info?.version ?? <span className="text-muted-foreground">—</span>}
+                        {tier.release?.sourceSha ?? <span className="text-muted-foreground">unavailable</span>}
                     </div>
                 </div>
             </div>
@@ -230,7 +230,7 @@ function TierCard({ tier }: { tier: TierStatus }) {
                             }
                         />
                         <StatRow label="Uptime" value={uptimeHuman(sys.uptime_seconds)} />
-                        <StatRow label="Routes" value={tier.routeCount ?? "—"} />
+                        <StatRow label="Routes" value={tier.routeCount ?? "unavailable"} />
                         <StatRow label="Sandboxes (DB)" value={`${sys.sandboxes_active} / ${sys.sandboxes_in_db}`} hint="active / total" />
                         <StatRow
                             label="Containers"
@@ -476,8 +476,9 @@ export default function SandboxInfraPage() {
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
                                 <HardDrive className="w-3 h-3" /> Disk pressure
                             </span>
-                            : red &gt;90% means deploys are about to fail. Run <code className="font-mono">docker system prune -af</code> on the host (the
-                            new deploy pipeline does this automatically every push).
+                            : red &gt;90% means capacity is exhausted or close to it. First inspect <code className="font-mono">df -h /</code> and
+                            <code className="font-mono">docker system df</code>, then use the deploy&apos;s scoped retention cleanup. Do not remove active
+                            containers, user volumes, or rollback images while diagnosing.
                         </p>
                         <p>
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
@@ -502,8 +503,8 @@ export default function SandboxInfraPage() {
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
                                 <Clock className="w-3 h-3" /> Stale deploy
                             </span>
-                            : if the orchestrator&apos;s version differs from the latest <code className="font-mono">main</code> tag in matrx-sandbox, the
-                            deploy didn&apos;t take effect. Check the latest GHA run for the failure.
+                            : compare the reported source SHA with the exact commit attached to the intended deploy run. This panel does not infer a
+                            &ldquo;latest main&rdquo; target; inspect the selected GitHub Actions run if they differ or either value is unavailable.
                         </p>
                     </div>
                 </section>

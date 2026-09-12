@@ -28,13 +28,14 @@ import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { setMode } from "@/styles/themes/themeSlice";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Notification } from "@/types/notification.types";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 
 export function MobileUnifiedMenu() {
   const dispatch = useAppDispatch();
-  const theme = useAppSelector((s) => s.theme.mode);
+  const theme = useThemeMode();
   const setTheme = (t: "light" | "dark") => dispatch(setMode(t));
   const user = useAppSelector(selectUser);
   const displayName =

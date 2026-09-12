@@ -1,6 +1,8 @@
 import { emptyNoteReuseUpdates } from "./notesService";
 import type { Note } from "../types";
 
+const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111112";
+
 describe("emptyNoteReuseUpdates", () => {
   const existing = {
     id: "11111111-1111-4111-8111-111111111111",
@@ -13,11 +15,12 @@ describe("emptyNoteReuseUpdates", () => {
       emptyNoteReuseUpdates(existing, {
         label: "War-room incident note",
         folder_name: "Draft",
+        organization_id: ORGANIZATION_ID,
       }),
     ).toEqual({ label: "War-room incident note" });
   });
 
   it("does not turn a default reuse into a redundant write", () => {
-    expect(emptyNoteReuseUpdates(existing, {})).toEqual({});
+    expect(emptyNoteReuseUpdates(existing, { organization_id: ORGANIZATION_ID })).toEqual({});
   });
 });

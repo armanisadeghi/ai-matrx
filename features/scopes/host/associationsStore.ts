@@ -28,32 +28,18 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
-import { suppressSupabaseErrorCapture } from "@/lib/diagnostics/supabaseErrorCapture";
 
-const DEMANDED_SCHEMA_PROBE_SENTINELS = new Set([
-  "__not_a_uuid__",
-  "__probe__",
-]);
-
-/**
- * The package's development-only demanded-schema check intentionally calls
- * each RPC with impossible sentinel values. Those expected Postgres errors
- * prove that the function exists; they are not application failures and must
- * not fill the global Error Inspector. The package still receives the raw
- * result and remains responsible for screaming when a function is missing.
- */
-export function isDemandedSchemaProbeArgs(value: unknown): boolean {
-  if (typeof value === "string") {
-    return DEMANDED_SCHEMA_PROBE_SENTINELS.has(value);
-  }
-  if (Array.isArray(value)) {
-    return value.some(isDemandedSchemaProbeArgs);
-  }
-  if (value && typeof value === "object") {
-    return Object.values(value).some(isDemandedSchemaProbeArgs);
-  }
-  return false;
-}
+// D311 (2026-09-12): NOTHING here probes RPC existence, and nothing hides a
+// probe's errors. @ai-matrx/associations 0.9.0 DELETED the boot probe and its
+// `probeSchema` knob — it established that a demanded function existed by
+// CALLING it (14 of the 26 are writes), which cost this app 25 rpc 400s on
+// every page load. The class rule the package now holds: a write RPC is never
+// invoked to ask whether it exists. PGRST202 at a real call site still screams
+// `demanded_schema_violation` with a remedy.
+//
+// The sentinel-args Error-Inspector suppression that used to live at this seam
+// went with the probe: every error reaching it now is a real one, and must be
+// captured.
 
 /**
  * The supabase client, narrowed to the package's structural dataSource
@@ -74,9 +60,6 @@ const client = supabase as unknown as {
 export const associationsDataSource: AssociationsDataSource = {
   rpc: (fn, args) => {
     const call = client.rpc(fn, args);
-    if (isDemandedSchemaProbeArgs(args)) {
-      return suppressSupabaseErrorCapture(call);
-    }
     if (fn !== "cmt_add") return call;
     // The cmt_add tap (W6 comments adoption): EVERY comment post — the
     // package CommentThread composer, the store service, any host caller —

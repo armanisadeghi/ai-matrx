@@ -2,10 +2,14 @@
 /**
  * sync-feature-docs.ts — repo ↔ admin.feature_docs two-way sync.
  *
- *   pnpm sync:feature-docs              # bidirectional (conflicts reported)
- *   pnpm sync:feature-docs -- --push    # repo → DB
- *   pnpm sync:feature-docs -- --pull    # DB → repo
- *   pnpm sync:feature-docs -- --push --confirm-delete  # soft-delete DB rows with no file
+ *   pnpm sync:feature-docs                              # system catalog, bidirectional
+ *   pnpm sync:feature-docs -- --push                    # system catalog, repo → DB
+ *   pnpm sync:feature-docs -- --pull                    # system catalog, DB → repo
+ *   tsx scripts/sync-feature-docs.ts --organization-id <UUID> --push
+ *     # soft-delete DB rows with no file
+ *
+ * The package command explicitly supplies the Matrx System organization. Other
+ * callers invoke this lower script with exactly one explicit organization ID.
  *
  * Env (.env.local): NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY (sb_secret_*).
  */
@@ -16,6 +20,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { globSync } from "glob";
+import { readAllRows } from "@ai-matrx/data/db";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import type { Database } from "@/types/database.types";
 import {
   FEATURE_DOC_GLOBS,
@@ -23,17 +29,45 @@ import {
   parseFeatureDocFile,
 } from "@/features/feature-docs/sync-utils";
 
-loadEnv({ path: ".env.local" });
-loadEnv({ path: ".env" });
-
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-
 type FeatureDocRow = Database["admin"]["Tables"]["feature_docs"]["Row"];
+type FeatureDocInsert = Database["admin"]["Tables"]["feature_docs"]["Insert"];
+type FeatureDocUpdate = Database["admin"]["Tables"]["feature_docs"]["Update"];
+export type FeatureDocIdentity = Pick<
+  FeatureDocRow,
+  "id" | "path" | "organization_id"
+>;
 type SyncMode = "bidirectional" | "push" | "pull";
+
+export interface SyncOperation {
+  organizationId: string;
+  gitHead: string;
+}
+
+export interface FeatureDocsStore {
+  list(organizationId: string): Promise<FeatureDocRow[]>;
+  insert(row: FeatureDocInsert): Promise<FeatureDocIdentity>;
+  update(
+    id: string,
+    organizationId: string,
+    update: FeatureDocUpdate,
+  ): Promise<FeatureDocIdentity>;
+  softDelete(
+    id: string,
+    organizationId: string,
+    path: string,
+  ): Promise<FeatureDocIdentity>;
+  delete(
+    id: string,
+    organizationId: string,
+    path: string,
+  ): Promise<FeatureDocIdentity>;
+}
 
 interface CliOptions {
   mode: SyncMode;
   confirmDelete: boolean;
+  organizationId: string;
 }
 
 interface SyncStats {
@@ -46,17 +80,30 @@ interface SyncStats {
   skipped: number;
 }
 
-function parseArgs(): CliOptions {
-  const args = process.argv.slice(2);
+export function parseArgs(args: readonly string[]): CliOptions {
   const push = args.includes("--push");
   const pull = args.includes("--pull");
   if (push && pull) {
-    console.error("[FAIL] Use only one of --push or --pull.");
-    process.exit(2);
+    throw new Error("Use only one of --push or --pull.");
   }
+  const organizationIdIndexes = args.reduce<number[]>((indexes, arg, index) => {
+    if (arg === "--organization-id") indexes.push(index);
+    return indexes;
+  }, []);
+  if (organizationIdIndexes.length !== 1) {
+    throw new Error(
+      "Supply exactly one --organization-id <UUID> before the sync can read or write admin.feature_docs.",
+    );
+  }
+  const organizationIdIndex = organizationIdIndexes[0];
+  const organizationIdRaw =
+    organizationIdIndex === -1 ? undefined : args[organizationIdIndex + 1];
+  const organizationId = requireOrganizationContext(organizationIdRaw);
+
   return {
     mode: push ? "push" : pull ? "pull" : "bidirectional",
     confirmDelete: args.includes("--confirm-delete"),
+    organizationId,
   };
 }
 
@@ -72,6 +119,8 @@ function getGitHead(): string {
 }
 
 function createAdminClient(): SupabaseClient<Database> {
+  loadEnv({ path: ".env.local" });
+  loadEnv({ path: ".env" });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) {
@@ -102,35 +151,85 @@ function collectRepoDocs(): Map<string, string> {
   return docs;
 }
 
-async function fetchDbRows(
+function assertOne(
+  operation: string,
+  data: FeatureDocIdentity[] | null,
+  error: { message: string } | null,
+): FeatureDocIdentity {
+  if (error) throw new Error(`${operation}: ${error.message}`);
+  if (!data || data.length !== 1)
+    throw new Error(
+      `${operation}: expected exactly one affected row, received ${data?.length ?? 0}`,
+    );
+  return data[0];
+}
+
+export function createFeatureDocsStore(
   supabase: SupabaseClient<Database>,
-): Promise<Map<string, FeatureDocRow>> {
-  const map = new Map<string, FeatureDocRow>();
-  const PAGE = 1000;
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .schema("admin")
-      .from("feature_docs")
-      // Select all columns so the result matches the full `FeatureDocRow`
-      // (the map stores whole rows). An explicit subset drops columns the
-      // Row type requires and fails assignment under strict checking.
-      .select("*")
-      .range(from, from + PAGE - 1);
-    if (error) {
-      console.error("[FAIL] Failed to load admin.feature_docs:", error.message);
-      process.exit(2);
-    }
-    if (!data || data.length === 0) break;
-    for (const row of data) {
-      map.set(row.path, row);
-    }
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-
-  return map;
+): FeatureDocsStore {
+  return {
+    async list(organizationId) {
+      return readAllRows<FeatureDocRow>(
+        ({ from, to }) =>
+          supabase
+            .schema("admin")
+            .from("feature_docs")
+            .select("*")
+            .eq("organization_id", organizationId)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "admin.feature_docs sync inventory" },
+      );
+    },
+    async insert(row) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .insert(row)
+        .select("id,path,organization_id");
+      const found = assertOne("feature-doc insert", result.data, result.error);
+      return found;
+    },
+    async update(id, organizationId, update) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .update(update)
+        .eq("id", id)
+        .eq("organization_id", organizationId)
+        .select("id,path,organization_id");
+      const found = assertOne("feature-doc update", result.data, result.error);
+      return found;
+    },
+    async softDelete(id, organizationId, path) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("path", path)
+        .eq("organization_id", organizationId)
+        .select("id,path,organization_id");
+      const found = assertOne(
+        "feature-doc soft-delete",
+        result.data,
+        result.error,
+      );
+      return found;
+    },
+    async delete(id, organizationId, path) {
+      const result = await supabase
+        .schema("admin")
+        .from("feature_docs")
+        .delete()
+        .eq("id", id)
+        .eq("path", path)
+        .eq("organization_id", organizationId)
+        .select("id,path,organization_id");
+      const found = assertOne("feature-doc delete", result.data, result.error);
+      return found;
+    },
+  };
 }
 
 function writeRepoFile(path: string, content: string): void {
@@ -139,30 +238,76 @@ function writeRepoFile(path: string, content: string): void {
   writeFileSync(abs, content, "utf8");
 }
 
+export function buildFeatureDocInsert(
+  operation: SyncOperation,
+  path: string,
+  content: string,
+): FeatureDocInsert {
+  const parsed = parseFeatureDocFile(path, content);
+  return {
+    organization_id: operation.organizationId,
+    path,
+    slug: parsed.slug,
+    title: parsed.title,
+    area: parsed.area,
+    content,
+    sync_base_hash: md5(content),
+    sync_base_commit: operation.gitHead,
+    synced_at: new Date().toISOString(),
+    deleted_at: null,
+    metadata: parsed.metadata,
+  };
+}
+
+/** Production one-record path used by the canary and the bulk sync. */
+export async function syncOneFeatureDoc(
+  store: FeatureDocsStore,
+  operation: SyncOperation,
+  path: string,
+  content: string,
+  existing?: FeatureDocRow,
+): Promise<FeatureDocIdentity> {
+  const admittedOperation: SyncOperation = {
+    organizationId: requireOrganizationContext(operation.organizationId),
+    gitHead: operation.gitHead,
+  };
+  const insert = buildFeatureDocInsert(admittedOperation, path, content);
+  if (!existing) {
+    const row = await store.insert(insert);
+    if (
+      row.organization_id !== admittedOperation.organizationId ||
+      row.path !== path
+    )
+      throw new Error("feature-doc insert returned a different row");
+    return row;
+  }
+  if (existing.organization_id !== admittedOperation.organizationId)
+    throw new Error(
+      `feature-doc update refused: ${path} belongs to a different organization`,
+    );
+  const { organization_id: _organizationId, ...update } = insert;
+  const row = await store.update(
+    existing.id,
+    admittedOperation.organizationId,
+    update,
+  );
+  if (
+    row.organization_id !== admittedOperation.organizationId ||
+    row.id !== existing.id ||
+    row.path !== path
+  )
+    throw new Error("feature-doc update returned a different row");
+  return row;
+}
+
 async function batchUpsertDocs(
-  supabase: SupabaseClient<Database>,
+  store: FeatureDocsStore,
+  operation: SyncOperation,
   items: Array<{ path: string; content: string }>,
   dbRows: Map<string, FeatureDocRow>,
   gitHead: string,
 ): Promise<number> {
   if (items.length === 0) return 0;
-
-  const buildRow = (path: string, content: string) => {
-    const parsed = parseFeatureDocFile(path, content);
-    const fileHash = md5(content);
-    return {
-      path,
-      slug: parsed.slug,
-      title: parsed.title,
-      area: parsed.area,
-      content,
-      sync_base_hash: fileHash,
-      sync_base_commit: gitHead,
-      synced_at: new Date().toISOString(),
-      deleted_at: null,
-      metadata: parsed.metadata,
-    };
-  };
 
   const toInsert = items.filter((i) => !dbRows.has(i.path));
   const toUpdate = items.filter((i) => dbRows.has(i.path));
@@ -172,12 +317,8 @@ async function batchUpsertDocs(
 
   for (let i = 0; i < toInsert.length; i += INSERT_CHUNK) {
     const chunk = toInsert.slice(i, i + INSERT_CHUNK);
-    const rows = chunk.map(({ path, content }) => buildRow(path, content));
-    const { error } = await supabase
-      .schema("admin")
-      .from("feature_docs")
-      .insert(rows);
-    if (error) throw new Error(`batch insert: ${error.message}`);
+    for (const item of chunk)
+      await syncOneFeatureDoc(store, operation, item.path, item.content);
     done += chunk.length;
     process.stdout.write(`\r[INFO] Inserted ${done}/${items.length}…`);
   }
@@ -188,15 +329,15 @@ async function batchUpsertDocs(
     const results = await Promise.all(
       chunk.map(({ path, content }) => {
         const existing = dbRows.get(path)!;
-        return supabase
-          .schema("admin")
-          .from("feature_docs")
-          .update(buildRow(path, content))
-          .eq("id", existing.id);
+        return syncOneFeatureDoc(store, operation, path, content, existing);
       }),
     );
-    const failed = results.find((r) => r.error);
-    if (failed?.error) throw new Error(`batch update: ${failed.error.message}`);
+    for (const updated of results) {
+      if (updated.organization_id !== operation.organizationId)
+        throw new Error(
+          "feature-doc update returned a mismatched organization",
+        );
+    }
     done += chunk.length;
     process.stdout.write(`\r[INFO] Upserted ${done}/${items.length}…`);
   }
@@ -205,8 +346,36 @@ async function batchUpsertDocs(
   return items.length;
 }
 
+/** Refresh one existing row's sync metadata through the production update path. */
+export async function refreshFeatureDocSyncMetadata(
+  store: FeatureDocsStore,
+  operation: SyncOperation,
+  row: FeatureDocRow,
+  gitHead: string,
+  syncedAt = new Date().toISOString(),
+): Promise<FeatureDocIdentity> {
+  if (row.organization_id !== operation.organizationId)
+    throw new Error(
+      `feature-doc metadata refresh refused: ${row.path} belongs to a different organization`,
+    );
+  const hash = row.content_hash ?? md5(row.content);
+  const updated = await store.update(row.id, operation.organizationId, {
+    sync_base_hash: hash,
+    sync_base_commit: gitHead,
+    synced_at: syncedAt,
+  });
+  if (
+    updated.id !== row.id ||
+    updated.path !== row.path ||
+    updated.organization_id !== operation.organizationId
+  )
+    throw new Error("feature-doc metadata refresh returned a different row");
+  return updated;
+}
+
 async function batchRefreshSyncMeta(
-  supabase: SupabaseClient<Database>,
+  store: FeatureDocsStore,
+  operation: SyncOperation,
   rows: FeatureDocRow[],
   gitHead: string,
 ): Promise<void> {
@@ -215,48 +384,60 @@ async function batchRefreshSyncMeta(
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     await Promise.all(
-      chunk.map((row) => {
-        const hash = row.content_hash ?? md5(row.content);
-        return supabase
-          .schema("admin")
-          .from("feature_docs")
-          .update({
-            sync_base_hash: hash,
-            sync_base_commit: gitHead,
-            synced_at: now,
-          })
-          .eq("id", row.id);
-      }),
+      chunk.map((row) =>
+        refreshFeatureDocSyncMetadata(store, operation, row, gitHead, now),
+      ),
     );
   }
 }
 
 async function batchSoftDelete(
-  supabase: SupabaseClient<Database>,
+  store: FeatureDocsStore,
+  operation: SyncOperation,
   rows: FeatureDocRow[],
 ): Promise<void> {
-  const ids = rows.map((r) => r.id);
   const CHUNK = 100;
-  const now = new Date().toISOString();
-  for (let i = 0; i < ids.length; i += CHUNK) {
-    const chunk = ids.slice(i, i + CHUNK);
-    const { error } = await supabase
-      .schema("admin")
-      .from("feature_docs")
-      .update({ deleted_at: now })
-      .in("id", chunk);
-    if (error) throw new Error(`batch soft-delete: ${error.message}`);
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    await Promise.all(
+      chunk.map(async (row) => {
+        if (row.organization_id !== operation.organizationId)
+          throw new Error(
+            `feature-doc soft-delete refused: ${row.path} belongs to a different organization`,
+          );
+        const deleted = await store.softDelete(
+          row.id,
+          operation.organizationId,
+          row.path,
+        );
+        if (
+          deleted.id !== row.id ||
+          deleted.path !== row.path ||
+          deleted.organization_id !== operation.organizationId
+        )
+          throw new Error("feature-doc soft-delete returned a different row");
+      }),
+    );
   }
 }
 
 async function runSync(options: CliOptions): Promise<SyncStats> {
+  // Capture the validated boundary value once. Every read and mutation below
+  // receives this value; a later environment or selection change cannot retarget
+  // an admitted sync operation.
+  const operation: SyncOperation = {
+    organizationId: options.organizationId,
+    gitHead: getGitHead(),
+  };
   const supabase = createAdminClient();
-  const gitHead = getGitHead();
+  const store = createFeatureDocsStore(supabase);
   console.log("[INFO] Collecting repo markdown…");
   const repoDocs = collectRepoDocs();
   console.log(`[INFO] Found ${repoDocs.size} repo .md files`);
   console.log("[INFO] Loading DB rows…");
-  const dbRows = await fetchDbRows(supabase);
+  const dbRows = new Map(
+    (await store.list(operation.organizationId)).map((row) => [row.path, row]),
+  );
   console.log(`[INFO] Found ${dbRows.size} DB rows`);
   const allPaths = new Set([...repoDocs.keys(), ...dbRows.keys()]);
 
@@ -370,7 +551,13 @@ async function runSync(options: CliOptions): Promise<SyncStats> {
   }
 
   if (toPush.length > 0) {
-    stats.pushed = await batchUpsertDocs(supabase, toPush, dbRows, gitHead);
+    stats.pushed = await batchUpsertDocs(
+      store,
+      operation,
+      toPush,
+      dbRows,
+      operation.gitHead,
+    );
   }
 
   for (const { path, row } of toPull) {
@@ -379,19 +566,25 @@ async function runSync(options: CliOptions): Promise<SyncStats> {
   }
   if (toPull.length > 0) {
     await batchRefreshSyncMeta(
-      supabase,
+      store,
+      operation,
       toPull.map((p) => p.row),
-      gitHead,
+      operation.gitHead,
     );
   }
 
   if (toRefreshMeta.length > 0) {
-    await batchRefreshSyncMeta(supabase, toRefreshMeta, gitHead);
+    await batchRefreshSyncMeta(
+      store,
+      operation,
+      toRefreshMeta,
+      operation.gitHead,
+    );
     stats.inSync = toRefreshMeta.length;
   }
 
   if (toSoftDelete.length > 0) {
-    await batchSoftDelete(supabase, toSoftDelete);
+    await batchSoftDelete(store, operation, toSoftDelete);
     stats.softDeleted = toSoftDelete.length;
   }
 
@@ -415,7 +608,7 @@ function printSummary(stats: SyncStats, mode: SyncMode): void {
 }
 
 async function main(): Promise<void> {
-  const options = parseArgs();
+  const options = parseArgs(process.argv.slice(2));
   console.log(`[INFO] Scanning repo (${FEATURE_DOC_GLOBS.length} glob roots)…`);
   const stats = await runSync(options);
   printSummary(stats, options.mode);
@@ -424,7 +617,12 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error("[FAIL]", err instanceof Error ? err.message : err);
-  process.exit(2);
-});
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  main().catch((err) => {
+    console.error("[FAIL]", err instanceof Error ? err.message : err);
+    process.exit(2);
+  });
+}

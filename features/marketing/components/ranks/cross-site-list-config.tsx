@@ -118,6 +118,8 @@ function useRankRowActions(
 
 export const crossSiteRankListConfig: EntityListConfig<CrossSiteRankRow> = {
   surfaceKey: "marketing-cross-site-ranks",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "seo_rank_target",
   entityLabel: { singular: "tracked keyword", plural: "tracked keywords" },
   sourceFeature: "marketing",
   scopes: RANK_LIST_SCOPES,

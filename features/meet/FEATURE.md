@@ -143,6 +143,20 @@ reader of an older tag will otherwise conclude the package is broken.
   the raw LiveKit identity where the host read a name. (5) A knocking participant was invisible
   unless that browser held the lobby broadcast. (6) The guest record view claimed "No wrap-up was
   written" under a panel that had just refused to read those rows.
+- `2026-09-12` — claude: **the guest lane now says out loud which meetings a guest may resolve
+  (DD-152).** `communication.meet_meeting_by_slug` and `meet_record_consent` are declared
+  ANONYMOUS doors that had no gate of any kind: the first handed the whole `meet_meetings` row —
+  organization, host, metadata — to anyone holding a slug, the second let an anonymous caller
+  holding a meeting UUID mint a `meet_participants` row. Both now refuse an anonymous caller
+  (`auth.uid() is null`) a meeting below `link` visibility, with 42501 and a sentence; a signed-in
+  caller is unchanged. Meetings carried the column default `internal` ("this organization"), which
+  contradicted the guest lane this feature is built for, so the 26 live rows were raised to `link`
+  and `meet_get_or_create_meeting` stamps `link` on creation. No reader was added anywhere: the
+  `{anon}` `pub_read` policy needs `= 'public'`, and the authenticated arms already matched at
+  `>= 'internal'`. Proven live over HTTPS with the published anon key — the link-visible meeting
+  resolves, the same meeting at `internal` returns 42501. **Still true and not fixed here:** a
+  meeting slug is 10 hex characters (~40 bits) and the door returns the full meeting row to
+  whoever holds one. Migration `migrations/dd152_anon_doors_closed_again_and_gated.sql`.
 - `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.4.0 (MRI-A11 + MRI-D2),
   same session.** Two things this surface could not do before. (a) **The host
   gets host controls**: the server now states the joiner's role on the token and

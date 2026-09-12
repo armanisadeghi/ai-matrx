@@ -315,3 +315,5 @@ lines by relocating trial-specific detail into the trial's register.
   later cases). Tell the judge to score only what the record allows, or bundle what the newsroom
   actually had; otherwise the verdict measures access, not craft.
 
+
+- **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.

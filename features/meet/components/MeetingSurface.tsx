@@ -32,7 +32,12 @@ import { Loader2 } from "lucide-react";
 import { Button, Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import {
+  selectAuthReady,
+  selectIsAuthenticated,
+} from "@/lib/redux/selectors/userSelectors";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 type Resolution =
   | { readonly state: "loading" }
@@ -57,6 +62,14 @@ export function MeetingSurface({
   isAuthenticated: boolean;
 }) {
   const [resolution, setResolution] = useState<Resolution>({ state: "loading" });
+  // The page's server auth value is a safe first-render snapshot, not a
+  // permanent client identity. GlobalAuthSync resolves the browser session
+  // after hydration into the canonical reactive Redux state.
+  // Keep the server lane only while that authority is unknown; switching
+  // earlier could mount a member runtime before a browser session exists.
+  const authReady = useAppSelector(selectAuthReady);
+  const authenticatedNow = useAppSelector(selectIsAuthenticated);
+  const useMemberRoom = authReady ? authenticatedNow : isAuthenticated;
 
   useEffect(() => {
     let live = true;
@@ -103,7 +116,7 @@ export function MeetingSurface({
     );
   }
 
-  return isAuthenticated ? (
+  return useMemberRoom ? (
     <MemberRoom meeting={resolution.meeting} />
   ) : (
     <GuestRoom meeting={resolution.meeting} slug={slug} />
@@ -142,14 +155,11 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
     }
     return (
       <Centered>
-        <h1 className="text-base font-semibold">
-          You are signed in, but no organization is active
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          A meeting is minted for one organization, so calls and meetings stay
-          inert until one is chosen. Pick your organization from the account menu
-          and reload this link.
-        </p>
+        <OrganizationRequiredNotice
+          compact
+          what="This meeting"
+          description="Meetings belong to one organization. Choose the organization you are working in below; this page stays open and prepares the meeting as soon as the active organization is available."
+        />
       </Centered>
     );
   }

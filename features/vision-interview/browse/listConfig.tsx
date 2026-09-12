@@ -25,6 +25,8 @@ import {
 
 export const sessionListConfig: EntityListConfig<SessionListRow> = {
   surfaceKey: "vision-interview-browse",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "interview_session",
   entityLabel: { singular: "interview", plural: "interviews" },
   // "agents-other" — registered in FEATURE_META (registration, not the type
   // union, is the gate; see the agents listConfig note). A dedicated

@@ -39,6 +39,7 @@ import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { ConfirmationBadge } from "@/features/content-ir/records/ConfirmationBadge";
 import {
   fetchRecordsForConversation,
+  subscribeToKindRecordChanges,
   type KindRecord,
 } from "@/features/content-ir/records/kind-record-service";
 import { shapeInstancePermalink } from "@/features/content-ir/studio/constants";
@@ -80,6 +81,13 @@ export function ConversationRecordsChip({
       cancelled = true;
     };
   }, [open, conversationId, reloadKey]);
+
+  // A record saved from a block while this panel is open must not leave the
+  // panel showing a list that is already false (THE RECORD CHANGE BUS).
+  useEffect(() => {
+    if (!open) return;
+    return subscribeToKindRecordChanges(() => setReloadKey((n) => n + 1));
+  }, [open]);
 
   const active = state.records.filter((r) => r.archivedAt === null);
   const archived = state.records.filter((r) => r.archivedAt !== null);

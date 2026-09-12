@@ -25,7 +25,6 @@ import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getFolderIconAndColor } from "../utils/folderUtils";
-import { createFolder } from "../service/notesService";
 import { cn } from "@/lib/utils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 
@@ -102,7 +101,6 @@ export function MoveNoteDialog({
   };
 
   const handleCreateFolder = async (folderName: string) => {
-    await createFolder(folderName);
     await onConfirm(folderName);
     recordToast.success(
       { type: "note", id: noteId, title: noteName },

@@ -53,16 +53,33 @@ const SELF_TEST = process.argv.includes("--self-test");
 const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[33m", x: "\x1b[0m" };
 
 /**
- * The residue budget. Every token here keeps an open staff lane for a reason the REGISTRY stores,
- * and the guard prints that reason. The budget may shrink; it may never grow silently.
+ * THE RESIDUE, BY NAME — never a count.
  *
- *  - ten tokens `iam.apply_rls` structurally refuses (six are `audit_class='machinery'` and own the
- *    inputs the access resolver consumes, three have no `id` column, one has a type mismatch);
- *  - `user_secret`, whose SELECT is walled by a RESTRICTIVE `platform_admin_select_only`: the staff
- *    lane is the table's ONLY client read path (its owner reads 0 of their own 39), so stripping it
- *    makes the vault readable by nobody. It needs the vault's own door, not a blind strip.
+ * Every token here keeps an open staff lane for a reason the REGISTRY itself stores, and the guard
+ * prints that reason beside it. A NAMED set rather than a budget number, because a count passes a
+ * swap: one expected token closing while an unexpected one opens leaves the number identical. This
+ * fails in BOTH directions — an unexpected token open is a finding, and an expected one CLOSING is
+ * a finding too, so the list shrinks deliberately in a commit instead of rotting into folklore.
+ *
+ *  - ten tokens `iam.apply_rls` refuses BY CONSTRUCTION: six are `audit_class='machinery'` and own
+ *    the inputs the access resolver consumes, three have no `id` column, one has a type mismatch;
+ *  - ~~`user_secret`~~ — REMOVED 2026-09-12 by DD-160 (lane B-46), and removed here in the same
+ *    commit because this list fails in both directions. The RESTRICTIVE `platform_admin_select_only`
+ *    wall is gone, so the owner reads their own 39 secret field rows instead of 0 and a platform
+ *    admin reads 0 of 307. `credential_item` left the open set in the same edit: DD-137b11 had
+ *    already closed its policies and left `suppress_platform_admin_lane` false, which was the only
+ *    reason this guard kept reporting it;
+ *  - `wc_impairment_definition`, a registered COMPONENT with no composition parent. db-rules §6d-1
+ *    requires one, so `iam.apply_rls` refuses the table outright and it keeps `auth_read` +
+ *    `platform_admin_all`. It resolves `private` only because a parentless component has nothing to
+ *    inherit; it is a legal reference catalogue, and the REGISTRY defect is what wants fixing.
  */
-const RESIDUE_BUDGET = 11;
+const RESIDUE_TOKENS: ReadonlySet<string> = new Set([
+  "access_request", "agent_surface_binding", "industry_curator", "invitation", "membership",
+  "system_personal_org_failure",
+  "user_analysis_preference", "user_form_profile", "user_preference", "wbx_guidance",
+  "wc_impairment_definition",
+]);
 
 function loadEnv(): { url: string; key: string } | null {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -246,13 +263,20 @@ async function main(): Promise<number> {
   console.log(`  ${C.d}${rows.length} tokens resolve to private or confidential (${[...byVariant].map(([v, n]) => `${v}: ${n}`).join(", ")})${C.x}`);
 
   let findings = 0;
-  if (open.length > RESIDUE_BUDGET) {
+  const unexpected = open.filter((r) => !RESIDUE_TOKENS.has(r.token));
+  const closed = [...RESIDUE_TOKENS].filter((t) => !open.some((r) => r.token === t));
+
+  if (unexpected.length > 0) {
     findings++;
-    console.error(`  ${C.r}✗${C.x} ${open.length} of them still let our own staff read with no door — the frozen budget is ${RESIDUE_BUDGET}`);
+    console.error(`  ${C.r}✗${C.x} ${unexpected.length} token(s) let our own staff read with no door and are NOT known residue`);
   } else if (open.length === 0) {
     console.log(`  ${C.g}✓${C.x} no private or confidential token lets our own staff read with no door`);
   } else {
-    console.log(`  ${C.g}✓${C.x} ${open.length} open, at or under the frozen budget of ${RESIDUE_BUDGET} — every one is printed below with the reason the registry stores`);
+    console.log(`  ${C.g}✓${C.x} the ${open.length} open tokens are EXACTLY the known residue, each printed below with the reason the registry stores`);
+  }
+  if (closed.length > 0) {
+    findings++;
+    console.error(`  ${C.y}!${C.x} ${closed.length} expected-residue token(s) are now CLOSED: ${closed.join(", ")}. Good news — remove them from RESIDUE_TOKENS here and from iam_component_regeneration_dd137b13_gate.sql's v_expected, in the same commit. A residue list that quietly shrinks is a residue list nobody re-reads.`);
   }
   for (const r of open) {
     const why = [
@@ -260,19 +284,22 @@ async function main(): Promise<number> {
       r.has_staff_arm ? "staff read arm" : "",
       !r.declares_closed ? "does not declare it closed" : "",
     ].filter(Boolean).join(" + ");
-    console.log(`     ${C.d}${r.token} (${r.variant}, ${r.resolved_class}): ${why}${C.x}`);
+    const mark = RESIDUE_TOKENS.has(r.token) ? `${C.d}` : `${C.r}UNEXPECTED ${C.x}${C.d}`;
+    console.log(`     ${mark}${r.token} (${r.variant}, ${r.resolved_class}): ${why}${C.x}`);
     if (r.reason) console.log(`       ${C.d}${r.reason.slice(0, 160)}${C.x}`);
   }
 
   // A component that resolves private/confidential must never carry the lane. This is the exact
   // twin of check:admin-door's org-admin component assertion, and its absence is why that guard
   // stayed green while 131,763 messages were readable.
-  const openComponents = open.filter((r) => r.variant === "component" || r.variant === "ledger");
+  const openComponents = open.filter(
+    (r) => (r.variant === "component" || r.variant === "ledger") && !RESIDUE_TOKENS.has(r.token),
+  );
   if (openComponents.length > 0) {
     findings++;
     console.error(`  ${C.r}✗${C.x} ${openComponents.length} COMPONENT/LEDGER tokens under a private or confidential parent still carry the staff lane — a component asks its parent (db-rules §6d-1): ${openComponents.map((r) => r.token).slice(0, 12).join(", ")}`);
   } else {
-    console.log(`  ${C.g}✓${C.x} no component or ledger under a private or confidential parent carries the staff lane`);
+    console.log(`  ${C.g}✓${C.x} no component or ledger under a private or confidential parent carries the staff lane, outside the named residue`);
   }
 
   if (findings === 0) {

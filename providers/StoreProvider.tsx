@@ -29,7 +29,8 @@ import {
 import { useRef } from "react";
 import { Provider } from "react-redux";
 import { attachStore } from "@/lib/sync/identity";
-import { writeThemeCookie, type ThemeMode } from "@/styles/themes/themeSlice";
+import { resolveThemeMode, themePolicy, writeThemeCookie, type ResolvedThemeMode, type ThemeMode } from "@/styles/themes/themeSlice";
+import { applyPrePaintDescriptors } from "@/lib/sync/engine/applyPrePaint";
 import { SyncBootstrap } from "@/lib/sync/components/SyncBootstrap";
 
 // Generic factory shape — both `makeStore` (slim) and `makeEntityStore`
@@ -65,15 +66,37 @@ function getOrCreateClientStore(
   // mirrored to a cookie: appContextPolicy owns its local cache, while the
   // default-org preference owns durable cross-device restore.
   let lastMode: ThemeMode | undefined = store.getState().theme?.mode;
+  let lastCookieMode: ResolvedThemeMode | undefined;
+  const mirrorResolvedTheme = (mode: ThemeMode) => {
+    const resolved = resolveThemeMode(mode);
+    if (resolved === lastCookieMode) return;
+    lastCookieMode = resolved;
+    writeThemeCookie(resolved);
+  };
   store.subscribe(() => {
     const state = store.getState();
 
     const mode = state.theme?.mode;
     if (mode && mode !== lastMode) {
       lastMode = mode;
-      writeThemeCookie(mode);
+      mirrorResolvedTheme(mode);
     }
   });
+
+  // System is a preference, while the DOM needs the currently resolved color.
+  // Reapply the policy on an OS change without rewriting/broadcasting the
+  // stored preference.
+  if (typeof window.matchMedia === "function") {
+    const systemMedia = window.matchMedia("(prefers-color-scheme: dark)");
+    const applySystemTheme = () => {
+      if (store.getState().theme?.mode === "system") {
+        applyPrePaintDescriptors(themePolicy.prePaintDescriptors, { mode: "system" });
+        mirrorResolvedTheme("system");
+      }
+    };
+    systemMedia.addEventListener("change", applySystemTheme);
+    applySystemTheme();
+  }
 
   clientStores.set(factory, store);
   return store;

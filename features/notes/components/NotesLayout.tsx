@@ -292,8 +292,15 @@ export function NotesLayout({
   const handleRenameFolder = useCallback(
     async (oldName: string, newName: string) => {
       try {
+        const matches = notes.filter(
+          (note) => note.folder_name === oldName && note.folder_id,
+        );
+        const folder = matches[0];
+        if (!folder?.folder_id || matches.some((note) => note.folder_id !== folder.folder_id || note.organization_id !== folder.organization_id)) {
+          throw new Error("This folder name exists in more than one organization. Open the folder from its organization before renaming it.");
+        }
         const { renameFolder } = await import("../service/notesService");
-        await renameFolder(oldName, newName);
+        await renameFolder({ id: folder.folder_id, organizationId: folder.organization_id, name: oldName }, newName);
         await refreshNotes();
 
         toast.success(`Renamed folder "${oldName}" to "${newName}"`);
@@ -302,14 +309,21 @@ export function NotesLayout({
         toast.error(error);
       }
     },
-    [refreshNotes, toast],
+    [notes, refreshNotes, toast],
   );
 
   const handleDeleteFolderNotes = useCallback(
     async (folderName: string) => {
       try {
+        const matches = notes.filter(
+          (note) => note.folder_name === folderName && note.folder_id,
+        );
+        const folder = matches[0];
+        if (!folder?.folder_id || matches.some((note) => note.folder_id !== folder.folder_id || note.organization_id !== folder.organization_id)) {
+          throw new Error("This folder name exists in more than one organization. Open the folder from its organization before deleting it.");
+        }
         const { deleteFolderNotes } = await import("../service/notesService");
-        const count = await deleteFolderNotes(folderName);
+        const count = await deleteFolderNotes({ id: folder.folder_id, organizationId: folder.organization_id, name: folderName });
         await refreshNotes();
 
         toast.success(
@@ -320,7 +334,7 @@ export function NotesLayout({
         toast.error(error);
       }
     },
-    [refreshNotes, toast],
+    [notes, refreshNotes, toast],
   );
 
   const handleSelectNote = useCallback(

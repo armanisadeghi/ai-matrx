@@ -3,7 +3,13 @@ import { surfaceFromPathname } from "./route-to-surface";
 const B = "e9906c5e-e21a-4194-8ad3-ad0c1eaca5ad";
 const S = "8cc4ba7b-2817-47f4-aef6-8b6b2028dd7d";
 const P = "02648d08-93bd-4c2e-b5cf-54c9c7828475";
-const SITE = `/marketing/brands/${B}/sites/${S}`;
+// THE LIVE TREE. `/marketing/brands/[brandId]/sites/[siteId]/…` was the shape
+// until the agency-model restructure; every address under it is now served by
+// ONE redirector, so a resolver branch written against it can never fire. It
+// did until 2026-09-12 — 23 surfaces, the page workspace included, resolved to
+// nothing and the header named the hub instead.
+const WEBSITE = `/marketing/${B}/websites/${S}`;
+const SEO = `/marketing/${B}/seo/${S}`;
 
 describe("surfaceFromPathname — marketing tree", () => {
   it("resolves hub-level routes to the marketing hub surface", () => {
@@ -21,24 +27,40 @@ describe("surfaceFromPathname — marketing tree", () => {
       "matrx-user/marketing",
     );
     expect(surfaceFromPathname("/marketing/cost")).toBe("matrx-user/marketing");
+    expect(surfaceFromPathname("/marketing/operations/approvals")).toBe(
+      "matrx-user/marketing",
+    );
   });
 
   it("resolves the brand cockpit", () => {
-    expect(surfaceFromPathname(`/marketing/brands/${B}`)).toBe(
+    expect(surfaceFromPathname(`/marketing/${B}`)).toBe(
+      "matrx-user/marketing-brand",
+    );
+    expect(surfaceFromPathname(`/marketing/${B}/settings`)).toBe(
       "matrx-user/marketing-brand",
     );
   });
 
-  it("resolves the brand-wide discovery inbox", () => {
-    expect(surfaceFromPathname(`/marketing/brands/${B}/discovery`)).toBe(
+  it("resolves the brand-level sections that kept their own surface", () => {
+    expect(surfaceFromPathname(`/marketing/${B}/inbox`)).toBe(
       "matrx-user/marketing-discovery",
     );
+    expect(surfaceFromPathname(`/marketing/${B}/identity/media`)).toBe(
+      "matrx-user/marketing-brand-assets",
+    );
+    expect(surfaceFromPathname(`/marketing/${B}/identity/media/research`)).toBe(
+      "matrx-user/marketing-brand-assets",
+    );
+    expect(
+      surfaceFromPathname(`/marketing/${B}/intelligence/reputation/${S}`),
+    ).toBe("matrx-user/marketing-reputation");
   });
 
   it("resolves the site root and folded verticals to marketing-site", () => {
-    expect(surfaceFromPathname(SITE)).toBe("matrx-user/marketing-site");
-    for (const folded of ["access", "cost"]) {
-      expect(surfaceFromPathname(`${SITE}/${folded}`)).toBe(
+    expect(surfaceFromPathname(WEBSITE)).toBe("matrx-user/marketing-site");
+    expect(surfaceFromPathname(SEO)).toBe("matrx-user/marketing-site");
+    for (const folded of ["structure", "changes", "performance"]) {
+      expect(surfaceFromPathname(`${WEBSITE}/${folded}`)).toBe(
         "matrx-user/marketing-site",
       );
     }
@@ -46,54 +68,57 @@ describe("surfaceFromPathname — marketing tree", () => {
 
   it("resolves each site vertical to its own surface", () => {
     const cases: Array<[string, string]> = [
-      ["pages", "matrx-user/marketing-site-pages"],
-      ["crawls", "matrx-user/marketing-crawls"],
-      ["crawls/new", "matrx-user/marketing-crawls"],
-      ["audit", "matrx-user/marketing-audit"],
-      ["analysis", "matrx-user/marketing-analysis"],
-      ["findings", "matrx-user/marketing-findings"],
-      ["links", "matrx-user/marketing-links"],
-      ["backlinks", "matrx-user/marketing-backlinks"],
-      ["reputation", "matrx-user/marketing-reputation"],
-      ["coverage", "matrx-user/marketing-coverage"],
-      ["sitemaps", "matrx-user/marketing-sitemaps"],
-      [`sitemaps/${P}`, "matrx-user/marketing-sitemaps"],
-      ["settings", "matrx-user/marketing-site-settings"],
-      ["keywords", "matrx-user/marketing-site-keywords"],
-      ["media", "matrx-user/marketing-site-media"],
+      [`${WEBSITE}/pages`, "matrx-user/marketing-site-pages"],
+      [`${WEBSITE}/crawls`, "matrx-user/marketing-crawls"],
+      [`${WEBSITE}/crawls/new`, "matrx-user/marketing-crawls"],
+      [`${WEBSITE}/sitemaps`, "matrx-user/marketing-sitemaps"],
+      [`${WEBSITE}/sitemaps/${P}`, "matrx-user/marketing-sitemaps"],
+      [`${WEBSITE}/settings`, "matrx-user/marketing-site-settings"],
+      [`${WEBSITE}/settings/access`, "matrx-user/marketing-site-settings"],
+      [`${WEBSITE}/settings/integrations`, "matrx-user/marketing-integrations"],
+      [`${WEBSITE}/media`, "matrx-user/marketing-site-media"],
+      [`${SEO}/audit`, "matrx-user/marketing-audit"],
+      [`${SEO}/analysis`, "matrx-user/marketing-analysis"],
+      [`${SEO}/findings`, "matrx-user/marketing-findings"],
+      [`${SEO}/links`, "matrx-user/marketing-links"],
+      [`${SEO}/backlinks`, "matrx-user/marketing-backlinks"],
+      [`${SEO}/authority`, "matrx-user/marketing-authority"],
+      [`${SEO}/coverage`, "matrx-user/marketing-coverage"],
+      [`${SEO}/keywords`, "matrx-user/marketing-site-keywords"],
+      [`${SEO}/automations`, "matrx-user/marketing-automations"],
     ];
-    for (const [tail, surface] of cases) {
-      expect(surfaceFromPathname(`${SITE}/${tail}`)).toBe(surface);
+    for (const [path, surface] of cases) {
+      expect(surfaceFromPathname(path)).toBe(surface);
     }
   });
 
-  it("resolves the value LEAF to the Keyword Value Workbench, and its family to the site", () => {
-    expect(surfaceFromPathname(`${SITE}/value`)).toBe(
+  it("resolves the keywords/value LEAF to the Keyword Value Workbench, and its family to the site", () => {
+    expect(surfaceFromPathname(`${SEO}/keywords/value`)).toBe(
       "matrx-user/keyword-value-workbench",
     );
-    // Topics / rules / dimensions / packs define the machinery rather than
+    // rules / dimensions / packs / settings define the machinery rather than
     // listing keywords — they stay on the site surface until each earns one.
-    for (const tail of ["topics", "rules", "dimensions", "packs"]) {
-      expect(surfaceFromPathname(`${SITE}/value/${tail}`)).toBe(
+    for (const tail of ["rules", "dimensions", "packs", "settings"]) {
+      expect(surfaceFromPathname(`${SEO}/keywords/value/${tail}`)).toBe(
         "matrx-user/marketing-site",
       );
     }
   });
 
   it("resolves page detail (and its snapshots subtree) to marketing-page", () => {
-    expect(surfaceFromPathname(`${SITE}/pages/${P}`)).toBe(
+    expect(surfaceFromPathname(`${WEBSITE}/pages/${P}`)).toBe(
       "matrx-user/marketing-page",
     );
-    expect(surfaceFromPathname(`${SITE}/pages/${P}/snapshots`)).toBe(
+    expect(surfaceFromPathname(`${WEBSITE}/pages/${P}/snapshots`)).toBe(
       "matrx-user/marketing-page",
     );
-    expect(surfaceFromPathname(`${SITE}/pages/${P}/snapshots/${B}`)).toBe(
+    expect(surfaceFromPathname(`${WEBSITE}/pages/${P}/snapshots/${B}`)).toBe(
       "matrx-user/marketing-page",
     );
   });
 
   it("resolves crawl detail (and its subtree) to marketing-crawl", () => {
-    expect(surfaceFromPathname(`${SITE}/crawls/${P}`)).toBe(
+    expect(surfaceFromPathname(`${WEBSITE}/crawls/${P}`)).toBe(
       "matrx-user/marketing-crawl",
     );
     for (const tail of [
@@ -104,26 +129,27 @@ describe("surfaceFromPathname — marketing tree", () => {
       "reports",
       "reports/page-titles",
     ]) {
-      expect(surfaceFromPathname(`${SITE}/crawls/${P}/${tail}`)).toBe(
+      expect(surfaceFromPathname(`${WEBSITE}/crawls/${P}/${tail}`)).toBe(
         "matrx-user/marketing-crawl",
       );
     }
   });
 
   // /marketing/batches was retired 2026-08-11 (D149) — it read the
-  // never-populated web.batch_* spine. An unknown /marketing/* tail folds into
-  // the hub surface, which is what a stale bookmark should get.
-  it("folds the retired batches route into the hub", () => {
+  // never-populated web.batch_* spine. An unknown /marketing/* tail is treated
+  // as a BRAND key today (the brand cockpit), which is what a stale bookmark
+  // to a one-segment address should get.
+  it("folds an unknown one-segment tail into the brand cockpit", () => {
     expect(surfaceFromPathname("/marketing/batches")).toBe(
-      "matrx-user/marketing",
+      "matrx-user/marketing-brand",
     );
   });
 
-  it("resolves the cross-site ranks hub — without stealing the per-site ranks vertical", () => {
+  it("resolves the cross-site ranks hub — without stealing the per-site rankings vertical", () => {
     expect(surfaceFromPathname("/marketing/ranks")).toBe(
       "matrx-user/marketing-ranks-hub",
     );
-    expect(surfaceFromPathname(`${SITE}/ranks`)).toBe(
+    expect(surfaceFromPathname(`${SEO}/rankings`)).toBe(
       "matrx-user/marketing-ranks",
     );
   });
@@ -134,11 +160,15 @@ describe("surfaceFromPathname — marketing tree", () => {
     );
   });
 
-  it("legacy flat site shims fall back to the hub (they client-redirect)", () => {
+  it("legacy flat site shims fall back to the hub (they redirect)", () => {
     expect(surfaceFromPathname(`/marketing/sites/${S}`)).toBe(
       "matrx-user/marketing",
     );
     expect(surfaceFromPathname(`/marketing/sites/${S}/pages/${P}`)).toBe(
+      "matrx-user/marketing",
+    );
+    // The retired brand-first tree is a redirector, not a workspace.
+    expect(surfaceFromPathname(`/marketing/brands/${B}/sites/${S}`)).toBe(
       "matrx-user/marketing",
     );
   });

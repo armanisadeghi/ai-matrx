@@ -79,19 +79,27 @@ export function resetListScopeCache(): void {
 }
 
 async function loadRegistry(): Promise<Map<string, ListScopeWord>> {
+  // 🚨 `platform.list_scope_registry`, NOT `platform.entity_types`. The table is admin-only by a
+  // RESTRICTIVE policy (`platform_admin_only`), which ANDs with everything else — so reading it
+  // from a browser returned `200 []` for every user who is not a platform administrator, this
+  // module announced its fallback, and EVERY list on the platform opened on `mine`. Measured live
+  // as `test@test.com` on 2026-09-12 and fixed by DD-137c8, which publishes the two columns a
+  // client actually needs through a view and nothing else.
   const { data, error } = await supabase
     .schema("platform")
-    .from("entity_types")
-    .select("token,default_list_scope")
-    .eq("is_active", true)
-    .not("default_list_scope", "is", null);
+    .from("list_scope_registry")
+    .select("token,default_list_scope");
   if (error) {
     throw new Error(error.message);
   }
   const map = new Map<string, ListScopeWord>();
   for (const row of data ?? []) {
     const scope = row.default_list_scope;
-    if (scope === "mine" || scope === "organization") map.set(row.token, scope);
+    // A view's columns are nullable to the generated types even when the view filters NULLs out,
+    // so both halves are checked rather than asserted away.
+    if (row.token && (scope === "mine" || scope === "organization")) {
+      map.set(row.token, scope);
+    }
   }
   if (map.size === 0) {
     // An empty registry is not a registry. Treating it as "everything is mine" would hide every
@@ -121,7 +129,7 @@ export async function resolveListScope(token: string): Promise<ListScopeWord> {
     // A failed read must not poison the session forever — the next call retries.
     registryPromise = null;
     reportFallback(
-      `Could not read where this list should open (platform.entity_types), so it is showing only your ` +
+      `Could not read where this list should open (platform.list_scope_registry), so it is showing only your ` +
         `own rows. If the organization's data is missing from this screen, that is why.`,
       cause,
     );

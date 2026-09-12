@@ -1,42 +1,112 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PG_BIN=/opt/homebrew/opt/postgresql@17/bin
-REPO=/Users/armanisadeghi/code/matrx-frontend
-CENSUS=/Users/armanisadeghi/code/common-docs/projects/no-db-assigned-org/census/live-2026-09-12-owner.json
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+FIXTURE="$REPO/scripts/fixtures/dd154-preapply-catalog.json"
+MIGRATION="$REPO/migrations/dd154_org_assignment_ddl_prevention.sql"
+EXPECTED_MIGRATION_SHA256=01d4323bbf7442160a67abbf2a1fc0dde2bf6e5086295c0f6d0e4f0a56fead5d
+GUIDANCE_DRAFT="$REPO/scripts/migration-drafts/dd155_org_assignment_guidance.sql"
+GUIDANCE_MIGRATION="$REPO/migrations/dd155_org_assignment_guidance.sql"
+EXPECTED_GUIDANCE_SHA256=f6531d457d6e33710ff659cde95ef65e2b47dd65ea280735a673c3a928dd332e
+MODE=${DD154_PG_MODE:-native}
+PG_BIN=${DD154_PG_BIN:-}
 RUN_DIR=$(mktemp -d /tmp/dd154-pg17-review.XXXXXX)
 DATA_DIR="$RUN_DIR/data"
-PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
 LOG="$RUN_DIR/postgres.log"
 RESULTS="$RUN_DIR/results.txt"
+CONTAINER=
+
+fail() {
+  echo "FAIL fixture: $*" | tee -a "$RESULTS"
+  exit 1
+}
+
+run_file() {
+  local file=$1
+  shift
+  "${PSQL[@]}" "$@" < "$file"
+}
 
 cleanup() {
-  "$PG_BIN/pg_ctl" -D "$DATA_DIR" -m fast stop >/dev/null 2>&1 || true
+  if [[ $MODE == native && -n $PG_BIN ]]; then
+    "$PG_BIN/pg_ctl" -D "$DATA_DIR" -m fast stop >/dev/null 2>&1 || true
+  fi
+  if [[ -n $CONTAINER ]]; then
+    docker logs "$CONTAINER" >"$LOG" 2>&1 || true
+    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+  fi
   cp "$RESULTS" /tmp/dd154-review-results.txt 2>/dev/null || true
   cp "$LOG" /tmp/dd154-review-postgres.log 2>/dev/null || true
   cp "$RUN_DIR/mapped.out" /tmp/dd154-review-mapped.out 2>/dev/null || true
   cp "$RUN_DIR/original.out" /tmp/dd154-review-original.out 2>/dev/null || true
+  cp "$RUN_DIR/dd155.out" /tmp/dd154-review-dd155.out 2>/dev/null || true
   rm -rf "$RUN_DIR"
 }
 trap cleanup EXIT
 
-"$PG_BIN/initdb" -D "$DATA_DIR" -A trust --no-locale -E UTF8 >/dev/null
-"$PG_BIN/pg_ctl" -D "$DATA_DIR" -l "$LOG" -o "-h 127.0.0.1 -p $PORT -F" start >/dev/null
-PSQL=("$PG_BIN/psql" -h 127.0.0.1 -p "$PORT" -d postgres -X -v ON_ERROR_STOP=1)
+[[ -f $FIXTURE ]] || fail "checked-in pre-apply catalog fixture is missing: $FIXTURE"
+[[ -f $MIGRATION ]] || fail "applied DD154 migration is missing: $MIGRATION"
+GUIDANCE_CANDIDATES=()
+[[ -f $GUIDANCE_DRAFT ]] && GUIDANCE_CANDIDATES+=("$GUIDANCE_DRAFT")
+[[ -f $GUIDANCE_MIGRATION ]] && GUIDANCE_CANDIDATES+=("$GUIDANCE_MIGRATION")
+case ${#GUIDANCE_CANDIDATES[@]} in
+  1) GUIDANCE_SQL=${GUIDANCE_CANDIDATES[0]} ;;
+  0) fail "DD155 guidance is missing from both lifecycle locations: $GUIDANCE_DRAFT and $GUIDANCE_MIGRATION" ;;
+  *) fail "DD155 guidance exists in both lifecycle locations; retain exactly one authoritative file: $GUIDANCE_DRAFT or $GUIDANCE_MIGRATION" ;;
+esac
+[[ $(shasum -a 256 "$GUIDANCE_SQL" | awk '{print $1}') == "$EXPECTED_GUIDANCE_SHA256" ]] || fail "DD155 guidance checksum does not match the reviewed bytes: $GUIDANCE_SQL"
+[[ $(shasum -a 256 "$MIGRATION" | awk '{print $1}') == "$EXPECTED_MIGRATION_SHA256" ]] || fail "applied DD154 migration checksum does not match the immutable ledger subject"
+
+case "$MODE" in
+  native)
+    [[ -n $PG_BIN ]] || fail "native mode requires DD154_PG_BIN pointing to PostgreSQL 17 binaries"
+    for bin in initdb pg_ctl psql; do [[ -x "$PG_BIN/$bin" ]] || fail "native PostgreSQL binary missing: $PG_BIN/$bin"; done
+    PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+    "$PG_BIN/initdb" -D "$DATA_DIR" -A trust --no-locale -E UTF8 >/dev/null
+    "$PG_BIN/pg_ctl" -D "$DATA_DIR" -l "$LOG" -o "-h 127.0.0.1 -p $PORT -F" start >/dev/null
+    PSQL=("$PG_BIN/psql" -h 127.0.0.1 -p "$PORT" -d postgres -X -v ON_ERROR_STOP=1)
+    ;;
+  docker)
+    command -v docker >/dev/null 2>&1 || fail "Docker mode requires docker"
+    CONTAINER="dd154-pg17-${RANDOM}-${RANDOM}"
+    docker run -d --name "$CONTAINER" --network none -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17 >/dev/null || fail "could not start the isolated postgres:17 container"
+    PSQL=(docker exec -i "$CONTAINER" psql -U postgres -d postgres -X -v ON_ERROR_STOP=1)
+    ready=false
+    for _ in $(seq 1 30); do
+      if "${PSQL[@]}" -Atc 'SELECT 1' >/dev/null 2>&1; then ready=true; break; fi
+      sleep 1
+    done
+    [[ $ready == true ]] || fail "isolated postgres:17 container did not become ready within 30 seconds"
+    ;;
+  *) fail "DD154_PG_MODE must be native or docker, got: $MODE" ;;
+esac
+
+[[ $("${PSQL[@]}" -Atc 'SHOW server_version_num') == 17* ]] || fail "acceptance runtime is not PostgreSQL 17"
 
 if [[ $("${PSQL[@]}" -Atc 'SHOW server_encoding') != UTF8 ]]; then
   echo 'FAIL fixture: PostgreSQL 17 acceptance cluster is not UTF8' | tee -a "$RESULTS"; exit 1
 fi
 echo 'PASS fixture: PostgreSQL 17 acceptance cluster uses UTF8' | tee -a "$RESULTS"
 
-node - "$CENSUS" <<'NODE' | "${PSQL[@]}" >/dev/null
+node - "$FIXTURE" <<'NODE' | "${PSQL[@]}" >/dev/null
 const fs = require('fs');
-const census = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const defs = census.ddl_guard_definitions;
-const attachments = [...new Map(census.assignment_attachments.map(x => [`${x.function_schema}.${x.function_name}`, x.function_definition])).values()];
-const constant = "'39c38960-d30c-4840-b0c1-c9960de95582'::uuid";
-const defaults = census.organization_column_defaults.map(x => {
-  const expr = x.schema === 'platform' && x.table === 'output_feedback' ? 'current_personal_org_id()' : constant;
+const fixture = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const crypto = require('crypto');
+const sha256 = crypto.createHash('sha256').update(fs.readFileSync(process.argv[2])).digest('hex');
+if (fixture.fixture_version !== 1 || fixture.ddl_guard_definitions?.length !== 2 || fixture.assignment_functions?.length !== 8 || fixture.organization_column_defaults?.length !== 9) throw new Error('incomplete DD154 pre-apply catalog fixture');
+if (fixture.provenance?.captured_from !== 'common-docs/projects/no-db-assigned-org/census/live-2026-09-12-owner.json' || !/^[0-9a-f]{64}$/.test(fixture.provenance?.source_sha256 ?? '') || fixture.provenance?.migration_sha256 !== '01d4323bbf7442160a67abbf2a1fc0dde2bf6e5086295c0f6d0e4f0a56fead5d') throw new Error('fixture provenance is incomplete or mismatched');
+const md5 = (value) => crypto.createHash('md5').update(value).digest('hex');
+for (const entry of [...fixture.ddl_guard_definitions, ...fixture.assignment_functions]) {
+  if (!entry.schema || !entry.name || typeof entry.definition !== 'string' || md5(entry.definition) !== entry.definition_md5) throw new Error(`fixture function hash mismatch: ${entry.schema}.${entry.name}`);
+}
+for (const entry of fixture.organization_column_defaults) {
+  if (!entry.schema || !entry.table || !/^\d+$/.test(entry.oid ?? '') || typeof entry.expression !== 'string' || md5(entry.expression) !== entry.expression_md5) throw new Error(`fixture default hash mismatch: ${entry.schema}.${entry.table}`);
+}
+console.error(`PASS fixture: pre-apply catalog fixture ${sha256} has 2 definitions, 8 assigners, and 9 defaults`);
+const defs = fixture.ddl_guard_definitions;
+const attachments = fixture.assignment_functions.map(x => x.definition);
+const defaults = fixture.organization_column_defaults.map(x => {
+  const expr = x.expression;
   return `CREATE TABLE ${x.schema}.${x.table} (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL DEFAULT ${expr});`;
 }).join('\n');
 process.stdout.write(`
@@ -91,26 +161,18 @@ FROM pg_attrdef d JOIN pg_class c ON c.oid=d.adrelid JOIN pg_namespace n ON n.oi
 JOIN pg_attribute a ON a.attrelid=d.adrelid AND a.attnum=d.adnum
 WHERE a.attname='organization_id' ORDER BY 1" > "$RUN_DIR/defaults.tsv"
 
-node - "$RUN_DIR/defaults.tsv" <<'NODE'
+node - "$RUN_DIR/defaults.tsv" "$FIXTURE" <<'NODE'
 const fs=require('fs');
 const rows=fs.readFileSync(process.argv[2],'utf8').trim().split('\n').map(x=>x.split('|'));
-const expected=new Map([
-['admin.feature_docs','74188ac5336e8d3bf1a14eee28fc6297'],
-['context.system_context_item','74188ac5336e8d3bf1a14eee28fc6297'],
-['education.learn_doc','74188ac5336e8d3bf1a14eee28fc6297'],
-['platform.output_feedback','4f5b09b52e1a7f210b4c0d8b8bfa8cb9'],
-['seo.keyword','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.keyword_edge','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.keyword_market','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.keyword_topic','74188ac5336e8d3bf1a14eee28fc6297'],
-['seo.topic','74188ac5336e8d3bf1a14eee28fc6297']]);
+const fixture=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
+const expected=new Map(fixture.organization_column_defaults.map(x => [`${x.schema}.${x.table}`, x.expression_md5]));
 if(rows.length!==9) throw new Error(`fixture default count ${rows.length}`);
 for(const [ref,oid,hash] of rows){if(expected.get(ref)!==hash) throw new Error(`hash mismatch ${ref}: ${hash}`)}
 console.log('PASS fixture: 9 default expression hashes exactly match production freeze');
 NODE
 
 set +e
-"${PSQL[@]}" -f "$REPO/scripts/migration-drafts/dd154_org_assignment_ddl_prevention.sql" >"$RUN_DIR/original.out" 2>&1
+run_file "$MIGRATION" >"$RUN_DIR/original.out" 2>&1
 ORIGINAL_RC=$?
 set -e
 if [[ $ORIGINAL_RC -eq 0 ]] || ! grep -q 'frozen organization-default debt changed (expected 9 exact attrdef rows, found 0)' "$RUN_DIR/original.out"; then
@@ -125,9 +187,9 @@ echo 'PASS red control: original production-OID migration refused the local clon
 "${PSQL[@]}" -c "CREATE TABLE public.preexisting_tenth_default (organization_id uuid NOT NULL DEFAULT public.current_personal_org_id())" >/dev/null
 echo 'ATTACK setup: added a tenth pre-existing organization default after the nine-row capture' | tee -a "$RESULTS"
 
-node - "$REPO/scripts/migration-drafts/dd154_org_assignment_ddl_prevention.sql" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" "$REPO/scripts/migration-drafts/dd154_rollback_probes.sql" <<'NODE'
+node - "$MIGRATION" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" <<'NODE'
 const fs=require('fs'),crypto=require('crypto');
-const [src,mapfile,out,probes]=process.argv.slice(2);
+const [src,mapfile,out]=process.argv.slice(2);
 const old=new Map([
 ['admin.feature_docs','1702067'],['context.system_context_item','3421071'],['education.learn_doc','1700870'],
 ['platform.output_feedback','1700228'],['seo.keyword','1709788'],['seo.keyword_edge','1709833'],
@@ -143,7 +205,7 @@ const lexicalEmitterProbes = [
   "PostgreSQL Unicode-escaped quoted identifiers are identifiers, not",
   "v_scan_decoded_identifier := v_scan_decoded_identifier || chr",
   "Comments and whitespace are interchangeable lexical separators",
-  "v_standard_conforming_strings := current_setting('standard_conforming_strings') = 'on'",
+  "FROM unnest(coalesce(p.proconfig, ARRAY[]::text[])) AS settings(v_setting)",
   "v_scan_next_codepoint NOT BETWEEN 56320 AND 57343",
 ];
 for (const probe of lexicalEmitterProbes) {
@@ -159,11 +221,13 @@ for(const [ref,oid] of rows){
 let reversed=sql;
 for(const [ref,oid] of rows) reversed=reversed.split(`${oid}::oid`).join(`${old.get(ref)}::oid`);
 if(reversed!==original) throw new Error('mapped migration changed bytes beyond nine OID constants');
-const probeSql=fs.readFileSync(probes,'utf8');
+const probeMarker='-- dd154 rollback-only live probes.';
+if (original.split(probeMarker).length !== 2) throw new Error('applied migration must contain exactly one rollback-probe section');
+const probeSql=original.slice(original.indexOf(probeMarker));
 const invertedProbeSql=probeSql.replace(') <> 1 THEN', ') = 1 THEN');
 if (invertedProbeSql === probeSql) throw new Error('rollback positive-probe inversion control was not generated');
 fs.writeFileSync(out,sql);
-fs.writeFileSync(`${out}.with-probes.sql`, `${sql}\n${probeSql}`);
+fs.writeFileSync(`${out}.with-probes.sql`, sql);
 fs.writeFileSync(`${out}.inverted-probes.sql`, invertedProbeSql);
 console.log(`PASS harness transform: only 9 OID constants changed, each in exactly 2 sites; reverse SHA ${crypto.createHash('sha256').update(reversed).digest('hex')}`);
 NODE
@@ -176,7 +240,7 @@ UNION ALL
 SELECT 'event',r.rolname,false,e.evtenabled::text,array_to_string(e.evttags,',') FROM pg_event_trigger e JOIN pg_roles r ON r.oid=e.evtowner WHERE e.evtname='ddl_guard'" > "$RUN_DIR/before.tsv"
 
 set +e
-"${PSQL[@]}" -f "$RUN_DIR/mapped.sql" >"$RUN_DIR/mapped.out" 2>&1
+run_file "$RUN_DIR/mapped.sql" >"$RUN_DIR/mapped.out" 2>&1
 MAPPED_RC=$?
 set -e
 if [[ $MAPPED_RC -eq 0 ]] || ! grep -q 'frozen organization-default debt changed (expected 9 exact attrdef rows, found 9)' "$RUN_DIR/mapped.out"; then
@@ -185,7 +249,7 @@ fi
 echo 'PASS freeze control: mapped migration refused the tenth organization default' | tee -a "$RESULTS"
 
 "${PSQL[@]}" -c 'DROP TABLE public.preexisting_tenth_default' >/dev/null
-"${PSQL[@]}" --single-transaction -f "$RUN_DIR/mapped.sql.with-probes.sql" >"$RUN_DIR/mapped.out" 2>&1
+run_file "$RUN_DIR/mapped.sql.with-probes.sql" --single-transaction >"$RUN_DIR/mapped.out" 2>&1
 echo 'PASS execution: production-OID-only mapped migration and rollback probes ran in one transaction' | tee -a "$RESULTS"
 
 if [[ $("${PSQL[@]}" -Atc "
@@ -201,7 +265,7 @@ fi
 echo 'PASS rollback probes: no persistent probe relation or function remains after the appended transaction' | tee -a "$RESULTS"
 
 set +e
-"${PSQL[@]}" -f "$RUN_DIR/mapped.sql.inverted-probes.sql" >"$RUN_DIR/inverted-probes.out" 2>&1
+run_file "$RUN_DIR/mapped.sql.inverted-probes.sql" >"$RUN_DIR/inverted-probes.out" 2>&1
 INVERTED_PROBES_RC=$?
 set -e
 if [[ $INVERTED_PROBES_RC -eq 0 ]] || ! grep -q 'explicit writer was not persisted in its temporary relation' "$RUN_DIR/inverted-probes.out"; then
@@ -223,6 +287,89 @@ if ! grep -q '^event|fixture_guard_owner|f|O|CREATE TABLE,ALTER TABLE,CREATE FUN
   echo 'FAIL metadata: event binding not preserved/extended exactly' | tee -a "$RESULTS"; cat "$RUN_DIR/after.tsv" | tee -a "$RESULTS"; exit 1
 fi
 echo 'PASS metadata: both function owners/security/config/ACL preserved; event owner/enabled preserved and CREATE TRIGGER added' | tee -a "$RESULTS"
+
+# DD155 is intentionally a separate prepared migration. It must run against the
+# DD154 result, retain guard metadata, remove both stale recommendations, and
+# leave the existing enforcement matrix below untouched.
+"${PSQL[@]}" -AtF '|' -c "
+SELECT r.rolname,p.prosecdef,coalesce(array_to_string(p.proconfig,','),''),coalesce(array_to_string(p.proacl::text[],','),'')
+FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+WHERE p.oid='platform._ddl_guard()'::regprocedure" > "$RUN_DIR/dd155-before.tsv"
+"${PSQL[@]}" -Atc "SELECT encode(digest(convert_to(pg_get_functiondef('platform._ddl_guard()'::regprocedure), 'UTF8'), 'sha256'), 'hex')" > "$RUN_DIR/dd155-fixture-source.sha256"
+echo "DD155 fixture input source hash: $(cat "$RUN_DIR/dd155-fixture-source.sha256")" | tee -a "$RESULTS"
+node - "$GUIDANCE_SQL" "$RUN_DIR/dd155-fixture-source.sha256" "$RUN_DIR/dd155-mapped.sql" <<'NODE'
+const fs = require('fs');
+const [guidance, fixtureHashFile, mapped] = process.argv.slice(2);
+const liveHash = 'd619ea4bd180b16a7a3ad7cf4f563552a783cc502040826fe328610661ac8a68';
+const fixtureHash = fs.readFileSync(fixtureHashFile, 'utf8').trim();
+if (!/^[0-9a-f]{64}$/.test(fixtureHash)) throw new Error('DD155 fixture source hash is malformed');
+const source = fs.readFileSync(guidance, 'utf8');
+if (source.split(liveHash).length !== 2) throw new Error('DD155 guidance must contain the reviewed live source hash exactly once');
+const output = source.replace(liveHash, fixtureHash);
+if (output.replace(fixtureHash, liveHash) !== source) throw new Error('DD155 fixture mapping changed bytes beyond the source-hash precondition');
+fs.writeFileSync(mapped, output);
+console.log('PASS DD155 fixture mapping: only the live source-hash precondition was adapted to the isolated PG17 fixture');
+NODE
+run_file "$RUN_DIR/dd155-mapped.sql" >"$RUN_DIR/dd155.out" 2>&1
+"${PSQL[@]}" -AtF '|' -c "
+SELECT r.rolname,p.prosecdef,coalesce(array_to_string(p.proconfig,','),''),coalesce(array_to_string(p.proacl::text[],','),'')
+FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+WHERE p.oid='platform._ddl_guard()'::regprocedure" > "$RUN_DIR/dd155-after.tsv"
+if ! diff -u "$RUN_DIR/dd155-before.tsv" "$RUN_DIR/dd155-after.tsv" >> "$RESULTS"; then
+  echo 'FAIL DD155 metadata: ddl_guard owner/security/config/ACL changed' | tee -a "$RESULTS"; exit 1
+fi
+
+"${PSQL[@]}" <<'SQL' | tee -a "$RESULTS"
+DO $dd155_hint$
+DECLARE
+  v_hint text;
+  v_old_hint constant text := $old_hint$NO NULL ORG (owner ruling 2026-08-21, db-rules §2/§6e). NULL is not a scope: system/global content belongs to the system org (matrx-system, 39c38960-d30c-4840-b0c1-c9960de95582, iam.system_orgs.global_readable), and user content falls back to the creator's personal org. Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id) and attach the backstop (public._stamp_org_default or platform.inherit_org_from_parent) in this same migration.$old_hint$;
+  v_new_hint constant text := $new_hint$Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id). The initiating operation must provide its organization_id explicitly; no resolver, default, trigger, backstop, or assignment may choose it.$new_hint$;
+BEGIN
+  PERFORM set_config('matrx.provisioner', '1', true);
+  BEGIN
+    CREATE TABLE public.dd155_null_at_birth (
+      organization_id uuid,
+      created_by uuid,
+      created_at timestamptz,
+      updated_at timestamptz
+    );
+    RAISE EXCEPTION 'DD155 hint probe unexpectedly allowed nullable organization_id at birth';
+  EXCEPTION WHEN check_violation THEN
+    GET STACKED DIAGNOSTICS v_hint = PG_EXCEPTION_HINT;
+    IF v_hint IS DISTINCT FROM v_new_hint OR position(v_old_hint IN coalesce(v_hint, '')) > 0 THEN
+      RAISE EXCEPTION 'DD155 hint retained stale guidance: %', v_hint;
+    END IF;
+  END;
+END
+$dd155_hint$;
+
+SELECT set_config('matrx.provisioner', '1', false);
+CREATE TABLE public.dd155_nullable_log_probe (
+  organization_id uuid NOT NULL,
+  created_by uuid,
+  created_at timestamptz,
+  updated_at timestamptz
+);
+ALTER TABLE public.dd155_nullable_log_probe ALTER COLUMN organization_id DROP NOT NULL;
+DO $dd155_log$
+DECLARE
+  v_detail text;
+  v_old_detail constant text := $old_detail$NO NULL ORG (owner ruling 2026-08-21): this entity-looking table still allows organization_id IS NULL. NULL is not a scope -- system/global content belongs to the system org (matrx-system 39c38960-d30c-4840-b0c1-c9960de95582), user content to the creator's personal org. Flip it NOT NULL and attach the backstop in ONE migration. (db-rules §2/§6e.)$old_detail$;
+  v_new_detail constant text := $new_detail$NO NULL ORG (owner ruling 2026-08-21): this entity-looking table still allows organization_id IS NULL. Declare organization_id NOT NULL. The initiating operation must provide its organization_id explicitly; no resolver, default, trigger, backstop, or assignment may choose it. (db-rules §2/§6e.)$new_detail$;
+BEGIN
+  SELECT detail INTO v_detail
+  FROM platform.ddl_guard_log
+  WHERE rule = 'nullable_org' AND object_ref = 'public.dd155_nullable_log_probe'
+  ORDER BY ctid DESC LIMIT 1;
+  IF v_detail IS DISTINCT FROM v_new_detail OR position(v_old_detail IN coalesce(v_detail, '')) > 0 THEN
+    RAISE EXCEPTION 'DD155 nullable_org log retained stale guidance: %', v_detail;
+  END IF;
+END
+$dd155_log$;
+DROP TABLE public.dd155_nullable_log_probe;
+SQL
+echo 'PASS DD155 guidance: stale NULL-at-birth hint and nullable_org detail fail exact assertions; repaired initiating-operation guidance passes' | tee -a "$RESULTS"
 
 "${PSQL[@]}" <<'SQL' | tee -a "$RESULTS"
 CREATE TEMP TABLE review_results(label text PRIMARY KEY, expected text NOT NULL, observed text NOT NULL, pass boolean NOT NULL);
@@ -251,6 +398,10 @@ INSERT INTO expected_cases(label, expected) VALUES
   ('assignment after dollar string','REJECT'),
   ('assignment after escape string','REJECT'),
   ('assignment after standard string backslash','REJECT'),
+  ('function SET off assignment after escaped quote','REJECT'),
+  ('function SET off escaped-quote literal','ALLOW'),
+  ('function SET on assignment after standard backslash','REJECT'),
+  ('function SET on standard-backslash literal','ALLOW'),
   ('assignment after Unicode string literal','REJECT'),
   ('assignment after line comment','REJECT'),
   ('assignment to distinct quoted field','ALLOW'),
@@ -315,6 +466,12 @@ SELECT pg_temp.record_allow('nested-comment assignment text', 'CREATE FUNCTION p
 SELECT pg_temp.record_reject('assignment after dollar string', $case$CREATE FUNCTION public.dd154_after_dollar() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$ordinary text$q$; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after escape string', $case$CREATE FUNCTION public.dd154_after_escape() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM E'it\'s text'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after standard string backslash', $case$CREATE FUNCTION public.dd154_after_standard_backslash() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM '\'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_reject('function SET off assignment after escaped quote', $case$CREATE FUNCTION public.dd154_set_off_escape() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO off AS $b$ BEGIN PERFORM 'it\'s'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_allow('function SET off escaped-quote literal', $case$CREATE FUNCTION public.dd154_set_off_literal() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO off AS $b$ BEGIN PERFORM 'it\'s'; RETURN NEW; END $b$$case$);
+SET standard_conforming_strings = off;
+SELECT pg_temp.record_reject('function SET on assignment after standard backslash', $case$CREATE FUNCTION public.dd154_set_on_standard() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO on AS $b$ BEGIN PERFORM '\'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_allow('function SET on standard-backslash literal', $case$CREATE FUNCTION public.dd154_set_on_literal() RETURNS trigger LANGUAGE plpgsql SET standard_conforming_strings TO on AS $b$ BEGIN PERFORM '\'; RETURN NEW; END $b$$case$);
+SET standard_conforming_strings = on;
 SELECT pg_temp.record_reject('assignment after Unicode string literal', $case$CREATE FUNCTION public.dd154_after_unicode_literal() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM U&'ordinary \0069 text'; NEW.U&"organizat\0069on_id" := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after line comment', $case$CREATE FUNCTION public.dd154_after_line_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN -- an ordinary comment
 NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);

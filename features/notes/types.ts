@@ -86,11 +86,16 @@ export type CreateNoteInput = Pick<
     | "position"
     | "visibility"
 > & {
-    // org is resolved by the create path (ensureOrgId), so callers need not
-    // pass it — keep it optional even though NoteInsert.organization_id is now
-    // NOT NULL / required.
-    organization_id?: string | null;
+    /** Captured at the initiating edge. The note writer never resolves it. */
+    organization_id: string;
 } & Partial<NoteContextLinks>;
+
+/** Immutable identity for a folder operation; its name is display data only. */
+export interface FolderReference {
+    id: string;
+    organizationId: string;
+    name: string;
+}
 
 export type UpdateNoteInput = Pick<
     NoteUpdate,

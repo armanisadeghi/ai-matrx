@@ -31,6 +31,8 @@ export type PrePaintDescriptor =
           /** Whitelist of acceptable values; anything else falls through to default/systemFallback. */
           allowed: readonly string[];
           default: string;
+          /** Stored value resolved through systemFallback instead of copied to DOM. */
+          systemValue?: string;
           systemFallback?: SystemFallback;
       }
     | {
@@ -39,6 +41,8 @@ export type PrePaintDescriptor =
           className: string;
           fromKey: string;
           whenEquals: string;
+          /** Stored value resolved through systemFallback instead of equality. */
+          systemValue?: string;
           systemFallback?: SystemFallback;
       };
 
@@ -51,7 +55,8 @@ export interface SystemFallback {
     mediaQuery: string;
     /**
      * classToggle: true = add the class when the MQ matches; false = remove it.
-     * attribute: true = set `whenMatchesValue`; false = set `default`.
+     * attribute: true = set `whenMatchesValue`; false = set
+     * `whenDoesNotMatchValue` when supplied, otherwise `default`.
      */
     applyWhenMatches: boolean;
     /**
@@ -59,6 +64,8 @@ export interface SystemFallback {
      * `default` is used in both branches (effectively no change).
      */
     whenMatchesValue?: string;
+    /** Attribute variant only. Value to set when the media query does not match. */
+    whenDoesNotMatchValue?: string;
 }
 
 /**

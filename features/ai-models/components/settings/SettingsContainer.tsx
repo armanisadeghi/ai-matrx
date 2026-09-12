@@ -391,6 +391,7 @@ function SettingDetailPanel({
 export default function SettingsContainer() {
   const [settings, setSettings] = useState<AiSetting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedSetting, setSelectedSetting] = useState<AiSetting | null>(
     null,
   );
@@ -399,11 +400,12 @@ export default function SettingsContainer() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const fetched = await aiModelService.fetchSettings();
       setSettings(fetched);
     } catch (err) {
-      console.error("Failed to load AI settings", err);
+      setLoadError(extractErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -484,11 +486,15 @@ export default function SettingsContainer() {
           <SettingTable
             settings={settings}
             isLoading={isLoading}
+            error={loadError}
             selectedId={selectedSetting?.id ?? null}
             onSelect={openSetting}
             onEdit={openSetting}
             onDelete={handleRowDelete}
             onCreate={openNew}
+            onRetry={() => {
+              void loadData();
+            }}
           />
         </div>
 

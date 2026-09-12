@@ -78,7 +78,6 @@ function Host({ children }: { children: ReactNode }) {
   return (
     <AssociationsProvider
       store={store}
-      probeSchema={false}
       notifier={{
         success: (msg: string) => toastSuccess(msg),
         error: (msg: string, opts?: unknown) => toastError(msg, opts),

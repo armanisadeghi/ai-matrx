@@ -40,7 +40,6 @@ import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { createFolder } from "../service/notesService";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   noteDisplayLabel,
@@ -172,7 +171,6 @@ export function NoteMetadataBar({
 
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      await createFolder(folderName);
       await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
     },
     [dispatch, noteId],

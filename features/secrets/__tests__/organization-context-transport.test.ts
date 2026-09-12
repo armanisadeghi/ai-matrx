@@ -1,6 +1,6 @@
 import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import { fetchAuthenticators } from "../authenticator-service";
-import { checkVaultDestination } from "../vault-service";
+import { checkVaultDestination, createVaultItem } from "../vault-service";
 import { uploadVaultAttachment } from "@/features/files/vault/vaultAttachmentTransport";
 
 const ACCESS_TOKEN = "test-access-token";
@@ -8,11 +8,16 @@ const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
 const mockGetSession = jest.fn(async () => ({
   data: { session: { access_token: ACCESS_TOKEN } },
 }));
+const mockGetUser = jest.fn(async () => ({
+  data: { user: { id: "user-1" } },
+  error: null,
+}));
 
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
       getSession: mockGetSession,
+      getUser: mockGetUser,
     },
   }),
 }));
@@ -39,12 +44,22 @@ function jsonResponse(body: unknown): Response {
   } as Response;
 }
 
+function errorResponse(status: number): Response {
+  return {
+    ok: false,
+    status,
+    json: async () => ({}),
+    text: async () => "",
+  } as Response;
+}
+
 describe("Vault and Authenticator organization transport", () => {
   const fetchMock = jest.fn<Promise<Response>, Parameters<typeof fetch>>();
 
   beforeEach(() => {
     fetchMock.mockReset();
     mockGetSession.mockClear();
+    mockGetUser.mockClear();
     global.fetch = fetchMock as typeof fetch;
     installContext(ORGANIZATION_ID);
   });
@@ -73,6 +88,58 @@ describe("Vault and Authenticator organization transport", () => {
       "X-Organization-Id": ORGANIZATION_ID,
     });
   });
+
+  test("import mutation rechecks the frozen actor before sending", async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: "different-user" } },
+      error: null,
+    });
+    await expect(
+      createVaultItem(
+        { display_name: "Imported", source: "system_import" },
+        {
+          idempotencyKey: "00000000-0000-4000-8000-000000000001",
+          expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
+        },
+      ),
+    ).rejects.toThrow("account or request organization changed");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("import retry keeps the supplied idempotency key", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ id: "item-1", fields: [], attachments: [] }),
+    );
+    await createVaultItem(
+      { display_name: "Imported", source: "system_import" },
+      {
+        idempotencyKey: "00000000-0000-4000-8000-000000000001",
+        expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
+      },
+    );
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
+      "x-idempotency-key": "00000000-0000-4000-8000-000000000001",
+    });
+  });
+
+  test.each([408, 429, 500, 502, 503, 504])(
+    "ambiguous import response %i keeps the frozen idempotency command retryable",
+    async (status) => {
+      fetchMock.mockResolvedValueOnce(errorResponse(status));
+      await expect(
+        createVaultItem(
+          { display_name: "Imported", source: "system_import" },
+          {
+            idempotencyKey: "00000000-0000-4000-8000-000000000001",
+            expectedActor: {
+              userId: "user-1",
+              organizationId: ORGANIZATION_ID,
+            },
+          },
+        ),
+      ).rejects.toMatchObject({ code: "retryable" });
+    },
+  );
 
   test("Vault attachment bytes send the selected organization", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ id: "attachment-1" }));

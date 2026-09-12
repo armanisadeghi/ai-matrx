@@ -21,6 +21,11 @@ import type {
   NoteListItem,
 } from "../types";
 
+/** Compatibility wrapper for older callers; the writer still rejects before I/O. */
+type NotesApiCreateInput = Omit<CreateNoteInput, "organization_id"> & {
+  organization_id?: string | null;
+};
+
 /**
  * Create a new note (client-side call)
  * @example
@@ -33,8 +38,11 @@ import type {
  * });
  * ```
  */
-export async function create(input: CreateNoteInput): Promise<Note> {
-  return createNoteService(input);
+export async function create(input: NotesApiCreateInput): Promise<Note> {
+  if (!input.organization_id) {
+    throw new Error("Choose an organization before creating a note.");
+  }
+  return createNoteService({ ...input, organization_id: input.organization_id });
 }
 
 /**
@@ -103,11 +111,14 @@ export async function getById(noteId: string): Promise<Note | null> {
 export async function quickCreate(
   content: string,
   label?: string,
+  organizationId?: string,
 ): Promise<Note> {
+  if (!organizationId) throw new Error("Choose an organization before creating a note.");
   return createNoteService({
     label: label || "Quick Note",
     content,
     folder_name: "Draft",
+    organization_id: organizationId,
   });
 }
 
@@ -128,8 +139,9 @@ export async function copy(noteId: string): Promise<Note> {
  */
 export async function ensureFolderMaterialized(
   folderName: string,
+  organizationId: string,
 ): Promise<void> {
-  return ensureFolderMaterializedService(folderName);
+  return ensureFolderMaterializedService(folderName, organizationId);
 }
 
 // Default export as namespace

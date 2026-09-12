@@ -122,6 +122,50 @@ const liveToasts = new Map<ToastId, LiveToast>();
 const recordKey = (record: Pick<ToastRecordRef, "type" | "id">) =>
   `${record.type}::${record.id}`;
 
+/**
+ * 🚨 SONNER DEFERS EVERY DISMISSAL THROUGH requestAnimationFrame — TWICE
+ * (`ToastState.dismiss` queues a frame, and the Toaster's subscriber queues a
+ * second one before it marks the toast deleted; sonner 2.0.8
+ * `dist/index.mjs`). A hidden document never runs an animation frame, so in a
+ * background tab or an agent browser pane `toast.dismiss(id)` is accepted and
+ * then simply never lands: the wall clock fired, and the toast stayed.
+ * Measured live 2026-09-12 — a «Pinned Code» toast outlived a client-side
+ * navigation by minutes with `document.hidden === true` and a frame callback
+ * that never ran in 3 s. jsdom runs frames regardless of visibility, which is
+ * why no unit test saw it until the double was made faithful.
+ *
+ * While the document is hidden there is nothing to animate and no batching to
+ * protect, so the frames sonner asks for during a dismissal are run on the
+ * spot. The shim is scoped to the dismiss call — every frame sonner requests
+ * inside it runs synchronously, which is exactly the chain of two — and the
+ * real `requestAnimationFrame` is back before the call returns. When the
+ * document is visible sonner's own frames run and nothing here is touched.
+ */
+function dismissInSonner(toastId?: ToastId): void {
+  const hidden = typeof document !== "undefined" && document.hidden;
+  if (!hidden || typeof window === "undefined") {
+    sonnerToast.dismiss(toastId);
+    return;
+  }
+  const realRaf = window.requestAnimationFrame;
+  const realCaf = window.cancelAnimationFrame;
+  // Ids handed out for frames we ran on the spot; cancelling one is a no-op.
+  let immediateFrameId = -1;
+  window.requestAnimationFrame = (cb: FrameRequestCallback) => {
+    cb(performance.now());
+    return immediateFrameId--;
+  };
+  window.cancelAnimationFrame = (id: number) => {
+    if (id >= 0) realCaf.call(window, id);
+  };
+  try {
+    sonnerToast.dismiss(toastId);
+  } finally {
+    window.requestAnimationFrame = realRaf;
+    window.cancelAnimationFrame = realCaf;
+  }
+}
+
 function forget(toastId: ToastId) {
   const entry = liveToasts.get(toastId);
   if (entry?.timer) clearTimeout(entry.timer);
@@ -148,7 +192,7 @@ function arm(entry: LiveToast) {
       return;
     }
     forget(entry.toastId);
-    sonnerToast.dismiss(entry.toastId);
+    dismissInSonner(entry.toastId);
   }, remaining);
   // A background tab throttles timers to ~1/minute but never stops them, and
   // `sweepExpiredToasts()` (called by the Toaster on visibilitychange)
@@ -165,7 +209,7 @@ export function sweepExpiredToasts(now: number = Date.now()): number {
   for (const entry of [...liveToasts.values()]) {
     if (entry.expiresAt > now) continue;
     forget(entry.toastId);
-    sonnerToast.dismiss(entry.toastId);
+    dismissInSonner(entry.toastId);
     dismissed += 1;
   }
   return dismissed;
@@ -186,7 +230,7 @@ export function dismissRecordToasts(
   for (const entry of [...liveToasts.values()]) {
     if (!entry.record || recordKey(entry.record) !== key) continue;
     forget(entry.toastId);
-    sonnerToast.dismiss(entry.toastId);
+    dismissInSonner(entry.toastId);
     dismissed += 1;
   }
   return dismissed;
@@ -226,7 +270,7 @@ export function dismissRecordToastsOffRoute(pathname: string): number {
   for (const entry of [...liveToasts.values()]) {
     if (!entry.record || routeStillShows(entry.record, pathname)) continue;
     forget(entry.toastId);
-    sonnerToast.dismiss(entry.toastId);
+    dismissInSonner(entry.toastId);
     dismissed += 1;
   }
   return dismissed;
@@ -241,7 +285,7 @@ export function dismissAllTrackedToasts(): number {
   let dismissed = 0;
   for (const entry of [...liveToasts.values()]) {
     forget(entry.toastId);
-    sonnerToast.dismiss(entry.toastId);
+    dismissInSonner(entry.toastId);
     dismissed += 1;
   }
   return dismissed;
@@ -343,7 +387,8 @@ export const toast: MatrxToast = Object.assign(
       } else {
         forget(id);
       }
-      return captured.toast.dismiss(id);
+      dismissInSonner(id);
+      return id;
     },
   },
 );

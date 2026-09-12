@@ -47,7 +47,6 @@ import {
 import { openNoteShareModal } from "./note-actions/noteMenuRegistry";
 import type { NoteRecord } from "../redux/notes.types";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { createFolder } from "../service/notesService";
 
 const MAX_PARALLEL = 4;
 
@@ -136,7 +135,6 @@ export function NoteSidebarBulkBar({
   };
 
   const handleCreateFolder = async (folderName: string) => {
-    await createFolder(folderName);
     await handleMove(folderName);
   };
 
