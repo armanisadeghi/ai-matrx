@@ -44,6 +44,11 @@ function stringField(payload: unknown, field: string): string | undefined {
     return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
+function sourceShaField(payload: unknown): string | undefined {
+    const sourceSha = stringField(payload, 'source_sha')
+    return sourceSha && /^[0-9a-f]{40}$/i.test(sourceSha) ? sourceSha : undefined
+}
+
 function routeCountFromSurface(payload: unknown): number | undefined {
     if (!payload || typeof payload !== 'object') return undefined
     const routes = (payload as Record<string, unknown>).routes
@@ -98,7 +103,7 @@ export async function fetchTierInfo(tier: SandboxTier): Promise<OrchestratorSyst
             system: sys,
             release: {
                 version: stringField(info, 'version') ?? stringField(surface, 'version'),
-                sourceSha: stringField(info, 'source_sha') ?? stringField(surface, 'source_sha'),
+                sourceSha: sourceShaField(info) ?? sourceShaField(surface),
             },
             routeCount: routeCountFromSurface(surface),
             fetchedAt,
