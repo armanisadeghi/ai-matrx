@@ -70,14 +70,16 @@ function SignalCard({
         hot ? "border-destructive/50 bg-destructive/5" : "border-border bg-card"
       }`}
     >
-      <div className="flex items-start gap-2 px-3 py-2">
+      <div className="flex items-start gap-2 px-3 py-2" title={meaning}>
         <Icon
           className={`mt-0.5 h-4 w-4 shrink-0 ${hot ? "text-destructive" : "text-muted-foreground"}`}
           aria-hidden
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-sm font-semibold text-foreground">{title}</span>
+            <span className="truncate text-sm font-semibold text-foreground">
+              {title}
+            </span>
             <span
               className={`shrink-0 text-sm font-semibold tabular-nums ${
                 hot ? "text-destructive" : "text-foreground"
@@ -87,10 +89,11 @@ function SignalCard({
             </span>
           </div>
           <div className="text-[11px] text-muted-foreground">
-            {empty ? "Nothing crossed the line in this window." : `${percent(share)} of the window · ${n} ${unit}`}
+            {empty
+              ? "Nothing crossed the line in this window."
+              : `${percent(share)} of the window · ${n} ${unit}`}
             {line ? ` · line: ${line}` : ""}
           </div>
-          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{meaning}</p>
         </div>
       </div>
       {rows.length > 0 ? (
@@ -103,7 +106,11 @@ function SignalCard({
                 onClick={() => setOpen((v) => !v)}
                 className="flex w-full items-center gap-1 px-3 py-1 text-[11px] text-primary hover:underline"
               >
-                {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                {open ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
                 {open
                   ? "Show fewer"
                   : `Show all ${rows.length}${moreThanShown > 0 ? ` (${moreThanShown} more not listed — narrow the window)` : ""}`}
@@ -144,9 +151,13 @@ function Row({
         ) : (
           <div className="truncate text-foreground">{primary}</div>
         )}
-        <div className="truncate text-[11px] text-muted-foreground">{secondary}</div>
+        <div className="truncate text-[11px] text-muted-foreground">
+          {secondary}
+        </div>
       </div>
-      <span className="shrink-0 tabular-nums font-medium text-foreground">{usd(cost)}</span>
+      <span className="shrink-0 tabular-nums font-medium text-foreground">
+        {usd(cost)}
+      </span>
       {href ? (
         <Link
           href={href}
@@ -187,7 +198,10 @@ export function DigHerePanel({
           unit="conversations"
           line={`one conversation ≥ ${s.conversationHogs.threshold}% of the window`}
           meaning="A single conversation this large is either the one job that mattered or a session that kept re-reading its own history. Open it and read the last few turns."
-          moreThanShown={Math.max(0, s.conversationHogs.n - s.conversationHogs.rows.length)}
+          moreThanShown={Math.max(
+            0,
+            s.conversationHogs.n - s.conversationHogs.rows.length,
+          )}
           rows={s.conversationHogs.rows.map((r) => (
             <Row
               key={r.conversationId}
@@ -214,7 +228,10 @@ export function DigHerePanel({
           unit="conversations"
           line={`≥ ${compactNumber(s.contextHeavy.threshold)} tokens of context per model call`}
           meaning="Every model call re-sends the whole history, so cost grows with the square of the conversation's length. These are the sessions where each call re-read a novel. The fix is trimming or starting fresh, not a cheaper model."
-          moreThanShown={Math.max(0, s.contextHeavy.n - s.contextHeavy.rows.length)}
+          moreThanShown={Math.max(
+            0,
+            s.contextHeavy.n - s.contextHeavy.rows.length,
+          )}
           rows={s.contextHeavy.rows.map((r) => (
             <Row
               key={r.conversationId}
@@ -241,7 +258,10 @@ export function DigHerePanel({
           unit="requests"
           line={`≥ ${s.iterationHeavy.threshold} model calls in one request`}
           meaning="One request that called the model this many times is a tool loop. Legitimate for agentic work; a defect when the same tool keeps failing and the agent keeps retrying."
-          moreThanShown={Math.max(0, s.iterationHeavy.n - s.iterationHeavy.rows.length)}
+          moreThanShown={Math.max(
+            0,
+            s.iterationHeavy.n - s.iterationHeavy.rows.length,
+          )}
           rows={s.iterationHeavy.rows.map((r) => (
             <Row
               key={r.requestId}
@@ -249,7 +269,11 @@ export function DigHerePanel({
               secondary={`${timestamp(r.at)} · ${r.user ?? "no person"} · ${r.agent ?? "no agent"}`}
               cost={r.cost}
               href={r.conversationId ? `/chat/${r.conversationId}` : null}
-              onDrill={r.conversationId ? () => onDrill("conversation", r.conversationId ?? "") : undefined}
+              onDrill={
+                r.conversationId
+                  ? () => onDrill("conversation", r.conversationId ?? "")
+                  : undefined
+              }
             />
           ))}
         />
@@ -267,7 +291,10 @@ export function DigHerePanel({
           n={s.failedSpend.n}
           unit="requests"
           meaning="Requests that failed, were abandoned, or were cut off at the output limit. The money left; no usable answer came back. Truncations (max_tokens) on a $5 request mean the output cap is too low for the job."
-          moreThanShown={Math.max(0, s.failedSpend.n - s.failedSpend.rows.length)}
+          moreThanShown={Math.max(
+            0,
+            s.failedSpend.n - s.failedSpend.rows.length,
+          )}
           rows={s.failedSpend.rows.map((r) => (
             <Row
               key={r.requestId}
@@ -275,7 +302,11 @@ export function DigHerePanel({
               secondary={`${timestamp(r.at)} · ${r.user ?? "no person"} · ${r.agent ?? "no agent"}`}
               cost={r.cost}
               href={r.conversationId ? `/chat/${r.conversationId}` : null}
-              onDrill={r.conversationId ? () => onDrill("conversation", r.conversationId ?? "") : undefined}
+              onDrill={
+                r.conversationId
+                  ? () => onDrill("conversation", r.conversationId ?? "")
+                  : undefined
+              }
             />
           ))}
         />
@@ -320,7 +351,10 @@ export function DigHerePanel({
           unit="bursts"
           line={`≥ ${s.repeatBursts.threshold} requests from the same person + agent + feature in 10 minutes`}
           meaning="A person typing does not send this many requests to the same agent in ten minutes. A loop or a retry storm does. Automated bursts are expected for fan-out jobs; manual ones are worth a look."
-          moreThanShown={Math.max(0, s.repeatBursts.n - s.repeatBursts.rows.length)}
+          moreThanShown={Math.max(
+            0,
+            s.repeatBursts.n - s.repeatBursts.rows.length,
+          )}
           rows={s.repeatBursts.rows.map((r) => (
             <Row
               key={`${r.bucket}-${r.user}-${r.agent}-${r.feature}`}
@@ -338,18 +372,22 @@ export function DigHerePanel({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{cards.map((c) => c.node)}</div>
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        {cards.map((c) => c.node)}
+      </div>
       {s.unpriced.n > 0 ? (
         <p className="flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-1.5 text-[11px] text-destructive">
           <Tag className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Unpriced calls: {s.unpriced.n} model calls across {s.unpriced.requests} requests have no
-          price on file, so this window is under-counted by an unknown amount. The model needs a
-          price in the AI catalog.
+          Unpriced calls: {s.unpriced.n} model calls across{" "}
+          {s.unpriced.requests} requests have no price on file, so this window
+          is under-counted by an unknown amount. The model needs a price in the
+          AI catalog.
         </p>
       ) : (
         <p className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[11px] text-muted-foreground">
           <Tag className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Unpriced calls: none — every model call in this window had a price on file.
+          Unpriced calls: none — every model call in this window had a price on
+          file.
         </p>
       )}
     </div>
