@@ -4,116 +4,103 @@ import {
   lookupSandboxAndOrchestrator,
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
+import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
 
-/**
- * POST /api/sandbox/[id]/extend
- *
- * Extends a sandbox's TTL by calling the orchestrator's `/sandboxes/{id}/extend`
- * endpoint, then mirrors the new `expires_at` into the local Postgres row so
- * UI and the orchestrator stay in sync. This replaces the old DB-only "extend"
- * action on PUT /api/sandbox/[id], which silently drifted from orchestrator
- * state.
- *
- * Body:
- *   { ttl_seconds?: number }   // default 3600, range 60..86400
- */
+function upstreamExpiry(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const value =
+    (payload as Record<string, unknown>).new_expires_at ??
+    (payload as Record<string, unknown>).expires_at;
+  return typeof value === "string" && !Number.isNaN(Date.parse(value))
+    ? value
+    : null;
+}
+
+function sameInstant(left: string, right: string) {
+  return Date.parse(left) === Date.parse(right);
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const { id } = await params;
-
-    const lookup = await lookupSandboxAndOrchestrator(id);
-    if (lookup.ok === false) {
-      const { error, status } = lookup;
-      return NextResponse.json({ error }, { status });
-    }
-
-    const body = await request.json().catch(() => ({}));
-    const ttlSeconds = Number(body?.ttl_seconds ?? 3600);
-    if (!Number.isFinite(ttlSeconds) || ttlSeconds < 60 || ttlSeconds > 86400) {
-      return NextResponse.json(
-        { error: "ttl_seconds must be between 60 and 86400" },
-        { status: 400 },
-      );
-    }
-
-    // Forward to the orchestrator hosting this sandbox's tier.
-    let resp: Response;
-    try {
-      resp = await fetch(
-        `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}/extend`,
-        {
-          method: "POST",
-          headers: orchestratorJsonHeaders(lookup.orchestrator),
-          body: JSON.stringify({ ttl_seconds: ttlSeconds }),
-        },
-      );
-    } catch (fetchError) {
-      console.error("Orchestrator extend connection failed:", fetchError);
-      return NextResponse.json(
-        { error: "Sandbox orchestrator is not reachable" },
-        { status: 502 },
-      );
-    }
-
-    if (!resp.ok) {
-      const errBody = await resp.text();
-      console.error("Orchestrator extend failed:", resp.status, errBody);
-      return NextResponse.json(
-        { error: "Failed to extend sandbox", details: errBody },
-        { status: resp.status >= 500 ? 502 : resp.status },
-      );
-    }
-
-    const orchestratorPayload = await resp.json();
-    const newExpiresAt =
-      orchestratorPayload?.new_expires_at || orchestratorPayload?.expires_at;
-    if (!newExpiresAt) {
-      return NextResponse.json(
-        {
-          error:
-            "Orchestrator extend returned no expires_at — likely on stale code",
-        },
-        { status: 502 },
-      );
-    }
-
-    // Mirror the orchestrator's authoritative new expiry into our DB.
-    const supabase = await createClient();
-    const { data: instance, error: updateError } = await supabase
-      .from("sandbox_instances")
-      .update({
-        expires_at: newExpiresAt,
-        ttl_seconds: ttlSeconds,
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error("Failed to mirror extend into DB:", updateError);
-      // Don't fail the request — orchestrator already accepted the extend.
-      return NextResponse.json({
-        instance: null,
-        orchestrator: orchestratorPayload,
-        warning: "Extended at orchestrator but local DB mirror failed",
-      });
-    }
-
-    return NextResponse.json({
-      instance,
-      orchestrator: orchestratorPayload,
-    });
-  } catch (error) {
-    console.error("Sandbox extend API error:", error);
+  const id = (await params).id;
+  const lookup = await lookupSandboxAndOrchestrator(id);
+  if (!lookup.ok)
     return NextResponse.json(
+      { error: lookup.error },
+      { status: lookup.status },
+    );
+  const body = await request.json().catch(() => ({}));
+  const seconds = Number(body?.ttl_seconds ?? 3600);
+  if (!Number.isInteger(seconds) || seconds < 60 || seconds > 86400)
+    return NextResponse.json(
+      { error: "ttl_seconds must be an integer between 60 and 86400" },
+      { status: 400 },
+    );
+  const supabase = await createClient();
+  const { data: before, error: beforeError } = await supabase
+    .from("sandbox_instances")
+    .select("expires_at")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
+  if (beforeError || !before)
+    return NextResponse.json(
+      { error: "Sandbox instance not found" },
+      { status: 404 },
+    );
+  if (before.expires_at == null)
+    return NextResponse.json(
+      { error: "Sandbox has no finite expiry to extend" },
+      { status: 409 },
+    );
+  let response: Response;
+  try {
+    response = await fetch(
+      `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}/extend`,
       {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        method: "POST",
+        headers: orchestratorJsonHeaders(lookup.orchestrator),
+        body: JSON.stringify({ ttl_seconds: seconds }),
       },
-      { status: 500 },
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Sandbox orchestrator is not reachable" },
+      { status: 502 },
     );
   }
+  if (!response.ok)
+    return NextResponse.json(
+      { error: "Sandbox orchestrator request failed" },
+      { status: response.status >= 500 ? 502 : response.status },
+    );
+  const payload: unknown = await response.json().catch(() => null);
+  const expiry = upstreamExpiry(payload);
+  if (!expiry)
+    return NextResponse.json(
+      { error: "Sandbox orchestrator returned no expiry" },
+      { status: 502 },
+    );
+  const { data: fresh, error: freshError } = await supabase
+    .from("sandbox_instances")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
+  if (
+    freshError ||
+    !fresh ||
+    fresh.expires_at == null ||
+    !sameInstant(fresh.expires_at, expiry)
+  )
+    return NextResponse.json(
+      { error: "Sandbox extended but persisted expiry could not be verified" },
+      { status: 502 },
+    );
+  return NextResponse.json({
+    instance: decorateSandboxRow(fresh),
+    orchestrator: payload,
+  });
 }

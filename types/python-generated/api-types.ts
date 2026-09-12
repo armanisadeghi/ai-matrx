@@ -29827,6 +29827,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact
+         * @description One verdict per mandate rung the named agents hold, directly or through a
+         *     duplicate of them. Read-only. Optionally graded against a proposed change
+         *     that has not been written yet (``delta``), so a batch can be judged BEFORE
+         *     it runs.
+         */
+        post: operations["agent_impact_mandates_impact_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Mine
+         * @description The same verdicts, for the jobs this caller can already see.
+         */
+        post: operations["agent_impact_mine_mandates_impact_mine_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-testing/agents/{agent_id}/tests": {
         parameters: {
             query?: never;
@@ -40980,6 +41023,20 @@ export interface components {
              * @default 0
              */
             assignments?: number;
+        };
+        /** ApplyToken */
+        ApplyToken: {
+            /**
+             * Holder Kind
+             * @enum {string}
+             */
+            holder_kind: "binding" | "mandate_default";
+            /** Row Id */
+            row_id: string;
+            /** Expected Pinned Version Id */
+            expected_pinned_version_id?: string | null;
+            /** Target Version Id */
+            target_version_id?: string | null;
         };
         /**
          * ApplyWorkflowPatchRequest
@@ -54882,7 +54939,7 @@ export interface components {
              * @default internal
              * @enum {string}
              */
-            visibility?: "internal" | "link" | "personal" | "public";
+            visibility?: "internal" | "link" | "personal";
         };
         /** CredentialCreateRequest */
         CredentialCreateRequest: {
@@ -69015,6 +69072,116 @@ export interface components {
             status_page?: "https://status.imgix.com/";
         };
         /**
+         * ImpactDelta
+         * @description A DRY-RUN's hypothetical change (R23).
+         *
+         *     A partial patch over the pinned version row; the read synthesizes
+         *     ``target = pinned_row | delta`` and then applies the ordinary column-diff
+         *     rules — there is no second classifier and no stored target row. Every
+         *     verdict produced from a delta carries ``apply_token.target_version_id = None``.
+         */
+        ImpactDelta: {
+            /** Model Id */
+            model_id?: string | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** ImpactFinding */
+        ImpactFinding: {
+            /** Rule Id */
+            rule_id: string;
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "green" | "identical" | "orange" | "red";
+            /** Message */
+            message: string;
+            /** Field */
+            field?: string | null;
+            /** Before */
+            before?: unknown | null;
+            /** After */
+            after?: unknown | null;
+        };
+        /** ImpactPrincipal */
+        ImpactPrincipal: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "global" | "org" | "user";
+            /** Organization Id */
+            organization_id: string;
+            /** Subject User Id */
+            subject_user_id?: string | null;
+        };
+        /**
+         * ImpactRequest
+         * @description There is no batch id on ``agent.definition_version`` — a batch writer
+         *     passes the ids it touched. A time window is NOT accepted: it sweeps
+         *     unrelated concurrent saves.
+         */
+        ImpactRequest: {
+            /** Agent Ids */
+            agent_ids: string[];
+            delta?: components["schemas"]["ImpactDelta"] | null;
+            /**
+             * Include Descendants
+             * @default true
+             */
+            include_descendants?: boolean;
+        };
+        /** ImpactVerdict */
+        ImpactVerdict: {
+            /**
+             * Holder Kind
+             * @enum {string}
+             */
+            holder_kind: "binding" | "mandate_default";
+            /** Row Id */
+            row_id: string;
+            /** Mandate Key */
+            mandate_key: string;
+            principal: components["schemas"]["ImpactPrincipal"];
+            /** Agent Id */
+            agent_id: string;
+            /** Agent Name */
+            agent_name: string;
+            /** Lineage Path */
+            lineage_path?: components["schemas"]["LineageStep"][];
+            /** Pinned Version Id */
+            pinned_version_id?: string | null;
+            /** Pinned Version Number */
+            pinned_version_number?: number | null;
+            /** Latest Version Id */
+            latest_version_id?: string | null;
+            /** Latest Version Number */
+            latest_version_number?: number | null;
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "green" | "identical" | "orange" | "red";
+            /** Blocker */
+            blocker?: ("set_aside" | "tracks_latest" | "unreachable" | "unsupported_holder") | null;
+            /** Set Aside Reason */
+            set_aside_reason?: string | null;
+            /** Findings */
+            findings?: components["schemas"]["ImpactFinding"][];
+            settings_drift?: components["schemas"]["SettingsDrift"];
+            /** Changed Columns */
+            changed_columns?: string[];
+            apply_token: components["schemas"]["ApplyToken"];
+            /**
+             * Auto Advance Eligible
+             * @default false
+             */
+            auto_advance_eligible?: boolean;
+        };
+        /**
          * ImpairmentAvailableAttributes
          * @description Which attributes a given impairment definition expects/allows.
          */
@@ -73995,6 +74162,18 @@ export interface components {
             } | null;
             /** Created At */
             created_at?: string | null;
+        };
+        /** LineageStep */
+        LineageStep: {
+            /** Agent Id */
+            agent_id: string;
+            /** Agent Name */
+            agent_name: string;
+            /**
+             * Relation
+             * @enum {string}
+             */
+            relation: "duplicated_from" | "self";
         };
         /** LineageTree */
         LineageTree: {
@@ -97790,6 +97969,50 @@ export interface components {
              */
             op: "set_variable";
             variable: components["schemas"]["VariableSpec"];
+        };
+        /** SettingsCapabilityIssue */
+        SettingsCapabilityIssue: {
+            /** Key */
+            key: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "clamped" | "const" | "dropped" | "effort_ceiling" | "mapped" | "omitted" | "to_default" | "unsupported_value";
+            /** Canonical Value */
+            canonical_value?: unknown | null;
+            /** Sent Value */
+            sent_value?: unknown | null;
+            /** Reason */
+            reason: string;
+            /** Expected */
+            expected: boolean;
+        };
+        /** SettingsDrift */
+        SettingsDrift: {
+            /** Keys */
+            keys?: components["schemas"]["SettingsDriftKey"][];
+            /** Capability */
+            capability?: components["schemas"]["SettingsCapabilityIssue"][];
+            /**
+             * Capability Checked
+             * @default false
+             */
+            capability_checked?: boolean;
+        };
+        /** SettingsDriftKey */
+        SettingsDriftKey: {
+            /** Key */
+            key: string;
+            /**
+             * Change
+             * @enum {string}
+             */
+            change: "added" | "changed" | "removed";
+            /** Before */
+            before?: unknown | null;
+            /** After */
+            after?: unknown | null;
         };
         /** SettlePlanRequest */
         SettlePlanRequest: {
@@ -162939,6 +163162,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateProvenanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_mandates_impact_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImpactRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactVerdict"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_mine_mandates_impact_mine_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImpactRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactVerdict"][];
                 };
             };
             /** @description Validation Error */

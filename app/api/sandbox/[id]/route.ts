@@ -148,140 +148,55 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { action } = body;
-
     const lookup = await lookupSandboxAndOrchestrator(id);
     if (lookup.ok === false) {
       const { error, status } = lookup;
       return NextResponse.json({ error }, { status });
     }
 
-    const supabase = await createClient();
-
-    if (action === "stop") {
+    if (body?.action === "stop") {
+      let resp: Response;
       try {
-        const resp = await fetch(
+        resp = await fetch(
           `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}?graceful=true`,
           {
             method: "DELETE",
             headers: orchestratorJsonHeaders(lookup.orchestrator),
           },
         );
-        if (!resp.ok && resp.status !== 404) {
-          console.error("Orchestrator stop failed:", resp.status);
-        }
-      } catch (fetchErr) {
-        console.warn(
-          "Orchestrator not reachable during stop — updating DB only:",
-          fetchErr instanceof Error ? fetchErr.message : fetchErr,
-        );
-      }
-
-      const { data: updated, error: updateError } = await supabase
-        .from("sandbox_instances")
-        .update({
-          status: "stopped",
-          stopped_at: new Date().toISOString(),
-          stop_reason: "user_requested",
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error("Error updating sandbox instance:", updateError);
-        return NextResponse.json(
-          {
-            error: "Failed to update sandbox status",
-            details: updateError.message,
-          },
-          { status: 500 },
-        );
-      }
-
-      return NextResponse.json({ instance: decorateSandboxRow(updated) });
-    }
-
-    if (action === "extend") {
-      // Forward to the orchestrator first, then mirror its authoritative
-      // expires_at into our DB. The previous DB-only path silently drifted
-      // because the orchestrator runs its own clock for idle/expiry sweeps.
-      const ttlSeconds = Number(body?.ttl_seconds ?? 3600);
-      if (
-        !Number.isFinite(ttlSeconds) ||
-        ttlSeconds < 60 ||
-        ttlSeconds > 86400
-      ) {
-        return NextResponse.json(
-          { error: "ttl_seconds must be between 60 and 86400" },
-          { status: 400 },
-        );
-      }
-
-      let resp: Response;
-      try {
-        resp = await fetch(
-          `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}/extend`,
-          {
-            method: "POST",
-            headers: orchestratorJsonHeaders(lookup.orchestrator),
-            body: JSON.stringify({ ttl_seconds: ttlSeconds }),
-          },
-        );
-      } catch (fetchErr) {
-        console.error("Orchestrator extend connection failed:", fetchErr);
+      } catch {
         return NextResponse.json(
           { error: "Sandbox orchestrator is not reachable" },
           { status: 502 },
         );
       }
-
-      if (!resp.ok) {
-        const errBody = await resp.text();
+      if (!resp.ok)
         return NextResponse.json(
-          { error: "Failed to extend sandbox", details: errBody },
+          { error: "Sandbox orchestrator request failed" },
           { status: resp.status >= 500 ? 502 : resp.status },
         );
-      }
-
-      const orchPayload = await resp.json();
-      const newExpiresAt =
-        orchPayload?.new_expires_at || orchPayload?.expires_at;
-      if (!newExpiresAt) {
+      const supabase = await createClient();
+      const { data: fresh, error } = await supabase
+        .from("sandbox_instances")
+        .select("*")
+        .eq("id", id)
+        .is("deleted_at", null)
+        .single();
+      if (error || !fresh || fresh.status !== "stopped")
         return NextResponse.json(
           {
-            error:
-              "Orchestrator extend returned no expires_at — likely a pre-v0.2.0 stub. " +
-              "Update the orchestrator and try again.",
+            error: "Sandbox stopped but persisted state could not be verified",
           },
           { status: 502 },
         );
-      }
+      return NextResponse.json({ instance: decorateSandboxRow(fresh) });
+    }
 
-      const { data: updated, error: updateError } = await supabase
-        .from("sandbox_instances")
-        .update({
-          expires_at: newExpiresAt,
-          ttl_seconds: ttlSeconds,
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (updateError) {
-        return NextResponse.json(
-          {
-            error: "Failed to mirror extend in DB",
-            details: updateError.message,
-          },
-          { status: 500 },
-        );
-      }
-
-      return NextResponse.json({
-        instance: decorateSandboxRow(updated),
-        orchestrator: orchPayload,
-      });
+    if (body?.action === "extend") {
+      return NextResponse.json(
+        { error: "Use POST /api/sandbox/[id]/extend" },
+        { status: 405 },
+      );
     }
 
     return NextResponse.json(
@@ -313,51 +228,40 @@ export async function DELETE(
       return NextResponse.json({ error }, { status });
     }
 
-    if (["creating", "starting", "ready", "running"].includes(lookup.status)) {
-      try {
-        // purge=true: the orchestrator also soft-deletes the row (sets
-        // deleted_at) atomically with the destroy, so the box disappears
-        // from every default list even if our own DB update below fails.
-        const resp = await fetch(
-          `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}?graceful=false&purge=true`,
-          {
-            method: "DELETE",
-            headers: orchestratorJsonHeaders(lookup.orchestrator),
-          },
-        );
-        if (!resp.ok && resp.status !== 404) {
-          console.error("Orchestrator destroy failed:", resp.status);
-        }
-      } catch (fetchErr) {
-        console.warn(
-          "Orchestrator not reachable during delete — removing DB record only:",
-          fetchErr instanceof Error ? fetchErr.message : fetchErr,
-        );
-      }
-    }
-
-    const supabase = await createClient();
-    const { error: deleteError } = await supabase
-      .from("sandbox_instances")
-      .update({
-        deleted_at: new Date().toISOString(),
-        status: "stopped",
-        stopped_at:
-          lookup.status !== "stopped" ? new Date().toISOString() : undefined,
-        stop_reason: "user_requested",
-      })
-      .eq("id", id);
-
-    if (deleteError) {
-      console.error("Error soft-deleting sandbox instance:", deleteError);
-      return NextResponse.json(
+    let resp: Response;
+    try {
+      resp = await fetch(
+        `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}?graceful=true&purge=true`,
         {
-          error: "Failed to delete sandbox instance",
-          details: deleteError.message,
+          method: "DELETE",
+          headers: orchestratorJsonHeaders(lookup.orchestrator),
         },
-        { status: 500 },
+      );
+    } catch {
+      return NextResponse.json(
+        { error: "Sandbox orchestrator is not reachable" },
+        { status: 502 },
       );
     }
+    if (!resp.ok)
+      return NextResponse.json(
+        { error: "Sandbox orchestrator request failed" },
+        { status: resp.status >= 500 ? 502 : resp.status },
+      );
+    const supabase = await createClient();
+    const { data: stillLive, error } = await supabase
+      .from("sandbox_instances")
+      .select("id")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error || stillLive)
+      return NextResponse.json(
+        {
+          error: "Sandbox deleted but persisted deletion could not be verified",
+        },
+        { status: 502 },
+      );
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

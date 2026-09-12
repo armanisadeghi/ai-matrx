@@ -55,8 +55,10 @@ export type KindComponentIncidentType =
    * the kind system never even claimed the block; the JsonBlock tripwire
    * (`KindEscapedNotice`) is the only witness. Every one of these is a
    * pipeline defect, never a missing component.
-   */
-  | "kind_escaped_render";
+  */
+  | "kind_escaped_render"
+  /** A sandbox CSP blocked a resource requested by a stored component. */
+  | "blocked_resource";
 
 export interface KindComponentIncidentInput {
   kind: string;

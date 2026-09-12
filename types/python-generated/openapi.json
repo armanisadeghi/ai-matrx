@@ -64474,6 +64474,98 @@
         }
       }
     },
+    "/mandates/impact": {
+      "post": {
+        "tags": [
+          "Mandates Admin"
+        ],
+        "summary": "Agent Impact",
+        "description": "One verdict per mandate rung the named agents hold, directly or through a\nduplicate of them. Read-only. Optionally graded against a proposed change\nthat has not been written yet (``delta``), so a batch can be judged BEFORE\nit runs.",
+        "operationId": "agent_impact_mandates_impact_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImpactVerdict"
+                  },
+                  "type": "array",
+                  "title": "Response Agent Impact Mandates Impact Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/impact/mine": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Agent Impact Mine",
+        "description": "The same verdicts, for the jobs this caller can already see.",
+        "operationId": "agent_impact_mine_mandates_impact_mine_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImpactVerdict"
+                  },
+                  "type": "array",
+                  "title": "Response Agent Impact Mine Mandates Impact Mine Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-testing/agents/{agent_id}/tests": {
       "post": {
         "tags": [
@@ -92933,6 +93025,51 @@
         "type": "object",
         "title": "ApplyTagsResponse",
         "description": "Result of applying picked cross-cutting tags: how many ``rs_tag`` rows\nwere newly created and how many source<->tag assignments were written."
+      },
+      "ApplyToken": {
+        "properties": {
+          "holder_kind": {
+            "type": "string",
+            "enum": [
+              "binding",
+              "mandate_default"
+            ],
+            "title": "Holder Kind"
+          },
+          "row_id": {
+            "type": "string",
+            "title": "Row Id"
+          },
+          "expected_pinned_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Pinned Version Id"
+          },
+          "target_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Version Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "holder_kind",
+          "row_id"
+        ],
+        "title": "ApplyToken"
       },
       "ApplyWorkflowPatchRequest": {
         "properties": {
@@ -124899,8 +125036,7 @@
             "enum": [
               "internal",
               "link",
-              "personal",
-              "public"
+              "personal"
             ],
             "title": "Visibility",
             "default": "internal"
@@ -155940,6 +156076,322 @@
         "title": "ImgixServiceStatus",
         "description": "Safe aggregate status projection for imgix's fixed status page."
       },
+      "ImpactDelta": {
+        "properties": {
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ImpactDelta",
+        "description": "A DRY-RUN's hypothetical change (R23).\n\nA partial patch over the pinned version row; the read synthesizes\n``target = pinned_row | delta`` and then applies the ordinary column-diff\nrules — there is no second classifier and no stored target row. Every\nverdict produced from a delta carries ``apply_token.target_version_id = None``."
+      },
+      "ImpactFinding": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "green",
+              "identical",
+              "orange",
+              "red"
+            ],
+            "title": "Grade"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "before": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "after": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule_id",
+          "grade",
+          "message"
+        ],
+        "title": "ImpactFinding"
+      },
+      "ImpactPrincipal": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "global",
+              "org",
+              "user"
+            ],
+            "title": "Kind"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "subject_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject User Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "organization_id"
+        ],
+        "title": "ImpactPrincipal"
+      },
+      "ImpactRequest": {
+        "properties": {
+          "agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agent Ids"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpactDelta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "include_descendants": {
+            "type": "boolean",
+            "title": "Include Descendants",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent_ids"
+        ],
+        "title": "ImpactRequest",
+        "description": "There is no batch id on ``agent.definition_version`` — a batch writer\npasses the ids it touched. A time window is NOT accepted: it sweeps\nunrelated concurrent saves."
+      },
+      "ImpactVerdict": {
+        "properties": {
+          "holder_kind": {
+            "type": "string",
+            "enum": [
+              "binding",
+              "mandate_default"
+            ],
+            "title": "Holder Kind"
+          },
+          "row_id": {
+            "type": "string",
+            "title": "Row Id"
+          },
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/ImpactPrincipal"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "agent_name": {
+            "type": "string",
+            "title": "Agent Name"
+          },
+          "lineage_path": {
+            "items": {
+              "$ref": "#/components/schemas/LineageStep"
+            },
+            "type": "array",
+            "title": "Lineage Path"
+          },
+          "pinned_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version Id"
+          },
+          "pinned_version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version Number"
+          },
+          "latest_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Version Id"
+          },
+          "latest_version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Version Number"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "green",
+              "identical",
+              "orange",
+              "red"
+            ],
+            "title": "Grade"
+          },
+          "blocker": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "set_aside",
+                  "tracks_latest",
+                  "unreachable",
+                  "unsupported_holder"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocker"
+          },
+          "set_aside_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Aside Reason"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactFinding"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "settings_drift": {
+            "$ref": "#/components/schemas/SettingsDrift"
+          },
+          "changed_columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changed Columns"
+          },
+          "apply_token": {
+            "$ref": "#/components/schemas/ApplyToken"
+          },
+          "auto_advance_eligible": {
+            "type": "boolean",
+            "title": "Auto Advance Eligible",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "holder_kind",
+          "row_id",
+          "mandate_key",
+          "principal",
+          "agent_id",
+          "agent_name",
+          "grade",
+          "apply_token"
+        ],
+        "title": "ImpactVerdict"
+      },
       "ImpairmentAvailableAttributes": {
         "properties": {
           "digit": {
@@ -167491,6 +167943,34 @@
         ],
         "title": "LineageNode",
         "description": "One node in the lineage tree (used by GET /lineage)."
+      },
+      "LineageStep": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "agent_name": {
+            "type": "string",
+            "title": "Agent Name"
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "duplicated_from",
+              "self"
+            ],
+            "title": "Relation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent_id",
+          "agent_name",
+          "relation"
+        ],
+        "title": "LineageStep"
       },
       "LineageTree": {
         "properties": {
@@ -220037,6 +220517,131 @@
         ],
         "title": "SetVariableOp",
         "description": "Upsert a declared run variable by name."
+      },
+      "SettingsCapabilityIssue": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "clamped",
+              "const",
+              "dropped",
+              "effort_ceiling",
+              "mapped",
+              "omitted",
+              "to_default",
+              "unsupported_value"
+            ],
+            "title": "Action"
+          },
+          "canonical_value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Value"
+          },
+          "sent_value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent Value"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "expected": {
+            "type": "boolean",
+            "title": "Expected"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "action",
+          "reason",
+          "expected"
+        ],
+        "title": "SettingsCapabilityIssue"
+      },
+      "SettingsDrift": {
+        "properties": {
+          "keys": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsDriftKey"
+            },
+            "type": "array",
+            "title": "Keys"
+          },
+          "capability": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsCapabilityIssue"
+            },
+            "type": "array",
+            "title": "Capability"
+          },
+          "capability_checked": {
+            "type": "boolean",
+            "title": "Capability Checked",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SettingsDrift"
+      },
+      "SettingsDriftKey": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "added",
+              "changed",
+              "removed"
+            ],
+            "title": "Change"
+          },
+          "before": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "after": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "change"
+        ],
+        "title": "SettingsDriftKey"
       },
       "SettlePlanRequest": {
         "properties": {

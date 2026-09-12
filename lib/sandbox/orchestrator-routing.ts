@@ -25,7 +25,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import type { SandboxConfig, SandboxTier } from "@/types/sandbox";
+import type { SandboxTier } from "@/types/sandbox";
 
 const LOG = "[sandbox-orchestrator-env]";
 
@@ -80,6 +80,41 @@ export interface OrchestratorTarget {
   apiKey: string;
   /** Resolved tier — either explicit or 'ec2' (back-compat default). */
   tier: SandboxTier;
+}
+
+export type PersistedTierResolution =
+  { ok: true; orchestrator: OrchestratorTarget } | { ok: false; error: string };
+
+/**
+ * Resolve a persisted sandbox row without an unsafe default. A row written
+ * before the dedicated tier column may use `config.tier`; once a dedicated
+ * value exists, it is authoritative and a disagreement is operationally
+ * unsafe, not a reason to route a destructive call to either host.
+ */
+export function resolvePersistedOrchestrator(
+  tier: unknown,
+  config: unknown,
+): PersistedTierResolution {
+  const configTier =
+    config && typeof config === "object" && "tier" in config
+      ? (config as { tier?: unknown }).tier
+      : undefined;
+  const isTier = (value: unknown): value is SandboxTier =>
+    value === "ec2" || value === "hosted";
+
+  if (tier != null) {
+    if (!isTier(tier)) {
+      return { ok: false, error: "Sandbox has an invalid persisted tier" };
+    }
+    if (configTier != null && (!isTier(configTier) || configTier !== tier)) {
+      return { ok: false, error: "Sandbox tier sources conflict" };
+    }
+    return { ok: true, orchestrator: resolveOrchestratorByTier(tier) };
+  }
+  if (!isTier(configTier)) {
+    return { ok: false, error: "Sandbox has no valid persisted tier" };
+  }
+  return { ok: true, orchestrator: resolveOrchestratorByTier(configTier) };
 }
 
 /**
@@ -173,19 +208,14 @@ export async function lookupSandboxAndOrchestrator(
     };
   }
 
-  // Prefer the dedicated `tier` column; fall back to `config.tier` for rows
-  // written before the column existed. Unknown values land as `null` so
-  // routing falls back to the EC2 default rather than corrupting traffic.
-  const colTier =
-    data.tier === "ec2" || data.tier === "hosted" ? data.tier : null;
-  const cfg = data.config as SandboxConfig | null;
-  const cfgTier =
-    cfg?.tier === "ec2" || cfg?.tier === "hosted" ? cfg.tier : null;
-  const tier: SandboxTier | null = colTier ?? cfgTier ?? null;
+  const resolved = resolvePersistedOrchestrator(data.tier, data.config);
+  if (!resolved.ok) {
+    return { ok: false, status: 409, error: resolved.error };
+  }
 
   return {
     ok: true,
-    orchestrator: resolveOrchestratorByTier(tier),
+    orchestrator: resolved.orchestrator,
     sandboxId: data.sandbox_id,
     status: data.status,
   };

@@ -35,7 +35,8 @@
  *   pnpm migrate:kind-sandbox-breakpoints            # dry run, prints the diff
  *   pnpm migrate:kind-sandbox-breakpoints --apply    # writes, one row at a time
  */
-import { packages } from "@babel/standalone";
+import { parse } from "@babel/parser";
+import * as t from "@babel/types";
 import type { Node } from "@babel/types";
 
 /**
@@ -74,6 +75,13 @@ interface Splice {
     text: string;
 }
 
+function sourceRange(node: Node): { start: number; end: number } | null {
+    if (typeof node.start !== "number" || typeof node.end !== "number") {
+        return null;
+    }
+    return { start: node.start, end: node.end };
+}
+
 /**
  * A token is a Tailwind class candidate when the breakpoint prefix is at the
  * start of a whitespace-delimited word and is followed by something that can
@@ -92,7 +100,7 @@ function rewriteClassText(text: string): { text: string; count: number } {
 }
 
 /** Every JSX root the component function can return. */
-function collectReturnedRoots(fn: Node, t: typeof import("@babel/types")): Node[] {
+function collectReturnedRoots(fn: Node): Node[] {
     const roots: Node[] = [];
     const body = (fn as any).body;
     if (!body) return roots;
@@ -139,7 +147,6 @@ function collectReturnedRoots(fn: Node, t: typeof import("@babel/types")): Node[
 /** The default-exported component function, however the author spelled it. */
 function findComponentFunction(
     ast: any,
-    t: typeof import("@babel/types"),
 ): Node | null {
     const program = ast.program;
     let fn: Node | null = null;
@@ -180,13 +187,16 @@ function findComponentFunction(
 function containerSplice(
     root: any,
     source: string,
-    t: typeof import("@babel/types"),
 ): { splices: Splice[]; how: RewriteResult["container"] } {
+    const rootRange = sourceRange(root);
+    if (!rootRange) {
+        return { splices: [], how: "already-declared" };
+    }
     if (t.isJSXFragment(root)) {
         return {
             splices: [
-                { start: root.start, end: root.start, text: '<div className="@container">' },
-                { start: root.end, end: root.end, text: "</div>" },
+                { start: rootRange.start, end: rootRange.start, text: '<div className="@container">' },
+                { start: rootRange.end, end: rootRange.end, text: "</div>" },
             ],
             how: "wrapped-root",
         };
@@ -202,8 +212,8 @@ function containerSplice(
     if (!intrinsic) {
         return {
             splices: [
-                { start: root.start, end: root.start, text: '<div className="@container">' },
-                { start: root.end, end: root.end, text: "</div>" },
+                { start: rootRange.start, end: rootRange.start, text: '<div className="@container">' },
+                { start: rootRange.end, end: rootRange.end, text: "</div>" },
             ],
             how: "wrapped-root",
         };
@@ -214,6 +224,9 @@ function containerSplice(
     );
     if (!classAttr) {
         const nameEnd = root.openingElement.name.end;
+        if (typeof nameEnd !== "number") {
+            return { splices: [], how: "already-declared" };
+        }
         return {
             splices: [{ start: nameEnd, end: nameEnd, text: ' className="@container"' }],
             how: "added-root-class",
@@ -221,26 +234,34 @@ function containerSplice(
     }
     const value = classAttr.value;
     if (t.isStringLiteral(value)) {
+        const valueRange = sourceRange(value);
+        if (!valueRange) {
+            return { splices: [], how: "already-declared" };
+        }
         if (/(^|\s)@container(\s|$)/.test(value.value)) {
             return { splices: [], how: "already-declared" };
         }
         return {
             splices: [
-                { start: value.start + 1, end: value.start + 1, text: "@container " },
+                { start: valueRange.start + 1, end: valueRange.start + 1, text: "@container " },
             ],
             how: "prepended-to-root-class",
         };
     }
     if (t.isJSXExpressionContainer(value)) {
-        const inner = source.slice(value.expression.start, value.expression.end);
+        const expressionRange = sourceRange(value.expression);
+        if (!expressionRange) {
+            return { splices: [], how: "already-declared" };
+        }
+        const inner = source.slice(expressionRange.start, expressionRange.end);
         if (/@container/.test(inner)) {
             return { splices: [], how: "already-declared" };
         }
         return {
             splices: [
                 {
-                    start: value.expression.start,
-                    end: value.expression.end,
+                    start: expressionRange.start,
+                    end: expressionRange.end,
                     // `filter(Boolean)` so an undefined class expression cannot
                     // paint the literal word "undefined" into the class list.
                     text: `["@container", ${inner}].filter(Boolean).join(" ")`,
@@ -257,10 +278,9 @@ function containerSplice(
  * container queries. Pure: same input, same output, no I/O.
  */
 export function rewriteViewportBreakpoints(source: string): RewriteResult {
-    const t = packages.types as typeof import("@babel/types");
     let ast: any;
     try {
-        ast = packages.parser.parse(source, {
+        ast = parse(source, {
             sourceType: "module",
             plugins: ["jsx", "typescript"],
             errorRecovery: false,
@@ -302,20 +322,21 @@ export function rewriteViewportBreakpoints(source: string): RewriteResult {
             node.forEach(walkStrings);
             return;
         }
-        if (t.isStringLiteral(node) && !seen.has(node.start)) {
-            seen.add(node.start);
+        const range = sourceRange(node);
+        if (t.isStringLiteral(node) && range && !seen.has(range.start)) {
+            seen.add(range.start);
             const { text, count } = rewriteClassText(node.value);
             if (count) {
                 variants += count;
-                splices.push({ start: node.start + 1, end: node.end - 1, text });
+                splices.push({ start: range.start + 1, end: range.end - 1, text });
             }
-        } else if (t.isTemplateElement(node) && !seen.has(node.start)) {
-            seen.add(node.start);
-            const raw = source.slice(node.start, node.end);
+        } else if (t.isTemplateElement(node) && range && !seen.has(range.start)) {
+            seen.add(range.start);
+            const raw = source.slice(range.start, range.end);
             const { text, count } = rewriteClassText(raw);
             if (count) {
                 variants += count;
-                splices.push({ start: node.start, end: node.end, text });
+                splices.push({ start: range.start, end: range.end, text });
             }
         }
         for (const key of Object.keys(node)) {
@@ -337,7 +358,7 @@ export function rewriteViewportBreakpoints(source: string): RewriteResult {
     }
 
     // 2. The container, on the component's own root(s).
-    const fn = findComponentFunction(ast, t);
+    const fn = findComponentFunction(ast);
     if (!fn) {
         return {
             next: source,
@@ -348,7 +369,7 @@ export function rewriteViewportBreakpoints(source: string): RewriteResult {
                 "This body has no default-exported component function, so the migration could not find the root element to declare `@container` on. Migrate it by hand.",
         };
     }
-    const roots = collectReturnedRoots(fn, t);
+    const roots = collectReturnedRoots(fn);
     if (!roots.length) {
         return {
             next: source,
@@ -361,7 +382,7 @@ export function rewriteViewportBreakpoints(source: string): RewriteResult {
     }
     const strategies = new Set<RewriteResult["container"]>();
     for (const root of roots) {
-        const r = containerSplice(root, source, t);
+        const r = containerSplice(root, source);
         if (r.splices.length) {
             splices.push(...r.splices);
         }

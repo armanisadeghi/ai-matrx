@@ -2209,13 +2209,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ai_model_model_provider_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "provider_sync_candidates"
-            referencedColumns: ["provider_id"]
-          },
-          {
             foreignKeyName: "model_definition_retry_fallback_id_fkey"
             columns: ["retry_fallback_id"]
             isOneToOne: false
@@ -2741,13 +2734,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_model_model_provider_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "provider_sync_candidates"
-            referencedColumns: ["provider_id"]
           },
           {
             foreignKeyName: "model_definition_retry_fallback_id_fkey"
@@ -60503,6 +60489,7 @@ export type Database = {
           basis: string | null
           created_at: string
           created_by: string | null
+          custody_selector: Json | null
           description: string | null
           effective_from: string
           enabled: boolean
@@ -60530,6 +60517,7 @@ export type Database = {
           basis?: string | null
           created_at?: string
           created_by?: string | null
+          custody_selector?: Json | null
           description?: string | null
           effective_from?: string
           enabled?: boolean
@@ -60557,6 +60545,7 @@ export type Database = {
           basis?: string | null
           created_at?: string
           created_by?: string | null
+          custody_selector?: Json | null
           description?: string | null
           effective_from?: string
           enabled?: boolean
@@ -62319,6 +62308,10 @@ export type Database = {
         Args: { p_entities_acted?: number; p_run_id: string; p_status?: string }
         Returns: Json
       }
+      lifecycle_custody_selector: {
+        Args: { p_policy_id: string }
+        Returns: Json
+      }
       lifecycle_execute: {
         Args: {
           p_dry_run?: boolean
@@ -62329,6 +62322,44 @@ export type Database = {
         }
         Returns: Json
       }
+      lifecycle_file_custody_assert_no_references: {
+        Args: { p_allow_recording_id?: string; p_file_id: string }
+        Returns: undefined
+      }
+      lifecycle_file_custody_candidates:
+        | { Args: { p_limit?: number }; Returns: Json }
+        | {
+            Args: {
+              p_after_created_at?: string
+              p_after_id?: string
+              p_limit?: number
+              p_retention_policy: string
+              p_source_kind: string
+            }
+            Returns: Json
+          }
+      lifecycle_file_custody_checkpoint: {
+        Args: {
+          p_complete: boolean
+          p_created_at: string
+          p_file_id: string
+          p_run_id: string
+        }
+        Returns: undefined
+      }
+      lifecycle_file_custody_finalize_delete: {
+        Args: { p_file_id: string; p_operation_id: string }
+        Returns: boolean
+      }
+      lifecycle_file_custody_preflight: {
+        Args: { p_file_id: string; p_operation_id: string }
+        Returns: Json
+      }
+      lifecycle_file_custody_scan_cursor: {
+        Args: { p_run_id: string }
+        Returns: Json
+      }
+      lifecycle_file_custody_selector: { Args: never; Returns: Json }
       lifecycle_hot_reference_scan: {
         Args: never
         Returns: {
@@ -62339,6 +62370,17 @@ export type Database = {
         }[]
       }
       lifecycle_map_is_fresh: { Args: never; Returns: boolean }
+      lifecycle_meet_custody_stage: {
+        Args: {
+          p_due_at: string
+          p_file_id: string
+          p_operation_id: string
+          p_policy_id: string
+          p_policy_updated_at: string
+          p_recording_id: string
+        }
+        Returns: Json
+      }
       lifecycle_open_run: { Args: { p_dry_run?: boolean }; Returns: string }
       lifecycle_partition_count: {
         Args: { p_partition: string }

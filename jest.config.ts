@@ -110,7 +110,14 @@ const config: Config = {
     transformIgnorePatterns: [
       "/node_modules/(?!\\.pnpm/|@ai-matrx|human-id|uuid|unist|hast|mdast|micromark|react-markdown|is-plain-obj|escape-string-regexp|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
     ],
-    testPathIgnorePatterns: ["/node_modules/", "/.next/", "/.claude/"],
+    testPathIgnorePatterns: [
+        "/node_modules/",
+        "/.next/",
+        "/.claude/",
+        // This is an explicit Playwright gate that requires a running app and
+        // Chromium; Jest owns the unit suite and must not attempt to load it.
+        "/features/content-ir/sandbox/browser/",
+    ],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our
     // handrolled tsx-runnable `*.script.ts` files (extract-json.script.ts,

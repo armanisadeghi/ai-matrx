@@ -78,7 +78,10 @@ resource/exposure/deleted filters, debounced search, page size, and refresh gene
 The existing super-admin RPC owns ordering and access; the table does not locally
 filter or sort an incomplete source. Scrolling uses the organization/user
 `tables.pagination` policy, with an explicit Load more/Retry control and an announced
-manual recovery when configuration is unavailable. Initial rendering never drains the source. On narrow screens, the page can scroll
+manual recovery when configuration is unavailable. `useTablePaginationPolicy` keeps
+the frontend identity/knob transport and delegates validation to
+`resolveScrollPaginationPolicy` in `@ai-matrx/data/react`, shared with Vite.
+Initial rendering never drains the source. On narrow screens, the page can scroll
 past its summary while the table retains a usable bounded scroll area.
 
 ## Data model (all via `public.` SECURITY DEFINER RPCs, each re-checks `is_super_admin()`)
@@ -216,9 +219,9 @@ used by the per-row **Link policy** side panel).
   has no independent grants or share registration. `containment` means the child
   can be shared directly and also inherits through a parent, and therefore requires
   `organization_id`, `created_by`, and `visibility`.
-- **A component cannot be directly shareable.** The planner reports this as a
-  blocker (currently including the pre-existing `web_page` contradiction) and
-  requires an explicit model decision; it never silently changes registry meaning.
+- **Nested identity and direct sharing can coexist.** The retired
+  `component_directly_shareable` finding is not a blocker; the planner preserves
+  the ratified nested-entity/share-point model described in the change log.
 - **Catalog evidence, not typed guesses.** Column names, real FKs, RLS state,
   policies, many-to-many candidates, canonical audit findings, entity metadata,
   sharing flags, and association conveyance all come from one super-admin snapshot.
@@ -312,6 +315,8 @@ used by the per-row **Link policy** side panel).
   a half-empty control plane.
 
 ## Change log
+
+- 2026-09-12 — Reused the published shared pagination-policy validator in the frontend; preserved organization lookup, manual recovery and retry messages. Adopted the shared wheel-baseline repair through design-system 0.17.1.
 
 - 2026-09-11 — Connected Exposure Audit to the packaged table and abortable append receipt; guarded scrolling follows scoped pagination policy. Existing exact-page table consumers retain their contracts.
 
