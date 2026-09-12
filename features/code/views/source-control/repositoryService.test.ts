@@ -1,3 +1,7 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ProcessAdapter } from "../../adapters/ProcessAdapter";
 import {
   discoverRepositories,
@@ -8,6 +12,40 @@ import {
 
 function result(stdout = "", exitCode = 0, stderr = "") {
   return { stdout, stderr, exitCode, cwd: "/workspace" };
+}
+
+function localProcess(cwd: string): ProcessAdapter {
+  return {
+    id: "local-test",
+    isReady: true,
+    cwd,
+    async exec(command, options) {
+      try {
+        return {
+          stdout: execFileSync("sh", ["-lc", command], {
+          cwd: options?.cwd ?? cwd,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          }),
+          stderr: "",
+          exitCode: 0,
+          cwd: options?.cwd ?? cwd,
+        };
+      } catch (error) {
+        const failure = error as {
+          status?: number;
+          stdout?: Buffer | string;
+          stderr?: Buffer | string;
+        };
+        return {
+          stdout: String(failure.stdout ?? ""),
+          stderr: String(failure.stderr ?? ""),
+          exitCode: failure.status ?? 1,
+          cwd: options?.cwd ?? cwd,
+        };
+      }
+    },
+  };
 }
 
 describe("repositoryService", () => {
@@ -80,5 +118,52 @@ describe("repositoryService", () => {
       unstageRepositoryPaths(process, "/workspace/repo", ["new-file.ts"]),
     ).resolves.toBeUndefined();
     expect(exec).toHaveBeenCalledTimes(2);
+  });
+
+  it("inspects and discovers a real linked worktree, then unstages without losing content", async () => {
+    const workspace = mkdtempSync(join(tmpdir(), "matrx-repository-service-"));
+    const repository = join(workspace, "repository");
+    const worktree = join(workspace, "worktree");
+    const git = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" });
+    try {
+      execFileSync("git", ["init", repository], { encoding: "utf8", stdio: "pipe" });
+      git(repository, ["config", "user.name", "Test User"]);
+      git(repository, ["config", "user.email", "test@example.invalid"]);
+      writeFileSync(join(repository, "tracked.txt"), "initial\n");
+      git(repository, ["add", "--", "tracked.txt"]);
+      git(repository, ["commit", "-m", "initial"]);
+      git(repository, ["remote", "add", "origin", "https://token@example.test/org/repository.git"]);
+      git(repository, ["worktree", "add", "-b", "review", worktree]);
+
+      const process = localProcess(workspace);
+      const metadata = await inspectRepository(process, worktree);
+      const canonicalRepository = realpathSync(repository);
+      const canonicalWorktree = realpathSync(worktree);
+      expect(metadata).toMatchObject({
+        rootPath: canonicalWorktree,
+        commonGitDir: join(canonicalRepository, ".git"),
+        branch: "review",
+      });
+      expect(metadata?.remotes[0]?.fetchUrl).toBe(
+        "https://***@example.test/org/repository.git",
+      );
+      await expect(discoverRepositories(process, workspace)).resolves.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ rootPath: canonicalRepository }),
+          expect.objectContaining({ rootPath: canonicalWorktree }),
+        ]),
+      );
+
+      writeFileSync(join(repository, "tracked.txt"), "changed but retained\n");
+      git(repository, ["add", "--", "tracked.txt"]);
+      await unstageRepositoryPaths(process, repository, ["tracked.txt"]);
+      expect(git(repository, ["diff", "--cached", "--name-only"])).toBe("");
+      expect(git(repository, ["diff", "--", "tracked.txt"])).toContain(
+        "changed but retained",
+      );
+    } finally {
+      rmSync(workspace, { recursive: true, force: true });
+    }
   });
 });
