@@ -97,6 +97,7 @@ export function ConversationAudienceFilter({
   list: EntityListController<ConversationBrowseRow>;
 }) {
   const active = readAudience(list.query.filters);
+  const facetsReady = !list.facetsLoading && !list.facetsError;
   const everything = CONVERSATION_AUDIENCES.reduce(
     (total, bucket) => total + bucketTotal(list.facets, bucket),
     0,
@@ -109,14 +110,17 @@ export function ConversationAudienceFilter({
       ? null
       : (active as ConversationAudienceId);
   const cut = bucket ? secondCut(bucket) : null;
-  const cutOptions = cut
-    ? facetValues(list.facets, cut.facet)
-        .filter((option) => option.value.startsWith(`${bucket}:`))
-        .map((option) => ({
-          value: option.value.slice(bucket!.length + 1),
-          count: option.count,
-        }))
-    : [];
+  // A facet response belongs to its exact query. Do not leave second-cut chips
+  // visible with cached counts while the bucket/search/scope changes.
+  const cutOptions =
+    cut && facetsReady
+      ? facetValues(list.facets, cut.facet)
+          .filter((option) => option.value.startsWith(`${bucket}:`))
+          .map((option) => ({
+            value: option.value.slice(bucket!.length + 1),
+            count: option.count,
+          }))
+      : [];
   const cutFilter = cut ? list.query.filters[cut.filterId] : undefined;
   const cutSelected =
     cutFilter && cutFilter.kind === "select"
@@ -151,7 +155,11 @@ export function ConversationAudienceFilter({
                   {/* A count IS a door: the number is how the user knows what a
                     bucket holds, and clicking it is how they reach it. */}
                   <span className="tabular-nums opacity-70">
-                    {bucketTotal(list.facets, id).toLocaleString()}
+                    {facetsReady
+                      ? bucketTotal(list.facets, id).toLocaleString()
+                      : list.facetsLoading
+                        ? "Loading…"
+                        : "Unavailable"}
                   </span>
                 </button>
               );
@@ -168,11 +176,30 @@ export function ConversationAudienceFilter({
               <Layers className="h-3.5 w-3.5" />
               <span>All</span>
               <span className="tabular-nums opacity-70">
-                {everything.toLocaleString()}
+                {facetsReady
+                  ? everything.toLocaleString()
+                  : list.facetsLoading
+                    ? "Loading…"
+                    : "Unavailable"}
               </span>
             </button>
           </div>
         </div>
+        {list.facetsError && (
+          <div
+            role="alert"
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+          >
+            <span>Audience counts are unavailable: {list.facetsError}</span>
+            <button
+              type="button"
+              onClick={list.refresh}
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         {active === "custom" && (
           <span className="text-xs text-muted-foreground">
             Custom bucket filter applied — the presets above replace it.

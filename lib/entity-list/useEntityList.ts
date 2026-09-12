@@ -200,6 +200,12 @@ export function useEntityList<TRow>({
   );
   const [countsError, setCountsError] = useState<string | null>(null);
   const [facets, setFacets] = useState<EntityFacets>(EMPTY_FACETS);
+  // Facets are an independent read. EMPTY_FACETS is only a safe payload
+  // shape; it cannot mean that a facet read completed with zero values.
+  const [facetsAnsweredFor, setFacetsAnsweredFor] = useState<string | null>(
+    null,
+  );
+  const [facetsError, setFacetsError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<EntityListFailure | null>(null);
@@ -338,16 +344,39 @@ export function useEntityList<TRow>({
     deep: query.deep,
     archived: query.archived,
   };
-  const facetsKey = JSON.stringify({ q: facetsQuery, refreshToken });
+  const facetsKey = JSON.stringify({
+    q: facetsQuery,
+    refreshToken,
+    service: serviceKey,
+  });
+
+  // Like countsLoading, this is derived from the request identity rather than
+  // written by an effect. A previously answered payload is stale as soon as
+  // the query changes, so consumers can never present its values as counts for
+  // the new query while the next request is still in flight.
+  const facetsLoading = facetsAnsweredFor !== facetsKey;
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
         const next = await service.fetchFacets(facetsQuery);
-        if (!cancelled) setFacets(next);
+        if (!cancelled) {
+          setFacets(next);
+          setFacetsError(null);
+        }
       } catch (err) {
         console.error(`[entity-list] facets failed`, err);
+        if (!cancelled) {
+          setFacets(EMPTY_FACETS);
+          setFacetsError(
+            err instanceof Error
+              ? err.message
+              : "the facets query failed with no message",
+          );
+        }
+      } finally {
+        if (!cancelled) setFacetsAnsweredFor(facetsKey);
       }
     })();
     return () => {
@@ -482,6 +511,8 @@ export function useEntityList<TRow>({
     countsLoading,
     countsError,
     facets,
+    facetsLoading,
+    facetsError,
     archivedProbe,
     defaultArchived: defaultQuery.archived,
     isLoading,

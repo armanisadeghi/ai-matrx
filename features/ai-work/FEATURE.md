@@ -216,6 +216,11 @@ Compose and Saved Requests shipped 2026-08-15 (TASK-005). Open work, in the plan
 
 ## Change log
 
+- `2026-09-11` — Audience chips now keep their counts in an explicit loading
+  or unavailable state until the matching facets request completes. A failed
+  facets request states its service error and retries through the canonical
+  list refresh; a stale response never leaves second-cut chips looking ready.
+
 - `2026-09-11` — Tightened the embedded `/work` workspace after live layout review: complete Start work and Saved requests doors join the compact strip; connection setup and sync status are named separately; the home holds only compact sync state; and 44px audience controls scroll horizontally on narrow screens instead of squeezing their labels.
 
 - `2026-09-11` — Rebuilt `/work` around the substantive canonical conversation workspace. The compact destination strip derives every AI Work door from `AI_WORK_DOOR_GROUPS` and the shell children; only the controller's real filtered conversation total appears, while destinations without complete data intentionally remain unnumbered.

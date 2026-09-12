@@ -62,6 +62,10 @@ export interface EntityListController<TRow> {
   /** The counts query's own failure, in the service's words. */
   countsError: string | null;
   facets: EntityFacets;
+  /** The facets query is in flight or the held facets answer another request. */
+  facetsLoading: boolean;
+  /** The facets query's own failure, in the service's words. */
+  facetsError: string | null;
   /**
    * THE ALL-ARCHIVED FACT — how many archived rows this exact view is hiding,
    * when the live half came back empty. A list may not print "none yet" until

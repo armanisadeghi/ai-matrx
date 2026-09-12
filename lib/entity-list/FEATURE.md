@@ -87,9 +87,8 @@ The archive filter's default HIDES archived rows, so **"the live half is empty"
 and "there is nothing here" are different facts** — and until 2026-09-10 this
 shell printed the second knowing only the first, straight out of the config's
 STATIC `emptyState`. Measured on `/maps` with all 46 of a user's maps archived:
-*"No maps yet — A map is a picture of how something works … Make one"*, beside a
-**New map** button, two clicks from that page's own Archived filter holding all
-46. A screen telling an Expert to rebuild work they already had.
+_"No maps yet — A map is a picture of how something works … Make one"_, beside a
+**New map** button, two clicks from that page's own Archived filter holding all 46. A screen telling an Expert to rebuild work they already had.
 
 It was a CLASS, not an instance: `EntityListConfig` gave a surface no way to
 name an archived count at all, so every archive-aware config inherited it
@@ -159,15 +158,15 @@ names on one page.
 
 ## Files
 
-| File                                                                                                            | What it is                                                                                                                                      |
-| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types.ts`                                                                                                      | Query/filter/facet/count vocabulary (`EntityListQuery`, `EntityFilters`, `EntityFacets`, `EntityScopeCounts`)                                   |
-| `config.tsx`                                                                                                    | `EntityListConfig<TRow>` — THE contract. Read its doc comments before adding a knob; a knob earns its place only when a second surface needs it |
-| `columns.tsx`                                                                                                   | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`)                                              |
-| `useEntityList.ts`                                                                                              | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys                                    |
-| `components/EntityListPage.tsx`                                                                                 | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions`                     |
-| `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — the shared vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux. WHICH tabs render can be overridden per page (`scopes`) — a scope conditional on who is looking, like admin-only `system`, cannot live in a module-constant config                                  |
-| `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces                                                                                                                       |
+| File                                                                                                            | What it is                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`                                                                                                      | Query/filter/facet/count vocabulary (`EntityListQuery`, `EntityFilters`, `EntityFacets`, `EntityScopeCounts`)                                                                                                                                                                      |
+| `config.tsx`                                                                                                    | `EntityListConfig<TRow>` — THE contract. Read its doc comments before adding a knob; a knob earns its place only when a second surface needs it                                                                                                                                    |
+| `columns.tsx`                                                                                                   | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`)                                                                                                                                                                                 |
+| `useEntityList.ts`                                                                                              | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys                                                                                                                                                                       |
+| `components/EntityListPage.tsx`                                                                                 | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions`                                                                                                                                                        |
+| `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — the shared vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux. WHICH tabs render can be overridden per page (`scopes`) — a scope conditional on who is looking, like admin-only `system`, cannot live in a module-constant config |
+| `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces                                                                                                                                                                                                                                                          |
 
 ## Rules
 
@@ -303,6 +302,12 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-11` — Facets now carry their own request-keyed loading and failure
+  state on `EntityListController`. `EMPTY_FACETS` remains a safe payload shape,
+  never evidence that a read completed with zero values; consumers suppress
+  stale values while a newer facet request is pending and can offer the
+  controller's existing refresh action after a failure.
+
 - 2026-09-10 — **A LIST MAY NOT SAY "NONE" WHILE ITS OWN DEFAULT IS HIDING
   ROWS** (archived-items-law row F10 repair, from an independent live review).
   `EntityListController.archivedProbe` + the shell's all-archived empty state
@@ -310,11 +315,11 @@ how that savior page gets built.
   surface's own archive default rather than the literal `"active"`. Full
   reasoning under § The archive axis is a LAW above. **RED 8 of 12 against the
   pre-fix shell** (`41fb3da018`), GREEN 12. Verified live on `/maps` with all
-  46 of `admin@admin.com`'s maps archived — *"All 46 maps are archived"* + a
+  46 of `admin@admin.com`'s maps archived — _"All 46 maps are archived"_ + a
   working door — and on `/workflows/all` (`workflow.definition`), where a
-  search whose only match was archived said *"No live workflows match … but 1
-  archived workflow did"* instead of the old *"Nothing matched your current
-  search and filters"*. Every touched row restored byte-exact (`is_archived`,
+  search whose only match was archived said _"No live workflows match … but 1
+  archived workflow did"_ instead of the old _"Nothing matched your current
+  search and filters"_. Every touched row restored byte-exact (`is_archived`,
   `updated_at`, `updated_by`, `version`) and confirmed by SELECT.
 
 - 2026-09-08 — **A SERVICE'S OWN INPUTS ARE PART OF THE FETCH KEY, AND A
@@ -348,8 +353,8 @@ how that savior page gets built.
   `https://www.aimatrx.com/mandates?scope=system` as a real non-admin: the list
   door's one honest refusal was printed THREE times — the shell's failure
   banner plus one toast per refetch — beside a **Retry** that could never
-  succeed and an empty state reading *"No mandates match … Clear the filters to
-  see the full registry"* with nothing filtered. Root cause: the controller held
+  succeed and an empty state reading _"No mandates match … Clear the filters to
+  see the full registry"_ with nothing filtered. Root cause: the controller held
   the failure as a bare `string`, so the shell could not tell a REFUSAL from a
   BREAKAGE, and announced the same event through two channels. `./failure.ts`
   is the missing distinction — `EntityListFailure { message, retryable }`,

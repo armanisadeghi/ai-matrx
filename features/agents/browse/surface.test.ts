@@ -28,6 +28,8 @@ function makeListController(): EntityListSurfaceController<AgentBrowseRow> {
         tag: [{ value: "seo", count: 2 }],
       },
     },
+    facetsLoading: false,
+    facetsError: null,
     isLoading: false,
     isFetching: false,
     error: null,
