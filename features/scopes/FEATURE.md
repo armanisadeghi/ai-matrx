@@ -339,16 +339,19 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   `cmt_add`, `ues_set` and the rest. Measured on `/administration/billing/spend`: 25 POSTs to
   `/rest/v1/rpc/<name>` answered 400 before the page's own reads — and on every load, not only in
   dev, because the package's `isDevelopmentBuild()` is `typeof process !== "undefined"`, which is
-  true in the browser bundle. `AssociationsHost` now passes `probeSchema={PROBE_SCHEMA_AT_BOOT}`
-  (`false`, documented in `host/associationsStore.ts`). **The class rule: a write RPC is never
-  invoked to ask whether it exists.** Nothing replaces the probe because nothing needs to — the
+  true in the browser bundle. This host switched the probe off the same day; the class was then
+  closed AT THE PACKAGE — **@ai-matrx/associations 0.9.0 deletes `assertDemandedSchema` and the
+  `probeSchema` knob outright**, so mounting the provider issues no network call for any consumer
+  and there is nothing left to switch on here. **The class rule: a write RPC is never invoked to
+  ask whether it exists.** Nothing replaces the probe because nothing needs to — the
   package's own `mapPgError` turns PGRST202 into the same `demanded_schema_violation` scream, with
   the same remedy, at every real call site, so a wrong database still announces itself at the moment
   it matters. The host's sentinel-args Error-Inspector suppression went with it (it existed only to
   hide the probe's errors, and would now hide real ones). Guard:
-  `host/__tests__/noBootRpcProbe.test.tsx` — a recorder mounted with the probe ON names the write
-  RPCs firing (the self-test that makes the green mean something), and the shipped value mounts with
-  zero RPC calls; proven RED by flipping the constant. After: 0 rpc 400s on
+  `host/__tests__/noBootRpcProbe.test.tsx` — this app's contract with the package across upgrades,
+  written against its public surface: mounting the provider we actually mount records zero RPCs,
+  with a self-test proving the recorder sees a real call. The package carries its own pair
+  (`mount-is-inert`, `no-node-env-gating`), both proven failing-then-passing. After: 0 rpc 400s on
   `/administration/billing/spend` (25→0) and on `/administration` (0 of 7 reads).
 
 - 2026-09-11 — **B-7 fix round 1** (independent verification V-7). `list_scopes`, `get_scope_tree`
