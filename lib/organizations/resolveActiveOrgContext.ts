@@ -26,6 +26,7 @@
 // hydration. The cookie is the cross-SURFACE truth for this browser.
 
 import { getUserOrganizations } from "@/features/organizations/service";
+import { isOwnPersonalOrg } from "@/features/organizations/types";
 import {
   resolvePersonalOrgId,
   primePersonalOrgId,
@@ -98,8 +99,24 @@ export async function resolveActiveOrgContext(
     };
   }
 
-  const resolvedPersonalId =
-    personalOrgId ?? (orgs.find((o) => o.isPersonal) ?? orgs[0])?.id ?? null;
+  // Fallback for the rare case where the RPC above failed. It may ONLY ever
+  // resolve an org the user actually OWNS (`created_by`), which is exactly what
+  // `iam.personal_org_id()` keys on — so the fallback can differ from the
+  // server in availability, never in answer.
+  //
+  // The previous heuristic was `orgs.find(o => o.isPersonal) ?? orgs[0]`, and
+  // both halves could hand back the WRONG org: `isPersonal` matches a
+  // membership in someone ELSE's personal workspace, and `orgs[0]` is simply
+  // whichever org sorted first. This value becomes `personal_organization_id`,
+  // which `getActiveOrgId()` uses as the never-null org for WRITES — so a wrong
+  // answer here silently files the user's rows into another person's org. A
+  // membership in another account's personal org exists live today, so this was
+  // reachable, not theoretical. Null (→ the loud nudge path) is the only
+  // acceptable alternative to the right answer.
+  const ownedPersonalOrg = orgs.find((o) =>
+    isOwnPersonalOrg(o, userId),
+  );
+  const resolvedPersonalId = personalOrgId ?? ownedPersonalOrg?.id ?? null;
   primePersonalOrgId(resolvedPersonalId);
 
   // 0. This browser's stored selection (the shared apex cookie) — if still a

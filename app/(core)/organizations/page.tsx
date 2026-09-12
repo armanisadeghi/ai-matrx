@@ -42,6 +42,8 @@ import { OrganizationAbbreviation } from "@/features/organizations/components/Or
 import { OrgScopeTree } from "@/features/organizations/components/OrgScopeTree";
 import type {
   OrganizationWithRole,
+  isOwnPersonalOrg,
+  displayOrganizationAbbreviation,
   OrgRole,
 } from "@/features/organizations/types";
 import { InlineMediaRef } from "@ai-matrx/media/react";
@@ -49,6 +51,7 @@ import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
@@ -127,7 +130,13 @@ function OrgCard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
-  const meta = org.isPersonal ? PERSONAL_META : ROLE_META[org.role];
+  // PERSONAL_META says "this is your own space". It is keyed on OWNERSHIP, not
+  // on `isPersonal` — a membership in another person's personal org is not the
+  // viewer's personal org and shows that membership's real role instead.
+  const viewerUserId = useAppSelector(selectUserId);
+  const meta = isOwnPersonalOrg(org, viewerUserId)
+    ? PERSONAL_META
+    : ROLE_META[org.role];
   const RoleIcon = meta.icon;
   const href = `/organizations/${org.slug}`;
 
@@ -174,7 +183,10 @@ function OrgCard({
                   className={`w-full h-full flex items-center justify-center ${meta.bg}`}
                 >
                   <OrganizationAbbreviation
-                    abbreviation={org.abbreviation}
+                    abbreviation={displayOrganizationAbbreviation(
+                      org,
+                      viewerUserId,
+                    )}
                     className={`text-sm ${meta.text}`}
                   />
                 </span>
@@ -193,7 +205,10 @@ function OrgCard({
             </h3>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <OrganizationAbbreviation
-                abbreviation={org.abbreviation}
+                abbreviation={displayOrganizationAbbreviation(
+                  org,
+                  viewerUserId,
+                )}
                 className="h-5 min-w-8 rounded border border-border bg-muted px-1.5 text-[10px] text-muted-foreground"
               />
               <Badge
@@ -382,6 +397,7 @@ export default function OrganizationsPage() {
   const [createOpen, setCreateOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const isMobile = useIsMobile();
+  const currentUserId = useAppSelector(selectUserId);
   const store = useAppStore();
 
   const filtered = query
@@ -393,9 +409,17 @@ export default function OrganizationsPage() {
       ])
     : organizations;
 
-  const personal = filtered.filter((o) => o.isPersonal);
-  const teams = filtered.filter((o) => !o.isPersonal);
-  const teamCount = organizations.filter((o) => !o.isPersonal).length;
+  // A user has exactly ONE personal org — their own (the DB enforces it with
+  // the partial unique index `organizations_one_personal_per_creator`). This
+  // used to filter on `isPersonal`, so a membership in someone ELSE's personal
+  // workspace rendered as a second entry under the Personal heading — the live
+  // "why am I seeing two personal orgs" defect, 2026-09-11. Anything the viewer
+  // does not own belongs with the other organizations they are a member of.
+  const personal = filtered.filter((o) => isOwnPersonalOrg(o, currentUserId));
+  const teams = filtered.filter((o) => !isOwnPersonalOrg(o, currentUserId));
+  const teamCount = organizations.filter(
+    (o) => !isOwnPersonalOrg(o, currentUserId),
+  ).length;
   const kpis = organizationKpis(organizations);
 
   // ── Surface runtime (matrx-user/organizations, list mode) ───────────────

@@ -15,6 +15,9 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { isOwnPersonalOrg } from "../types";
 import { useUserOrganizations } from "../hooks";
 import { OrganizationCard } from "./OrganizationCard";
 import { CreateOrgModal } from "./CreateOrgModal";
@@ -51,6 +54,7 @@ export function OrganizationList() {
   );
 
   const { organizations, loading, error, refresh } = useUserOrganizations();
+  const userId = useAppSelector(selectUserId);
 
   // Filter organizations based on search
   const filteredOrgs = searchTerm
@@ -62,9 +66,16 @@ export function OrganizationList() {
       ])
     : organizations;
 
-  // Separate personal and team organizations
-  const personalOrg = filteredOrgs.find((org) => org.isPersonal);
-  const teamOrgs = filteredOrgs.filter((org) => !org.isPersonal);
+  // Separate the viewer's OWN personal org from every other org they belong to.
+  // Keyed on ownership (`isOwnPersonalOrg`), never on `isPersonal` alone: a
+  // membership in someone else's personal org used to match here, which both
+  // mislabelled it as "Personal Space" AND dropped the viewer's real personal
+  // org from the page, since the team list filtered out everything personal.
+  // Another person's personal org is just an org you belong to — it lists below.
+  const personalOrg = filteredOrgs.find((org) => isOwnPersonalOrg(org, userId));
+  const teamOrgs = filteredOrgs.filter(
+    (org) => !isOwnPersonalOrg(org, userId),
+  );
   const kpis = organizationKpis(organizations);
 
   // Loading state

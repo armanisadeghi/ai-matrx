@@ -301,6 +301,45 @@ export function validateOrgSlug(slug: string): {
 /** The fixed compact label for a user's personal organization. */
 export const PERSONAL_ORG_ABBREVIATION = "ME";
 
+/**
+ * Is this organization the VIEWER'S OWN personal organization?
+ *
+ * 🚨 `isPersonal` ALONE IS NOT THE ANSWER — it says "this is somebody's private
+ * workspace", never "it is yours". A user can hold a membership in another
+ * person's personal org, and every surface that derived "Personal" / "ME" from
+ * `isPersonal` alone was labelling someone else's private workspace as the
+ * viewer's own.
+ *
+ * Live defect, 2026-09-11: an account holding an `admin` membership in another
+ * account's personal org saw TWO organizations badged Personal, and
+ * `OrganizationList`'s `find(o => o.isPersonal)` matched the one it did NOT
+ * own — so the viewer's real personal org disappeared from the page entirely
+ * (the team-org list filters out everything `isPersonal`).
+ *
+ * Ownership is `created_by`. That is the same column the database keys on in
+ * `iam.personal_org_id()` and in the partial unique index
+ * `organizations_one_personal_per_creator`, so this predicate and the server
+ * agree by construction rather than by coincidence.
+ *
+ * Accepts either wire spelling: the camelCase `Organization` shape and the
+ * snake_case row/RPC shape are the same fact, so they share one predicate
+ * instead of growing a second implementation.
+ */
+export function isOwnPersonalOrg(
+  org: {
+    isPersonal?: boolean | null;
+    is_personal?: boolean | null;
+    createdBy?: string | null;
+    created_by?: string | null;
+  },
+  viewerUserId: string | null | undefined,
+): boolean {
+  const personal = org.isPersonal ?? org.is_personal ?? false;
+  if (personal !== true) return false;
+  const owner = org.createdBy ?? org.created_by ?? null;
+  return !!viewerUserId && !!owner && owner === viewerUserId;
+}
+
 const ABBREVIATION_IGNORED_WORDS = new Set([
   "A",
   "AN",
@@ -349,6 +388,39 @@ export function generateOrganizationAbbreviation(
     abbreviation += word[0];
   }
   return abbreviation.slice(0, 3).padEnd(2, "X");
+}
+
+/**
+ * The compact label to SHOW a given viewer for an organization.
+ *
+ * 🚨 `PERSONAL_ORG_ABBREVIATION` ("ME") is a VIEWER-RELATIVE word stored as an
+ * absolute column: every personal org carries `abbreviation = 'ME'` in
+ * `iam.organizations`, which is true only for its owner. A user holding a
+ * membership in someone else's personal org therefore saw two different orgs
+ * both chipped "ME" — the most visible half of the 2026-09-11 "why am I seeing
+ * two personal organizations" defect, and one that no amount of fixing the
+ * badge logic alone could remove, because the wrong word is in the data.
+ *
+ * So the stored value is honoured for the owner and for every shared org, and
+ * recomputed from the name for a personal org the viewer does not own. Nothing
+ * is written back: the column stays correct for the person it describes.
+ */
+export function displayOrganizationAbbreviation(
+  org: {
+    name: string;
+    abbreviation?: string | null;
+    isPersonal?: boolean | null;
+    is_personal?: boolean | null;
+    createdBy?: string | null;
+    created_by?: string | null;
+  },
+  viewerUserId: string | null | undefined,
+): string {
+  const personal = org.isPersonal ?? org.is_personal ?? false;
+  if (personal === true && !isOwnPersonalOrg(org, viewerUserId)) {
+    return generateOrganizationAbbreviation(org.name, false);
+  }
+  return org.abbreviation ?? generateOrganizationAbbreviation(org.name, personal === true);
 }
 
 /** Validate the database-backed compact organization label. */

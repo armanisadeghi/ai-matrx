@@ -14,7 +14,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import type { OrganizationWithRole } from "../types";
+import {
+  displayOrganizationAbbreviation,
+  isOwnPersonalOrg,
+  type OrganizationWithRole,
+} from "../types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { organizationLogoRef } from "@/features/organizations/lib/organization-logo";
@@ -56,12 +62,22 @@ export function OrganizationCard({
   const navigate = useSettingsNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const isPersonal = organization.isPersonal;
+  // TWO different questions, and conflating them is what broke this card:
+  //   isPersonalOrg — is this org SOMEBODY's private workspace? Governs what
+  //                   may be done to it (nobody administers a personal org
+  //                   from the outside), so capability checks keep using it.
+  //   isMine        — is it the VIEWER'S OWN? Governs identity: the Personal
+  //                   badge and the purple treatment that say "this is you".
+  // A membership in another person's personal org is `isPersonalOrg && !isMine`
+  // — it may not be administered, and it must not wear the viewer's colours.
+  const viewerUserId = useAppSelector(selectUserId);
+  const isPersonalOrg = organization.isPersonal;
+  const isMine = isOwnPersonalOrg(organization, viewerUserId);
   const role = organization.role;
 
   // Get role icon and color
   const getRoleDisplay = () => {
-    if (isPersonal) {
+    if (isMine) {
       return {
         icon: <UserIcon className="h-3 w-3" />,
         label: "Personal",
@@ -121,7 +137,7 @@ export function OrganizationCard({
     <Card
       className={cn(
         "p-5 transition-all duration-200 hover:shadow-md cursor-pointer group",
-        isPersonal &&
+        isMine &&
           "border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10",
         isNavigating && "opacity-50 pointer-events-none",
       )}
@@ -135,7 +151,7 @@ export function OrganizationCard({
             <div
               className={cn(
                 "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center",
-                isPersonal
+                isMine
                   ? "bg-purple-100 dark:bg-purple-900/50"
                   : "bg-blue-100 dark:bg-blue-900/50",
               )}
@@ -147,10 +163,13 @@ export function OrganizationCard({
                 rounded="lg"
                 fallbackIcon={
                   <OrganizationAbbreviation
-                    abbreviation={organization.abbreviation}
+                    abbreviation={displayOrganizationAbbreviation(
+                      organization,
+                      viewerUserId,
+                    )}
                     className={cn(
                       "text-sm",
-                      isPersonal
+                      isMine
                         ? "text-purple-600 dark:text-purple-400"
                         : "text-blue-600 dark:text-blue-400",
                     )}
@@ -167,7 +186,10 @@ export function OrganizationCard({
                   {organization.name}
                 </h3>
                 <OrganizationAbbreviation
-                  abbreviation={organization.abbreviation}
+                  abbreviation={displayOrganizationAbbreviation(
+                    organization,
+                    viewerUserId,
+                  )}
                   className="h-5 min-w-8 rounded border border-border bg-muted px-1.5 text-[10px] text-muted-foreground"
                 />
                 <Badge
@@ -234,7 +256,7 @@ export function OrganizationCard({
               })
             }
           />
-          {canManageSettings && !isPersonal && (
+          {canManageSettings && !isPersonalOrg && (
             <Button
               asChild
               variant="ghost"
@@ -254,7 +276,7 @@ export function OrganizationCard({
             </Button>
           )}
 
-          {isPersonal && (
+          {isPersonalOrg && (
             <Button
               asChild
               variant="ghost"
@@ -274,7 +296,7 @@ export function OrganizationCard({
             </Button>
           )}
 
-          {!canManageSettings && !isPersonal && (
+          {!canManageSettings && !isPersonalOrg && (
             <Button
               asChild
               variant="ghost"
