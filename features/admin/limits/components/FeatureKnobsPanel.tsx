@@ -21,6 +21,7 @@ import { Input } from "@ai-matrx/design-system";
 import { fetchKnobOverrideCounts } from "@/lib/scoped-config/service";
 import { toast } from "@/lib/toast";
 import { fetchFeatureKnobs, setFeatureKnob } from "../service";
+import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import type { FeatureKnob } from "../types";
 
 function knobId(knob: FeatureKnob): string {
@@ -80,6 +81,14 @@ export function FeatureKnobsPanel() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Opt in to the platform client-directive channel: when an `instant` key
+  // changes anywhere — another tab, another admin, the server — re-read, so
+  // this table never shows a value the database no longer holds.
+  useEffect(
+    () => registerDirectiveHandler("settings_changed", () => void load()),
+    [load],
+  );
 
   const byFeature = useMemo(() => {
     const groups = new Map<string, FeatureKnob[]>();

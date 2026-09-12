@@ -106,6 +106,13 @@ import { WindowPersistenceManager } from "@/features/window-panels/WindowPersist
 // See /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md and lib/extension-bridge/.
 // disaster
 import { ExtensionBridgeSubscriber } from "@/lib/extension-bridge/ExtensionBridgeSubscriber";
+// THE platform client-directive channel. One mount, two rooms
+// (`matrx-server-bus:<userId>` + `matrx-server-bus:platform`), carrying every
+// "this changed, react" message the platform sends a running client —
+// settings invalidation, app-config re-fetch, and the consent-toast refresh
+// ask. Subscribe-only; consumers opt in by name. See lib/client-directives/
+// and ../common-docs/systems/platform/realtime/CLIENT-DIRECTIVES.md.
+import { PlatformDirectiveSubscriber } from "@/components/client-directives/PlatformDirectiveSubscriber";
 import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
 // Deep imports, NOT `@/features/files` — this file's own header (line 13) says
@@ -192,6 +199,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 <LoopbackApiAccessSync />
                                 <GoogleOAuthRedirectNotice />
                                 <ExtensionBridgeSubscriber />
+                                <PlatformDirectiveSubscriber />
                                 <GlobalTaskShortcut />
                                 <CreateTaskFromSourceDialog />
                                 {/* Cloud-files realtime — mounted globally so
