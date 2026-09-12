@@ -85,6 +85,8 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
+- `2026-09-11` — Browser verification: removed the desktop checkbox dependency from portaled route-menu styles and the inherited bottom-sheet top margin on tablets; verified visible 48px rows in a 352px-wide panel at 834×1112 with the desktop sidebar expanded.
+
 - `2026-09-11` — Codex: made every global parent label/icon a real module-home link and moved submenu opening to a separate disclosure control; restored portaled route-menu labels and 48px touch rows; tablet navigation now presents as a bounded edge panel rather than a phone-height drawer.
 
 - `2026-09-08` — Codex: made the Administration Large Route consume one

@@ -2011,27 +2011,21 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
    `#shell-sidebar-toggle`, but the mobile sheet has no collapsed rail —
    always show labels and expanded row spacing here. Desktop is unaffected:
    `.shell-mobile-sheet-wrapper` is hidden at lg+. */
-body:has(.shell-root:not(:has(#shell-sidebar-toggle:checked)))
-  .shell-mobile-route-nav
-  .shell-nav-label {
+.shell-mobile-sheet .shell-mobile-route-nav .shell-nav-label {
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
   width: auto;
 }
 
-body:has(.shell-root:not(:has(#shell-sidebar-toggle:checked)))
-  .shell-mobile-route-nav
-  .shell-nav-item {
+.shell-mobile-sheet .shell-mobile-route-nav .shell-nav-item {
   gap: 0.75rem;
   justify-content: flex-start;
   min-height: 3rem;
   padding: 0.625rem 0.75rem;
 }
 
-body:has(.shell-root:not(:has(#shell-sidebar-toggle:checked)))
-  .shell-mobile-route-nav
-  .shell-nav-item[title]:hover::after {
+.shell-mobile-sheet .shell-mobile-route-nav .shell-nav-item[title]:hover::after {
   content: none;
 }
 
@@ -2041,6 +2035,7 @@ body:has(.shell-root:not(:has(#shell-sidebar-toggle:checked)))
 @media (min-width: 768px) and (max-width: 1023px) {
   .shell-mobile-sheet {
     top: 0;
+    margin-top: 0;
     right: auto;
     bottom: 0;
     left: 0;
