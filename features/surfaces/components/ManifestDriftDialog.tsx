@@ -33,8 +33,10 @@ import {
   listSurfaceValues,
   remediateBrokenMapping,
   RECENT_ROW_REFUSAL_PREFIX,
+  RECENT_ROW_WINDOW_HOURS,
   type MirrorTable,
 } from "@/features/surfaces/services/surfaces.service";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
 import type {
   SurfaceDriftReport,
@@ -51,14 +53,43 @@ interface Props {
 /**
  * Appended to every stale (`db_only`) section, so the recency guard is
  * announced BEFORE an admin clicks rather than discovered as a refusal. The
- * per-row age itself is not in the drift report — adding it would mean widening
- * four drift row types on the most collision-prone file in this feature — so
- * the guard states its RULE up front and the server states the actual age when
- * it fires. That is the part an operator needs in advance: that a fresh row
- * will push back.
+ * window is imported, never retyped: the sentence and the server guard read the
+ * same constant, so the dialog cannot describe a rule the server stopped
+ * enforcing. Each stale row now also carries its OWN age (see `RowAge`), which
+ * is what actually separates a dead row from a sibling branch's live one.
  */
-const GLOBAL_SWEEP_NOTE =
-  "Rows written in the last 24h are treated as probably in-flight and need a second, explicit confirm.";
+const GLOBAL_SWEEP_NOTE = `Rows written in the last ${RECENT_ROW_WINDOW_HOURS}h are treated as probably in-flight and need a second, explicit confirm.`;
+
+/**
+ * The age of ONE stale mirror row: relative in the line (what an operator
+ * actually reasons with — "12 minutes ago" is a branch still running), exact
+ * timestamp in the tooltip (what they quote when they ask whose it is). Rows
+ * inside the recency window are toned to say so, matching the guard that will
+ * refuse the first delete click.
+ *
+ * Only `db_only` drift entries carry `updatedAt`; anything else renders
+ * nothing rather than an invented age.
+ */
+function RowAge({ updatedAt }: { updatedAt?: string }) {
+  if (!updatedAt) return null;
+  const ms = new Date(updatedAt).getTime();
+  if (!Number.isFinite(ms)) return null;
+  const ageMs = Math.max(0, Date.now() - ms);
+  const recent = ageMs < RECENT_ROW_WINDOW_HOURS * 3_600_000;
+  return (
+    <span
+      title={new Date(ms).toLocaleString()}
+      className={
+        recent
+          ? "text-[10px] text-amber-600 dark:text-amber-400"
+          : "text-[10px] text-muted-foreground"
+      }
+    >
+      {formatDurationMs(Math.max(60_000, ageMs), { style: "coarse" })} ago
+      {recent ? " · in-flight window" : ""}
+    </span>
+  );
+}
 
 export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
   const [report, setReport] = useState<SurfaceDriftReport | null>(null);
@@ -150,6 +181,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`d-${d.surfaceName}-${d.valueName}`}
                     surfaceName={d.surfaceName}
                     name={d.valueName}
+                    updatedAt={d.updatedAt}
                     action={
                       <DeleteMirrorRowButton
                         table="ui_surface_value"
@@ -205,6 +237,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`rd-${d.surfaceName}-${d.roleName}`}
                     surfaceName={d.surfaceName}
                     name={d.roleName}
+                    updatedAt={d.updatedAt}
                     action={
                       <DeleteMirrorRowButton
                         table="ui_surface_agent_role"
@@ -260,6 +293,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`wtd-${d.surfaceName}-${d.targetName}`}
                     surfaceName={d.surfaceName}
                     name={d.targetName}
+                    updatedAt={d.updatedAt}
                     action={
                       <DeleteMirrorRowButton
                         table="ui_surface_write_target"
@@ -315,6 +349,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`ctd-${d.surfaceName}-${d.toolName}`}
                     surfaceName={d.surfaceName}
                     name={d.toolName}
+                    updatedAt={d.updatedAt}
                     action={
                       <DeleteMirrorRowButton
                         table="ui_surface_client_tool"
@@ -565,6 +600,7 @@ function DriftRow({
   diff,
   showDiff = false,
   action,
+  updatedAt,
 }: {
   surfaceName: string;
   name: string;
@@ -572,6 +608,8 @@ function DriftRow({
   showDiff?: boolean;
   /** Optional per-row action (the stale sections pass a delete button). */
   action?: React.ReactNode;
+  /** `updated_at` of the DB row — `db_only` entries only. */
+  updatedAt?: string;
 }) {
   return (
     <div className="px-2 py-1.5 text-[11px] space-y-0.5">
@@ -579,6 +617,7 @@ function DriftRow({
         <span className="font-mono text-foreground">{surfaceName}</span>
         <span className="text-muted-foreground">·</span>
         <span className="font-mono">{name}</span>
+        <RowAge updatedAt={updatedAt} />
       </div>
       {action}
       {showDiff && diff && (

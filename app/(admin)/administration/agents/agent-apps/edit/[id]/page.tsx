@@ -24,6 +24,11 @@ import {
   agentAppAdminKpis,
   type AgentAppAdminEditView,
 } from "@/features/agent-apps/format";
+import {
+  formatCount,
+  formatPercentFromFraction,
+  formatUsd,
+} from "@/lib/format/honest";
 import { AgentAppAdminActions } from "@/features/agent-apps/components/AgentAppAdminActions";
 import { AgentAppEditor } from "@/features/agent-apps/components/AgentAppEditor";
 import { UpdateAgentAppModal } from "@/features/agent-apps/components/UpdateAgentAppModal";
@@ -547,19 +552,19 @@ export default function AdminEditAgentAppPage({
                   <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <Stat
                       label="Runs"
-                      value={(app.total_executions ?? 0).toLocaleString()}
+                      value={formatCount(app.total_executions)}
                     />
                     <Stat
                       label="Users"
-                      value={(app.unique_users_count ?? 0).toLocaleString()}
+                      value={formatCount(app.unique_users_count)}
                     />
                     <Stat
                       label="Success"
-                      value={`${((app.success_rate ?? 0) * 100).toFixed(0)}%`}
+                      value={formatPercentFromFraction(app.success_rate)}
                     />
                     <Stat
                       label="Cost"
-                      value={`$${(app.total_cost ?? 0).toFixed(4)}`}
+                      value={formatUsd(app.total_cost, { digits: 4 })}
                     />
                   </CardContent>
                 </Card>

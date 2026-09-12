@@ -516,6 +516,79 @@ function propertyCandidates(
   return { nodes: out, unresolved };
 }
 
+/**
+ * The string values a `for (const x of <expr>)` loop variable can take, for the
+ * `for (const name of Object.values(TARGETS)) handlers[name] = …` shape
+ * (`PdfStudioShell`). Only the two forms that are actually static: an array
+ * literal, and `Object.values`/`Object.keys` of a resolvable object literal.
+ */
+function forOfElementStrings(node: ts.Identifier, file: string, depth: number): StringResult | null {
+  // Walk OUT from the reference to the nearest enclosing `for…of` that declares
+  // this name — the reference itself is not the declaration.
+  let loop: ts.ForOfStatement | null = null;
+  for (let current: ts.Node | undefined = node.parent; current; current = current.parent) {
+    if (!ts.isForOfStatement(current)) continue;
+    const initializer = current.initializer;
+    if (!ts.isVariableDeclarationList(initializer)) continue;
+    const declares = initializer.declarations.some(
+      (decl) => ts.isIdentifier(decl.name) && decl.name.text === node.text,
+    );
+    if (declares) {
+      loop = current;
+      break;
+    }
+  }
+  if (!loop) return null;
+  const iterable = unwrap(loop.expression);
+
+  if (ts.isArrayLiteralExpression(iterable)) {
+    return iterable.elements.reduce<StringResult>(
+      (acc, element) => {
+        const resolved = resolveStringExpr(element, file, depth + 1);
+        return {
+          values: [...acc.values, ...resolved.values],
+          unresolved: [...acc.unresolved, ...resolved.unresolved],
+        };
+      },
+      { values: [], unresolved: [] },
+    );
+  }
+
+  if (
+    ts.isCallExpression(iterable) &&
+    ts.isPropertyAccessExpression(unwrap(iterable.expression)) &&
+    ["values", "keys"].includes(
+      (unwrap(iterable.expression) as ts.PropertyAccessExpression).name.text,
+    ) &&
+    iterable.arguments.length === 1
+  ) {
+    const wantsKeys =
+      (unwrap(iterable.expression) as ts.PropertyAccessExpression).name.text === "keys";
+    const holders = resolveObjectLiterals(iterable.arguments[0], file, depth + 1);
+    const out: StringResult = { values: [], unresolved: [...holders.unresolved] };
+    for (const holder of holders.literals) {
+      for (const prop of (holder.node as ts.ObjectLiteralExpression).properties) {
+        if (!ts.isPropertyAssignment(prop)) {
+          out.unresolved.push(`\`${snippet(prop)}\` is not a plain property this check can read`);
+          continue;
+        }
+        if (wantsKeys) {
+          const key = propName(prop.name, holder.file);
+          if (key) out.values.push(key);
+          else out.unresolved.push(`computed key \`${snippet(prop.name)}\` is not resolvable`);
+          continue;
+        }
+        const resolved = resolveStringExpr(prop.initializer, holder.file, depth + 1);
+        out.values.push(...resolved.values);
+        out.unresolved.push(...resolved.unresolved);
+      }
+    }
+    return out.values.length > 0 || out.unresolved.length > 0 ? out : null;
+  }
+
+  return null;
+}
+
 function resolveStringExpr(node: ts.Node, file: string, depth = 0): StringResult {
   if (depth > 12) return { values: [], unresolved: ["expression nesting too deep"] };
   const n = unwrap(node);
@@ -524,6 +597,11 @@ function resolveStringExpr(node: ts.Node, file: string, depth = 0): StringResult
     return { values: [n.text], unresolved: [] };
   }
   if (n.kind === ts.SyntaxKind.NullKeyword) return { values: [], unresolved: [] };
+
+  if (ts.isIdentifier(n)) {
+    const viaForOf = forOfElementStrings(n, file, depth);
+    if (viaForOf) return viaForOf;
+  }
 
   const expanded = candidates(n, file, depth);
   const values: string[] = [];
@@ -612,6 +690,84 @@ function returnExpressions(body: ts.Node): ts.Expression[] {
 
 const HOOK_WRAPPERS = new Set(["useCallback", "useMemo", "useRef"]);
 
+/**
+ * HANDLERS ASSEMBLED BY ASSIGNMENT. A map is often built up rather than written
+ * out — `const handlers: Record<string, Handler> = { … };` followed by
+ * `handlers.scrape_command = …` / `handlers["x"] = …`, often inside an `if`
+ * that asks whether THIS mount owns the input. `AgentRunnerPage` and
+ * `buildScraperWriteHandlers` both do it, and before 2026-09-11 this guard read
+ * only the literal's own members, so it called six live targets on two surfaces
+ * unhandled.
+ *
+ * Conditional assignment still counts as registration: this guard proves a
+ * handler EXISTS for a declared target, not that every mount offers it (the
+ * runtime decides that per mount, and `check:agent-disclosure` owns the
+ * availability half).
+ */
+function assignedKeys(literal: ts.ObjectLiteralExpression, file: string): KeyResult {
+  // The literal must be the initializer of `const <name> = { … }`.
+  const declaration = literal.parent;
+  if (
+    !declaration ||
+    !ts.isVariableDeclaration(declaration) ||
+    declaration.initializer !== literal ||
+    !ts.isIdentifier(declaration.name)
+  ) {
+    return emptyKeys();
+  }
+  const name = declaration.name.text;
+
+  // Scope: the nearest enclosing function or source file.
+  let scope: ts.Node = declaration;
+  while (scope.parent && !isFunctionish(scope.parent) && !ts.isSourceFile(scope.parent)) {
+    scope = scope.parent;
+  }
+  const root = scope.parent ?? scope;
+
+  const result = emptyKeys();
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+    ) {
+      const left = unwrap(node.left);
+      if (
+        ts.isPropertyAccessExpression(left) &&
+        ts.isIdentifier(unwrap(left.expression)) &&
+        (unwrap(left.expression) as ts.Identifier).text === name
+      ) {
+        result.keys.add(left.name.text);
+      } else if (
+        ts.isElementAccessExpression(left) &&
+        ts.isIdentifier(unwrap(left.expression)) &&
+        (unwrap(left.expression) as ts.Identifier).text === name
+      ) {
+        const key = resolveStringExpr(left.argumentExpression, file);
+        for (const value of key.values) result.keys.add(value);
+        result.unresolved.push(...key.unresolved);
+      }
+    }
+    // `Object.assign(handlers, …)` — the spread-by-call form of the same thing.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(unwrap(node.expression)) &&
+      (unwrap(node.expression) as ts.PropertyAccessExpression).name.text === "assign" &&
+      node.arguments.length > 1 &&
+      ts.isIdentifier(unwrap(node.arguments[0])) &&
+      (unwrap(node.arguments[0]) as ts.Identifier).text === name
+    ) {
+      for (const arg of node.arguments.slice(1)) {
+        const merged = resolveHandlerKeys(arg, file, 1);
+        for (const key of merged.keys) result.keys.add(key);
+        result.unresolved.push(...merged.unresolved);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(root);
+  return result;
+}
+
 function resolveHandlerKeys(node: ts.Node, file: string, depth = 0): KeyResult {
   if (depth > 14) return { keys: new Set(), unresolved: ["expression nesting too deep"] };
   const n = unwrap(node);
@@ -643,7 +799,7 @@ function resolveHandlerKeys(node: ts.Node, file: string, depth = 0): KeyResult {
       }
       result.unresolved.push(`unsupported handler-map member \`${snippet(prop)}\``);
     }
-    return result;
+    return mergeKeys(result, assignedKeys(n, file));
   }
 
   if (ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n) || ts.isMethodDeclaration(n)) {
@@ -733,10 +889,12 @@ function resolveHandlerKeys(node: ts.Node, file: string, depth = 0): KeyResult {
  *       name the mounts. Each must be a real declared surface.
  *
  *   // surface-write-handlers: note_draft, rating_*
- *       the handler map is built dynamically. Name the targets it covers; a
- *       trailing `*` credits a generated family (both halves derive from one
- *       source). Every name/pattern must match a declared target of the
- *       surface, or it is a finding.
+ *       part of the handler map is built dynamically. Name the targets that
+ *       part covers; a trailing `*` credits a generated family (both halves
+ *       derive from one source). Every name/pattern must match a declared
+ *       target of the surface, or it is a finding. ADDITIVE: whatever the
+ *       resolver CAN read is still credited, so a map that is only partly
+ *       opaque never has to re-type its static keys into the comment.
  *
  *   // surface-write-handlers: pass-through
  *       this element only re-registers a map its CALLER owns (a generic list
@@ -853,9 +1011,22 @@ export function scanFiles(files: string[]): Registration[] {
       const surface: StringResult = surfaceAnnotation
         ? { values: surfaceAnnotation, unresolved: [] }
         : resolvedSurface;
-      const keys: KeyResult = keyAnnotation
-        ? { keys: new Set(keyAnnotation.keys), unresolved: [] }
+      // A key annotation is ADDITIVE, never a replacement. A map is usually
+      // only PARTLY opaque — `PerformanceReviewApp` writes sixteen keys out
+      // literally and generates twenty-three more from `RATING_SCHEMA` — and a
+      // replacing annotation would force whoever adds the one dynamic family to
+      // re-type every static key beside it, which is exactly how an annotation
+      // drifts from the code and starts lying. Resolution still contributes
+      // everything it can read; the annotation only covers what it cannot.
+      const resolvedKeys = keyAnnotation?.passThrough
+        ? emptyKeys()
         : resolveKeys();
+      const keys: KeyResult = keyAnnotation
+        ? {
+            keys: new Set([...resolvedKeys.keys, ...keyAnnotation.keys]),
+            unresolved: [],
+          }
+        : resolvedKeys;
       out.push({
         file,
         line: lineOf(sf, node),
@@ -895,13 +1066,20 @@ export function scanFiles(files: string[]): Registration[] {
         );
       }
 
-      // Seam 3 — { surfaceName, getWriteHandlers } handed to
-      // useSurfaceRuntimeRegistration / registerSurfaceRuntime.
+      // Seam 3 — a DESCRIPTOR object that carries both halves:
+      // `{ surfaceName, getScope, getWriteHandlers }`, either handed straight to
+      // useSurfaceRuntimeRegistration / registerSurfaceRuntime, or handed to a
+      // shell that mounts it (the `surface` of an `EntityListPage` config — the
+      // canonical list shell; `features/agents/browse/surface.ts` and
+      // `SitesPortfolio.tsx` both wire real targets this way, and before
+      // 2026-09-11 this guard called both of them UNHANDLED).
       //
-      // ONLY those two. A hook that RETURNS `{ getScope, getWriteHandlers }` for
-      // its caller to mount is not a registration — counting it as one invents a
-      // site with no surface and buries a real finding under noise. The caller's
-      // provider is the site, and it resolves through this hook anyway.
+      // THE `surfaceName` MEMBER IS WHAT MAKES IT A SITE. A hook that RETURNS
+      // `{ getScope, getWriteHandlers }` for its caller to mount (e.g.
+      // `useAgentAdvancedEditorSurface`) names no surface, so it is still not a
+      // registration — counting that would invent a site with no surface and
+      // bury a real finding under noise. The caller's provider is the site, and
+      // it resolves through the hook anyway.
       if (
         (ts.isPropertyAssignment(node) ||
           ts.isShorthandPropertyAssignment(node) ||
@@ -909,7 +1087,8 @@ export function scanFiles(files: string[]): Registration[] {
         node.name &&
         propName(node.name as ts.PropertyName, file) === "getWriteHandlers" &&
         ts.isObjectLiteralExpression(node.parent) &&
-        isSurfaceRegistrationArgument(node.parent)
+        (isSurfaceRegistrationArgument(node.parent) ||
+          declaresSurfaceName(node.parent, file))
       ) {
         const objectLiteral = node.parent;
         let surface: StringResult = {
@@ -944,6 +1123,19 @@ const REGISTRATION_CALLS = new Set([
   "useSurfaceRuntimeRegistration",
   "registerSurfaceRuntime",
 ]);
+
+/**
+ * Does this object literal declare a `surfaceName` member? That is what turns
+ * `{ …, getWriteHandlers }` from an anonymous callback bag into a descriptor
+ * that names the surface it mounts on.
+ */
+function declaresSurfaceName(literal: ts.ObjectLiteralExpression, file: string): boolean {
+  return literal.properties.some(
+    (prop) =>
+      (ts.isPropertyAssignment(prop) || ts.isShorthandPropertyAssignment(prop)) &&
+      propName(prop.name as ts.PropertyName, file) === "surfaceName",
+  );
+}
 
 /** Is this object literal an argument to a surface-registration call? */
 function isSurfaceRegistrationArgument(literal: ts.ObjectLiteralExpression): boolean {
@@ -1155,6 +1347,124 @@ function runSelfTest(): number {
       bad += 1;
     } else {
       console.log(`  ${TAG.ok} planted UNRESOLVABLE registration is caught: ${missed.keyUnresolved[0] ?? missed.surfaceUnresolved[0]}`);
+    }
+
+    // SEAM 3 — a DESCRIPTOR object (`{ surfaceName, getScope, getWriteHandlers }`)
+    // handed to a list shell that mounts it, which is how the canonical
+    // `EntityListPage` surfaces wire their write half. Before 2026-09-11 this
+    // guard read only the provider prop and the hook, so it called two real,
+    // correctly-wired surfaces (`matrx-user/agents`, `matrx-user/marketing`)
+    // UNHANDLED — a false positive that would have been "fixed" by wiring a
+    // second handler on top of a working one.
+    const descriptorFile = join(dir, "planted-descriptor.ts");
+    writeFileSync(
+      descriptorFile,
+      [
+        'const DESCRIPTOR_TARGET = "planted_descriptor_target";',
+        "export const listSurface = {",
+        '  surfaceName: "matrx-selftest/fixture",',
+        "  getScope: (list: unknown) => list,",
+        "  getWriteHandlers: (list: unknown) => ({",
+        "    [DESCRIPTOR_TARGET]: (value: unknown) => void [list, value],",
+        "  }),",
+        "};",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const descriptorFindings = diff(
+      [{ surfaceName: "matrx-selftest/fixture", targets: ["planted_descriptor_target"] }],
+      scanFiles([descriptorFile]),
+    );
+    if (
+      descriptorFindings.unhandled.length > 0 ||
+      descriptorFindings.unresolvedRegistrations.length > 0
+    ) {
+      console.log(
+        `  ${TAG.fail} a surface wired through a { surfaceName, getWriteHandlers } DESCRIPTOR was reported unhandled — the guard is blind to the EntityListPage seam and would send agents to double-wire a working surface`,
+      );
+      bad += 1;
+    } else {
+      console.log(
+        `  ${TAG.ok} a { surfaceName, getWriteHandlers } descriptor object counts as a registration (the EntityListPage seam)`,
+      );
+    }
+
+    // …but a callback bag that names NO surface must still NOT be credited as a
+    // registration — that is a hook's return value, and its caller is the site.
+    const bagFile = join(dir, "planted-callback-bag.ts");
+    writeFileSync(
+      bagFile,
+      [
+        "export function useSomeSurface() {",
+        "  return {",
+        "    getScope: () => ({}),",
+        "    getWriteHandlers: () => ({ planted_descriptor_target: () => {} }),",
+        "  };",
+        "}",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    if (scanFiles([bagFile]).length > 0) {
+      console.log(
+        `  ${TAG.fail} a surfaceName-less callback bag was counted as a registration — every hook return would invent a site with no surface`,
+      );
+      bad += 1;
+    } else {
+      console.log(
+        `  ${TAG.ok} a surfaceName-less callback bag is not counted as a registration (the caller's mount is the site)`,
+      );
+    }
+
+    // A map ASSEMBLED BY ASSIGNMENT (`handlers.x = …`, often behind an `if`)
+    // is how AgentRunnerPage and buildScraperWriteHandlers wire six live
+    // targets. Reading only the literal's own members called all six unhandled.
+    const assembledFile = join(dir, "planted-assembled.ts");
+    writeFileSync(
+      assembledFile,
+      [
+        "type H = (value: unknown) => void;",
+        "const PLANTED_TARGETS = { a: \"planted_looped\" };",
+        "export function buildHandlers(owns: boolean) {",
+        "  const handlers: Record<string, H> = {",
+        "    planted_literal: () => {},",
+        "  };",
+        "  if (owns) {",
+        "    handlers.planted_assigned = () => {};",
+        '    handlers["planted_indexed"] = () => {};',
+        "  }",
+        "  for (const name of Object.values(PLANTED_TARGETS)) {",
+        "    handlers[name] = () => {};",
+        "  }",
+        "  return handlers;",
+        "}",
+        "export const registration = {",
+        '  surfaceName: "matrx-selftest/fixture",',
+        "  getWriteHandlers: () => buildHandlers(true),",
+        "};",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const assembledFindings = diff(
+      [
+        {
+          surfaceName: "matrx-selftest/fixture",
+          targets: ["planted_literal", "planted_assigned", "planted_indexed", "planted_looped"],
+        },
+      ],
+      scanFiles([assembledFile]),
+    );
+    if (assembledFindings.unhandled.length > 0) {
+      console.log(
+        `  ${TAG.fail} a handler map ASSEMBLED BY ASSIGNMENT lost its assigned keys (${assembledFindings.unhandled[0].targets.join(", ")}) — the resolver reads only the literal and would call live targets unhandled`,
+      );
+      bad += 1;
+    } else {
+      console.log(
+        `  ${TAG.ok} a handler map assembled by \`handlers.x = …\` / \`handlers["x"] = …\` keeps its assigned keys`,
+      );
     }
 
     // The annotation escape hatch must work AND still be checked.

@@ -23,6 +23,11 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  formatCount,
+  formatPercentFromFraction,
+  formatUsd,
+} from "@/lib/format/honest";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1003,7 +1008,7 @@ export default function AgentAppsAdminListPage() {
                       title={`Open the runs and errors for ${app.name}`}
                       className="underline-offset-2 hover:text-primary hover:underline"
                     >
-                      {app.total_executions?.toLocaleString() || 0}
+                      {formatCount(app.total_executions)}
                     </AppLink>
                   </TableCell>
                   <TableCell
@@ -1011,21 +1016,21 @@ export default function AgentAppsAdminListPage() {
                     data-label="Users"
                     data-phone="inline"
                   >
-                    {app.unique_users_count?.toLocaleString() || 0}
+                    {formatCount(app.unique_users_count)}
                   </TableCell>
                   <TableCell
                     className="text-right"
                     data-label="Success"
                     data-phone="inline"
                   >
-                    {((app.success_rate || 0) * 100).toFixed(0)}%
+                    {formatPercentFromFraction(app.success_rate)}
                   </TableCell>
                   <TableCell
                     className="text-right"
                     data-label="Cost"
                     data-phone="inline"
                   >
-                    ${app.total_cost?.toFixed(4) ?? "0.0000"}
+                    {formatUsd(app.total_cost, { digits: 4 })}
                   </TableCell>
                   <TableCell
                     className="text-right"

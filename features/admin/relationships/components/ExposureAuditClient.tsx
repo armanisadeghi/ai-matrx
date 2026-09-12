@@ -90,7 +90,7 @@ function sumSummary(
 
 /** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function relativeTime(value: string): string {
-  return formatRelativeTime(value, { style: "short" });
+  return formatRelativeTime(value, { style: "short", suffix: false });
 }
 
 function ResourceIcon({ row }: { row: ExposureAuditRow }) {

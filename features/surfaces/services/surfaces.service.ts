@@ -783,8 +783,13 @@ export type MirrorTable =
   | "ui_surface_write_target"
   | "ui_surface_client_tool";
 
-/** Stable prefix the server puts on the "row was written recently" refusal. */
-export const RECENT_ROW_REFUSAL_PREFIX = "Recently updated:";
+// The recency rule is ONE definition (`mirror-recency.ts`) — the server guard
+// and this client surface import the same window and the same refusal prefix,
+// so the dialog can never describe a window the server does not enforce.
+export {
+  RECENT_ROW_REFUSAL_PREFIX,
+  RECENT_ROW_WINDOW_HOURS,
+} from "@/features/surfaces/services/mirror-recency";
 
 export interface DeleteMirrorRowResult {
   ok: true;

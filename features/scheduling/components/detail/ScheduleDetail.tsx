@@ -217,8 +217,13 @@ function ScheduleDetailBody({ taskId }: Props) {
       // A destructive/expensive click states its consequence first: what
       // fires, when, and what happens if the cause was not fixed.
       const approval = approvalSentence(task);
-      const overdue =
-        task.nextDueAt && new Date(task.nextDueAt).getTime() < Date.now();
+      // `sch_task.next_due_at` is the MIN over ENABLED triggers, so a
+      // suspended task carries null there while its (disabled) trigger still
+      // remembers when it was due. Read the trigger when the task is silent —
+      // otherwise the sentence about when it will run goes missing exactly on
+      // the rows this dialog exists for.
+      const nextDue = task.nextDueAt ?? task.triggers[0]?.nextDueAt ?? null;
+      const overdue = nextDue !== null && new Date(nextDue).getTime() < Date.now();
       const failures = suspended?.consecutive_failures;
       const ok = await confirm({
         title: isSystemTask
@@ -229,9 +234,9 @@ function ScheduleDetailBody({ taskId }: Props) {
             ? "Turns the schedule and its trigger back on together."
             : "Turns the schedule back on.",
           overdue
-            ? `It was due ${humanizeRelative(task.nextDueAt)}, so the scanner will run it on its next pass — within about a minute — not at the next scheduled time.`
-            : task.nextDueAt
-              ? `Its next run stays at ${humanizeRelative(task.nextDueAt)}.`
+            ? `It was due ${humanizeRelative(nextDue)}, so the scanner will run it on its next pass — within about a minute — not at the next scheduled time.`
+            : nextDue
+              ? `Its next run stays at ${humanizeRelative(nextDue)}.`
               : "",
           typeof failures === "number"
             ? `If the cause is not fixed, the repeat guard will switch it off again after ${failures} more matching failures.`

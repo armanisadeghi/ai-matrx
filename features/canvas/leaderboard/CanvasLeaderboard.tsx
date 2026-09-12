@@ -7,7 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Trophy, Clock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { formatDurationMs } from '@ai-matrx/kit/format';
+// THE package duration + initials formatters (`@ai-matrx/kit/format`, census
+// H1 2026-09-07). Recorded initials decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM"; an empty name now reads "?" instead of "".
+import { formatDurationMs, getInitials } from '@ai-matrx/kit/format';
 
 interface CanvasLeaderboardProps {
     canvasId: string;
@@ -48,10 +52,6 @@ export function CanvasLeaderboard({
     };
 
     const getRankBadge = (rank: number) => `#${rank}`;
-
-    const getInitials = (name: string) => {
-        return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    };
 
     return (
         <div className="space-y-3">

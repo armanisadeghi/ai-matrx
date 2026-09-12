@@ -30,9 +30,13 @@ export function fmtInt(value: number | string | null | undefined): string {
   return n.toLocaleString();
 }
 
-/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
+/**
+ * THE relative-time voice: @ai-matrx/kit/format owns "3m". Bare on purpose —
+ * the column header is "Age", so " ago" on every row is a word per row that
+ * says nothing the header has not.
+ */
 export function fmtAge(iso: string | null | undefined): string {
-  return formatRelativeTime(iso, { style: "short" });
+  return formatRelativeTime(iso, { style: "short", suffix: false });
 }
 
 export function fmtStamp(iso: string | null | undefined): string {

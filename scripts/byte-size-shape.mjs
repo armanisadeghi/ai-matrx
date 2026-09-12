@@ -21,6 +21,42 @@
  * detector requires `/ 1024`, `< 1024`, `>= 1024` etc. That asymmetry is the
  * whole reason the rule is usable — the repo has ~60 legitimate byte ceilings.
  *
+ * THE DECIMAL (SI) FAMILY (added 2026-09-11 after a second independent review).
+ * Every arm below used to start from a BINARY base — 1024 / 1048576 /
+ * 1073741824 — so a body that divides by the SI base was invisible to the whole
+ * detector, and five live twins sat in the fleet returning zero findings:
+ * `m.value / 1_000_000` + " MB" (cloud-browser telemetry, which has no B or KB
+ * tier at all and renders a 4 KB payload as a confident "0.0 MB"),
+ * `content_length / 1000` + "KB", `effectiveContent.length / 1000` + " KB", and
+ * `bytes_downloaded / 1e6` + " MB". Decimal is not a different capability — it
+ * is the SAME capability with a wrong divisor, which is precisely why it must
+ * be collapsed rather than tolerated. So the base literal now covers 1000,
+ * 1_000, 1e3, 1e6, 1e9, 1e12 and their long spellings alongside the binary
+ * three, and EVERY arm inherits the widening because they all read one shared
+ * literal pattern.
+ *
+ * THE MULTIPLY-FROM-GB ARM (added 2026-09-11, same review). One live twin runs
+ * the conversion the other way: `matrx-local`'s `fmtSize(gb: number)` receives
+ * GIGABYTES and MULTIPLIES — ``return `${Math.round(gb * 1024)} MB`;`` — so no
+ * division exists anywhere in the body. Its two collapsed siblings
+ * (`Devices.tsx`, `Voice.tsx`) were found by hand, not by this guard.
+ *
+ * WHY THIS DOES NOT BREAK THE CAPACITY-CONSTANT ASYMMETRY, which is still the
+ * whole reason the rule is usable. The multiply arm is narrower than the
+ * division arms in TWO independent ways, and a byte ceiling fails BOTH:
+ *   1. OPERAND SHAPE. It requires a NON-LITERAL (an identifier or property)
+ *      multiplied by the base: `gb * 1024`, `mb * 1024 * 1024`. Every capacity
+ *      ceiling in the fleet is literal × literal — `80 * 1024 * 1024`,
+ *      `16 * 1024 * 1024`, `64 * 1024 * 1024` — and literal × literal can never
+ *      match this pattern.
+ *   2. LABEL POSITION. It requires the unit label on the SAME LINE and OUTSIDE
+ *      any comment, because that is what "this number is being displayed" looks
+ *      like: ``${Math.round(gb * 1024)} MB``. The ±6-line window is deliberately
+ *      NOT extended to this arm: `const maxBytes = limitMb * 1024 * 1024; //
+ *      25 MB` is a ceiling computed from a variable, and under a window (or a
+ *      rule that read comments) it would be indistinguishable from a formatter.
+ *      Comments are stripped before the label test for exactly that reason.
+ *
  * THE SINGLE-UNIT FORM (added 2026-09-11 after an independent review). The
  * window above assumes the unit label sits near the arithmetic. One whole
  * idiom does not: the conversion is hoisted into a NAMED value at the top of a
@@ -79,9 +115,46 @@
 /** Unit-label literal: " B", "KB", "MiB"… inside a string or template. */
 const UNIT_LABEL_RE = /(?:^|[^A-Za-z])(?:[KMGT]i?B|B)(?:[^A-Za-z]|$)/;
 
+/**
+ * A byte BASE as it is actually written in source: the binary three (and the
+ * `1024 ** n` exponent spelling), plus the decimal/SI family in every spelling
+ * the fleet used — `1000`, `1_000`, `1e3`, `1_000_000`, `1e6`, `1e9`, `1e12`.
+ * Longest alternative first, and a trailing lookahead so `/ 10240` and
+ * `/ 10000` are not read as `/ 1024` and `/ 1000`.
+ *
+ * ONE shared literal, read by every arm: the decimal blindness existed because
+ * four arms each started from a divisor pattern that only knew about 1024.
+ */
+const BYTE_BASE_LITERAL =
+  "(?:1024(?:\\s*\\*\\*\\s*[234])?|1048576|1073741824|" +
+  "1_?000_?000_?000_?000|1_?000_?000_?000|1_?000_?000|1_?000|" +
+  "1e(?:12|9|6|3))(?![\\d_.])";
+
 /** A byte DIVISION or THRESHOLD COMPARISON. Multiplication never matches. */
-const BYTE_DIVISOR_RE =
-  /(?:\/\s*\(?\s*(?:1024|1048576|1073741824)|[<>]=?\s*\(?\s*(?:1024|1048576|1073741824))/;
+const BYTE_DIVISOR_RE = new RegExp(
+  `(?:\\/\\s*\\(?\\s*${BYTE_BASE_LITERAL}|[<>]=?\\s*\\(?\\s*${BYTE_BASE_LITERAL})`,
+);
+
+/**
+ * A NON-LITERAL scaled UP by a byte base — the GB-input idiom, `gb * 1024`.
+ * Literal × literal (`80 * 1024 * 1024`) can never match: the left branch needs
+ * an identifier or property before the `*`, and the right branch needs one
+ * after it. That is the first of the two guards keeping capacity ceilings out.
+ */
+const BYTE_SCALE_MULTIPLY_RE = new RegExp(
+  `(?:[A-Za-z_$][\\w$.\\]]*\\s*\\*\\s*${BYTE_BASE_LITERAL}` +
+    `|${BYTE_BASE_LITERAL}\\s*\\*\\s*[A-Za-z_$])`,
+);
+
+/**
+ * The line with its line comments and block comments removed. The multiply arm
+ * asks for a unit label on the same line, and a byte CEILING very often
+ * carries one in a trailing comment (`16 * 1024 * 1024; // 16 MB chunks`). A comment is
+ * documentation, not a rendered label.
+ */
+function withoutComments(line) {
+  return line.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/.*$/, " ");
+}
 
 /**
  * A callee whose NAME carries the unit — `formatGb(bytes / 1024 ** 3)`. The
@@ -182,7 +255,19 @@ export function byteShapeIn(source) {
     const divides =
       BYTE_DIVISOR_RE.test(line) ||
       (identifierDivisor !== null && identifierDivisor.test(line));
-    if (!divides) continue;
+    if (!divides) {
+      // THE MULTIPLY-FROM-GB ARM: no division anywhere, because the body takes
+      // GB/MB and scales UP. Needs BOTH a non-literal operand and a unit label
+      // on this line outside any comment — see the header for why a capacity
+      // ceiling fails both.
+      if (
+        BYTE_SCALE_MULTIPLY_RE.test(line) &&
+        UNIT_LABEL_RE.test(withoutComments(line))
+      ) {
+        out.push({ line: i + 1, text: line.trim() });
+      }
+      continue;
+    }
     // The single-unit form: the identifier carries the unit, so the label may
     // be anywhere — or nowhere at all, until it is typed into JSX far below.
     if (UNIT_NAMED_VALUE_RE.test(line) || UNIT_NAMED_CALLEE_RE.test(line)) {

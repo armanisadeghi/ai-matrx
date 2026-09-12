@@ -2,6 +2,12 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/styles/themes/utils";
+// THE package initials + avatar-color formatters (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). Recorded display decision: a multi-part name takes
+// FIRST + LAST, so "Ana Maria Rivera" is AR — this surface previously took
+// first + second and printed "AM". `avatarPaletteIndex` reproduces this
+// file's own hash exactly, so the 8-color palette assigns identical colors.
+import { avatarPaletteIndex, getInitials } from "@ai-matrx/kit/format";
 
 interface WAAvatarProps {
   name: string;
@@ -30,15 +36,6 @@ const dotSizeClasses: Record<NonNullable<WAAvatarProps["size"]>, string> = {
   xxl: "h-4 w-4 ring-[3px]",
 };
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 const fallbackPalette = [
   "bg-emerald-600 text-white",
   "bg-sky-600 text-white",
@@ -51,10 +48,7 @@ const fallbackPalette = [
 ];
 
 function colorFor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++)
-    hash = (hash * 31 + name.charCodeAt(i)) | 0;
-  return fallbackPalette[Math.abs(hash) % fallbackPalette.length];
+  return fallbackPalette[avatarPaletteIndex(name, fallbackPalette.length)];
 }
 
 export function WAAvatar({
@@ -70,7 +64,7 @@ export function WAAvatar({
       <Avatar className={cn(sizeClasses[size])}>
         {src ? <AvatarImage src={src} alt={name} /> : null}
         <AvatarFallback className={cn("font-medium", colorFor(name))}>
-          {initials(name) || "?"}
+          {getInitials(name)}
         </AvatarFallback>
       </Avatar>
       {showPresenceDot && online ? (

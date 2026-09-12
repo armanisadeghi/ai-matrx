@@ -42,7 +42,9 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 
 function sinceLabel(from: number | null): string | null {
   if (!from) return null;
-  return formatDurationMs(Date.now() - from, { style: "coarse" });
+  // THE PROSE VOICE. This lands mid-sentence — "over the last 5 minutes" —
+  // so it is `long`, not `coarse`. `coarse` said "over the last 5 min".
+  return formatDurationMs(Date.now() - from, { style: "long" });
 }
 
 interface NoteSaveFailureBannerProps {
