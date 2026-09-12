@@ -1063,7 +1063,10 @@ The emitted read expression is keyed on `id` in both the bounded-definer arm and
 set, so a registered entity without `id` can never take a generated policy (§2 base contract).
 For `legal.wc_impairment_definition` the fix is the **variant**, not the policy (§6d-1 corollary).
 
-### D266 — `iam.entity_read_expr`'s parent arms still emit the §6d planner trap: 251 component read policies (2026-08-26)
+### D266 — CLOSED 2026-09-12: `iam.entity_read_expr`'s parent arms emitted the §6d planner trap on 306 read policies (2026-08-26)
+
+**CLOSED 2026-09-12 06:24 UTC.** `migrations/iam_rls_read_lane_planner_trap_closed_d266.sql` was applied by the release train (ledgered, 10.0 s, every inline proof green). Verified live afterwards as the affected user through RLS: `files.files` primary-key read planning **1,289 ms → 6.4 ms**, `files.file_versions` 597 → 1.1 ms, `chat.message` 63 → 1.0 ms; `pg_policies` carries **0** trapped forms; `platform._ddl_guard()` carries lane (f) `rls_generator_planner_trap`. The 02:05 UTC `57014` rows are resolved with that proof. History below is kept as written.
+
 
 db-rules §6d bans `IN (SELECT unnest(<STABLE fn>))` in a policy — `unnest`'s planner support
 function const-folds the STABLE call, so Postgres **executes the recursive `SECURITY DEFINER`
