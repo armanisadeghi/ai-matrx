@@ -20,7 +20,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pause, Pencil, Plus, Save, Trash2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Button } from "@/components/ui/button";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -82,13 +82,17 @@ export function VariationsEditorWindow({
         promoteVariationToAgent({ columnId: active.columnId, name }),
       ).unwrap();
       setPromoteOpen(false);
-      toast.success(`Saved "${name}" as a new agent`, {
-        action: {
-          label: "Open in builder",
-          // agent-link-ok: a variation is saved as a new user agent for this user
-          onClick: () => router.push(`/agents/${newId}/build`),
+      recordToast.success(
+        { type: "agent", id: newId, title: name },
+        `Saved "${name}" as a new agent`,
+        {
+          action: {
+            label: "Open in builder",
+            // agent-link-ok: a variation is saved as a new user agent for this user
+            onClick: () => router.push(`/agents/${newId}/build`),
+          },
         },
-      });
+      );
     } catch (err) {
       toast.error(
         `Couldn't save agent: ${err instanceof Error ? err.message : err}`,

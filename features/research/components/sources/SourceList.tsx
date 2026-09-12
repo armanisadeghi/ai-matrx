@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import {
   ExternalLink,
   MoreVertical,
@@ -1156,7 +1156,10 @@ export default function SourceList() {
       try {
         await addTagToSources(tagId, [...selected]);
         const name = tagList.find((t) => t.id === tagId)?.name ?? "tag";
-        toast.success(`Tagged ${selected.size} source(s) with "${name}"`);
+        recordToast.success(
+          { type: "research_tag", id: tagId, title: name },
+          `Tagged ${selected.size} source(s) with "${name}"`,
+        );
         refreshTagState();
       } catch (err) {
         toast.error(
@@ -1178,7 +1181,8 @@ export default function SourceList() {
         const tag = await createTag(topicId, { name });
         const sourceIds = target === "__bulk__" ? [...selected] : [target];
         await addTagToSources(tag.id, sourceIds);
-        toast.success(
+        recordToast.success(
+          { type: "research_tag", id: tag.id, title: tag.name },
           `Created "${tag.name}" · tagged ${sourceIds.length} source(s)`,
         );
         setCreateTagTarget(null);

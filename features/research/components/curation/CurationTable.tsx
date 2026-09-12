@@ -11,7 +11,7 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -445,7 +445,10 @@ export default function CurationTable() {
     try {
       await addTagToSources(tagId, [...selected]);
       const name = tags.find((t) => t.id === tagId)?.name ?? "tag";
-      toast.success(`Tagged ${selected.size} source(s) with "${name}"`);
+      recordToast.success(
+        { type: "research_tag", id: tagId, title: name },
+        `Tagged ${selected.size} source(s) with "${name}"`,
+      );
       refresh();
     } catch (err) {
       toast.error(
@@ -461,7 +464,8 @@ export default function CurationTable() {
     try {
       const tag = await createTag(topicId, { name });
       await addTagToSources(tag.id, [...selected]);
-      toast.success(
+      recordToast.success(
+        { type: "research_tag", id: tag.id, title: tag.name },
         `Created "${tag.name}" · tagged ${selected.size} source(s)`,
       );
       setCreateTagOpen(false);

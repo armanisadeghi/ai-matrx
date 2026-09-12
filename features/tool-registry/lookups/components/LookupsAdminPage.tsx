@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import {
   listUiClients,
   listUiSurfaces,
@@ -265,7 +265,10 @@ function UiClientCrud() {
     try {
       await setUiClientActive(row.name, next);
       await load();
-      toast.success(`${row.name} ${next ? "activated" : "deactivated"}`);
+      recordToast.success(
+        { type: "ui_client", id: row.name, title: row.name },
+        `${row.name} ${next ? "activated" : "deactivated"}`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
     }
@@ -385,7 +388,10 @@ function UiClientDialog({
         sort_order: sortOrder,
         is_active: isActive,
       });
-      toast.success(`${name} saved`);
+      recordToast.success(
+        { type: "ui_client", id: name, title: name },
+        `${name} saved`,
+      );
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -676,7 +682,10 @@ function UiSurfaceDialog({
         sort_order: sortOrder,
         is_active: isActive,
       });
-      toast.success(`${fullName} saved`);
+      recordToast.success(
+        { type: "ui_surface", id: fullName, title: fullName },
+        `${fullName} saved`,
+      );
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");

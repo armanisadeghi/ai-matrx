@@ -11,7 +11,7 @@
 import Link from "next/link";
 import { ArrowRight, Library, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 
@@ -20,14 +20,24 @@ const TEASER_LIMIT = 4;
 export function LibraryCatalogPane() {
   const { items, loading, error, subscribe, unsubscribe } = useLibraryCatalog();
 
+  // These libraries are the `data_store` entity type (the catalog RPCs pass
+  // entity_type data_store) — the same token the full catalog page carries.
   const onSubscribe = async (id: string, name: string) => {
     const ok = await subscribe(id);
-    if (ok) toast.success(`Subscribed to ${name}`);
+    if (ok)
+      recordToast.success(
+        { type: "data_store", id, title: name },
+        `Subscribed to ${name}`,
+      );
     else toast.error("Could not subscribe");
   };
   const onUnsubscribe = async (id: string, name: string) => {
     const ok = await unsubscribe(id);
-    if (ok) toast.success(`Left ${name}`);
+    if (ok)
+      recordToast.success(
+        { type: "data_store", id, title: name },
+        `Left ${name}`,
+      );
     else toast.error("Could not unsubscribe");
   };
 

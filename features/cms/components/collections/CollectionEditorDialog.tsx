@@ -51,7 +51,7 @@ import {
   ShieldAlert,
   Trash2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast } from "@/lib/toast";
 import { parseOrderSpec } from "@/features/cms/collections/ordering";
 
 const FIELD_TYPES: { value: CollectionFieldType; label: string }[] = [
@@ -304,7 +304,10 @@ export function CollectionEditorDialog({
           collection.id,
           payload,
         );
-        toast.success(`Saved "${saved.name}"`);
+        recordToast.success(
+          { type: "cms-collection", id: saved.id, title: saved.name },
+          `Saved "${saved.name}"`,
+        );
         onSaved(saved, false);
       } else {
         const { collection: created, mintedDataApiKey } =
@@ -314,7 +317,10 @@ export function CollectionEditorDialog({
             name: form.name.trim(),
             ...payload,
           });
-        toast.success(`Created "${created.name}"`);
+        recordToast.success(
+          { type: "cms-collection", id: created.id, title: created.name },
+          `Created "${created.name}"`,
+        );
         onSaved(created, mintedDataApiKey);
       }
       onOpenChange(false);

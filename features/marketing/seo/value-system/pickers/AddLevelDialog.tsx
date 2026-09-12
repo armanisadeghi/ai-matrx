@@ -135,9 +135,14 @@ export function AddLevelDialog({
       void queryClient.invalidateQueries({
         queryKey: ["marketing", "gsc", "filter-level-vocabulary", siteId],
       });
-      toast.success(`“${name}” is now one of your ${copy.noun}s`, {
-        description: `It lives in your ${kind === "value_band" ? "value scale" : "geo bands"} — rename it, move its ${copy.unit}, or remove it from the vocabulary editor whenever you like.`,
-      });
+      // Deliberately NOT a recordToast: the value is a slug of free text
+      // ("local", "settings") that would match unrelated route segments.
+      toast.success(
+        `“${name}” is now one of your ${copy.noun}s`,
+        {
+          description: `It lives in your ${kind === "value_band" ? "value scale" : "geo bands"} — rename it, move its ${copy.unit}, or remove it from the vocabulary editor whenever you like.`,
+        },
+      );
       onCreated(value, name);
     },
     onError: (error) => {

@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -241,7 +241,10 @@ export function DigTab({
         template,
         organizationId,
       });
-      toast.success(`Adopted "${template.name}" — it's yours to edit now.`);
+      recordToast.success(
+        { type: "gsc_dig_rule", id: created.id, title: template.name },
+        `Adopted "${template.name}" — it's yours to edit now.`,
+      );
       onSelectRule(created.id);
       startEdit(created);
     } catch (error) {
@@ -261,6 +264,8 @@ export function DigTab({
     if (!ok) return;
     try {
       await mutations.remove.mutateAsync(rule.id);
+      // The row is gone: withdraw any toast still naming it.
+      dismissRecordToasts({ type: "gsc_dig_rule", id: rule.id });
       if (ruleId === rule.id) onSelectRule(null);
       // Never leave an editor open against a soft-deleted row.
       if (editingRuleId === rule.id) closeEditor();

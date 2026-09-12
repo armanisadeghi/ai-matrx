@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { convertToKebabCase } from "@/utils/text/stringUtils";
 
@@ -145,7 +145,10 @@ export function NewNodeDialog({
       {
         onSuccess: (node) => {
           onOpenChange(false);
-          toast.success(`"${node.label}" added at ${node.route}.`);
+          recordToast.success(
+            { type: "plan_node", id: node.id, title: node.label },
+            `"${node.label}" added at ${node.route}.`,
+          );
           onCreated(node);
         },
         onError: (error) =>

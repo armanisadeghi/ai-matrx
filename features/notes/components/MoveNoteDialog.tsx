@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { FolderInput, FolderPlus, Search } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Dialog,
@@ -104,7 +104,10 @@ export function MoveNoteDialog({
   const handleCreateFolder = async (folderName: string) => {
     await createFolder(folderName);
     await onConfirm(folderName);
-    toast.success(`Created ${folderName} and moved the note`);
+    recordToast.success(
+      { type: "note", id: noteId, title: noteName },
+      `Created ${folderName} and moved the note`,
+    );
     reset();
     onOpenChange(false);
   };

@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -254,7 +254,10 @@ export default function SystemJobsPage() {
       const updated = await patchSystemTask(taskId, body);
       applyPatched(updated);
       setEditing(null);
-      toast.success(`${updated.title} updated`);
+      recordToast.success(
+        { type: "system-task", id: taskId, title: updated.title },
+        `${updated.title} updated`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     } finally {
@@ -552,7 +555,10 @@ export default function SystemJobsPage() {
     try {
       const updated = await patchDbJob(j.jobid, { active: !j.active });
       applyDbPatched(updated);
-      toast.success(`${name} ${updated.active ? "enabled" : "disabled"}`);
+      recordToast.success(
+        { type: "db-job", id: String(j.jobid), title: name },
+        `${name} ${updated.active ? "enabled" : "disabled"}`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     } finally {

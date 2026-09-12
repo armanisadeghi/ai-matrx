@@ -19,7 +19,7 @@
 
 import { useState } from "react";
 import { Globe2, Link2, Lock, Building2, Check, Copy } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -88,7 +88,10 @@ export function SetVisibilityControl({
       return;
     }
     onChange(res.data.visibility);
-    toast.success(`Sharing set to "${OPTIONS.find((o) => o.value === next)?.label}"`);
+    recordToast.success(
+      { type: "flashcard_set", id: setId },
+      `Sharing set to "${OPTIONS.find((o) => o.value === next)?.label}"`,
+    );
   };
 
   const copyLink = async () => {

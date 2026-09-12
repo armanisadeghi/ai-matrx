@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@ai-matrx/design-system";
@@ -308,7 +308,14 @@ export function SkillDetailEditor({
         }
         const result = await dispatch(createSkill({ draft }));
         if (createSkill.fulfilled.match(result)) {
-          toast.success(`Created “${result.payload.label}”.`);
+          recordToast.success(
+            {
+              type: "skill",
+              id: result.payload.id,
+              title: result.payload.label,
+            },
+            `Created “${result.payload.label}”.`,
+          );
           // Stay on the editor for the new row — but flip to edit mode.
           setChanged(new Set());
           setDraft(skillRowToDraft(result.payload));
@@ -325,7 +332,14 @@ export function SkillDetailEditor({
       // is_active; non-admins only ever soft-delete via the trash button.
       const result = await dispatch(patchSkill({ skillId: skill.id, patch }));
       if (patchSkill.fulfilled.match(result)) {
-        toast.success(`Saved “${result.payload.label}”.`);
+        recordToast.success(
+          {
+            type: "skill",
+            id: result.payload.id,
+            title: result.payload.label,
+          },
+          `Saved “${result.payload.label}”.`,
+        );
         setChanged(new Set());
       }
     } catch (err) {
@@ -347,6 +361,7 @@ export function SkillDetailEditor({
     if (!confirmed) return;
     try {
       await dispatch(deleteSkill({ skillId: skill.id })).unwrap();
+      dismissRecordToasts({ type: "skill", id: skill.id });
       toast.success(`Deleted “${skill.label}”.`);
       onBack();
     } catch (err) {

@@ -45,7 +45,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { cn } from "@/styles/themes/utils";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import { useMyCuratorships, type Curatorship } from "@/features/rag/hooks/useMyCuratorships";
@@ -98,7 +98,12 @@ export function LibraryCuratePage() {
       }),
     onSuccess: async (created) => {
       setNewFor(null);
-      toast.success(`Draft “${created.name}” created. Nothing is shared until you submit it.`);
+      // `seo_starter_pack` is the library entity token for these packs
+      // (features/rag/hooks/useLibraryResources.ts).
+      recordToast.success(
+        { type: "seo_starter_pack", id: created.id, title: created.name },
+        `Draft “${created.name}” created. Nothing is shared until you submit it.`,
+      );
       await queryClient.invalidateQueries({ queryKey: adminPacksQueryKey });
       await queryClient.invalidateQueries({ queryKey: ["library", "my-curatorships"] });
       select(created.id);

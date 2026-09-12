@@ -19,7 +19,7 @@ import {
   Trash2,
   Undo2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
@@ -265,6 +265,7 @@ export function DealsPage() {
     if (!ok) return;
     try {
       await deleteDeal(row.id);
+      dismissRecordToasts({ type: "deal", id: row.id });
       list.removeRow(row.id);
       toast.success(`"${row.name}" deleted`);
     } catch (e) {
@@ -295,7 +296,10 @@ export function DealsPage() {
                     try {
                       await restoreDeal(row.id);
                       list.removeRow(row.id);
-                      toast.success(`"${row.name}" restored`);
+                      recordToast.success(
+                        { type: "deal", id: row.id, title: row.name },
+                        `"${row.name}" restored`,
+                      );
                     } catch (e) {
                       toast.error(
                         e instanceof Error ? e.message : "Restore failed",
@@ -347,7 +351,10 @@ export function DealsPage() {
                           });
                           list.refresh();
                           refreshBoard();
-                          toast.success(`"${row.name}" → ${stage.name}`);
+                          recordToast.success(
+                            { type: "deal", id: row.id, title: row.name },
+                            `"${row.name}" → ${stage.name}`,
+                          );
                         } catch (e) {
                           toast.error(
                             e instanceof Error ? e.message : "Move failed",

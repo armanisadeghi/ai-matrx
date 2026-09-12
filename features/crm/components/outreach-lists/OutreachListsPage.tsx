@@ -16,7 +16,7 @@ import {
   MoreVertical,
   Plus,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -222,7 +222,10 @@ export function OutreachListsPage() {
               try {
                 await setOutreachListStatus(row, next);
                 await load();
-                toast.success(`${row.name} → ${next}`);
+                recordToast.success(
+                  { type: "crm-outreach-list", id: row.id, title: row.name },
+                  `${row.name} → ${next}`,
+                );
               } catch (e) {
                 toast.error(e instanceof Error ? e.message : "Update failed");
               }
@@ -247,6 +250,10 @@ export function OutreachListsPage() {
                 if (!ok) return;
                 try {
                   await deleteOutreachList(row.id);
+                  dismissRecordToasts({
+                    type: "crm-outreach-list",
+                    id: row.id,
+                  });
                   setRows((prev) => prev.filter((r) => r.id !== row.id));
                   toast.success(`${row.name} deleted`);
                 } catch (e) {
@@ -427,7 +434,10 @@ export function OutreachListsPage() {
           open={createOpen}
           onOpenChange={setCreateOpen}
           onCreated={(list) => {
-            toast.success(`${list.name} created`);
+            recordToast.success(
+              { type: "crm-outreach-list", id: list.id, title: list.name },
+              `${list.name} created`,
+            );
             router.push(`/crm/outreach-lists/${list.id}`);
           }}
         />

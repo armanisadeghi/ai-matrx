@@ -19,7 +19,7 @@ import {
   Loader2,
   ClipboardPaste,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,7 +78,10 @@ export function ImportSetView() {
       setCreating(true);
       try {
         const outcome = await importPortableJson(text);
-        toast.success(`Imported "${outcome.name}" with ${outcome.cardCount} cards`);
+        recordToast.success(
+          { type: "flashcard_set", id: outcome.setId, title: outcome.name },
+          `Imported "${outcome.name}" with ${outcome.cardCount} cards`,
+        );
         startNavigation(() => router.push(`${EDU_BASE}/${outcome.setId}`));
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Import failed");
@@ -110,7 +113,8 @@ export function ImportSetView() {
         format: "delimited",
         skippedLines: skipped,
       });
-      toast.success(
+      recordToast.success(
+        { type: "flashcard_set", id: outcome.setId, title: outcome.name },
         `Imported "${outcome.name}" with ${outcome.cardCount} ${outcome.cardCount === 1 ? "card" : "cards"}`,
       );
       startNavigation(() => router.push(`${EDU_BASE}/${outcome.setId}`));

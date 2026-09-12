@@ -32,7 +32,7 @@
 import { useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Coins, Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
@@ -153,12 +153,16 @@ export function WorthConvertDialog({
       }),
     onSuccess: () => {
       const moved = preview.data?.moved_keywords ?? 0;
-      toast.success(`“${row.value_label}” is worth ${signed(parsed)} points`, {
-        description:
-          moved > 0
-            ? `${formatCount(moved)} keyword${moved === 1 ? "" : "s"} changed level.`
-            : "No keyword changed level — the scores moved, the bands did not.",
-      });
+      recordToast.success(
+        { type: "facet_value", id: row.value_id, title: row.value_label },
+        `“${row.value_label}” is worth ${signed(parsed)} points`,
+        {
+          description:
+            moved > 0
+              ? `${formatCount(moved)} keyword${moved === 1 ? "" : "s"} changed level.`
+              : "No keyword changed level — the scores moved, the bands did not.",
+        },
+      );
       for (const key of valueSurfaceQueryKeys(siteId)) {
         void queryClient.invalidateQueries({ queryKey: key });
       }

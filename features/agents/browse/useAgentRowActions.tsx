@@ -13,7 +13,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
@@ -202,9 +202,13 @@ export function useAgentRowActions({
               : agent.id,
           ),
         ).unwrap();
-        toast.success(`Duplicated "${agent.name}"`, {
-          action: toastDoor("agent", newAgentId),
-        });
+        recordToast.success(
+          // The toast is about the COPY (its door opens it); the source's
+          // name is quoted, never used as identity.
+          { type: "agent", id: newAgentId },
+          `Duplicated "${agent.name}"`,
+          { action: toastDoor("agent", newAgentId) },
+        );
         refresh();
       } catch (err) {
         toast.error("Could not duplicate agent", {
@@ -226,6 +230,7 @@ export function useAgentRowActions({
       try {
         await dispatch(deleteAgent(agent.id)).unwrap();
         removeRow(agent.id);
+        dismissRecordToasts({ type: "agent", id: agent.id });
         toast.success(`Deleted "${agent.name}"`);
         setActionAgent(null);
       } catch (err) {

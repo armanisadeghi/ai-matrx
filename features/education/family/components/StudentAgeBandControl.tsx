@@ -14,7 +14,7 @@
 
 import { useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { coppaService } from "@/features/education/compliance/coppaService";
 import type { AgeBand } from "@/features/education/compliance/types";
@@ -47,7 +47,8 @@ export function StudentAgeBandControl({
       return;
     }
     setDone(band);
-    toast.success(
+    recordToast.success(
+      { type: "student", id: studentUserId, title: studentLabel },
       `${studentLabel}'s age is now set to ${
         BANDS.find((b) => b.value === band)?.label ?? band
       }.`,

@@ -19,7 +19,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, ArrowRightLeft, AlertTriangle } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
@@ -127,11 +127,15 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
       }
       // Honest feedback: what moved, and what stayed on purpose.
       const kept = result.preserved_tables.length;
-      toast.success(`Moved ${result.site_name} to ${result.organization_name}`, {
-        description:
-          `${result.rows_moved} record${result.rows_moved === 1 ? "" : "s"} re-homed` +
-          (kept ? `; ${kept} append-only history table${kept === 1 ? "" : "s"} left with the previous organization on purpose.` : "."),
-      });
+      recordToast.success(
+        { type: "web_site", id: site.id, title: result.site_name },
+        `Moved ${result.site_name} to ${result.organization_name}`,
+        {
+          description:
+            `${result.rows_moved} record${result.rows_moved === 1 ? "" : "s"} re-homed` +
+            (kept ? `; ${kept} append-only history table${kept === 1 ? "" : "s"} left with the previous organization on purpose.` : "."),
+        },
+      );
       if (result.brand?.action === "kept" && result.brand.warning) {
         toast.warning(result.brand.warning);
       }

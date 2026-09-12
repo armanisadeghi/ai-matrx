@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import {
   createSurface,
   SURFACE_TIERS,
@@ -97,7 +97,13 @@ export function NewSurfaceDialog({
         parent_surface_name:
           parentSurface === PARENT_NONE ? null : parentSurface,
       });
-      toast.success(`${fullName} created`);
+      // A surface name carries a slash, so it can never be a whole path
+      // segment; its admin route ends in the LOCAL part, and that is what
+      // keeps this toast alive through the caller's navigation to it.
+      recordToast.success(
+        { type: "ui_surface", id: fullName, title: local },
+        `${fullName} created`,
+      );
       onCreated(fullName);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");

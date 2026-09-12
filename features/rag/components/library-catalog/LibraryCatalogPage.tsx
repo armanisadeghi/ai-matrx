@@ -43,7 +43,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -426,12 +426,28 @@ export function LibraryCatalogPage() {
               onBack={() => select(null)}
               onSubscribe={async () => {
                 const ok = await catalog.subscribe(selected);
-                if (ok) toast.success(`Subscribed to ${selected.name}`);
+                if (ok)
+                  recordToast.success(
+                    {
+                      type: selected.entityType,
+                      id: selected.id,
+                      title: selected.name,
+                    },
+                    `Subscribed to ${selected.name}`,
+                  );
                 else toast.error(catalog.error ?? "Could not subscribe");
               }}
               onUnsubscribe={async () => {
                 const ok = await catalog.unsubscribe(selected);
-                if (ok) toast.success(`Left ${selected.name}`);
+                if (ok)
+                  recordToast.success(
+                    {
+                      type: selected.entityType,
+                      id: selected.id,
+                      title: selected.name,
+                    },
+                    `Left ${selected.name}`,
+                  );
                 else toast.error(catalog.error ?? "Could not unsubscribe");
               }}
             />

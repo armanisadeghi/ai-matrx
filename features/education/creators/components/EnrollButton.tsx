@@ -13,7 +13,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { GraduationCap, CreditCard, Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { startClassCheckout } from "@/features/education/classes/service";
@@ -89,7 +89,10 @@ export function EnrollButton({ classId, title, accessMode, price, handle }: Enro
       } else if (outcome === "already_member") {
         toast.success(`You're already in "${title}"`);
       } else {
-        toast.success(`You're enrolled in "${title}"`);
+        recordToast.success(
+          { type: "class", id: classId, title },
+          `You're enrolled in "${title}"`,
+        );
       }
     } catch (e) {
       toast.error("Could not enroll", {
