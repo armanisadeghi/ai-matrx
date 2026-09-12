@@ -46,8 +46,10 @@ in the same change.
 7. **Mutations are optimistic + rollback**, never spinner-then-refetch, and every REST write ships a
    `requestId` registered in `redux/request-ledger.ts` — that is what lets realtime middleware ignore
    echoes of our own writes.
-8. **Reads hit Supabase directly, never Python.** Adding a `getJson('/files/...')` for plain table
-   data is a regression.
+8. **Reads hit Supabase directly, except exact-id hydration.** `useEnsureCloudFile` is the one
+   exception: it calls the authenticated `GET /files/{id}?include_urls=false` access gate because
+   the browser RLS planner can time out before a primary-key lookup. Do not reintroduce a browser
+   `files.files` exact-id read there; normal lists and metadata writes remain direct Supabase.
 9. **Renderable media identity and bytes are centrally cached.** Keep `fileId` as identity; use
    `useFileAsset` to select a persisted display variant and the shared `useFileBlob` cache whenever
    private image pixels must not depend on the file-session cookie. `FilePreview`,
@@ -114,6 +116,12 @@ in the same change.
 and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
+
+- **2026-09-11 — Exact-id hydration bypasses browser RLS planning.** Canonical
+  `useEnsureCloudFile` metadata reads now use the authenticated file record gate with
+  `include_urls=false`; it authorizes before returning metadata and avoids URL/thumbnail resolution.
+  The retired narrow PostgREST projection was deleted so no hydration consumer can silently restore
+  the timeout path.
 
 - **2026-09-11 — Partial deep-link records keep an honest preview loading state.** `FilePreview`
   now waits for canonical render fields before dispatching by MIME/type, preventing a cold PDF
