@@ -27,9 +27,17 @@ import { SANDBOX_PROTOCOL_VERSION } from "../protocol";
 
 describe("a resource the frame's CSP refuses", () => {
     let uninstall: (() => void) | null = null;
+    const openChannels: NodeMessageChannel[] = [];
     afterEach(() => {
         uninstall?.();
         uninstall = null;
+        // Close every port: an open MessagePort keeps the jest worker alive
+        // and leaks this file's state into whatever runs next.
+        for (const channel of openChannels) {
+            channel.port1.close();
+            channel.port2.close();
+        }
+        openChannels.length = 0;
         document.body.innerHTML = "";
     });
 
@@ -38,6 +46,7 @@ describe("a resource the frame's CSP refuses", () => {
         const { mount } = recordingMount();
         uninstall = installTrackedFrameBridge(mount);
         const channel = new NodeMessageChannel();
+        openChannels.push(channel);
         const fromFrame: unknown[] = [];
         (channel.port1 as unknown as MessagePort).onmessage = (event) => {
             fromFrame.push((event as MessageEvent).data);

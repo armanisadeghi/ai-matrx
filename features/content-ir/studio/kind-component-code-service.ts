@@ -131,6 +131,41 @@ export interface SaveKindComponentCodeArgs {
 const SHAPE_AUTHORING_REFUSAL_HEAD =
   "Only AI Matrx staff can write shape component code right now";
 
+/**
+ * 🚨 THE REQUEST NEVER REACHED THE DATABASE.
+ *
+ * `db.matrxserver.com` sits behind Cloudflare, and Cloudflare's managed WAF
+ * inspects the PATCH body. A component body is source code, so it can trip a
+ * SQL-injection or malformed-data rule and be answered with Cloudflare's own
+ * HTML block page — which arrives here as a PostgREST "error" whose `message`
+ * is an entire HTML document. Wrapped by `operationFailed`, the author is told
+ * "We couldn't save this Shape's component code." and nothing else: no reason,
+ * no remedy, and no hint that the database never saw the save at all.
+ *
+ * MEASURED, 2026-09-12 (B-36): two live bodies — `study_notes_readout` and
+ * `study_summary_readout` — cannot be saved through this path even when
+ * written back BYTE-FOR-BYTE UNCHANGED. The narrowest blocked payload found by
+ * bisection is one statement from their markdown parsers:
+ * `const h = /^(#{1,6})\s+(.*)$/.exec(t);` (the regex on its own is allowed).
+ *
+ * Nothing in this file can unblock it — the fix is a WAF rule exception for
+ * this endpoint. What this file owes the author is the truth about what
+ * happened, which is what the sentence below says.
+ */
+export function edgeBlockedRefusal(error: unknown): string | null {
+    if (typeof error !== "object" || error === null) return null;
+    const message =
+        "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+    if (!/^\s*<(!doctype|html)/i.test(message)) return null;
+    const ray = /Cloudflare Ray ID:\s*<strong[^>]*>([^<]+)</i.exec(message)?.[1];
+    return (
+        "This component's code was blocked by the security filter in front of the database, so it was never saved. " +
+        "It is the code itself that triggered the filter, not your account: the same body is refused even when nothing in it changed. " +
+        (ray ? `Quote this reference when you report it: Cloudflare Ray ID ${ray.trim()}. ` : "") +
+        "Ask AI Matrx to lift the filter for Shape component saves."
+    );
+}
+
 function shapeAuthoringRefusal(error: unknown): string | null {
   if (typeof error !== "object" || error === null) return null;
   const fields = error as { message?: unknown; hint?: unknown };
@@ -219,6 +254,8 @@ export async function saveKindComponentCode(
     }
     const authoringRefusal = shapeAuthoringRefusal(error);
     if (authoringRefusal) throw new Error(authoringRefusal);
+    const edgeRefusal = edgeBlockedRefusal(error);
+    if (edgeRefusal) throw new Error(edgeRefusal);
     throw operationFailed("save this Shape's component code", error);
   }
 }
