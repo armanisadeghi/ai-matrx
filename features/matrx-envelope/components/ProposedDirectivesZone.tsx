@@ -24,7 +24,7 @@
  * or phrased.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   AlertTriangle,
@@ -131,6 +131,14 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const dispatch = useAppDispatch();
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const [busy, setBusy] = useState(false);
+  // 🚨 A REF, NOT JUST `busy` (V-24, live 2026-09-12). `disabled={busy}` is a
+  // render away: two clicks inside one React tick both run `onApprove` before
+  // the re-render disables anything, and the verifier's double-click sent two
+  // POSTs that wrote two projects. The ref closes the window synchronously, in
+  // the same tick as the click. It is NECESSARY AND NOT SUFFICIENT — the fix is
+  // the server's claim under the ledger's primary key (aidream round 3); this
+  // only stops the client asking twice.
+  const inFlight = useRef(false);
 
   // The slug's class + noun ARE the title — derived from the one identity, so
   // the card can never name the action differently from what it will apply,
@@ -153,6 +161,8 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
     );
 
   const onApprove = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     const body: DirectiveConfirmRequest = {
       directive: proposal.directive,
@@ -204,6 +214,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
             ? err.message
             : "That couldn't be applied just now. Please try again.";
       toast.error(message);
+      inFlight.current = false;
       setBusy(false);
     }
   };
@@ -274,13 +285,21 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
           <X className="size-4" />
           Decline
         </Button>
-        <Button size="sm" onClick={onApprove} disabled={busy}>
+        <Button
+          size="sm"
+          onClick={onApprove}
+          disabled={busy}
+          aria-busy={busy}
+          data-approve-state={busy ? "applying" : "idle"}
+        >
           {busy ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <Check className="size-4" />
           )}
-          Approve
+          {/* The PENDING STATE says what is happening, so a click that looks
+              like it did nothing is never mistaken for one that did. */}
+          {busy ? "Applying…" : "Approve"}
         </Button>
       </div>
     </div>
