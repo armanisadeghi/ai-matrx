@@ -9,6 +9,7 @@ import Editor, {
 // Monaco's editor type is pulled directly from @monaco-editor/react re-exports
 // where possible; the handful of shapes we need are narrowed locally.
 import { configureMonaco } from "./monaco-config";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useMonacoTheme } from "./useMonacoTheme";
 
 /** Minimal shape of the Monaco editor instance we need. Keeping this loose
@@ -133,6 +134,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
 }) => {
   const [isConfigured, setIsConfigured] = useState(false);
   const isDark = useMonacoTheme();
+  const isMobile = useIsMobile();
   const editorRef = useRef<StandaloneCodeEditor | null>(null);
   const monacoRef = useRef<MonacoNamespace | null>(null);
   // Keep latest onSave in a ref so the keybinding always sees the fresh
@@ -219,7 +221,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
         options={{
           readOnly,
           automaticLayout: true,
-          minimap: { enabled: true, renderCharacters: false },
+          minimap: { enabled: !isMobile, renderCharacters: false },
           fontSize: 13,
           fontLigatures: true,
           fontFamily:

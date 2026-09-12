@@ -285,6 +285,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <SidePanelHeader title="Search" subtitle={filesystem.label} />
+      <p className="truncate px-2 py-1 text-xs text-muted-foreground" title={filesystem.rootPath}>Search in {filesystem.rootPath}</p>
       <div className="flex flex-col gap-1.5 border-b border-neutral-200 p-2 dark:border-neutral-800">
         <div className="flex h-6 items-center gap-1 rounded-sm bg-neutral-100 p-0.5 text-[10px] dark:bg-neutral-900">
           <ModeButton
@@ -328,8 +329,9 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
         {mode === "content" && (
           <div className="flex items-center justify-between text-[10px] text-neutral-500 dark:text-neutral-400">
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1 cursor-pointer">
+              <label className="flex min-h-11 items-center gap-1 cursor-pointer md:min-h-0">
                 <Checkbox
+                  aria-label="Match case"
                   checked={caseSensitive}
                   onCheckedChange={(v) => setCaseSensitive(v === true)}
                   className="h-3 w-3 shrink-0"
@@ -337,8 +339,9 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
                 Aa
               </label>
               {supportsServerContent && (
-                <label className="flex items-center gap-1 cursor-pointer">
+                <label className="flex min-h-11 items-center gap-1 cursor-pointer md:min-h-0">
                   <Checkbox
+                    aria-label="Use regular expression"
                     checked={regex}
                     onCheckedChange={(v) => setRegex(v === true)}
                     className="h-3 w-3 shrink-0"

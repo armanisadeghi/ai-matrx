@@ -29,6 +29,7 @@ import { useCodeWorkspaceUrlState } from "./hooks/useCodeWorkspaceUrlState";
 import { useTabRealtimeWatcher } from "./hooks/useTabRealtimeWatcher";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  revealView,
   selectActiveSandboxId,
   selectActiveView,
   selectFarRightOpen,
@@ -42,6 +43,7 @@ import {
   selectTerminalOpen,
   setOpen as setBottomOpen,
 } from "./redux/terminalSlice";
+import { ACTIVITY_VIEWS } from "./activity-bar/activity-views";
 import type { ActivityViewId } from "./types";
 import { useSandboxHeartbeat } from "@/hooks/sandbox/use-sandbox-heartbeat";
 import type { SandboxInstance } from "@/types/sandbox";
@@ -263,7 +265,7 @@ function buildMobilePanels({
       id: "side-panel",
       label: activityViewLabel(activeView),
       icon: FolderTree,
-      content: <SidePanelRouter />,
+      content: <MobileWorkspacePane />,
       open: sideOpen,
       onOpenChange: onSideOpenChange,
     },
@@ -357,3 +359,28 @@ const TabRealtimeBridge: React.FC = () => {
   useTabRealtimeWatcher();
   return null;
 };
+
+/** Touch navigation uses the same view registry as the desktop activity bar. */
+function MobileWorkspacePane() {
+  const dispatch = useAppDispatch();
+  const activeView = useAppSelector(selectActiveView);
+  return (
+    <div className="flex min-h-0 flex-col">
+      <label className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
+        <span>Workspace</span>
+        <select
+          aria-label="Workspace pane"
+          value={activeView === "git" ? "source-control" : activeView}
+          className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-base text-foreground"
+          onChange={(event) => {
+            const view = ACTIVITY_VIEWS.find((item) => item.id === event.target.value);
+            if (view) dispatch(revealView(view.id));
+          }}
+        >
+          {ACTIVITY_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
+        </select>
+      </label>
+      <SidePanelRouter />
+    </div>
+  );
+}

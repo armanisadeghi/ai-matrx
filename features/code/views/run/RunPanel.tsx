@@ -98,7 +98,7 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
     } finally {
       setLoading(false);
     }
-  }, [filesystem]);
+  }, [filesystem, root]);
 
   useEffect(() => {
     void load();
@@ -149,6 +149,7 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
           />
         }
       />
+      <p className="truncate px-2 py-1 text-xs text-muted-foreground" title={root}>Scripts in {root}</p>
       <div className="flex-1 overflow-y-auto">
         {error && (
           <div className="mx-2 mt-2 rounded border border-red-300 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">

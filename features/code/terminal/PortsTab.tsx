@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   Check,
@@ -62,7 +63,11 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
       const resp = await fetch(`/api/sandbox/${activeSandboxId}/ports`, {
         signal: ctl.signal,
       });
-      if (!resp.ok) throw new Error(`Ports fetch failed (${resp.status})`);
+      if (!resp.ok) {
+        const message = `Unable to load sandbox ports (${resp.status}). Retry or check sandbox status.`;
+        captureError({ source: "api-http", relation: "GET /api/sandbox/:id/ports", code: "sandbox_ports_http_error", message, userMessage: message, status: resp.status });
+        throw new Error(message);
+      }
       const data = (await resp.json()) as PortsResponse;
       setPorts(data.ports ?? []);
       setError(null);
@@ -129,7 +134,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
         <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
           <Network size={12} />
           <span>
-            {ports?.length ?? 0} listening port{ports?.length === 1 ? "" : "s"}
+            {error ? "Port status unavailable" : ports === null ? "Checking listening ports…" : `${ports.length} listening port${ports.length === 1 ? "" : "s"}`}
           </span>
         </div>
         <button
