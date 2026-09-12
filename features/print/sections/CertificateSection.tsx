@@ -22,7 +22,7 @@ import {
 } from "@ai-matrx/print/certificate";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { Field, SectionShell, StatusChip, announcePrintOutcome, controlClass } from "./shared";
+import { Field, SectionShell, StatusChip, announcePrintOutcome, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_CERTIFICATE, SAMPLE_WORKBOOK_SECTIONS } from "./sample-data";
 
 export function CertificateSection() {

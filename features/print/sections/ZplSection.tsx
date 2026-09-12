@@ -17,7 +17,7 @@ import { LABEL_TEMPLATES, type LabelTemplate } from "@ai-matrx/print/labels";
 import { DEFAULT_ZPL_DPI, assertZplScannable, labelsToZpl, type ZplDpi } from "@ai-matrx/print/zpl";
 import { Button } from "@/components/ui/button";
 import { useClipboard } from "@/hooks/useClipboard";
-import { Field, SectionShell, StatusChip, byteLength, controlClass } from "./shared";
+import { Field, SectionShell, StatusChip, byteLength, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_ZPL_LABELS } from "./sample-data";
 
 const ROLL_TEMPLATES: LabelTemplate[] = LABEL_TEMPLATES.filter((t) => t.kind === "roll");

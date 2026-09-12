@@ -20,7 +20,7 @@ import {
 import { LabelSheetPreview } from "@ai-matrx/print/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { Field, SectionShell, StatusChip, byteLength, controlClass } from "./shared";
+import { Field, SectionShell, StatusChip, byteLength, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_FORMAT_ROWS } from "./sample-data";
 
 const EC_LEVELS: QrEcLevel[] = ["L", "M", "Q"];
@@ -100,7 +100,7 @@ export function LabelsSection() {
         setBusy("pdf");
         try {
             const { downloadLabelsPdf } = await import("@ai-matrx/print/labels");
-            await downloadLabelsPdf({ labels, templateId }, templateId, { ecLevel, startAtLabel }, "print-studio-labels");
+            await downloadLabelsPdf({ labels, templateId }, templateId, { ecLevel, startAtLabel }, "matrx-labels");
             toast.success("Label PDF downloaded");
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "PDF generation failed");

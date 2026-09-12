@@ -1,7 +1,7 @@
 /**
- * Print Studio — realistic sample payloads.
+ * Print hub — realistic sample payloads.
  *
- * Every section starts populated: an empty demo proves nothing, and Arman
+ * Every section starts populated: an empty form proves nothing, and Arman
  * should be able to hit Print on arrival. Kept out of the components so the
  * rows stay easy to read and swap.
  */
