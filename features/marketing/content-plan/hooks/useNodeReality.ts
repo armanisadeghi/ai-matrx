@@ -208,6 +208,9 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                         cmsSite: args.cmsSiteId,
                         nodeId: args.nodeId,
                         write: true,
+                        // A live page is re-authored into its DRAFT; the public
+                        // keeps seeing the current version until it is published.
+                        includePublished: args.cmsPage?.isPublished === true,
                     });
                     toast.success(
                         preview.wrote

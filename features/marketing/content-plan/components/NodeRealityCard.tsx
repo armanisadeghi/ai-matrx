@@ -71,6 +71,7 @@ const ACTION_ICON = {
     "write-content": BrainCircuit,
     publish: Rocket,
     "edit-in-cms": PenLine,
+    rewrite: RefreshCw,
 } as const;
 
 export function NodeRealityCard({
@@ -128,9 +129,8 @@ export function NodeRealityCard({
      * Rewriting overwrites the CMS draft — human work included — so it is
      * confirmed wherever it is offered (the confirmation itself lives in
      * `../lib/reality-actions`, shared with the pipeline rail). It is only
-     * reachable on a page that is NOT yet published: the server's authoring
-     * pipeline refuses published pages outright, so offering it there would be
-     * a button that cannot work.
+     * offered on a draft here and, for a LIVE page, as the `stale` verdict's
+     * own action (the server writes the rewrite into a new draft).
      */
     async function rewrite() {
         await confirmRewritePage(reality);
@@ -160,6 +160,10 @@ export function NodeRealityCard({
                 await confirmPublishPage(reality, node.route ?? node.label);
                 return;
             }
+            case "rewrite": {
+                await confirmRewritePage(reality);
+                return;
+            }
             default:
                 return;
         }
@@ -170,7 +174,7 @@ export function NodeRealityCard({
     const retryAction =
         verdict.action === "create-page"
             ? ("create" as const)
-            : verdict.action === "write-content"
+            : verdict.action === "write-content" || verdict.action === "rewrite"
               ? ("write" as const)
               : verdict.action === "publish"
                 ? ("publish" as const)

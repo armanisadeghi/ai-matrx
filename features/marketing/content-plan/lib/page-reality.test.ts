@@ -80,8 +80,8 @@ describe("judgePageReality", () => {
             nodeUpdatedAt: "2026-08-09T00:00:00Z",
         });
         expect(verdict.state).toBe("stale");
-        // NOT "rewrite" — the server refuses to re-author a published page.
-        expect(verdict.action).toBe("edit-in-cms");
+        // The server re-authors a live page into a new DRAFT (include_published).
+        expect(verdict.action).toBe("rewrite");
     });
 
     it("settles on live when the page is published and current", () => {
