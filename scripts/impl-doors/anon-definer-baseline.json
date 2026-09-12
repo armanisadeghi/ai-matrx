@@ -1,7 +1,7 @@
 {
-  "count": 369,
-  "why": "SECURITY DEFINER, non-trigger functions that `anon` can EXECUTE and that carry NO platform.client_callable_door row. Every one is a door the published anon key can reach that nobody declared safe for an anonymous caller. Captured after B-14 / DD-110 closed the 159-function class-C population from common-docs/projects/data-doctrine-adoption/discovery/DEFINER-CENSUS.md (anon-callable definers 533 -> 421; undeclared 481 -> 370). This number may only SHRINK - never raise it to clear a finding. Shrink it by declaring the door (platform.client_callable_door) when an anonymous caller must reach the function by design, or by revoking anon EXECUTE when it must not. Lower this file to match whenever the count drops. 2026-09-11 (B-15/DD-116a): lowered 370 -> 369 after public.get_published_app_with_prompt(text,uuid) was gated and declared as a door.",
-  "capturedAt": "2026-09-11",
+  "count": 364,
+  "why": "SECURITY DEFINER, non-trigger functions that `anon` can EXECUTE and that carry NO platform.client_callable_door row. Every one is a door the published anon key can reach that nobody declared safe for an anonymous caller. Captured after B-14 / DD-110 closed the 159-function class-C population from common-docs/projects/data-doctrine-adoption/discovery/DEFINER-CENSUS.md (anon-callable definers 533 -> 421; undeclared 481 -> 370). This number may only SHRINK - never raise it to clear a finding. Shrink it by declaring the door (platform.client_callable_door) when an anonymous caller must reach the function by design, or by revoking anon EXECUTE when it must not. Lower this file to match whenever the count drops. 2026-09-11 (B-15/DD-116a): lowered 370 -> 369 after public.get_published_app_with_prompt(text,uuid) was gated and declared as a door. 2026-09-12 (B-35/DD-146): lowered 369 -> 364 after anon EXECUTE was revoked from platform.retrofit_entity, platform.create_entity_table, platform._drop_custom_field_index, platform.enforce_definer_client_grants and public.org_admin_remove_member.",
+  "capturedAt": "2026-09-12",
   "capturedBy": "B-14 / DD-110 definer sweep",
   "anonCallableDefinersAtCapture": 421
 }

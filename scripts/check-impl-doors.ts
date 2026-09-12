@@ -77,6 +77,14 @@
  *
  * D1, D3 and D4 have no baseline and no allowlist. They are absolutes.
  *
+ *   D7  No SECURITY DEFINER, non-trigger function that a CLIENT role (`anon`,
+ *       `authenticated`, `PUBLIC`) can EXECUTE contains DDL, unless its body
+ *       gates on a platform-admin predicate before it. DD-146 (2026-09-12):
+ *       `platform.retrofit_entity` and `platform.create_entity_table` were
+ *       SECURITY DEFINER owned by `postgres`, granted to `anon`, and ran
+ *       `execute format('alter table …')` with no gate — proven live as `anon`,
+ *       whose call entered the body. Absolute: no baseline, no allowlist.
+ *
  *   pnpm check:impl-doors            # loud, non-blocking (exit 0)
  *   pnpm check:impl-doors:strict     # exit 1 on any finding
  *
@@ -390,6 +398,89 @@ interface UngatedDoorRow {
   args: string;
 }
 
+
+// ─── D7: no client-executable SECURITY DEFINER function runs DDL ─────────────
+//
+// DD-146 / B-35 (2026-09-12). D5 asks whether an anon-callable definer DECLARED
+// itself. D6 asks whether the declaration is honest about the rows behind it.
+// D7 asks a different question entirely: what does the function DO? A
+// SECURITY DEFINER owned by `postgres` whose body runs DDL is not a door at any
+// width — it is the provisioner, and a client role holding EXECUTE on it is
+// `ALTER TABLE` as the superuser over HTTP.
+//
+// Measured live before the fix (`platform` is in the authenticator role's
+// `pgrst.db_schemas`, and anon/authenticated both hold schema USAGE, so every
+// one of these was `/rest/v1/rpc/<name>` with the published anon key):
+//
+//   platform.retrofit_entity               anon+auth    alter table … add column, create/drop trigger
+//   platform.create_entity_table           anon+auth+PUBLIC  create table / index / trigger
+//   platform._drop_custom_field_index      anon+auth+PUBLIC  DROP INDEX
+//   platform.enforce_definer_client_grants anon+auth+PUBLIC  revoke execute … (the §6d-4 guard itself)
+//
+// Proven live as `anon` in a rolled-back transaction:
+//   select platform.retrofit_entity('__zz_nonexistent_probe_b35__', …)
+//   -->  [P0001] retrofit_entity: public.__zz_nonexistent_probe_b35__ not found
+// i.e. the privilege check PASSED and the body ran; only the deliberately
+// nonexistent table name stopped it.
+//
+// THE RULE. A SECURITY DEFINER, non-trigger function that `anon`,
+// `authenticated` or `PUBLIC` can EXECUTE may not contain DDL unless its body
+// names a platform-admin gate (`is_super_admin` / `is_platform_admin` /
+// `is_admin(` / `admin.admins`). Two genuinely gated functions live in that
+// state today and are meant to: `public.admin_set_association_enforcement`
+// (`IF NOT public.is_super_admin() THEN RAISE EXCEPTION 'admin only'`) and
+// `public.admin_spend_breakdown` (same opening; its DDL is a CREATE TEMP TABLE
+// in the caller's own temp schema).
+//
+// DDL is matched per LINE, deliberately: a body whose only "create table" is
+// inside `format('Failed to create table: %s', SQLERRM)` is not a DDL function
+// (`public.create_new_user_table_dynamic` is exactly that), so a line qualifies
+// only when it pairs `execute` with a DDL statement shape, or when the line
+// itself STARTS with one. Like D1/D3/D4 this is an ABSOLUTE — no baseline, no
+// allowlist. The population is zero, and zero is the only correct number.
+const CLIENT_DEFINER_DDL_QUERY = `
+  select n.nspname || '.' || p.proname as fn,
+         pg_get_function_identity_arguments(p.oid) as args,
+         has_function_privilege('anon', p.oid, 'EXECUTE') as anon_x,
+         has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_x,
+         (p.proacl is null or exists (
+            select 1 from aclexplode(p.proacl) a
+            where a.grantee = 0 and a.privilege_type = 'EXECUTE')) as public_x
+  from pg_catalog.pg_proc p
+  join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+  where p.prosecdef
+    and p.prokind = 'f'
+    and p.prorettype <> 'trigger'::regtype
+    and n.nspname not in ('pg_catalog','information_schema','pgsodium','pgsodium_masks',
+                          'extensions','graphql','graphql_public','vault','auth','storage',
+                          'realtime','supabase_functions','supabase_migrations','net','cron','pgbouncer')
+    and not exists (select 1 from pg_catalog.pg_depend d where d.objid = p.oid and d.deptype = 'e')
+    and (
+      has_function_privilege('anon', p.oid, 'EXECUTE')
+      or has_function_privilege('authenticated', p.oid, 'EXECUTE')
+      or p.proacl is null
+      or exists (select 1 from aclexplode(p.proacl) a
+                 where a.grantee = 0 and a.privilege_type = 'EXECUTE')
+    )
+    and p.prosrc !~* '(is_super_admin|is_platform_admin|admin\\.admins|\\mis_admin\\s*\\()'
+    and exists (
+      select 1 from unnest(string_to_array(p.prosrc, chr(10))) l
+      where (l ~* '\\mexecute\\M' and l ~* '\\m(alter|create|drop|truncate)\\s+(table|index|trigger|view|policy|schema|type|sequence|materialized|unique|or\\s+replace|extension)\\M')
+         or (l ~* '\\mexecute\\M' and l ~* '\\m(grant|revoke)\\s+(execute|all|select|insert|update|delete)\\M')
+         or (l ~* '^\\s*(alter|create|drop|truncate)\\s+(table|index|trigger|view|policy|schema|type|sequence|materialized|unique)\\M')
+         or (l ~* '^\\s*(grant|revoke)\\s+(execute|all|select|insert|update|delete)\\M')
+    )
+  order by 1, 2
+`;
+
+interface DefinerDdlRow {
+  fn: string;
+  args: string;
+  anon_x: boolean;
+  auth_x: boolean;
+  public_x: boolean;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -450,6 +541,7 @@ async function main(): Promise<number> {
   let clientWrites: ClientWriteRow[];
   let anonDefiners: AnonDefinerRow[];
   let ungatedDoors: UngatedDoorRow[];
+  let definerDdl: DefinerDdlRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -471,6 +563,10 @@ async function main(): Promise<number> {
     ungatedDoors = await q<UngatedDoorRow>(
       UNGATED_ANON_DOOR_QUERY,
       "D6 declared anon doors with no visibility gate",
+    );
+    definerDdl = await q<DefinerDdlRow>(
+      CLIENT_DEFINER_DDL_QUERY,
+      "D7 client-executable SECURITY DEFINER functions that run DDL",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -721,6 +817,55 @@ async function main(): Promise<number> {
         `${C.dim}       Lower the baseline to ${g} in scripts/impl-doors/anon-door-visibility-baseline.json so the win is held.${C.reset}`,
       );
     }
+  }
+
+  // ── D7 ────────────────────────────────────────────────────────────────────
+  if (definerDdl.length === 0) {
+    console.log(
+      `${TAG.ok}D7 no client-executable SECURITY DEFINER function runs DDL ${C.dim}(ungated; DD-146)${C.reset}`,
+    );
+  } else {
+    findings += definerDdl.length;
+    console.log(
+      `${TAG.fail}D7 ${definerDdl.length} SECURITY DEFINER function(s) run DDL and a CLIENT role can execute them:`,
+    );
+    for (const r of definerDdl) {
+      const roles = [
+        r.public_x ? "PUBLIC" : null,
+        r.anon_x ? "anon" : null,
+        r.auth_x ? "authenticated" : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${roles}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       A definer owned by postgres whose body runs DDL is the PROVISIONER, not a door:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       a client role holding EXECUTE on it is ALTER TABLE as the superuser over HTTP.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       DD-146: platform.retrofit_entity and platform.create_entity_table were exactly${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       that, reachable by anon, and a plain user's call entered the body. Fix:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       revoke all on function <fn>(<args>) from public, anon, authenticated;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       grant execute on function <fn>(<args>) to service_role;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       and DELETE its platform.definer_client_grant_grandfather row. If a signed-in${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       platform admin genuinely must call it, gate the BODY on public.is_super_admin()${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       before the first DDL statement and raise 42501 with a sentence when it fails.${C.reset}`,
+    );
   }
 
   if (findings === 0) {
