@@ -284,6 +284,12 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-12` — `ResourcePeekHost` now gives Next's lazy boundary the
+  renderable host component rather than a module-shaped wrapper. Every
+  registered `EntityRef` Quick look control can consequently mount its peek;
+  `ResourcePeekHost.test.tsx` proves the loader contract that production had
+  silently discarded.
+
 - `2026-09-12` — **The org-admin surface no longer exposes unaudited bulk
   ownership reassignment.** Member removal leaves resources with their existing
   owner, resource inventory is read-only, and the database client door is
