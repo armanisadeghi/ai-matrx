@@ -448,9 +448,18 @@ export async function updateNote(
     await syncNoteContextLinks({ noteId: id, organizationId, projectId, taskId });
   } catch (error) {
     if (error instanceof NoteContextLinkPartialError) {
+      const partialStoredNote: Note = {
+        ...data,
+        project_id: error.succeededFields.includes("project_id")
+          ? projectId ?? null
+          : priorStoredNote.project_id,
+        task_id: error.succeededFields.includes("task_id")
+          ? taskId ?? null
+          : priorStoredNote.task_id,
+      };
       throw new NoteContextPartialSaveError({
         databaseWrite,
-        actualStoredNote: storedNote,
+        actualStoredNote: partialStoredNote,
         succeededFields: error.succeededFields,
         failedFields: error.failedFields,
         safeCauses: error.safeCauses,

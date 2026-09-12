@@ -142,7 +142,7 @@ describe("notesService versioned write convergence", () => {
     })).rejects.toMatchObject({
       name: "NoteContextPartialSaveError",
       databaseWrite: "saved",
-      actualStoredNote: expect.objectContaining({ label: "After", project_id: PROJECT_ID, task_id: TASK_ID }),
+      actualStoredNote: expect.objectContaining({ label: "After", project_id: PROJECT_ID, task_id: null }),
       succeededFields: ["project_id"],
       failedFields: ["task_id"],
       safeCauses: { task_id: "task denied" },
@@ -160,7 +160,7 @@ describe("notesService versioned write convergence", () => {
     await expect(updateNote(NOTE_ID, { project_id: PROJECT_ID }))
       .rejects.toMatchObject({
         databaseWrite: "unchanged",
-        actualStoredNote: expect.objectContaining({ project_id: PROJECT_ID }),
+        actualStoredNote: expect.objectContaining({ project_id: null }),
         succeededFields: [],
         failedFields: ["project_id"],
       } satisfies Partial<NoteContextPartialSaveError>);

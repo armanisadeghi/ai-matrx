@@ -127,13 +127,16 @@ export async function syncNoteContextLinks(args: {
         : "The context association request failed.";
   }
 
-  if (failedFields.length > 0) {
-    if (succeededFields.length > 0) {
-      getAssociationsStore().invalidate("note", args.noteId);
-    }
-    throw new NoteContextLinkPartialError({ succeededFields, failedFields, safeCauses });
-  }
   if (succeededFields.length > 0) {
-    getAssociationsStore().invalidate("note", args.noteId);
+    try {
+      getAssociationsStore().invalidate("note", args.noteId);
+    } catch (error) {
+      // The durable RPC already settled. A cache refresh failure is recovery
+      // evidence, never evidence that a successful edge was not saved.
+      console.error("Could not invalidate the note association cache", error);
+    }
+  }
+  if (failedFields.length > 0) {
+    throw new NoteContextLinkPartialError({ succeededFields, failedFields, safeCauses });
   }
 }
