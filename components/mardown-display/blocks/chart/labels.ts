@@ -14,7 +14,7 @@
  * pulling recharts into the Jest module graph.
  */
 
-import { formatPercentFromFraction } from "@/lib/format/honest";
+import { formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 export interface PieSliceLabelInput {
   name?: string;

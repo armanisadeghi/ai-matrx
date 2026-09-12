@@ -24,11 +24,7 @@ import {
   agentAppAdminKpis,
   type AgentAppAdminEditView,
 } from "@/features/agent-apps/format";
-import {
-  formatCount,
-  formatPercentFromFraction,
-  formatUsd,
-} from "@/lib/format/honest";
+import { formatCount, formatPercentFromFraction, formatUsd } from "@ai-matrx/kit/format";
 import { AgentAppAdminActions } from "@/features/agent-apps/components/AgentAppAdminActions";
 import { AgentAppEditor } from "@/features/agent-apps/components/AgentAppEditor";
 import { UpdateAgentAppModal } from "@/features/agent-apps/components/UpdateAgentAppModal";

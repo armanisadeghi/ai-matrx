@@ -65,11 +65,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatNumber } from "@/features/agent-apps/format";
-import {
-  formatPercentFromFraction,
-  formatUsd,
-  isKnownNumber,
-} from "@/lib/format/honest";
+import { formatPercentFromFraction, formatUsd, isKnownNumber } from "@ai-matrx/kit/format";
 
 interface AgentAppOverviewContentProps {
   appId: string;

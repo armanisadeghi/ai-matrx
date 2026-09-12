@@ -145,16 +145,11 @@ export function formatCompact(n: number): string {
   return COMPACT.format(Math.round(n));
 }
 
-/** USD with adaptive precision — sub-dollar amounts keep cents/mills. */
-export function formatUsd(n: number): string {
-  if (!Number.isFinite(n) || n === 0) return "$0.00";
-  if (n < 0.01) return `$${n.toFixed(4)}`;
-  if (n < 1) return `$${n.toFixed(3)}`;
-  return `$${n.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+// `formatUsd` LIVES IN THE PACKAGE. Import it from "@ai-matrx/kit/format"
+// with `digits: "adaptive"` — sub-dollar amounts keep their cents and mills.
+// The copy that used to live here also returned "$0.00" for a NON-FINITE
+// value, which is the confident-wrong-number bug the package's em-dash exists
+// to stop; callers get "—" there now.
 
 /** Google favicon service with a usable default size. */
 export function faviconUrl(hostname: string | null): string | null {

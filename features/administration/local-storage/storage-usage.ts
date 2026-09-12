@@ -17,12 +17,8 @@
  * (very large) admin component.
  */
 
-import {
-  clampedBarWidth,
-  formatPercentFromFraction,
-  safeRatio,
-  UNKNOWN_DISPLAY,
-} from "@/lib/format/honest";
+import { formatPercentFromFraction, safeRatio, UNKNOWN_DISPLAY } from "@ai-matrx/kit/format";
+import { clampedBarWidth } from "@/lib/format/honest";
 
 export interface StorageSizeReading {
   used: number;

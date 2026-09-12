@@ -21,7 +21,8 @@
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { costToUnits, formatUnits, formatUsd } from "@/lib/processing-units/units";
+import { costToUnits, formatUnits } from "@/lib/processing-units/units";
+import { formatUsd } from "@ai-matrx/kit/format";
 
 export interface CostDisplay {
   /** True when the viewer is allowed to see raw USD alongside units. */
@@ -46,10 +47,10 @@ export function useCostDisplay(): CostDisplay {
     showUsd,
     toUnits: costToUnits,
     units: (usd, opts) => formatUnits(costToUnits(usd), opts),
-    usd: (usd) => (showUsd ? formatUsd(usd) : ""),
+    usd: (usd) => (showUsd ? formatUsd(usd, { digits: "adaptive" }) : ""),
     label: (usd, opts) => {
       const unitLabel = formatUnits(costToUnits(usd), opts);
-      return showUsd ? `${unitLabel} · ${formatUsd(usd)}` : unitLabel;
+      return showUsd ? `${unitLabel} · ${formatUsd(usd, { digits: "adaptive" })}` : unitLabel;
     },
   };
 }

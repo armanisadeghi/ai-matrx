@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCount, formatUsd } from "@/lib/format/honest";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";

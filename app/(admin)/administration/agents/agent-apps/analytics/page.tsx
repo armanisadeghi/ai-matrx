@@ -45,14 +45,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
-import {
-  formatCount,
-  formatPercentFromFraction,
-  formatUsd,
-  isKnownNumber,
-  safeRatio,
-  UNKNOWN_DISPLAY,
-} from "@/lib/format/honest";
+import { UNKNOWN_DISPLAY, formatCount, formatPercentFromFraction, formatUsd, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,

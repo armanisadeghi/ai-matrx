@@ -68,7 +68,7 @@ import type { AgentRunFacts } from "@/features/workflow-runtime/agent-run-output
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface AgentResultBlockProps {
   serverData?: unknown;
@@ -126,10 +126,6 @@ function formatDuration(ms: number): string | null {
 /** Sub-cent runs are the common case, so they keep four decimals. */
 function formatCost(usd: number): string {
   return usd >= 1 ? `$${usd.toFixed(2)}` : `$${usd.toFixed(4)}`;
-}
-
-function formatCount(n: number): string {
-  return n.toLocaleString();
 }
 
 interface Fact {

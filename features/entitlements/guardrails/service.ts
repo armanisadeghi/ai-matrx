@@ -261,14 +261,10 @@ export function usdToPoints(usd: number): number {
   return Math.round(usd * POINTS_PER_USD);
 }
 
-export function formatUsd(usd: number): string {
-  return usd.toLocaleString(undefined, {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
+// THE money voice: @ai-matrx/kit/format owns "$1,234.50" — same grouped,
+// two-decimal output this produced, plus an em-dash for an unmeasured value.
+import { formatUsd } from "@ai-matrx/kit/format";
+export { formatUsd };
 
 export function formatPoints(points: number): string {
   return `${points.toLocaleString()} pts`;

@@ -36,18 +36,13 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
 
 interface OrgPrivacyTabProps {
   organizationId: string;
   /** When false, the controls render read-only so non-admins still see the
    * current state and limits without being able to flip them. */
   canEdit: boolean;
-}
-
-function formatUsd(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  return `$${value.toFixed(2)}`;
 }
 
 function formatPercent(value: number): string {

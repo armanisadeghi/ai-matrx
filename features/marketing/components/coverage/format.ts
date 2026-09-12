@@ -5,11 +5,10 @@
  * these at a callsite.
  */
 
-export function formatCount(value: number | null | undefined): string {
-  return value === null || value === undefined
-    ? "—"
-    : Intl.NumberFormat("en").format(value);
-}
+// THE count voice: @ai-matrx/kit/format owns grouped integers with an
+// em-dash for unknown. Collapsed 2026-09-12 (kit 0.12.x).
+import { formatCount } from "@ai-matrx/kit/format";
+export { formatCount };
 
 export function humanCoverageTile(
   label: string,

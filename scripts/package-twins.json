@@ -169,6 +169,47 @@
       ]
     },
     {
+      "name": "formatUsd",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE honest money formatter (kit 0.12.0, 2026-09-12). `$${(cost ?? 0).toFixed(4)}` rendered \"$0.0000\" for a cost NOBODY MEASURED and a reader walked away believing the run was free; the same `?? 0` then went into a SUM, so an unmeasured cost was invisible inside an analytics total that rode into an agent payload. Unknown is an em-dash, a MEASURED zero is still \"$0.00\". Named Usd not Currency under the UNIT LAW: it prepends a literal `$` with no locale handling, and a EUR amount wearing a `$` is the same class of lie. Census: currency in ~85 files across four clients with zero package coverage before this.",
+      "allow": []
+    },
+    {
+      "name": "formatCount",
+      "package": "@ai-matrx/kit/format",
+      "why": "Rides the formatUsd row's contract: locale-grouped integer, em-dash for unknown, \"0\" for a measured zero. There is deliberately no compact (\"1.2M\") voice yet — see features/admin/spend/explorer/labels.ts in the formatFileSize shapeAllow list, which is the collapse target waiting on one.",
+      "allow": [
+        {
+          "file": "features/user-lists/components/CategoryPanel.tsx",
+          "reason": "A DIFFERENT capability under the same name: this renders a COMPACT count (\"1.2k\") for a sidebar badge, and returns an EMPTY STRING for undefined rather than an em-dash, because the badge is absent when the count is unknown instead of showing a placeholder in a 20px chip. @ai-matrx/kit/format's `formatCount` is the grouped-integer voice (\"1,234\") and deliberately ships no compact voice yet. Collapse this the moment one exists — a waiting collapse target, not a permanent exemption. (Checked 2026-09-12.)"
+        }
+      ]
+    },
+    {
+      "name": "formatPercentFromFraction",
+      "package": "@ai-matrx/kit/format",
+      "why": "The percentage half of the honest-number contract (~149 files, zero package coverage before kit 0.12.0). The long name is the point: half the fleet's twins took a 0..1 fraction and half took a 0..100 percentage, a 100x error that renders plausibly, so the unit is in the name. Does NOT clamp — over 100% is usually a real signal.",
+      "allow": []
+    },
+    {
+      "name": "safeRatio",
+      "package": "@ai-matrx/kit/format",
+      "why": "The indeterminate-division guard behind formatPercentFromFraction. `0 / 0` is not zero, it is unknown, and this returns null for it rather than letting NaN reach the screen as \"NaN% used\".",
+      "allow": []
+    },
+    {
+      "name": "sumKnown",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE function that closes the lying-screen class. `?? 0` was never typed in front of a formatter — it was typed in front of `+`, because a nullable number must become a number before it can be added. This returns { total, known, unknown } so a caller cannot present a total as complete without ignoring a field it was handed, and it is the only thing that separates \"all zero\" from \"nothing measured\".",
+      "allow": []
+    },
+    {
+      "name": "isKnownNumber",
+      "package": "@ai-matrx/kit/format",
+      "why": "The predicate that makes `?? 0` unnecessary: true only for a real, usable measurement, so a measured 0 passes and null/undefined/NaN/Infinity do not. Rides the formatUsd row.",
+      "allow": []
+    },
+    {
       "name": "formatDurationSeconds",
       "package": "@ai-matrx/kit/format",
       "why": "Rides formatDurationMs. See that row.",
@@ -223,7 +264,7 @@
       "shapeAllow": [
         {
           "file": "features/admin/spend/explorer/labels.ts",
-          "reason": "PROVABLY NOT A BYTE COUNT. `compactNumber` renders TOKEN counts for the spend explorer \u2014 \"1.2M\" tokens, \"340k\" tokens, \"812\" \u2014 and no byte value of any kind enters this module. The byte-size rule fires because /1_000 and /1_000_000 are magnitude steps beside a one-decimal `toFixed(1)`, which is character-for-character the shape of a KB/MB step; the rule cannot tell a decimal SI magnitude step from a binary byte step here. Note the units are DECIMAL (1,000) and the labels carry no \"B\", which is exactly how a count differs from a size. (Checked 2026-09-12 while clearing the duration lane.) This is a COUNT formatter and belongs in @ai-matrx/kit/format's forthcoming `formatCount` \u2014 it is a future collapse target under that name, not a permanent exemption from byte-size."
+          "reason": "PROVABLY NOT A BYTE COUNT. `compactNumber` renders TOKEN counts for the spend explorer — \"1.2M\" tokens, \"340k\" tokens, \"812\" — and no byte value of any kind enters this module. The byte-size rule fires because /1_000 and /1_000_000 are magnitude steps beside a one-decimal `toFixed(1)`, which is character-for-character the shape of a KB/MB step; the rule cannot tell a decimal SI magnitude step from a binary byte step here. Note the units are DECIMAL (1,000) and the labels carry no \"B\", which is exactly how a count differs from a size. (Checked 2026-09-12 while clearing the duration lane.) This is a COUNT formatter and belongs in @ai-matrx/kit/format's forthcoming `formatCount` — it is a future collapse target under that name, not a permanent exemption from byte-size."
         },
         {
           "file": "features/organizations/admin/utils.ts",

@@ -256,7 +256,7 @@ export function ProducerYieldConsole() {
           <StatCard
             icon={<TrendingDown className="h-3.5 w-3.5" />}
             label="Cost per accepted"
-            value={formatUsd(totals.cost_per_accepted_usd, { precision: 4 })}
+            value={formatUsd(totals.cost_per_accepted_usd, { digits: 4 })}
             hint="The honest number. Cost per PRODUCED outcome flatters a producer that emits more junk, so it is never the headline."
           />
           <StatCard
@@ -340,10 +340,10 @@ export function ProducerYieldConsole() {
                     {formatUsd(r.cost_usd)}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">
-                    {formatUsd(r.cost_per_accepted_usd, { precision: 4 })}
+                    {formatUsd(r.cost_per_accepted_usd, { digits: 4 })}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {formatUsd(r.cost_per_produced_usd, { precision: 4 })}
+                    {formatUsd(r.cost_per_produced_usd, { digits: 4 })}
                   </td>
                   <td className="px-3 py-2 text-right">
                     {/* THE DOOR LAW: the producer is a thing; let the user reach it. */}
