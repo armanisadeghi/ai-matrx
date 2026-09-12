@@ -84,6 +84,7 @@ import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { IngestTimelineDialog } from "./IngestTimelineDialog";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
 import {
   fetchDistillationApproaches,
@@ -587,6 +588,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   useEffect(() => {
     if (ingestLane) setIngestOpen(true);
   }, [ingestLane]);
+  // The `timeline` Approach ("A case that unfolds in time") is its OWN lane and
+  // its own dialog — a case is chunked by step, not by word count — so
+  // ?ingest=timeline opens that dialog rather than the single-source one.
+  const [timelineOpen, setTimelineOpen] = useState(
+    searchParams.get("ingest") === "timeline",
+  );
   // THE APPROACH PICKER (2026-08-20). Every lane below is opened by a query
   // param read ONCE at mount, so the in-page picker cannot reach them by
   // changing the URL. Each param therefore gets a state twin the picker sets;
@@ -635,6 +642,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       if (q.interview === "1") {
         setInterviewTarget({ newNonce: Date.now() });
         setInterviewOpen(true);
+        return;
+      }
+      if (q.ingest === "timeline") {
+        setTimelineOpen(true);
         return;
       }
       if (
@@ -2184,6 +2195,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewSeed(seed);
               setInterviewOpen(true);
             }}
+          />
+          <IngestTimelineDialog
+            open={timelineOpen}
+            onOpenChange={setTimelineOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
           />
           <ApproachPickerDialog
             open={approachPickerOpen}

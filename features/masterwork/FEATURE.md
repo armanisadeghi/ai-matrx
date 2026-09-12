@@ -126,6 +126,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - `intake/NewRulebookFlow.tsx` — the guided start at `/masterwork/new` (house guided-intake pattern).
   The old `NewRulebookDialog` was DELETED 2026-08-17 — a cramped dialog with chip-bubble pickers
   is exactly what the house pattern forbids.
+- `components/detail/IngestTimelineDialog.tsx` — the `timeline` Approach: a case pasted in the
+  order it happened, read one moment at a time with the ending withheld by default.
 - `durable-run/useMasterworkRun.ts` — the ONE way a dialog here runs something long. A face over
   `lib/durable-run/useDurableRun.ts` (shared with SEO): remembers the run id, rejoins on load,
   settles from server truth, keeps a finished answer across a refresh. Both ingest lanes share one
@@ -177,6 +179,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-12` — 🚨 **A case that unfolds in time is no longer one chunk (W58).** A real clinical case report (three emergency visits, then an admission) pasted into "Add rules from a source" became ONE size-based chunk and came back as 11 static rules all citing `chunk: 1` — the entire skill (what was known at each step, what was still unknown when each choice was made, and what each choice cost and risked) was gone. New lane: the `timeline` Approach, `IngestTimelineDialog` on `?ingest=timeline` and through the Approach picker (`intake_query {"ingest":"timeline"}`), posting `/masterworks/ingest-timeline` on its OWN durable-run surface (`timeline`) so a case never rejoins the single-source dialog. The dialog carries one switch — "Hide the ending while the rules are written", default ON — because a distiller that can see how the case turned out writes hindsight, not judgment; the ending is still saved with the case for the Audition. Server half (segment → chunk BY STEP → distil each step with the future withheld → policy-shaped rules anchored by `source_ref.step`): `aidream/services/distillation/timeline_ingest.py` + its FEATURE.md rule 21.
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
 

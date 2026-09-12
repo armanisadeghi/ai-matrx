@@ -65,6 +65,7 @@ export type MasterworkRunSurface =
   | "chat"
   | "dump"
   | "corpus"
+  | "timeline"
   | "audition"
   | "checkup"
   | "clean_corpus";
@@ -83,6 +84,11 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // (`/masterworks/ingest-corpus`) — its own surface + pointer for the same
   // reason, even though its terminal event type matches the ingest lanes'.
   corpus: "masterwork_ingest_complete",
+  // The `timeline` Approach (`/masterworks/ingest-timeline`) — a case that
+  // unfolds in time, chunked by STEP. Its own surface + pointer so a case never
+  // rejoins the single-source ingest dialog or vice versa, even though it lands
+  // the same terminal event.
+  timeline: "masterwork_ingest_complete",
   audition: "masterwork_audition_verdict",
   checkup: "masterwork_checkup_complete",
   // The manual "clean up what I said" pass (`/masterworks/clean-corpus`) — a
