@@ -73,6 +73,15 @@ export function shapeInstancesHref(kind: string): string {
 }
 
 /**
+ * The kind's RECORDS table — org-wide, confirmation-aware (DD-131 slice 1).
+ * Distinct from `shapeInstancesHref`, which is the viewer's OWN saved
+ * instances; this one is what the viewer's organizations hold.
+ */
+export function shapeRecordsTableHref(kind: string): string {
+  return `${shapeDetailHref(kind)}/table`;
+}
+
+/**
  * 🚨 ONE SET OF TABS FOR EVERYONE (Arman, 2026-08-29): "there's no reason why
  * we get this amazing set of options and users get fucked… any kind of
  * difference between them is going to be permissions differences."

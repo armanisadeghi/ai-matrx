@@ -52,7 +52,7 @@ import {
   updateKindInstance,
   type KindInstanceListEntry,
 } from "@/features/content-ir/studio/instance-service";
-import { resolveListScope, type ListScope } from "@/lib/list-scope";
+import { resolveListScope, type ListScopeWord } from "@/lib/list-scope";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
@@ -155,8 +155,8 @@ export default function ShapeInstancesTab({
   // could read the whole time. `null` means "whatever the registry says";
   // clicking the toggle pins an explicit scope, which is always one click away
   // and never blocked.
-  const [scope, setScope] = useState<ListScope | null>(null);
-  const [resolvedScope, setResolvedScope] = useState<ListScope | null>(null);
+  const [scope, setScope] = useState<ListScopeWord | null>(null);
+  const [resolvedScope, setResolvedScope] = useState<ListScopeWord | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,7 +214,7 @@ export default function ShapeInstancesTab({
 
   // The scope actually in force: what the person pinned, else what the registry
   // says. `null` only while the registry read is still in flight.
-  const effectiveScope: ListScope | null = scope ?? resolvedScope;
+  const effectiveScope: ListScopeWord | null = scope ?? resolvedScope;
 
   const entries = list.status === "ready" ? list.entries : [];
   const selected = entries.find((e) => e.id === selectedId) ?? null;

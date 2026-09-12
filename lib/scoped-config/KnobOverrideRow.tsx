@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 
 import {
   KnobFieldControl,
@@ -184,7 +185,7 @@ export function KnobOverrideRow(props: {
       onChanged();
       return true;
     } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
+      const detail = extractErrorMessage(err);
       setInlineError(detail);
       toast.error(detail);
       return false;
@@ -334,13 +335,23 @@ export function KnobOverrideRow(props: {
         )}
       </div>
       )}
-      <p className="text-right text-[11px] text-muted-foreground">
-        {stateOnly ? "Not connected yet" : isSetHere ? "Set here" : `Inherited from ${inheritedFrom}`}
-      </p>
-      <details className="w-full text-right text-[11px] text-muted-foreground">
-        <summary className="cursor-pointer">Details</summary>
-        <p className="mt-1">{!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}</p>
-      </details>
+      <div className="flex w-full items-center justify-end gap-2 text-[11px] text-muted-foreground">
+        <span>{stateOnly
+          ? "Not connected yet"
+          : system
+            ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault)
+              ? "Set for the platform"
+              : "Registered default"
+            : isSetHere
+              ? "Set here"
+              : `Inherited from ${inheritedFrom}`}</span>
+        <details className="relative">
+          <summary aria-label={`Details for ${knob.label}`} className="cursor-pointer">Details</summary>
+          <div className="absolute right-0 z-20 mt-1 w-72 rounded-md border border-border bg-popover p-3 text-left text-xs leading-snug text-popover-foreground shadow-md">
+            {!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
+          </div>
+        </details>
+      </div>
     </div>
     </SettingsRow>
     </SettingAnchor>

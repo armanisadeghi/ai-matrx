@@ -7,8 +7,8 @@ export {
   countSearchHits,
   type SettingsSearchHit,
   useSettingsControlSearch,
-  type SettingsControlSearchHit,
 } from "./hooks/useSettingsSearch";
+export type { SettingsControlSearchHit } from "./search/controlSearch";
 export {
   settingsRegistry,
   getVisibleTabs,

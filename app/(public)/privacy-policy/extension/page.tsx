@@ -20,7 +20,7 @@ export default function ExtensionPrivacyPolicyPage() {
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Matrx Extend — Chrome Extension Privacy Policy
           </h1>
-          <p className="text-muted-foreground">Last updated: August 22, 2026</p>
+          <p className="text-muted-foreground">Last updated: September 12, 2026</p>
         </div>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8">
@@ -30,8 +30,10 @@ export default function ExtensionPrivacyPolicyPage() {
               Matrx Extend (the &ldquo;extension&rdquo;) is an opt-in AI
               assistant published by AI Matrx. It runs in your browser&rsquo;s
               side panel and helps you understand and act on the web page you
-              are currently viewing — reading only the pages you explicitly
-              choose to use it on.
+              are currently viewing. Page capture and AI actions follow the
+              controls described below. When you are signed in, optional Vault
+              features also detect login fields to offer saved logins and ask
+              whether to save a login you enter.
             </p>
             <p>
               You can use the extension either with a Matrx account or{" "}
@@ -62,8 +64,10 @@ export default function ExtensionPrivacyPolicyPage() {
               Everything the extension does serves that one purpose: answering
               questions about the current page, pulling information out of it,
               and — only when you ask — performing actions on it such as filling
-              a form or navigating. It processes page content only for a feature
-              you invoke or an automatic capture you explicitly enable. The
+              a form or navigating. Full-page processing runs for a feature
+              you invoke or automatic page capture you explicitly enable.
+              Vault login detection and saved-login matching are separate
+              controls, described below. The
               default permission mode asks before actions that change a page;
               privileged actions always require confirmation.
             </p>
@@ -74,11 +78,11 @@ export default function ExtensionPrivacyPolicyPage() {
               What the extension accesses
             </h2>
             <p>
-              On a fresh install, the extension accesses page content only when
-              you take a deliberate action in the side panel, popup, or context
-              menu. You may separately enable automatic page capture in
-              Settings; that setting is off by default and can be turned off at
-              any time.
+              Full-page capture starts when you take a deliberate action in the
+              side panel, popup, or context menu. Automatic page capture is a
+              separate setting, off by default. Signed-in Vault login offers
+              inspect login-form structure and can match the current site to
+              saved logins without capturing the full page for an AI model.
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>
@@ -119,7 +123,7 @@ export default function ExtensionPrivacyPolicyPage() {
                 website usernames and passwords you save to your own Matrx
                 account. A login can enter the Vault in three ways, each
                 requiring your deliberate action: you type it into the Vault
-                tab; after you sign in to a website yourself, the extension
+                tab; when you submit a website login yourself, the extension
                 shows a small &ldquo;Save this login?&rdquo; prompt (on the page
                 and in the Vault tab) and saves only if you click Save or
                 Update; or, when an AI agent you are directing reaches a login
@@ -129,13 +133,27 @@ export default function ExtensionPrivacyPolicyPage() {
                 Vault, are encrypted at rest on our servers, and are never sent
                 to an AI model provider or shown to the assistant. A saved login
                 is filled into a page only for the website it was saved for, and
-                only when you click &ldquo;Use here&rdquo; or approve an agent
-                action that asks for it. The save prompt displays only the site
+                only when you select a saved login beside a login field, click
+                &ldquo;Use here&rdquo;, or authorize an agent action that asks
+                for it. Selecting an inline saved login fills its fields; it
+                does not submit the form. The save prompt displays only the site
                 and the username you entered; it holds the password briefly in
                 extension memory (never on disk) and discards it if you dismiss
                 the prompt or do nothing for a few minutes. You can turn the
                 prompt off in Settings &rarr; Privacy, silence it for individual
                 sites, and view, edit, or delete any saved login at any time.
+              </li>
+              <li>
+                <strong>Saved-login suggestions.</strong> When you are signed
+                in and &ldquo;Offer saved logins&rdquo; is enabled, focusing a
+                supported login field can send the current site&rsquo;s origin
+                and path (without query parameters or fragment) to your Matrx
+                Vault to find matching saved-login metadata. The setting is on
+                by default and can be turned off in Settings &rarr; Privacy.
+                Matching does not send the values you have typed or full-page
+                content, and does not send a password to an AI model. You choose
+                an account before its authorized fields are filled. Signed-out
+                users do not receive Vault matches.
               </li>
               <li>
                 <strong>Local preferences.</strong> Settings such as your
@@ -240,7 +258,9 @@ export default function ExtensionPrivacyPolicyPage() {
                 content-script bridge is present on normal web pages so the side
                 panel can respond immediately; it does not transmit page content
                 until the user invokes a feature or has explicitly enabled
-                automatic capture.
+                automatic page capture. Signed-in Vault offers separately
+                inspect login forms and send site origin/path for saved-login
+                matching as described above.
               </li>
               <li>
                 <strong>activeTab + scripting.</strong> Used to inject the
@@ -398,6 +418,7 @@ export default function ExtensionPrivacyPolicyPage() {
                 deleted at any time from the Vault tab or your Matrx account.
                 The &ldquo;Save this login?&rdquo; prompt can be turned off in
                 Settings &rarr; Privacy, or silenced for individual sites.
+                &ldquo;Offer saved logins&rdquo; has its own control there.
               </li>
               <li>
                 <strong>Account deletion</strong> requests — for a full account

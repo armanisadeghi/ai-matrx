@@ -13,6 +13,7 @@ import { createProject as createProjectCanonical } from "@/features/projects/ser
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { generateProjectSlug } from "@/features/projects/types";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 function toTaskPriority(
   p: string | undefined,
@@ -153,17 +154,20 @@ export const hierarchyService = {
     return (data ?? []) as HierarchyProject[];
   },
 
-  async fetchAllUserProjects(): Promise<HierarchyProject[]> {
+  async fetchAllUserProjects(scope?: ListScopeWord): Promise<HierarchyProject[]> {
     const userId = requireUserId();
 
-    const { data, error } = await workspaceDb(supabase)
+    // DD-137c / §3.3: `project` is registered `organization`. An agent-context tree that shows the
+    // viewer only their own projects hides the organization's work from the agent as well.
+    const ownerOnly = await scopeToOwner("project", scope);
+    let projectQuery = workspaceDb(supabase)
       .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
-      .is("deleted_at", null)
-      .eq("created_by", userId)
-      .order("name");
+      .is("deleted_at", null);
+    if (ownerOnly) projectQuery = projectQuery.eq("created_by", userId);
+    const { data, error } = await projectQuery.order("name");
 
     if (error) throw error;
     return (data ?? []) as HierarchyProject[];
@@ -183,17 +187,19 @@ export const hierarchyService = {
     return (data ?? []) as HierarchyTask[];
   },
 
-  async fetchOrphanTasks(): Promise<HierarchyTask[]> {
+  async fetchOrphanTasks(scope?: ListScopeWord): Promise<HierarchyTask[]> {
     const userId = requireUserId();
 
-    const { data, error } = await workspaceDb(supabase)
+    const ownerOnly = await scopeToOwner("task", scope);
+    let orphanQuery = workspaceDb(supabase)
       .from("tasks")
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, created_by",
       )
       .is("deleted_at", null)
-      .is("project_id", null)
-      .eq("created_by", userId)
+      .is("project_id", null);
+    if (ownerOnly) orphanQuery = orphanQuery.eq("created_by", userId);
+    const { data, error } = await orphanQuery
       .order("created_at", { ascending: false });
 
     if (error) throw error;

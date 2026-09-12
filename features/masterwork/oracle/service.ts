@@ -3,6 +3,7 @@ import { requireUserId, getUserId } from "@/utils/auth/getUserId";
 import { getRulebook, saveRules } from "../service";
 import { nextRuleId } from "../ruleIds";
 import type { Rulebook, RulebookRule } from "../types";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
  * The Oracle tap — Approach #10's in-app half. Colleagues (and the Expert
@@ -63,12 +64,17 @@ export interface OracleRulebookOption {
  */
 export async function listMyRulebooks(): Promise<OracleRulebookOption[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  // DECLARED `mine`, not hard-coded (DD-137c / §3.3). A draft lands where the Expert reviews it, so
+  // this picker deliberately offers only Rulebooks they created — said in one word, through the
+  // same helper every other list uses, and one word from being changed.
+  const ownerOnly = await scopeToOwner("rulebook", "mine");
+  let q = supabase
     .schema("platform")
     .from("rulebook")
     .select("id,name,description,rules,updated_at")
-    .eq("created_by", userId)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  if (ownerOnly) q = q.eq("created_by", userId);
+  const { data, error } = await q
     .order("updated_at", { ascending: false })
     .limit(50);
   if (error) throw error;
@@ -93,12 +99,14 @@ export function hasAnyRulebook(): Promise<boolean> {
   if (!userId) return Promise.resolve(false);
   if (hasRulebookCache?.userId === userId) return hasRulebookCache.promise;
   const promise = (async () => {
-    const { count, error } = await supabase
+    const ownerOnly = await scopeToOwner("rulebook", "mine");
+    let countQuery = supabase
       .schema("platform")
       .from("rulebook")
       .select("id", { count: "exact", head: true })
-      .eq("created_by", userId)
       .is("deleted_at", null);
+    if (ownerOnly) countQuery = countQuery.eq("created_by", userId);
+    const { count, error } = await countQuery;
     if (error) {
       hasRulebookCache = null; // don't cache a failure
       return false;

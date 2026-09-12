@@ -32,8 +32,13 @@ import {
 } from "@/features/content-ir/react/ProvisionalKindBoundary";
 import {
   readPartialKindEvent,
+  reconstructRegionValue,
   type CanonicalBlockIR,
 } from "@ai-matrx/content-ir";
+import {
+  KindRecordChrome,
+  kindHasRecordChrome,
+} from "@/features/content-ir/records/KindRecordChrome";
 import {
   isBlockLoading,
   resolveBlockDispatch,
@@ -121,6 +126,33 @@ const ARTIFACT_LOADING_COMPONENTS: Partial<
  * spinner for a very long time" and then dumped JSON at once).
  */
 const KINDLESS_PATIENCE_CHARS = 300;
+
+/**
+ * The block's instance value for the record chrome, in the SAME descending
+ * fidelity every kind consumer uses: the envelope first (it merges residues
+ * back, so nothing a producer sent is lost), a bare `JSON.parse` as the floor,
+ * and `null` when the region genuinely never parsed. `null` is not a failure to
+ * hide — the chrome prints it as a sentence instead of offering a Save that
+ * would write nothing.
+ */
+function readRecordValue(block: {
+  content?: string | null;
+  metadata?: Record<string, unknown>;
+}): Record<string, unknown> | null {
+  const envelope = readEnvelope(block.metadata);
+  const value = envelope
+    ? reconstructRegionValue(envelope)
+    : (() => {
+        try {
+          return JSON.parse(block.content ?? "") as unknown;
+        } catch {
+          return null;
+        }
+      })();
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
 
 export function pendingStructuredEnvelope(block: {
   type: string;
@@ -264,6 +296,42 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   const hideToolResults = useAppSelector(
     conversationId ? selectHideToolResults(conversationId) : () => false,
   );
+
+  /**
+   * RECORD CHROME (THE WRAPPER LAW's other half). A kind component renders
+   * BARE; the host draws the frame. A kind that declares the `record`
+   * disposition (`features/content-ir/records/kind-record-registry.ts`) gets a
+   * strip under its finished block: the confirmation badge for the row that
+   * chat turn already wrote, the organization's count of that kind with a link
+   * to its table, and the Confirm / Archive doors.
+   *
+   * Registry-keyed, never kind-specific: `wine_tasting` is only the first slug
+   * in the table. Drawn ONLY on a settled block — while the message streams the
+   * server has not finished writing the row, so a strip then would be a
+   * promise the database has not kept yet.
+   */
+  const recordChromeKind =
+    envelopeKind && !suppressLoadingGate && kindHasRecordChrome(envelopeKind)
+      ? envelopeKind
+      : null;
+  const withRecordChrome = <T extends React.ReactElement | null>(
+    el: T,
+  ): T | React.ReactElement => {
+    if (!el || !recordChromeKind || isStreamActive || isBlockLoading(block)) {
+      return el;
+    }
+    return (
+      <div key={index} data-kind-record-host={recordChromeKind}>
+        {el}
+        <KindRecordChrome
+          kind={recordChromeKind}
+          messageId={messageId}
+          conversationId={conversationId}
+          value={readRecordValue(block)}
+        />
+      </div>
+    );
+  };
 
   const renderFallbackContent = useCallback(
     (content: string, language: string = "json") => {
@@ -444,7 +512,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           return <Loader key={index} />;
         }
       }
-      return (
+      return withRecordChrome(
         <ArtifactRender
           key={index}
           canvasType={_def.canvasType}
@@ -466,7 +534,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
               ? (updated: string) => replaceBlockContent(block.content, updated)
               : undefined
           }
-        />
+        />,
       );
     }
   }
@@ -491,7 +559,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
   const dispatch = resolveBlockDispatch(block.type);
   if (dispatch) {
-    return dispatch(ctx);
+    return withRecordChrome(dispatch(ctx));
   }
 
   // No registration — a genuinely unknown type (Python outran the generated

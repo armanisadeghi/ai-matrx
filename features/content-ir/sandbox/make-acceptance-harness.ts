@@ -96,6 +96,9 @@ async function main(): Promise<void> {
         const { data: inst } = await sb
             .schema("content_ir")
             .from("kind_instance")
+            // archived-items-law-exempt: fixture builder for a sandbox harness,
+            // not a user-facing list — it wants ANY real payload of this kind,
+            // and an archived row is as valid a sample as a live one.
             .select("id,data")
             .eq("kind_definition_id", c.kind_definition_id)
             .is("deleted_at", null)

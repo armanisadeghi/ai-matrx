@@ -39,6 +39,7 @@ import {
   Pencil,
   Radio,
   ShieldCheck,
+  Table2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { revealAndFlash } from "@/lib/dom/flash-attention";
@@ -53,6 +54,7 @@ import {
   shapeGateHref,
   shapeInputsHref,
   shapeInstancesHref,
+  shapeRecordsTableHref,
   shapeSchemaHref,
   shapeStreamHref,
   shapeTemplateHref,
@@ -151,6 +153,10 @@ export default function ShapeDetailHeader({
         { name: "Stream", href: shapeStreamHref(kind), icon: Radio },
         { name: "Examples", href: shapeExamplesHref(kind), icon: Images },
         { name: "Instances", href: shapeInstancesHref(kind), icon: Boxes },
+        // Records = what the viewer's ORGANIZATIONS hold, with the
+        // confirmation axis. Instances = what the viewer saved. Two questions,
+        // two tabs (DD-131 slice 1).
+        { name: "Records", href: shapeRecordsTableHref(kind), icon: Table2 },
         { name: "Schema", href: shapeSchemaHref(kind), icon: FileJson },
         { name: "Template", href: shapeTemplateHref(kind), icon: ClipboardCopy },
         { name: "Inputs", href: shapeInputsHref(kind), icon: FormInput },

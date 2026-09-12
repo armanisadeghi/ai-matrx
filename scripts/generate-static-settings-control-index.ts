@@ -10,6 +10,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { settingsControlSearchId } from "@/components/official/settings/searchIdentity";
 
@@ -142,7 +143,11 @@ export function generateStaticSettingsControlIndex(check = false): ExtractedStat
   return entries;
 }
 
-// Jest imports the pure extractor; never rewrite generated source during a test.
-if (!process.env.JEST_WORKER_ID) {
+// Keep imports pure: tests consume the extractor without rewriting the index.
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly) {
   generateStaticSettingsControlIndex(process.argv.includes("--check"));
 }

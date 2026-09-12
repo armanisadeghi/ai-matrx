@@ -7,6 +7,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 type CanvasItemDbRow = Database["canvas"]["Tables"]["canvas_items"]["Row"];
 
@@ -264,14 +265,18 @@ export const canvasItemsService = {
    */
   async list(
     filters?: CanvasItemFilters,
+    scope?: ListScopeWord,
   ): Promise<{ data: CanvasItemRow[] | null; error: any }> {
     try {
       const userId = requireUserId();
+      // DD-137c / §3.3: `canvas_item` is registered `organization`, so this opens on the
+      // organization's canvases unless the caller asks for its own.
+      const ownerOnly = await scopeToOwner("canvas_item", scope);
       let query = supabase
         .schema("canvas").from("canvas_items")
         .select("*")
-        .is("deleted_at", null)
-        .eq("user_id", userId);
+        .is("deleted_at", null);
+      if (ownerOnly) query = query.eq("user_id", userId);
 
       // Apply filters
       if (filters?.type) {
@@ -448,7 +453,7 @@ export const canvasItemsService = {
   /**
    * Get statistics for user's canvas items
    */
-  async getStats(): Promise<{
+  async getStats(scope?: ListScopeWord): Promise<{
     total: number;
     byType: Record<string, number>;
     favorited: number;
@@ -457,11 +462,14 @@ export const canvasItemsService = {
   }> {
     try {
       const userId = requireUserId();
-      const { data, error } = await supabase
+      // Counts read the same scope the list reads, or the two disagree on screen.
+      const ownerOnly = await scopeToOwner("canvas_item", scope);
+      let statsQuery = supabase
         .schema("canvas").from("canvas_items")
         .select("type, is_favorited, is_archived")
-        .is("deleted_at", null)
-        .eq("user_id", userId);
+        .is("deleted_at", null);
+      if (ownerOnly) statsQuery = statsQuery.eq("user_id", userId);
+      const { data, error } = await statsQuery;
 
       if (error || !data) {
         return { total: 0, byType: {}, favorited: 0, archived: 0, error };

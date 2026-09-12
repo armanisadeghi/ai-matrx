@@ -30,7 +30,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { scopeToOwner, type ListScope } from "@/lib/list-scope";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 import {
   DEFAULT_ARCHIVE_FILTER,
   type ArchiveFilterValue,
@@ -193,18 +193,17 @@ export async function saveKindInstance(
       organization_id: organizationId,
       created_by: userId,
       ...(metadata ? { metadata: metadata as Json } : {}),
-      // `confirmation` is NOT NULL and carries no catalog default, so the
-      // generated Insert type demands a value. WHAT WE PASS IS IGNORED.
-      // `platform._stamp_actor_tier` overwrites it on every INSERT from the
-      // CHANNEL, never from the payload (DD-131 §2.2 rule 3): a signed-in
-      // browser write declares no `x-matrx-actor-tier` header, which IS the
-      // declaration "a person is typing", and the row is born `confirmed`
-      // with that person recorded. An agent or server write declares its tier
-      // and is born `unconfirmed` unless two knobs say otherwise. Probed live
-      // 2026-09-12: an INSERT naming `'confirmed'` off the client channel
-      // still lands exactly what the trigger decided. This literal exists to
-      // satisfy the column, and is never a second confirmation write path.
-      confirmation: "unconfirmed",
+      // `confirmation` is NOT NULL and carries no catalog default — deliberately,
+      // so an admitted table that loses its carrier trigger refuses the insert
+      // rather than silently minting a row claiming a person confirmed it
+      // (DD-131 slice 1). `platform._stamp_actor_tier` stamps it on every INSERT
+      // from the CHANNEL, never from the payload (DD-131 §2.2 rule 3): a
+      // signed-in browser write declares no `x-matrx-actor-tier` header, which
+      // IS the declaration "a person is typing", and the row is born `confirmed`
+      // with that person recorded. We pass nothing here — the generated Insert
+      // type marks `confirmation` optional for exactly this reason
+      // (`scripts/server-set-columns.json`), so there is no literal for the
+      // trigger to overwrite and no second write path to drift from it.
     })
     .select("id,title,validation_status,kind_version,confirmation")
     .single();
@@ -252,7 +251,7 @@ export interface KindInstanceListEntry {
 export async function listKindInstances(
   kindDefinitionId: string,
   archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
-  scope?: ListScope,
+  scope?: ListScopeWord,
 ): Promise<KindInstanceListEntry[]> {
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;

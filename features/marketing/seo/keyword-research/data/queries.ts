@@ -7,6 +7,10 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import {
+  DEFAULT_ARCHIVE_FILTER,
+  type ArchiveFilterValue,
+} from "@ai-matrx/design-system";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 
 import type {
@@ -148,7 +152,17 @@ async function keywordResearchDefinitionId(
  */
 export async function listSavedKeywordResearch(
   siteId: string,
-  options?: { limit?: number; signal?: AbortSignal },
+  options?: {
+    limit?: number;
+    signal?: AbortSignal;
+    /**
+     * THE ARCHIVED-ITEMS LAW axis (common-docs/policies/archived-items.md):
+     * the default HIDES archived artifacts and the library's own control
+     * reveals them. A request, never a client-side sieve — the count on the
+     * trigger describes exactly what the list renders.
+     */
+    archiveFilter?: ArchiveFilterValue;
+  },
 ): Promise<SavedKeywordResearch[]> {
   const [db, instanceIds] = await Promise.all([
     contentIrDb(),
@@ -157,12 +171,16 @@ export async function listSavedKeywordResearch(
   if (instanceIds.length === 0) return [];
   const definitionId = await keywordResearchDefinitionId(db);
   if (!definitionId) return [];
-  const response = await db
+  const archiveFilter = options?.archiveFilter ?? DEFAULT_ARCHIVE_FILTER;
+  let query = db
     .from("kind_instance")
     .select("id, created_at, title, data")
     .in("id", instanceIds)
     .eq("kind_definition_id", definitionId)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  if (archiveFilter === "active") query = query.is("archived_at", null);
+  else if (archiveFilter === "archived") query = query.not("archived_at", "is", null);
+  const response = await query
     .order("created_at", { ascending: false })
     .limit(options?.limit ?? 50)
     .abortSignal(options?.signal ?? new AbortController().signal);
@@ -206,6 +224,9 @@ export async function getLatestSavedKeywordResearch(
     .in("id", instanceIds)
     .eq("kind_definition_id", definitionId)
     .eq("data->>primary_keyword", phrase.trim())
+    // archived-items-law-exempt: resolves THE latest artifact for one phrase,
+    // not a browsable list — an archived run is not the current answer.
+    .is("archived_at", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -229,6 +250,9 @@ export async function getLatestSavedKeywordResearch(
     .select("id, created_at, title, data")
     .in("id", instanceIds)
     .eq("kind_definition_id", definitionId)
+    // archived-items-law-exempt: the normalized-spelling fallback of the same
+    // single-answer lookup above — it returns one artifact, never a list.
+    .is("archived_at", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(50)
@@ -459,6 +483,10 @@ export async function getKeywordDossierCompleteness(
         .select("data")
         .in("id", instanceIds)
         .eq("kind_definition_id", definitionId)
+        // archived-items-law-exempt: computes WHICH phrases already have live
+        // research, to badge rows of a keyword table — not a list of artifacts.
+        // An archived run must not claim a phrase is already covered.
+        .is("archived_at", null)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(500)

@@ -21,7 +21,12 @@ import { FolderOpen, Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import {
+  ArchiveFilter,
+  DEFAULT_ARCHIVE_FILTER,
+  Input,
+  type ArchiveFilterValue,
+} from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,
@@ -33,8 +38,17 @@ import {
 } from "@/features/marketing/seo/keyword-research/data/queries";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 
-export function savedKeywordResearchListQueryKey(siteId: string | null) {
-  return ["seo", "keyword-research", "saved-list", siteId] as const;
+/**
+ * The list's cache key. Omitting `archiveFilter` yields the PREFIX, which is
+ * what an invalidator wants: a copy that lands new research must refresh every
+ * archive state's cached page, not only the one the user happens to be on.
+ */
+export function savedKeywordResearchListQueryKey(
+  siteId: string | null,
+  archiveFilter?: ArchiveFilterValue,
+) {
+  const base = ["seo", "keyword-research", "saved-list", siteId] as const;
+  return archiveFilter ? ([...base, archiveFilter] as const) : base;
 }
 
 export default function SavedResearchLibrary({
@@ -43,12 +57,18 @@ export default function SavedResearchLibrary({
   siteId: string | null;
 }) {
   const [search, setSearch] = useState("");
+  // THE ARCHIVED-ITEMS LAW: the default hides archived runs and the control
+  // below reveals them in one click. The value is a server REQUEST, so the
+  // count on the trigger always describes what this list renders.
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilterValue>(
+    DEFAULT_ARCHIVE_FILTER,
+  );
 
   const saved = useQuery({
-    queryKey: savedKeywordResearchListQueryKey(siteId),
+    queryKey: savedKeywordResearchListQueryKey(siteId, archiveFilter),
     queryFn: ({ signal }) =>
       siteId
-        ? listSavedKeywordResearch(siteId, { signal })
+        ? listSavedKeywordResearch(siteId, { signal, archiveFilter })
         : Promise.resolve([]),
     enabled: Boolean(siteId),
   });
@@ -112,6 +132,12 @@ export default function SavedResearchLibrary({
               </Button>
             ) : null}
           </div>
+          <ArchiveFilter
+            value={archiveFilter}
+            onValueChange={setArchiveFilter}
+            size="sm"
+            aria-label="Archived saved research"
+          />
         </div>
         <div className="max-h-80 overflow-y-auto">
           {saved.isLoading ? (

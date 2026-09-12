@@ -51,6 +51,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { scanRepo, scanSource, type Registry, type RegistryFact } from "./list-scope-client-scan";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -134,8 +135,39 @@ select json_build_object(
                              order by s.default_list_scope), '[]'::json)
       from (select default_list_scope, count(*) n from platform.entity_types
              where is_active and rls_variant not in ('component','ledger')
-             group by 1) s)
+             group by 1) s),
+  -- Guard B's source of truth: every active token's table, and where its list lands. The scanner
+  -- resolves a .schema(x).from(y) chain against this and asks nothing else.
+  'registry', (
+    select coalesce(json_agg(json_build_object(
+             'schema', et.schema_name, 'table', et.table_name,
+             'scope', coalesce(et.default_list_scope::text,
+                               case when et.rls_variant in ('component','ledger')
+                                    then 'inherited' end)) order by et.schema_name, et.table_name), '[]'::json)
+      from platform.entity_types et
+     where et.is_active
+       and (et.default_list_scope is not null or et.rls_variant in ('component','ledger')))
 ) as j`;
+
+/**
+ * Build the scanner's lookup: `schema.table` always, and the bare `table` too when every schema
+ * that owns that name agrees. A bare name whose owners DISAGREE is marked ambiguous, so the scanner
+ * reports it UNRESOLVED instead of guessing — guessing is how a guard starts lying.
+ */
+export function buildRegistry(rows: Array<{ schema: string; table: string; scope: string }>): Registry {
+  const reg: Registry = new Map();
+  const bare = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (r.scope !== "mine" && r.scope !== "organization" && r.scope !== "inherited") continue;
+    reg.set(`${r.schema}.${r.table}`, r.scope as RegistryFact);
+    if (!bare.has(r.table)) bare.set(r.table, new Set());
+    bare.get(r.table)!.add(r.scope);
+  }
+  for (const [table, scopes] of bare) {
+    reg.set(table, scopes.size === 1 ? ([...scopes][0] as RegistryFact) : "ambiguous");
+  }
+  return reg;
+}
 
 async function selfTest(env: { url: string; key: string }): Promise<number> {
   console.log(`${C.b}SELF-TEST${C.x} ${C.d}(the detector must find a definer list RPC, and must not flag an invoker one)${C.x}`);
@@ -182,6 +214,42 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
     }
   } finally {
     try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* the teardown is best effort; the schema name is unique per run */ }
+  }
+
+  // ── Guard B's detector, fed source this test wrote itself ──────────────────────────────────────
+  console.log(`${C.b}SELF-TEST — GUARD B${C.x} ${C.d}(the registry decides, not a list of files)${C.x}`);
+  const reg = buildRegistry([
+    { schema: "content_ir", table: "kind_instance", scope: "organization" },
+    { schema: "users", table: "user_secrets", scope: "mine" },
+    { schema: "a", table: "twins", scope: "mine" },
+    { schema: "b", table: "twins", scope: "organization" },
+  ]);
+  const cases: Array<[string, string, number]> = [
+    ["RED   — owner filter is the sole scope on an `organization` token",
+     `const q = supabase.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId);`, 1],
+    ["GREEN — the SAME line on a `mine` token is correct and is not flagged",
+     `const q = supabase.schema("users").from("user_secrets").select("id").eq("created_by", userId);`, 0],
+    ["GREEN — an organization filter alongside it answers the question already",
+     `const q = supabase.schema("content_ir").from("kind_instance").select("id").eq("organization_id", orgId).eq("created_by", userId);`, 0],
+    ["GREEN — asking the registry is the fix, and a fixed site stops being flagged",
+     `const ownerOnly = await scopeToOwner("content_ir_kind_instance", scope);\nlet q = supabase.schema("content_ir").from("kind_instance").select("id");\nif (ownerOnly) q = q.eq("created_by", userId);`, 0],
+    ["GREEN — a single-row read is not a list",
+     `const q = await supabase.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId).maybeSingle();`, 0],
+    ["GREEN — nor is a single-row read that types its row",
+     `const q = await supabase.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId).maybeSingle<{ id: string }>();`, 0],
+    ["GREEN — a write asserting ownership is not a list",
+     `await supabase.schema("content_ir").from("kind_instance").update({ x: 1 }).eq("created_by", userId);`, 0],
+    ["GREEN — a ternary twin on the SAME table carries the organization filter",
+     `const rows = orgIds.length\n  ? db.from("kind_instance").select("id").in("organization_id", orgIds)\n  : db.from("kind_instance").select("id").eq("created_by", userId);`, 0],
+    ["RED   — a twin on a DIFFERENT table does not exempt anything",
+     `const a = db.from("other_table").select("id").in("organization_id", orgIds);\nconst b = db.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId);`, 1],
+    ["RED   — a bare table name two schemas disagree about is UNRESOLVED, never guessed",
+     `const q = supabase.from("twins").select("id").eq("created_by", userId);`, 1],
+  ];
+  for (const [label, src, expect] of cases) {
+    const n = scanSource(src, "self-test.ts", reg).length;
+    if (n === expect) console.log(`  ${C.g}✓${C.x} ${label}`);
+    else { console.log(`  ${C.r}✗${C.x} ${label} ${C.d}(got ${n}, expected ${expect})${C.x}`); bad++; }
   }
 
   console.log(bad === 0 ? `${C.g}✓${C.x} ${C.b}the detector fails when it should and passes when it should${C.x}`
@@ -246,6 +314,42 @@ async function main(): Promise<number> {
     console.log(`  ${C.g}✓${C.x} ${reading.length} list RPCs take their default from the registry, not from a literal`);
   }
 
+  // D — GUARD B: the clients (§3.3, "and the client half is the larger job")
+  const registryRows = (j.registry as Array<{ schema: string; table: string; scope: string }>) ?? [];
+  if (registryRows.length === 0) {
+    findings++;
+    console.log(`  ${C.r}✗${C.x} UNMEASURED — the registry returned no table→scope rows, so the client scan cannot run. That is a failure, not a pass.`);
+  } else {
+    const reg = buildRegistry(registryRows);
+    const hits = scanRepo(ROOT, reg);
+    const orgHits = hits.filter((h) => h.scope === "organization");
+    const inherited = hits.filter((h) => h.scope === "inherited");
+    const unresolved = hits.filter((h) => h.scope === "unresolved");
+    if (orgHits.length > 0) {
+      findings++;
+      console.log(`  ${C.r}✗${C.x} ${orgHits.length} list quer${orgHits.length === 1 ? "y" : "ies"} filter to the signed-in person on a token the registry lands on ${C.b}organization${C.x}`);
+      for (const h of orgHits.slice(0, 40)) {
+        console.log(`     ${C.d}${h.file}:${h.line}  ${h.table}  .eq("${h.column}", …)${C.x}`);
+      }
+      if (orgHits.length > 40) console.log(`     ${C.d}… and ${orgHits.length - 40} more${C.x}`);
+      console.log(`     ${C.d}Each one throws away the organization_id the row is carrying. Read the registry instead: \`const ownerOnly = await scopeToOwner("<token>", scope)\` from @/lib/list-scope, then apply the owner filter only when it says so.${C.x}`);
+    } else {
+      console.log(`  ${C.g}✓${C.x} no list query filters to its owner as the sole scope on an ${"`organization`"} token ${C.d}(${registryRows.length} tokens known)${C.x}`);
+    }
+    // Two things this guard SEES but does not judge, printed rather than swallowed. Neither is a
+    // query defect; both are facts about the registry, and a guard that hides what it stepped over
+    // is a guard nobody can audit.
+    if (inherited.length > 0) {
+      const rels = [...new Set(inherited.map((h) => h.table))].sort();
+      console.log(`  ${C.y}!${C.x} ${inherited.length} owner-filtered list quer${inherited.length === 1 ? "y" : "ies"} on a registered ${C.b}component${C.x} ${C.d}(${rels.join(", ")}) — a component has no landing place of its own: db-rules §6d-1 says its access IS its parent's, so §3.3 (F-20) leaves its scope NULL on purpose. Not judged here.${C.x}`);
+    }
+    if (unresolved.length > 0) {
+      const rels = [...new Set(unresolved.map((h) => h.table))].sort();
+      console.log(`  ${C.y}!${C.x} ${unresolved.length} owner-filtered list quer${unresolved.length === 1 ? "y" : "ies"} on ${rels.length} table(s) with ${C.b}no registry row at all${C.x} — so no declared landing place, and §3.3's rule has nothing to say about them. A REGISTRY gap, not a query defect; named so it is not mistaken for a clean scan:`);
+      for (const t of rels) console.log(`     ${C.d}${t}${C.x}`);
+    }
+  }
+
   if (findings === 0) {
     console.log(`${C.g}✓${C.x} ${C.b}the list-scope axis is wired end to end${C.x}`);
     return 0;
@@ -254,7 +358,13 @@ async function main(): Promise<number> {
   return STRICT ? 1 : 0;
 }
 
-main().then((code) => process.exit(code)).catch((e) => {
+/**
+ * 🚨 `process.exit()` DISCARDS ANYTHING STILL IN THE STDOUT PIPE. When this guard grew a findings
+ * list longer than one pipe buffer, the last nine lines of a twenty-line list simply vanished into
+ * a redirect — the count said 20 and the reader could see 11. A guard that cannot be trusted to
+ * print what it found is worse than no guard. `exitCode` lets Node drain and leave on its own.
+ */
+main().then((code) => { process.exitCode = code; }).catch((e) => {
   console.error(`${C.r}✗${C.x} check:list-scope crashed: ${String(e)}`);
-  process.exit(1);
+  process.exitCode = 1;
 });

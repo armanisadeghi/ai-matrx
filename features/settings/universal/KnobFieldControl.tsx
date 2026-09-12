@@ -46,6 +46,7 @@ import { formatKnobValue, type KnobControl, type KnobLadder } from "@/lib/scoped
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { extractErrorMessage } from "@/utils/errors";
 
 /** The control kinds this file renders. Anything else keeps the row's own editor. */
 const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
@@ -103,7 +104,7 @@ export function KnobFieldControl(props: KnobFieldControlProps) {
 }
 
 /** Structured values are inspectable by default and editable only on intent. */
-function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
+function JsonField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
   const [editing, setEditing] = useState(false);
   const [raw, setRaw] = useState(() => JSON.stringify(ladder.value, null, 2));
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +123,7 @@ function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
   return (
     <div className="w-full min-w-64 space-y-2">
       <Textarea
-        aria-label="Structured value"
+        aria-label={`Structured value for ${knob.label}`}
         className="min-h-28 font-mono text-xs"
         value={raw}
         disabled={disabled}
@@ -133,6 +134,10 @@ function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
         <Button size="sm" disabled={disabled} onClick={() => {
           try {
             const parsed: unknown = JSON.parse(raw);
+            if (parsed === null) {
+              setError("Use the reset action to clear this value.");
+              return;
+            }
             setError(null);
             void Promise.resolve(onCommit(parsed)).then((saved) => {
               if (saved !== false) setEditing(false);
@@ -299,7 +304,7 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
     try {
       await sendMessage(VOICE_SAMPLE_LINE, VoiceSpeed.NORMAL, { mode: "id", id: current });
     } catch (err) {
-      setFailure(err instanceof Error ? err.message : String(err));
+      setFailure(extractErrorMessage(err));
     } finally {
       setPlaying(false);
     }

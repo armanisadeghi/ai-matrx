@@ -214,6 +214,18 @@ if $STRICT; then
         # banner instead of a silent green [OK].
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live --strict"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
+        # 🚨 THE STAFF DOOR (DD-137b). Our own staff go through the audited emergency
+        # door like anyone on a `private` or `confidential` table — COMPONENTS INCLUDED.
+        # V-40 measured the gap this exists to keep shut: 131,763 of 131,763
+        # `chat.message` rows readable by a platform admin while only 226 of 24,590
+        # conversations were, because a component's NULL lane set was read as "allow".
+        # `check:admin-door` has the ORG-admin twin of this and stayed green throughout.
+        "Staff door (private/confidential, components included)|pnpm exec tsx scripts/check-staff-door.ts --strict"
+        # THE LIST-SCOPE AXIS (DD-137b §3.3) is RED at 11 of 11 on purpose: the eleven
+        # %_list_scoped RPCs are still SECURITY DEFINER. It runs NON-strict here so the
+        # standing RED is printed at every release instead of being remembered, without
+        # blocking a release on work that is scheduled rather than broken.
+        "List-scope axis (RED until the eleven RPCs convert)|pnpm exec tsx scripts/check-list-scope.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         # THE COMPONENT OWNERSHIP LAW exits 1 in strict mode, unlike most
         # drift gates here. Its live count is 0 today (191 component tables, 945
@@ -558,6 +570,8 @@ else
         "Entity registry generation drift|pnpm check:entity-types"
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
+        "Staff door (private/confidential, components included)|pnpm exec tsx scripts/check-staff-door.ts --strict"
+        "List-scope axis (RED until the eleven RPCs convert)|pnpm exec tsx scripts/check-list-scope.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         # 🚨 `:strict` ON PURPOSE, IN THE ADVISORY LIST TOO — and this line is the
         # fix for a gate that was decor for five days. The checker gates its EXIT

@@ -1,0 +1,4 @@
+{
+  "_comment": "Columns a database TRIGGER stamps on every INSERT, with deliberately NO DDL default — so `supabase gen types` cannot infer optionality from the catalog the way it does for a plain `DEFAULT now()` column. Read by mark-server-set-columns-optional.ts as a post-processing step of `pnpm db-types`. Adding a column here NEVER changes the database — it only tells the generated Insert type that a client does not need to supply it, because the trigger overwrites whatever is sent (DD-131: the fail-closed NOT NULL / no-default shape stays; only the client-facing type gets easier to use honestly).",
+  "content_ir.kind_instance": ["confirmation", "confirmed_by", "confirmed_at"]
+}

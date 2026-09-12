@@ -18494,7 +18494,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           archived_by?: string | null
-          confirmation: Database["platform"]["Enums"]["confirmation"]
+          confirmation?: Database["platform"]["Enums"]["confirmation"]
           confirmed_at?: string | null
           confirmed_by?: string | null
           created_at?: string
