@@ -90,10 +90,17 @@ export function SeriesBars({ points, granularity, onPickDay }: SeriesBarsProps) 
           );
         })}
       </div>
-      <div className="mt-1 flex gap-[2px] text-[10px] text-muted-foreground">
+      {/* Tick labels sit OUTSIDE their bucket's width: a 48-bucket window gives
+          each cell ~26px and "Sep 11, 5 PM" needs ~65px, so a label clipped to
+          its cell reads "Se…". Each labelled cell anchors its text absolutely
+          and lets it run right; `tickEvery` keeps labelled cells far enough
+          apart (≥ 6 buckets at hour granularity) that labels never collide. */}
+      <div className="relative mt-1 flex h-4 gap-[2px] overflow-hidden text-[10px] text-muted-foreground">
         {points.map((p, i) => (
-          <div key={p.at} className="min-w-[3px] flex-1 truncate">
-            {i % tickEvery === 0 ? shortLocal(p.at) : ""}
+          <div key={p.at} className="relative min-w-[3px] flex-1">
+            {i % tickEvery === 0 ? (
+              <span className="absolute left-0 top-0 whitespace-nowrap">{shortLocal(p.at)}</span>
+            ) : null}
           </div>
         ))}
       </div>
