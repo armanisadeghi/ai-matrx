@@ -165,4 +165,27 @@ describe("OlderMessagesSentinel automatic fetching", () => {
     land(20, 28);
     expect(loadOlderMessages).toHaveBeenCalledTimes(1);
   });
+
+  it("expires an upward gesture away from the top before a later programmatic jump", () => {
+    render();
+    act(() => { scrollRef.current!.dispatchEvent(new WheelEvent("wheel", { deltaY: -10 })); });
+    frame();
+    scrollRef.current!.scrollTop = 0;
+    act(() => { scrollRef.current!.dispatchEvent(new Event("scroll")); intersect(); });
+    frame();
+    expect(loadOlderMessages).not.toHaveBeenCalled();
+  });
+
+  it("does not treat scrolling inside a tool result as transcript navigation", () => {
+    render(); frame();
+    scrollRef.current!.scrollTop = 0;
+    const tool = document.createElement("div");
+    tool.style.overflowY = "auto";
+    Object.defineProperties(tool, { scrollHeight: { value: 500 }, clientHeight: { value: 100 } });
+    tool.scrollTop = 100;
+    scrollRef.current!.appendChild(tool);
+    act(() => { tool.dispatchEvent(new WheelEvent("wheel", { deltaY: -10, bubbles: true })); intersect(); });
+    frame();
+    expect(loadOlderMessages).not.toHaveBeenCalled();
+  });
 });

@@ -224,23 +224,44 @@ export function OlderMessagesSentinel({
     let pointerDown = false;
     let touchY: number | undefined;
     let previousTop = scrollEl.scrollTop;
+    let gestureFrame = 0;
 
     const pump = () => {
       if (scrollEl.scrollTop > PREFETCH_BAND_PX) return;
       advanceOlderHistory.current();
     };
     const direction = (upward: boolean) => {
+      window.cancelAnimationFrame(gestureFrame);
       upwardIntentRef.current = upward;
       if (upward) pump();
+      // A gesture away from the top authorizes its native scroll, not some
+      // unrelated layout/programmatic jump much later in the conversation.
+      if (upward && scrollEl.scrollTop > PREFETCH_BAND_PX) {
+        gestureFrame = window.requestAnimationFrame(() => {
+          if (scrollEl.scrollTop > PREFETCH_BAND_PX) upwardIntentRef.current = false;
+        });
+      }
+    };
+    const nestedScrollerConsumes = (target: EventTarget | null, upward: boolean) => {
+      let element = target instanceof Element ? target : null;
+      while (element && element !== scrollEl) {
+        const overflow = window.getComputedStyle(element).overflowY;
+        if ((overflow === "auto" || overflow === "scroll") && element.scrollHeight > element.clientHeight) {
+          if (upward ? element.scrollTop > 0 : element.scrollTop + element.clientHeight < element.scrollHeight) return true;
+        }
+        element = element.parentElement;
+      }
+      return false;
     };
     const wheel = (event: WheelEvent) => {
+      if (nestedScrollerConsumes(event.target, event.deltaY < 0)) return;
       if (event.deltaY !== 0) direction(event.deltaY < 0);
     };
     const touchStart = (event: TouchEvent) => { touchY = event.touches[0]?.clientY; };
     const touchMove = (event: TouchEvent) => {
       const nextY = event.touches[0]?.clientY;
       if (nextY !== undefined && touchY !== undefined && nextY !== touchY) {
-        direction(nextY > touchY);
+        if (!nestedScrollerConsumes(event.target, nextY > touchY)) direction(nextY > touchY);
       }
       touchY = nextY;
     };
@@ -269,6 +290,7 @@ export function OlderMessagesSentinel({
     window.addEventListener("pointercancel", pointerEnd);
     scrollEl.addEventListener("scroll", scroll, { passive: true });
     return () => {
+      window.cancelAnimationFrame(gestureFrame);
       scrollEl.removeEventListener("wheel", wheel);
       scrollEl.removeEventListener("touchstart", touchStart);
       scrollEl.removeEventListener("touchmove", touchMove);
