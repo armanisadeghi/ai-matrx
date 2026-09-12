@@ -257,23 +257,62 @@ export function FeatureKnobsPanel() {
                       {knob.unit === "usd" && (
                         <span className="text-sm text-muted-foreground">$</span>
                       )}
-                      <Input
-                        className="w-40"
-                        value={drafts[id] ?? ""}
-                        list={
-                          knob.allowed_values?.length ? `${id}-options` : undefined
-                        }
-                        onChange={(event) =>
-                          setDrafts((prev) => ({ ...prev, [id]: event.target.value }))
-                        }
-                      />
+                      {/* 🚨 A CLOSED SET IS A CHOICE, NOT A TYPING TEST. This
+                          was an <Input> with a <datalist>, i.e. free text over
+                          64 enum knobs platform-wide: an admin could type a
+                          word `platform.feature_knob_set` then refuses, and
+                          only learn it on save. A knob is a decision an
+                          organization makes — the values it may hold are the
+                          register's, so they are OFFERED. Boolean knobs get the
+                          same treatment for the same reason ("True" is not
+                          `true`, and the old field parsed anything-but-"true"
+                          as false, silently). */}
                       {knob.allowed_values?.length ? (
-                        <datalist id={`${id}-options`}>
+                        <select
+                          className="h-9 w-40 rounded-md border border-input bg-background px-2 text-sm"
+                          aria-label={knob.label}
+                          value={drafts[id] ?? ""}
+                          onChange={(event) =>
+                            setDrafts((prev) => ({ ...prev, [id]: event.target.value }))
+                          }
+                        >
+                          {/* The value the row currently holds, even if the
+                              register no longer allows it. Dropping it would
+                              show a DIFFERENT value than the one in force. */}
+                          {knob.allowed_values.includes(drafts[id] ?? "") ? null : (
+                            <option value={drafts[id] ?? ""}>
+                              {(drafts[id] ?? "") === ""
+                                ? "(no value)"
+                                : `${drafts[id]} (not in the allowed set)`}
+                            </option>
+                          )}
                           {knob.allowed_values.map((option) => (
-                            <option key={option} value={option} />
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
                           ))}
-                        </datalist>
-                      ) : null}
+                        </select>
+                      ) : knob.value_type === "boolean" ? (
+                        <select
+                          className="h-9 w-40 rounded-md border border-input bg-background px-2 text-sm"
+                          aria-label={knob.label}
+                          value={(drafts[id] ?? "") === "true" ? "true" : "false"}
+                          onChange={(event) =>
+                            setDrafts((prev) => ({ ...prev, [id]: event.target.value }))
+                          }
+                        >
+                          <option value="true">on</option>
+                          <option value="false">off</option>
+                        </select>
+                      ) : (
+                        <Input
+                          className="w-40"
+                          value={drafts[id] ?? ""}
+                          onChange={(event) =>
+                            setDrafts((prev) => ({ ...prev, [id]: event.target.value }))
+                          }
+                        />
+                      )}
                       {knob.unit && knob.unit !== "usd" && (
                         <span className="text-xs text-muted-foreground">
                           {knob.unit}

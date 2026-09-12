@@ -51,6 +51,17 @@ deployed. The satellite hosts still hand `/meet/*` back to the main origin.
   package's own rule.
 - **Nothing dead, nothing lying.** Every state on these surfaces has a sentence:
   no org, no meet host, an unresolvable slug, an inert provider.
+- **A guest who attended can read what the meeting produced, and NOTHING here
+  decides how much.** `@ai-matrx/meet` 0.5.0 (MRF-1): `useMeetingRecord` picks
+  the guest door by itself — `GET /api/v1/meet/record`, authorized by the room
+  token that device kept, with the shared subset resolved server-side from the
+  meeting's own setting, then the organization's `meet.guest_record_access`
+  knob, then the platform default `summary`. This repo changed **nothing** for
+  it: `GuestRoom` already mounts the provider with the resolved meeting row and
+  `<MeetingRoom>` already flips to the record when `ended_at` is set. An
+  administrator changes the organization's answer at
+  **/administration/users/limits → Feature knobs**; a host changes one meeting's
+  from the record view or the People panel.
 
 ## Zero wrappers (and why that is the point)
 
@@ -98,6 +109,21 @@ reader of an older tag will otherwise conclude the package is broken.
 
 ## Change log
 
+
+- **2026-09-12 — adopted `@ai-matrx/meet` 0.5.0 (MRF-1: guests and the
+  post-meeting record).** A guest following a meeting link afterwards used to
+  get four honest refusals where the record should have been. Arman ruled that
+  guest access is a configuration and never a question, so the package now
+  reads the shared subset from the server with the room token the device kept,
+  and a host sets the level from the record view or the People panel.
+  **This repo changed nothing but the version and one adjacent fix** — the
+  "zero wrappers" contract working again. The adjacent fix is in the knob admin
+  panel, not in Meet: `platform.feature_knob` rows with `allowed_values` (64 of
+  them platform-wide, including this new one) were edited in a free-text field
+  with a `datalist`, so an admin could type a word the database then refuses and
+  only learn it on save. A closed set is now a real `<select>`, and a boolean
+  knob is an on/off select rather than a field where anything but the literal
+  "true" silently meant false.
 
 - **2026-09-09 — adopted `@ai-matrx/meet` 0.4.12 (MRI-A16 at 0.4.8 + 0.4.9 + 0.4.11 + 0.4.12; 0.4.10 is a parallel
   guest-read fix that builds on them).** 0.4.9 is the defect 0.4.8 walked into by fixing the one
