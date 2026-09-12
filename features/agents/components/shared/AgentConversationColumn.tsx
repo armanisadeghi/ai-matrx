@@ -438,7 +438,6 @@ export function AgentConversationColumn({
               <AgentConversationDisplay
                 conversationId={displayId}
                 surfaceKey={surfaceKey}
-                scrollRef={scrollRef}
                 deferColdMarkdown={deferColdMarkdown}
                 bottomPinned={shouldPinColdScroll}
                 fallbackVisibleGroupLimit={

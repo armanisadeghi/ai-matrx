@@ -41,7 +41,7 @@ const conversationId = "cold-history";
 const activeResizeObservers = new Set<() => void>();
 
 function page(): MessageRecord[] {
-  return Array.from({ length: 12 }, (_, index) => ({
+  return Array.from({ length: 4 }, (_, index) => ({
     id: `message-${index}`,
     conversationId,
     agentId: null,
@@ -131,6 +131,42 @@ describe("AgentConversationColumn cold history anchoring", () => {
           this.callback([], this as unknown as ResizeObserver);
       },
     });
+    class IntersectionObserverMock {
+      constructor(private readonly callback: IntersectionObserverCallback) {}
+
+      observe(target: Element) {
+        this.callback(
+          [
+            {
+              isIntersecting: false,
+              target,
+              intersectionRatio: 0,
+              boundingClientRect: new DOMRect(),
+              intersectionRect: new DOMRect(),
+              rootBounds: null,
+              time: 0,
+            },
+          ],
+          this as unknown as IntersectionObserver,
+        );
+      }
+
+      disconnect() {}
+
+      takeRecords() {
+        return [];
+      }
+
+      unobserve() {}
+    }
+    Object.defineProperty(globalThis, "IntersectionObserver", {
+      configurable: true,
+      value: IntersectionObserverMock,
+    });
+    Object.defineProperty(window, "IntersectionObserver", {
+      configurable: true,
+      value: IntersectionObserverMock,
+    });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -196,18 +232,29 @@ describe("AgentConversationColumn cold history anchoring", () => {
     );
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 1000 });
 
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+    const callsBeforeDelayedGrowth = scrollTo.mock.calls.length;
     // The old 4.8s unlock released the ResizeObserver before this growth.
     act(() => {
       jest.advanceTimersByTime(5000);
       for (const observer of activeResizeObservers) observer();
     });
+    expect(scrollTo.mock.calls.length).toBeGreaterThan(
+      callsBeforeDelayedGrowth,
+    );
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 1000 });
     expect(loadOlderMessages).not.toHaveBeenCalled();
 
+    const callsBeforeDownwardGrowth = scrollTo.mock.calls.length;
     act(() => {
       scrollEl?.dispatchEvent(new WheelEvent("wheel", { deltaY: 120 }));
       for (const observer of activeResizeObservers) observer();
     });
+    expect(scrollTo.mock.calls.length).toBeGreaterThan(
+      callsBeforeDownwardGrowth,
+    );
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 1000 });
 
     act(() => {

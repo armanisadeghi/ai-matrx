@@ -442,6 +442,8 @@ model overrides.
 
 ## Change Log
 
+- `2026-09-11` — **Bottom-first conversation loading and intentional history paging.** Keep the newest response and composer available while older loaded content settles above; retain the bottom pin beyond slow renders, fetch older pages only after upward navigation, and remove competing history anchors. Regression coverage exercises the real column and sentinel, including delayed resize, initial intersections, nested scrolling, and collapsed tool-heavy pages.
+
 - `2026-09-11` — Comparison headings use data-only timestamps and locale-aware relative age from the shared diff viewer; removed the duplicate older-version timestamp and clock from the toolbar.
 
 - `2026-09-11` — Codex: Older-history fetching rechecks the top after a page or display-window advance and after the cold-history lock opens. Collapsed assistant/tool batches no longer require repeated down/up scrolling to reach earlier messages. The shared sentinel preserves the scroll anchor and stops when the viewer leaves the top or history is exhausted; loading-state changes alone do not cause automatic retry loops. Initial page sizes and initial-turn selection are unchanged. Guard: `components/shared/__tests__/OlderMessagesSentinel.test.tsx`.
@@ -813,7 +815,7 @@ A turn with exactly one assistant `cx_message` becomes a one-member group. Visua
 
 `/chat/[conversationId]` cold loads and `/agents/[id]/run?conversationId=...` deep-links render the transcript bottom-first. `AgentConversationDisplay` derives display groups through `display-groups.ts`, then applies a visible group window from the messages slice. The first hydrated frame shows the latest user group + latest assistant group only, bottom-aligns that cold transcript with a moderate viewport spacer, and `AgentConversationColumn` pins the scroll container to its true bottom while `MarkdownStream` and the auto-revealed prior four groups settle above it. Runner deep-links pass the same bounded `loadConversation` limit and `deferColdMarkdown` flag as chat so the two page surfaces cannot drift.
 
-The top sentinel is locked during this cold settle window so it cannot auto-trigger while the transcript is still shorter than the viewport. Once unlocked, upward scroll reveals two already-loaded groups at a time; only after the hidden loaded groups are exhausted does it dispatch `loadOlderMessages`. Live `requestId` streams and URL-promotion conversations skip the cold markdown/window path, so active streaming bubbles keep the existing stream contract.
+The column maintains its bottom pin through delayed content resizing until deliberate upward navigation or transcript interaction releases it; there is no timed unlock or automatic older-page fetch. The top sentinel requires upward navigation intent before revealing two already-loaded groups at a time or dispatching `loadOlderMessages`. Initial intersection, programmatic scroll, downward scrolling, and scrolling inside a tool result do not authorize history fetching. The sentinel alone compensates prepend height; the display never runs a competing cold user-message anchor. The newest assistant member renders immediately while older cold markdown settles in a transition. Live `requestId` streams and URL-promotion conversations skip the cold markdown/window path, so active streaming bubbles keep the existing stream contract.
 
 ---
 

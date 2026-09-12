@@ -18,13 +18,7 @@
  * tool_call stubs with their full payloads from `observability.toolCalls`.
  */
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  type RefObject,
-} from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectConversationMessages,
@@ -65,8 +59,6 @@ import { AgentAssistantMessage } from "./assistant/AgentAssistantMessage";
 import { AgentEmptyMessageDisplay } from "./assistant/AgentEmptyMessageDisplay";
 import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
 
-const COLD_MARKDOWN_ANCHOR_WINDOW_MS = 4200;
-
 interface AgentConversationDisplayProps {
   conversationId: string;
   /**
@@ -77,7 +69,6 @@ interface AgentConversationDisplayProps {
    */
   surfaceKey?: string;
   compact?: boolean;
-  scrollRef?: RefObject<HTMLDivElement | null>;
   deferColdMarkdown?: boolean;
   fallbackVisibleGroupLimit?: number | null;
   bottomPinned?: boolean;
@@ -87,7 +78,6 @@ export function AgentConversationDisplay({
   conversationId,
   surfaceKey,
   compact = false,
-  scrollRef,
   deferColdMarkdown = false,
   fallbackVisibleGroupLimit = null,
   bottomPinned = false,
@@ -150,7 +140,8 @@ export function AgentConversationDisplay({
   const prevLastUserKeyRef = useRef<string | undefined>(undefined);
   const didMountRef = useRef(false);
   const lastUserIsPending = messages.some(
-    (message) => message.id === lastUserKey && message._clientStatus === "pending",
+    (message) =>
+      message.id === lastUserKey && message._clientStatus === "pending",
   );
   useEffect(() => {
     const prev = prevLastUserKeyRef.current;
@@ -171,89 +162,8 @@ export function AgentConversationDisplay({
     }
   }, [lastUserKey, lastUserIsPending]);
 
-  const scrollSnapshotRef = useRef<{
-    firstKey: string | undefined;
-    scrollHeight: number;
-  } | null>(null);
-  const didAnchorColdRevealRef = useRef(false);
-  useEffect(() => {
-    scrollSnapshotRef.current = null;
-    didAnchorColdRevealRef.current = false;
-  }, [conversationId]);
-
-  useLayoutEffect(() => {
-    if (bottomPinned) {
-      scrollSnapshotRef.current = null;
-      return;
-    }
-    const scrollEl = scrollRef?.current;
-    const firstKey = displayGroups[0]?.key;
-    const previous = scrollSnapshotRef.current;
-    if (scrollEl && previous && previous.firstKey !== firstKey) {
-      const previousKeyStillVisible =
-        previous.firstKey != null &&
-        displayGroups.some((group) => group.key === previous.firstKey);
-      if (previousKeyStillVisible) {
-        const delta = scrollEl.scrollHeight - previous.scrollHeight;
-        if (delta > 0) {
-          scrollEl.scrollTo({ top: scrollEl.scrollTop + delta });
-        }
-      }
-    }
-    scrollSnapshotRef.current = {
-      firstKey,
-      scrollHeight: scrollEl?.scrollHeight ?? 0,
-    };
-  }, [bottomPinned, displayGroups, scrollRef]);
-
-  useEffect(() => {
-    if (bottomPinned) return undefined;
-    if (!deferColdMarkdown) return undefined;
-    if (didAnchorColdRevealRef.current) return undefined;
-    if (
-      effectiveVisibleGroupLimit === null ||
-      effectiveVisibleGroupLimit <= 2
-    ) {
-      return undefined;
-    }
-    didAnchorColdRevealRef.current = true;
-    let animationFrame = 0;
-    let stopped = false;
-    const anchorLatestUser = () => {
-      const scrollEl = scrollRef?.current;
-      const target = lastUserRef.current;
-      if (!scrollEl || !target) return;
-      const scrollRect = scrollEl.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const delta = targetRect.top - scrollRect.top;
-      if (Math.abs(delta) > 1) {
-        scrollEl.scrollTo({ top: scrollEl.scrollTop + delta });
-      }
-    };
-    const timer = window.setTimeout(() => {
-      const startedAt = performance.now();
-      const tick = () => {
-        anchorLatestUser();
-        if (
-          !stopped &&
-          performance.now() - startedAt < COLD_MARKDOWN_ANCHOR_WINDOW_MS
-        ) {
-          animationFrame = window.requestAnimationFrame(tick);
-        }
-      };
-      animationFrame = window.requestAnimationFrame(tick);
-    }, 220);
-    return () => {
-      stopped = true;
-      window.clearTimeout(timer);
-      if (animationFrame) window.cancelAnimationFrame(animationFrame);
-    };
-  }, [
-    bottomPinned,
-    deferColdMarkdown,
-    effectiveVisibleGroupLimit,
-    lastUserKey,
-  ]);
+  // The column owns initial bottom placement; OlderMessagesSentinel owns
+  // prepend compensation. History rendering must not add another scroll anchor.
 
   const assistantGroupCount = displayGroups.filter(
     (g) => g.kind === "assistant" || g.kind === "assistant-failed",
