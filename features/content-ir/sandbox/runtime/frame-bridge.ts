@@ -75,16 +75,35 @@ export function frameRefusals(): Readonly<RefusalLog> {
     return refusals;
 }
 
+/**
+ * The origin this document was SERVED from — not the origin it RUNS on. See
+ * the origin check below for why the two differ inside the sandbox.
+ */
+function servedOrigin(): string {
+    try {
+        return new URL(window.location.href).origin;
+    } catch {
+        return "";
+    }
+}
+
 export function installFrameBridge(mount: FrameMountApi): void {
     if (typeof window === "undefined") return;
 
     const onWindowMessage = (event: MessageEvent): void => {
-        // THE FRAME-SIDE ORIGIN CHECK. The frame is served from the app's own
-        // origin, so `location.origin` IS the only origin allowed to hand it a
-        // port — even though the frame's own execution origin is opaque.
-        if (event.origin !== window.location.origin) {
+        // THE FRAME-SIDE ORIGIN CHECK: only the origin this document was
+        // SERVED from may hand the frame its port.
+        //
+        // 🚨 IT CANNOT USE `location.origin`. The frame is sandboxed without
+        // `allow-same-origin`, so its execution origin is opaque and
+        // `location.origin` is the string "null" — comparing against it
+        // refuses the real host every single time (observed in the browser
+        // 2026-09-12: the host posted init and the frame never answered).
+        // `location.href` still carries the URL the document was served from,
+        // so the scheme+host parsed out of it is the honest expectation.
+        if (event.origin !== servedOrigin()) {
             refuse(
-                `Ignored a message from "${event.origin}". This frame only accepts its host page at ${window.location.origin}.`,
+                `Ignored a message from "${event.origin}". This frame only accepts its host page at ${servedOrigin()}.`,
             );
             return;
         }
