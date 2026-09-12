@@ -23,7 +23,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
-import { compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
+import { blastRadiusFor, compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
 import type { KnobScopeKindName, ScopedKnob } from "@/lib/scoped-config/types";
 import { useActiveSettingsTabId } from "../components/SettingsTabHost";
 import { resolveConfigSection } from "./configTree";
@@ -99,17 +99,22 @@ export function UniversalSettingsRows({
     <>
       {[...groups.entries()].map(([group, rows]) => (
         <SettingsSection key={group} title={group}>
-          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId }, index) => (
+          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId, ladder }) => (
             <KnobOverrideRow
               key={knob.full_key}
               knob={knob}
               scopeKind={scopeKind}
               scopeId={scopeId}
               organizationId={organizationId}
-              reach={{ organizationName, members: memberCount }}
-              canManageOrganization={canManageOrganization}
+              ladder={ladder}
+              blastRadius={blastRadiusFor(scopeKind, {
+                organizationName,
+                members: memberCount,
+              })}
+              showUserLockControl={
+                scopeKind === "organization" && canManageOrganization
+              }
               hideKey={hideKey}
-              last={index === rows.length - 1}
               onChanged={settings.refresh}
             />
           ))}

@@ -158,6 +158,10 @@ export default function KeywordResearchLauncher({
    * host's emitted value and the box can never disagree. Nothing here starts a
    * run — `handleRun` stays behind the button.
    */
+  // The surface arrives as a prop. Two mounts pass one:
+  // `KeywordResearchWorkbench` ("matrx-user/keyword-research") and
+  // `KeywordResearchWindow` (KEYWORD_RESEARCH_WINDOW_SURFACE_NAME).
+  // surface-write-handlers-surface: matrx-user/keyword-research, matrx-user/keyword-research-window
   useSurfaceWriteHandlers(writeTargetSurfaceName, {
     research_input_keyword: (value: unknown) => {
       // Refuse before validating shape: while a run is in flight the answer is

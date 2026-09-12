@@ -6,6 +6,7 @@
  */
 
 import type { JsonObject } from "@/types/json";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ============================================================================
 // Core Types
@@ -298,11 +299,15 @@ export function validateOrgSlug(slug: string): {
   return { valid: true };
 }
 
-/** The fixed compact label for a user's personal organization. */
-export const PERSONAL_ORG_ABBREVIATION = "ME";
-
 /**
  * Is this organization the VIEWER'S OWN personal organization?
+ *
+ * 🚨 FOR DATA ROUTING ONLY — NEVER FOR DISPLAY. An organization is shown
+ * under its real name, its real abbreviation and the viewer's real role in it,
+ * always; nothing on screen is relabelled because a row carries `is_personal`
+ * (Arman, 2026-09-11: *"annihilate the feature that renames an org and gives it
+ * some override name by calling it my personal"*). Use this only where the
+ * answer decides WHERE A ROW IS WRITTEN.
  *
  * 🚨 `isPersonal` ALONE IS NOT THE ANSWER — it says "this is somebody's private
  * workspace", never "it is yours". A user can hold a membership in another
@@ -311,10 +316,10 @@ export const PERSONAL_ORG_ABBREVIATION = "ME";
  * viewer's own.
  *
  * Live defect, 2026-09-11: an account holding an `admin` membership in another
- * account's personal org saw TWO organizations badged Personal, and
- * `OrganizationList`'s `find(o => o.isPersonal)` matched the one it did NOT
- * own — so the viewer's real personal org disappeared from the page entirely
- * (the team-org list filters out everything `isPersonal`).
+ * account's personal org had `resolveActiveOrgContext` seed
+ * `personal_organization_id` — the never-null org for WRITES — from
+ * `find(o => o.isPersonal)`, which could match the workspace it did NOT own.
+ * That is the class this predicate exists to close.
  *
  * Ownership is `created_by`. That is the same column the database keys on in
  * `iam.personal_org_id()` and in the partial unique index
@@ -364,16 +369,18 @@ const ABBREVIATION_IGNORED_WORDS = new Set([
 ]);
 
 /**
- * Generate the canonical 2-3 letter starting value for an organization.
- * Personal organizations are always ME. Shared organizations use meaningful
- * word initials, preserving a short leading initialism (AI Matrx -> AIM).
+ * Generate the canonical 2-3 letter starting value for an organization, from
+ * its NAME — meaningful word initials, preserving a short leading initialism
+ * (AI Matrx -> AIM).
+ *
+ * There is no personal-organization special case. It used to return the
+ * constant "ME" for any `is_personal` row, which is a viewer-relative word
+ * applied as an absolute label: a user who belonged to two personal
+ * organizations saw the same "ME" chip on both and could not tell them apart
+ * (Arman, 2026-09-11). Every organization now abbreviates from its own name,
+ * the same way every other name in the product is its own.
  */
-export function generateOrganizationAbbreviation(
-  name: string,
-  isPersonal = false,
-): string {
-  if (isPersonal) return PERSONAL_ORG_ABBREVIATION;
-
+export function generateOrganizationAbbreviation(name: string): string {
   const words = (name.toUpperCase().match(/[A-Z]+/g) ?? []).filter(
     (word) => !ABBREVIATION_IGNORED_WORDS.has(word),
   );
@@ -388,39 +395,6 @@ export function generateOrganizationAbbreviation(
     abbreviation += word[0];
   }
   return abbreviation.slice(0, 3).padEnd(2, "X");
-}
-
-/**
- * The compact label to SHOW a given viewer for an organization.
- *
- * 🚨 `PERSONAL_ORG_ABBREVIATION` ("ME") is a VIEWER-RELATIVE word stored as an
- * absolute column: every personal org carries `abbreviation = 'ME'` in
- * `iam.organizations`, which is true only for its owner. A user holding a
- * membership in someone else's personal org therefore saw two different orgs
- * both chipped "ME" — the most visible half of the 2026-09-11 "why am I seeing
- * two personal organizations" defect, and one that no amount of fixing the
- * badge logic alone could remove, because the wrong word is in the data.
- *
- * So the stored value is honoured for the owner and for every shared org, and
- * recomputed from the name for a personal org the viewer does not own. Nothing
- * is written back: the column stays correct for the person it describes.
- */
-export function displayOrganizationAbbreviation(
-  org: {
-    name: string;
-    abbreviation?: string | null;
-    isPersonal?: boolean | null;
-    is_personal?: boolean | null;
-    createdBy?: string | null;
-    created_by?: string | null;
-  },
-  viewerUserId: string | null | undefined,
-): string {
-  const personal = org.isPersonal ?? org.is_personal ?? false;
-  if (personal === true && !isOwnPersonalOrg(org, viewerUserId)) {
-    return generateOrganizationAbbreviation(org.name, false);
-  }
-  return org.abbreviation ?? generateOrganizationAbbreviation(org.name, personal === true);
 }
 
 /** Validate the database-backed compact organization label. */
@@ -498,23 +472,14 @@ export function getRoleBadgeColor(role: OrgRole): string {
 /**
  * Format time remaining until expiration
  */
+/**
+ * THE prose voice: @ai-matrx/kit/format's `long` ("3 days", "5 hours",
+ * "20 minutes"), which floors so a countdown never over-promises, and
+ * pluralises correctly at every unit.
+ */
 export function getExpiryDisplay(expiresAt: string): string {
-  const now = new Date();
-  const expiry = new Date(expiresAt);
-  const diff = expiry.getTime() - now.getTime();
-
-  if (diff < 0) {
-    return "Expired";
-  }
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-  if (days > 0) {
-    return `Expires in ${days} day${days > 1 ? "s" : ""}`;
-  } else if (hours > 0) {
-    return `Expires in ${hours} hour${hours > 1 ? "s" : ""}`;
-  } else {
-    return "Expires soon";
-  }
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (Number.isNaN(diff)) return "Expired";
+  if (diff < 0) return "Expired";
+  return `Expires in ${formatDurationMs(diff, { style: "coarse" })}`;
 }

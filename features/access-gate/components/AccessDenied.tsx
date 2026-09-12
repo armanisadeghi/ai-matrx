@@ -48,6 +48,11 @@ import type {
   AccessDeniedContext,
   AccessRequestability,
 } from "@/features/access-gate/types";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM".
+import { getInitials as initials } from "@ai-matrx/kit/format";
 
 /**
  * One concrete way forward, offered by the surface that knows the feature.
@@ -97,12 +102,6 @@ export interface AccessDeniedProps {
   headline?: string;
   /** The surface's own trailing disclosure (a reference code, an audit id). */
   footer?: React.ReactNode;
-}
-
-function initials(name: string | null): string {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
 /** The full sentence: "Site · AI Matrx" or just "Site" when we may not say. */

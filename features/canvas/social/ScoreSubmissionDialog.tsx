@@ -27,6 +27,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 // @ts-ignore - canvas-confetti types may not be available
 import confetti from 'canvas-confetti';
+import { formatDurationMs } from '@ai-matrx/kit/format';
 
 interface ScoreSubmissionDialogProps {
     open: boolean;
@@ -183,7 +184,7 @@ export function ScoreSubmissionDialog({
                     {timeTaken && (
                         <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                             <Clock className="w-4 h-4" />
-                            <span>Completed in {Math.round(timeTaken / 1000)} seconds</span>
+                            <span>Completed in {formatDurationMs(timeTaken, { style: 'compact' })}</span>
                         </div>
                     )}
 

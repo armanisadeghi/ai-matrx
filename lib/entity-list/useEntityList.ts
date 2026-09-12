@@ -211,6 +211,27 @@ export function useEntityList<TRow>({
   const [error, setError] = useState<EntityListFailure | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
+  // ── THE MUTATION INVALIDATES THE COUNTS ──────────────────────────────────
+  //
+  // 🚨 A LIST MAY NOT KEEP COUNTING ROWS IT HAS ALREADY REMOVED.
+  // Measured on production `/agents/all`: soft-deleting an agent spliced the
+  // row out and decremented `total`, and the System scope tab went on saying
+  // 418 for the rest of the session. `removeRow`/`patchRow` wrote only local
+  // row state, and the counts/facets/archived reads are keyed by the QUERY —
+  // which a mutation does not change — so nothing ever re-asked.
+  //
+  // ONE invalidation path, in the shell, not per feature: any row mutation
+  // that goes through this hook bumps this token, and every DERIVED read
+  // (scope counts, facets, the all-archived probe) is keyed by it. The row
+  // PAGE is deliberately NOT keyed by it — the caller has already applied the
+  // optimistic change, and refetching the page here would fight it with a
+  // flash and could resurrect a row the server has not caught up on yet.
+  const [mutationToken, setMutationToken] = useState(0);
+  const invalidateDerivedReads = useCallback(
+    () => setMutationToken((n) => n + 1),
+    [],
+  );
+
   const generation = useRef(0);
   const hasLoadedOnce = useRef(false);
 
@@ -295,6 +316,7 @@ export function useEntityList<TRow>({
   const countsKey = JSON.stringify({
     q: countsQuery,
     refreshToken,
+    mutationToken,
     service: serviceKey,
   });
 
@@ -347,6 +369,7 @@ export function useEntityList<TRow>({
   const facetsKey = JSON.stringify({
     q: facetsQuery,
     refreshToken,
+    mutationToken,
     service: serviceKey,
   });
 
@@ -406,6 +429,7 @@ export function useEntityList<TRow>({
       ? JSON.stringify({
           q: { ...effectiveQuery, archived: "archived", page: 1 },
           refreshToken,
+          mutationToken,
           service: serviceKey,
         })
       : null;
@@ -492,16 +516,28 @@ export function useEntityList<TRow>({
   };
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
-  const removeRow = useCallback((id: string) => {
-    setRows((prev) => prev.filter((r) => getRowId(r) !== id));
-    setTotal((prev) => Math.max(prev - 1, 0));
-  }, []);
+  const removeRow = useCallback(
+    (id: string) => {
+      setRows((prev) => prev.filter((r) => getRowId(r) !== id));
+      setTotal((prev) => Math.max(prev - 1, 0));
+      // The scope tabs, the facet options and the all-archived probe were all
+      // counted BEFORE this row went away. See the token's banner above.
+      invalidateDerivedReads();
+    },
+    [invalidateDerivedReads],
+  );
 
-  const patchRow = useCallback((id: string, patch: Partial<TRow>) => {
-    setRows((prev) =>
-      prev.map((r) => (getRowId(r) === id ? { ...r, ...patch } : r)),
-    );
-  }, []);
+  const patchRow = useCallback(
+    (id: string, patch: Partial<TRow>) => {
+      setRows((prev) =>
+        prev.map((r) => (getRowId(r) === id ? { ...r, ...patch } : r)),
+      );
+      // A patch moves a row BETWEEN buckets (archived, favorite, state), so the
+      // per-bucket counts are just as stale as they are after a removal.
+      invalidateDerivedReads();
+    },
+    [invalidateDerivedReads],
+  );
 
   return {
     query,

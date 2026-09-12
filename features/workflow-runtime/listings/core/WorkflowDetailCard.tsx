@@ -321,7 +321,7 @@ export function WorkflowDetailCard({
             sideOffset={12}
             avoidCollisions
             collisionPadding={8}
-            className="flex max-h-[70dvh] w-[420px] flex-col gap-3 border border-border bg-card p-4"
+            className="flex max-h-[var(--radix-hover-card-content-available-height)] w-[420px] flex-col gap-3 border border-border bg-card p-4"
           >
             <div className="shrink-0 pr-2 text-sm font-semibold text-foreground">
               {workflow.name}

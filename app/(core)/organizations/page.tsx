@@ -3,7 +3,7 @@
 /**
  * Organizations launcher — the parent to the org workspace.
  *
- * A polished home that lists the user's personal workspace and team orgs as
+ * A polished home that lists every organization the user belongs to as
  * rich cards (logo, role, members, created), with search and a create action.
  * Matches the OrgWorkspace aesthetic (gradient accents, single scroll, semantic
  * surfaces). Client component — same interactive-dashboard pattern as the rest
@@ -45,15 +45,12 @@ import type {
   OrgRole,
 } from "@/features/organizations/types";
 import {
-  isOwnPersonalOrg,
-  displayOrganizationAbbreviation,
 } from "@/features/organizations/types";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
@@ -112,14 +109,6 @@ const ROLE_META: Record<OrgRole, RoleMeta> = {
   },
 };
 
-const PERSONAL_META: RoleMeta = {
-  label: "Personal",
-  icon: UserIcon,
-  bar: "bg-gradient-to-r from-violet-500 to-sky-500",
-  text: "text-violet-600 dark:text-violet-400",
-  bg: "bg-violet-500/10",
-};
-
 function OrgCard({
   org,
   suggestions,
@@ -132,13 +121,9 @@ function OrgCard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
-  // PERSONAL_META says "this is your own space". It is keyed on OWNERSHIP, not
-  // on `isPersonal` — a membership in another person's personal org is not the
-  // viewer's personal org and shows that membership's real role instead.
-  const viewerUserId = useAppSelector(selectUserId);
-  const meta = isOwnPersonalOrg(org, viewerUserId)
-    ? PERSONAL_META
-    : ROLE_META[org.role];
+  // Every organization shows the viewer's REAL role in it. Nothing is relabelled
+  // because the row carries `is_personal`.
+  const meta = ROLE_META[org.role];
   const RoleIcon = meta.icon;
   const href = `/organizations/${org.slug}`;
 
@@ -185,10 +170,7 @@ function OrgCard({
                   className={`w-full h-full flex items-center justify-center ${meta.bg}`}
                 >
                   <OrganizationAbbreviation
-                    abbreviation={displayOrganizationAbbreviation(
-                      org,
-                      viewerUserId,
-                    )}
+                    abbreviation={org.abbreviation}
                     className={`text-sm ${meta.text}`}
                   />
                 </span>
@@ -207,10 +189,7 @@ function OrgCard({
             </h3>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <OrganizationAbbreviation
-                abbreviation={displayOrganizationAbbreviation(
-                  org,
-                  viewerUserId,
-                )}
+                abbreviation={org.abbreviation}
                 className="h-5 min-w-8 rounded border border-border bg-muted px-1.5 text-[10px] text-muted-foreground"
               />
               <Badge
@@ -399,7 +378,6 @@ export default function OrganizationsPage() {
   const [createOpen, setCreateOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const isMobile = useIsMobile();
-  const currentUserId = useAppSelector(selectUserId);
   const store = useAppStore();
 
   const filtered = query
@@ -411,17 +389,11 @@ export default function OrganizationsPage() {
       ])
     : organizations;
 
-  // A user has exactly ONE personal org — their own (the DB enforces it with
-  // the partial unique index `organizations_one_personal_per_creator`). This
-  // used to filter on `isPersonal`, so a membership in someone ELSE's personal
-  // workspace rendered as a second entry under the Personal heading — the live
-  // "why am I seeing two personal orgs" defect, 2026-09-11. Anything the viewer
-  // does not own belongs with the other organizations they are a member of.
-  const personal = filtered.filter((o) => isOwnPersonalOrg(o, currentUserId));
-  const teams = filtered.filter((o) => !isOwnPersonalOrg(o, currentUserId));
-  const teamCount = organizations.filter(
-    (o) => !isOwnPersonalOrg(o, currentUserId),
-  ).length;
+  // ONE list, every organization under its own name. The personal/teams split
+  // grouped on `is_personal`, so a user who belonged to two personal
+  // organizations saw both under a "Personal" heading with no way to tell them
+  // apart (Arman, 2026-09-11: use the real name, always).
+  const teamCount = organizations.filter((o) => !o.isPersonal).length;
   const kpis = organizationKpis(organizations);
 
   // ── Surface runtime (matrx-user/organizations, list mode) ───────────────
@@ -609,41 +581,16 @@ export default function OrganizationsPage() {
             ) : (
               <>
                 <div data-surface-value="organizations_summary">
-                  {personal.length > 0 && (
-                    <section>
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        Personal
-                      </h2>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {personal.map((org) => (
-                          <OrgCard
-                            key={org.id}
-                            org={org}
-                            suggestions={suggestions}
-                            kpis={kpis}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {teams.length > 0 && (
-                    <section>
-                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        Teams
-                      </h2>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {teams.map((org) => (
-                          <OrgCard
-                            key={org.id}
-                            org={org}
-                            suggestions={suggestions}
-                            kpis={kpis}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filtered.map((org) => (
+                      <OrgCard
+                        key={org.id}
+                        org={org}
+                        suggestions={suggestions}
+                        kpis={kpis}
+                      />
+                    ))}
+                  </div>
                 </div>
               </>
             )}

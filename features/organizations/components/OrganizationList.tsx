@@ -6,18 +6,11 @@ import {
   Building2,
   Plus,
   Search,
-  Users,
-  Crown,
-  Shield,
-  User as UserIcon,
   Loader2,
 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { isOwnPersonalOrg } from "../types";
 import { useUserOrganizations } from "../hooks";
 import { OrganizationCard } from "./OrganizationCard";
 import { CreateOrgModal } from "./CreateOrgModal";
@@ -38,7 +31,7 @@ import {
  *
  * Features:
  * - Displays all organizations user belongs to
- * - Personal org shown first with special styling
+ * - Every organization under its own name, with the viewer's real role
  * - Role-based badges and actions
  * - Search/filter functionality
  * - Create new organization modal
@@ -54,7 +47,6 @@ export function OrganizationList() {
   );
 
   const { organizations, loading, error, refresh } = useUserOrganizations();
-  const userId = useAppSelector(selectUserId);
 
   // Filter organizations based on search
   const filteredOrgs = searchTerm
@@ -66,16 +58,10 @@ export function OrganizationList() {
       ])
     : organizations;
 
-  // Separate the viewer's OWN personal org from every other org they belong to.
-  // Keyed on ownership (`isOwnPersonalOrg`), never on `isPersonal` alone: a
-  // membership in someone else's personal org used to match here, which both
-  // mislabelled it as "Personal Space" AND dropped the viewer's real personal
-  // org from the page, since the team list filtered out everything personal.
-  // Another person's personal org is just an org you belong to — it lists below.
-  const personalOrg = filteredOrgs.find((org) => isOwnPersonalOrg(org, userId));
-  const teamOrgs = filteredOrgs.filter(
-    (org) => !isOwnPersonalOrg(org, userId),
-  );
+  // ONE list, every organization under its own name and the viewer's real role.
+  // The Personal/Team split grouped on `is_personal`, so belonging to two
+  // personal organizations put both under "Personal Space" — or, worse, hid one
+  // entirely, since `find` returns a single match (Arman, 2026-09-11).
   const kpis = organizationKpis(organizations);
 
   // Loading state
@@ -180,30 +166,14 @@ export function OrganizationList() {
         </div>
       </div>
 
-      {/* Personal Organization */}
-      {personalOrg && (
-        <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-            <UserIcon className="h-4 w-4" />
-            Personal Space
-          </h2>
-          <OrganizationCard
-            organization={personalOrg}
-            onUpdate={refresh}
-            kpis={kpis}
-          />
-        </div>
-      )}
-
-      {/* Team Organizations */}
-      {teamOrgs.length > 0 && (
+      {filteredOrgs.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Team Organizations {searchTerm && `(${teamOrgs.length})`}
+            Organizations {searchTerm && `(${filteredOrgs.length})`}
           </h2>
           <div className="space-y-3">
-            {teamOrgs.map((org) => (
+            {filteredOrgs.map((org) => (
               <OrganizationCard
                 key={org.id}
                 organization={org}

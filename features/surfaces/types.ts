@@ -656,6 +656,15 @@ export interface SurfaceBindingPayload {
 export interface SurfaceValueDrift {
   surfaceName: string;
   valueName: string;
+  /**
+   * `updated_at` of the DB row, populated ONLY on `db_only` entries — the age
+   * is what separates "dead since a refactor last month" from "a sibling
+   * branch synced this twenty minutes ago", which is the question an admin
+   * has to answer before deleting a stale mirror row (see
+   * `RECENT_ROW_WINDOW_HOURS`). Absent on `manifest_only` (no DB row exists)
+   * and on `diff` (the row is live, so its age decides nothing).
+   */
+  updatedAt?: string;
   /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
   kind: "manifest_only" | "db_only" | "diff";
   /** Field-level diff when `kind === "diff"`. */
@@ -668,6 +677,15 @@ export interface SurfaceValueDrift {
 export interface SurfaceAgentRoleDrift {
   surfaceName: string;
   roleName: string;
+  /**
+   * `updated_at` of the DB row, populated ONLY on `db_only` entries — the age
+   * is what separates "dead since a refactor last month" from "a sibling
+   * branch synced this twenty minutes ago", which is the question an admin
+   * has to answer before deleting a stale mirror row (see
+   * `RECENT_ROW_WINDOW_HOURS`). Absent on `manifest_only` (no DB row exists)
+   * and on `diff` (the row is live, so its age decides nothing).
+   */
+  updatedAt?: string;
   /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
   kind: "manifest_only" | "db_only" | "diff";
   /** Field-level diff when `kind === "diff"`. */
@@ -689,6 +707,15 @@ export interface SurfaceAgentRoleDrift {
 export interface SurfaceWriteTargetDrift {
   surfaceName: string;
   targetName: string;
+  /**
+   * `updated_at` of the DB row, populated ONLY on `db_only` entries — the age
+   * is what separates "dead since a refactor last month" from "a sibling
+   * branch synced this twenty minutes ago", which is the question an admin
+   * has to answer before deleting a stale mirror row (see
+   * `RECENT_ROW_WINDOW_HOURS`). Absent on `manifest_only` (no DB row exists)
+   * and on `diff` (the row is live, so its age decides nothing).
+   */
+  updatedAt?: string;
   /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
   kind: "manifest_only" | "db_only" | "diff";
   /** Field-level diff when `kind === "diff"`. */
@@ -704,6 +731,15 @@ export interface SurfaceWriteTargetDrift {
 export interface SurfaceClientToolDrift {
   surfaceName: string;
   toolName: string;
+  /**
+   * `updated_at` of the DB row, populated ONLY on `db_only` entries — the age
+   * is what separates "dead since a refactor last month" from "a sibling
+   * branch synced this twenty minutes ago", which is the question an admin
+   * has to answer before deleting a stale mirror row (see
+   * `RECENT_ROW_WINDOW_HOURS`). Absent on `manifest_only` (no DB row exists)
+   * and on `diff` (the row is live, so its age decides nothing).
+   */
+  updatedAt?: string;
   /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
   kind: "manifest_only" | "db_only" | "diff";
   /** Field-level diff when `kind === "diff"`. */

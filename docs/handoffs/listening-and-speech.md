@@ -58,8 +58,8 @@ On why it matters beyond this feature:
   row + 33 user rows; **zero org rows**).
 - **Admin editing (system default):** `/administration/ui/surfaces/matrx-user/assistant-message`
   → "Config namespaces" → `listening`. Raw JSON textarea, writes the global tier.
-- **Testing:** `pnpm preview:start` (port 3001), sign in via
-  `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/chat`. Right-click any assistant reply → Listen,
+- **Testing:** `pnpm preview:start` (port 3001), sign in via the nonce handshake —
+  `openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/chat`. Right-click any assistant reply → Listen,
   or the ⋯ menu → Actions. Tests: `pnpm jest features/audio features/context-menu-v3/model`.
 
 ## Remaining work

@@ -59,7 +59,7 @@ For ANY tool returning a batch of results, a list, or a report (news, RAG, lists
 The local Next dev server in this env destabilizes after rapid edits / reloads: RSC-payload fetch failures, ChunkLoadErrors, and **clicks / timers stop firing after Fast-Refresh**. So:
 - Prefer **`preview_eval` DOM inspection** over screenshots / clicks. For timer-driven demos, add a **static mid-stream snapshot** fixture to prove the code path without a timer (Wave 1 did this to prove the ≤4 conveyor + dedupe).
 - Restart once (`preview_stop` + `preview_start`); if hydration still won't recover, `rm -rf .next` + restart (nuclear, per memory).
-- Dev-login: `/api/dev-login?token=<DEV_LOGIN_TOKEN from .env.local>&next=<route>`.
+- Dev-login (nonce handshake): `openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=<route>`.
 - **Never** claim "verified" off a flawed screenshot — DOM-inspect, name defects, real validation only.
 
 ### How to use SUBAGENTS effectively — this is HOW so much shipped in one context

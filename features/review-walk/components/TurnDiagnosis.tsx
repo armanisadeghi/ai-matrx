@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 
 import type { DescendInput, DescendOut } from "../types";
 import type { AssistantPart, ConversationTurn } from "../turns";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ── expand state ────────────────────────────────────────────────────────────
 
@@ -502,7 +503,7 @@ function AssistantPartCard({
               )}
               {row && row.duration_ms > 0 && (
                 <span className="text-[10px] tabular-nums text-muted-foreground">
-                  {(row.duration_ms / 1000).toFixed(1)}s
+                  {formatDurationMs(row.duration_ms, { style: "compact" })}
                 </span>
               )}
             </>

@@ -56,6 +56,7 @@ import type {
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -429,7 +430,7 @@ function DbEntryCard({ entry, selected, onToggle }: DbEntryCardProps) {
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-[10px] font-mono text-muted-foreground">
-            {(entry.duration_ms / 1000).toFixed(1)}s
+            {formatDurationMs(entry.duration_ms, { style: "compact" })}
           </span>
           <span className="text-[10px] text-muted-foreground">
             {formatDistanceToNow(new Date(entry.completed_at), {

@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 
@@ -34,7 +36,9 @@ export function useAuditStore() {
     try {
       const { note, durationMs } = await refreshAuditStore();
       toast.success(
-        `Audit store rebuilt in ${(durationMs / 1000).toFixed(1)}s${note ? ` — ${note}` : ""}`,
+        `Audit store rebuilt in ${formatDurationMs(durationMs, {
+          style: "compact",
+        })}${note ? ` — ${note}` : ""}`,
       );
       await reloadLastRefresh();
       return true;

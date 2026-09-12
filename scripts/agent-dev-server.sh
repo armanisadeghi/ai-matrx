@@ -80,19 +80,16 @@ report_previous_failure() {
   printf '\n' >&2
 }
 
-load_token() {
-  [[ -n "${DEV_LOGIN_TOKEN:-}" ]] && return 0
-  local f value
-  for f in "$REPO_ROOT/.env.local" "$REPO_ROOT/.env.development.local" "$REPO_ROOT/.env.development" "$REPO_ROOT/.env"; do
-    [[ -f "$f" ]] || continue
-    value="$(sed -n 's/^[[:space:]]*DEV_LOGIN_TOKEN[[:space:]]*=[[:space:]]*//p' "$f" | head -1 | tr -d '\r')"
-    value="${value#\"}"; value="${value%\"}"
-    value="${value#\'}"; value="${value%\'}"
-    if [[ -n "$value" ]]; then
-      DEV_LOGIN_TOKEN="$value"
-      return 0
-    fi
-  done
+# Mint the single-use nonce /api/dev-login accepts. This used to scrape
+# DEV_LOGIN_TOKEN out of .env* and put it in the warm-up URL — a durable
+# credential written into the dev-server's own request log on every start,
+# which is one of the two ways it leaked (2026-08-31, again 2026-09-11). The
+# nonce is generated here, consumed by the first request, and worthless after.
+mint_nonce() {
+  NONCE=""
+  command -v openssl >/dev/null 2>&1 || return 0
+  NONCE="$(openssl rand -hex 16)"
+  printf '%s\n' "$NONCE" > "$REPO_ROOT/.dev-login-nonce" || NONCE=""
 }
 
 killtree() {
@@ -277,17 +274,17 @@ PY
 cmd_warm() {
   local expected_pid="${1:-}"
   alive "$expected_pid" || exit 0
-  load_token
 
   local attempt
   for attempt in $(seq 1 90); do
     if curl --max-time 5 -fsS -o /dev/null "http://localhost:$PORT/" 2>/dev/null; then
-      if [[ -n "${DEV_LOGIN_TOKEN:-}" ]]; then
+      mint_nonce
+      if [[ -n "${NONCE:-}" ]]; then
         curl -fsS -L -c "$JAR" -b "$JAR" -o /dev/null \
-          "http://localhost:$PORT/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/dashboard" \
+          "http://localhost:$PORT/api/dev-login?nonce=$NONCE&next=/dashboard" \
           2>/dev/null || true
       fi
-      rm -f "$JAR"
+      rm -f "$JAR" "$REPO_ROOT/.dev-login-nonce"
       touch "$READY"
       exit 0
     fi

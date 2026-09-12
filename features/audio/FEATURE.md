@@ -39,7 +39,7 @@ Every recording made through the shared recorder is auto-persisted as a `transcr
 - **The panel** is `features/window-panels/windows/listen/ListenSummaryWindow.tsx` (overlay `listenSummaryWindow`) — streaming summary, audio transport, and an in-place settings pane.
 - **Stream-to-stream speech** (speaking before the summary finishes) is `voicePlaybackBus` `includeActive` + `useAutoVoiceResponse`.
 - **No agent UUID appears in code.** The default agent is mandate-backed: `ambient.spoken_summary` in `mandate.definition`, holder "Listening Summary", carried by the `spoken_summary` surface role on `matrx-user/assistant-message`. That is what makes Listen work for every user on every surface with no personal binding.
-- **Tests:** `pnpm jest features/audio features/context-menu-v3/model`. Manual: `pnpm preview:start` (port 3001), `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/chat`, then right-click any assistant reply → Listen.
+- **Tests:** `pnpm jest features/audio features/context-menu-v3/model`. Manual: `pnpm preview:start` (port 3001), then the nonce handshake — `openssl rand -hex 16 > .dev-login-nonce`, `/api/dev-login?nonce=<that value>&next=/chat` — then right-click any assistant reply → Listen.
 - **Open work:** [`docs/handoffs/listening-and-speech.md`](../../docs/handoffs/listening-and-speech.md). VISION MISSING — Arman's verbatim words are quoted in that handoff, no vision doc exists.
 
 ---

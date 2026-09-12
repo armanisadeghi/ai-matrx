@@ -56,6 +56,8 @@ import {
 } from "../service";
 import type { LabelBatch, LabelCode } from "../types";
 import { formatBatchState } from "../columns";
+import { PrinterCertificationNotice } from "../printers/components/PrinterCertificationNotice";
+import { useFailedPrinterGate } from "../printers/useFailedPrinterGate";
 
 function stateTone(state: string): string {
   return state === "open"
@@ -122,6 +124,32 @@ export function LabelBatchDetail({
   const template =
     getLabelTemplate(batch?.templateId ?? "") ?? LABEL_TEMPLATES[0];
   const perPage = template.cols * template.rows;
+
+  /**
+   * Printer certification for THIS stock. Calibration and the PDF are never
+   * gated — the calibration page is the remedy, and it prints on plain paper.
+   */
+  const gate = useFailedPrinterGate({
+    organizationId,
+    templateId: template.id,
+  });
+
+  /** An honest refusal instead of a dead-looking Print button. */
+  const certificationRefusal = (): boolean => {
+    if (!gate.ready) {
+      toast.error(
+        `Still checking this printer against ${template.name} — try again in a moment.`,
+      );
+      return true;
+    }
+    if (gate.blocked) {
+      toast.error(
+        "This organization blocks printing on a printer that failed certification. An admin can change that in Organization settings → Configuration.",
+      );
+      return true;
+    }
+    return false;
+  };
 
   const printData = useMemo<QrLabelPrintData>(
     () => ({
@@ -214,6 +242,7 @@ export function LabelBatchDetail({
             className="h-9"
             disabled={printable.length === 0}
             onClick={() => {
+              if (certificationRefusal()) return;
               void stampPrinted();
               void triggerPrint();
             }}
@@ -264,6 +293,14 @@ export function LabelBatchDetail({
           )}
         </div>
       </div>
+
+      {/* Printer certification for this stock — warn or refuse, never silent */}
+      <PrinterCertificationNotice
+        gate={gate}
+        organizationId={organizationId}
+        stockName={template.name}
+        className="rounded-xl border border-border bg-card p-3"
+      />
 
       {/* Sheet preview (exact proportions; the printer's geometry brain) */}
       {printable.length > 0 && (

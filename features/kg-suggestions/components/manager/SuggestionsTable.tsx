@@ -48,6 +48,7 @@ import {
 import {
   MOBILE_TABLE,
 } from "@/components/official/mobile-table/mobileTable";
+import { formatRelativeTime } from "@/utils/datetime";
 
 const STATUS_STYLE: Record<KgSuggestionStatus, string> = {
   pending: "border-primary/40 text-primary",
@@ -514,20 +515,7 @@ function IconAction({
 }
 
 function formatRelative(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "—";
-  const diff = Date.now() - then;
-  const sec = Math.round(diff / 1000);
-  if (sec < 60) return "just now";
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h`;
-  const day = Math.round(hr / 24);
-  if (day < 30) return `${day}d`;
-  const mo = Math.round(day / 30);
-  if (mo < 12) return `${mo}mo`;
-  return `${Math.round(mo / 12)}y`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 export default SuggestionsTable;

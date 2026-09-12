@@ -8,6 +8,10 @@
  */
 
 import type { HrInboxRow, HrUrgencyBucket } from "@/features/hr/tasks/types";
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 export const URGENCY_ORDER: HrUrgencyBucket[] = [
     "overdue",
@@ -64,12 +68,12 @@ export function relativeDue(dueAt: string | null | undefined, now = new Date()):
     if (Number.isNaN(due.getTime())) return "No due date";
     const deltaMs = due.getTime() - now.getTime();
     const overdue = deltaMs < 0;
-    const minutes = Math.round(Math.abs(deltaMs) / 60000);
+    const magnitude = Math.abs(deltaMs);
     const text =
-        minutes < 60
-            ? `${minutes} min`
-            : minutes < 60 * 48
-              ? `${Math.round(minutes / 60)} hr`
-              : `${Math.round(minutes / 1440)} days`;
+        magnitude < HOUR_MS
+            ? formatDurationMs(magnitude, { style: "coarse" })
+            : magnitude < 48 * HOUR_MS
+              ? `${Math.round(magnitude / HOUR_MS)} hr`
+              : `${Math.round(magnitude / DAY_MS)} days`;
     return overdue ? `${text} overdue` : `in ${text}`;
 }

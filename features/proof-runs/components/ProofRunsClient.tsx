@@ -28,6 +28,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatUsd } from "@/lib/format/honest";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -75,6 +76,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -615,10 +617,10 @@ export default function ProofRunsClient() {
                       </span>
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap font-mono">
-                      ${(row.cost_usd ?? 0).toFixed(4)}
+                      {formatUsd(row.cost_usd, { digits: 4 })}
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap text-muted-foreground">
-                      {((row.duration_ms ?? 0) / 1000).toFixed(1)}s
+                      {formatDurationMs(row.duration_ms ?? 0, { style: "compact" })}
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap text-muted-foreground">
                       {row.trigger_source}

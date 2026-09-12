@@ -114,6 +114,25 @@ export interface SaveKindComponentCodeArgs {
 }
 
 /** Replace one DB-authored component body without silently overwriting drift. */
+/**
+ * B-23 / DD-123 — the database refuses a component body written by anyone who
+ * is not AI Matrx platform staff (`zzz_component_author_gate`, aidream
+ * migration 0639), because the string gate above cannot close the
+ * exfiltration class and the iframe origin boundary has not shipped yet. That
+ * refusal is a SENTENCE written for the person, so it must reach them
+ * verbatim instead of being wrapped in "We couldn't save ...".
+ */
+const SHAPE_AUTHORING_REFUSAL_HEAD =
+  "Only AI Matrx staff can write shape component code right now";
+
+function shapeAuthoringRefusal(error: unknown): string | null {
+  const message =
+    typeof error === "object" && error !== null && "message" in error
+      ? String((error as { message: unknown }).message)
+      : "";
+  return message.startsWith(SHAPE_AUTHORING_REFUSAL_HEAD) ? message : null;
+}
+
 export async function saveKindComponentCode(
   client: KindComponentCodeClient,
   args: SaveKindComponentCodeArgs,
@@ -191,6 +210,8 @@ export async function saveKindComponentCode(
     if (error instanceof Error && error.message.startsWith("This component")) {
       throw error;
     }
+    const authoringRefusal = shapeAuthoringRefusal(error);
+    if (authoringRefusal) throw new Error(authoringRefusal);
     throw operationFailed("save this Shape's component code", error);
   }
 }

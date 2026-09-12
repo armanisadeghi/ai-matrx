@@ -18,6 +18,7 @@
  *     watchdog.dispose();
  *   }
  */
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface InactivityWatchdog {
   /** Pass to fetch / stream consumers. */
@@ -69,7 +70,12 @@ export function withTimeout<T>(
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)),
+      () =>
+        reject(
+          new Error(
+            `${label} timed out after ${formatDurationMs(ms, { style: "compact" })}`,
+          ),
+        ),
       ms,
     );
     promise.then(

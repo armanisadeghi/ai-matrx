@@ -10,6 +10,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogIn, UserPlus, ChevronRight } from "lucide-react";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM".
+import { getInitials } from "@ai-matrx/kit/format";
 
 // ============================================================================
 // SIDEBAR USER FOOTER
@@ -24,14 +29,7 @@ export function SidebarUserFooter() {
   const isAuthenticated = !!user?.id;
 
   // Get initials for avatar fallback
-  const initials = displayName
-    ? displayName
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "?";
+  const initials = getInitials(displayName);
 
   if (!isAuthenticated) {
     return (

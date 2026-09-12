@@ -34,6 +34,7 @@ import {
 } from "recharts";
 
 import { CHART_PALETTE, type ChartSpec } from "./chart-spec";
+import { pieSliceLabel } from "./labels";
 
 const AXIS = { fontSize: 12, stroke: "var(--muted-foreground)" };
 const GRID_STROKE = "var(--border)";
@@ -131,9 +132,7 @@ function render(spec: ChartSpec, showLegend: boolean): React.ReactElement {
             outerRadius="78%"
             innerRadius="0%"
             paddingAngle={1}
-            label={(e: { name?: string; percent?: number }) =>
-              `${e.name ?? ""} ${e.percent != null ? Math.round(e.percent * 100) : 0}%`
-            }
+            label={(e: { name?: string; percent?: number }) => pieSliceLabel(e)}
             labelLine={false}
           >
             {spec.data.map((_, i) => (

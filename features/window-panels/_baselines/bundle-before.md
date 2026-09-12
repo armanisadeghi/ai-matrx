@@ -119,7 +119,7 @@ For each, the script sums the byte size of every JS chunk referenced in `.next/a
 Not yet captured. After merging PR-00 (this phase), capture manually:
 
 1. `pnpm dev`
-2. Log in via `http://localhost:3000/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/dashboard`.
+2. Log in via the nonce handshake: `openssl rand -hex 16 > .dev-login-nonce`, then `http://localhost:3000/api/dev-login?nonce=<that value>&next=/dashboard`.
 3. Open Redux DevTools → `State` tab → click the ⋯ menu → `Raw` → copy.
 4. Sequentially open: Notes, Quick Tasks, Agent Run, Scraper, Quick Data. Minimize the Agent Run. Restore.
 5. Copy the state tree again.

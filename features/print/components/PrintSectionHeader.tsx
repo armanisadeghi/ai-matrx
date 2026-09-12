@@ -52,7 +52,7 @@ export function PrintSectionHeader({
                             </span>
                             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="max-h-[70vh] w-72 overflow-y-auto">
+                        <DropdownMenuContent align="start" className="max-h-[var(--radix-dropdown-menu-content-available-height)] w-72 overflow-y-auto">
                             <DropdownMenuItem asChild>
                                 <Link href="/print">All printables</Link>
                             </DropdownMenuItem>

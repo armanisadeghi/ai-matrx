@@ -20,6 +20,8 @@
  * fails silently (CLAUDE.md § "An env var is a VALUE, never a TOGGLE").
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 /** "Until I turn it back on" — the Postgres `infinity` timestamp. */
 export const QUIET_FOREVER = "infinity";
 
@@ -98,7 +100,7 @@ export function formatQuietRemaining(
   if (!until || until === QUIET_FOREVER) return "until you turn it back on";
   const remaining = Date.parse(until) - now.getTime();
   if (remaining < HOUR_MS) {
-    return `${Math.max(1, Math.round(remaining / 60_000))}m left`;
+    return `${formatDurationMs(remaining, { style: "coarse" })} left`;
   }
   if (remaining < 48 * HOUR_MS) return `${Math.round(remaining / HOUR_MS)}h left`;
   return `${Math.round(remaining / (24 * HOUR_MS))}d left`;

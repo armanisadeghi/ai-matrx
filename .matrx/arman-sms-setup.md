@@ -18,9 +18,6 @@ TWILIO_VERIFY_SID=VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Twilio Messaging Service (NEW — create in step 2)
 TWILIO_MESSAGING_SERVICE_SID=MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# Optional: Skip signature validation in dev
-TWILIO_SKIP_VALIDATION=true   # Remove in production!
 ```
 
 **Vercel:** Go to Project Settings > Environment Variables and add `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, and `TWILIO_MESSAGING_SERVICE_SID` for Production, Preview, and Development environments.

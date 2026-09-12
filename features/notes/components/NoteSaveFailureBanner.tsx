@@ -38,14 +38,13 @@ import {
   getNoteLiveContent,
   subscribeNoteLiveContent,
 } from "../utils/noteLiveContent";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 function sinceLabel(from: number | null): string | null {
   if (!from) return null;
-  const minutes = Math.floor((Date.now() - from) / 60_000);
-  if (minutes < 1) return "less than a minute";
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours} hour${hours === 1 ? "" : "s"}`;
+  // THE PROSE VOICE. This lands mid-sentence — "over the last 5 minutes" —
+  // so it is `long`, not `coarse`. `coarse` said "over the last 5 min".
+  return formatDurationMs(Date.now() - from, { style: "compact" });
 }
 
 interface NoteSaveFailureBannerProps {

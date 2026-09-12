@@ -175,6 +175,11 @@ export function AgentSettingsForm({
     isDirty,
   ]);
 
+  // The surface arrives as a prop, so `pnpm check:surface-write-handlers`
+  // cannot read it here. The only mount that passes one is
+  // `AgentSettingsWindow` (AGENT_SETTINGS_SURFACE_NAME); `AgentContentWindow`
+  // renders this form WITHOUT the prop and registers nothing, by design.
+  // surface-write-handlers-surface: matrx-user/agent-settings
   useSurfaceWriteHandlers(writeSurfaceName ?? null, {
     /**
      * Stage a `{description?, category?, tags?}` patch into the SAME state the

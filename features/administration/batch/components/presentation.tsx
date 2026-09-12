@@ -9,6 +9,7 @@
  * "dead" reads one way in a chip and another way in a row is a lying screen.
  */
 import { Badge } from "@/components/ui/badge";
+import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 
 export function fmtUsd(value: number | null | undefined, digits = 4): string {
@@ -29,15 +30,13 @@ export function fmtInt(value: number | string | null | undefined): string {
   return n.toLocaleString();
 }
 
+/**
+ * THE relative-time voice: @ai-matrx/kit/format owns "3m". Bare on purpose —
+ * the column header is "Age", so " ago" on every row is a word per row that
+ * says nothing the header has not.
+ */
 export function fmtAge(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "—";
-  const sec = Math.max(0, Math.round((Date.now() - then) / 1000));
-  if (sec < 60) return `${sec}s`;
-  if (sec < 3600) return `${Math.round(sec / 60)}m`;
-  if (sec < 86400) return `${Math.round(sec / 3600)}h`;
-  return `${Math.round(sec / 86400)}d`;
+  return formatRelativeTime(iso, { style: "short" }).replace(/ ago$/, "");
 }
 
 export function fmtStamp(iso: string | null | undefined): string {
@@ -61,11 +60,8 @@ export function fmtSpan(
   const a = new Date(fromIso).getTime();
   const b = new Date(toIso).getTime();
   if (Number.isNaN(a) || Number.isNaN(b)) return "—";
-  const ms = b - a;
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  if (ms < 3_600_000) return `${(ms / 60_000).toFixed(1)}m`;
-  return `${(ms / 3_600_000).toFixed(1)}h`;
+  // THE compact duration voice (@ai-matrx/kit/format): 250ms, 5.2s, 5m 30s.
+  return formatDurationMs(b - a, { style: "compact" });
 }
 
 // ---------------------------------------------------------------------------

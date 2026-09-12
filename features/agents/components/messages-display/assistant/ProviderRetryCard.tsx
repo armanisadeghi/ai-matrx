@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import { useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -27,12 +29,9 @@ function retryAtMs(retryAt: number | null | undefined): number | null {
   return retryAt > 1_000_000_000_000 ? retryAt : retryAt * 1000;
 }
 
+/** THE compact duration voice (@ai-matrx/kit/format): 45s, 1m 30s. */
 function formatCountdown(ms: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  if (minutes <= 0) return `${seconds}s`;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  return formatDurationMs(Math.max(0, ms), { style: "compact" });
 }
 
 function providerName(provider: string): string {

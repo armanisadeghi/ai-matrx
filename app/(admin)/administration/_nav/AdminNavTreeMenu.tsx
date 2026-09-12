@@ -101,7 +101,7 @@ export default function AdminNavTreeMenu() {
 
       <DropdownMenuContent
         align="start"
-        className="max-h-[80dvh] w-80 overflow-y-auto"
+        className="max-h-[var(--radix-dropdown-menu-content-available-height)] w-80 overflow-y-auto"
       >
         <div className="p-2 pb-1">
           <div className="relative">
@@ -169,7 +169,7 @@ export default function AdminNavTreeMenu() {
                 </span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuSubContent className="max-h-[80dvh] w-80 overflow-y-auto">
+                <DropdownMenuSubContent className="max-h-[var(--radix-dropdown-menu-content-available-height)] w-80 overflow-y-auto">
                   <DropdownMenuItem asChild className="gap-2 font-medium">
                     <AppLink href={adminDomainHref(domain)}>
                       <span className={cn(iconSlot, "text-muted-foreground")}>

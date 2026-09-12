@@ -34,7 +34,12 @@ export interface ServerTimer {
     getTotalMs: () => number;
 }
 
-const ENABLE_TIMING = process.env.NODE_ENV === 'development' || process.env.SSR_TIMING === '1';
+// UNFINISHED, NOT DEAD. This timer has no importers yet — it is waiting to be
+// wired into the SSR shell, not abandoned (/policies/unfinished-work-alarm.md).
+// Its old `SSR_TIMING=1` switch is gone: an env var may not control behaviour
+// (Arman, 2026-09-10). When this is wired up, the on/off switch becomes a knob
+// under platform > observability, beside `platform.debug.config_parity_shadow`.
+const ENABLE_TIMING = process.env.NODE_ENV === 'development';
 
 function createNoopTimer(): ServerTimer {
     return {

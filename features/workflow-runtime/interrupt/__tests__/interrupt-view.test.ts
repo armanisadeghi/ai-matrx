@@ -242,12 +242,14 @@ describe("the deadline, while the question waits", () => {
     escalation: { deadline_at: DEADLINE, fallback: "agent" },
   }).escalation;
 
+  // The abbreviations ("12 min", "3 hr") went in kit 0.11.0: this copy is a
+  // sentence, and @ai-matrx/kit/format's `long` voice is the prose voice.
   it("says when the run stops waiting, and who decides", () => {
     expect(escalationLine(escalation, at("2026-08-28T11:48:00Z"))).toBe(
-      "Auto-continues in 12 min — an agent decides",
+      "Auto-continues in 12 minutes — an agent decides",
     );
     expect(escalationLine(escalation, at("2026-08-28T09:00:00Z"))).toBe(
-      "Auto-continues in 3 hr — an agent decides",
+      "Auto-continues in 3 hours — an agent decides",
     );
   });
 
@@ -256,7 +258,7 @@ describe("the deadline, while the question waits", () => {
       escalation: { deadline_at: DEADLINE, fallback: "default_answer" },
     }).escalation;
     expect(escalationLine(withDefault, at("2026-08-28T11:30:00Z"))).toBe(
-      "Auto-continues in 30 min — the default answer decides",
+      "Auto-continues in 30 minutes — the default answer decides",
     );
   });
 

@@ -62236,6 +62236,10 @@ export type Database = {
         }
         Returns: Json
       }
+      knob_scope_rows: {
+        Args: { p_kind: string; p_organization_id: string }
+        Returns: Json
+      }
       lifecycle_archive_candidates: {
         Args: {
           p_entity_token: string
@@ -70425,6 +70429,7 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: never; Returns: boolean }
+      is_platform_admin_for: { Args: { p_user: string }; Returns: boolean }
       is_resource_owner: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: boolean

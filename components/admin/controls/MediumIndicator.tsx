@@ -1,5 +1,6 @@
 // components/admin/controls/MediumIndicator.tsx
 import React, { useState, useEffect, useRef } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   ChevronRight,
   ChevronDown,
@@ -164,7 +165,7 @@ const MediumIndicator: React.FC<MediumIndicatorProps> = ({
   }, [showServerDropdown]);
 
   const lastCheckedLabel = activeHealth.lastCheckedAt
-    ? `${Math.round((Date.now() - activeHealth.lastCheckedAt) / 1000)}s ago`
+    ? formatRelativeTime(activeHealth.lastCheckedAt, { style: "short" })
     : "never";
 
   return (

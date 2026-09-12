@@ -114,6 +114,7 @@ Migrated out of `(dev)` on 2026-09-11. The demo routes `/demos/print-studio` and
 
 ## Change log
 
+- `2026-09-11` — Claude Fable 5.1: Verified live on `localhost:3001` — all 14 `/print` routes serve (`/print/admin` 307s for a non-admin, correctly); hub, QR, flashcards, label sheets, markdown, practice tests and the order page screenshotted; the flashcards printer proven to request a print window; signed-out `/print` serves the marketing landing; mobile (375×812) passes on the hub and on a section page. Review row `6b1ed4e2-963c-481d-9cf5-2e7b1719751f`; the two older demo rows were repointed to `/print` and `/print/order`.
 - `2026-09-11` — Claude Fable 5.1: Built the Print hub as a `(core)` feature. Moved the 11 print-studio sections and the whole Lulu calculator + order flow out of `app/(dev)/demos/` into `features/print/`; added `/print` (hub, with a public `PrintLanding` for guests), 11 section routes, `/print/order`, and `/print/admin`. Registered Print in the shell nav and in `MODULE_LANDING_DIRECTORY`; cross-linked the commerce label surfaces and flashcards set detail. `ordering-gate.ts` and `OrderFlow.tsx` moved byte-identical.
 
 ---

@@ -33,21 +33,16 @@ import {
 } from "@/features/marketing/data/crawl-schedule-hooks";
 import type { CrawlSchedule } from "@/features/marketing/types";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
+import { formatRelativeTime } from "@/utils/datetime";
 
 /** Absolute local time, with the relative distance a human actually reads. */
 function formatNextRun(value: string | null): string | null {
   if (!value) return null;
   const when = new Date(value);
   if (Number.isNaN(when.getTime())) return null;
-  const minutes = Math.round((when.getTime() - Date.now()) / 60_000);
-  const relative =
-    minutes <= 1
-      ? "any moment"
-      : minutes < 60
-        ? `in ${minutes} min`
-        : minutes < 60 * 48
-          ? `in ${Math.round(minutes / 60)} h`
-          : `in ${Math.round(minutes / 1440)} days`;
+  // "in 5 minutes" / "in 2 days" — the locale-aware voice, because this one
+  // points FORWARD and the short "ago" voice cannot say a future time.
+  const relative = formatRelativeTime(when, { style: "intl" });
   return `${when.toLocaleString()} · ${relative}`;
 }
 

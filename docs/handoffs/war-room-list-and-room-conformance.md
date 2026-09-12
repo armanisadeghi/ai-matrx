@@ -32,7 +32,7 @@ On the individual room page `/war-room/[id]` (session 3):
 - Room page entry: `app/(core)/war-room/[id]/page.tsx` → `features/war-room/components/room/WarRoomShell.tsx` (the header + body live here).
 - List page (the finished reference for how the room page should end up): `features/war-room/components/all/WarRoomAllView.tsx`.
 - Thread search internals: `features/war-room/components/room/ThreadSearchBox.tsx` + `features/war-room/hooks/useThreadSearch.ts` (title-only today).
-- Verify: dev server + `/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/war-room/all`, at **375 AND 1280**. Test room "Acme acquisition" has 11 threads + parked threads — good for exercising rail/grid/projector.
+- Verify: dev server + the nonce handshake (`openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/war-room/all`), at **375 AND 1280**. Test room "Acme acquisition" has 11 threads + parked threads — good for exercising rail/grid/projector.
 
 ## Remaining work
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -81,15 +82,9 @@ function shortId(id: string) {
   return id.slice(0, 8);
 }
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function relativeTime(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const sec = Math.floor(diff / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  return `${Math.floor(hr / 24)}d ago`;
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 function formatTimestamp(iso: string) {

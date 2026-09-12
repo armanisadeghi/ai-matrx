@@ -107,44 +107,65 @@ export function useFailedPrinterGate(args: {
 }): FailedPrinterGate {
   const { organizationId, templateId } = args;
 
-  const [printers, setPrinters] = useState<CertifiedPrinter[] | null>(null);
-  const [listError, setListError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string>(UNCERTIFIED_PRINTER);
+  // Snapshot-by-request-key (the `useScopedKnobs` shape): a stale org's or
+  // stock's certifications are never shown against a new one, and nothing is
+  // set into state from inside the effect body.
+  const requestKey = `${organizationId ?? ""}|${templateId ?? ""}`;
+  const [snapshot, setSnapshot] = useState<{
+    requestKey: string;
+    rows: CertifiedPrinter[];
+    defaultSelection: string;
+    error: string | null;
+  } | null>(null);
+  const [chosen, setChosen] = useState<{ requestKey: string; id: string } | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (!organizationId || !templateId) {
-      setPrinters([]);
-      return;
-    }
+    if (!organizationId || !templateId) return;
     let cancelled = false;
-    setPrinters(null);
-    setListError(null);
     void listCertificationsForTemplate({ organizationId, templateId })
       .then((rows) => {
         if (cancelled) return;
-        setPrinters(rows);
         const remembered = rememberedPrinter(organizationId, templateId);
         const known = remembered && rows.some((r) => r.id === remembered);
-        setSelectedId(
-          known
+        setSnapshot({
+          requestKey,
+          rows,
+          defaultSelection: known
             ? remembered
             : rows.length === 1
               ? rows[0].id
               : UNCERTIFIED_PRINTER,
-        );
+          error: null,
+        });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         console.error("[commerce-labels] certification read failed", err);
-        setPrinters([]);
-        setListError(
-          err instanceof Error ? err.message : "Unknown database error",
-        );
+        setSnapshot({
+          requestKey,
+          rows: [],
+          defaultSelection: UNCERTIFIED_PRINTER,
+          error: err instanceof Error ? err.message : "Unknown database error",
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [organizationId, templateId]);
+  }, [organizationId, templateId, requestKey]);
+
+  const addressable = Boolean(organizationId) && Boolean(templateId);
+  const current = snapshot?.requestKey === requestKey ? snapshot : null;
+  // Nothing to read without an org and a stock: an empty register, not a wait.
+  const printers: CertifiedPrinter[] | null = addressable
+    ? (current?.rows ?? null)
+    : [];
+  const listError = current?.error ?? null;
+  const selectedId =
+    chosen?.requestKey === requestKey
+      ? chosen.id
+      : (current?.defaultSelection ?? UNCERTIFIED_PRINTER);
 
   const {
     knobs,
@@ -183,7 +204,7 @@ export function useFailedPrinterGate(args: {
     printers: printers ?? [],
     selectedId,
     select: (id: string) => {
-      setSelectedId(id);
+      setChosen({ requestKey, id });
       if (organizationId && templateId) {
         rememberPrinter(organizationId, templateId, id);
       }

@@ -18,14 +18,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import type { TelemetryMetric, TelemetrySnapshot } from "../types";
 
 function formatValue(m: TelemetryMetric): string {
   if (!m.measured || m.value === null) return "—";
-  if (m.unit === "bytes") {
-    const mb = m.value / 1_000_000;
-    return `${mb >= 1000 ? (mb / 1000).toFixed(1) + " GB" : mb.toFixed(1) + " MB"}`;
-  }
+  // Bytes are formatFileSize's, whatever the unit turns out to be. The body
+  // this replaced divided by 1_000_000 and had no B or KB tier at all, so a
+  // 4 KB transfer rendered "0.0 MB" — a confident wrong zero, which is the one
+  // thing this package exists to forbid.
+  if (m.unit === "bytes") return formatFileSize(m.value);
   if (m.unit === "USD") return `$${m.value.toFixed(2)}`;
   return `${m.value.toLocaleString()}${m.unit ? " " + m.unit : ""}`;
 }

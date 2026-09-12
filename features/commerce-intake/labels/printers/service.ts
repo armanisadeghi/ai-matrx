@@ -14,6 +14,8 @@
  * duplicate (org, make, model, stock) unrepresentable while both are live.
  */
 
+import { readAllRows } from "@ai-matrx/data/db";
+
 import { createClient } from "@/utils/supabase/client";
 
 import {
@@ -95,6 +97,35 @@ export async function findCertifiedPrinter(args: {
     .maybeSingle();
   if (error) throw error;
   return data ? toPrinter(data as Row) : null;
+}
+
+/**
+ * Every live certification this org holds for ONE label stock. The print flows
+ * read this to answer "is the printer I am about to print on proven against
+ * these labels?" — see `useFailedPrinterGate`.
+ *
+ * Complete by contract (`readAllRows`): this list decides whether a print is
+ * warned about or refused, and a silently capped read would hide a failure.
+ */
+export async function listCertificationsForTemplate(args: {
+  organizationId: string;
+  templateId: string;
+}): Promise<CertifiedPrinter[]> {
+  const rows = await readAllRows<Row>(
+    ({ from, to }) =>
+      db()
+        .from("certified_printer")
+        .select(COLUMNS, { count: "exact" })
+        .eq("organization_id", args.organizationId)
+        .eq("template_id", args.templateId)
+        .is("deleted_at", null)
+        .order("printer_make", { ascending: true })
+        .order("printer_model", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "commerce.certified_printer" },
+  );
+  return rows.map(toPrinter);
 }
 
 const SORTABLE = new Set([

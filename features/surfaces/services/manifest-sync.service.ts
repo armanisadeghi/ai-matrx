@@ -37,6 +37,14 @@ import {
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
 import { readAllRows } from "@ai-matrx/data/db";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import {
+  RECENT_ROW_REFUSAL_PREFIX,
+  RECENT_ROW_WINDOW_HOURS,
+} from "@/features/surfaces/services/mirror-recency";
+import {
+  apiSyncedFrom,
+  type MirrorSyncProvenance,
+} from "@/features/surfaces/services/sync-provenance";
 import type {
   BrokenMapping,
   SurfaceAgentRole,
@@ -103,9 +111,20 @@ type SyncSurfaceValue = SurfaceValue & { groupKey?: string };
 /** SurfaceWriteTarget projected onto the DB's `group_key` column name. */
 type SyncSurfaceWriteTarget = SurfaceWriteTarget & { groupKey?: string };
 
+/**
+ * PROVENANCE ON EVERY MIRROR WRITE.
+ *
+ * The four mirror tables carry `synced_by` / `synced_from` (migration
+ * `ui_surface_mirror_provenance.sql`). Every row this service writes stamps
+ * BOTH — on insert and on the conflict-update alike, because a row whose
+ * provenance is only set at creation lies the moment a later sync touches it.
+ * The values come from the CALLER (`applyManifestSync`'s `provenance` option),
+ * never from anything guessed in here: see `sync-provenance.ts`.
+ */
 function manifestRowFor(
   surfaceName: string,
   v: SyncSurfaceValue,
+  provenance: MirrorSyncProvenance,
 ): UiSurfaceValueInsert {
   return {
     surface_name: surfaceName,
@@ -118,6 +137,8 @@ function manifestRowFor(
     auto_context: v.autoContext ?? true,
     sort_order: v.sortOrder ?? 1000,
     group_key: v.groupKey ?? v.group ?? "general",
+    synced_by: provenance.syncedBy,
+    synced_from: provenance.syncedFrom,
   };
 }
 
@@ -184,8 +205,11 @@ function diffSurfaceValue(
 function manifestRoleRowFor(
   surfaceName: string,
   r: SurfaceAgentRole,
+  provenance: MirrorSyncProvenance,
 ): UiSurfaceAgentRoleInsert {
   return {
+    synced_by: provenance.syncedBy,
+    synced_from: provenance.syncedFrom,
     surface_name: surfaceName,
     name: r.name,
     label: r.label,
@@ -214,6 +238,7 @@ function manifestRoleRowFor(
 function manifestWriteTargetRowFor(
   surfaceName: string,
   t: SurfaceWriteTarget,
+  provenance: MirrorSyncProvenance,
 ): UiSurfaceWriteTargetInsert {
   return {
     surface_name: surfaceName,
@@ -222,12 +247,20 @@ function manifestWriteTargetRowFor(
     description: t.description,
     value_type: t.valueType,
     mode: t.mode,
+    // THE VALUE CONTRACT, mirrored: `valueKind` names the registered Kind whose
+    // emitted schema IS the shape this target accepts, and the server half of
+    // the 360 loop prints it beside the target. Absent = no declared contract,
+    // written as NULL rather than omitted so a target that DROPS its kind
+    // clears the column on the next sync instead of keeping a dead slug.
+    kind_key: t.valueKind ?? null,
     // Default "manual" is the SAFE default and is written explicitly: a target
     // that omits the field must never drift into agent-writable.
     apply_policy: t.applyPolicy ?? "manual",
     updates_value: t.updatesValue ?? null,
     group_key: t.group ?? "general",
     sort_order: t.sortOrder ?? 1000,
+    synced_by: provenance.syncedBy,
+    synced_from: provenance.syncedFrom,
   };
 }
 
@@ -246,8 +279,11 @@ function manifestWriteTargetRowFor(
 function manifestClientToolRowFor(
   surfaceName: string,
   t: SurfaceClientTool,
+  provenance: MirrorSyncProvenance,
 ): UiSurfaceClientToolInsert {
   return {
+    synced_by: provenance.syncedBy,
+    synced_from: provenance.syncedFrom,
     surface_name: surfaceName,
     name: t.name,
     label: t.label,
@@ -340,6 +376,9 @@ function dbRowToSurfaceWriteTarget(
     // mean the same thing (no read twin), so the row keeps `undefined` and the
     // comparator normalizes each side to `null` before comparing.
     updatesValue: row.updates_value ?? undefined,
+    // Same absence contract as `updates_value`: NULL in the DB and `undefined`
+    // in code both mean "no declared value contract".
+    valueKind: row.kind_key ?? undefined,
     groupKey: row.group_key,
     sortOrder: row.sort_order,
   };
@@ -382,6 +421,13 @@ function diffSurfaceWriteTarget(
   if (mUpdates !== dUpdates) {
     diff.updatesValue = { manifest: mUpdates, db: dUpdates };
   }
+  // `valueKind` → `kind_key`, same `undefined`/NULL normalization. Compared
+  // rather than ignored: without this the report would call a target "in sync"
+  // while the mirror carries no contract (or a stale one) for the server half
+  // of the 360 loop to print.
+  const mKind = manifest.valueKind ?? null;
+  const dKind = db.valueKind ?? null;
+  if (mKind !== dKind) diff.valueKind = { manifest: mKind, db: dKind };
   // `group` in code lands in `group_key` in the DB, defaulting to "general".
   const mGroup = manifest.groupKey ?? manifest.group ?? "general";
   const dGroup = db.groupKey ?? db.group ?? "general";
@@ -706,6 +752,8 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           surfaceName,
           valueName,
           kind: "db_only",
+          // Age is populated on db_only entries ONLY — see SurfaceValueDrift.
+          updatedAt: dbValues.get(valueName)?.updated_at,
         });
       }
     }
@@ -747,6 +795,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           surfaceName,
           roleName,
           kind: "db_only",
+          updatedAt: dbRoles.get(roleName)?.updated_at,
         });
       }
     }
@@ -796,6 +845,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           surfaceName,
           targetName,
           kind: "db_only",
+          updatedAt: dbTargets.get(targetName)?.updated_at,
         });
       }
     }
@@ -840,6 +890,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
           surfaceName,
           toolName,
           kind: "db_only",
+          updatedAt: dbTools.get(toolName)?.updated_at,
         });
       }
     }
@@ -1045,6 +1096,15 @@ export interface ApplyManifestSyncOptions {
   deleteStale?: boolean;
   /** When false, skips registering manifests for surfaces not present in `ui_surface`. Defaults to false (no implicit surface creation). */
   createMissingSurfaces?: boolean;
+  /**
+   * WHO ran this sync and WHERE from, stamped onto every mirror row written
+   * (`synced_by` / `synced_from`). The caller supplies it because only the
+   * caller has a session: the admin route passes the super admin it already
+   * authenticated. Omitted, this defaults to the honest API-channel stamp with
+   * a NULL actor — "this ran through the endpoint, nobody identified" — rather
+   * than inventing one. See `sync-provenance.ts`.
+   */
+  provenance?: MirrorSyncProvenance;
 }
 
 export interface ApplyManifestSyncResult {
@@ -1223,29 +1283,17 @@ export function isMirrorTable(value: unknown): value is MirrorTable {
   );
 }
 
-/**
- * A row updated this recently is treated as probably-in-flight rather than
- * probably-dead.
- *
- * THE DECISION, and the reasoning, because this was an open question:
- * a fresh `updated_at` is good evidence a row belongs to work still running —
- * it is exactly the signal that separates "an agent synced this twenty minutes
- * ago" from "this has been dead since a refactor last month" — but it is
- * EVIDENCE, not proof, and it points both ways. The admin most likely to have
- * a legitimate reason to delete a row minutes old is the person who just
- * created it by mistake. So a recent row is WARNED ON, not BLOCKED: the first
- * attempt is refused with the row's actual age in the message, and the caller
- * may repeat it with `acknowledgeRecent: true`. That keeps the accident
- * expensive and the deliberate act possible, which a hard block does not.
- * 24h is chosen to cover a working session, not tuned to anything.
- */
-export const RECENT_ROW_WINDOW_HOURS = 24;
+// The recency window + refusal prefix live in `mirror-recency.ts` so the admin
+// UI can state the same rule without retyping the number; re-exported here
+// because this module is the API every existing caller imports them from.
+export {
+  RECENT_ROW_WINDOW_HOURS,
+  RECENT_ROW_REFUSAL_PREFIX,
+} from "@/features/surfaces/services/mirror-recency";
 
-/**
- * Stable prefix on the recency refusal so a caller can distinguish "you need
- * to confirm this one" from a genuine failure without parsing prose.
- */
-export const RECENT_ROW_REFUSAL_PREFIX = "Recently updated:";
+/** Stable prefixes used by the shared API error-to-status mapper. */
+export const NO_SUCH_MIRROR_ROW_PREFIX = "No such mirror row:";
+export const STILL_DECLARED_REFUSAL_PREFIX = "Still declared:";
 
 export interface DeleteMirrorRowArgs {
   table: MirrorTable;
@@ -1316,7 +1364,7 @@ export async function deleteMirrorRow(
   if (read.error) throw read.error;
   if (!read.data) {
     throw new Error(
-      `No ${table} row for ${surfaceName} · ${name}. It may already be gone — re-run the drift report.`,
+      `${NO_SUCH_MIRROR_ROW_PREFIX} no ${table} row for ${surfaceName} · ${name}. It may already be gone — re-run the drift report.`,
     );
   }
 
@@ -1325,7 +1373,7 @@ export async function deleteMirrorRow(
   //    drift the next sync re-fixes, and this button is not the tool for it.
   if (manifestKeysForTable(table).has(`${surfaceName}::${name}`)) {
     throw new Error(
-      `${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only removes rows the drift report lists as DB-only.`,
+      `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only removes rows the drift report lists as DB-only.`,
     );
   }
 
@@ -1388,7 +1436,11 @@ export async function applyManifestSync(
   sb: Sb,
   opts: ApplyManifestSyncOptions = {},
 ): Promise<ApplyManifestSyncResult> {
-  const { deleteStale = false, createMissingSurfaces = false } = opts;
+  const {
+    deleteStale = false,
+    createMissingSurfaces = false,
+    provenance = { syncedBy: null, syncedFrom: apiSyncedFrom() },
+  } = opts;
 
   // 1. Make sure surfaces referenced by manifests exist in ui_surface.
   // Existence read: `existingSurfaces.has()` below decides whether a manifest is
@@ -1443,7 +1495,7 @@ export async function applyManifestSync(
   const upsertRows: UiSurfaceValueInsert[] = [];
   for (const manifest of targetManifests) {
     for (const v of manifest.values) {
-      upsertRows.push(manifestRowFor(manifest.surfaceName, v));
+      upsertRows.push(manifestRowFor(manifest.surfaceName, v, provenance));
     }
   }
   const upserted: ApplyManifestSyncResult["upserted"] = [];
@@ -1463,7 +1515,9 @@ export async function applyManifestSync(
   const roleUpsertRows: UiSurfaceAgentRoleInsert[] = [];
   for (const manifest of targetManifests) {
     for (const r of manifest.agentRoles ?? []) {
-      roleUpsertRows.push(manifestRoleRowFor(manifest.surfaceName, r));
+      roleUpsertRows.push(
+        manifestRoleRowFor(manifest.surfaceName, r, provenance),
+      );
     }
   }
   const roleUpserted: ApplyManifestSyncResult["roleUpserted"] = [];
@@ -1484,7 +1538,9 @@ export async function applyManifestSync(
   const writeTargetRows: UiSurfaceWriteTargetInsert[] = [];
   for (const manifest of targetManifests) {
     for (const t of manifest.writeTargets ?? []) {
-      writeTargetRows.push(manifestWriteTargetRowFor(manifest.surfaceName, t));
+      writeTargetRows.push(
+        manifestWriteTargetRowFor(manifest.surfaceName, t, provenance),
+      );
     }
   }
   const writeTargetUpserted: ApplyManifestSyncResult["writeTargetUpserted"] = [];
@@ -1508,7 +1564,9 @@ export async function applyManifestSync(
   const clientToolRows: UiSurfaceClientToolInsert[] = [];
   for (const manifest of targetManifests) {
     for (const t of manifest.clientTools ?? []) {
-      clientToolRows.push(manifestClientToolRowFor(manifest.surfaceName, t));
+      clientToolRows.push(
+        manifestClientToolRowFor(manifest.surfaceName, t, provenance),
+      );
     }
   }
   const clientToolUpserted: ApplyManifestSyncResult["clientToolUpserted"] = [];

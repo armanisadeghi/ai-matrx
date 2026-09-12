@@ -14,7 +14,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import type { RulebookRow } from "../types";
-import { allTensions, type TensionState } from "./types";
+import { allTensions, SETTLED_STATES } from "./types";
 
 const rulebookTable = () => supabase.schema("platform").from("rulebook");
 
@@ -34,7 +34,12 @@ export type SettleResult =
 export async function settleTension(opts: {
   rulebookId: string;
   tensionId: string;
-  outcome: Exclude<TensionState, "open">;
+  /**
+   * Only a state the EXPERT can put a question in. `moot` is the machine's own
+   * bookkeeping for a question whose rules were removed — it is written by the
+   * server's rule-removing writes, never by a click here.
+   */
+  outcome: (typeof SETTLED_STATES)[number];
   answer?: string;
 }): Promise<SettleResult> {
   for (let attempt = 0; attempt < 2; attempt += 1) {

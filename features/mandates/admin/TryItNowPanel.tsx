@@ -74,6 +74,7 @@ import {
 import { resolveMandate } from "@/features/mandates/service";
 import { sampleInputsForMandate } from "./sample-inputs";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface CompletedRun {
   result: MandateTestResponse;
@@ -750,7 +751,9 @@ export function TryItNowPanel({
           />
           <PropertyRow
             label="Duration"
-            value={`${((result.duration_ms ?? 0) / 1000).toFixed(1)} seconds`}
+            value={formatDurationMs(result.duration_ms ?? 0, {
+              style: "compact",
+            })}
           />
           <ConfigurationTable
             label="Applied model overrides"

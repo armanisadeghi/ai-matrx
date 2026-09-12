@@ -25,6 +25,7 @@
 // page SAYS SO instead of pretending — a stand-in that is silent is a defect.
 
 import type { DraftInput } from "./service";
+import { formatRelativeTime } from "@/utils/datetime";
 
 /** Bumped only if the shape changes incompatibly; an old key is then ignored. */
 const STORAGE_KEY = "matrx.mandates.authoring.draft.v1";
@@ -171,12 +172,5 @@ export function draftUnstorableSentence(reason: string): string {
 }
 
 function describeAge(savedAt: string): string {
-  const saved = Date.parse(savedAt);
-  if (Number.isNaN(saved)) return "earlier";
-  const minutes = Math.floor((Date.now() - saved) / 60_000);
-  if (minutes < 1) return "moments ago";
-  if (minutes === 1) return "a minute ago";
-  if (minutes < 60) return `${minutes} minutes ago`;
-  const hours = Math.floor(minutes / 60);
-  return hours === 1 ? "an hour ago" : `${hours} hours ago`;
+  return formatRelativeTime(savedAt, { style: "long", fallback: "earlier" });
 }

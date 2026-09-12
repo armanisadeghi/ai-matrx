@@ -51,9 +51,36 @@ export function surfacesAdminErrorStatus(message: string): number {
   return 500;
 }
 
+/**
+ * Describe a thrown value that is NOT an `Error`.
+ *
+ * Every mutating call in this family goes through PostgREST, and a
+ * supabase-js failure is thrown as a PLAIN OBJECT (`{ message, code, details,
+ * hint }`), not an `Error`. The old `error instanceof Error ? … : "Unknown
+ * error"` therefore threw away the only description of every database failure
+ * these routes can have — a real one cost this session a debugging round on
+ * the manifest sync, which answered `{"error":"Unknown error"}` while the
+ * database had said exactly what was wrong. Nothing fails silently: the
+ * message is used when there is one, and the code/details/hint ride along.
+ */
+function describeNonError(error: unknown): string {
+  if (!error || typeof error !== "object") return String(error ?? "Unknown error");
+  const e = error as Record<string, unknown>;
+  const parts = [
+    typeof e.message === "string" && e.message.trim() ? e.message.trim() : null,
+    typeof e.code === "string" && e.code ? `code=${e.code}` : null,
+    typeof e.details === "string" && e.details ? `details=${e.details}` : null,
+    typeof e.hint === "string" && e.hint ? `hint=${e.hint}` : null,
+  ].filter(Boolean);
+  return parts.length > 0
+    ? parts.join(" · ")
+    : `Non-Error thrown: ${JSON.stringify(error).slice(0, 500)}`;
+}
+
 /** The ONE error response every `/api/admin/surfaces/*` route returns. */
 export function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown error";
+  const message =
+    error instanceof Error ? error.message : describeNonError(error);
   return NextResponse.json(
     { error: message },
     { status: surfacesAdminErrorStatus(message) },

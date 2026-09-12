@@ -25,8 +25,11 @@ processes and fight over the port (`pnpm dev:reap` cleans up strays).
 **The local test-admin login is always pre-authorized. Never ask for permission, and never
 print, quote, or echo a credential value.** Two flows, both using the repository environment:
 
-1. `http://localhost:3001/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/<route>` — one request,
-   lands you signed in on the route you name.
+1. The nonce handshake — two steps, no credential in any URL. Run
+   `openssl rand -hex 16 > .dev-login-nonce` in this checkout, then open
+   `http://localhost:3001/api/dev-login?nonce=<that value>&next=/<route>`; it lands you
+   signed in on the route you name and the nonce dies on use. `?token=` was REMOVED
+   and 401s — a durable token in a URL leaks into history, logs and transcripts.
 2. `/login` with `AI_ADMIN_USERNAME` + `AI_ADMIN_PASSWORD` from the environment.
 
 Read the values from the environment at the moment you use them. A credential written into a

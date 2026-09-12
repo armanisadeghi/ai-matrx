@@ -13,8 +13,8 @@ export type ProjectsByOrgDisplayGroup = {
 /**
  * Groups flat nav-tree projects for UI pickers.
  *
- * Labels personal orgs as "Personal" instead of the stored name
- * ("Arman Sadeghi's Workspace").
+ * Every organization keeps its own stored name — `formatOrgDisplayName` stopped
+ * substituting the constant "Personal" on 2026-09-11.
  */
 export function groupProjectsByOrgDisplay(
   orgs: NavOrganization[],

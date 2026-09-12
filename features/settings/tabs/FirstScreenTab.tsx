@@ -19,6 +19,7 @@
 // radius, and a locked key explained with its request door.
 
 import { Building2, Palette, SlidersHorizontal } from "lucide-react";
+import type { SettingsTabDef } from "../types";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
@@ -54,9 +55,16 @@ export default function FirstScreenTab() {
   const absent = (keys: readonly string[]): string[] =>
     keys.filter((key) => !settings.knobByKey(key));
 
-  const modelKnobs = present([FIRST_SCREEN_MODEL_KEY]);
-  const voiceKnobs = present([FIRST_SCREEN_VOICE_KEY]);
-  const moreKnobs = present(FIRST_SCREEN_MORE_KEYS);
+  // ONE list, rendered by ONE call. Rows are grouped by their `ui.group`
+  // inside `UniversalSettingsRows`, so splitting the same keys across several
+  // calls printed a group heading once per call — "AI" appeared twice on this
+  // screen, with "Voice" between them. A group is a property of the keys, not
+  // of how many times the screen asks for them.
+  const ladderKnobs = present([
+    FIRST_SCREEN_MODEL_KEY,
+    FIRST_SCREEN_VOICE_KEY,
+    ...FIRST_SCREEN_MORE_KEYS,
+  ]);
   const missingKeys = settings.isLoading
     ? []
     : absent([FIRST_SCREEN_MODEL_KEY, FIRST_SCREEN_VOICE_KEY, ...FIRST_SCREEN_MORE_KEYS]);
@@ -110,11 +118,23 @@ export default function FirstScreenTab() {
         </SettingsCallout>
       )}
 
-      {modelKnobs.length > 0 && <UniversalSettingsRows knobs={modelKnobs} hideKey />}
-      {voiceKnobs.length > 0 && <UniversalSettingsRows knobs={voiceKnobs} hideKey />}
-      {moreKnobs.length > 0 && <UniversalSettingsRows knobs={moreKnobs} hideKey />}
+      {ladderKnobs.length > 0 && <UniversalSettingsRows knobs={ladderKnobs} hideKey />}
 
       <OrganizationRungSection />
     </>
   );
 }
+
+/**
+ * The first screen as a registry tab, so the settings route's index renders it
+ * through the SAME host (Suspense, error boundary, breadcrumb) as every other
+ * tab instead of an empty "choose a category" panel.
+ */
+export const FIRST_SCREEN_TAB: SettingsTabDef = {
+  id: "firstScreen",
+  label: "Settings",
+  icon: SlidersHorizontal,
+  description: "The basics, then everything else on the left.",
+  component: FirstScreenTab,
+  persistence: "server",
+};

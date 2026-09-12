@@ -70,6 +70,34 @@ export type KnobLadder = {
   order: number;
 };
 
+/**
+ * Units that are written glued to the number by convention. Everything else
+ * is a separate word.
+ */
+const GLUED_UNITS = new Set(["%", "\u00b0", "\u00b0C", "\u00b0F", "\u00d7", "x"]);
+
+/** A value with no answer reads as an em dash, never an empty cell. */
+function valueWord(value: unknown): string {
+  if (value === null || value === undefined) return "\u2014";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
+}
+
+/**
+ * THE ONE value+unit formatter for every settings surface. A unit is a word,
+ * not a suffix: "120 pixels", never "120pixels". Symbol units that convention
+ * glues to the number ("80%", "20\u00d7") stay glued. A value with no unit, and
+ * a value that is missing entirely, are formatted here too so no screen ever
+ * hand-concatenates the two halves its own way.
+ */
+export function formatKnobValue(value: unknown, unit?: string | null): string {
+  const word = valueWord(value);
+  if (!unit || value === null || value === undefined) return word;
+  const trimmed = unit.trim();
+  if (trimmed === "") return word;
+  return GLUED_UNITS.has(trimmed) ? `${word}${trimmed}` : `${word} ${trimmed}`;
+}
+
 /** Friendly, lower-case rung names. Used in sentences, so never a slug. */
 const RUNG_NAMES: Record<string, string> = {
   platform: "the platform",

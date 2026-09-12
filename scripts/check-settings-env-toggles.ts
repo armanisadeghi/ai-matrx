@@ -39,14 +39,36 @@
  * including the legitimate ones, so a wrong call is visible and arguable rather
  * than silent. Misclassification is the only way a guard like this rots.
  *
- * 🚨 THE SIX KNOWN VIOLATORS ARE IN A DATED, SHRINKING ALLOWLIST.
- * `scripts/settings-env-toggles-allowlist.json` (baselined 2026-09-11) carries
- * `NEXT_PUBLIC_HR_MOCK`, `NEXT_PUBLIC_ENABLE_CONTENT_BLOCKS_ADMIN`,
- * `NEXT_PUBLIC_USE_DATABASE_CONTENT_BLOCKS`, `MATRX_ALLOW_ARCHIVED_REGENERATOR`,
- * `TWILIO_SKIP_VALIDATION` and `UNWIRED_DEBUG`. LANE D of the Unified Settings
- * Platform is removing them in parallel, so they are REPORTED LOUDLY on every
- * run and do not fail the build; anything NEW exits 1. `--write` shrinks the
- * allowlist to what is still present and can never add an entry.
+ * 🚨 THE ALLOWLIST IS EMPTY, AND THAT IS THE POINT.
+ * `scripts/settings-env-toggles-allowlist.json` was seeded 2026-09-11 with 15
+ * names / 20 sites; LANE D of the Unified Settings Platform drained it the same
+ * day and it now holds ZERO entries. So every BEHAVIOUR finding from here on is
+ * NEW and exits 1 — there is no "known bad" tier left to hide in. `--write`
+ * shrinks the allowlist to what is still present and can never add an entry, so
+ * a new toggle cannot be baselined away.
+ *
+ * How the 19+3 were drained, because the split is the judgement that matters:
+ *   1 became a feature knob   — MATRX_PARITY_SHADOW → `platform.debug.config_parity_shadow`
+ *                               (aidream migration 0638), the only one that was
+ *                               product runtime behaviour.
+ *   14 became real CLI flags  — APPLY → --apply, UNWIRED_DEBUG → --debug,
+ *                               MATRX_ALLOW_ARCHIVED_REGENERATOR → --allow-archived,
+ *                               PODCAST_E2E_FULL → --full, P6_* → --benchmark /
+ *                               --image-benchmark-contract, MATRX_PARITY_REQUIRE_FRONTEND
+ *                               → --require-frontend, MATRX_INFO/DEBUG/VERBOSE →
+ *                               run_schema_generation() arguments. A one-off
+ *                               script's dry-run switch is a CLI flag wearing an
+ *                               env var; a knob for it would put a developer's
+ *                               keystroke in an organization's settings registry.
+ *   6 were deleted outright   — SSR_TIMING and the two NEXT_PUBLIC_*CONTENT_BLOCKS*
+ *                               with the dead modules that carried them (zero
+ *                               importers), MATRX_BROWSER_PROOF_SERVER (a second
+ *                               gate beside a real secret), TWILIO_SKIP_VALIDATION
+ *                               (turned off webhook signature validation — no
+ *                               organization may choose that, so there was no
+ *                               honest setting to move it to).
+ *   1 was upheld as legitimate — MATRX_SEO_LOCAL_DEV, reclassified IDENTITY here;
+ *                               see the comment on IDENTITY_RE.
  *
  * Sibling guard on the aidream side, by SHAPE rather than by name:
  * `aidream/scripts/check_env_toggles.py`. This one is cross-repo and is the
@@ -86,8 +108,19 @@ const ENDPOINT_RE =
 // Host identity includes what the RUNNER stamps on a process: CI, the test
 // harness (PYTEST_CURRENT_TEST), and the terminal's own colour convention
 // (NO_COLOR / FORCE_COLOR / TERM are the terminal describing itself).
+// MATRX_SEO_LOCAL_DEV is here by a STANDING WRITTEN RULING, not by convenience
+// (common-docs/policies/env-vars-are-values-not-toggles.md, 2026-08-25, § "ruled
+// IN, and worth knowing why"). It looks like a toggle and is not: it carries a
+// per-environment FACT — which database role this process may run as. Production
+// asserts `svc_seo`; the documented local launcher permits the broad pooled login
+// on loopback only; DEPLOY.md states deployments must never set it. The test is
+// not "is it a boolean" but "does it name something about the ENVIRONMENT, or
+// something about the PRODUCT?" A role, a URL, a key: a value. A validation
+// strictness, a cutover, an engine choice: a toggle. Lane D re-read the call site
+// on 2026-09-11 and upheld the ruling rather than sweeping it up to make a sweep
+// look complete.
 const IDENTITY_RE =
-  /^(NODE_ENV|VERCEL_ENV|VERCEL|VERCEL_[A-Z_]*|CI|GITHUB_ACTIONS|ENVIRONMENT|ENV|APP_ENV|DEPLOY_ENV|BUILD_ID|APP_VERSION|INSTANCE_ID|NEXT_RUNTIME|npm_[a-z_]+|HOME|PATH|TMPDIR|PWD|AIDREAM_DIR|TZ|PYTEST_CURRENT_TEST|NO_COLOR|FORCE_COLOR|TERM)$/;
+  /^(NODE_ENV|VERCEL_ENV|VERCEL|VERCEL_[A-Z_]*|CI|GITHUB_ACTIONS|ENVIRONMENT|ENV|APP_ENV|DEPLOY_ENV|BUILD_ID|APP_VERSION|INSTANCE_ID|NEXT_RUNTIME|npm_[a-z_]+|HOME|PATH|TMPDIR|PWD|AIDREAM_DIR|TZ|PYTEST_CURRENT_TEST|NO_COLOR|FORCE_COLOR|TERM|MATRX_SEO_LOCAL_DEV)$/;
 
 /** The env-toggle guards themselves — their pattern tables are not reads. */
 const GUARD_MODULES = /(check-settings-env-toggles\.ts$|aidream\/scripts\/check_env_toggles\.py$)/;
@@ -219,10 +252,13 @@ function main(): void {
             'Arman, 2026-09-10: "Never an env var. Env values are only for secrets, not for ' +
             'controlling behavior."',
           _rule:
-            "THIS LIST ONLY SHRINKS. These are the behavioural env toggles that existed when the " +
-            "guard was written. LANE D of the Unified Settings Platform is converting each one " +
-            "into a platform.feature_knob row (register USP-035 / USP-085). A NEW behavioural env " +
-            "toggle fails the guard and must never be added here.",
+            "THIS LIST ONLY SHRINKS, AND IT IS NOW EMPTY. It was seeded 2026-09-11 with the 15 " +
+            "behavioural env toggles that existed that day; LANE D of the Unified Settings " +
+            "Platform drained all 15 the same day (register USP-035 / USP-085) — one became a " +
+            "platform.feature_knob row, most became real CLI flags, the rest were deleted with " +
+            "the dead code or the unsafe bypass that carried them. Every BEHAVIOUR finding from " +
+            "here on is therefore NEW and fails the guard. Adding an entry here is the defect " +
+            "this guard exists to catch: convert it or delete it instead.",
           _how:
             "`pnpm check:settings-env-toggles --write` removes entries that no longer exist in " +
             "the tree. It cannot add one.",

@@ -58,10 +58,10 @@ import { HrCountDoor, HrPersonDoor, HrStructureDoor } from "../doors/HrPersonDoo
 import { HrStatusChip, formatFullDate } from "../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../shared/HrWorkerClassChip";
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
-}
+// NOTE: this file's own `initials(name)` helper was dead code (unused,
+// unexported) — removed rather than swapped to the package export. Avatar
+// initials on this surface render through `HrEmployeePhoto`, whose
+// `hrInitials` already uses `@ai-matrx/kit/format`'s `getInitials`.
 
 export function ProfileHeader({
   header,

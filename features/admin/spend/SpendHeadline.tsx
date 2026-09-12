@@ -140,10 +140,16 @@ export function SpendHeadline({
         <Tile
           label="This month"
           value={usd(monthToDate)}
+          // `null` means the month is too young to extrapolate; `undefined`
+          // means this caller never carried a projection (the popover). They
+          // are different facts and the tile must never claim the first when
+          // it means the second.
           hint={
-            monthProjection === null || monthProjection === undefined
-              ? "too early to project"
-              : `on pace for ${usd(monthProjection)}`
+            monthProjection === undefined
+              ? undefined
+              : monthProjection === null
+                ? "too early to project"
+                : `on pace for ${usd(monthProjection)}`
           }
         />
       </div>

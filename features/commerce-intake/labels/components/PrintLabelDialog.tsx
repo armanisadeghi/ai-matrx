@@ -33,7 +33,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
-import { printQrLabelSheet, type QrEcLevel } from "@ai-matrx/print/labels";
+import {
+  getLabelTemplate,
+  printQrLabelSheet,
+  type QrEcLevel,
+} from "@ai-matrx/print/labels";
 import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
 import { toast } from "@/lib/toast";
 
@@ -51,6 +55,8 @@ import {
   releaseLabelCode,
 } from "../service";
 import type { LabelBatch } from "../types";
+import { PrinterCertificationNotice } from "../printers/components/PrinterCertificationNotice";
+import { useFailedPrinterGate } from "../printers/useFailedPrinterGate";
 
 const MINT_SINGLE = "__mint_single__";
 
@@ -81,6 +87,33 @@ export function PrintLabelDialog({
     const v = knobs.find((k) => k.key === "default_template")?.effective_value;
     return typeof v === "string" && v ? v : "avery-5163";
   }, [knobs]);
+
+  const gate = useFailedPrinterGate({
+    organizationId,
+    templateId: defaultTemplate,
+  });
+  const stockName = getLabelTemplate(defaultTemplate)?.name ?? defaultTemplate;
+
+  /**
+   * The certification gate as an honest refusal rather than a dead button:
+   * still checking → say so; a failed printer under the org's `block` setting →
+   * refuse, and the banner beside it names the setting and where to change it.
+   */
+  const certificationRefusal = (): boolean => {
+    if (!gate.ready) {
+      toast.error(
+        `Still checking this printer against ${stockName} — try again in a moment.`,
+      );
+      return true;
+    }
+    if (gate.blocked) {
+      toast.error(
+        "This organization blocks printing on a printer that failed certification. An admin can change that in Organization settings → Configuration.",
+      );
+      return true;
+    }
+    return false;
+  };
 
   const livePrimary = identifiers.find(
     (i) => i.kind === "our_qr" && !i.replacedAt,
@@ -136,6 +169,7 @@ export function PrintLabelDialog({
 
   const reprint = async () => {
     if (!livePrimary) return;
+    if (certificationRefusal()) return;
     setBusy(true);
     try {
       await printOne(livePrimary.value);
@@ -149,6 +183,8 @@ export function PrintLabelDialog({
   };
 
   const assignNew = async () => {
+    // Refuse BEFORE claiming a code — a blocked print must not burn a code.
+    if (certificationRefusal()) return;
     setBusy(true);
     try {
       // 1. A code to claim: next from the chosen batch, or mint a single.
@@ -229,6 +265,12 @@ export function PrintLabelDialog({
               </SelectContent>
             </Select>
           </div>
+
+          <PrinterCertificationNotice
+            gate={gate}
+            organizationId={organizationId}
+            stockName={stockName}
+          />
         </div>
 
         <DialogFooter className="gap-2">

@@ -24,20 +24,16 @@ import { cn } from "@/lib/utils";
 import { CanvasLeaderboard } from "../leaderboard/CanvasLeaderboard";
 import { CanvasSocialActions } from "../social/CanvasSocialActions";
 import { PublicCanvasRenderer } from "./PublicCanvasRenderer";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
+// second and printed "AM"; a whitespace-only name now also reads "?"
+// (this copy previously rendered a blank fallback for that case).
+import { getInitials as initials } from "@ai-matrx/kit/format";
 
 interface SharedCanvasViewProps {
   shareToken: string;
   className?: string;
-}
-
-function initials(name: string | null): string {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 export function SharedCanvasView({
@@ -167,7 +163,7 @@ export function SharedCanvasView({
           <PopoverContent
             align="end"
             sideOffset={4}
-            className="max-h-[min(34rem,calc(100dvh-1rem))] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto p-0"
+            className="max-h-[min(34rem,var(--radix-popover-content-available-height))] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto p-0"
           >
             <div className="flex items-center gap-3 border-b border-border p-4">
               <Avatar className="h-10 w-10 border border-border">

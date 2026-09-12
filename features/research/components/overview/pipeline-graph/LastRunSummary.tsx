@@ -50,6 +50,7 @@ import {
 } from "../../results/ResultsHeroMetrics";
 import { TopSourcesGrid } from "../../results/TopSourcesGrid";
 import { ResultsMediaBand } from "../../results/ResultsMediaBand";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 interface Props {
   topicId: string;
@@ -59,21 +60,6 @@ interface Props {
   finishedAt?: string | null;
   /** When set, this is the receipt for the just-completed run; otherwise it's a cold-load summary. */
   variant?: "fresh" | "cold";
-}
-
-function relativeTime(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  const diff = Date.now() - t;
-  const min = Math.floor(diff / 60_000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hrs = Math.floor(min / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
 }
 
 // ── Page-count precision ──────────────────────────────────────────────────
@@ -181,7 +167,7 @@ export function LastRunSummary({
   variant = "cold",
 }: Props) {
   const base = `/research/topics/${topicId}`;
-  const when = relativeTime(finishedAt);
+  const when = formatRelativeTime(finishedAt, { fallback: "" }) || null;
 
   // Showcase data — same hooks the standalone Results page consumed, so the
   // band survives a cold refresh. A generous source limit so the ranking /

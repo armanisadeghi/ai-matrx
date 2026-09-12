@@ -16,10 +16,26 @@
 
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { visibilityLabelShort } from "@/lib/visibility/labels";
+import {
+  formatCount,
+  formatPercentFromFraction,
+  formatUsd,
+  isKnownNumber,
+  UNKNOWN_DISPLAY,
+} from "@/lib/format/honest";
 
-/** "1.2k" / "3m" style compact number, matching the app's existing style. */
+/**
+ * "1.2k" / "3m" style compact number, matching the app's existing style.
+ *
+ * A SCREEN NEVER LIES. `aga_apps.total_executions` is nullable, and the
+ * original `if (!n || n <= 0) return "0"` printed a confident "0" for a
+ * counter nobody has measured. Unknown is the em-dash; a REAL zero — and a
+ * real negative, which would be a genuine data problem worth seeing — still
+ * prints as itself.
+ */
 export function formatNumber(n: number | null | undefined): string {
-  if (!n || n <= 0) return "0";
+  if (!isKnownNumber(n)) return UNKNOWN_DISPLAY;
+  if (n <= 0) return String(n);
   if (n < 1000) return String(n);
   if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k`;
   return `${(n / 1_000_000).toFixed(1)}m`;
@@ -72,8 +88,8 @@ export function humanAgentApp(app: AppSummaryLike): string {
       .join(" · "),
     app.category ? `Category: ${app.category}` : null,
     `Runs: ${formatNumber(app.total_executions)}${
-      typeof app.success_rate === "number"
-        ? ` · ${Math.round(app.success_rate * 100)}% success`
+      isKnownNumber(app.success_rate)
+        ? ` · ${formatPercentFromFraction(app.success_rate)} success`
         : ""
     }`,
     app.description || null,
@@ -89,8 +105,8 @@ export function appBrief(app: AppSummaryLike): string {
     app.status ? `— ${app.status}` : null,
     app.category ? `· ${app.category}` : null,
     `· ${formatNumber(app.total_executions)} runs`,
-    typeof app.success_rate === "number"
-      ? `· ${Math.round(app.success_rate * 100)}% success`
+    isKnownNumber(app.success_rate)
+      ? `· ${formatPercentFromFraction(app.success_rate)} success`
       : null,
   ].filter(Boolean);
   return bits.join(" ");
@@ -134,16 +150,16 @@ export type AgentAppKpis = Record<string, string | number>;
 export function agentAppKpis(app: AgentAppKpiLike): AgentAppKpis {
   const kpis: AgentAppKpis = {
     runs: formatNumber(app.total_executions),
-    success:
-      typeof app.success_rate === "number"
-        ? `${Math.round(app.success_rate * 100)}%`
-        : "—",
+    success: formatPercentFromFraction(app.success_rate),
   };
   if (app.unique_users_count != null) {
     kpis.users = formatNumber(app.unique_users_count);
   }
-  if (typeof app.total_cost === "number" && app.total_cost > 0) {
-    kpis.cost = `$${app.total_cost.toFixed(2)}`;
+  // A MEASURED zero cost is information and belongs on the strip; only an
+  // UNMEASURED cost is omitted. The old `> 0` test hid a real free run and
+  // (with the `?? 0` twin below) turned an unknown one into "$0.00".
+  if (isKnownNumber(app.total_cost)) {
+    kpis.cost = formatUsd(app.total_cost);
   }
   if (app.status) kpis.status = app.status;
   if (app.visibility) kpis.visibility = app.visibility;
@@ -157,10 +173,10 @@ export function agentAppKpis(app: AgentAppKpiLike): AgentAppKpis {
  */
 export function agentAppAdminKpis(app: AgentAppKpiLike): AgentAppKpis {
   return {
-    runs: (app.total_executions ?? 0).toLocaleString(),
-    users: (app.unique_users_count ?? 0).toLocaleString(),
-    success: `${((app.success_rate ?? 0) * 100).toFixed(0)}%`,
-    cost: `$${(app.total_cost ?? 0).toFixed(4)}`,
+    runs: formatCount(app.total_executions),
+    users: formatCount(app.unique_users_count),
+    success: formatPercentFromFraction(app.success_rate),
+    cost: formatUsd(app.total_cost, { digits: 4 }),
   };
 }
 

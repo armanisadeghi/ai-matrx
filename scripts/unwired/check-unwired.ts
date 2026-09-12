@@ -39,6 +39,7 @@ interface Args {
   write: boolean;
   json: boolean;
   strict: boolean;
+  debug: boolean;
   limit: number;
 }
 
@@ -52,6 +53,7 @@ function parseArgs(): Args {
   pnpm check:unwired --json      emit the report contract
   pnpm check:unwired --limit=20  cap terminal detail (0 shows all)
   pnpm check:unwired --strict    opt-in exit 1 when findings exist
+  pnpm check:unwired --debug     trace scan progress to stderr
 
 Law:        common-docs/policies/unfinished-work-alarm.md
 Contract:   scripts/unwired/FEATURE.md
@@ -64,7 +66,7 @@ Scoreboard: /administration/reporting/unwired`);
     console.error(`${RED}[unwired] --limit must be a non-negative integer.${NC}`);
     process.exit(2);
   }
-  const known = new Set(["--write", "--json", "--strict", ...(limitArg ? [limitArg] : [])]);
+  const known = new Set(["--write", "--json", "--strict", "--debug", ...(limitArg ? [limitArg] : [])]);
   const unknown = argv.filter((arg) => !known.has(arg));
   if (unknown.length > 0) {
     console.error(`${RED}[unwired] unknown argument(s): ${unknown.join(", ")}.${NC} Run --help.`);
@@ -74,6 +76,7 @@ Scoreboard: /administration/reporting/unwired`);
     write: argv.includes("--write"),
     json: argv.includes("--json"),
     strict: argv.includes("--strict"),
+    debug: argv.includes("--debug"),
     limit: limitRaw === undefined ? 40 : Number(limitRaw),
   };
 }
@@ -139,7 +142,7 @@ function rank(findings: UnwiredFinding[]): UnwiredBucket[] {
 }
 
 function buildReport(): { report: UnwiredReport; stale: UnwiredAllowlistEntry[] } {
-  const scan = scanUnwired(ROOT);
+  const scan = scanUnwired(ROOT, { debug: args.debug });
   const entries = allowlist();
   const byKey = new Map(entries.map((entry) => [keyOf(entry), entry]));
   const used = new Set<string>();

@@ -18,11 +18,17 @@
  * keys, tokens, connection strings, or credential material are read or placed
  * in the scope — see the manifest header for the standing rule.
  *
- * Write half: this mount also registers the surface's `writeTargets` handlers
- * (`useSystemAgentWriteHandlers`) — the four authored identity fields (name,
- * description, category, tags), each persisted through `saveAgentField`. The
- * roster mount (`features/agents/browse/adminSurface.ts`) deliberately registers NONE; see the
- * manifest's `writeTargets` block for the reasoning on both.
+ * Write half: registration lives ONLY on the detail PAGE
+ * (`SystemAgentWriteTargets`, mounted by
+ * `app/(admin)/.../agents/[id]/page.tsx`), not here. This component used to
+ * ALSO register the same four handlers via `useSystemAgentWriteHandlers`,
+ * which put two live registrations on the detail sub-routes at once —
+ * `resolveHandlers()` in `surface-writeback.ts` merges provider + registered
+ * handlers, so the registered (page-mounted) ones silently won and this
+ * mount's copy never ran, while still doubling the four target names on
+ * `/build` (which also mounts `matrx-user/agent-builder` over the same
+ * names as draft targets). Fixed 2026-09-12 by deleting the duplicate here;
+ * see the manifest's `writeTargets` block for the full per-mount reasoning.
  */
 
 import type { ReactNode } from "react";
@@ -33,7 +39,6 @@ import {
   ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
   createAdminSystemAgentsScope,
 } from "@/features/surfaces/manifests/admin-system-agents.manifest";
-import { useSystemAgentWriteHandlers } from "@/features/agents/hooks/useSystemAgentWriteHandlers";
 
 export function SystemAgentSurfaceEmitter({
   agentId,
@@ -43,7 +48,6 @@ export function SystemAgentSurfaceEmitter({
   children: ReactNode;
 }) {
   const agent = useAppSelector((s) => selectAgentById(s, agentId));
-  const getWriteHandlers = useSystemAgentWriteHandlers(agentId);
 
   // Built at trigger time (Run), not on mount — reads whatever the Redux
   // record holds at that instant.
@@ -104,7 +108,6 @@ export function SystemAgentSurfaceEmitter({
       // Not a text-editing route — `isEditable` only decides whether the
       // editor default agents get bound, and gates nothing about writes.
       isEditable={false}
-      getWriteHandlers={getWriteHandlers}
     >
       {children}
     </SurfaceRuntimeProvider>

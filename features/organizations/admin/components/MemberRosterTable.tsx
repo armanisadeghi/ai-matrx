@@ -18,6 +18,14 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { OrgAdminMember } from "../types";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). VISIBLE CHANGE: this file previously took first+second word
+// for multi-word names (package: first+last) AND took the first TWO
+// characters for a single-word name or email fallback (package: first ONE
+// character) — a member named "Ana" or falling back to "ana@example.com"
+// now shows one letter instead of two. Recorded as intentional per the
+// package's documented, once-made display decision.
+import { getInitials } from "@ai-matrx/kit/format";
 import {
   activityBucket,
   formatBytes,
@@ -46,10 +54,7 @@ const ROLE_BADGE: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 function initials(name: string | null, email: string | null): string {
-  const base = (name || email || "?").trim();
-  const parts = base.split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return base.slice(0, 2).toUpperCase();
+  return getInitials(name || email);
 }
 
 function ActivityDot({ member }: { member: OrgAdminMember }) {

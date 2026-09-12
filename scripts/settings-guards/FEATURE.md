@@ -32,8 +32,8 @@ would flag them all as NEW).
 | `check:settings-orphans` | a `platform.feature_knob` row no code reads — frontend, aidream, the packages, or a database function/view | none (report, never guess) | **161 orphans** of 474 rows: `esign.outsider` 28, `hr.time_and_attendance` 25, `hr.domain_wide` 14, `infrastructure.sandbox` 13 (Lane D rows seeded, reads not repointed yet), `hr.employees` 12, `hr.scheduling` 12, … |
 | `check:settings-unregistered` | a resolvable knob read whose (feature, key) has no registry row — it RAISES at run time by design | none | **0** unregistered · 146 resolved read sites · 14 dynamic (listed, never hidden) |
 | `check:settings-hardcoded` | a NEW module-level `const NAME = <number\|boolean>` whose name starts `MAX_`/`MIN_` or ends `_LIMIT/_TIMEOUT/_MS/_THRESHOLD/_INTERVAL/_SIZE/_TTL/_RETRIES` | `scripts/settings-hardcoded-allowlist.json` — 1,763 (715 matrx-frontend + 1,048 aidream) | **0 new** |
-| `check:settings-env-toggles` | a behavioural env var read in a boolean shape (compared to "1"/"true", `Boolean(...)`, `if (process.env.X)`, `in {truthy}`) that is not a SECRET / ENDPOINT / IDENTITY | `scripts/settings-env-toggles-allowlist.json` — 15 names / 20 sites | **0 new**; 20 baselined |
-| `check:settings-ladder-ui` | a customer-tunable knob (`overridable_by` non-empty) the universal settings UI cannot honour: UNFILED (`taxonomy_node_id` null), UNREGISTERED_RUNG (not in `knob_scope_kind`), UNNAMED_RUNG (not in the UI vocabulary), UNADDRESSED_RUNG (the UI never passes the rung to `knob_index`) | `scripts/settings-ladder-ui-allowlist.json` — the 10 `commerce.*` namespaces 0631 deliberately left unfiled | **196 keys / 584 findings**: `platform.spend_popover` (2) unfiled since 0631; 194 hr.* keys name `employer_profile`/`pay_group`/`location` and `features/settings/universal` addresses only organization, user, device |
+| `check:settings-env-toggles` | a behavioural env var read in a boolean shape (compared to "1"/"true", `Boolean(...)`, `if (process.env.X)`, `in {truthy}`) that is not a SECRET / ENDPOINT / IDENTITY | `scripts/settings-env-toggles-allowlist.json` — **EMPTY** (seeded 2026-09-11 with 15 names / 20 sites, drained the same day by lane D) | **0 BEHAVIOUR reads anywhere.** Every future finding is NEW and exits 1 |
+| `check:settings-ladder-ui` | a customer-tunable knob (`overridable_by` non-empty) the universal settings UI cannot honour: UNFILED (`taxonomy_node_id` null), UNREGISTERED_RUNG (not in `knob_scope_kind`), UNNAMED_RUNG (not in the UI vocabulary), UNADDRESSED_RUNG (the UI never passes the rung to `knob_index`) | `scripts/settings-ladder-ui-allowlist.json` — the `commerce.*` namespaces 0631 deliberately left unfiled; **7** after the 2026-09-12 shrink (market, quota, research removed: their rows are platform-engineering-only, so the guard never grades them) | **0 / GREEN (2026-09-12)**, from 196 keys / 584 findings. `platform.spend_popover` filed by aidream migration 0638 (platform › observability); the 194 hr.* keys' `employer_profile`/`pay_group`/`location` rungs are addressed by `features/settings/universal/scopeRows.ts` + the "Standing inside" picker — and the picker was proven to LIST and WRITE at a rung on the live surface, not merely to name one (aidream migration 0639 gave it the door it needed). `--self-test` still goes red. |
 
 ### Which register cases each guard would have caught
 
@@ -43,16 +43,27 @@ would flag them all as NEW).
   row and the enforcement read is the only reader that counts.
 - Quiz question count (8 in `kindConfig.ts`, 10 in `quizGenerator.ts`) and `respect_robots`
   (hardcoded `False` at three probe sites) → hardcoded.
-- `NEXT_PUBLIC_HR_MOCK`, `MATRX_ALLOW_ARCHIVED_REGENERATOR`, `UNWIRED_DEBUG` → env-toggles
-  (the other three of the census's six were already gone from the tree at seed time).
+- `NEXT_PUBLIC_HR_MOCK`, `MATRX_ALLOW_ARCHIVED_REGENERATOR`, `UNWIRED_DEBUG` → env-toggles.
+  (The seed note claimed the other three of the census's six were already gone; two of them —
+  `NEXT_PUBLIC_USE_DATABASE_CONTENT_BLOCKS`, `NEXT_PUBLIC_ENABLE_CONTENT_BLOCKS_ADMIN` — plus
+  `TWILIO_SKIP_VALIDATION` were still in the tree and surfaced as NEW on the very next run.
+  All three are gone now; see the drain below.)
 - `force_ocr` wired through an API contract no UI ever passes; theme stored seven ways →
   ladder-ui (a rung the registry promises and the surface never offers).
 
-### What the env-toggle census missed
+### What the env-toggle census missed, and how the list was drained (2026-09-11)
 
 The register named six toggles. The guard found **twenty sites / fifteen names** in the tree,
 mostly in aidream packages and one-off scripts (`MATRX_DEBUG/INFO/VERBOSE`, `MATRX_PARITY_*`,
-`P6_*`, `APPLY`, `SSR_TIMING`, …). All are baselined with a reason each; Lane D drains the list.
+`P6_*`, `APPLY`, `SSR_TIMING`, …), plus three more that surfaced as NEW on the next run. Lane D
+drained all of them the same day. **The split is the judgement, not the count:**
+
+| Disposition | Count | Which, and why |
+|---|---|---|
+| Became a `platform.feature_knob` row | 1 | `MATRX_PARITY_SHADOW` → `platform.debug.config_parity_shadow` (aidream migration 0638, `overridable_by` `{}`, default `false` = what production ran). The only one that was *product runtime behaviour*. matrx-ai takes `configure_parity_shadow` and never reads the environment. |
+| Became a real CLI flag | 14 | `APPLY`→`--apply`, `UNWIRED_DEBUG`→`--debug`, `MATRX_ALLOW_ARCHIVED_REGENERATOR`→`--allow-archived` (the banner now STATES the consequence), `PODCAST_E2E_FULL`→`--full`, `MATRX_PARITY_REQUIRE_FRONTEND`→`--require-frontend`, `P6_BENCHMARK_MODE`→`--benchmark`, `P6_IMAGE_BENCHMARK_CONTRACT`→`--image-benchmark-contract`, `MATRX_INFO/DEBUG/VERBOSE`→`run_schema_generation()` arguments. **A one-off script's dry-run switch is a CLI flag wearing an env var**; seeding a knob for it would put a developer's keystroke in an organization's settings registry — worse than leaving it. |
+| Deleted outright | 6 | `SSR_TIMING` and the two `NEXT_PUBLIC_*CONTENT_BLOCKS*` went with the modules that carried them — `utils/performance/serverTiming.ts` and `config/content-blocks.ts` had **zero importers** (policy remediation step 2: a flag for behaviour that does not exist is scenery). `MATRX_BROWSER_PROOF_SERVER` was a second gate beside the proof harness's own signing-key requirement, which is a genuine secret. `TWILIO_SKIP_VALIDATION` turned off webhook SIGNATURE VALIDATION — no organization may choose to accept unsigned webhooks, so there was no honest setting to move it to; the check is now unconditional. |
+| Upheld as a legitimate env var | 1 | `MATRX_SEO_LOCAL_DEV` names which database role a process may run as — host identity, by the standing written ruling of 2026-08-25 in `env-vars-are-values-not-toggles.md`. `classify()` was corrected to say IDENTITY, per this guard's own instruction to fix the classifier rather than the list. |
 
 ## Red then green — planted known-bad cases (2026-09-11)
 

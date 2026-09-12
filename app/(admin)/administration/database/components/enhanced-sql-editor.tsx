@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 import React, { useRef, useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -638,7 +640,7 @@ export const EnhancedSQLEditor = ({
               {executionTime !== null && (
                 <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {(executionTime / 1000).toFixed(2)}s
+                  {formatDurationMs(executionTime, { style: "compact" })}
                 </span>
               )}
             </div>

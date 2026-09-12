@@ -42,6 +42,7 @@ import { useLiveRating } from "./state/useLiveRating";
 import { useSaveCase } from "./state/useSaveCase";
 import { evaluateDraftReadiness } from "./state/buildStatelessPayload";
 import type { RatingDraft } from "./state/types";
+import { formatRelativeTime } from "@/utils/datetime";
 
 interface CaPdCalculatorClientProps {
   initialDraft?: RatingDraft;
@@ -430,18 +431,15 @@ function ResumeSavedCasesPanel({
   );
 }
 
+/** Past this age the list shows a calendar date instead of an age. */
+const RELATIVE_CUTOFF_MS = 30 * 24 * 60 * 60 * 1000;
+
 function formatRelative(iso: string): string {
   const then = new Date(iso).getTime();
-  const now = Date.now();
-  const diffMs = now - then;
-  const diffMin = Math.round(diffMs / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHours = Math.round(diffMin / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.round(diffHours / 24);
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return new Date(iso).toLocaleDateString();
+  if (Date.now() - then >= RELATIVE_CUTOFF_MS) {
+    return new Date(iso).toLocaleDateString();
+  }
+  return formatRelativeTime(iso, { style: "short" });
 }
 
 function WorkspaceSkeleton() {

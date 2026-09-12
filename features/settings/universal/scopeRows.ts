@@ -9,9 +9,13 @@
 // every rung a registry row names is one a human can actually reach
 // (`check:settings-ladder-ui`).
 //
-// Reads are client-direct under the caller's JWT; RLS on each table decides
-// what they may see. The table and label column per kind are fixed here
-// because `knob_scope_kind` names the table but not which column is the name.
+// Reads go through ONE door, `platform.knob_scope_rows` (aidream migration
+// 0639), client-direct under the caller's JWT. They cannot read the rung's own
+// table: only `public` and `platform` are exposed to PostgREST, so
+// `supabase.schema("hr").from("location")` answers "Invalid schema: hr" and
+// every picker stood permanently empty. The door is driven by
+// `platform.knob_scope_kind`'s own `scope_schema`/`scope_table`, so a new rung
+// needs no new code here — only the noun a person reads.
 
 import { createClient } from "@/utils/supabase/client";
 import type { KnobScopeKindName } from "@/lib/scoped-config/types";
@@ -25,16 +29,13 @@ export type SubOrgScopeKind = Exclude<KnobScopeKindName, "organization" | "user"
  * offered as a picker; `check:settings-ladder-ui` reads it from disk.
  */
 export const SUB_ORG_SCOPE_SOURCES = [
-  { kind: "employer_profile", schema: "hr", table: "employer_profile", labelColumn: "legal_name", noun: "Employer profile" },
-  { kind: "brand", schema: "web", table: "brand", labelColumn: "name", noun: "Brand" },
-  { kind: "pay_group", schema: "hr", table: "pay_group", labelColumn: "name", noun: "Pay group" },
-  { kind: "site", schema: "web", table: "site", labelColumn: "name", noun: "Site" },
-  { kind: "location", schema: "hr", table: "location", labelColumn: "name", noun: "Location" },
+  { kind: "employer_profile", noun: "Employer profile" },
+  { kind: "brand", noun: "Brand" },
+  { kind: "pay_group", noun: "Pay group" },
+  { kind: "site", noun: "Site" },
+  { kind: "location", noun: "Location" },
 ] as const satisfies readonly {
   kind: SubOrgScopeKind;
-  schema: "hr" | "web";
-  table: string;
-  labelColumn: string;
   noun: string;
 }[];
 
@@ -58,25 +59,30 @@ export function scopeKindNoun(kind: SubOrgScopeKind): string {
 
 export type ScopeRow = { id: string; label: string };
 
-/** The rows of one sub-org rung inside an organization, RLS-limited. */
+type ScopeRowsResult =
+  | { ok: true; kind: string; rows: ScopeRow[] }
+  | { ok: false; reason: string; detail?: string };
+
+/**
+ * The rows of one sub-org rung inside an organization, membership-gated in the
+ * door. A refusal is thrown with the sentence the door carries — the picker
+ * shows it rather than an empty list that says nothing.
+ */
 export async function fetchScopeRows(
   kind: SubOrgScopeKind,
   organizationId: string,
 ): Promise<ScopeRow[]> {
-  const source = sourceFor(kind);
+  const noun = scopeKindNoun(kind).toLowerCase();
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema(source.schema)
-    .from(source.table as never)
-    .select(`id, ${source.labelColumn}` as "*")
-    .eq("organization_id" as never, organizationId as never)
-    .is("deleted_at" as never, null)
-    .order(source.labelColumn as never, { ascending: true })
-    .limit(500);
-  if (error) throw new Error(`${source.schema}.${source.table} read failed: ${error.message}`);
-  const rows = (data ?? []) as unknown as Record<string, unknown>[];
-  return rows.map((row) => ({
-    id: String(row.id),
-    label: String(row[source.labelColumn] ?? row.id),
-  }));
+  const { data, error } = await supabase.schema("platform").rpc("knob_scope_rows", {
+    p_organization_id: organizationId,
+    p_kind: kind,
+  });
+  if (error) throw new Error(`knob_scope_rows(${noun}) failed: ${error.message}`);
+  const result = (data ?? null) as unknown as ScopeRowsResult | null;
+  if (!result) throw new Error(`knob_scope_rows(${noun}) returned nothing`);
+  if (!result.ok) {
+    throw new Error(result.detail ?? result.reason.replace(/_/g, " "));
+  }
+  return result.rows;
 }

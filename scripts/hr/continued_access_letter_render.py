@@ -15,7 +15,7 @@ LAST DAY WORKED (2026-08-20) and not the run date, and employment stated as ende
 🚨 Admin session via /api/dev-login (the repo's own lane, which signs in as AI_ADMIN_USERNAME from
 env). No password is typed anywhere by hand.
 """
-import asyncio, json, os, io, sys
+import asyncio, json, os, io, sys, pathlib, secrets
 
 import asyncpg
 import httpx
@@ -62,8 +62,18 @@ async def main():
         ctx = await b.new_context(viewport={"width": 1400, "height": 950},
                                   accept_downloads=True)
         page = await ctx.new_page()
-        await page.goto(f"{ORIGIN}/api/dev-login?token={os.environ['DEV_LOGIN_TOKEN']}&next=/hr/people",
-                        wait_until="domcontentloaded")
+        # Single-use nonce handshake — the ONLY way into /api/dev-login. The old
+        # ?token= path authenticated from DEV_LOGIN_TOKEN, a durable credential,
+        # so every run wrote it into the browser profile's history and the dev
+        # server's log. This nonce is dead the moment the route reads it.
+        nonce = secrets.token_hex(16)
+        nonce_file = pathlib.Path(__file__).resolve().parents[2] / ".dev-login-nonce"
+        nonce_file.write_text(nonce + "\n", encoding="utf-8")
+        try:
+            await page.goto(f"{ORIGIN}/api/dev-login?nonce={nonce}&next=/hr/people",
+                            wait_until="domcontentloaded")
+        finally:
+            nonce_file.unlink(missing_ok=True)
         await page.wait_for_timeout(5000)
         rec("an HR admin session is established through the repo's own dev-login lane",
             "/login" not in page.url, page.url)

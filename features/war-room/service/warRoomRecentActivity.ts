@@ -14,6 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { WarRoomActivityEvent } from "@/features/war-room/service/warRoomContextXml";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** One raw row from the RPC (mirrors its RETURNS TABLE shape). */
 export interface WarRoomActivityRow {
@@ -48,21 +49,12 @@ export async function fetchWarRoomRecentActivity(
   return (data ?? []) as WarRoomActivityRow[];
 }
 
-/** Compact relative-age label for an ISO timestamp vs `nowMs`. */
+/**
+ * Compact relative-age label for an ISO timestamp vs `nowMs` — the fleet's one
+ * `short` relative voice from `@ai-matrx/kit/format` ("5m ago", "3h ago").
+ */
 export function relativeWhen(iso: string, nowMs: number): string {
-  const then = Date.parse(iso);
-  if (Number.isNaN(then)) return "";
-  const s = Math.max(0, Math.round((nowMs - then) / 1000));
-  if (s < 45) return "just now";
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.round(h / 24);
-  if (d < 14) return `${d}d`;
-  const w = Math.round(d / 7);
-  if (w < 9) return `${w}w`;
-  return `${Math.round(d / 30)}mo`;
+  return formatRelativeTime(iso, { now: nowMs, fallback: "" });
 }
 
 /** Human-friendly action verb for the `<event action>` attribute. */

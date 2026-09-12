@@ -177,6 +177,10 @@ export function QuickNoteSaveCore({
   // the mode, choosing the target note, choosing overwrite — stays human and
   // is not a target at all. Bad shapes THROW; the writeback seam turns a throw
   // into the error envelope the agent reads.
+  // The surface arrives as a prop; the only mount that passes one is
+  // `QuickNoteSaveWindow` (QUICK_NOTE_SAVE_SURFACE_NAME). The dialog, popover
+  // and overlay mounts deliberately pass none and register nothing.
+  // surface-write-handlers-surface: matrx-user/quick-note-save
   useSurfaceWriteHandlers(surfaceName ?? null, {
     note_draft: (value: unknown) => {
       if (savedNote)

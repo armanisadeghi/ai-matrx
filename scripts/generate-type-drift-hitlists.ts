@@ -30,9 +30,13 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 // ⛔ Wave-5 guard: campaign complete, output dir archived. See banner above.
-// Escape hatch (deliberate friction): set MATRX_ALLOW_ARCHIVED_REGENERATOR=1
-// only after retargeting OUT_DIR to a live, non-archived location.
-if (process.env.MATRX_ALLOW_ARCHIVED_REGENERATOR !== "1") {
+// Escape hatch (deliberate friction): pass --allow-archived, and only after
+// retargeting OUT_DIR to a live, non-archived location. It was
+// MATRX_ALLOW_ARCHIVED_REGENERATOR=1 until 2026-09-11 — USD-5 retired it: a
+// safety gate that a shell can hold open for every later command in the same
+// terminal is the env-toggle class this campaign exists to kill. A flag is
+// typed once, for one run, in the command you can see.
+if (!process.argv.slice(2).includes("--allow-archived")) {
 console.error("");
 console.error("============================================================");
 console.error("  [FAIL] generate-type-drift-hitlists.ts is RETIRED");
@@ -45,6 +49,10 @@ console.error("");
 console.error("  See: docs/archive/2026/handoff__doc-consolidation-campaign.md (Regenerator hazard)");
 console.error("  If you truly need a new campaign, retarget OUT_DIR to a live");
 console.error("  location and remove this guard in the same PR.");
+console.error("");
+console.error("  --allow-archived runs it anyway. CONSEQUENCE: it RECREATES the");
+console.error("  archived docs/type-drift/generated/ tree and regrows the doc");
+console.error("  jungle the consolidation campaign deleted. Retarget OUT_DIR first.");
 console.error("");
 process.exit(1);
 }

@@ -104,6 +104,7 @@ import { StatusBadge } from "./StatusBadge";
 import { LibraryDocDetailSheet } from "./LibraryDocDetailSheet";
 import { QuickSearchDialog } from "./QuickSearchDialog";
 import { cn } from "@/lib/utils";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** Poll cadence (ms) while an in-session operation is actively running.
  *  We deliberately do NOT auto-poll just because a doc sits in a non-terminal
@@ -1092,7 +1093,7 @@ function DocRow({
         )}
       </TableCell>
       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-        {formatRelative(doc.createdAt)}
+        {formatRelativeTime(doc.createdAt, { fallbackToInput: true })}
       </TableCell>
       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
@@ -1225,18 +1226,4 @@ function EmptyState({ searching }: { searching: boolean }) {
       </p>
     </div>
   );
-}
-
-function formatRelative(iso: string): string {
-  const ts = new Date(iso).getTime();
-  if (Number.isNaN(ts)) return iso;
-  const diff = Date.now() - ts;
-  const min = Math.floor(diff / 60_000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
 }

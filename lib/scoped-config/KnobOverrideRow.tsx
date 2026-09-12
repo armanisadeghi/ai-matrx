@@ -21,6 +21,7 @@ import { Input } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
+import { formatKnobValue, type KnobLadder } from "./ladder";
 import { setKnobOverride, setKnobRungLock } from "./service";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 
@@ -61,6 +62,18 @@ export function KnobOverrideRow(props: {
   organizationId: string;
   /** What a save reaches — said before saving, per settings-ladder rule 9. */
   blastRadius: string;
+  /** Hide the implementation key on curated, user-facing sections. */
+  hideKey?: boolean;
+  /**
+   * The resolver's own answer for THIS rung (`resolveKnobLadder`). Required to
+   * be right at a sub-organization rung: `user_override` / `org_override` are
+   * the only two values the flat row ever knew about, so a pay group's or a
+   * location's own value read as "inherited from your organization" and its
+   * Inherit button followed the organization's row instead of its own. Where a
+   * caller passes it, the scope chain decides origin, what a clear falls back
+   * to, and whether there is anything here to clear.
+   */
+  ladder?: KnobLadder;
   /**
    * Org screen only: render the per-key "personal overrides" switch (the
    * scfg_50 rung lock — the org turning off user-level control of this one
@@ -75,19 +88,37 @@ export function KnobOverrideRow(props: {
     scopeId,
     organizationId,
     blastRadius,
+    hideKey = false,
+    ladder,
     showUserLockControl,
     onChanged,
   } = props;
-  const overrideValue = scopeKind === "user" ? knob.user_override : knob.org_override;
-  const isSetHere = overrideValue !== null && overrideValue !== undefined;
-  // What clearing falls back to: on the user rung the org's override (when one
-  // exists) is the parent, not the platform default.
+  const flatOverride = scopeKind === "user" ? knob.user_override : knob.org_override;
+  const overrideValue = ladder
+    ? ladder.setHere
+      ? ladder.here?.value
+      : undefined
+    : flatOverride;
+  const isSetHere = ladder
+    ? ladder.setHere
+    : flatOverride !== null && flatOverride !== undefined;
+  // What clearing falls back to: the nearest rung ABOVE this one that holds a
+  // live value. With a ladder the scope chain answers; without one the only
+  // parent the flat row knows is the organization (user rung) or the platform.
   const hasOrgParent =
     scopeKind === "user" &&
     knob.org_override !== null &&
     knob.org_override !== undefined;
-  const inheritedValue = hasOrgParent ? knob.org_override : knob.platform_default;
-  const inheritedFrom = hasOrgParent ? "your organization" : "the platform";
+  const inheritedValue = ladder
+    ? ladder.inheritedValue
+    : hasOrgParent
+      ? knob.org_override
+      : knob.platform_default;
+  const inheritedFrom = ladder
+    ? ladder.inheritedFrom
+    : hasOrgParent
+      ? "your organization"
+      : "the platform";
   const overrideText = isSetHere ? valueText(overrideValue) : "";
   const [draft, setDraft] = useState<string>(overrideText);
   const [busy, setBusy] = useState(false);
@@ -174,9 +205,10 @@ export function KnobOverrideRow(props: {
   const clear = async () => {
     const confirmed = await confirm({
       title: `Inherit ${knob.label} from ${inheritedFrom}?`,
-      description: `The override is removed and this setting falls back to ${valueText(
+      description: `The override is removed and this setting falls back to ${formatKnobValue(
         inheritedValue,
-      )}${knob.unit ? ` ${knob.unit}` : ""}.`,
+        knob.unit,
+      )}.`,
       confirmLabel: "Inherit it",
     });
     if (confirmed) await write(null);
@@ -198,14 +230,16 @@ export function KnobOverrideRow(props: {
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">{knob.label}</span>
-          <code className="text-xs text-muted-foreground">{knob.key}</code>
+          {!hideKey && (
+            <code className="text-xs text-muted-foreground">{knob.key}</code>
+          )}
           {isSetHere ? (
             <Badge variant="default" className="text-xs">
               Set here
             </Badge>
           ) : (
             <Badge variant="outline" className="text-xs">
-              Inherited from {hasOrgParent ? "organization" : "platform"}
+              Inherited from {inheritedFrom}
             </Badge>
           )}
           {knob.out_of_range && (
@@ -222,7 +256,7 @@ export function KnobOverrideRow(props: {
           {knob.bound_value !== null && knob.bound_value !== undefined && (
             <Badge variant="outline" className="gap-1 text-xs">
               <Gavel className="h-3 w-3" />
-              floor {valueText(knob.bound_value)}
+              floor {formatKnobValue(knob.bound_value, knob.unit)}
             </Badge>
           )}
         </div>
@@ -245,8 +279,7 @@ export function KnobOverrideRow(props: {
           </p>
         )}
         <p className="mt-1 text-xs text-muted-foreground">
-          Platform default {valueText(knob.platform_default)}
-          {knob.unit ? ` ${knob.unit}` : ""}
+          Platform default {formatKnobValue(knob.platform_default, knob.unit)}
           {knob.basis ? (
             <>
               {" · "}
@@ -271,7 +304,7 @@ export function KnobOverrideRow(props: {
             onChange={(event) => setDraft(event.target.value)}
           >
             <option value="" disabled>
-              {valueText(knob.effective_value)}
+              {formatKnobValue(knob.effective_value, knob.unit)}
             </option>
             {enumOptions.map((option) => (
               <option key={option} value={option}>
@@ -282,7 +315,7 @@ export function KnobOverrideRow(props: {
         ) : (
           <Input
             className="w-40"
-            placeholder={valueText(knob.effective_value)}
+            placeholder={formatKnobValue(knob.effective_value, knob.unit)}
             value={draft}
             disabled={busy}
             onChange={(event) => setDraft(event.target.value)}

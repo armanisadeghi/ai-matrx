@@ -36,7 +36,7 @@ Read [`references/readiness-gate.md`](./references/readiness-gate.md) before the
 1. Resolve the exact route, panel, or overlay and its feature directory.
 2. Read `docs/official/browser-testing.md`; start or reuse only `pnpm preview:start` on port 3001.
 3. Use the available browser tool to open an isolated in-app Browser for routine localhost work. Computer Use is allowed; no particular skill name or API is required. If the isolated browser cannot complete the task, follow the pre-authorized new-tab fallback in `docs/official/browser-testing.md`.
-4. Authenticate yourself with the repository's pre-authorized `DEV_LOGIN_TOKEN` or `AI_ADMIN_USERNAME` / `AI_ADMIN_PASSWORD` flow. Never ask Arman to log in, provide credentials, click through setup, or perform routine verification.
+4. Authenticate yourself with the repository's pre-authorized flows: the dev-login nonce handshake (`openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/<route>`) or `AI_ADMIN_USERNAME` / `AI_ADMIN_PASSWORD` at `/login`. Never put a durable token in a URL — the `?token=` path was removed for leaking it. Never ask Arman to log in, provide credentials, click through setup, or perform routine verification.
 5. Inspect the real surface before editing: desktop state, current behavior, console, feature docs, manifest/readiness/last check, and exact-route review feedback.
 6. **Run the first-screen gate at 1280×800.** If a table, editor, list, or other primary workspace is only a token strip at the bottom—or starts below the fold—remove the obstruction before lower-priority polish. Browser visibility is not a pause.
 

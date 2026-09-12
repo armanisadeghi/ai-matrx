@@ -1,5 +1,6 @@
 // components/admin/controls/LargeIndicator.tsx
 import React, { Suspense, lazy, useState, useCallback, useMemo } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   ChevronRight,
   X,
@@ -141,7 +142,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   ]);
 
   const lastCheckedLabel = activeHealth.lastCheckedAt
-    ? `${Math.round((Date.now() - activeHealth.lastCheckedAt) / 1000)}s ago`
+    ? formatRelativeTime(activeHealth.lastCheckedAt, { style: "short" })
     : "never";
 
   return (

@@ -199,10 +199,11 @@ async function main(): Promise<number> {
   }
 
   // ── Chunks (search-hit level) ────────────────────────────────────────────
-  // Probe one specific chunk id: a whole-corpus filter as the CONTROL user
-  // statement-times-out (per-row SECURITY DEFINER policy evaluation over
-  // thousands of rows — recorded perf finding), which would be indistinguishable
-  // from denial. A single-id probe is fast and decisive for both users.
+  // D93 (FOUND_DEFECTS.md, fixed by migrations/rag_kg_chunks_rls_hoist_per_row_definer_lanes.sql):
+  // the deny path used to evaluate three per-row SECURITY DEFINER policies over
+  // every row and statement-time-out — indistinguishable from denial. That is
+  // now hoisted to one definer call per distinct source, so the CONTROL user
+  // can be probed with a real whole-corpus filter again, not just a single id.
   if (tree.chunk_count > 0 && tree.files.length > 0) {
     const anyFile = tree.files[0];
     const cE = await rlsCount(env, jwtE, "rag", "kg_chunks", `source_kind=eq.cld_file&source_id=eq.${anyFile}`);
@@ -215,6 +216,18 @@ async function main(): Promise<number> {
       const cC = await rlsCount(env, jwtC, "rag", "kg_chunks", `id=eq.${oneChunk[0].id}`);
       assert("chunk row RLS (control)", String(controlCount(1)), String(cC), cC === controlCount(1));
     }
+    // Whole-corpus filter — the shape that used to time out. Same row-count
+    // expectation as the single-id probe (control has no grant on anyFile
+    // either way), but this one has to survive RLS evaluating every live row.
+    const corpusStart = Date.now();
+    const cCorpus = await rlsCount(env, jwtC, "rag", "kg_chunks", `valid_to=is.null`);
+    const corpusMs = Date.now() - corpusStart;
+    assert(
+      `chunks corpus RLS (control) [${corpusMs}ms]`,
+      libraryOpen ? ">0" : "0",
+      String(cCorpus),
+      cCorpus >= 0 && (libraryOpen ? cCorpus > 0 : cCorpus === 0),
+    );
   }
 
   // ── Extraction jobs + children ───────────────────────────────────────────

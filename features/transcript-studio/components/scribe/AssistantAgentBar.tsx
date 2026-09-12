@@ -33,20 +33,11 @@ import {
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { cn } from "@/lib/utils";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 interface AssistantAgentBarProps {
   sessionId: string;
   compact?: boolean;
-}
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.round(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
 }
 
 export function AssistantAgentBar({
@@ -157,7 +148,7 @@ export function AssistantAgentBar({
       return {
         key: c.conversationId,
         label: chatLabel ? `${agentName}: ${chatLabel}` : agentName,
-        description: `${relativeTime(c.lastUsedAt)}${isActive ? " · current" : ""}`,
+        description: `${formatRelativeTime(c.lastUsedAt)}${isActive ? " · current" : ""}`,
         icon: <Webhook className="h-4 w-4" />,
         disabled: isActive,
         onSelect: () => {

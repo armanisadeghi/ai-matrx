@@ -131,6 +131,10 @@ import {
 } from "@/features/notes/format";
 
 import type { NoteRecord } from "../redux/notes.types";
+import { formatRelativeTime } from "@/utils/datetime";
+
+/** Past a week a note in the sidebar reads as a calendar date, not an age. */
+const NOTE_AGE_CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 import type { NoteSortField, NoteSortOrder, NoteGroupBy } from "../types";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
@@ -841,14 +845,10 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const formatTime = (dateStr: string | null | undefined) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
-    if (mins < 1) return "now";
-    if (mins < 60) return `${mins}m`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h`;
-    const days = Math.floor(hrs / 24);
-    if (days < 7) return `${days}d`;
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    if (Date.now() - d.getTime() >= NOTE_AGE_CUTOFF_MS) {
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+    return formatRelativeTime(d, { style: "short", fallback: "" });
   };
 
   const sortLabel =

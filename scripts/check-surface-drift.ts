@@ -73,7 +73,7 @@ const ALLOWED_AUTO_RUN = new Set(["always", "never", "user-choice"]);
  * Every `object`/`array` write target should name a registered Kind
  * (`SurfaceWriteTarget.valueKind`) — that kind's schema is what the wire
  * advertises, what `applySurfaceWrite` validates against, and what the DB
- * mirror prints to server-side agents. The 173 structured targets that predate
+ * mirror prints to server-side agents. The structured targets that predate
  * the contract can't all be converted at once (most need a kind registered
  * first), so this is an ADVISORY count, printed loudly on every run and never
  * fatal — repo doctrine is scream, never block. The number only goes down.
@@ -107,7 +107,7 @@ function reportUncontractedStructuredTargets(
     "   (shape-system skill) — never inline a JSON schema. Census + recommended",
   );
   console.warn(
-    "   kinds: docs/handoffs/surface-write-target-kind-census.md",
+    "   kinds: docs/handoffs/canonical-stream-and-surface-writeback.md",
   );
   if (listAll) {
     for (const [surface, targets] of [...bySurface].sort()) {

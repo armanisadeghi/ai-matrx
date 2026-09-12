@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { AlertTriangle, Ban, Bug, ChevronRight, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@ai-matrx/design-system";
@@ -58,14 +59,10 @@ interface ErrorInspectorWindowProps {
 
 type TierFilter = ErrorTier | "all";
 
+/** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function relativeTime(ms: number): string {
   if (!ms) return "";
-  const delta = Date.now() - ms;
-  if (delta < 5_000) return "just now";
-  if (delta < 60_000) return `${Math.floor(delta / 1000)}s ago`;
-  if (delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
-  if (delta < 86_400_000) return `${Math.floor(delta / 3_600_000)}h ago`;
-  return `${Math.floor(delta / 86_400_000)}d ago`;
+  return formatRelativeTime(ms, { style: "short" });
 }
 
 /**

@@ -22,11 +22,13 @@
  * reported by the drift API, never silently purged here.
  */
 
+import { execFileSync } from "node:child_process";
 import {
   getAllManifests,
   getRawManifest,
 } from "@/features/surfaces/manifests/registry";
 import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-pattern";
+import { sqlSyncedFrom } from "@/features/surfaces/services/sync-provenance";
 
 function sqlString(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
@@ -37,8 +39,31 @@ function sqlStringOrNull(s: string | null | undefined): string {
   return trimmed ? sqlString(trimmed) : "NULL";
 }
 
+/**
+ * The checkout's commit, or null when git cannot answer (a tarball, a detached
+ * export, no git binary). Null is a first-class answer — `sqlSyncedFrom` then
+ * stamps `sha-unknown` rather than inventing a build identity.
+ */
+function currentGitSha(): string | null {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 function main() {
   const allManifests = getAllManifests();
+  // PROVENANCE, twin of manifest-sync.service.ts: every row this SQL writes
+  // stamps `synced_by` / `synced_from`. `synced_by` is NULL by contract — this
+  // channel has no session, and the applier is whoever runs the SQL.
+  const syncedFrom = sqlString(sqlSyncedFrom(currentGitSha()));
+  const provenanceValues = `NULL, ${syncedFrom}`;
+  const provenanceSet =
+    "synced_by = EXCLUDED.synced_by, synced_from = EXCLUDED.synced_from";
   const requestedSurfaceNames = new Set<string>();
   const args = process.argv.slice(2);
   for (let index = 0; index < args.length; index += 1) {
@@ -92,7 +117,9 @@ function main() {
           v.alwaysAvailable
         }, ${v.typicalCharCount}, ${v.sortOrder ?? 1000}, ${
           v.autoContext ?? true
-        }, ${sqlString(v.groupKey ?? v.group ?? "general")})`,
+        }, ${sqlString(
+          v.groupKey ?? v.group ?? "general",
+        )}, ${provenanceValues})`,
       );
     }
     for (const r of m.agentRoles ?? []) {
@@ -105,7 +132,7 @@ function main() {
           r.maxAgents ?? 1
         }, ${r.allowCustom ?? true}, ${sqlString(
           r.autoRun ?? "user-choice",
-        )}, ${r.sortOrder ?? 1000})`,
+        )}, ${r.sortOrder ?? 1000}, ${provenanceValues})`,
       );
     }
     for (const t of m.writeTargets ?? []) {
@@ -116,7 +143,9 @@ function main() {
           t.mode,
         )}, ${sqlStringOrNull(t.updatesValue)}, ${sqlString(
           t.group ?? "general",
-        )}, ${t.sortOrder ?? 1000}, ${sqlString(t.applyPolicy ?? "manual")})`,
+        )}, ${t.sortOrder ?? 1000}, ${sqlString(
+          t.applyPolicy ?? "manual",
+        )}, ${sqlStringOrNull(t.valueKind)}, ${provenanceValues})`,
       );
     }
 
@@ -126,7 +155,7 @@ function main() {
           t.label,
         )}, ${sqlString(t.description)}, ${sqlString(
           JSON.stringify(t.inputSchema),
-        )}::jsonb, ${sqlString(t.mode ?? "ui")})`,
+        )}::jsonb, ${sqlString(t.mode ?? "ui")}, ${provenanceValues})`,
       );
     }
 
@@ -166,43 +195,43 @@ function main() {
   console.log("");
   console.log("-- Upsert all manifest values");
   console.log(
-    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order, auto_context, group_key) VALUES`,
+    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order, auto_context, group_key, synced_by, synced_from) VALUES`,
   );
   console.log(valueRows.join(",\n"));
   console.log(
-    `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, auto_context = EXCLUDED.auto_context, group_key = EXCLUDED.group_key, updated_at = now();`,
+    `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, always_available = EXCLUDED.always_available, typical_char_count = EXCLUDED.typical_char_count, sort_order = EXCLUDED.sort_order, auto_context = EXCLUDED.auto_context, group_key = EXCLUDED.group_key, ${provenanceSet}, updated_at = now();`,
   );
   if (roleRows.length > 0) {
     console.log("");
     console.log("-- Upsert all manifest agent roles");
     console.log(
-      `INSERT INTO ui.ui_surface_agent_role (surface_name, name, label, description, kind, default_agent_id, mandate_key, max_agents, allow_custom, auto_run, sort_order) VALUES`,
+      `INSERT INTO ui.ui_surface_agent_role (surface_name, name, label, description, kind, default_agent_id, mandate_key, max_agents, allow_custom, auto_run, sort_order, synced_by, synced_from) VALUES`,
     );
     console.log(roleRows.join(",\n"));
     console.log(
-      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, mandate_key = EXCLUDED.mandate_key, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, updated_at = now();`,
+      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, mandate_key = EXCLUDED.mandate_key, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, ${provenanceSet}, updated_at = now();`,
     );
   }
   if (writeTargetRows.length > 0) {
     console.log("");
     console.log("-- Upsert all manifest write targets");
     console.log(
-      `INSERT INTO ui.ui_surface_write_target (surface_name, name, label, description, value_type, mode, updates_value, group_key, sort_order, apply_policy) VALUES`,
+      `INSERT INTO ui.ui_surface_write_target (surface_name, name, label, description, value_type, mode, updates_value, group_key, sort_order, apply_policy, kind_key, synced_by, synced_from) VALUES`,
     );
     console.log(writeTargetRows.join(",\n"));
     console.log(
-      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, mode = EXCLUDED.mode, updates_value = EXCLUDED.updates_value, group_key = EXCLUDED.group_key, sort_order = EXCLUDED.sort_order, apply_policy = EXCLUDED.apply_policy, updated_at = now();`,
+      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, mode = EXCLUDED.mode, updates_value = EXCLUDED.updates_value, group_key = EXCLUDED.group_key, sort_order = EXCLUDED.sort_order, apply_policy = EXCLUDED.apply_policy, kind_key = EXCLUDED.kind_key, ${provenanceSet}, updated_at = now();`,
     );
   }
   if (clientToolRows.length > 0) {
     console.log("");
     console.log("-- Upsert all manifest client tools");
     console.log(
-      `INSERT INTO ui.ui_surface_client_tool (surface_name, name, label, description, input_schema, mode) VALUES`,
+      `INSERT INTO ui.ui_surface_client_tool (surface_name, name, label, description, input_schema, mode, synced_by, synced_from) VALUES`,
     );
     console.log(clientToolRows.join(",\n"));
     console.log(
-      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, input_schema = EXCLUDED.input_schema, mode = EXCLUDED.mode, updated_at = now();`,
+      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, input_schema = EXCLUDED.input_schema, mode = EXCLUDED.mode, ${provenanceSet}, updated_at = now();`,
     );
   }
   if (surfaceUpdates.length > 0) {

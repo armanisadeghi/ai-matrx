@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
 /**
  * BackendTargetPanel
  *
@@ -134,12 +136,10 @@ function maskToken(token: string): string {
 
 function fmtCountdown(expSeconds: number | null): string {
   if (!expSeconds) return "—";
-  const now = Math.floor(Date.now() / 1000);
-  const remaining = expSeconds - now;
+  const remaining = expSeconds - Math.floor(Date.now() / 1000);
   if (remaining <= 0) return "expired";
-  const m = Math.floor(remaining / 60);
-  const s = remaining % 60;
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  // THE compact duration voice (@ai-matrx/kit/format): 45s, 3m 12s.
+  return formatDurationSeconds(remaining, { style: "compact" });
 }
 
 export function BackendTargetPanel({
