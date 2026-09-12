@@ -4,8 +4,6 @@
 -- guidance strings in the live ddl guard. It deliberately does not relax a
 -- branch, detach a historical default, or change permissions.
 
-SET LOCAL lock_timeout = '5s';
-
 DO $dd155$
 DECLARE
   v_definition text;
@@ -18,11 +16,12 @@ DECLARE
   v_after_security_definer boolean;
   v_after_config text[];
   v_after_acl aclitem[];
-  v_old_hint constant text := $old_hint$NO NULL ORG (owner ruling 2026-08-21, db-rules §2/§6e). NULL is not a scope: system/global content belongs to the system org (matrx-system, 39c38960-d30c-4840-b0c1-c9960de95582, iam.system_orgs.global_readable), and user content falls back to the creator's personal org. Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id) and attach the backstop (public._stamp_org_default or platform.inherit_org_from_parent) in this same migration.$old_hint$;
+  v_old_hint constant text := $old_hint$NO NULL ORG (owner ruling 2026-08-21, db-rules §2/§6e). NULL is not a scope: system/global content belongs to the system org (matrx-system, 39c38960-d30c-4840-b0c1-c9960de95582, iam.system_orgs.global_readable), and user content falls back to the creator''s personal org. Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id) and attach the backstop (public._stamp_org_default or platform.inherit_org_from_parent) in this same migration.$old_hint$;
   v_new_hint constant text := $new_hint$Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id). The initiating operation must provide its organization_id explicitly; no resolver, default, trigger, backstop, or assignment may choose it.$new_hint$;
-  v_old_detail constant text := $old_detail$NO NULL ORG (owner ruling 2026-08-21): this entity-looking table still allows organization_id IS NULL. NULL is not a scope -- system/global content belongs to the system org (matrx-system 39c38960-d30c-4840-b0c1-c9960de95582), user content to the creator's personal org. Flip it NOT NULL and attach the backstop in ONE migration. (db-rules §2/§6e.)$old_detail$;
+  v_old_detail constant text := $old_detail$NO NULL ORG (owner ruling 2026-08-21): this entity-looking table still allows organization_id IS NULL. NULL is not a scope -- system/global content belongs to the system org (matrx-system 39c38960-d30c-4840-b0c1-c9960de95582), user content to the creator''s personal org. Flip it NOT NULL and attach the backstop in ONE migration. (db-rules §2/§6e.)$old_detail$;
   v_new_detail constant text := $new_detail$NO NULL ORG (owner ruling 2026-08-21): this entity-looking table still allows organization_id IS NULL. Declare organization_id NOT NULL. The initiating operation must provide its organization_id explicitly; no resolver, default, trigger, backstop, or assignment may choose it. (db-rules §2/§6e.)$new_detail$;
 BEGIN
+  PERFORM set_config('lock_timeout', '5s', true);
   SELECT pg_get_functiondef(p.oid), p.proowner, p.prosecdef, p.proconfig, p.proacl
     INTO v_definition, v_before_owner, v_before_security_definer, v_before_config, v_before_acl
   FROM pg_proc p

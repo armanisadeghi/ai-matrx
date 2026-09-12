@@ -287,7 +287,20 @@ FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
 WHERE p.oid='platform._ddl_guard()'::regprocedure" > "$RUN_DIR/dd155-before.tsv"
 "${PSQL[@]}" -Atc "SELECT encode(digest(convert_to(pg_get_functiondef('platform._ddl_guard()'::regprocedure), 'UTF8'), 'sha256'), 'hex')" > "$RUN_DIR/dd155-fixture-source.sha256"
 echo "DD155 fixture input source hash: $(cat "$RUN_DIR/dd155-fixture-source.sha256")" | tee -a "$RESULTS"
-run_file "$GUIDANCE_DRAFT" >"$RUN_DIR/dd155.out" 2>&1
+node - "$GUIDANCE_DRAFT" "$RUN_DIR/dd155-fixture-source.sha256" "$RUN_DIR/dd155-mapped.sql" <<'NODE'
+const fs = require('fs');
+const [draft, fixtureHashFile, mapped] = process.argv.slice(2);
+const liveHash = 'd619ea4bd180b16a7a3ad7cf4f563552a783cc502040826fe328610661ac8a68';
+const fixtureHash = fs.readFileSync(fixtureHashFile, 'utf8').trim();
+if (!/^[0-9a-f]{64}$/.test(fixtureHash)) throw new Error('DD155 fixture source hash is malformed');
+const source = fs.readFileSync(draft, 'utf8');
+if (source.split(liveHash).length !== 2) throw new Error('DD155 draft must contain the reviewed live source hash exactly once');
+const output = source.replace(liveHash, fixtureHash);
+if (output.replace(fixtureHash, liveHash) !== source) throw new Error('DD155 fixture mapping changed bytes beyond the source-hash precondition');
+fs.writeFileSync(mapped, output);
+console.log('PASS DD155 fixture mapping: only the live source-hash precondition was adapted to the isolated PG17 fixture');
+NODE
+run_file "$RUN_DIR/dd155-mapped.sql" >"$RUN_DIR/dd155.out" 2>&1
 "${PSQL[@]}" -AtF '|' -c "
 SELECT r.rolname,p.prosecdef,coalesce(array_to_string(p.proconfig,','),''),coalesce(array_to_string(p.proacl::text[],','),'')
 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
@@ -303,6 +316,7 @@ DECLARE
   v_old_hint constant text := $old_hint$NO NULL ORG (owner ruling 2026-08-21, db-rules §2/§6e). NULL is not a scope: system/global content belongs to the system org (matrx-system, 39c38960-d30c-4840-b0c1-c9960de95582, iam.system_orgs.global_readable), and user content falls back to the creator's personal org. Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id) and attach the backstop (public._stamp_org_default or platform.inherit_org_from_parent) in this same migration.$old_hint$;
   v_new_hint constant text := $new_hint$Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id). The initiating operation must provide its organization_id explicitly; no resolver, default, trigger, backstop, or assignment may choose it.$new_hint$;
 BEGIN
+  PERFORM set_config('matrx.provisioner', '1', true);
   BEGIN
     CREATE TABLE public.dd155_null_at_birth (
       organization_id uuid,
@@ -320,6 +334,7 @@ BEGIN
 END
 $dd155_hint$;
 
+SELECT set_config('matrx.provisioner', '1', false);
 CREATE TABLE public.dd155_nullable_log_probe (
   organization_id uuid NOT NULL,
   created_by uuid,
