@@ -72,7 +72,6 @@ import {
   listEngineSchedules,
   listRunPlacements,
 } from "./data";
-import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
 import { RunHistoryPanel } from "./RunHistoryPanel";
 import { extractErrorMessage } from "@/utils/errors";
@@ -89,7 +88,11 @@ import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
 import type { RunPlacementRow } from "./data";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { siteEntityRef, buildSiteMenuSection, type SiteMenuRow } from "./site-menu";
+import {
+  siteEntityRef,
+  buildSiteMenuSection,
+  type SiteMenuRow,
+} from "./site-menu";
 import {
   keywordEntityRef,
   useKeywordAssignSurfaces,
@@ -103,7 +106,8 @@ function pct(part: number, whole: number): number {
 
 function scopeHeadline(scope: RunConsoleScope): string {
   if (scope.tier === "system") return "Every brand on the platform";
-  if (scope.tier === "organization") return "The brands this organization controls";
+  if (scope.tier === "organization")
+    return "The brands this organization controls";
   return "This brand";
 }
 
@@ -334,7 +338,8 @@ export function RunConsole({
 }) {
   const [engineSlug, setEngineSlug] = useState<string>(initialEngine.slug);
   const engine =
-    CONSOLE_ENGINES.find((row) => row.slug === engineSlug) ?? TOPIC_PLACEMENT_ENGINE;
+    CONSOLE_ENGINES.find((row) => row.slug === engineSlug) ??
+    TOPIC_PLACEMENT_ENGINE;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-textured">
@@ -345,7 +350,11 @@ export function RunConsole({
       >
         <TabsList className="h-9 shrink-0 justify-start gap-1 rounded-none border-b border-border bg-card px-2">
           {CONSOLE_ENGINES.map((row) => (
-            <TabsTrigger key={row.slug} value={row.slug} className="h-7 text-xs">
+            <TabsTrigger
+              key={row.slug}
+              value={row.slug}
+              className="h-7 text-xs"
+            >
               {row.label}
             </TabsTrigger>
           ))}
@@ -359,7 +368,11 @@ export function RunConsole({
             {/* `key` remounts on engine change: two engines never share run
                 state, a queue draining for one must not appear under the other. */}
             {row.slug === SITUATIONAL_REFRESH_ENGINE.slug ? (
-              <SituationalEngineView key={row.slug} scope={scope} engine={row} />
+              <SituationalEngineView
+                key={row.slug}
+                scope={scope}
+                engine={row}
+              />
             ) : (
               <TopicPlacementConsole
                 key={row.slug}
@@ -552,7 +565,10 @@ function TopicPlacementConsole({
   const minImpressions = Number(knobs.data?.min_impressions ?? 0);
   const capCeiling = Number(knobs.data?.[engine.capKnobKey] ?? 0);
   const dailyCeiling = Number(knobs.data?.daily_keyword_ceiling ?? 0);
-  const effectiveCap = Math.min(Math.max(cap ?? capCeiling, 1), capCeiling || 1);
+  const effectiveCap = Math.min(
+    Math.max(cap ?? capCeiling, 1),
+    capCeiling || 1,
+  );
 
   const sites = useQuery({
     queryKey: ["seo", "run-console", "sites", scope],
@@ -566,20 +582,11 @@ function TopicPlacementConsole({
     staleTime: 60 * 1000,
   });
 
-  // THE CONSOLE'S ORG (Arman's ruling, 2026-08-24): work done from the admin
-  // panel travels under the Matrx System organization, EXPLICITLY — never the
-  // operator's header org, and never a transport-invented one. The org tier
-  // declares its own; the site tier (unmounted in v1) rides the operator's
-  // selected org like any normal surface. This rides launch AND rejoin, so a
-  // refreshed page can pick its run back up without a selected org.
-  // Engine writes stay scoped by the SITE the pass runs over — the request
-  // org is context, never row ownership (no-db-assigned-org law).
+  // The organization tier has one stable request tenant. System and site
+  // mounts select a SITE, so the launch below supplies that site's owning
+  // organization per run; the durable receipt retains it for rejoin.
   const requestOrganizationId =
-    scope.tier === "system"
-      ? SYSTEM_ORGANIZATION_ID
-      : scope.tier === "organization"
-        ? scope.organizationId
-        : undefined;
+    scope.tier === "organization" ? scope.organizationId : undefined;
 
   const pass = useSeoCommandRun<TopicPlacementPassResult>({
     key: "run-console-topic-placement",
@@ -615,7 +622,8 @@ function TopicPlacementConsole({
     const site = siteById.get(result.site_id);
     setOutcomes((current) =>
       current.some(
-        (entry) => entry.siteId === result.site_id && entry.claimed === result.claimed,
+        (entry) =>
+          entry.siteId === result.site_id && entry.claimed === result.claimed,
       )
         ? current
         : [
@@ -651,24 +659,24 @@ function TopicPlacementConsole({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- settle once per result
   }, [pass.result]);
 
-  /** Drain the queue one brand at a time — the engine is a paid pass, not a fan-out. */
-  useEffect(() => {
-    if (pass.running || queue.length === 0) return;
-    const [next, ...rest] = queue;
-    const site = siteById.get(next);
-    if (!site) {
-      setQueue(rest);
-      return;
+  /** Drain one paid brand pass at a time; the launch promise is the fence. */
+  const drainRunQueue = async (siteIds: string[]) => {
+    const pending = [...siteIds];
+    while (pending.length > 0) {
+      const next = pending.shift();
+      setQueue([...pending]);
+      if (!next) continue;
+      const site = siteById.get(next);
+      if (!site) continue;
+      pass.reset();
+      runStartedAtRef.current = new Date().toISOString();
+      await pass.launch(
+        { site_id: site.id, refresh: true, limit: effectiveCap },
+        site.name,
+        { scopeOverrides: { organization_id: site.organization_id } },
+      );
     }
-    setQueue(rest);
-    pass.reset();
-    runStartedAtRef.current = new Date().toISOString();
-    void pass.launch(
-      { site_id: site.id, refresh: true, limit: effectiveCap },
-      site.name,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- driven by queue + running
-  }, [queue, pass.running]);
+  };
 
   const startRun = (siteIds: string[]) => {
     if (siteIds.length === 0) return;
@@ -680,6 +688,7 @@ function TopicPlacementConsole({
         description: `Up to ${effectiveCap} keywords each, highest demand first. Watch it think in the live run window.`,
       },
     );
+    void drainRunQueue(siteIds);
   };
 
   const focused = focusedSiteId ? siteById.get(focusedSiteId) : undefined;
@@ -831,10 +840,7 @@ function TopicPlacementConsole({
             is always the SELECTED brand's data. Mixing a global schedule into
             brand-keyed tabs is what made the tab strip lie. */}
         <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-5">
-          <Tabs
-            defaultValue="brands"
-            className="flex min-h-0 flex-1 flex-col"
-          >
+          <Tabs defaultValue="brands" className="flex min-h-0 flex-1 flex-col">
             <TabsList className="h-8 shrink-0 justify-start rounded-none border-b border-border bg-transparent px-1">
               <TabsTrigger value="brands" className="h-6 text-xs">
                 Brands
@@ -861,93 +867,98 @@ function TopicPlacementConsole({
               value="brands"
               className="m-0 flex min-h-0 flex-1 flex-col"
             >
-          <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-[10px]"
-              onClick={() =>
-                setSelected(
-                  selected.length === visible.length
-                    ? []
-                    : visible.map((site) => site.id),
-                )
-              }
-            >
-              {selected.length === visible.length && visible.length > 0
-                ? "None"
-                : "All"}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-1.5"
-              title="Re-read coverage"
-              onClick={() =>
-                void queryClient.invalidateQueries({
-                  queryKey: ["seo", "topics", "placement-status"],
-                })
-              }
-            >
-              <RefreshCw className="h-3 w-3" />
-            </Button>
-          </div>
+              <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-[10px]"
+                  onClick={() =>
+                    setSelected(
+                      selected.length === visible.length
+                        ? []
+                        : visible.map((site) => site.id),
+                    )
+                  }
+                >
+                  {selected.length === visible.length && visible.length > 0
+                    ? "None"
+                    : "All"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-1.5"
+                  title="Re-read coverage"
+                  onClick={() =>
+                    void queryClient.invalidateQueries({
+                      queryKey: ["seo", "topics", "placement-status"],
+                    })
+                  }
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+              </div>
 
-          <div className="flex min-h-0 flex-1 flex-col">
-            {sites.isError ? (
-              <p className="p-3 text-xs text-destructive">
-                Could not read the brand list.
-              </p>
-            ) : (
-              <NonEditableContextMenu
-                sourceFeature="marketing"
-                contentSource={{ type: "raw" }}
-                contextData={{ content: "" }}
-                resolveContextOnOpen={(target) => {
-                  const id = target
-                    ?.closest("[data-row-id]")
-                    ?.getAttribute("data-row-id");
-                  const row =
-                    (id && brandRows.find((r) => r.site.id === id)) || null;
-                  const siteRow: SiteMenuRow | null = row
-                    ? {
-                        id: row.site.id,
-                        name: row.site.name,
-                        brandId: row.site.brand_id,
-                      }
-                    : null;
-                  setContextBrandRow(siteRow);
-                  if (!siteRow) return null;
-                  return {
-                    content: `${siteRow.name}`,
-                    [CONTEXT_MENU_ENTITY_KEY]: siteEntityRef(siteRow),
-                  };
-                }}
-                extraSections={
-                  contextBrandRow ? [buildSiteMenuSection(contextBrandRow)] : []
-                }
-              >
-                <MatrxDataTable<BrandTableRow>
-                  data={brandRows}
-                  columns={brandColumns}
-                  getRowId={(r) => r.site.id}
-                  isLoading={sites.isLoading}
-                  toolbar={{ search: true, searchPlaceholder: "Find a brand" }}
-                  selectedId={focusedSiteId}
-                  onRowOpen={(r) => setFocusedSiteId(r.site.id)}
-                  selection={{
-                    selectedIds: selected,
-                    onSelectedIdsChange: setSelected,
-                    noun: "brand",
-                  }}
-                  pageSize={0}
-                  zebra
-                  emptyState={{ title: "No brands match your search." }}
-                  className="h-full"
-                />
-              </NonEditableContextMenu>
-            )}
-          </div>
+              <div className="flex min-h-0 flex-1 flex-col">
+                {sites.isError ? (
+                  <p className="p-3 text-xs text-destructive">
+                    Could not read the brand list.
+                  </p>
+                ) : (
+                  <NonEditableContextMenu
+                    sourceFeature="marketing"
+                    contentSource={{ type: "raw" }}
+                    contextData={{ content: "" }}
+                    resolveContextOnOpen={(target) => {
+                      const id = target
+                        ?.closest("[data-row-id]")
+                        ?.getAttribute("data-row-id");
+                      const row =
+                        (id && brandRows.find((r) => r.site.id === id)) || null;
+                      const siteRow: SiteMenuRow | null = row
+                        ? {
+                            id: row.site.id,
+                            name: row.site.name,
+                            brandId: row.site.brand_id,
+                          }
+                        : null;
+                      setContextBrandRow(siteRow);
+                      if (!siteRow) return null;
+                      return {
+                        content: `${siteRow.name}`,
+                        [CONTEXT_MENU_ENTITY_KEY]: siteEntityRef(siteRow),
+                      };
+                    }}
+                    extraSections={
+                      contextBrandRow
+                        ? [buildSiteMenuSection(contextBrandRow)]
+                        : []
+                    }
+                  >
+                    <MatrxDataTable<BrandTableRow>
+                      data={brandRows}
+                      columns={brandColumns}
+                      getRowId={(r) => r.site.id}
+                      isLoading={sites.isLoading}
+                      toolbar={{
+                        search: true,
+                        searchPlaceholder: "Find a brand",
+                      }}
+                      selectedId={focusedSiteId}
+                      onRowOpen={(r) => setFocusedSiteId(r.site.id)}
+                      selection={{
+                        selectedIds: selected,
+                        onSelectedIdsChange: setSelected,
+                        noun: "brand",
+                      }}
+                      pageSize={0}
+                      zebra
+                      emptyState={{ title: "No brands match your search." }}
+                      className="h-full"
+                    />
+                  </NonEditableContextMenu>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </section>
@@ -979,10 +990,10 @@ function TopicPlacementConsole({
             >
               {outcomes.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Pick one or more brands on the left, set the cap, and press Run
-                  now. Every pass reports what it claimed, what it placed, what
-                  it is not sure about, and what it refused to touch — right
-                  here.
+                  Pick one or more brands on the left, set the cap, and press
+                  Run now. Every pass reports what it claimed, what it placed,
+                  what it is not sure about, and what it refused to touch —
+                  right here.
                 </p>
               ) : (
                 <ul className="flex flex-col gap-1.5">
@@ -1050,7 +1061,8 @@ function TopicPlacementConsole({
                         ) : null}
                         {outcome.timeoutApplied > 0 ? (
                           <span className="rounded border border-border px-1 py-px text-[10px] tabular-nums text-muted-foreground">
-                            {formatCount(outcome.timeoutApplied)} applied after the wait
+                            {formatCount(outcome.timeoutApplied)} applied after
+                            the wait
                           </span>
                         ) : null}
                         {outcome.ceilingReached ? (
@@ -1085,7 +1097,10 @@ function TopicPlacementConsole({
                           <RunDecisions
                             siteId={outcome.siteId}
                             siteName={outcome.siteName}
-                            brandId={siteById.get(outcome.siteId)?.brand_id ?? undefined}
+                            brandId={
+                              siteById.get(outcome.siteId)?.brand_id ??
+                              undefined
+                            }
                             since={outcome.startedAt}
                             confidenceFloor={outcome.confidenceFloor}
                           />
@@ -1148,14 +1163,12 @@ function TopicPlacementConsole({
             >
               <RunHistoryPanel />
             </TabsContent>
-
           </Tabs>
         </section>
       </div>
     </div>
   );
 }
-
 
 /**
  * WHAT THE AI ACTUALLY DID — the point of an admin console.

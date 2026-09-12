@@ -139,6 +139,8 @@ interface RunPointer {
   runId: string;
   startedAt: number;
   target: string | null;
+  /** Exact request tenancy used by this launch. A rejoin is the same run. */
+  scopeOverrides?: Record<string, string>;
   /**
    * The run reached a good terminal state here. The pointer is KEPT so a
    * reload re-reads the finished result off the durable row — losing an answer
@@ -165,11 +167,21 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
       window.localStorage.removeItem(pointerKey(wire, key));
       return null;
     }
+    const rawScopeOverrides = parsed.scopeOverrides;
+    const scopeOverrides =
+      rawScopeOverrides &&
+      typeof rawScopeOverrides === "object" &&
+      Object.values(rawScopeOverrides).every(
+        (value) => typeof value === "string",
+      )
+        ? (rawScopeOverrides as Record<string, string>)
+        : undefined;
     return {
       runId: parsed.runId,
       startedAt,
       target: typeof parsed.target === "string" ? parsed.target : null,
       settled: parsed.settled === true,
+      ...(scopeOverrides ? { scopeOverrides } : {}),
     };
   } catch {
     // A corrupt pointer must never break the tool it belongs to.
@@ -300,12 +312,21 @@ export interface UseDurableRunOptions<TResult> {
 export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
   /** True while the run is working — launched here or rejoined. */
   running: boolean;
-  /** Start it. `target` is what the run is about, for rejoin copy. */
-  launch: (body: Record<string, unknown>, target?: string) => Promise<void>;
+  /** Start it. Per-launch scope wins and is retained for rejoin. */
+  launch: (
+    body: Record<string, unknown>,
+    target?: string,
+    options?: DurableRunLaunchOptions,
+  ) => Promise<void>;
   /** Wipe a finished run's output before a new one (the caller's reset). */
   reset: () => void;
   /** Set an error the surface detected itself (a bad URL, a rejected result). */
   fail: (message: string) => void;
+}
+
+export interface DurableRunLaunchOptions {
+  /** Exact request context for this target; persisted with the run receipt. */
+  scopeOverrides?: Record<string, string>;
 }
 
 function initialState<TResult>(): DurableRunState<TResult> {
@@ -338,6 +359,10 @@ export function useDurableRun<TResult>(
 
   /** The target of the launch in flight, read when the run id arrives. */
   const pendingTargetRef = useRef<string | null>(null);
+  /** The exact tenant context of the launch in flight, retained for rejoin. */
+  const pendingScopeOverridesRef = useRef<Record<string, string> | undefined>(
+    undefined,
+  );
 
   // ── Live adoption plumbing (only used when `live` is set) ────────────────
   // Retention discipline (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md): the
@@ -436,6 +461,9 @@ export function useDurableRun<TResult>(
             runId,
             startedAt: Date.now(),
             target: pendingTargetRef.current,
+            ...(pendingScopeOverridesRef.current
+              ? { scopeOverrides: pendingScopeOverridesRef.current }
+              : {}),
           });
         }
         return;
@@ -525,8 +553,7 @@ export function useDurableRun<TResult>(
       }
 
       const line =
-        stageLabels[name] ??
-        (stageFallback ? stageFallback(name, data) : name);
+        stageLabels[name] ?? (stageFallback ? stageFallback(name, data) : name);
       if (line === null) return;
       setState((prev) => ({
         ...prev,
@@ -538,13 +565,29 @@ export function useDurableRun<TResult>(
   );
 
   const launch = useCallback(
-    async (body: Record<string, unknown>, target?: string): Promise<void> => {
-      const { wire, path, scopeOverrides, key } = optionsRef.current;
+    async (
+      body: Record<string, unknown>,
+      target?: string,
+      launchOptions?: DurableRunLaunchOptions,
+    ): Promise<void> => {
+      const {
+        wire,
+        path,
+        scopeOverrides: defaultScopeOverrides,
+        key,
+      } = optionsRef.current;
+      const scopeOverrides =
+        launchOptions?.scopeOverrides ?? defaultScopeOverrides;
       pendingTargetRef.current = target ?? null;
+      pendingScopeOverridesRef.current = scopeOverrides;
       // A new launch retires the previous receipt; the new one lands with the
       // new run's id.
       clearPointer(wire, key);
-      setState({ ...initialState<TResult>(), status: "running", stage: "Connecting" });
+      setState({
+        ...initialState<TResult>(),
+        status: "running",
+        stage: "Connecting",
+      });
       try {
         const response = await dispatch(
           callApi({
@@ -567,8 +610,7 @@ export function useDurableRun<TResult>(
                 ...prev,
                 status: "error",
                 stage: null,
-                error:
-                  error instanceof Error ? error.message : String(error),
+                error: error instanceof Error ? error.message : String(error),
               },
         );
         return;
@@ -594,7 +636,11 @@ export function useDurableRun<TResult>(
   useEffect(() => {
     if (rejoinedRef.current) return;
     rejoinedRef.current = true;
-    const { wire, key, scopeOverrides } = optionsRef.current;
+    const {
+      wire,
+      key,
+      scopeOverrides: defaultScopeOverrides,
+    } = optionsRef.current;
     const pointer = readPointer(wire, key);
     if (!pointer) return;
     // A settled pointer is a finished ANSWER being restored, not a run being
@@ -610,7 +656,7 @@ export function useDurableRun<TResult>(
     void rejoinDurableRun({
       dispatch,
       wire,
-      scopeOverrides,
+      scopeOverrides: pointer.scopeOverrides ?? defaultScopeOverrides,
       runId: pointer.runId,
       streamOptions: streamOptions((event) =>
         handleEvent(event, { rejoin: true }),

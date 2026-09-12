@@ -11,13 +11,19 @@ jest.mock("@/lib/api/call-api", () => ({
   callApi: (request: Record<string, unknown>) => mockCallApi(request),
 }));
 
-jest.mock("@/features/agents/redux/execution-system/thunks/adopt-foreign-stream", () => ({
-  adoptForeignStream: jest.fn(),
-}));
+jest.mock(
+  "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream",
+  () => ({
+    adoptForeignStream: jest.fn(),
+  }),
+);
 
-jest.mock("@/features/agents/redux/execution-system/active-requests/active-requests.slice", () => ({
-  removeRequest: jest.fn(),
-}));
+jest.mock(
+  "@/features/agents/redux/execution-system/active-requests/active-requests.slice",
+  () => ({
+    removeRequest: jest.fn(),
+  }),
+);
 
 jest.mock("@/features/overlays/openers/liveRunWindow", () => ({
   useFloatingLiveRun: jest.fn(),
@@ -50,18 +56,20 @@ describe("useDurableRun launch organization context", () => {
   beforeEach(() => {
     localStorage.clear();
     jest.clearAllMocks();
-    mockDispatch.mockImplementation(async (request: Record<string, unknown>) => {
-      const onStreamEvent = request.onStreamEvent as
-        | ((event: { event: "data"; data: Record<string, unknown> }) => void)
-        | undefined;
-      if (request.path === "/seo/keywords/topics/backfill") {
-        onStreamEvent?.({
-          event: "data",
-          data: { kind: "test.run_started", run_id: "run-1" },
-        });
-      }
-      return { data: null, error: null };
-    });
+    mockDispatch.mockImplementation(
+      async (request: Record<string, unknown>) => {
+        const onStreamEvent = request.onStreamEvent as
+          | ((event: { event: "data"; data: Record<string, unknown> }) => void)
+          | undefined;
+        if (request.path === "/seo/keywords/topics/backfill") {
+          onStreamEvent?.({
+            event: "data",
+            data: { kind: "test.run_started", run_id: "run-1" },
+          });
+        }
+        return { data: null, error: null };
+      },
+    );
   });
 
   it("keeps a per-launch organization on both launch and rejoin", async () => {
