@@ -9,6 +9,8 @@ import userAuthReducer, {
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 import { MeetingSurface } from "./MeetingSurface";
 
+let mockMeetHost: object | null = { participant: { identity: "member-1" } };
+
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/features/meet/lib/meetBaseUrl", () => ({
   meetBaseUrl: () => "https://www.aimatrx.com",
@@ -27,7 +29,10 @@ jest.mock("@ai-matrx/meet/react", () => ({
     <div data-testid="guest-provider">{children}</div>
   ),
   MeetingRoom: () => <div data-testid="member-room" />,
-  useMeetHost: () => ({ participant: { identity: "member-1" } }),
+  useMeetHost: () => mockMeetHost,
+}));
+jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
+  OrganizationRequiredNotice: () => <div data-testid="organization-recovery" />,
 }));
 
 const guestAuth: UserAuthState = {
@@ -78,6 +83,10 @@ async function renderSurface(serverAuthenticated: boolean, auth = guestAuth) {
 }
 
 describe("MeetingSurface authentication hydration", () => {
+  beforeEach(() => {
+    mockMeetHost = { participant: { identity: "member-1" } };
+  });
+
   it("keeps the server guest lane while browser authentication is unresolved, then replaces it when Redux resolves a member", async () => {
     const surface = await renderSurface(false);
 
@@ -103,5 +112,24 @@ describe("MeetingSurface authentication hydration", () => {
 
     expect(surface.container.querySelector('[data-testid="guest-provider"]')).not.toBeNull();
     surface.unmount();
+  });
+
+  it("keeps the meeting open with the canonical organization picker when a signed-in host has no active organization", async () => {
+    jest.useFakeTimers();
+    mockMeetHost = null;
+    const surface = await renderSurface(true, {
+      ...guestAuth,
+      id: "member-1",
+      authReady: true,
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(8000);
+    });
+
+    expect(surface.container.querySelector('[data-testid="organization-recovery"]')).not.toBeNull();
+    expect(surface.container.textContent).not.toContain("reload this link");
+    surface.unmount();
+    jest.useRealTimers();
   });
 });

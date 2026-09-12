@@ -37,6 +37,7 @@ import {
   selectAuthReady,
   selectIsAuthenticated,
 } from "@/lib/redux/selectors/userSelectors";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 type Resolution =
   | { readonly state: "loading" }
@@ -154,14 +155,11 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
     }
     return (
       <Centered>
-        <h1 className="text-base font-semibold">
-          You are signed in, but no organization is active
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          A meeting is minted for one organization, so calls and meetings stay
-          inert until one is chosen. Pick your organization from the account menu
-          and reload this link.
-        </p>
+        <OrganizationRequiredNotice
+          compact
+          what="This meeting"
+          description="Meetings belong to one organization. Choose the organization you are working in below; this page stays open and prepares the meeting as soon as the active organization is available."
+        />
       </Centered>
     );
   }
