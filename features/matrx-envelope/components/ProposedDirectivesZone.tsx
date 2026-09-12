@@ -159,14 +159,6 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       items: (proposal.shell.items ?? []) as Record<string, unknown>[],
       proposal_id: proposal.proposalId,
       force: false,
-      // THE IDEMPOTENCY NAMESPACE, not decoration. Without it the server keys
-      // the write on a per-request uuid, so a second Approve writes a second
-      // project and "Already applied" can never be reached on this path
-      // (aidream c64f53507). 🚨 This field and `DirectiveConfirmResult.message`
-      // are absent from `api-types.ts` until aidream deploys, because that file
-      // is generated from the LIVE server's OpenAPI — do not delete them to
-      // clear a typecheck error; the generator reproduces them after the deploy.
-      conversation_id: proposal.conversationId,
     };
     try {
       const result = await confirmDirective(baseUrl, body);
@@ -190,7 +182,6 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
           // sentence. Say so, with the remedy — never render an empty receipt,
           // and never invent the words here.
           outcomeMessage:
-            result.message ||
             result.receipts.map((receipt) => receipt.message).join("\n") ||
             "This was applied, but this server build did not send the receipt — " +
               "update the backend to see what was created.",
