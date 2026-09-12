@@ -81,6 +81,14 @@ Ask of every double: *does it replace a dependency, or the logic I am verifying?
 - Mock setup outgrowing the test logic → use real components (real `Scheduler` + `MemoryCheckpointer`;
   real store + real reducers with only the API module mocked).
 
+## 4a. Proving RED never weakens the shared working tree (added 2026-09-12, Data Doctrine chair)
+
+A RED proof that edits the real guard on disk is one interruption away from shipping the weakening: on
+a shared checkout a peer sweeper commits whatever is on disk the moment a lane dies (it happened —
+a frame guard reached `main` deleted; DD-158). So: prove RED by injecting the weakening **in memory**
+(patch/mock inside the test), in a **scratch copy**, or in a **`git worktree`** you delete after. If the
+real file must be touched, weaken and restore in the SAME tool call, then verify the restore.
+
 ## 5. Fixtures: captured, complete, typed
 
 The done law bans manufactured data as PROOF. Controlled inputs inside a guard are fine — shaped
