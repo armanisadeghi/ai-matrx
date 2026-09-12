@@ -914,6 +914,8 @@ export type Registration = {
   keys: Set<string>;
   keyUnresolved: string[];
   viaAnnotation: boolean;
+  /** Exactly the keys a `// surface-write-handlers:` comment claimed. */
+  annotationKeys: Set<string>;
   passThrough: boolean;
 };
 
@@ -1036,6 +1038,7 @@ export function scanFiles(files: string[]): Registration[] {
         keys: keys.keys,
         keyUnresolved: keyAnnotation?.passThrough ? [] : keys.unresolved,
         viaAnnotation: Boolean(keyAnnotation || surfaceAnnotation),
+        annotationKeys: new Set(keyAnnotation?.keys ?? []),
         passThrough: Boolean(keyAnnotation?.passThrough),
       });
     };
@@ -1181,8 +1184,23 @@ function matches(pattern: string, target: string): boolean {
   return pattern === target;
 }
 
-export function diff(declared: DeclaredSurface[], registrations: Registration[]): Findings {
+export function diff(
+  declared: DeclaredSurface[],
+  registrations: Registration[],
+  /**
+   * Every surface name the manifest registry declares, write targets or not.
+   * An annotation may legitimately name a mount whose surface declares no write
+   * targets (`SkillDetailEditor` mounts on both `matrx-user/connections-skills`
+   * and `matrx-admin/skills`; only the first declares any) — that is credited
+   * nothing and is NOT a lie. A name that is no surface at all still is.
+   * Omitted, every name outside `declared` reads as a lie, which is what the
+   * fixture diffs in the self-test want.
+   */
+  knownSurfaces?: ReadonlySet<string>,
+): Findings {
   const declaredBySurface = new Map(declared.map((s) => [s.surfaceName, s.targets]));
+  const isRealSurface = (name: string): boolean =>
+    knownSurfaces ? knownSurfaces.has(name) : declaredBySurface.has(name);
   const handledBySurface = new Map<string, Set<string>>();
   const lyingAnnotations: Findings["lyingAnnotations"] = [];
 
@@ -1192,10 +1210,10 @@ export function diff(declared: DeclaredSurface[], registrations: Registration[])
     // surface does not have, is a finding — never a silent credit.
     if (reg.viaAnnotation) {
       for (const surfaceName of reg.surfaces) {
-        if (!declaredBySurface.has(surfaceName)) {
+        if (!isRealSurface(surfaceName)) {
           lyingAnnotations.push({
             registration: reg,
-            why: `annotation names "${surfaceName}", which declares no write targets`,
+            why: `annotation names "${surfaceName}", which is not a declared surface`,
           });
         }
       }
@@ -1206,7 +1224,15 @@ export function diff(declared: DeclaredSurface[], registrations: Registration[])
       for (const key of reg.keys) {
         const hits = targets.filter((t) => matches(key, t));
         for (const hit of hits) set.add(hit);
-        if (hits.length === 0 && reg.viaAnnotation && declaredBySurface.has(surfaceName)) {
+        // Only a key the ANNOTATION claimed can be a lying annotation. A key
+        // read out of the code that matches no declared target is a different
+        // (and unmeasured) class — dead wiring — and must not be reported here
+        // under the wrong name.
+        if (
+          hits.length === 0 &&
+          reg.annotationKeys.has(key) &&
+          declaredBySurface.has(surfaceName)
+        ) {
           lyingAnnotations.push({
             registration: reg,
             why: `annotation names "${key}", which is not a declared target of ${surfaceName}`,
@@ -1235,18 +1261,24 @@ export function diff(declared: DeclaredSurface[], registrations: Registration[])
   return { unhandled, unresolvedRegistrations, lyingAnnotations, handledCount, declaredCount };
 }
 
-async function loadDeclaredSurfaces(): Promise<DeclaredSurface[]> {
+async function loadDeclaredSurfaces(): Promise<{
+  declared: DeclaredSurface[];
+  allSurfaceNames: Set<string>;
+}> {
   const mod = await import(resolve(ROOT, "features/surfaces/manifests/registry"));
   const manifests = (mod.ALL_MANIFESTS ?? []) as ReadonlyArray<{
     surfaceName: string;
     writeTargets?: ReadonlyArray<{ name: string }>;
   }>;
-  return manifests
-    .filter((m) => (m.writeTargets?.length ?? 0) > 0)
-    .map((m) => ({
-      surfaceName: m.surfaceName,
-      targets: (m.writeTargets ?? []).map((t) => t.name),
-    }));
+  return {
+    declared: manifests
+      .filter((m) => (m.writeTargets?.length ?? 0) > 0)
+      .map((m) => ({
+        surfaceName: m.surfaceName,
+        targets: (m.writeTargets ?? []).map((t) => t.name),
+      })),
+    allSurfaceNames: new Set(manifests.map((m) => m.surfaceName)),
+  };
 }
 
 /* ───────────────────────────────── self-test ─────────────────────────────── */
@@ -1571,10 +1603,10 @@ function runSelfTest(): number {
 async function main(): Promise<number> {
   if (SELF_TEST) return runSelfTest();
 
-  const declared = await loadDeclaredSurfaces();
+  const { declared, allSurfaceNames } = await loadDeclaredSurfaces();
   const files = seedFiles();
   const registrations = scanFiles(files);
-  const findings = diff(declared, registrations);
+  const findings = diff(declared, registrations, allSurfaceNames);
 
   const surfacesWithRegistrations = new Set(registrations.flatMap((r) => r.surfaces));
 

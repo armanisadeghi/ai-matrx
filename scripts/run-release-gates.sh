@@ -190,6 +190,15 @@ if $STRICT; then
         # it reads the LIVE DB and must never block a release when creds or the
         # network are missing (it exits 3 and says so).
         "Surface value blast radius|pnpm exec tsx scripts/check-surface-impact.ts"
+        # Every `writeTargets` entry a manifest DECLARES must have a handler
+        # some mount REGISTERS. The two halves live in different files and
+        # nothing links them at build time, so a gap is invisible until APPLY
+        # time — after the agent planned a turn around the target and the user
+        # approved the write. Static (AST over the three registration seams),
+        # no credentials, ~10s. ADVISORY in both lanes: a finding is a page to
+        # wire, never a stopped release. `pnpm check:surface-write-handlers:self-test`
+        # proves the guard can still fail.
+        "Surface write targets without a handler|pnpm check:surface-write-handlers"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
         "Entity registry generation drift|pnpm check:entity-types"
         # --live pulls the deployed agx_sync_linked_agents() and diffs the TS
@@ -504,6 +513,15 @@ else
         # it reads the LIVE DB and must never block a release when creds or the
         # network are missing (it exits 3 and says so).
         "Surface value blast radius|pnpm exec tsx scripts/check-surface-impact.ts"
+        # Every `writeTargets` entry a manifest DECLARES must have a handler
+        # some mount REGISTERS. The two halves live in different files and
+        # nothing links them at build time, so a gap is invisible until APPLY
+        # time — after the agent planned a turn around the target and the user
+        # approved the write. Static (AST over the three registration seams),
+        # no credentials, ~10s. ADVISORY in both lanes: a finding is a page to
+        # wire, never a stopped release. `pnpm check:surface-write-handlers:self-test`
+        # proves the guard can still fail.
+        "Surface write targets without a handler|pnpm check:surface-write-handlers"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
         "Entity registry generation drift|pnpm check:entity-types"
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"

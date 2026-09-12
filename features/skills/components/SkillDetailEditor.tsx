@@ -243,6 +243,10 @@ export function SkillDetailEditor({
     return value;
   };
 
+  // The surface arrives as a prop. Two mounts pass one: `SkillsSection`
+  // (CONNECTIONS_SKILLS_SURFACE_NAME) and the admin skills page
+  // (ADMIN_SKILLS_SURFACE_NAME).
+  // surface-write-handlers-surface: matrx-user/connections-skills, matrx-admin/skills
   useSurfaceWriteHandlers(surfaceName ?? null, {
     skill_label: (value) => {
       assertWritable("skill_label");
