@@ -169,6 +169,46 @@ describe("a record toast cannot outlive its record on screen", () => {
     expect(toastText()).toContain("ZZZ Alpha");
   });
 
+  it("survives a navigation to the record's own KEY-routed page", async () => {
+    // The mandates admin routes by mandateKey, not id — a toast raised on
+    // create and followed by a push to that record's page must survive it.
+    await act(async () => {
+      recordToast.success(
+        { type: "mandate", id: "DDDD-4444", title: "zzz.fixq12.demo" },
+        'Created "zzz.fixq12.demo"',
+        { duration: 60_000 },
+      );
+    });
+    await settle();
+
+    await navigateTo("/administration/mandates/zzz.fixq12.demo");
+    await act(async () => {
+      await wait(0);
+    });
+
+    expect(liveRecordToastRefs()).toHaveLength(1);
+    expect(toastText()).toContain("zzz.fixq12.demo");
+  });
+
+  it("does not keep a toast alive on a route that merely CONTAINS the id", async () => {
+    await act(async () => {
+      recordToast.success(
+        { type: "mandate", id: "EEEE-5555", title: "alpha" },
+        'Created "alpha"',
+        { duration: 60_000 },
+      );
+    });
+    await settle();
+
+    // "alpha" is a word in this path, not the record it shows.
+    await navigateTo("/administration/alphabetical/EEEE-5555-copy");
+    await act(async () => {
+      await wait(400);
+    });
+
+    expect(liveRecordToastRefs()).toHaveLength(0);
+  });
+
   it("resolves when the record it names is deleted", async () => {
     await act(async () => {
       recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', {

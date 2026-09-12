@@ -179,17 +179,38 @@ export function dismissRecordToasts(
 }
 
 /**
+ * Is this record what the new route is showing?
+ *
+ * A record's route names it in a path SEGMENT — by id on most surfaces, by a
+ * human key on the ones that route by key (`/administration/mandates/
+ * matrx.demo.intake`). So both are accepted, and only as a whole decoded
+ * segment: a substring test would keep a toast alive on any URL that merely
+ * contained the word, which is the false sentence this whole mechanism exists
+ * to prevent.
+ */
+function routeStillShows(record: ToastRecordRef, pathname: string): boolean {
+  const segments = pathname.split("/").filter(Boolean).map((s) => {
+    try {
+      return decodeURIComponent(s);
+    } catch {
+      return s;
+    }
+  });
+  if (record.id && segments.includes(record.id)) return true;
+  return !!record.title && segments.includes(record.title);
+}
+
+/**
  * Dismiss every record toast whose record is not on the route we just landed
- * on. A record's id appears in its own URL, so "still here" is decidable
- * without any per-feature wiring: navigating deeper into A keeps A's toast,
- * navigating to B (or back to a list) drops it.
+ * on. Navigating deeper into A keeps A's toast; navigating to B (or back to a
+ * list) drops it. No per-feature wiring: the URL already names the record.
  *
  * Called by the app-wide Toaster on every pathname change.
  */
 export function dismissRecordToastsOffRoute(pathname: string): number {
   let dismissed = 0;
   for (const entry of [...liveRecordToasts.values()]) {
-    if (entry.record.id && pathname.includes(entry.record.id)) continue;
+    if (routeStillShows(entry.record, pathname)) continue;
     forget(entry.toastId);
     sonnerToast.dismiss(entry.toastId);
     dismissed += 1;
