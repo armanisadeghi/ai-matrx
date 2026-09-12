@@ -25,8 +25,11 @@
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { kindSchemaFromJsonSchema } from "@ai-matrx/content-ir";
+import { SYSTEM_KIND_DEFINITIONS } from "@/features/content-ir/registry/system-kinds";
+import { REFUSAL_KIND } from "@/features/content-ir/kinds/refusal";
+import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
 import { RENDER_PATHS, type RenderPathId } from "../paths";
-import { runRenderPath } from "../run-path";
+import { routeBlock, runRenderPath } from "../run-path";
 
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: jest.fn(),
@@ -340,5 +343,94 @@ describe("THE RENDER MATRIX — a valid payload always reaches its component", (
     const run = runRenderPath("chat_bare", kind, { count: "not a number" })!;
     expect(run.verdict.reachedRealComponent).toBe(false);
     expect(run.verdict.fallbackReason).toBe("broken-instance");
+  });
+});
+
+/**
+ * THE SYSTEM-KIND CELL — a kind this repo REGISTERS must have a component.
+ *
+ * The matrix above proves the plumbing carries a payload to whatever component
+ * a kind has. It cannot prove a kind HAS one: every archetype registers its own
+ * component row before it runs. That gap is exactly where a system kind can be
+ * shipped — schema, bridge, markdown, registry entry, all green — and reach a
+ * reader as the generic floor, or as a `reportUnregisteredBlockType` nobody
+ * reads. `refusal` was written that way on purpose (trial 12) and this block
+ * was proven RED before its component existed.
+ *
+ * `legacyBlockType` is the contract: a definition that declares one is saying
+ * "route me to this block type", and a block type with no dispatch entry is a
+ * route to nothing.
+ */
+describe("SYSTEM KINDS — a registered kind with no component is the outage", () => {
+  it("every registered system kind's block type has a component", () => {
+    const missing = SYSTEM_KIND_DEFINITIONS.filter(
+      (definition) =>
+        definition.legacyBlockType &&
+        resolveBlockDispatch(definition.legacyBlockType) === null,
+    ).map((definition) => `${definition.kind} → ${definition.legacyBlockType}`);
+
+    if (missing.length > 0) {
+      throw new Error(
+        [
+          "These kinds are REGISTERED and route to a block type nobody renders:",
+          ...missing.map((line) => `  - ${line}`),
+          "",
+          "A registered kind with no component reaches the reader as the generic",
+          "floor at best and as an unregistered-block report at worst. Register",
+          "the component in BlockComponentRegistry + block-dispatch, or do not",
+          "register the kind.",
+        ].join("\n"),
+      );
+    }
+    expect(missing).toEqual([]);
+  });
+
+  /**
+   * THE REFUSAL, end to end. Not an error, not a toast, not an empty screen —
+   * an honest result that reaches its own component on every path a reader can
+   * receive it on, carrying the facts that make it actionable.
+   */
+  describe("refusal", () => {
+    const REFUSAL_VALUE: Record<string, unknown> = {
+      headline:
+        "I am not picking a keyword for this page yet — I do not know what the site already ranks for.",
+      missing: [
+        {
+          fact: "The site's existing keyword plan",
+          why_it_matters:
+            "Picking a term the site already targets splits its own pages against each other.",
+          how_to_get_it: "Export the current ranking terms.",
+        },
+      ],
+      what_i_can_say_now:
+        "Whatever the answer is, the term sits under the parent term the hub page holds.",
+      protocol_frame: "site-wide keyword plan",
+      provenance: ["entry-order-site-before-page"],
+    };
+
+    it("has a component registered for its block type", () => {
+      expect(resolveBlockDispatch(REFUSAL_KIND)).not.toBeNull();
+    });
+
+    for (const pathId of COMPONENT_PATHS) {
+      it(`reaches its component on "${pathId}"`, () => {
+        const run = runRenderPath(pathId, REFUSAL_KIND, REFUSAL_VALUE);
+        if (!run) throw new Error(`${pathId} produced no run`);
+        expect(run.verdict.reachedRealComponent).toBe(true);
+      });
+    }
+
+    it("carries the facts that make the refusal actionable", () => {
+      // A refusal whose `how_to_get_it` is lost on the way is a wall, not a
+      // refusal — the bridge is what a reader's component actually receives.
+      const run = runRenderPath("reload", REFUSAL_KIND, REFUSAL_VALUE)!;
+      const routed = routeBlock(run.blocks[0]!);
+      const data = routed.serverData as
+        | { missing?: Array<{ howToGetIt?: string | null }> }
+        | undefined;
+      expect(data?.missing?.[0]?.howToGetIt).toBe(
+        "Export the current ranking terms.",
+      );
+    });
   });
 });

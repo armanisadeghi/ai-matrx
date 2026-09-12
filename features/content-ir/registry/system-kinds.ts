@@ -77,6 +77,7 @@ import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
 import { MASTERWORK_CHECKUP_KIND_DEFINITIONS } from "../kinds/masterwork-checkup-finding";
 import { SERIAL_OBSERVATION_TIMELINE_KIND_DEFINITIONS } from "../kinds/serial-observation-timeline";
 import { MASTERWORK_UNFOLDING_KIND_DEFINITIONS } from "../kinds/masterwork-unfolding";
+import { REFUSAL_KIND_DEFINITIONS } from "../kinds/refusal";
 import { AGENT_RESULT_KIND_DEFINITIONS } from "../kinds/agent-result";
 import { RUNTIME_WRAPPER_KIND_DEFINITIONS } from "../kinds/runtime-wrappers";
 import { GENERATED_IMAGE_SET_KIND_DEFINITIONS } from "../kinds/generated-image-set";
@@ -134,6 +135,11 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // The UNFOLDING-CASE kinds — the case oracle's growing ledger and the
   // desk's ruling. One component each; see kinds/masterwork-unfolding.ts.
   ...MASTERWORK_UNFOLDING_KIND_DEFINITIONS,
+  // THE REFUSAL — an honest "not yet" as a first-class RESULT: the headline,
+  // every missing fact with why it matters and how to get it, and whatever
+  // the desk can already say. Never an error, never a toast, never an empty
+  // screen. See kinds/refusal.ts.
+  ...REFUSAL_KIND_DEFINITIONS,
   // The canonical output of EVERY matrx-ai graph action. Registered 2026-08-18
   // after an active, componentless `agent_result` printed the verbatim system
   // prompt and the token bill into a learner's "Study notes" box.

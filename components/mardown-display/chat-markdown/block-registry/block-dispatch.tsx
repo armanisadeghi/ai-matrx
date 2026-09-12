@@ -316,6 +316,11 @@ export function isBlockLoading(block: {
  *    fields within one do not. Carries the Approve/Improve/Reject/Edit verbs
  *    through the `checkup_decision` surface write target when the page it
  *    landed on offers it.
+ *  - `refusal` — the honest "not yet": the desk declined to produce until its
+ *    frame holds, and named every missing fact with how to get it. Produced
+ *    ONLY by `applyIrKindRoute`'s compiled-bridge flip; a COMPLETE bridge (a
+ *    half-written refusal is not a position). It is a RESULT — never routed to
+ *    an error surface, a toast, or nothing.
   *  - `case_disclosure` / `unfolding_ruling` — the UNFOLDING-CASE kinds,
  *    produced ONLY by `applyIrKindRoute`'s compiled-bridge flips (`__kind`
  *    JSON arrival only — no tag/fence surface); never emitted upstream.
@@ -425,6 +430,7 @@ export type FeSynthesizedBlockType =
   | "serial_observation_timeline"
   | "case_disclosure"
   | "unfolding_ruling"
+  | "refusal"
   | "agent_result"
   | "node_outcome"
   | "run_result"
@@ -594,6 +600,7 @@ export type ShapeBlockType =
   | "serial_observation_timeline"
   | "case_disclosure"
   | "unfolding_ruling"
+  | "refusal"
   | "agent_result"
   | "node_outcome"
   | "run_result"
@@ -1919,6 +1926,20 @@ const SHAPE_BLOCK_DISPATCH = {
           serverData={block.serverData}
         />
       );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (refusal): COMPLETE bridge — an honest "not yet". NEVER an
+  // error branch and never a toast: the desk declined, said what is missing
+  // and how to get it, and that is a finished result. Same three-branch
+  // contract as every other kind-routed entry.
+  refusal: ({ block, index }) => {
+    if (block.serverData) {
+      return <BlockComponents.RefusalBlock key={index} serverData={block.serverData} />;
     }
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;

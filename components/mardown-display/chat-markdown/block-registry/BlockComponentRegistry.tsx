@@ -27,6 +27,7 @@ import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/Episode
 import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
 import SerialObservationTimelineBlock from "../../blocks/masterwork-timeline/SerialObservationTimelineBlock";
 import CaseDisclosureBlock from "../../blocks/masterwork-unfolding/CaseDisclosureBlock";
+import RefusalBlock from "../../blocks/refusal/RefusalBlock";
 import UnfoldingRulingBlock from "../../blocks/masterwork-unfolding/UnfoldingRulingBlock";
 import AgentResultBlock from "../../blocks/agent-result/AgentResultBlock";
 // Runtime wrapper kinds — transparent routers that DELEGATE the nested payload
@@ -470,6 +471,11 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <UnfoldingRulingBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  RefusalBlock: (props: React.ComponentProps<typeof RefusalBlock>) => (
+    <LazyBlockWrapper>
+      <RefusalBlock {...props} />
     </LazyBlockWrapper>
   ),
   IngestedSourcesBlock: (
