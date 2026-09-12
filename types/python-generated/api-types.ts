@@ -3772,6 +3772,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meet/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Meeting Record
+         * @description THE POST-MEETING RECORD, FOR A READER WHO HAS NO DATABASE (MRF-1).
+         *
+         *     Like `/token` and `/intelligence/ask` this route takes NO authentication
+         *     dependency, because the reader it exists for has no session: a guest who
+         *     attended a meeting by link. Their credential is the room token this server
+         *     signed for them, presented in the `x-meet-room-token` header and VERIFIED
+         *     (`services/meet/record.py` — a token for another meeting, an unadmitted
+         *     knocker, or a forged string is refused with a sentence). It is a header and
+         *     not a query parameter on purpose: a bearer credential in a URL lands in
+         *     access logs, referrers and browser history.
+         *
+         *     How much of the record comes back is the resolved
+         *     `meet.guest_record_access` configuration — the meeting's own setting, then
+         *     the organization's, then the platform default `summary`. `none` is a 403
+         *     carrying the sentence a guest reads; it is never an empty record, because a
+         *     screen that cannot tell "not shared" from "nothing happened" is a screen
+         *     that lies.
+         *
+         *     **RLS is not widened by this route and nothing here is a signed URL.** The
+         *     rows are read server-side through the ORM and returned already filtered,
+         *     de-identified to the least-privileged reader in the room. A signed-in member
+         *     of the meeting's organization keeps reading the record direct from Supabase
+         *     under RLS; this route answers them too, so one shape is testable.
+         */
+        get: operations["meeting_record_v1_meet_record_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/record/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Record Access
+         * @description A HOST chooses what guests may read of THIS meeting (MRF-1).
+         *
+         *     `{meeting_id, organization_id, access}` where access is `default` (use the
+         *     organization's setting), `summary`, `full` or `none`. Host power is
+         *     re-checked server-side exactly as it is for `/end` — the control is absent
+         *     for a non-host on every client, and this route refuses one anyway.
+         */
+        post: operations["meeting_record_access_v1_meet_record_access_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/meet/webhooks/livekit": {
         parameters: {
             query?: never;
@@ -66809,6 +66876,27 @@ export interface components {
             mode?: "backfill" | "incremental";
         };
         /**
+         * GuestRecordAccess
+         * @description The resolved answer, and WHERE it came from — never just a word.
+         *
+         *     The source is not decoration: the host's own control renders "this meeting
+         *     uses your organization's setting" or "you set this meeting to …", and a
+         *     guest's screen says which. A level with no provenance is a setting nobody
+         *     can audit.
+         */
+        GuestRecordAccess: {
+            /**
+             * Level
+             * @description `none` | `summary` | `full`.
+             */
+            level: string;
+            /**
+             * Source
+             * @description `meeting` when a host chose for this meeting; `organization` otherwise (the org knob, which itself falls back to the platform value).
+             */
+            source: string;
+        };
+        /**
          * GuruServiceStatus
          * @description Safe aggregate status projection for Guru's fixed status page.
          */
@@ -77074,6 +77162,75 @@ export interface components {
             meeting_id: string;
             /** Question */
             question: string;
+        };
+        /**
+         * MeetRecordAccessRequest
+         * @description `POST /api/v1/meet/record/access` — a host sets ONE meeting's level.
+         */
+        MeetRecordAccessRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Access */
+            access: string;
+        };
+        /** MeetRecordAccessResponse */
+        MeetRecordAccessResponse: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Setting */
+            setting: string;
+            effective: components["schemas"]["GuestRecordAccess"];
+        };
+        /**
+         * MeetRecordResponse
+         * @description What `GET /v1/meet/record` returns. De-identified by construction.
+         *
+         *     The row shapes are deliberately the SAME snake_case shapes
+         *     `@ai-matrx/meet`'s `core/repository.ts` already projects out of Supabase, so
+         *     the package's `projectNote` / `projectSegment` / `projectAttendee` /
+         *     `projectRecording` are reused verbatim and the guest's record and a member's
+         *     record cannot drift into two different screens.
+         */
+        MeetRecordResponse: {
+            /** Meeting Id */
+            meeting_id: string;
+            /**
+             * Access
+             * @description The resolved level: `summary` or `full`.
+             */
+            access: string;
+            /**
+             * Access Source
+             * @description `meeting` or `organization`.
+             */
+            access_source: string;
+            /** Shared */
+            shared: {
+                [key: string]: boolean;
+            };
+            /** Attendees */
+            attendees: {
+                [key: string]: unknown;
+            }[];
+            /** Notes */
+            notes: {
+                [key: string]: unknown;
+            }[];
+            /** Transcript */
+            transcript: {
+                [key: string]: unknown;
+            }[];
+            /** Recordings */
+            recordings: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Recording Notice
+             * @default
+             */
+            recording_notice?: string;
         };
         /**
          * MeetingEndRequest
@@ -122507,6 +122664,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_record_v1_meet_record_get: {
+        parameters: {
+            query?: {
+                meeting_id?: string | null;
+                slug?: string | null;
+            };
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_record_access_v1_meet_record_access_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetRecordAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetRecordAccessResponse"];
                 };
             };
             /** @description Validation Error */
