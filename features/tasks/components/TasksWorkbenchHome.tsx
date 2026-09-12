@@ -18,7 +18,7 @@ import {
   setSelectedTaskId,
   setSmartView,
 } from "@/features/tasks/redux/taskUiSlice";
-import { TaskQuickAddBar } from "@/features/tasks/widgets/TaskQuickAddBar";
+import TaskQuickAddBar from "@/features/tasks/widgets/TaskQuickAddBar";
 import {
   selectAllScopesFlat,
   selectAllScopeTypesFlat,
@@ -56,7 +56,9 @@ export function TasksWorkbenchHome() {
           const type = scopeTypes.find(
             (candidate) => candidate.id === scope?.scope_type_id,
           );
-          return scope ? `${type?.name ?? "Scope"}: ${scope.name}` : null;
+          return scope
+            ? `${type?.label_singular ?? "Scope"}: ${scope.name}`
+            : null;
         })
         .filter((label): label is string => label !== null),
     [scopeSelections, scopes, scopeTypes],
@@ -79,11 +81,16 @@ export function TasksWorkbenchHome() {
   }, []);
 
   return (
-    <section aria-label="Task workbench" className="flex h-full min-h-0 flex-col bg-background">
+    <section
+      aria-label="Task workbench"
+      className="flex h-full min-h-0 flex-col bg-background"
+    >
       <div className="shrink-0 border-b border-border/60 bg-card/40 px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">Task workbench</p>
+            <p className="text-sm font-semibold text-foreground">
+              Task workbench
+            </p>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span className="inline-flex min-w-0 items-center gap-1.5">
                 <Building2 className="size-3.5 shrink-0" />
@@ -92,7 +99,9 @@ export function TasksWorkbenchHome() {
               <span className="inline-flex min-w-0 items-center gap-1.5">
                 <Layers className="size-3.5 shrink-0" />
                 <span className="truncate">
-                  {selectedScopes.length > 0 ? selectedScopes.join(" · ") : "All scope dimensions"}
+                  {selectedScopes.length > 0
+                    ? selectedScopes.join(" · ")
+                    : "All scope dimensions"}
                 </span>
               </span>
               <span className="inline-flex items-center gap-1.5">
@@ -121,11 +130,16 @@ export function TasksWorkbenchHome() {
                 size="sm"
                 title={view.description}
                 onClick={() => dispatch(setSmartView(view.key))}
-                className={cn("h-8 gap-1.5 px-2 text-xs", active && "bg-primary/10 text-primary hover:bg-primary/15")}
+                className={cn(
+                  "h-8 gap-1.5 px-2 text-xs",
+                  active && "bg-primary/10 text-primary hover:bg-primary/15",
+                )}
               >
                 <Icon className="size-3.5" />
                 <span>{view.label}</span>
-                <span className="tabular-nums text-muted-foreground">{smartViewCounts[view.key]}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {smartViewCounts[view.key]}
+                </span>
               </Button>
             );
           })}
@@ -135,7 +149,11 @@ export function TasksWorkbenchHome() {
           label="Workspace destinations"
           items={workspaceDestinations.map((item) =>
             item.href === "/tasks"
-              ? { ...item, value: smartViewCounts.all, description: "Open tasks in the current organization" }
+              ? {
+                  ...item,
+                  value: smartViewCounts.all,
+                  description: "Open tasks in the current organization",
+                }
               : item,
           )}
           className="mt-3"
