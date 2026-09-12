@@ -12,6 +12,7 @@ import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { DatabaseProject, ProjectWithTasks } from "../types";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
  * Create a new project in the user's personal organization.
@@ -98,11 +99,13 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
       : membersResult.data.memberships.map((m) => m.containerId);
 
     // Also fetch personal projects created by user that may not have members yet
-    const { data: createdProjects, error: createdError } = await workspaceDb(supabase)
+    const ownerOnly = await scopeToOwner("project");
+    let createdQuery = workspaceDb(supabase)
       .from("projects")
       .select("*")
-      .is("deleted_at", null)
-      .eq("created_by", userId)
+      .is("deleted_at", null);
+    if (ownerOnly) createdQuery = createdQuery.eq("created_by", userId);
+    const { data: createdProjects, error: createdError } = await createdQuery
       .order("created_at", { ascending: false });
 
     if (createdError) {

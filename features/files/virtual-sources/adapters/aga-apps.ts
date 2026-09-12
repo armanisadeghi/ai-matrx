@@ -25,6 +25,7 @@ import type {
 } from "@/features/files/virtual-sources/types";
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 const TAB_ID_PREFIX = "aga-app:";
 
@@ -81,11 +82,15 @@ const agaAppsAdapter: VirtualSourceAdapter = {
   async list(supabase, userId, args: ListArgs): Promise<VirtualNode[]> {
     if (!userId) return [];
     if (args.parentId !== null) return []; // flat — no folders
-    const { data, error } = await supabase
+    // DD-137c / §3.3: `app` is registered `organization`, so the apps source lists the
+    // organization's apps. RLS is the ceiling; this is only where the tree opens.
+    const ownerOnly = await scopeToOwner("app");
+    let appQuery = supabase
       .schema("app").from("definition")
       .select(COLUMNS)
-      .is("deleted_at", null)
-      .eq("user_id", userId)
+      .is("deleted_at", null);
+    if (ownerOnly) appQuery = appQuery.eq("user_id", userId);
+    const { data, error } = await appQuery
       .order("updated_at", { ascending: false })
       .limit(args.limit ?? 200);
     if (error) return [];

@@ -62,17 +62,33 @@ const OWNER_FILTER = new RegExp(
   "g",
 );
 
-const EXEMPT = [
+/** Answered inside the query chain itself. */
+const EXEMPT_IN_CHAIN = [
   /\.eq\(\s*["'`](organization_id|org_id)["'`]/,           // already scoped to an organization
   /\.in\(\s*["'`](organization_id|org_id)["'`]/,
   /["'`]visibility["'`]/,                                    // already scoped by visibility
-  /\bscopeToOwner\b|\bresolveListScope\b|\bshouldFilterToOwner\b/, // asks the registry
-  /\bownerOnly\b/,                                           // the local name the helper's answer takes
-  /\bscope\.kind\b/,                                         // an explicit scope branch (THE VIEW LAW)
+  /\bscope\.kind\b/,                                        // an explicit scope branch (THE VIEW LAW)
 ];
 
-/** A write, or a single-row read, is not a list and is not this guard's business. */
-const NOT_A_LIST = /\.(single|maybeSingle|insert|update|upsert|delete)\s*\(/;
+/**
+ * Answered ABOVE the query. The fix's shape is
+ *   `const ownerOnly = await scopeToOwner("note", scope);`  … then …  `if (ownerOnly) q = q.eq(…)`
+ * and the `scopeToOwner` line sits BEFORE the `.from(`, so a window that starts at `.from(` cannot
+ * see it and calls a fixed site broken. This set is matched against the surrounding code instead.
+ */
+const EXEMPT_ABOVE = [
+  /\bscopeToOwner\b|\bresolveListScope\b|\bshouldFilterToOwner\b/, // asks the registry
+  /\b\w*[Oo]wnerOnly\b/,                                     // the local name the helper's answer takes
+];
+
+/**
+ * A write, or a single-row read, is not a list and is not this guard's business.
+ *
+ * The optional `<…>` is not decoration: `.maybeSingle<{ id: string }>()` is how half this repo
+ * types a single-row read, and without it the detector called `createPersonalCopy` a list and
+ * reported a defect that was not one. A guard's first false positive is the one people remember.
+ */
+const NOT_A_LIST = /\.(single|maybeSingle|insert|update|upsert|delete)\s*(<[^;()]*?>)?\s*\(/;
 
 /**
  * A SERVICE-ROLE query is not a list scope, and flagging one is how a guard loses its audience.
@@ -85,6 +101,30 @@ const NOT_A_LIST = /\.(single|maybeSingle|insert|update|upsert|delete)\s*\(/;
  * The receiver is the honest signal, so the receiver is what this reads.
  */
 const SERVICE_CLIENT = /^(admin|adminClient|supabaseAdmin|serviceClient|serviceRole|serviceSupabase|adminSupabase|svc)$/;
+
+/**
+ * THE TERNARY TWIN — the one shape that is scope-declared and cannot be seen from inside one chain.
+ *
+ * `features/crm/analytics/service.ts` reads the same table two ways in one expression:
+ *
+ *   ctx.orgIds.length
+ *     ? platformDb.from("outcome_event")…in("organization_id", ctx.orgIds)…
+ *     : platformDb.from("outcome_event")…eq("created_by", ctx.userId)…
+ *
+ * The owner branch is the fallback for a person who belongs to no organization, where their own
+ * rows ARE their whole world. It is correct, and the chain it lives in genuinely has no
+ * organization filter — the filter is in its twin, a few lines up. So this looks for exactly that:
+ * ANOTHER read of THE SAME TABLE, inside a tight window, that is organization-scoped. Narrow on
+ * purpose — it will not exempt a different table, and it will not reach across a whole function.
+ */
+export function hasOrgScopedTwin(before: string, after: string, table: string): boolean {
+  const WINDOW = 700;
+  const near = before.slice(-WINDOW) + after.slice(0, WINDOW);
+  const twin = new RegExp(
+    String.raw`\.from\(\s*["'\`]` + table + String.raw`["'\`]\s*\)[\s\S]{0,400}?\.(eq|in)\(\s*["'\`](organization_id|org_id)["'\`]`,
+  );
+  return twin.test(near);
+}
 
 export function isOrganizationScoped(reg: Registry, schema: string | null, table: string):
   { token: string; scope: ScopeWord | "inherited" | "unresolved" } {
@@ -125,7 +165,9 @@ export function scanSource(text: string, file: string, reg: Registry): Finding[]
 
     const chain = before.slice(fromM.index ?? 0) + after;
     if (NOT_A_LIST.test(chain)) continue;
-    if (EXEMPT.some((re) => re.test(chain))) continue;
+    if (EXEMPT_IN_CHAIN.some((re) => re.test(chain))) continue;
+    if (EXEMPT_ABOVE.some((re) => re.test(before) || re.test(after))) continue;
+    if (hasOrgScopedTwin(before, after, table)) continue;
 
     const { token, scope } = isOrganizationScoped(reg, schema, table);
     if (scope === "mine") continue; // the registry says this list belongs to its owner. Correct.

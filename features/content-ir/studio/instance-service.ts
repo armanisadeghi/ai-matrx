@@ -30,7 +30,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { scopeToOwner, type ListScope } from "@/lib/list-scope";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 import {
   DEFAULT_ARCHIVE_FILTER,
   type ArchiveFilterValue,
@@ -252,7 +252,7 @@ export interface KindInstanceListEntry {
 export async function listKindInstances(
   kindDefinitionId: string,
   archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
-  scope?: ListScope,
+  scope?: ListScopeWord,
 ): Promise<KindInstanceListEntry[]> {
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;

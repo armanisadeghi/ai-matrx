@@ -39,14 +39,27 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import type { ListScope } from "./types";
 
-export type ListScope = "mine" | "organization";
+/**
+ * The registry's word for where a list lands: exactly the two values
+ * `platform.entity_types.default_list_scope` can hold.
+ *
+ * 🚨 NOT `ListScope`, and the name is load-bearing. `lib/list-scope/types.ts` — the same module
+ * folder — already exports a `ListScope`, and it is a different thing: a discriminated UNION of the
+ * six scopes a surface's tabs can show (`{ kind: "mine" }`, `{ kind: "orgs", organizationId }`, …).
+ * Two different types called `ListScope`, reachable as `@/lib/list-scope` and
+ * `@/lib/list-scope/types`, is how a file silently types a registry word as a tab descriptor and
+ * type-checks anyway. Found by DD-137c while converting the clients; the union keeps the name it
+ * had, and the word it maps to gets its own.
+ */
+export type ListScopeWord = "mine" | "organization";
 
 /** The narrower screen is the safe fallback: never wrong, only sometimes emptier. */
-export const FALLBACK_LIST_SCOPE: ListScope = "mine";
+export const FALLBACK_LIST_SCOPE: ListScopeWord = "mine";
 
 /** A whole-registry snapshot, fetched once per browser session. */
-let registryPromise: Promise<Map<string, ListScope>> | null = null;
+let registryPromise: Promise<Map<string, ListScopeWord>> | null = null;
 
 /** Announce when a stand-in fired. Wired by the host to `captureError`. */
 export type ListScopeFallbackReporter = (message: string, cause: unknown) => void;
@@ -65,7 +78,7 @@ export function resetListScopeCache(): void {
   registryPromise = null;
 }
 
-async function loadRegistry(): Promise<Map<string, ListScope>> {
+async function loadRegistry(): Promise<Map<string, ListScopeWord>> {
   const { data, error } = await supabase
     .schema("platform")
     .from("entity_types")
@@ -75,7 +88,7 @@ async function loadRegistry(): Promise<Map<string, ListScope>> {
   if (error) {
     throw new Error(error.message);
   }
-  const map = new Map<string, ListScope>();
+  const map = new Map<string, ListScopeWord>();
   for (const row of data ?? []) {
     const scope = row.default_list_scope;
     if (scope === "mine" || scope === "organization") map.set(row.token, scope);
@@ -92,7 +105,7 @@ async function loadRegistry(): Promise<Map<string, ListScope>> {
  * Where this token's list should open. Reads the registry once per session; on any failure returns
  * `mine` AND reports it.
  */
-export async function resolveListScope(token: string): Promise<ListScope> {
+export async function resolveListScope(token: string): Promise<ListScopeWord> {
   try {
     registryPromise ??= loadRegistry();
     const map = await registryPromise;
@@ -122,7 +135,7 @@ export async function resolveListScope(token: string): Promise<ListScope> {
  * Returns true when the caller must apply its owner filter. An explicit scope always wins — "one
  * click away and never blocked".
  */
-export function shouldFilterToOwner(resolved: ListScope, requested?: ListScope): boolean {
+export function shouldFilterToOwner(resolved: ListScopeWord, requested?: ListScopeWord): boolean {
   return (requested ?? resolved) === "mine";
 }
 
@@ -130,7 +143,32 @@ export function shouldFilterToOwner(resolved: ListScope, requested?: ListScope):
  * The one call a list site makes: "should I scope this to me?" — answered by the registry unless
  * the caller (a scope toggle the person clicked) says otherwise.
  */
-export async function scopeToOwner(token: string, requested?: ListScope): Promise<boolean> {
+export async function scopeToOwner(token: string, requested?: ListScopeWord): Promise<boolean> {
   if (requested) return requested === "mine";
   return shouldFilterToOwner(await resolveListScope(token));
+}
+
+/**
+ * THE BRIDGE BETWEEN THE TWO HALVES OF THIS MODULE.
+ *
+ * `lib/list-scope/types.ts` + `applyListScope.ts` were here first: a six-value scope vocabulary
+ * (`mine` / `orgs` / `shared` / `industry` / `public` / `system`) that a surface renders as tabs,
+ * with `DEFAULT_LIST_SCOPE = { kind: "mine" }` — a LITERAL, and exactly the literal DD-137's second
+ * axis exists to replace. This function is the same answer read from the registry instead:
+ *
+ *   const scope = await defaultListScopeFor("transcript");   // { kind: "orgs", organizationId: null }
+ *   query = applyListScope(query, scope, { userId, ownerColumn: "created_by" });
+ *
+ * `organizationId: null` is deliberate and is what the union's own comment already means by it:
+ * blended across every non-personal organization the person belongs to. Narrowing to ONE
+ * organization is a thing the person does with the org switcher, never a default a list invents.
+ *
+ * On any failure it returns `{ kind: "mine" }` — the narrower screen — and `resolveListScope` has
+ * already said so through `onFallback`. It never returns the wider one on a guess.
+ */
+export async function defaultListScopeFor(token: string): Promise<ListScope> {
+  const word = await resolveListScope(token);
+  return word === "organization"
+    ? { kind: "orgs", organizationId: null }
+    : { kind: "mine" };
 }

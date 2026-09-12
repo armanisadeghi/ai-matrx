@@ -66,6 +66,7 @@ import {
   setNoteField,
 } from "./slice";
 import { serverMatchesAttempt } from "../utils/saveVerification";
+import { scopeToOwner } from "@/lib/list-scope";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,17 +110,19 @@ export const fetchNotesList = createAsyncThunk<void, void>(
 
     try {
       await assertCurrentNotesUser(userId);
-      const { data, error } = await runWithSessionRetry(() =>
-        supabase
+      // DD-137c / §3.3: where this list lands is the `note` token's registry word, not a literal.
+      const ownerOnly = await scopeToOwner("note");
+      const { data, error } = await runWithSessionRetry(() => {
+        let q = supabase
           .schema("workbench")
           .from("notes")
           .select(
             "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
           )
-          .eq("created_by", userId)
-          .is("deleted_at", null)
-          .order("updated_at", { ascending: false }),
-      );
+          .is("deleted_at", null);
+        if (ownerOnly) q = q.eq("created_by", userId);
+        return q.order("updated_at", { ascending: false });
+      });
 
       if (error) {
         if (isMissingSessionError(error)) throw new SessionUnavailableError();
@@ -818,15 +821,18 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
   async (_, { dispatch, getState }) => {
     const userId = getUserId(getState);
 
-    const { data, error } = await supabase
+    // The trash list lands where the notes list lands — a bin that hides the organization's
+    // deleted notes while the list shows its live ones is two different screens wearing one name.
+    const ownerOnly = await scopeToOwner("note");
+    let trashQuery = supabase
       .schema("workbench")
       .from("notes")
       .select(
         "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, visibility, deleted_at, version",
       )
-      .eq("created_by", userId)
-      .not("deleted_at", "is", null)
-      .order("updated_at", { ascending: false });
+      .not("deleted_at", "is", null);
+    if (ownerOnly) trashQuery = trashQuery.eq("created_by", userId);
+    const { data, error } = await trashQuery.order("updated_at", { ascending: false });
 
     if (error) throw error;
 

@@ -47,6 +47,7 @@ import type {
 } from "./costs";
 
 import type { ScopesRpcResult } from "@/features/scopes/types";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 // ── Research M2M edges live in platform.associations ─────────────────────────
 // The rs_source_tag / rs_keyword_source junctions were collapsed into the
@@ -192,14 +193,20 @@ export async function setTopicProject(
  * lets through" (a user belongs to multiple orgs; a bare RLS-only read
  * here previously blended all of them into one undifferentiated list).
  */
-export async function getAllTopics(): Promise<ResearchTopic[]> {
+export async function getAllTopics(scope?: ListScopeWord): Promise<ResearchTopic[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  // THE VIEW LAW still holds — this list declares its scope rather than taking a bare RLS read.
+  // What changed (DD-137c / §3.3) is WHERE the declaration comes from: `research_topic` is
+  // registered `organization`, so research opens on the organization's topics instead of hiding
+  // every colleague's work behind a literal.
+  const ownerOnly = await scopeToOwner("research_topic", scope);
+  let topicQuery = supabase
     .schema("research")
     .from("rs_topic")
     .select("*")
-    .is("deleted_at", null)
-    .eq("created_by", userId) // VIEW LAW: mine-scoped
+    .is("deleted_at", null);
+  if (ownerOnly) topicQuery = topicQuery.eq("created_by", userId);
+  const { data, error } = await topicQuery
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(rowToResearchTopic);

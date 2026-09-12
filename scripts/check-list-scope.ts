@@ -235,8 +235,14 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
      `const ownerOnly = await scopeToOwner("content_ir_kind_instance", scope);\nlet q = supabase.schema("content_ir").from("kind_instance").select("id");\nif (ownerOnly) q = q.eq("created_by", userId);`, 0],
     ["GREEN — a single-row read is not a list",
      `const q = await supabase.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId).maybeSingle();`, 0],
+    ["GREEN — nor is a single-row read that types its row",
+     `const q = await supabase.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId).maybeSingle<{ id: string }>();`, 0],
     ["GREEN — a write asserting ownership is not a list",
      `await supabase.schema("content_ir").from("kind_instance").update({ x: 1 }).eq("created_by", userId);`, 0],
+    ["GREEN — a ternary twin on the SAME table carries the organization filter",
+     `const rows = orgIds.length\n  ? db.from("kind_instance").select("id").in("organization_id", orgIds)\n  : db.from("kind_instance").select("id").eq("created_by", userId);`, 0],
+    ["RED   — a twin on a DIFFERENT table does not exempt anything",
+     `const a = db.from("other_table").select("id").in("organization_id", orgIds);\nconst b = db.schema("content_ir").from("kind_instance").select("id").eq("created_by", userId);`, 1],
     ["RED   — a bare table name two schemas disagree about is UNRESOLVED, never guessed",
      `const q = supabase.from("twins").select("id").eq("created_by", userId);`, 1],
   ];
@@ -352,7 +358,13 @@ async function main(): Promise<number> {
   return STRICT ? 1 : 0;
 }
 
-main().then((code) => process.exit(code)).catch((e) => {
+/**
+ * 🚨 `process.exit()` DISCARDS ANYTHING STILL IN THE STDOUT PIPE. When this guard grew a findings
+ * list longer than one pipe buffer, the last nine lines of a twenty-line list simply vanished into
+ * a redirect — the count said 20 and the reader could see 11. A guard that cannot be trusted to
+ * print what it found is worse than no guard. `exitCode` lets Node drain and leave on its own.
+ */
+main().then((code) => { process.exitCode = code; }).catch((e) => {
   console.error(`${C.r}✗${C.x} check:list-scope crashed: ${String(e)}`);
-  process.exit(1);
+  process.exitCode = 1;
 });

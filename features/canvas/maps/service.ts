@@ -33,6 +33,7 @@ import {
   starterMap,
   type MapListRow,
 } from "./types";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /** Columns the list needs. `content` comes along for the box/arrow counts. */
 const LIST_COLUMNS =
@@ -70,15 +71,20 @@ function toRow(raw: Record<string, unknown>): MapListRow {
 export async function fetchMapListPage(
   query: EntityListQuery,
   sort: EntityListSort,
+  scope?: ListScopeWord,
 ): Promise<EntityListPage<MapListRow>> {
   const userId = requireUserId();
+  // DD-137c / VISIBILITY-BY-CLASS §3.3: the `canvas_item` token is registered `organization`, so
+  // the maps list opens on the organization's maps. RLS is still the ceiling — this is only where
+  // the screen starts, and the other scope is one click away.
+  const ownerOnly = await scopeToOwner("canvas_item", scope);
   let q = supabase
     .schema("canvas")
     .from("canvas_items")
     .select(LIST_COLUMNS, { count: "exact" })
     .is("deleted_at", null)
-    .eq("user_id", userId)
     .eq("type", MAP_CANVAS_TYPE);
+  if (ownerOnly) q = q.eq("user_id", userId);
 
   if (query.archived === "active") q = q.eq("is_archived", false);
   else if (query.archived === "archived") q = q.eq("is_archived", true);
@@ -103,15 +109,18 @@ export async function fetchMapListPage(
 
 export async function fetchMapScopeCounts(
   query: EntityListQuery,
+  scope?: ListScopeWord,
 ): Promise<EntityScopeCounts> {
   const userId = requireUserId();
+  // The count and the page must agree, so they read the same registry word.
+  const ownerOnly = await scopeToOwner("canvas_item", scope);
   let q = supabase
     .schema("canvas")
     .from("canvas_items")
     .select("id", { count: "exact", head: true })
     .is("deleted_at", null)
-    .eq("user_id", userId)
     .eq("type", MAP_CANVAS_TYPE);
+  if (ownerOnly) q = q.eq("user_id", userId);
 
   if (query.archived === "active") q = q.eq("is_archived", false);
   else if (query.archived === "archived") q = q.eq("is_archived", true);
