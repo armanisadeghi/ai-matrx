@@ -1,5 +1,6 @@
 import { saveRules } from "../service";
 import { nextRuleId } from "../ruleIds";
+import { pushRuleHistory } from "../ruleHistory";
 import type { Rulebook, RulebookRule } from "../types";
 import {
   chosenProposal,
@@ -163,6 +164,17 @@ export function projectCheckup(opts: {
 
     // modify — the id never changes (audits cite it), everything else can.
     if (!proposal) continue;
+    // 🚨 THE PRIOR POSITION. The words being replaced here were the Expert's
+    // rule; the replacement was drafted by the Checkup. Keep what it replaces
+    // ON the rule, so the earlier position is still readable (Arman's
+    // expertise mandate, 2026-09-12 — dissent and earlier positions are
+    // retained, never overwritten out of existence).
+    if (proposal.statement.trim() !== (target.statement ?? "").trim()) {
+      pushRuleHistory(target, {
+        reason: "a Final Checkup suggestion you approved",
+        changedBy: "lane:masterwork_checkup",
+      });
+    }
     target.name = proposal.name;
     target.statement = proposal.statement;
     target.severity = proposal.severity;
