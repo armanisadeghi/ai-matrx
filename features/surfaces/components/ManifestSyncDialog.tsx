@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { toast } from "@/lib/toast";
 import { syncManifests } from "@/features/surfaces/services/surfaces.service";
 import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
@@ -22,13 +23,6 @@ type SyncResult = Awaited<ReturnType<typeof syncManifests>>;
 interface Props {
   onClose: () => void;
   onSynced: () => void;
-}
-
-function formatRecentAge(ageMs: number): string {
-  const minutes = Math.round(ageMs / 60_000);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.round(minutes / 60);
-  return `${hours}h`;
 }
 
 export function ManifestSyncDialog({ onClose, onSynced }: Props) {
@@ -255,7 +249,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                         {row.table} · {row.surfaceName} · {row.name}
                       </span>
                       <span className="shrink-0 text-muted-foreground">
-                        {formatRecentAge(row.ageMs)} ago
+                        {formatRelativeTime(Date.now() - row.ageMs)}
                       </span>
                     </div>
                   ))}

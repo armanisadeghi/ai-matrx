@@ -48,6 +48,7 @@
  * show (THE NOTHING-FAILS-SILENTLY LAW) and is captured to the error store.
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { Json } from "@/types/database.types";
@@ -112,7 +113,7 @@ function withSaveTimeout<T>(promise: Promise<T>, what: string): Promise<T> {
     const timer = setTimeout(() => {
       reject(
         new Error(
-          `${what} did not finish within ${SAVE_TIMEOUT_MS / 1000} seconds — the database or network is not responding. Nothing was confirmed saved; check your connection and try again.`,
+          `${what} did not finish within ${formatDurationMs(SAVE_TIMEOUT_MS, { style: "long" })} — the database or network is not responding. Nothing was confirmed saved; check your connection and try again.`,
         ),
       );
     }, SAVE_TIMEOUT_MS);

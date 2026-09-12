@@ -187,7 +187,7 @@ describe("a long ingest dialog is honest under time and under loss", () => {
       await jest.advanceTimersByTimeAsync(30_000);
     });
     expect(probe.run().overdue).toBe(false);
-    expect(probe.container.textContent).toContain("about 3 minutes");
+    expect(probe.container.textContent).toContain("about 3 min");
     expect(probe.container.textContent).not.toContain(THE_OLD_PROMISE);
 
     // 90 seconds — where the person gave up. Still honest, still working.
@@ -206,7 +206,7 @@ describe("a long ingest dialog is honest under time and under loss", () => {
     expect(text).toContain("This is taking longer than it should");
     expect(text).toContain("still running on the server");
     expect(text).toMatch(/\d+m \d+s so far/);
-    expect(text).not.toContain("about 3 minutes");
+    expect(text).not.toContain("about 3 min");
     // A slow run is not a failed run — the row never said so.
     expect(probe.run().status).toBe("running");
     expect(probe.run().error).toBeNull();

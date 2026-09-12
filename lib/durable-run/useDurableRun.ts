@@ -47,6 +47,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
@@ -142,15 +143,12 @@ export const DEFAULT_EXPECTED_MS = 60_000;
 export function describeExpected(ms: number): string {
   if (ms < 45_000) return "under a minute";
   if (ms < 90_000) return "about a minute";
-  return `about ${Math.round(ms / 60_000)} minutes`;
+  return `about ${formatDurationMs(ms, { style: "coarse" })}`;
 }
 
 /** "2m 57s" / "48s" — the honest clock a stuck-looking screen owes the reader. */
 export function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  return formatDurationMs(ms, { style: "compact", round: "down" });
 }
 
 /** Durable-row statuses that mean the work is still in flight. */
