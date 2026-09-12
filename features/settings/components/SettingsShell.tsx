@@ -10,6 +10,8 @@
 
 import { useCallback, useState } from "react";
 import { Check, Loader2, Settings as SettingsIcon } from "lucide-react";
+import { useSettingsControlSearch } from "../hooks/useSettingsSearch";
+import type { SettingsControlSearchHit } from "../search/controlSearch";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -82,8 +84,11 @@ function SettingsShellBody({
   const [activeTabId, setActiveTabId] = useState<string | null>(
     initialTabId ?? null,
   );
+  const [focusControlId, setFocusControlId] = useState(initialControlId);
+  const [overlayQuery, setOverlayQuery] = useState("");
 
   const { nodes: treeNodes, resolveTab } = useSettingsTree(isAdmin);
+  const controlResults = useSettingsControlSearch(overlayQuery, isAdmin);
 
   // Surface saved / saving status from the userPreferences slice meta.
   // Settings auto-save through the unified sync engine (debounced ~250ms +
@@ -97,6 +102,10 @@ function SettingsShellBody({
   // context so descendants (breadcrumbs, "open profile" buttons in
   // other tabs, etc.) can swap tabs in-place instead of route-pushing.
   const activateTab = useCallback((id: string) => setActiveTabId(id), []);
+  const activateControl = useCallback((hit: SettingsControlSearchHit) => {
+    setActiveTabId(hit.tabId);
+    setFocusControlId(hit.controlId);
+  }, []);
 
   // Mobile intentionally renders the purpose-built push-navigation drawer
   // instead of WindowPanel. Acknowledge that alternate visible surface so the
@@ -129,7 +138,7 @@ function SettingsShellBody({
         presentation="drawer"
         closeShell={onClose}
         setActiveTabId={activateTab}
-        focusControlId={initialControlId}
+        focusControlId={focusControlId}
       >
         <SettingsDrawerNav
           nodes={treeNodes}
@@ -160,7 +169,7 @@ function SettingsShellBody({
       presentation="window"
       closeShell={onClose}
       setActiveTabId={activateTab}
-      focusControlId={initialControlId}
+      focusControlId={focusControlId}
     >
       <WindowPanel
         title="Settings"
@@ -175,6 +184,10 @@ function SettingsShellBody({
             nodes={treeNodes}
             activeId={activeTabId}
             onActivate={setActiveTabId}
+            query={overlayQuery}
+            onQueryChange={setOverlayQuery}
+            hasSearchResults={controlResults.length > 0}
+            searchResults={overlayQuery && controlResults.length > 0 ? <OverlayControlSearchResults results={controlResults} onActivate={activateControl} /> : null}
           />
         }
         sidebarDefaultSize={240}
@@ -196,5 +209,29 @@ function SettingsShellBody({
         />
       </WindowPanel>
     </SettingsPresentationProvider>
+  );
+}
+
+function OverlayControlSearchResults({
+  results,
+  onActivate,
+}: {
+  results: SettingsControlSearchHit[];
+  onActivate: (hit: SettingsControlSearchHit) => void;
+}) {
+  return (
+    <div className="border-b border-border px-2 py-1" aria-label="Setting matches">
+      {results.map((result) => (
+        <button
+          key={result.id}
+          type="button"
+          onClick={() => onActivate(result)}
+          className="flex w-full flex-col rounded-sm px-2 py-1.5 text-left hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="text-sm text-foreground">{result.label}</span>
+          <span className="text-xs text-muted-foreground">{result.location}</span>
+        </button>
+      ))}
+    </div>
   );
 }
