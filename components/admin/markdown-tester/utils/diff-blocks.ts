@@ -26,7 +26,7 @@ export interface NormalizedBlock {
 export interface DiffCell {
   block: NormalizedBlock | null;
   status: CellStatus;
-  /** First differing byte index vs V2, or -1 if no drift. */
+  /** First differing CHARACTER index vs V2 (UTF-16 code units), or -1 if no drift. */
   firstDiffAt: number;
 }
 
@@ -115,7 +115,7 @@ function describeCell(
   }
   const baselineLen = baseline?.content.length ?? 0;
   const otherLen = cell.block?.content.length ?? 0;
-  return `${source.toUpperCase()} content drift at byte ${cell.firstDiffAt} (${otherLen} vs ${baselineLen} B)`;
+  return `${source.toUpperCase()} content drift at char ${cell.firstDiffAt} (${otherLen} vs ${baselineLen} chars)`;
 }
 
 function pairwiseByteEquality(

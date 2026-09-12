@@ -120,7 +120,7 @@ async function main(): Promise<void> {
         cases.push({
             componentKey: key,
             kind: (kd?.kind as string) ?? "unknown",
-            sourceBytes: (row.component_source as string).length,
+            sourceBytes: new TextEncoder().encode((row.component_source as string)).length,
             dataSource: first
                 ? `live content_ir.kind_instance ${first.id}`
                 : "live content_ir.kind_definition.sample_data",

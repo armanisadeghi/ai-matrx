@@ -334,7 +334,9 @@ function useLocalStorageManager(): UseLocalStorageManager {
     // assumed cap makes it negative, which `formatFileSize` renders as "—"
     // and `storageUsageBarWidth` clamps to a full bar — neither pretends to
     // a number it does not have.
-    const used = JSON.stringify(localStorage).length;
+    // UTF-8 bytes of exactly what "Download" exports; `.length` would be
+    // UTF-16 code units, which formatFileSize would then call bytes.
+    const used = new TextEncoder().encode(JSON.stringify(localStorage)).length;
     const remaining = 5 * 1024 * 1024 - used;
     return { used, remaining };
   }, []);
