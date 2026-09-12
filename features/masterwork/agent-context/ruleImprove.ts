@@ -260,9 +260,11 @@ export function applyRuleTidy(
   if (!next.name || !next.statement) {
     throw new Error("AI cleanup removed the rule name or the rule statement.");
   }
-  if (current.isPolicy && (!next.precondition.trim() || !next.nextAction.trim())) {
-    throw new Error("AI cleanup removed the decision rule's precondition or next action.");
-  }
+  // No second guard on the decision prose: a reply that CARRIES a decision
+  // shape has already been refused by `readPolicyResult` when either field is
+  // blank, and a reply that carries none leaves the form's own values exactly
+  // as they were — including the empty fields of a decision rule the Expert
+  // has only just toggled on and not yet written (Bugbot, round 6).
   return next;
 }
 

@@ -204,6 +204,28 @@ describe("rule improve keeps the decision shape (Bugbot on W58: a rewrite is of 
   });
 });
 
+describe("rule tidy on a decision rule the Expert has only just toggled on (Bugbot, round 6)", () => {
+  it("polishes the prose and leaves the still-empty decision fields empty — never a throw", () => {
+    const freshlyToggled: RulebookDraftSnapshot = {
+      mode: "edit",
+      rule_id: "R1",
+      ...SAVED_VALUES,
+      isPolicy: true,
+      precondition: "",
+      nextAction: "",
+    };
+    const result = coerceRuleImproveResult(REVISED, {
+      sections: SECTIONS,
+      fallbackSection: "G",
+    });
+    const next = applyRuleTidy(freshlyToggled, result);
+    expect(next.statement).toBe(REVISED.statement);
+    expect(next.isPolicy).toBe(true);
+    expect(next.precondition).toBe("");
+    expect(next.nextAction).toBe("");
+  });
+});
+
 describe("rule tidy contract (empty expert_input — the editor's Clean up with AI)", () => {
   it("polishes prose but mechanically freezes quote, severity, and section", () => {
     const result = coerceRuleImproveResult(REVISED, {
