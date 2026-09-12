@@ -28,6 +28,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { renameIntentFallback } from "@/components/official/item/renameIntentFallback";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   ContextMenuExtraItem,
@@ -237,9 +238,11 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
             icon: Pencil,
             intent: "rename",
             shortcutKey: "r",
-            // ItemRow intercepts `intent: "rename"` and drives inline edit;
-            // this no-op is the fallback for non-row consumers.
-            onSelect: () => {},
+            // ItemRow intercepts `intent: "rename"` and drives inline edit.
+            // This fallback runs ONLY on a host that has no inline rename, and
+            // it says so rather than looking like a working control — a silent
+            // `() => {}` here was a dead menu row (2026-09-11).
+            onSelect: renameIntentFallback("note"),
           },
           {
             id: "duplicate",

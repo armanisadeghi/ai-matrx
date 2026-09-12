@@ -267,6 +267,13 @@ if $STRICT; then
         # position; a `build*MenuSection` that calls one escapes it. Zero
         # violations at introduction (9 builders renamed), so a finding is new.
         "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)|pnpm check:menu-naming"
+        # THE LIVE-ITEM LAW (2026-09-11): a menu item that looks clickable and
+        # cannot act — no handler, an empty handler, `href: ""`, an empty
+        # submenu. The wrapper grade above it only ever checked plumbing props,
+        # so "no dead controls" read as certified when it had only been walked
+        # by hand. Two real violations found and fixed at introduction, so the
+        # tree is at zero and a finding is new.
+        "Menu items that cannot act (THE LIVE-ITEM LAW)|pnpm check:menu-live-items"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one
@@ -553,6 +560,13 @@ else
         # position; a `build*MenuSection` that calls one escapes it. Zero
         # violations at introduction (9 builders renamed), so a finding is new.
         "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)|pnpm check:menu-naming"
+        # THE LIVE-ITEM LAW (2026-09-11): a menu item that looks clickable and
+        # cannot act — no handler, an empty handler, `href: ""`, an empty
+        # submenu. The wrapper grade above it only ever checked plumbing props,
+        # so "no dead controls" read as certified when it had only been walked
+        # by hand. Two real violations found and fixed at introduction, so the
+        # tree is at zero and a finding is new.
+        "Menu items that cannot act (THE LIVE-ITEM LAW)|pnpm check:menu-live-items"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one

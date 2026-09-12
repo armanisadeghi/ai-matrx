@@ -49,23 +49,36 @@ const SIZE: Record<
   lg: { row: "h-10", text: "text-sm", kebab: "h-7 w-7", icon: "h-4 w-4" },
 };
 
-/** Replace `intent: "rename"` command actions with the host's rename trigger. */
+/**
+ * Replace `intent: "rename"` command actions with the host's rename trigger —
+ * or REMOVE them when this row has no `rename` prop at all.
+ *
+ * 🚨 The removal half is not tidiness. Without it, a row that renders a menu
+ * carrying `intent: "rename"` but passes no `rename` handed the user a live
+ * "Rename" row whose click set `pendingRenameRef`, flipped `editing`, and then
+ * rendered the plain label again because `editing && rename` is false —
+ * a control that looks clickable and does nothing (found by the LIVE-ITEM LAW,
+ * 2026-09-11). `ctx.showRename === false` asks every consumer to remember;
+ * this is the one place that KNOWS. Absent beats dead.
+ */
 function mapRenameIntent(
   config: ItemMenuConfig,
-  requestRename: () => void,
+  requestRename: (() => void) | null,
 ): ItemMenuConfig {
-  const mapEntry = (entry: ItemMenuEntry): ItemMenuEntry => {
+  const mapEntry = (entry: ItemMenuEntry): ItemMenuEntry | null => {
     if (isSubmenu(entry)) {
       return { ...entry, sections: entry.sections.map(mapSection) };
     }
     if (isCommand(entry) && entry.intent === "rename") {
-      return { ...entry, onSelect: requestRename };
+      return requestRename ? { ...entry, onSelect: requestRename } : null;
     }
     return entry;
   };
   const mapSection = (section: ItemMenuSection): ItemMenuSection => ({
     ...section,
-    items: section.items.map(mapEntry),
+    items: section.items
+      .map(mapEntry)
+      .filter((e): e is ItemMenuEntry => e !== null),
   });
   return { ...config, sections: config.sections.map(mapSection) };
 }
@@ -103,9 +116,14 @@ export function ItemRow({
   // a static config is still resolved lazily (on open).
   const mappedMenu: ItemMenuConfigInput | undefined = menu
     ? () =>
-        mapRenameIntent(resolveItemMenuConfig(menu), () => {
-          pendingRenameRef.current = true;
-        })
+        mapRenameIntent(
+          resolveItemMenuConfig(menu),
+          canRename
+            ? () => {
+                pendingRenameRef.current = true;
+              }
+            : null,
+        )
     : undefined;
 
   // Radix returns focus to the trigger on close; when a rename was requested,

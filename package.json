@@ -65,6 +65,8 @@
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
     "check:context-menu": "tsx scripts/check-context-menu.ts",
     "check:menu-naming": "tsx scripts/check-context-menu.ts --strict --population=naming",
+    "check:menu-live-items": "tsx scripts/check-context-menu.ts --strict --population=dead-item",
+    "check:menu-live-items:self-test": "tsx scripts/check-context-menu.ts --self-test",
     "check:picker-add": "tsx scripts/check-picker-custom-entry.ts",
     "check:thinking-leak": "tsx scripts/check-thinking-leak.ts",
     "check:thinking-leak:self-test": "tsx scripts/check-thinking-leak.ts --self-test",
