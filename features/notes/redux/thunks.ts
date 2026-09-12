@@ -16,7 +16,6 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { TablesUpdate } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import {
   isMissingSessionError,
@@ -30,11 +29,14 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
-import { createFolder, createNote } from "../service/notesService";
+import { createFolder, createNote, persistNoteUpdate } from "../service/notesService";
 import {
   hydrateNoteContextLinks,
-  syncNoteContextLinks,
 } from "../service/noteContextAssociations";
+import {
+  NoteContextPartialSaveError,
+  NoteUpdateConflictError,
+} from "../service/noteSaveErrors";
 import {
   noteSaveErrorMessage,
   toastNoteWriteBlocked,
@@ -42,7 +44,7 @@ import {
   reportNoteSaveFailure,
   NOTE_READONLY_DELETE_MESSAGE,
 } from "../utils/writeErrors";
-import type { FolderReference, Note, CreateNoteInput } from "../types";
+import type { FolderReference, Note, CreateNoteInput, UpdateNoteInput } from "../types";
 import type {
   NoteRecord,
   NoteScopeAssignment,
@@ -66,7 +68,6 @@ import {
   markTabInteraction,
   setNoteField,
 } from "./slice";
-import { serverMatchesAttempt } from "../utils/saveVerification";
 import { scopeToOwner } from "@/lib/list-scope";
 
 // ---------------------------------------------------------------------------
@@ -274,7 +275,7 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
 /**
  * Save dirty fields with atomic concurrency check.
  * - Reads note from state, checks _dirty and _dirtyFields
- * - UPDATE … WHERE updated_at = local (0 rows ⇒ conflict / RLS deny)
+ * - Delegates revision CAS and association settlement to the Notes service
  * - markNoteSaved gets a savedSnapshot so mid-save keystrokes stay dirty
  * - Label change: dispatch custom event "notes:labelChange"
  */
@@ -311,7 +312,7 @@ export const saveNote = createAsyncThunk<void, string>(
     }
 
     // Build update object from only dirty fields (snapshot for mid-save safety)
-    const updates: Record<string, unknown> = {};
+    const updates: UpdateNoteInput = {};
     let projectId: string | null | undefined;
     let taskId: string | null | undefined;
     const savedSnapshot: Partial<
@@ -325,8 +326,20 @@ export const saveNote = createAsyncThunk<void, string>(
         projectId = record.project_id;
       } else if (field === "task_id") {
         taskId = record.task_id;
-      } else {
-        updates[field] = record[field];
+      } else if (field === "content") {
+        updates.content = record.content;
+      } else if (field === "label") {
+        updates.label = record.label;
+      } else if (field === "folder_id") {
+        updates.folder_id = record.folder_id;
+      } else if (field === "tags") {
+        updates.tags = record.tags;
+      } else if (field === "visibility") {
+        updates.visibility = record.visibility;
+      } else if (field === "folder_name" || field === "organization_id") {
+        const error = new Error("A persisted note can only move through an admitted folder ID and cannot change organization.");
+        failNoteSave(dispatch, getState, noteId, error.message);
+        throw error;
       }
       savedSnapshot[field] = record[field];
     }
@@ -337,86 +350,53 @@ export const saveNote = createAsyncThunk<void, string>(
     dispatch(recordNoteWriteAttempt({ id: noteId, values: savedSnapshot }));
     dispatch(markNoteSaving(noteId));
 
-    // Atomic optimistic lock via updated_at predicate (OLD row; trigger only
-    // mutates NEW). 0 rows ⇒ conflict or RLS deny.
-    let updatedAt = record.updated_at;
-    if (Object.keys(updates).length > 0) {
-      let query = supabase
-        .schema("workbench")
-        .from("notes")
-        .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
-        .eq("id", noteId);
-
-      if (record.updated_at) {
-        query = query.eq("updated_at", record.updated_at);
+    try {
+      const receipt = await persistNoteUpdate(noteId, {
+        ...updates,
+        ...(projectId === undefined ? {} : { project_id: projectId }),
+        ...(taskId === undefined ? {} : { task_id: taskId }),
+      }, {
+        expectedVersion: record.version,
+        expectedOrganizationId: record.organization_id,
+      });
+      if (receipt.postSaveRecoveryError) {
+        console.error("Saved note context links need a cache recovery", receipt.postSaveRecoveryError);
       }
 
-      const { data, error } = await query.select("updated_at").maybeSingle();
-
-      if (error) {
-        failNoteSave(dispatch, getState, noteId, noteSaveErrorMessage(error));
+      clearNoteWriteBlockedToast(noteId);
+      dispatch(
+        markNoteSaved({
+          id: noteId,
+          updatedAt: receipt.note.updated_at ?? undefined,
+          version: receipt.note.version,
+          savedSnapshot,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof NoteContextPartialSaveError) {
+        const acknowledgedSnapshot = { ...savedSnapshot };
+        for (const field of error.failedFields) {
+          delete acknowledgedSnapshot[field];
+        }
+        dispatch(markNoteSaved({
+          id: noteId,
+          updatedAt: error.actualStoredNote.updated_at ?? undefined,
+          version: error.actualStoredNote.version,
+          savedSnapshot: acknowledgedSnapshot,
+        }));
+        if (error.receipt.postSaveRecoveryError) {
+          console.error("Partial note context save needs a cache recovery", error.receipt.postSaveRecoveryError);
+        }
+      }
+      if (error instanceof NoteUpdateConflictError) {
+        dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
         throw error;
       }
-
-      if (!data) {
-        const { data: stillThere } = await supabase
-          .schema("workbench")
-          .from("notes")
-          .select("updated_at, content, label")
-          .eq("id", noteId)
-          .maybeSingle();
-
-        if (!stillThere) {
-          const failed = operationFailed(
-            "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
-          );
-          failNoteSave(dispatch, getState, noteId, failed.message);
-          throw failed;
-        }
-
-        // Check the ACTUAL server row before crying conflict: if it already
-        // holds exactly what we tried to write, only our cached `updated_at`
-        // was stale. Nobody overwrote the user — adopt the timestamp and move
-        // on rather than raising a conflict prompt.
-        if (serverMatchesAttempt(stillThere, savedSnapshot)) {
-          console.warn(
-            "[saveNote] stale updated_at recovered — server row already matches this write for",
-            noteId,
-          );
-          updatedAt = stillThere.updated_at;
-        } else {
-          const conflictMsg =
-            "Conflict: note was modified on another device or tab. Please refresh.";
-          dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
-          throw new Error(conflictMsg);
-        }
-      } else {
-        updatedAt = data.updated_at;
-      }
-    }
-
-    try {
-      await syncNoteContextLinks({
-        noteId,
-        organizationId: record.organization_id,
-        projectId,
-        taskId,
-      });
-    } catch (error) {
       const friendly =
         error instanceof Error ? error.message : "Could not save note context.";
       failNoteSave(dispatch, getState, noteId, friendly);
       throw error;
     }
-
-    clearNoteWriteBlockedToast(noteId);
-    dispatch(
-      markNoteSaved({
-        id: noteId,
-        updatedAt: updatedAt ?? undefined,
-        savedSnapshot,
-      }),
-    );
 
     // Dispatch label change event if label was dirty
     if (hasLabelChange) {

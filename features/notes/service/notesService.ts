@@ -24,7 +24,6 @@ import {
   syncNoteContextLinks,
 } from "./noteContextAssociations";
 import {
-  NoteContextLinkPartialError,
   NoteContextPartialSaveError,
   type NoteSaveReceipt,
   NoteUpdateConflictError,
@@ -279,14 +278,33 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
     "Content length:",
     content.length,
   );
-  await syncNoteContextLinks({
+  const contextSettlement = await syncNoteContextLinks({
     noteId: data.id,
     organizationId,
     projectId: input.project_id,
     taskId: input.task_id,
   });
-  const [note] = await hydrateNoteContextLinks([data]);
-  return note;
+  const note: Note = {
+    ...data,
+    project_id: contextSettlement.succeededFields.includes("project_id")
+      ? input.project_id ?? null
+      : null,
+    task_id: contextSettlement.succeededFields.includes("task_id")
+      ? input.task_id ?? null
+      : null,
+  };
+  const receipt: NoteSaveReceipt = {
+    note,
+    databaseWrite: "saved",
+    ...contextSettlement,
+  };
+  if (receipt.failedFields.length > 0) {
+    throw new NoteContextPartialSaveError(receipt);
+  }
+  if (receipt.postSaveRecoveryError) {
+    console.error("Created note context links need a cache recovery", receipt.postSaveRecoveryError);
+  }
+  return receipt.note;
 }
 
 /**
@@ -440,44 +458,29 @@ export async function persistNoteUpdate(
     );
   }
 
-  const storedNote: Note = {
-    ...data,
-    project_id: projectId === undefined ? priorStoredNote.project_id : projectId,
-    task_id: taskId === undefined ? priorStoredNote.task_id : taskId,
-  };
-  try {
-    await syncNoteContextLinks({ noteId: id, organizationId, projectId, taskId });
-  } catch (error) {
-    if (error instanceof NoteContextLinkPartialError) {
-      const partialStoredNote: Note = {
-        ...data,
-        project_id: error.succeededFields.includes("project_id")
-          ? projectId ?? null
-          : priorStoredNote.project_id,
-        task_id: error.succeededFields.includes("task_id")
-          ? taskId ?? null
-          : priorStoredNote.task_id,
-      };
-      throw new NoteContextPartialSaveError({
-        databaseWrite,
-        actualStoredNote: partialStoredNote,
-        succeededFields: error.succeededFields,
-        failedFields: error.failedFields,
-        safeCauses: error.safeCauses,
-      });
-    }
-    throw error;
-  }
-  return {
-    note: storedNote,
+  const contextSettlement = await syncNoteContextLinks({
+    noteId: id,
+    organizationId,
+    projectId,
+    taskId,
+  });
+  const receipt: NoteSaveReceipt = {
+    note: {
+      ...data,
+      project_id: contextSettlement.succeededFields.includes("project_id")
+        ? projectId ?? null
+        : priorStoredNote.project_id,
+      task_id: contextSettlement.succeededFields.includes("task_id")
+        ? taskId ?? null
+        : priorStoredNote.task_id,
+    },
     databaseWrite,
-    succeededFields: projectId === undefined && taskId === undefined ? [] : [
-      ...(projectId === undefined ? [] : ["project_id" as const]),
-      ...(taskId === undefined ? [] : ["task_id" as const]),
-    ],
-    failedFields: [],
-    safeCauses: {},
+    ...contextSettlement,
   };
+  if (receipt.failedFields.length > 0) {
+    throw new NoteContextPartialSaveError(receipt);
+  }
+  return receipt;
 }
 
 /** Temporary compatibility adapter while direct editors migrate to receipts. */
