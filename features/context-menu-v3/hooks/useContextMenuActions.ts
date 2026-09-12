@@ -58,6 +58,8 @@ import {
 } from "@/lib/redux/slices/diffCompareSlice";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useOpenFindReplace } from "@/features/overlays/openers/findReplace";
+import { useOpenReferencePicker } from "@/features/overlays/openers/referencePicker";
+import type { ReferencePick } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 import { useOpenContextAssignment } from "@/features/overlays/openers/contextAssignment";
 import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
 import { useOpenStateViewerOverlay } from "@/features/overlays/openers/adminStateAnalyzer";
@@ -272,6 +274,8 @@ export interface ContextMenuActions {
   handleEntrySelect: (entry: AgentMenuEntry) => void;
   handleDelete: () => Promise<void>;
   handleFind: () => void;
+  /** "Insert reference…" (editable) / "Copy reference…" (read-only). */
+  handleInsertReference: () => void;
   handleAttach: () => void;
   handleShare: () => void;
   handleInspectValues: () => void;
@@ -440,6 +444,7 @@ export function useContextMenuActions(
   const quickActions = useQuickActions();
   const openDiffWindow = useOpenDiffViewerWindow();
   const openFindReplace = useOpenFindReplace();
+  const openReferencePicker = useOpenReferencePicker();
   const openContextAssignment = useOpenContextAssignment();
   const openShareModalWindow = useOpenShareModalWindow();
   const openStateViewer = useOpenStateViewerOverlay();
@@ -921,6 +926,60 @@ export function useContextMenuActions(
     });
   };
 
+  // Add a reference: the picker returns the canonical minified fence; an
+  // editable surface gets it inserted at the caret on its own paragraph, any
+  // other surface (or a "Copy" choice inside the picker) gets it on the
+  // clipboard — never a silent no-op.
+  const canInsertReference =
+    isEditable && (Boolean(editorId) || Boolean(getTextarea));
+  const copyReference = (pick: ReferencePick) => {
+    void navigator.clipboard.writeText(pick.fence).then(
+      () =>
+        toast({
+          title: "Reference copied",
+          description: pick.title
+            ? `Paste it anywhere to link "${pick.title}".`
+            : "Paste it anywhere to render the link.",
+        }),
+      (err) => {
+        console.error("[ContextMenuV3] reference copy failed", err);
+        showManualCopy({ text: pick.fence, title: "Copy the reference" });
+      },
+    );
+  };
+  const insertReference = (pick: ReferencePick) => {
+    if (editorId && insertTextAtCursor(editorId, `\n${pick.fence}\n`)) {
+      onContentInserted?.();
+      return;
+    }
+    const textarea = editorId ? null : getTextarea?.();
+    if (textarea) {
+      const before = textarea.value.slice(0, textarea.selectionStart);
+      const after = textarea.value.slice(textarea.selectionEnd);
+      const lead = before.length === 0 || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+      const tail = after.length === 0 || after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+      if (insertTextAtTextareaCursor(textarea, `${lead}${pick.fence}${tail}`)) {
+        onContentInserted?.();
+        return;
+      }
+    }
+    toast({
+      title: "Copied instead",
+      description: "The editor could not take the insert, so the reference is on your clipboard.",
+    });
+    copyReference(pick);
+  };
+  const handleInsertReference = () => {
+    props.suppressSelectionRestore();
+    openReferencePicker({
+      mode: canInsertReference ? "insert" : "copy",
+      onPicked: (pick) => {
+        if (pick.delivery === "insert" && canInsertReference) insertReference(pick);
+        else copyReference(pick);
+      },
+    });
+  };
+
   const handleAttach = () => {
     if (!entity) return;
     openContextAssignment({
@@ -1145,6 +1204,7 @@ export function useContextMenuActions(
     handleEntrySelect,
     handleDelete,
     handleFind,
+    handleInsertReference,
     handleAttach,
     handleShare,
     handleInspectValues,
