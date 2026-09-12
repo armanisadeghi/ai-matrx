@@ -17,7 +17,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { createInstanceFull } from "../create-instance-full";
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type {
   AgentType,
   VariableDefinition,
@@ -29,6 +29,7 @@ import type {
 } from "@/features/agents/types/instance.types";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { hasField } from "@/features/agents/redux/shared/field-flags";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { executeInstance } from "./execute-instance.thunk";
 
 import { generateConversationId } from "../utils/ids";
@@ -224,6 +225,24 @@ export const createManualInstance = createAsyncThunk<
   } = args;
 
   const conversationId = providedConversationId ?? generateConversationId();
+
+  // Execution-mode instances must snapshot a complete agent payload. Most
+  // launches pass through launchAgentExecution's preload, but cold resume and
+  // several shared hosts call this canonical factory directly. On a fresh
+  // page those callers may only have the list/minimal row, which previously
+  // seeded an empty base model before loadConversation hydrated the transcript.
+  // Builder/manual mode deliberately keeps its live, possibly-unsaved Redux
+  // definition and must never refetch over it.
+  const preSnapshotState = getState() as RootState;
+  const preSnapshotAgent = preSnapshotState.agentDefinition.agents?.[agentId];
+  if (
+    apiEndpointMode !== "manual" &&
+    preSnapshotAgent &&
+    !hasField(preSnapshotAgent._loadedFields, "modelId")
+  ) {
+    await (dispatch as AppDispatch)(fetchAgentExecutionFull(agentId)).unwrap();
+  }
+
   const state = getState() as RootState;
 
   const snapshot = readAgentSnapshot(state, agentId);

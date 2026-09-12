@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-09-08`
+**Last updated:** `2026-09-12`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -420,7 +420,7 @@ model overrides.
 - **Every conversation START sends three required fields: `conversation_id` (we mint it, always), `is_new`, `store`.** `store:false` is the ONLY thing that makes a run ephemeral — omitting the id and sending `is_new:false` is a 422 from the server and a throw from `buildAgentStartLifecycleFields`. The id is our correlation handle, so concurrent sends can be told apart. Continue calls (`/ai/conversations/{id}`) are exempt: the id is in the path. Server contract: `/Users/armanisadeghi/code/aidream/aidream/services/conversation_context/FEATURE.md` § "Starting a conversation".
 - **Wire / stream / DB types are never hand-mirrored.** Python → `types/python-generated/api-types.ts` + `stream-events.ts`; DB → `types/database.types.ts`. Alias with `components["schemas"]["…"]`. Hitlist: `pnpm generate:type-drift-hitlists` → `docs/type-drift/generated/`. Invoke the **`type-safety`** skill before adding or "fixing" a type at a data boundary.
 - **`BackendChannel` lives in `resolve-base-url.ts` only.** `RequestRouting.channel` must use that type — never re-declare the union (a stale copy already dropped `local-runtime`).
-- **`agentId` is read once at instance creation.** Do not re-read during execution. If the agent definition changes mid-run, the instance must not notice.
+- **`agentId` is read once at instance creation.** `createManualInstance` loads the full execution payload before every non-manual snapshot when only a list/minimal row is present, so cold resume and direct shared hosts cannot seed an empty base model. Builder/manual mode preserves its live, possibly-unsaved Redux definition and never performs that preload. Do not re-read during execution; if the definition changes mid-run, the instance must not notice.
 - **Builder and Runner are not the same payload shape.** Builder ships the full definition; Runner ships only the ID. If you add a field to the agent definition, both paths must be updated — Runner needs server-side handling, Builder needs client-side bundling.
 - **Shortcuts and Apps pin to version.** `useLatest: false` + `agentVersionId` is the frozen case. Breaking the version contract breaks every embedded invocation silently.
 - **The stream is never paused for widget tools.** Fast + fire-and-forget. Non-widget delegated tools do pause.
@@ -441,6 +441,8 @@ model overrides.
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+
+- `2026-09-12` — **Cold conversation resume snapshots the agent's real model and settings.** `createManualInstance` now guarantees `agx_get_execution_full` has populated a list/minimal agent before every execution-mode instance snapshot, covering `/chat/[conversationId]`, Masterwork, floating history windows, and every other direct consumer of the canonical factory. Manual Agent Builder instances remain cache-independent and never refetch over unsaved definition edits. Guard: `create-manual-instance-payload.test.ts` proves both sides.
 
 - `2026-09-12` — **A first Code chat turn promotes the browser to its durable deep link only after the conversation row is readable.** `AgentRunnerPage` now uses the shared `useConversationRoutePromotion` primitive for its initial-send path as well as fork/retry navigation. The Code workspace supplies its existing URL builder, so promotion retains workspace state (`view=sandboxes`, `chat=1`, selected agent, and the rest of the query) while adding the committed `conversationId`; a client-minted draft id never reaches the URL. The route primitive reads the latest builder through React's effect-event contract, so normal renders do not cancel an in-flight persistence wait. Guard: `hooks/useConversationRoutePromotion.test.tsx` exercises the pending barrier and the preserved Code route.
 
