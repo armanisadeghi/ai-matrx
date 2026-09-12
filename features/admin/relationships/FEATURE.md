@@ -78,7 +78,8 @@ resource/exposure/deleted filters, debounced search, page size, and refresh gene
 The existing super-admin RPC owns ordering and access; the table does not locally
 filter or sort an incomplete source. Scrolling uses the organization/user
 `tables.pagination` policy, with an explicit Load more/Retry control and an announced
-manual recovery when configuration is unavailable. Initial rendering never drains the source.
+manual recovery when configuration is unavailable. Initial rendering never drains the source. On narrow screens, the page can scroll
+past its summary while the table retains a usable bounded scroll area.
 
 ## Data model (all via `public.` SECURITY DEFINER RPCs, each re-checks `is_super_admin()`)
 

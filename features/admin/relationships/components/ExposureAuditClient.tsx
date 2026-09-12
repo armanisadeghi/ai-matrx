@@ -437,7 +437,7 @@ export function ExposureAuditClient() {
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col gap-3">
+    <section className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto sm:overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-lg font-semibold">
@@ -576,7 +576,7 @@ export function ExposureAuditClient() {
         <span>{policy.notice}</span>
         {policy.organizationId ? <Button size="sm" variant="ghost" onClick={policy.refresh}>Retry preferences</Button> : null}
       </div> : null}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="h-96 min-h-96 shrink-0 overflow-hidden sm:h-auto sm:min-h-0 sm:flex-1">
         <NonEditableContextMenu
           sourceFeature="admin"
           contentSource={{ type: "raw" }}
