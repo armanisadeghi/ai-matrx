@@ -182,10 +182,16 @@ function DevHints() {
       </summary>
       <ul className="ml-4 mt-2 list-disc space-y-1">
         <li>
-          Auto-login bypass:{" "}
+          Auto-login, two steps — no credential ever enters a URL. In a shell in
+          this checkout:{" "}
           <code className="rounded bg-background px-1">
-            /api/dev-login?token=$DEV_LOGIN_TOKEN&amp;next=/tests/extension-bridge
+            openssl rand -hex 16 &gt; .dev-login-nonce
+          </code>{" "}
+          then open{" "}
+          <code className="rounded bg-background px-1">
+            /api/dev-login?nonce=&lt;that value&gt;&amp;next=/tests/extension-bridge
           </code>
+          . The nonce is consumed by that one request.
         </li>
         <li>
           Bearer mode uses the signed-in user's Supabase access token and omits
