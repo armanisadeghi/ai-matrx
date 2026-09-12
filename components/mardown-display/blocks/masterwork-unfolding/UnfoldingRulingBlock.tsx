@@ -15,7 +15,10 @@
 import { AlertTriangle, Gavel } from "lucide-react";
 
 import type { UnfoldingRulingData } from "@/features/content-ir/kinds/masterwork-unfolding";
-import { describeLedgerEntry } from "@/features/content-ir/kinds/masterwork-unfolding";
+import {
+  describeLedgerEntry,
+  formatConfidence,
+} from "@/features/content-ir/kinds/masterwork-unfolding";
 
 export interface UnfoldingRulingBlockProps {
   serverData?: unknown;
@@ -47,7 +50,10 @@ export function UnfoldingRulingBlock({ serverData }: UnfoldingRulingBlockProps) 
         </p>
         <p className="text-[11px] text-muted-foreground">
           {[
-            ruling.confidence ? `Confidence ${ruling.confidence}` : null,
+            // 0-1 on the wire, a percentage to a person — never a bare 0.7.
+            ruling.confidence !== null && ruling.confidence !== undefined
+              ? `Confidence ${formatConfidence(ruling.confidence)}`
+              : null,
             ruling.committedAtStep !== null
               ? `committed at step ${ruling.committedAtStep}`
               : null,

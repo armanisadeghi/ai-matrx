@@ -117,10 +117,9 @@ export const unfoldingRulingKindSchema: KindSchema = {
       description: "What the desk concluded — the answer it commits to.",
     },
     confidence: {
-      type: "union",
-      scalars: ["string", "number"],
+      type: "number",
       description:
-        "How sure the desk is: a 0-1 number, or a word the desk used. Rendered honestly either way.",
+        "How sure the desk is, 0-1. The server's field is a float with that range (`UnfoldingRuling.confidence`, aidream/kinds/masterwork.py) — rendered as a percentage, never as a bare 0.7.",
     },
     committed_at_step: {
       type: "number",
@@ -130,7 +129,7 @@ export const unfoldingRulingKindSchema: KindSchema = {
     dangerous_branches_considered: {
       type: "json[]",
       description:
-        "The dangerous branches the desk weighed: a name, or {branch, why}. An empty list means none were considered — itself a safety fact.",
+        "The dangerous branches the desk weighed, each {branch: the path, named; why: what made it dangerous} — the server's `DangerousBranch`. An empty list means none were considered, itself a safety fact.",
     },
     additionalDetails: { type: "inline_object", open: true, fields: {} },
   },
@@ -182,7 +181,12 @@ export interface CaseDisclosureData {
   ledger: CaseLedger;
 }
 
-/** One dangerous branch, as the judge scores it. */
+/**
+ * One dangerous branch, as the judge scores it — the server's `DangerousBranch`
+ * (`aidream/kinds/masterwork.py`): the path, NAMED, and what made it dangerous.
+ * A bare string is not one: the reason is the half that tells "considered" from
+ * "committed", which is what the Audition scores.
+ */
 export interface DangerousBranch {
   branch: string;
   why: string | null;
@@ -190,8 +194,11 @@ export interface DangerousBranch {
 
 export interface UnfoldingRulingData {
   diagnosis: string;
-  /** Verbatim, already formatted for a reader ("high", "72%"). */
-  confidence: string | null;
+  /**
+   * 0-1, exactly as the server types it (`confidence: float`, ge 0, le 1).
+   * Render it with `formatConfidence` — a reader is shown "70%", never 0.7.
+   */
+  confidence: number | null;
   committedAtStep: number | null;
   path: CaseLedger;
   dangerousBranches: DangerousBranch[];
@@ -214,6 +221,24 @@ function strings(value: unknown): string[] {
   return value
     .map((item) => text(item))
     .filter((item): item is string => item !== null);
+}
+
+/**
+ * `confidence` is a 0-1 float server-side and NOTHING else. It used to be read
+ * as `string | number` here while `UnfoldingRuling.confidence` was already
+ * `float` with `ge=0, le=1` — so the union described a payload the server
+ * cannot produce, and a reader could be shown a raw `0.7`. A value outside the
+ * range is a non-conforming payload and reads as absent rather than being
+ * quietly clamped into a confidence nobody declared.
+ */
+function readConfidence(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return value >= 0 && value <= 1 ? value : null;
+}
+
+/** The ONE way a confidence reaches a person: "70%". */
+export function formatConfidence(value: number | null): string | null {
+  return value === null ? null : `${Math.round(value * 100)}%`;
 }
 
 function readRequest(value: unknown): CaseRequest {
@@ -278,24 +303,16 @@ export function readUnfoldingRuling(
   // A ruling with no diagnosis is not a ruling — render nothing rather than an
   // empty verdict card claiming the desk decided something.
   if (!diagnosis) return undefined;
-  const rawConfidence = value.confidence;
-  const confidence =
-    typeof rawConfidence === "number" && Number.isFinite(rawConfidence)
-      ? rawConfidence <= 1
-        ? `${Math.round(rawConfidence * 100)}%`
-        : `${rawConfidence}`
-      : text(rawConfidence);
+  const confidence = readConfidence(value.confidence);
   const branches: DangerousBranch[] = Array.isArray(
     value.dangerous_branches_considered,
   )
     ? value.dangerous_branches_considered
         .map((item): DangerousBranch | null => {
-          const name = text(item);
-          if (name) return { branch: name, why: null };
           if (!isRecordValue(item)) return null;
-          const branch = text(item.branch) ?? text(item.name);
+          const branch = text(item.branch);
           if (!branch) return null;
-          return { branch, why: text(item.why) ?? text(item.note) };
+          return { branch, why: text(item.why) };
         })
         .filter((item): item is DangerousBranch => item !== null)
     : [];
@@ -396,7 +413,9 @@ export function unfoldingRulingMarkdown(value: Record<string, unknown>): string 
     "## The ruling",
     data.diagnosis,
     [
-      data.confidence ? `Confidence: ${data.confidence}` : null,
+      data.confidence !== null
+        ? `Confidence: ${formatConfidence(data.confidence)}`
+        : null,
       data.committedAtStep !== null
         ? `Committed at step ${data.committedAtStep}`
         : null,
