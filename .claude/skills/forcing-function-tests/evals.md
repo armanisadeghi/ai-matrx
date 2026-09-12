@@ -88,7 +88,7 @@ assertions there."
 |---|---|---|---|
 | R1 | `a615a545a5caec936` | PASS | Literal `countBrandId` / `countState.search` assertions. 5-mutant jest matrix in scratch. Found the old test already catches the reported bug: "My lines add nothing for the reported bug." |
 | R2 | `a90b65e642b470a33` | PASS | Literal `toMatchObject` on the count call; 6 mutants; named the self-oracle blind spot. |
-| R3 | `a73a4f0bc9bf22594` | PASS | Literals; showed the old test misses "shared adapter sets `search: ""`". |
+| R3 | `a73a4f0bc9bf22594` | PASS | Literals; its mutation matrix marks the mutant labelled *Shared adapter sets search: ""* **pass (missed)** against the existing test, and its test comment reads, verbatim, *"adapter as its own oracle lets a search-dropping adapter pass."* (Corrected 2026-09-12: the earlier note quoted the matrix row label as if it were a sentence of prose.) |
 
 ### GREEN (with skill) — 3/3 meet C1–C7; 0/3 cite the skill by name
 
