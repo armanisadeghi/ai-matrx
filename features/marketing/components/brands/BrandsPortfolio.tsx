@@ -31,7 +31,7 @@ import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
