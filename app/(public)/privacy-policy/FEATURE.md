@@ -18,7 +18,18 @@ The extension policy must describe the exact current packaged manifest and fresh
 
 Any Matrx Extend permission or privacy-default change updates this page in the same release. The canonical submission copy remains in `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHROME-WEB-STORE.md`.
 
+## Connected-provider invariant
+
+The general policy and terms name the real data boundary for every reviewed provider integration.
+For Amazon Selling Partner API, they state the initial non-restricted roles, seller-authorized OAuth
+boundary, permitted listing/inventory/order uses, credential custody, infrastructure subprocessors,
+retention/disconnection path, and the prohibitions on resale, advertising, unrelated cross-seller use,
+and generalized-model training. Any added role or Restricted Data Token access updates both pages
+before the provider amendment is submitted.
+
 ## Change log
+
+- 2026-09-12: Added the Amazon Selling Partner data boundary and aligned the terms with AI Matrx's public solution-provider role before production-access registration; no Restricted role or buyer PII claim was added.
 
 - 2026-08-30: Repaired the shared public/legal mobile presentation: legal documents now participate in the single page scroll so the footer follows the full document, mobile gutters and extension-policy heading scale fit narrow screens, and anonymous guest sessions no longer receive account-only feedback/new-feature promotion chrome.
 

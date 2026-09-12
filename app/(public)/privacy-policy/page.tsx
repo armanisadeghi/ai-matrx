@@ -7,7 +7,7 @@ const PrivacyPolicyPage = () => {
       <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>Privacy Policy</h1>
         <p>
-          <strong>Last updated:</strong> August 17, 2026
+          <strong>Last updated:</strong> September 12, 2026
         </p>
         <p>
           AI Matrx is a technology product owned and operated by{" "}
@@ -326,6 +326,25 @@ const PrivacyPolicyPage = () => {
           to, or when required by law.
         </p>
 
+        <h3>2.10 Amazon Selling Partner data (optional)</h3>
+        <p>
+          If you connect an Amazon selling account, AI Matrx accesses Amazon
+          Selling Partner API data only after you authorize the connection
+          through Amazon&rsquo;s OAuth workflow. The initial integration uses the
+          Product Listing and Inventory and Order Tracking roles to create and
+          maintain your listings, synchronize quantities across channels, and
+          show non-restricted order information such as order identifiers, line
+          items, status, and totals. It does not request Restricted roles or
+          Restricted Data Tokens and does not obtain buyer names, addresses, or
+          contact details through other means.
+        </p>
+        <p>
+          Amazon Information is isolated to your organization and used only to
+          provide the features you request. We do not sell it, use it for
+          advertising, combine it across sellers for unrelated purposes, or use
+          it to train or fine-tune generalized AI models.
+        </p>
+
         <h2>3. Where your data goes</h2>
 
         <h3>3.1 Sub-processors</h3>
@@ -458,6 +477,18 @@ const PrivacyPolicyPage = () => {
           or Gmail message bodies.
         </p>
 
+        <h3>3.6 Amazon credentials and information</h3>
+        <p>
+          Amazon OAuth credentials are encrypted in AI Matrx&rsquo;s server-side
+          credential vault. Amazon Information is processed by our contracted
+          infrastructure providers &mdash; AWS for application compute,
+          Supabase for managed database storage, and Vercel for the web
+          frontend &mdash; only as needed to operate AI Matrx. We do not place
+          Amazon credentials or Amazon Information in public repositories or
+          share them with advertisers, data brokers, or unrelated third
+          parties.
+        </p>
+
         <h2>4. How we use the information</h2>
         <ul>
           <li>To authenticate you and keep your session active.</li>
@@ -520,6 +551,13 @@ const PrivacyPolicyPage = () => {
             endpoints.
           </li>
           <li>
+            <strong>Amazon Selling Partner connection:</strong> encrypted
+            credentials and seller-authorized listing, inventory, and
+            non-restricted order records are kept until you disconnect Amazon,
+            delete those records, or delete your account, subject to legal,
+            security, and fraud-prevention retention requirements.
+          </li>
+          <li>
             <strong>Local extension data:</strong> stays on your device until
             you clear it, uninstall the Extension, or wipe Chrome&rsquo;s
             extension storage.
@@ -550,6 +588,12 @@ const PrivacyPolicyPage = () => {
             authorization and remove the saved server-side credential and
             selected-file references. You can also revoke AI Matrx from your
             Google Account permissions.
+          </li>
+          <li>
+            <strong>Disconnect Amazon.</strong> Use the Amazon connection
+            control in AI Matrx to revoke the connection and remove the saved
+            server-side credential. You can also revoke the application from
+            your Amazon selling-account settings.
           </li>
           <li>
             <strong>Uninstall.</strong> Uninstalling the Extension removes the
