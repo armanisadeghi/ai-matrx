@@ -123,14 +123,7 @@ capability probe that calls every write RPC with no body?). Fix: find the caller
 `rpc(` names above in `features/shell` / `lib`) and probe existence through `pg_proc` or a
 HEAD/`OPTIONS`, never by invoking a write RPC. Owner: whoever owns the shell's RPC catalogue.
 
-### D312 — `CREATE INDEX CONCURRENTLY` is refused by BOTH appliers when the file carries a second statement (2026-09-12)
-
-CLAUDE.md says an autocommit file is "refused by `pnpm db:apply` by name — apply it from
-aidream", and aidream's `db/apply_migrations.py` says it "runs such files in autocommit
-automatically". A two-statement file (`CREATE INDEX CONCURRENTLY …; COMMENT ON INDEX …;`) was
-refused there too: `CREATE INDEX CONCURRENTLY cannot run inside a transaction block`. Either
-the autocommit lane only fires for a single-statement file (then say so in both docs) or it
-does not fire at all (then fix the applier). Not chased — the index turned out unnecessary.
+### D312 — RESOLVED 2026-09-12 — an autocommit migration with more than one statement was refused mid-run: `psycopg` sent the whole file as one simple query and libpq wraps that in an implicit transaction block; `aidream/db/apply_migrations.py` now splits an autocommit file and sends one statement at a time, reporting PARTIALLY APPLIED with no ledger row if a later statement fails (guard: `aidream/db/tests/test_autocommit_statement_split.py`).
 
 ### D309 — deleting an `auth.users` row takes MINUTES and cannot finish inside an HTTP request
 
