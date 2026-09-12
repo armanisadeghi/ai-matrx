@@ -217,6 +217,9 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-11** — `SystemScheduleAlarmBanner`: critical schedule alarms reach
+  every super-admin page (global singleton, fixed under the header, one door per
+  schedule). Six suspended system schedules had been unread for 17 days.
 - **2026-08-31** — Independent rule `.2` verification repaired the canonical
   schedule roster read: `listAgentTasks` now pages to the exact count with
   `readAllRows` and a stable `updated_at, id` order, while the S15 source-census
@@ -504,6 +507,26 @@ each row a door to `/schedules/<id>`. The scanner status and these alarms settle
 independently — a green scanner says nothing about whether a schedule ran — and
 if the alarm read itself fails the page says so ("treat this as unknown, not
 healthy") rather than implying all-clear.
+
+**The alarm nobody heard (2026-09-11).** Six critical `suspended` rows sat on
+that page for seventeen days — one of them an approved schedule whose
+suspension froze a 76,129-row classification queue — because a page you open
+only when you already suspect the problem is a report, not an alarm. The same
+rows now reach a super-admin on EVERY page through
+`components/alarm/SystemScheduleAlarmBanner.tsx`, mounted with the other
+admin-gated global singletons in `app/DeferredSingletonCore.tsx`: super-admin
+gated BEFORE the read (the RPC's 42501 would otherwise be captured as a red
+error for every other user), read directly from Supabase on boot / route
+change / focus, rendered as a `CalloutBanner` fixed under the header with an
+`EntityRef` door per schedule and "Review all" → scanner health. It is ABSENT
+at zero alarms (`lib/system-schedule-alarm-notice.ts` returns `null`,
+unit-tested — never an all-clear strip), a failed read is said with Retry, and
+it collapses to a pill per tab session but is never dismissable: only fixing
+the schedules removes it. Inventoried and rejected first: Assists (Chip Rescue
+ruling — a notification is never a chip; `scheduler_` is dispositioned
+`notification` and ambient presentation is off), the Notification System (the
+right destination once it has an in-app channel — today email/SMS only, server
+producers only), and the Error Inspector (client errors, no record door).
 
 ## Realtime
 
