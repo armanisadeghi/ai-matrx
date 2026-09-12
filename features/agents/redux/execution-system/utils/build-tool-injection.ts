@@ -61,6 +61,11 @@ import {
   listAgentWritableTargets,
   SURFACE_WRITE_TOOL_NAME,
 } from "@/features/surfaces/runtime/surface-writeback";
+import { getCachedKindSchema } from "@/features/content-ir/registry/validate-against-kind";
+import {
+  announceWithheldSurfaceWriteTools,
+  resolveRunOutputContract,
+} from "./output-contract-guard";
 import type { ToolSpecInline } from "@/features/agents/types/tool-injection.types";
 
 interface BuildOptions {
@@ -97,18 +102,99 @@ const SANDBOX_FS_STOPGAP_TOOL_NAMES = [
 ] as const;
 
 /**
- * The inline spec for `apply_surface_write`, built per turn from the LIVE
- * agent-writable targets (see `listAgentWritableTargets`). Null when nothing
- * is currently agent-writable — no tool is offered, matching aidream's
- * `_write_targets_block` (which likewise stays silent when every target is
- * manual). The `target` enum makes the server reject an undeclared target
- * before it is ever delegated; `value` is deliberately open (each target
- * documents its own shape in the description) — the page handler is the
- * runtime validator.
+ * A one-line, model-readable précis of a kind's JSON Schema: the required and
+ * optional top-level fields with their types. Deliberately compact — this
+ * rides in a tool description beside up to a few dozen targets, and the full
+ * schema is what the SEAM validates against, not what the model must recite.
  */
-function buildSurfaceWriteInlineSpec(): ToolSpecInline | null {
-  const writable = listAgentWritableTargets();
+function summarizeKindSchema(schema: unknown): string | null {
+  if (typeof schema !== "object" || schema === null) return null;
+  const s = schema as Record<string, unknown>;
+
+  const describe = (spec: unknown): string => {
+    if (typeof spec !== "object" || spec === null) return "any";
+    const p = spec as Record<string, unknown>;
+    const t = p.type;
+    const base = Array.isArray(t)
+      ? t.filter((entry) => entry !== "null").join("|") || "any"
+      : typeof t === "string"
+        ? t
+        : p.$ref || p.anyOf || p.oneOf
+          ? "object"
+          : "any";
+    if (base === "array") {
+      const inner = describe(p.items);
+      return `${inner}[]`;
+    }
+    return String(base);
+  };
+
+  if (s.type === "array") return `${describe(s.items)}[]`;
+
+  const props = s.properties;
+  if (typeof props !== "object" || props === null) return null;
+  const required = new Set(
+    Array.isArray(s.required) ? (s.required as unknown[]).map(String) : [],
+  );
+  const parts = Object.entries(props as Record<string, unknown>)
+    // `__kind` is part of the data everywhere, but it is never what the author
+    // of a write has to think about — the seam accepts it either way.
+    .filter(([name]) => name !== "__kind")
+    .map(([name, spec]) => `${name}${required.has(name) ? "" : "?"}: ${describe(spec)}`);
+  if (parts.length === 0) return null;
+  return `{ ${parts.join(", ")} }`;
+}
+
+/**
+ * THE VALUE CONTRACT ON THE WIRE.
+ *
+ * A target declaring `valueKind` advertises that contract to the model. It
+ * rides in the target's DESCRIPTION line, not as a per-target branch of the
+ * input schema — and that is a measured decision, not a shortcut (verified
+ * against aidream 2026-09-11):
+ *
+ *  - `CustomToolInputSchema` (matrx_ai/config/custom_tool.py) is
+ *    `extra="forbid"`. A top-level `oneOf`/`anyOf` — the only way to make the
+ *    `value` schema depend on which `target` was chosen — is REJECTED at parse
+ *    with a 422. There is no per-target branch to send.
+ *  - `JsonSchemaProperty` (matrx_ai/config/json_schema_wire.py) is
+ *    `extra="allow"`, and `CustomTool.get_provider_format` model_dumps the
+ *    schema straight through, so a nested schema on a single property WOULD
+ *    survive to anthropic/openai — but it is still one `value` property shared
+ *    by every target, so an undiscriminated union there would make a valid
+ *    write to one target invalid against another's branch. (Google's
+ *    `_normalize_google_schema` discards unknown keys outright.)
+ *  - aidream does NOT block on the declared schema for a client-delegated tool
+ *    (`executor.py` skips the pydantic gate; the content-IR check logs drift
+ *    and never blocks), so the enforcing validator is the seam —
+ *    `applySurfaceWrite` → `validateAgainstKind` — on every origin.
+ *
+ * So: the wire TEACHES the contract, the seam ENFORCES it.
+ *
+ * Built per turn from the LIVE agent-writable targets
+ * (`listAgentWritableTargets`). Null when nothing is currently agent-writable
+ * — no tool is offered, matching aidream's `_write_targets_block` (which
+ * likewise stays silent when every target is manual). The `target` enum makes
+ * the server reject an undeclared target before it is ever delegated.
+ */
+async function buildSurfaceWriteInlineSpec(
+  writable: ReturnType<typeof listAgentWritableTargets>,
+): Promise<ToolSpecInline | null> {
   if (writable.length === 0) return null;
+
+  const contracts = new Map<string, string>();
+  await Promise.all(
+    [
+      ...new Set(
+        writable
+          .map(({ target }) => target.valueKind)
+          .filter((kind): kind is string => Boolean(kind)),
+      ),
+    ].map(async (kind) => {
+      const summary = summarizeKindSchema(await getCachedKindSchema(kind));
+      if (summary) contracts.set(kind, summary);
+    }),
+  );
 
   const lines = writable.map(({ target, policy }) => {
     const applied =
@@ -119,7 +205,13 @@ function buildSurfaceWriteInlineSpec(): ToolSpecInline | null {
         : target.mode === "entity"
           ? "persisted through the page's canonical save path"
           : "ephemeral view state";
-    return `- ${target.name} (type=${target.valueType}, ${landing}, ${applied}): ${target.description}`;
+    // A kind-bearing target states its contract: the slug (the registered
+    // shape's name) and, when the registry answered, the field précis. A
+    // value that fails it is refused at the seam before the user is asked.
+    const contract = target.valueKind
+      ? ` [kind=${target.valueKind}${contracts.has(target.valueKind) ? ` ${contracts.get(target.valueKind)}` : ""}]`
+      : "";
+    return `- ${target.name} (type=${target.valueType}, ${landing}, ${applied})${contract}: ${target.description}`;
   });
 
   return {
@@ -131,8 +223,10 @@ function buildSurfaceWriteInlineSpec(): ToolSpecInline | null {
       "through its own handler — you never touch storage directly, and " +
       "targets not listed here cannot be written. Depending on the target's " +
       "policy the user may be asked to approve in place; a decline is a " +
-      "normal outcome (respect it, do not retry). Available targets right " +
-      "now:\n" +
+      "normal outcome (respect it, do not retry). A target marked " +
+      "[kind=<slug> {...}] has a REGISTERED value contract: send exactly that " +
+      "shape — a value that fails it is refused before the user is even " +
+      "asked. Available targets right now:\n" +
       lines.join("\n"),
     input_schema: {
       type: "object",
@@ -265,11 +359,32 @@ export async function buildToolInjection(
   // wired a handler since launch takes effect on the next turn. Skipped under
   // the disable-injection brake (it is an automatic, surface-driven
   // injection, exactly what the brake exists to silence).
+  //
+  // 🚨 AND WITHHELD ENTIRELY FOR A STRUCTURED-OUTPUT RUN. An agent whose job is
+  // to RETURN an object calls `apply_surface_write` instead of answering, and
+  // the run pauses forever (see `./output-contract-guard`, and
+  // `common-docs/systems/mandates/RUNTIME.md`). The verdict is resolved ONLY
+  // when this surface actually has page-write tools to withhold, so the
+  // by-id output-schema read never touches a run that was never at risk.
   if (!disableInjection) {
+    const liveSurfaceTools = listLiveSurfaceClientTools();
+    const writableTargets = listAgentWritableTargets();
+    const outputContract =
+      liveSurfaceTools.length > 0 || writableTargets.length > 0
+        ? await resolveRunOutputContract(state, conversationId)
+        : null;
+    if (outputContract) {
+      announceWithheldSurfaceWriteTools(
+        outputContract,
+        conversationId,
+        liveSurfaceTools.map((live) => live.tool.name),
+      );
+    }
+
     const alreadyNamed = new Set(
       allTools.map((t) => (t.kind === "agent" ? t.agent_id : t.name)),
     );
-    for (const live of listLiveSurfaceClientTools()) {
+    for (const live of outputContract ? [] : liveSurfaceTools) {
       if (!live.hasHandler) {
         // Declared on a mounted surface but not wired — don't offer the agent
         // a tool that can only fail. The loud failure belongs at the page
@@ -297,7 +412,9 @@ export async function buildToolInjection(
     // apply-policy machinery (ask → in-place confirm, per-binding overrides,
     // the manual floor) governs every write — this injection is the offer, the
     // seam is the gate. Read fresh every turn, like the client tools above.
-    const surfaceWriteTool = buildSurfaceWriteInlineSpec();
+    const surfaceWriteTool = outputContract
+      ? null
+      : await buildSurfaceWriteInlineSpec(writableTargets);
     if (surfaceWriteTool) {
       if (alreadyNamed.has(surfaceWriteTool.name)) {
         console.warn(

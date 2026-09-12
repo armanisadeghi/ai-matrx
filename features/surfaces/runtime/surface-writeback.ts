@@ -28,8 +28,13 @@
  *  - Validation is manifest-driven: only names declared in the resolved
  *    surface's `writeTargets` are accepted, so a UI cannot accept a write it
  *    never declared, and a caller cannot invent one.
+ *  - THE VALUE CONTRACT. A target declaring `valueKind` has its value checked
+ *    against that registered kind's schema BEFORE approval and BEFORE the
+ *    handler — for every origin. An unverifiable contract (kind unregistered,
+ *    catalog unreachable) FAILS naming the reason; a skip is never a pass.
  */
 
+import { validateAgainstKind } from "@/features/content-ir/registry/validate-against-kind";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
@@ -292,6 +297,65 @@ async function agentWriteAllowed(
   );
 }
 
+/**
+ * THE VALUE CONTRACT, enforced.
+ *
+ * A target that declares `valueKind` has a real contract — the registered
+ * kind's `emitted_json_schema` — and this is where it binds. Runs BEFORE the
+ * approval gate and before the handler, deliberately:
+ *
+ *  - Never ask a human to approve a value the platform already knows is
+ *    malformed. An approval card for garbage teaches people to click through.
+ *  - Never hand a handler a shape it did not declare; the hand-rolled throw
+ *    inside a page handler is exactly the per-instance validator this replaces.
+ *
+ * It applies to USER-origin writes too: the contract is the contract, and a
+ * kind-component action button emitting the wrong shape is the same defect as
+ * an agent doing it.
+ *
+ * A SKIP IS NEVER A PASS. `validateAgainstKind` reports `checked:false` when
+ * the kind is not registered, has no schema, has an uncompilable schema, or
+ * the catalog is unreachable. None of those mean "fine" — they mean the
+ * platform cannot tell, which for a write into the user's page is a failure
+ * naming the degraded reason, not a silent pass-through.
+ */
+async function valueContractHolds(
+  target: SurfaceWriteTarget,
+  surfaceName: string,
+  value: unknown,
+): Promise<SurfaceWriteResult | true> {
+  const kind = target.valueKind;
+  if (!kind) return true;
+
+  const verdict = await validateAgainstKind(value, kind);
+
+  if (!verdict.checked) {
+    return fail(
+      `"${target.label}" declares the value contract "${kind}", but that contract could not be checked (${verdict.degradedReason}): ${verdict.errors[0] ?? "no detail"}. The write was refused — an unverifiable contract is not an approved one.`,
+      {
+        targetName: target.name,
+        surfaceName,
+        valueKind: kind,
+        degradedReason: verdict.degradedReason,
+      },
+    );
+  }
+
+  if (!verdict.ok) {
+    return fail(
+      `"${target.label}" expects a value shaped like the "${kind}" kind, and this one isn't: ${verdict.errors.join("; ")}`,
+      {
+        targetName: target.name,
+        surfaceName,
+        valueKind: kind,
+        errors: verdict.errors,
+      },
+    );
+  }
+
+  return true;
+}
+
 function findDeclaredTarget(
   surfaceName: string,
   targetName: string,
@@ -351,6 +415,12 @@ export async function applySurfaceWrite(
         { targetName, surfaceName: runtime.surfaceName },
       );
     }
+
+    // The declared value contract binds before anything else looks at the
+    // value — no approval card for a malformed payload, no handler asked to
+    // re-validate what the kind already describes.
+    const contract = await valueContractHolds(target, runtime.surfaceName, value);
+    if (contract !== true) return contract;
 
     if ((opts?.origin ?? "user") === "agent") {
       // Returns `true` to proceed, or the exact result to hand back (already
