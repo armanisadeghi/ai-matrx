@@ -257,6 +257,8 @@ export interface UseDurableRunOptions<TResult> {
   ) => string | null;
   /** Narrow/validate the result document. Return null to reject it loudly. */
   parseResult?: (raw: unknown) => TResult | null;
+  /** Consume a validated terminal result at the stream/rejoin boundary. */
+  onResult?: (result: TResult) => void;
   /**
    * PROGRESSIVE RESULTS — every domain data event, before stage/terminal
    * handling. Some runs answer in PIECES (the Masterwork checkup emits one
@@ -421,6 +423,7 @@ export function useDurableRun<TResult>(
         stageFallback,
         parseResult,
         onDomainEvent,
+        onResult,
       } = optionsRef.current;
 
       if (event.event === "error") {
@@ -494,6 +497,7 @@ export function useDurableRun<TResult>(
           result: parsed,
           error: null,
         }));
+        onResult?.(parsed);
       };
 
       const resultOf =

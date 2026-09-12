@@ -588,6 +588,13 @@ function TopicPlacementConsole({
   const requestOrganizationId =
     scope.tier === "organization" ? scope.organizationId : undefined;
 
+  const siteRows = sites.data ?? [];
+  const siteById = new Map(siteRows.map((site) => [site.id, site]));
+  // Stamped per site so each result reads decisions from its own pass window.
+  const [runStartedAtBySite, setRunStartedAtBySite] = useState<
+    Record<string, string>
+  >({});
+
   const pass = useSeoCommandRun<TopicPlacementPassResult>({
     key: "run-console-topic-placement",
     path: runner.path,
@@ -597,67 +604,54 @@ function TopicPlacementConsole({
     ...(requestOrganizationId
       ? { scopeOverrides: { organization_id: requestOrganizationId } }
       : {}),
+    onResult: (result) => {
+      const site = siteById.get(result.site_id);
+      setOutcomes((current) =>
+        current.some(
+          (entry) =>
+            entry.siteId === result.site_id && entry.claimed === result.claimed,
+        )
+          ? current
+          : [
+              {
+                siteId: result.site_id,
+                siteName: site?.name ?? result.site_id,
+                finishedAt: new Date().toISOString(),
+                startedAt:
+                  runStartedAtBySite[result.site_id] ??
+                  new Date().toISOString(),
+                confidenceFloor: result.confidence_floor ?? 90,
+                claimed: result.claimed,
+                placed: result.placed,
+                proposed: result.proposed,
+                humanProtected: result.human_protected,
+                quarantined: result.quarantined,
+                returnedToQueue: result.returned_to_queue,
+                placedToday: result.placed_today,
+                dailyCeiling: result.daily_ceiling,
+                ceilingReached: result.ceiling_reached,
+                topicsCreated: result.topics_created ?? [],
+                topPhrases: result.top_phrases ?? [],
+                error: result.error,
+                autonomyRefusal: result.autonomy_refusal ?? null,
+                autonomyDecision: result.autonomy_decision ?? null,
+                timeoutApplied: result.timeout_applied ?? 0,
+              },
+              ...current,
+            ],
+      );
+      if (result.error) toast.error(result.error);
+      setFocusedSiteId(result.site_id);
+      void queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
+    },
   });
 
-  // Stamped at launch so the decisions read asks for THIS pass's window.
-  const runStartedAtRef = useRef<string>(new Date().toISOString());
-
-  const siteRows = sites.data ?? [];
-  const siteById = new Map(siteRows.map((site) => [site.id, site]));
   // The canonical table owns its own search/sort/filter over the full brand
   // list — "All"/"None" therefore act on the whole list, not a pre-filtered
   // one (a filtered-only bulk-select is a MatrxDataTable enhancement, not
   // something this console can express without a second filter pass).
   const visible = siteRows;
-
-  /**
-   * The run settles on the HANDLE, not on `launch()` — a durable run can also
-   * arrive by rejoin after a refresh, and `launch` resolves the moment the
-   * stream is handed over. Recording the outcome here is what makes the log
-   * survive a reload of this page.
-   */
-  useEffect(() => {
-    const result = pass.result;
-    if (!result) return;
-    const site = siteById.get(result.site_id);
-    setOutcomes((current) =>
-      current.some(
-        (entry) =>
-          entry.siteId === result.site_id && entry.claimed === result.claimed,
-      )
-        ? current
-        : [
-            {
-              siteId: result.site_id,
-              siteName: site?.name ?? result.site_id,
-              finishedAt: new Date().toISOString(),
-              startedAt: runStartedAtRef.current,
-              confidenceFloor: result.confidence_floor ?? 90,
-              claimed: result.claimed,
-              placed: result.placed,
-              proposed: result.proposed,
-              humanProtected: result.human_protected,
-              quarantined: result.quarantined,
-              returnedToQueue: result.returned_to_queue,
-              placedToday: result.placed_today,
-              dailyCeiling: result.daily_ceiling,
-              ceilingReached: result.ceiling_reached,
-              topicsCreated: result.topics_created ?? [],
-              topPhrases: result.top_phrases ?? [],
-              error: result.error,
-              autonomyRefusal: result.autonomy_refusal ?? null,
-              autonomyDecision: result.autonomy_decision ?? null,
-              timeoutApplied: result.timeout_applied ?? 0,
-            },
-            ...current,
-          ],
-    );
-    if (result.error) toast.error(result.error);
-    setFocusedSiteId(result.site_id);
-    void queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
-    void queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- settle once per result
-  }, [pass.result]);
 
   /** Drain one paid brand pass at a time; the launch promise is the fence. */
   const drainRunQueue = async (siteIds: string[]) => {
@@ -669,7 +663,10 @@ function TopicPlacementConsole({
       const site = siteById.get(next);
       if (!site) continue;
       pass.reset();
-      runStartedAtRef.current = new Date().toISOString();
+      setRunStartedAtBySite((current) => ({
+        ...current,
+        [site.id]: new Date().toISOString(),
+      }));
       await pass.launch(
         { site_id: site.id, refresh: true, limit: effectiveCap },
         site.name,

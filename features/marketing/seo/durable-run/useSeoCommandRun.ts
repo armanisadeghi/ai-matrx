@@ -73,6 +73,8 @@ export interface UseSeoCommandRunOptions<TResult> {
   stageLabels: Record<string, string>;
   /** Narrow/validate the result document. Return null to reject it loudly. */
   parseResult?: (raw: unknown) => TResult | null;
+  /** Consume a validated terminal result at the stream/rejoin boundary. */
+  onResult?: (result: TResult) => void;
   /** Extra body fields every launch and rejoin needs (e.g. `scopeOverrides`). */
   scopeOverrides?: Record<string, string>;
   /**
@@ -100,7 +102,10 @@ export function useSeoCommandRun<TResult>(
     finalEvent: options.finalKind,
     stageLabels: options.stageLabels,
     ...(options.parseResult ? { parseResult: options.parseResult } : {}),
-    ...(options.scopeOverrides ? { scopeOverrides: options.scopeOverrides } : {}),
+    ...(options.onResult ? { onResult: options.onResult } : {}),
+    ...(options.scopeOverrides
+      ? { scopeOverrides: options.scopeOverrides }
+      : {}),
     ...(options.live
       ? {
           live: {
