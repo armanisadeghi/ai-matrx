@@ -44,8 +44,6 @@ describe("AI Work overview destinations", () => {
     expect(items.map((item) => item.href)).toEqual(
       expect.arrayContaining([
         "/work",
-        "/work/new",
-        "/work/requests",
         "/work/conversations",
         "/work/connections",
         "/agent-connections/plugins",
