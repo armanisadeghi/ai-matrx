@@ -12,45 +12,104 @@ DECLARE
   v_guard_new text;
   v_provisioner_body text;
   v_provisioner_new text;
-  v_guard_marker_pattern constant text := E'    IF cmd[[:space:]]+\\.[[:space:]]*command_tag[[:space:]]+NOT[[:space:]]+IN[[:space:]]*\\(''CREATE TABLE''[[:space:]]*,[[:space:]]*''ALTER TABLE''\\)[[:space:]]+THEN[[:space:]]+CONTINUE;[[:space:]]+END IF;';
+  v_guard_marker_pattern constant text := E'    IF cmd[[:space:]]*\\.[[:space:]]*command_tag[[:space:]]+NOT[[:space:]]+IN[[:space:]]*\\(''CREATE TABLE''[[:space:]]*,[[:space:]]*''ALTER TABLE''\\)[[:space:]]+THEN[[:space:]]+CONTINUE;[[:space:]]+END IF;';
   v_guard_replacement constant text := $patch$
     -- DB-T02: new organization defaults and known assignment triggers are forbidden.
     -- This code runs before the table-only branch because CREATE TRIGGER has a trigger
     -- OID, not a relation OID.  OID comparisons are schema-qualified at resolution
     -- time; never compare regproc-rendered text (it drops schemas on search_path).
-    v_known_assignment_oids := ARRAY[
-      to_regprocedure('ops._stamp_capture_org()'),
-      to_regprocedure('plan._stamp_from_node()'),
-      to_regprocedure('platform.inherit_org_from_parent()'),
-      to_regprocedure('platform.stamp_run_org()'),
-      to_regprocedure('public._stamp_org_default()'),
-      to_regprocedure('public.dm_default_org()'),
-      to_regprocedure('public.files_inherit_org_from_folder()'),
-      to_regprocedure('users._stamp_secret_audit_org()')
-    ];
     IF cmd.command_tag = 'CREATE FUNCTION' THEN
-      SELECT p.prosrc INTO v_function_source FROM pg_proc p WHERE p.oid = cmd.objid;
-      IF v_function_source ~* 'NEW[[:space:]]*[.][[:space:]]*organization_id[[:space:]]*:='
-         OR v_function_source ~* '(^|[;]|BEGIN|THEN)[[:space:]]*NEW[[:space:]]*[.][[:space:]]*organization_id[[:space:]]*=[[:space:]]*[^=]'
-         OR EXISTS (
-              SELECT 1 FROM pg_proc known
-              WHERE known.oid = ANY(v_known_assignment_oids)
-                AND known.prosrc = v_function_source
-            ) THEN
+      v_assignment_target_oid := cmd.objid;
+    ELSIF cmd.command_tag = 'CREATE TRIGGER' THEN
+      SELECT t.tgfoid INTO v_assignment_target_oid
+      FROM pg_trigger t WHERE t.oid = cmd.objid AND NOT t.tgisinternal;
+    ELSE
+      v_assignment_target_oid := NULL;
+    END IF;
+
+    IF v_assignment_target_oid IS NOT NULL THEN
+      SELECT p.prosrc INTO v_function_source FROM pg_proc p WHERE p.oid = v_assignment_target_oid;
+      v_direct_assignment := false;
+      v_scan_tokens := ARRAY[]::text[];
+      v_scan_pos := 1;
+      v_scan_len := length(v_function_source);
+      WHILE v_scan_pos <= v_scan_len LOOP
+        v_scan_token := substr(v_function_source, v_scan_pos, 1);
+        IF v_scan_token ~ '[[:space:]]' THEN
+          v_scan_pos := v_scan_pos + 1;
+        ELSIF v_scan_token = '-' AND substr(v_function_source, v_scan_pos + 1, 1) = '-' THEN
+          v_scan_next_pos := position(E'\\n' IN substr(v_function_source, v_scan_pos + 2));
+          v_scan_pos := CASE WHEN v_scan_next_pos = 0 THEN v_scan_len + 1 ELSE v_scan_pos + 1 + v_scan_next_pos END;
+        ELSIF v_scan_token = '/' AND substr(v_function_source, v_scan_pos + 1, 1) = '*' THEN
+          v_scan_comment_depth := 1;
+          v_scan_pos := v_scan_pos + 2;
+          WHILE v_scan_pos <= v_scan_len AND v_scan_comment_depth > 0 LOOP
+            IF substr(v_function_source, v_scan_pos, 2) = '/*' THEN
+              v_scan_comment_depth := v_scan_comment_depth + 1;
+              v_scan_pos := v_scan_pos + 2;
+            ELSIF substr(v_function_source, v_scan_pos, 2) = '*/' THEN
+              v_scan_comment_depth := v_scan_comment_depth - 1;
+              v_scan_pos := v_scan_pos + 2;
+            ELSE
+              v_scan_pos := v_scan_pos + 1;
+            END IF;
+          END LOOP;
+        ELSIF v_scan_token = '''' THEN
+          v_scan_pos := v_scan_pos + 1;
+          WHILE v_scan_pos <= v_scan_len LOOP
+            IF substr(v_function_source, v_scan_pos, 1) = '''' THEN
+              IF substr(v_function_source, v_scan_pos + 1, 1) = '''' THEN v_scan_pos := v_scan_pos + 2; ELSE v_scan_pos := v_scan_pos + 1; EXIT; END IF;
+            ELSE
+              v_scan_pos := v_scan_pos + 1;
+            END IF;
+          END LOOP;
+        ELSIF v_scan_token = '$' THEN
+          v_scan_dollar_delimiter := (regexp_match(substr(v_function_source, v_scan_pos), '^(\\$[A-Za-z_][A-Za-z_0-9]*\\$|\\$\\$)'))[1];
+          IF v_scan_dollar_delimiter IS NULL THEN
+            v_scan_tokens := array_append(v_scan_tokens, '$');
+            v_scan_pos := v_scan_pos + 1;
+          ELSE
+            v_scan_next_pos := position(v_scan_dollar_delimiter IN substr(v_function_source, v_scan_pos + length(v_scan_dollar_delimiter)));
+            v_scan_pos := CASE WHEN v_scan_next_pos = 0 THEN v_scan_len + 1 ELSE v_scan_pos + length(v_scan_dollar_delimiter) + v_scan_next_pos - 1 END;
+          END IF;
+        ELSIF v_scan_token = '"' THEN
+          v_scan_next_pos := v_scan_pos + 1;
+          WHILE v_scan_next_pos <= v_scan_len LOOP
+            IF substr(v_function_source, v_scan_next_pos, 1) = '"' THEN
+              IF substr(v_function_source, v_scan_next_pos + 1, 1) = '"' THEN v_scan_next_pos := v_scan_next_pos + 2; ELSE v_scan_next_pos := v_scan_next_pos + 1; EXIT; END IF;
+            ELSE
+              v_scan_next_pos := v_scan_next_pos + 1;
+            END IF;
+          END LOOP;
+          v_scan_tokens := array_append(v_scan_tokens, lower(replace(substr(v_function_source, v_scan_pos + 1, v_scan_next_pos - v_scan_pos - 2), '""', '"')));
+          v_scan_pos := v_scan_next_pos;
+        ELSIF v_scan_token ~ '[A-Za-z_]' THEN
+          v_scan_next_pos := v_scan_pos + 1;
+          WHILE v_scan_next_pos <= v_scan_len AND substr(v_function_source, v_scan_next_pos, 1) ~ '[A-Za-z_0-9$]' LOOP v_scan_next_pos := v_scan_next_pos + 1; END LOOP;
+          v_scan_tokens := array_append(v_scan_tokens, lower(substr(v_function_source, v_scan_pos, v_scan_next_pos - v_scan_pos)));
+          v_scan_pos := v_scan_next_pos;
+        ELSIF substr(v_function_source, v_scan_pos, 2) = ':=' THEN
+          v_scan_tokens := array_append(v_scan_tokens, ':='); v_scan_pos := v_scan_pos + 2;
+        ELSE
+          v_scan_tokens := array_append(v_scan_tokens, v_scan_token); v_scan_pos := v_scan_pos + 1;
+        END IF;
+      END LOOP;
+      FOR v_scan_index IN 1..GREATEST(cardinality(v_scan_tokens) - 3, 0) LOOP
+        IF v_scan_tokens[v_scan_index] = 'new'
+           AND v_scan_tokens[v_scan_index + 1] = '.'
+           AND v_scan_tokens[v_scan_index + 2] = 'organization_id'
+           AND (v_scan_tokens[v_scan_index + 3] = ':='
+                OR (v_scan_tokens[v_scan_index + 3] = '='
+                    AND (v_scan_index = 1 OR v_scan_tokens[v_scan_index - 1] = ANY (ARRAY[';','begin','then','else','loop'])))) THEN
+          v_direct_assignment := true;
+          EXIT;
+        END IF;
+      END LOOP;
+      IF v_assignment_target_oid = ANY(c_known_assignment_oids) OR v_direct_assignment THEN
         RAISE EXCEPTION 'ddl_guard: % creates or clones an organization-assignment trigger function', cmd.object_identity
           USING HINT = 'Writers must supply organization_id explicitly. A validation-only trigger may refuse a missing value, but no trigger/function may assign one.',
                 ERRCODE = 'check_violation';
-      END IF;
     END IF;
-
-    IF cmd.command_tag = 'CREATE TRIGGER' AND EXISTS (
-      SELECT 1 FROM pg_trigger t
-      WHERE t.oid = cmd.objid AND NOT t.tgisinternal
-        AND t.tgfoid = ANY(v_known_assignment_oids)
-    ) THEN
-      RAISE EXCEPTION 'ddl_guard: % attaches a forbidden organization-assignment function', cmd.object_identity
-        USING HINT = 'Supply organization_id at the writer. Historical attachments are migration debt and cannot be added, renamed, or recreated.',
-              ERRCODE = 'check_violation';
     END IF;
 
     -- DB-T02 frozen debt: only these exact existing default identities/bodies may
@@ -96,6 +155,10 @@ DECLARE
   v_enabled "char";
   v_tags text[];
   v_default_debt_count integer;
+  v_default_debt_total_count integer;
+  v_assignment_debt_count integer;
+  v_frozen_assignment_oids oid[];
+  v_frozen_assignment_oid_sql text;
   v_guard_def text;
   v_provisioner_def text;
   v_old_advice_start integer;
@@ -137,9 +200,26 @@ BEGIN
    AND debt.object_ref = n.nspname || '.' || c.relname
    AND debt.definition_md5 = md5(pg_get_expr(d.adbin, d.adrelid))
   WHERE a.attname = 'organization_id' AND NOT a.attisdropped;
-  IF v_default_debt_count <> 9 THEN
+  SELECT count(*) INTO v_default_debt_total_count
+  FROM pg_attrdef d JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
+  WHERE a.attname = 'organization_id' AND NOT a.attisdropped;
+  IF v_default_debt_count <> 9 OR v_default_debt_total_count <> 9 THEN
     RAISE EXCEPTION 'dd154: frozen organization-default debt changed (expected 9 exact attrdef rows, found %); re-read live catalog before applying', v_default_debt_count;
   END IF;
+  SELECT array_agg(p.oid ORDER BY p.oid), count(DISTINCT p.oid)
+    INTO v_frozen_assignment_oids, v_assignment_debt_count
+  FROM pg_proc p
+  WHERE p.oid = ANY (ARRAY[
+    to_regprocedure('ops._stamp_capture_org()'), to_regprocedure('plan._stamp_from_node()'),
+    to_regprocedure('platform.inherit_org_from_parent()'), to_regprocedure('platform.stamp_run_org()'),
+    to_regprocedure('public._stamp_org_default()'), to_regprocedure('public.dm_default_org()'),
+    to_regprocedure('public.files_inherit_org_from_folder()'), to_regprocedure('users._stamp_secret_audit_org()')
+  ]);
+  IF v_assignment_debt_count <> 8 THEN
+    RAISE EXCEPTION 'dd154: frozen organization-assignment function set changed (expected 8 exact functions, found %); re-read live catalog before applying', v_assignment_debt_count;
+  END IF;
+  SELECT string_agg(oid::text || '::oid', ',' ORDER BY oid) INTO v_frozen_assignment_oid_sql
+  FROM unnest(v_frozen_assignment_oids) oid;
   IF position(v_guard_replacement IN v_guard_body) = 0 THEN
     IF regexp_count(v_guard_body, v_guard_marker_pattern) <> 1 THEN
       RAISE EXCEPTION 'dd154: ddl_guard table-only marker is unrecognized; re-read pg_get_functiondef and update this surgical transform';
@@ -147,8 +227,10 @@ BEGIN
     v_guard_new := regexp_replace(v_guard_body, v_guard_marker_pattern, v_guard_replacement);
     v_guard_new := replace(v_guard_new,
       '  v_schema text; v_rel text; v_kind "char"; v_ispart boolean;',
-      E'  v_schema text; v_rel text; v_kind "char"; v_ispart boolean;\n  v_known_assignment_oids oid[]; v_function_source text; v_default_oid oid; v_default_ref text; v_default_md5 text;');
-    IF position('v_known_assignment_oids oid[]' IN v_guard_new) = 0 THEN
+      E'  v_schema text; v_rel text; v_kind "char"; v_ispart boolean;\n  c_known_assignment_oids CONSTANT oid[] := ARRAY[$dd154_assignment_oids$];\n  v_assignment_target_oid oid; v_function_source text; v_default_oid oid; v_default_ref text; v_default_md5 text;\n  v_scan_len integer; v_scan_pos integer; v_scan_next_pos integer; v_scan_comment_depth integer; v_scan_index integer; v_scan_token text; v_scan_tokens text[]; v_scan_dollar_delimiter text; v_direct_assignment boolean;');
+    v_guard_new := replace(v_guard_new, '$dd154_assignment_oids$', v_frozen_assignment_oid_sql);
+    IF position('c_known_assignment_oids CONSTANT oid[]' IN v_guard_new) = 0
+       OR position('$dd154_assignment_oids$' IN v_guard_new) > 0 THEN
       RAISE EXCEPTION 'dd154: ddl_guard declaration marker is unrecognized; refusing to guess';
     END IF;
     v_old_advice_start := position('      IF EXISTS (SELECT 1 FROM pg_attribute a' || E'\n                 WHERE a.attrelid = cmd.objid AND a.attname = ''organization_id''' IN v_guard_new);
