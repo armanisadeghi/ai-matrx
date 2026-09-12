@@ -40,8 +40,16 @@
  * one-answer-per-callId rule, and the 16-in-flight ceiling.
  */
 
-/** Bumped with the message contract. The host refuses a mismatched frame. */
-export const SANDBOX_PROTOCOL_VERSION = 1;
+/**
+ * Bumped with the message contract. The host refuses a mismatched frame.
+ *
+ * 2 (S3, 2026-09-12): the host sends resolved THEME TOKENS with `init` and
+ * with every `theme` message, and `matrx:sandbox:size` carries the frame's
+ * true content height and whether the host's cap is holding it back. A frame
+ * still speaking 1 cannot be themed, so it is refused with a sentence rather
+ * than rendered in the wrong colours.
+ */
+export const SANDBOX_PROTOCOL_VERSION = 2;
 
 /** Host → frame. */
 export const HOST_MESSAGE_TYPES = [
@@ -70,6 +78,20 @@ export const MAX_INBOUND_BYTES = 64 * 1024;
 export const MAX_OUTBOUND_PROPS_BYTES = 256 * 1024;
 /** §1.6: at most 16 unanswered actions per instance. */
 export const MAX_IN_FLIGHT_ACTIONS = 16;
+
+/**
+ * THE SIZING CAP (§1.8, S3). The frame measures itself and the host gives the
+ * iframe exactly that height — so nothing scrolls inside the frame and the
+ * host page owns scroll. A runaway body (an author's infinite list, a layout
+ * loop) must not be able to grow the page without bound, so the host holds it
+ * at this height and shows the reader an "expand" control naming the real
+ * height. Nothing is hidden silently: the affordance says how tall the thing
+ * actually is.
+ */
+export const MAX_FRAME_HEIGHT = 4000;
+
+/** What "expand" grows to. Past this the host says so rather than growing. */
+export const EXPANDED_MAX_FRAME_HEIGHT = 20000;
 
 /**
  * Reserved action keys the frame's two host-only copy-bar items relay on
@@ -146,7 +168,17 @@ export interface SandboxReadyMessage {
 export interface SandboxSizeMessage {
     type: "matrx:sandbox:size";
     instanceId: string;
+    /** What the host should give the iframe — never above {@link MAX_FRAME_HEIGHT}. */
     height: number;
+    /**
+     * What the component ACTUALLY occupies, overlays included. Equal to
+     * `height` in the normal case; larger when the cap is holding the frame
+     * back, which is how the host knows to offer the expand control and what
+     * number to put in it (S3).
+     */
+    contentHeight?: number;
+    /** True when `contentHeight > MAX_FRAME_HEIGHT` — the reader is seeing part. */
+    capped?: boolean;
 }
 
 export interface SandboxActionMessage {
@@ -279,11 +311,23 @@ export function checkFrameMessage(
             };
         }
     }
-    if (msg.type === "matrx:sandbox:size" && typeof msg.height !== "number") {
-        return {
-            ok: false,
-            refusal: `Dropped a size message whose height is not a number.`,
-        };
+    if (msg.type === "matrx:sandbox:size") {
+        if (typeof msg.height !== "number" || !Number.isFinite(msg.height)) {
+            return {
+                ok: false,
+                refusal: `Dropped a size message whose height is not a number.`,
+            };
+        }
+        if (
+            msg.contentHeight !== undefined &&
+            (typeof msg.contentHeight !== "number" ||
+                !Number.isFinite(msg.contentHeight))
+        ) {
+            return {
+                ok: false,
+                refusal: `Dropped a size message whose content height is not a number — the frame stays at the height it already had.`,
+            };
+        }
     }
     if (msg.type === "matrx:sandbox:error" && typeof msg.message !== "string") {
         return {

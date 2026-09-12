@@ -100,6 +100,21 @@ class FrameErrorBoundary extends React.Component<
     }
 }
 
+/**
+ * Put the host's resolved look onto this document's `:root` (S3).
+ *
+ * The frame links the stylesheet the app itself was built from, so the token
+ * DEFAULTS are already right; what cannot cross a document boundary on its own
+ * is (a) which of light/dark the reader is in and (b) any value the host
+ * resolved at runtime — an organization theme, a user accent. Both arrive here
+ * and are written as inline custom properties, which outrank the sheet's own
+ * `@layer base` declarations, so a framed component resolves every
+ * `hsl(var(--…))` to the same string the unframed one does.
+ *
+ * `color-scheme` is set too: it is what makes the browser's own widgets (form
+ * controls, scrollbars, the default caret) match the theme. Without it a dark
+ * page would show light-chrome inputs inside the frame and nowhere else.
+ */
 function applyTheme(
     tokens: Record<string, string> | undefined,
     colorScheme: "light" | "dark" | undefined,
@@ -108,11 +123,17 @@ function applyTheme(
     if (tokens) {
         for (const [name, value] of Object.entries(tokens)) {
             if (!name.startsWith("--")) continue;
+            if (typeof value !== "string") continue;
             root.style.setProperty(name, value);
         }
     }
-    if (colorScheme === "dark") root.classList.add("dark");
-    else if (colorScheme === "light") root.classList.remove("dark");
+    if (colorScheme === "dark") {
+        root.classList.add("dark");
+        root.style.colorScheme = "dark";
+    } else if (colorScheme === "light") {
+        root.classList.remove("dark");
+        root.style.colorScheme = "light";
+    }
 }
 
 function renderFailure(

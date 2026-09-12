@@ -26,6 +26,7 @@
  * The build audits the served bytes for all of them and fails.
  */
 import {
+    MAX_FRAME_HEIGHT,
     MAX_IN_FLIGHT_ACTIONS,
     SANDBOX_PROTOCOL_VERSION,
     checkHostMessage,
@@ -286,22 +287,84 @@ function startInstance(
         onError: reportError,
     });
 
-    // ── sizing (the minimum S2 owes; S3 owns the rest) ────────────────────
+    // ── sizing (§1.8, S3) ─────────────────────────────────────────────────
+    //
+    // The frame measures itself and the host gives the iframe exactly that
+    // many pixels, so NOTHING scrolls inside the frame — the host page owns
+    // scroll, and a component in a chat thread reads as one continuous page.
+    //
+    // The measurement is not simply the root's box, because an overlay
+    // (tooltip, select popover) is portalled to `document.body` as a SIBLING
+    // of the root and is usually absolutely positioned: it contributes nothing
+    // to the root's height, and a frame sized to the root alone would clip it
+    // to nothing. Overlays are frame-local by ruling 4 — clipped honestly by
+    // the frame's own box — but "honestly" means the frame first grows to hold
+    // what it can.
     let lastHeight = -1;
-    const reportSize = (): void => {
-        const height = Math.ceil(
-            container.getBoundingClientRect().height ||
-                document.documentElement.scrollHeight,
-        );
-        if (height === lastHeight || height <= 0) return;
-        lastHeight = height;
-        send({ type: "matrx:sandbox:size", instanceId, height });
+    let lastContentHeight = -1;
+    let scheduled = false;
+
+    const measure = (): number => {
+        let bottom = container.getBoundingClientRect().bottom;
+        for (const node of Array.from(document.body.children)) {
+            if (node === container) continue;
+            if (!(node instanceof HTMLElement)) continue;
+            const rect = node.getBoundingClientRect();
+            if (rect.height <= 0 && rect.width <= 0) continue;
+            if (rect.bottom > bottom) bottom = rect.bottom;
+        }
+        // `bottom` is viewport-relative and the frame never scrolls, so it is
+        // the content height. The document's own scrollHeight is the floor for
+        // anything measured at zero during the first frame.
+        return Math.ceil(Math.max(bottom, document.documentElement.scrollHeight));
     };
+
+    const reportSize = (): void => {
+        const contentHeight = measure();
+        if (contentHeight <= 0) return;
+        const height = Math.min(contentHeight, MAX_FRAME_HEIGHT);
+        if (height === lastHeight && contentHeight === lastContentHeight) return;
+        lastHeight = height;
+        lastContentHeight = contentHeight;
+        send({
+            type: "matrx:sandbox:size",
+            instanceId,
+            height,
+            contentHeight,
+            capped: contentHeight > MAX_FRAME_HEIGHT,
+        });
+    };
+
+    /**
+     * One report per animation frame. A streaming chat block re-renders many
+     * times a second and an unthrottled ResizeObserver would post a message
+     * per layout — the host would then resize the iframe mid-layout, which
+     * resizes the frame, which reports again. Coalescing to the frame boundary
+     * is what §1.8 asks for and what stops that loop.
+     */
+    const scheduleSize = (): void => {
+        if (scheduled) return;
+        scheduled = true;
+        const run = () => {
+            scheduled = false;
+            reportSize();
+        };
+        if (typeof requestAnimationFrame === "function") requestAnimationFrame(run);
+        else setTimeout(run, 16);
+    };
+
     const observer =
         typeof ResizeObserver === "undefined"
             ? null
-            : new ResizeObserver(() => reportSize());
+            : new ResizeObserver(() => scheduleSize());
     observer?.observe(container);
+    // Overlays are portalled to `body`, so watch for their arrival too —
+    // otherwise a tooltip opens into a frame that never grew for it.
+    const bodyObserver =
+        typeof MutationObserver === "undefined"
+            ? null
+            : new MutationObserver(() => scheduleSize());
+    bodyObserver?.observe(document.body, { childList: true, subtree: true });
     reportSize();
 
     port.onmessage = (event: MessageEvent) => {
@@ -314,10 +377,12 @@ function startInstance(
         switch (message.type) {
             case "matrx:sandbox:props":
                 handle.update(withHostProps(message.props ?? {}));
-                reportSize();
+                scheduleSize();
                 break;
             case "matrx:sandbox:theme":
                 handle.setTheme(message.themeTokens ?? {}, message.colorScheme);
+                // A theme change can change type metrics and therefore height.
+                scheduleSize();
                 break;
             case "matrx:sandbox:action-result": {
                 const resolver = pending.get(message.callId);
@@ -337,6 +402,7 @@ function startInstance(
             }
             case "matrx:sandbox:dispose":
                 observer?.disconnect();
+                bodyObserver?.disconnect();
                 port.onmessage = null;
                 handle.unmount();
                 break;

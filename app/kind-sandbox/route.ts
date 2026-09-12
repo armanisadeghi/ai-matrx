@@ -7,8 +7,12 @@
  * and is applied after the parser has already started, so the policy has to
  * arrive with the bytes.
  *
- * WHAT THE DOCUMENT IS: a `<div id="root">`, the sandbox stylesheet and the
- * sandbox bundle. Nothing else — no app shell, no Next runtime, no data. The
+ * WHAT THE DOCUMENT IS: a `<main id="root">`, the sandbox stylesheet and the
+ * sandbox bundle. The mount point is a `<main>` — a real landmark — because a
+ * screen reader entering the frame is entering a document, and a document
+ * whose only content sits in an anonymous `<div>` announces nothing. The host
+ * names the frame itself (the iframe's `title` is the kind's label), so the
+ * reader hears the component's name and then lands in its main region. Nothing else — no app shell, no Next runtime, no data. The
  * bundle (`public/kind-sandbox.js`, built by `pnpm build:kind-sandbox`) is the
  * frame's entire world, because `connect-src 'none'` means it can never fetch
  * anything at runtime.
@@ -77,7 +81,7 @@ const DOCUMENT = `<!doctype html>
 <script src="/kind-sandbox.js"></script>
 </head>
 <body>
-<div id="root"></div>
+<main id="root"></main>
 </body>
 </html>
 `;

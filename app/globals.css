@@ -18,6 +18,15 @@
 @source "../node_modules/@ai-matrx/media/dist";
 @source "../node_modules/@ai-matrx/diff/dist";
 @import "tw-animate-css";
+
+/* THE DATABASE-CLASS SAFELIST (DD-123 §1.8). Tailwind emits a utility only for
+   a class it SCANS in a source file — and the 162 organization-authored kind
+   component bodies are ROWS in content_ir.kind_component, which no scan can
+   see. Without this generated file those classes produce no CSS and the
+   component renders unstyled in that respect, here and in the Shape sandbox
+   frame (which compiles from this same file, so the two must never diverge).
+   GENERATED: pnpm gen:kind-sandbox-safelist · VERIFIED: pnpm check:kind-sandbox-safelist */
+@import "../features/content-ir/sandbox/generated/db-class-safelist.css";
 @plugin "@tailwindcss/typography";
 
 /* Enable dark mode variant for Tailwind v4 */

@@ -35,6 +35,8 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
 import { transformKindComponentBody } from "@/features/content-ir/sandbox/transform/transform-kind-body";
 import {
+    EXPANDED_MAX_FRAME_HEIGHT,
+    MAX_FRAME_HEIGHT,
     MAX_IN_FLIGHT_ACTIONS,
     MAX_OUTBOUND_PROPS_BYTES,
     SANDBOX_ERROR_TYPES,
@@ -43,7 +45,12 @@ import {
     measureBytes,
     type HostMessage,
 } from "@/features/content-ir/sandbox/protocol";
+import {
+    readColorScheme,
+    readThemeTokens,
+} from "@/features/content-ir/sandbox/theme-tokens";
 import type { SandboxBodyPayload } from "@/features/content-ir/sandbox/transform/transform-kind-body";
+import { formatText } from "@ai-matrx/kit/text-case";
 import type { ComponentResolution } from "@ai-matrx/content-ir-react";
 import type { RunKindAction } from "../actions/useKindActionRunner";
 import type {
@@ -55,8 +62,26 @@ import { reportKindComponentIncident } from "./kindComponentIncident";
 /** The sandbox document. Same origin; the `sandbox` attribute opaques it. */
 export const KIND_SANDBOX_ROUTE = "/kind-sandbox";
 
-/** What an un-measured frame occupies until it reports its own height (S3). */
+/** What an un-measured frame occupies until it reports its own height. */
 const INITIAL_HEIGHT = 320;
+
+/**
+ * THE FRAME'S ACCESSIBLE NAME (S3). An iframe with no name is announced as
+ * "frame" and a reader moving by landmarks has no idea what they have entered.
+ * The row's own label is the honest name; failing that the kind key, spelled
+ * the way the rest of the product spells a key (`@ai-matrx/kit/text-case`).
+ */
+export function sandboxFrameTitle(
+    kind: string,
+    config: Record<string, unknown> | null | undefined,
+): string {
+    const declared = config?.label ?? config?.title ?? config?.display_name;
+    const label =
+        typeof declared === "string" && declared.trim()
+            ? declared.trim()
+            : formatText(kind);
+    return `${label} — component`;
+}
 
 /**
  * Transform once per (kind, row version) — the same staleness key the in-page
@@ -159,6 +184,8 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     const answered = React.useRef<Set<string>>(new Set());
     const inFlight = React.useRef<Set<string>>(new Set());
     const [height, setHeight] = React.useState(INITIAL_HEIGHT);
+    const [contentHeight, setContentHeight] = React.useState(INITIAL_HEIGHT);
+    const [expanded, setExpanded] = React.useState(false);
     const [oversize, setOversize] = React.useState<string | null>(null);
 
     const instanceId = React.useId();
@@ -219,9 +246,19 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         switch (message.type) {
             case "matrx:sandbox:ready":
                 break;
-            case "matrx:sandbox:size":
+            case "matrx:sandbox:size": {
+                // The frame reports what it OCCUPIES; the host decides what to
+                // give it. Nothing scrolls inside the frame, so the iframe is
+                // exactly as tall as its content — up to the cap, past which
+                // the reader gets a control that names the real height (S3).
+                const measured = Math.max(
+                    1,
+                    Math.ceil(message.contentHeight ?? message.height),
+                );
+                setContentHeight(measured);
                 setHeight(Math.max(1, Math.ceil(message.height)));
                 break;
+            }
             case "matrx:sandbox:resolve":
                 latest.current.onResolve?.(message.value);
                 break;
@@ -312,9 +349,12 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                 body: payload,
                 propsTransform,
                 props,
-                colorScheme: document.documentElement.classList.contains("dark")
-                    ? "dark"
-                    : "light",
+                // The frame links the same compiled stylesheet, but it cannot
+                // see which of light/dark the reader is in, nor any token the
+                // host RESOLVED at runtime (an organization theme, a user
+                // accent). Both cross here, at mount, before first paint.
+                themeTokens: readThemeTokens(document),
+                colorScheme: readColorScheme(document),
             },
             // The frame's origin is OPAQUE (no allow-same-origin), so "*" is
             // the only targetOrigin that can reach it. The frame checks the
@@ -332,17 +372,29 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [instanceId, data, kind, config, uiOptions]);
 
-    /** Theme changes: the host owns light/dark, the frame owns its :root. */
+    /**
+     * Theme changes: the host owns light/dark and the organization theme, the
+     * frame owns its own `:root`. Every way the app can change how it looks
+     * lands on the root element — the `dark` class, an inline custom property
+     * written by a theme applier, a `data-theme` attribute — so all three are
+     * watched and the resolved tokens are re-read and re-sent. A theme flip the
+     * frame did not hear about is a visibly wrong component, which is exactly
+     * the parity S3 exists to hold.
+     */
     React.useEffect(() => {
         const root = document.documentElement;
         const observer = new MutationObserver(() => {
             post({
                 type: "matrx:sandbox:theme",
                 instanceId,
-                colorScheme: root.classList.contains("dark") ? "dark" : "light",
+                themeTokens: readThemeTokens(document),
+                colorScheme: readColorScheme(document),
             });
         });
-        observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+        observer.observe(root, {
+            attributes: true,
+            attributeFilter: ["class", "style", "data-theme"],
+        });
         return () => observer.disconnect();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [instanceId]);
@@ -379,6 +431,16 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         );
     }
 
+    // THE HEIGHT THE IFRAME GETS. Normally the content's own height, so the
+    // frame never scrolls and the host page owns scroll. Past the cap the
+    // reader is told, in a control, how tall the thing really is (S3).
+    const capped = contentHeight > MAX_FRAME_HEIGHT;
+    const shownHeight = expanded
+        ? Math.min(contentHeight, EXPANDED_MAX_FRAME_HEIGHT)
+        : height;
+    const beyondExpanded = contentHeight > EXPANDED_MAX_FRAME_HEIGHT;
+    const title = sandboxFrameTitle(kind, resolution.config as Record<string, unknown>);
+
     return (
         <>
             <iframe
@@ -388,11 +450,34 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                 // page and read the signed-in session.
                 sandbox="allow-scripts"
                 onLoad={handleLoad}
-                title={`${kind} component`}
+                // THE ACCESSIBLE NAME. An unnamed iframe is announced as
+                // "frame"; with this a screen-reader user knows what they have
+                // tabbed into, and the frame stays in the page's tab order
+                // exactly where it sits (an iframe is focusable by default —
+                // nothing here removes it from the sequence).
+                title={title}
                 data-matrx-kind-sandbox={kind}
                 className={className ?? "w-full border-0"}
-                style={{ height, display: "block" }}
+                style={{ height: shownHeight, display: "block" }}
             />
+            {capped ? (
+                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                    <button
+                        type="button"
+                        onClick={() => setExpanded((value) => !value)}
+                        className="rounded-md border border-border px-2 py-1 font-medium text-foreground hover:bg-accent"
+                    >
+                        {expanded ? "Show less" : "Show all"}
+                    </button>
+                    <span>
+                        {expanded
+                            ? beyondExpanded
+                                ? `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${EXPANDED_MAX_FRAME_HEIGHT} pixels and the rest is cut off.`
+                                : `Showing all ${contentHeight} pixels of this component.`
+                            : `This component is ${contentHeight} pixels tall; ${MAX_FRAME_HEIGHT} are shown.`}
+                    </span>
+                </div>
+            ) : null}
             {oversize ? (
                 <div
                     role="alert"
