@@ -316,6 +316,12 @@ export function isBlockLoading(block: {
  *    fields within one do not. Carries the Approve/Improve/Reject/Edit verbs
  *    through the `checkup_decision` surface write target when the page it
  *    landed on offers it.
+  *  - `case_disclosure` / `unfolding_ruling` — the UNFOLDING-CASE kinds,
+ *    produced ONLY by `applyIrKindRoute`'s compiled-bridge flips (`__kind`
+ *    JSON arrival only — no tag/fence surface); never emitted upstream.
+ *    COMPLETE bridges: the case oracle emits a whole disclosure (its ledger is
+ *    cumulative, so the latest one IS the whole path) and the desk emits a
+ *    whole ruling — there is no half-written one on the wire.
  *  - `agent_result` — produced ONLY by `applyIrKindRoute`'s compiled-bridge
  *    flip for the registered `agent_result` kind (`__kind` JSON arrival only —
  *    no tag/fence surface); never emitted upstream. COMPLETE bridge: an
@@ -416,6 +422,8 @@ export type FeSynthesizedBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "case_disclosure"
+  | "unfolding_ruling"
   | "agent_result"
   | "node_outcome"
   | "run_result"
@@ -582,6 +590,8 @@ export type ShapeBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "case_disclosure"
+  | "unfolding_ruling"
   | "agent_result"
   | "node_outcome"
   | "run_result"
@@ -1886,6 +1896,39 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.MasterworkCheckupFindingBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (case_disclosure): COMPLETE bridge — the sealed case's growing
+  // ledger. Same three-branch contract as every other kind-routed entry.
+  case_disclosure: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.CaseDisclosureBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (unfolding_ruling): COMPLETE bridge — where the desk committed.
+  unfolding_ruling: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.UnfoldingRulingBlock
           key={index}
           serverData={block.serverData}
         />

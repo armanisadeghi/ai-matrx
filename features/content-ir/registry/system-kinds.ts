@@ -75,6 +75,7 @@ import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
 import { MASTERWORK_CHECKUP_KIND_DEFINITIONS } from "../kinds/masterwork-checkup-finding";
+import { MASTERWORK_UNFOLDING_KIND_DEFINITIONS } from "../kinds/masterwork-unfolding";
 import { AGENT_RESULT_KIND_DEFINITIONS } from "../kinds/agent-result";
 import { RUNTIME_WRAPPER_KIND_DEFINITIONS } from "../kinds/runtime-wrappers";
 import { GENERATED_IMAGE_SET_KIND_DEFINITIONS } from "../kinds/generated-image-set";
@@ -128,6 +129,9 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS,
   ...MEDIA_CHAPTERS_KIND_DEFINITIONS,
   ...MASTERWORK_CHECKUP_KIND_DEFINITIONS,
+  // The UNFOLDING-CASE kinds — the case oracle's growing ledger and the
+  // desk's ruling. One component each; see kinds/masterwork-unfolding.ts.
+  ...MASTERWORK_UNFOLDING_KIND_DEFINITIONS,
   // The canonical output of EVERY matrx-ai graph action. Registered 2026-08-18
   // after an active, componentless `agent_result` printed the verbatim system
   // prompt and the token bill into a learner's "Study notes" box.
