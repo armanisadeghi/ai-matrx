@@ -447,10 +447,21 @@ export function BrandsPortfolio({
         ) : null}
 
         {brands.isError ? (
-          <QueryError
-            error={brands.error}
-            onRetry={() => void brands.refetch()}
-          />
+          <div className="space-y-2">
+            <Button
+              size="sm"
+              className="h-11"
+              aria-label="Add brand"
+              onClick={openCreate}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add brand
+            </Button>
+            <QueryError
+              error={brands.error}
+              onRetry={() => void brands.refetch()}
+            />
+          </div>
         ) : (
           <div
             className={cn(
