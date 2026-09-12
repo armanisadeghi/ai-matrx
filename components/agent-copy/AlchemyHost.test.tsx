@@ -214,4 +214,25 @@ describe("AlchemyHost identity lifecycle", () => {
 
     await expect(pending).rejects.toThrow("account or organization changed");
   });
+
+  it("withholds AI capability and creates no preparation port without an organization", () => {
+    identity = { userId: "user-a", organizationId: null };
+    let exposedAi: unknown = Symbol("unread");
+    function CapabilityObserver() {
+      exposedAi = useContentTransferCapabilities().ai;
+      return null;
+    }
+
+    act(() => {
+      root.render(
+        <AlchemyHost>
+          <CapabilityObserver />
+        </AlchemyHost>,
+      );
+    });
+
+    expect(exposedAi).toBeUndefined();
+    expect(providerProps).not.toBeNull();
+    expect(mockConsume).not.toHaveBeenCalled();
+  });
 });
