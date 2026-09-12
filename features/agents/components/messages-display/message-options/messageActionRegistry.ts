@@ -995,7 +995,7 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
           const organizationId = await ensureOrganizationContext({ organizationId: selectOrganizationId(ctx.getState()) });
           await NotesAPI.create({ label: deriveMessageTitle(ctx) ?? "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
         } catch (error) {
-          if (isOrganizationSelectionCancelled(error)) return;
+          if (isOrganizationSelectionCancelled(error)) throw error;
           throw error;
         }
       },

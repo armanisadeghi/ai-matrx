@@ -518,7 +518,7 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
           const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
           await NotesAPI.create({ label: "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
         } catch (error) {
-          if (isOrganizationSelectionCancelled(error)) return;
+          if (isOrganizationSelectionCancelled(error)) throw error;
           throw error;
         }
       },

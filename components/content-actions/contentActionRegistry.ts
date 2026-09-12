@@ -530,7 +530,7 @@ function saveItems(ctx: ContentActionContext): MenuItem[] {
           const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
           await NotesAPI.create({ label: title ?? "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
         } catch (error) {
-          if (isOrganizationSelectionCancelled(error)) return;
+          if (isOrganizationSelectionCancelled(error)) throw error;
           throw error;
         }
       },

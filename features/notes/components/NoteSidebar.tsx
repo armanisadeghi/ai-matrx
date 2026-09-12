@@ -844,7 +844,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           await createFolder(folderName, organizationId);
           handleNewNote(folderName, organizationId);
         } catch (error) {
-          if (isOrganizationSelectionCancelled(error)) return;
+          if (isOrganizationSelectionCancelled(error)) throw error;
           throw error;
         }
       }

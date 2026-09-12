@@ -25,6 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FOLDER_CATEGORIES } from "../constants/folderCategories";
 import { cn } from "@/lib/utils";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 interface CreateFolderDialogProps {
   open: boolean;
@@ -94,6 +95,7 @@ export function CreateFolderDialog({
       reset();
       onOpenChange(false);
     } catch (cause) {
+      if (isOrganizationSelectionCancelled(cause)) return;
       setError(
         cause instanceof Error ? cause.message : "Could not create the folder",
       );

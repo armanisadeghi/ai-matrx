@@ -388,7 +388,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
         const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
         await NotesAPI.create({ label: "New Note", content, folder_name: "Scratch", tags: [], organization_id: capturedOrganizationId });
       } catch (error) {
-        if (isOrganizationSelectionCancelled(error)) return;
+        if (isOrganizationSelectionCancelled(error)) throw error;
         throw error;
       }
     } else {
