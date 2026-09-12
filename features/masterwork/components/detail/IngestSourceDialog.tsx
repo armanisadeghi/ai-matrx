@@ -27,6 +27,10 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
+import {
+  MonologueRecorder,
+  describeDistillWait,
+} from "../../record/MonologueRecorder";
 import { recordPastedSource } from "../../record/pastedSource";
 
 /**
@@ -67,6 +71,27 @@ const INGEST_FILE_PATH = "/masterworks/ingest-file" satisfies keyof paths;
  */
 const INGEST_TIMELINE_PATH =
   "/masterworks/ingest-timeline" satisfies keyof paths;
+
+/**
+ * THE MONOLOGUE (VOICE-FIRST) LANE, wired 2026-09-12. Arman's expertise
+ * mandate puts "just talk" first; the server lane has existed since the
+ * recording lane shipped (`file_ingest._ingest_recording` → transcription →
+ * `_distill_transcript`, chunked by transcript time range, distilled through
+ * `masterwork.monologue_distiller`, every rule anchored to the moment it was
+ * said) and the `monologue` Approach was `enabled=false` purely because the
+ * product had no door: an Expert who wanted to talk was sent to the generic
+ * "Upload a file" card, i.e. told to go and make a recording somewhere else.
+ *
+ * It posts to the SAME endpoint as the file lane — a recording IS a file to
+ * the server, which routes audio/video to the monologue distiller by content
+ * type — so the door is a capture surface, not a second pipeline. What it adds
+ * is the half that was missing: recording in the browser, through the
+ * platform's one capture primitive (`useSimpleRecorder`).
+ */
+const MONOLOGUE_MANDATE_KEY = MANDATE_KEYS.masterwork__monologue_distiller;
+
+/** Only a recording goes down this lane — a PDF is the `file` card's job. */
+const MONOLOGUE_ACCEPT = "audio/*,video/*";
 
 /** The server's own floor (`IngestTimelineRequest.text`, min_length=200). */
 const MIN_SOURCE_CHARS = 200;
@@ -215,6 +240,10 @@ export function IngestSourceDialog({
   // a case has no "is it the finished work?" question and no upload half, and
   // it carries one choice the others do not (whether to keep the ending back).
   const timeline = initialLane === "timeline";
+  // The voice-first lane: record here, or upload a recording you already have.
+  // No "is it the finished work?" question and no paste half — a person who
+  // came here to talk is not choosing a source shape.
+  const monologue = initialLane === "monologue";
   const [shape, setShape] = useState<SourceShape>(
     initialLane === "file" ? "file" : "text",
   );
@@ -222,6 +251,9 @@ export function IngestSourceDialog({
   const [hideResolution, setHideResolution] = useState(true);
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  /** Monologue only: how long the just-finished recording ran, for the
+   *  measured wait promise (never a bare spinner). */
+  const [recordedSeconds, setRecordedSeconds] = useState<number | null>(null);
   const [mode, setMode] = useState<IngestMode>(
     initialLane === "exemplar" ? "exemplar" : "instructional",
   );
@@ -240,7 +272,7 @@ export function IngestSourceDialog({
     rulebookId: rulebook.id,
     path: timeline
       ? INGEST_TIMELINE_PATH
-      : shape === "file"
+      : monologue || shape === "file"
         ? INGEST_FILE_PATH
         : INGEST_PATH,
     parseResult: parseIngestSummary,
@@ -254,6 +286,7 @@ export function IngestSourceDialog({
   const reset = () => {
     run.reset();
     setUploading(false);
+    setRecordedSeconds(null);
   };
 
   // Drafts that landed while the user was away still have to reach the page
@@ -279,6 +312,12 @@ export function IngestSourceDialog({
   const ingest = async () => {
     if (timeline) {
       await ingestTimeline();
+      return;
+    }
+    if (monologue) {
+      // A recording IS a file to the server; the only difference is that the
+      // person made it here, a moment ago.
+      await ingestFile();
       return;
     }
     if (shape === "file") {
@@ -341,7 +380,11 @@ export function IngestSourceDialog({
 
   const ingestFile = async () => {
     if (!file) {
-      toast.error("Choose a document or a recording first.");
+      toast.error(
+        monologue
+          ? "Record something, or choose a recording you already have."
+          : "Choose a document or a recording first.",
+      );
       return;
     }
     // The upload happens BEFORE the run exists — there is no run row to rejoin
@@ -393,11 +436,17 @@ export function IngestSourceDialog({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {timeline ? "Add rules from a case" : "Add rules from a source"}
+            {timeline
+              ? "Add rules from a case"
+              : monologue
+                ? "Just talk \u2014 we'll do the rest"
+                : "Add rules from a source"}
             {timeline ? (
               <AgentCredit
                 mandate={TIMELINE_MANDATE_KEY}
               />
+            ) : monologue ? (
+              <AgentCredit mandate={MONOLOGUE_MANDATE_KEY} />
             ) : (
               <AgentCredit
                 mandate={MANDATE_KEYS.masterwork__source_distiller}
@@ -406,7 +455,14 @@ export function IngestSourceDialog({
             )}
           </DialogTitle>
           <DialogDescription>
-            {timeline
+            {monologue
+              ? "Talk through how you actually work \u2014 rambling is fine, and " +
+                "you can pause whenever you like. It gets written down, your " +
+                "rules are pulled out with the moment you said each one, and " +
+                "anything you touched on but didn\u2019t explain comes back as " +
+                "questions you can answer later. They arrive as drafts for you " +
+                "to approve one by one."
+              : timeline
               ? "Paste a case the way it actually happened — what you knew at each " +
                 "moment, what you did next, and how it turned out. It gets read " +
                 "step by step, and each step is judged knowing only what you knew " +
@@ -483,7 +539,7 @@ export function IngestSourceDialog({
           </div>
         ) : (
           <div className="space-y-3">
-            {timeline ? null : (
+            {timeline || monologue ? null : (
             <div className="space-y-1.5">
               <Label>What kind of source is it?</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -510,7 +566,7 @@ export function IngestSourceDialog({
               </div>
             </div>
             )}
-            {timeline ? null : (
+            {timeline || monologue ? null : (
             <div className="space-y-1.5">
               <Label>How do you want to bring it in?</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -538,7 +594,78 @@ export function IngestSourceDialog({
             </div>
             )}
 
-            {!timeline && shape === "file" ? (
+            {monologue ? (
+              <div className="space-y-3">
+                {file ? (
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)}
+                        {recordedSeconds !== null
+                          ? ` \u00b7 ${describeDistillWait(recordedSeconds)}`
+                          : ""}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Start over"
+                      onClick={() => {
+                        setFile(null);
+                        setRecordedSeconds(null);
+                        if (fileInputRef.current)
+                          fileInputRef.current.value = "";
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <MonologueRecorder
+                    disabled={running}
+                    onRecorded={(blob, seconds) => {
+                      setRecordedSeconds(seconds);
+                      // A recording is delivered as a real file with a real
+                      // name, because it becomes a Source row the Expert will
+                      // see listed later.
+                      const stamp = new Date()
+                        .toISOString()
+                        .slice(0, 16)
+                        .replace("T", " ");
+                      const ext =
+                        (blob.type.split("/")[1] || "webm").split(";")[0];
+                      setFile(
+                        new File([blob], `Talking it through \u2014 ${stamp}.${ext}`, {
+                          type: blob.type || "audio/webm",
+                        }),
+                      );
+                    }}
+                  />
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={MONOLOGUE_ACCEPT}
+                  className="hidden"
+                  onChange={(e) => {
+                    setRecordedSeconds(null);
+                    setFile(e.target.files?.[0] ?? null);
+                  }}
+                />
+                {file ? null : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  >
+                    Or upload a recording you already have
+                  </button>
+                )}
+              </div>
+            ) : !timeline && shape === "file" ? (
               <div className="space-y-1.5">
                 <Label>The file</Label>
                 <input
@@ -645,7 +772,9 @@ export function IngestSourceDialog({
                 placeholder={
                   timeline
                     ? "e.g. 'ED case 3, March 2026'"
-                    : "e.g. Chapter 3, or 'recorded call, Aug 10'"
+                    : monologue
+                      ? "e.g. 'how I triage a Monday morning'"
+                      : "e.g. Chapter 3, or 'recorded call, Aug 10'"
                 }
               />
             </div>
@@ -666,13 +795,19 @@ export function IngestSourceDialog({
             </Button>
             <Button
               onClick={() => void ingest()}
-              disabled={running || (!timeline && shape === "file" && !file)}
+              disabled={
+                running ||
+                (monologue && !file) ||
+                (!timeline && !monologue && shape === "file" && !file)
+              }
             >
               {running
                 ? "Distilling…"
                 : timeline
                   ? "Distill this case"
-                  : "Distill rules"}
+                  : monologue
+                    ? "Distill what I said"
+                    : "Distill rules"}
             </Button>
           </DialogFooter>
         ) : null}

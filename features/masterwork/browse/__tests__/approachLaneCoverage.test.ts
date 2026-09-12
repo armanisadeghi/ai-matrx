@@ -111,10 +111,15 @@ const REGISTRY_SNAPSHOT_2026_09_12: RegistryRow[] = [
     launchHref: null,
   },
   {
+    // THE VOICE-FIRST DOOR, opened 2026-09-12
+    // (aidream/db/migrations/enable_masterwork_monologue_approach.sql). The
+    // server lane had existed since the recording lane shipped; the row said
+    // "coming soon" only because the product had no capture surface of its
+    // own and sent an Expert who wanted to TALK to the generic upload card.
     key: "monologue",
-    enabled: false,
-    availability: "coming_soon",
-    intakeQuery: {},
+    enabled: true,
+    availability: "available",
+    intakeQuery: { ingest: "monologue" },
     launchHref: null,
   },
   {
@@ -219,6 +224,16 @@ describe("every promised Distillation Approach has a lane", () => {
     expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
       kind: "ingest",
       lane: "timeline",
+    });
+  });
+
+  it("opens the monologue Approach on the voice-first ingest lane", () => {
+    const row = REGISTRY_SNAPSHOT_2026_09_12.find((r) => r.key === "monologue");
+    expect(row).toBeDefined();
+    expect(row!.enabled).toBe(true);
+    expect(resolveApproachLane(row!)).toEqual<ApproachLane>({
+      kind: "ingest",
+      lane: "monologue",
     });
   });
 
