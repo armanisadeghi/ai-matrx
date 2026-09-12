@@ -618,6 +618,10 @@ export function ProjectsHub({
           data-surface-value="project_list"
         >
           <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
+            <MetricNavigation
+              label="Workspace destinations"
+              items={workspaceNavigationItems}
+            />
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
                 {subtitle && (
@@ -817,7 +821,7 @@ export function ProjectsHub({
             ) : (
               <>
                 {personal.length > 0 && (
-                  <Section title="Personal">
+                  <Section title="Personal" count={personal.length}>
                     {personal.map((p) => (
                       <ProjectHubCard
                         key={p.id}
@@ -825,23 +829,38 @@ export function ProjectsHub({
                         stat={stats.get(p.id)}
                         orgMap={orgMap}
                         statsReadFailed={statsReadFailed}
+                        accent="bg-primary"
                       />
                     ))}
                   </Section>
                 )}
-                {teams.length > 0 && (
-                  <Section title="Team projects">
-                    {teams.map((p) => (
+                {groupedTeams.map(([organizationId, organizationProjects]) => (
+                  <Section
+                    key={organizationId}
+                    title={
+                      organizationId === "unassigned"
+                        ? "Other projects"
+                        : (orgMap.get(organizationId)?.name ?? "Shared projects")
+                    }
+                    count={organizationProjects.length}
+                    accent={organizationAccent(
+                      organizationId === "unassigned" ? null : organizationId,
+                    )}
+                  >
+                    {organizationProjects.map((p) => (
                       <ProjectHubCard
                         key={p.id}
                         project={p}
                         stat={stats.get(p.id)}
                         orgMap={orgMap}
                         statsReadFailed={statsReadFailed}
+                        accent={organizationAccent(
+                          organizationId === "unassigned" ? null : organizationId,
+                        )}
                       />
                     ))}
                   </Section>
-                )}
+                ))}
               </>
             )}
           </div>
@@ -853,16 +872,31 @@ export function ProjectsHub({
 
 function Section({
   title,
+  count,
+  accent,
   children,
 }: {
   title: string;
+  count: number;
+  accent?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section>
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-        {title}
-      </h2>
+    <section className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "h-2.5 w-2.5 rounded-full",
+            accent ?? "bg-primary",
+          )}
+        />
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          {title}
+        </h2>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {count}
+        </span>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{children}</div>
     </section>
   );
@@ -1729,11 +1763,13 @@ function ProjectHubCard({
   stat,
   orgMap,
   statsReadFailed,
+  accent,
 }: {
   project: ProjectWithRole;
   stat?: Stat;
   orgMap: OrgMap;
   statsReadFailed: boolean;
+  accent: string;
 }) {
   const router = useRouter();
   const preview = stat?.preview ?? [];
@@ -1749,7 +1785,7 @@ function ProjectHubCard({
       data-project-row-id={project.id}
       className="group/entity-ref relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all"
     >
-      <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/40 opacity-80" />
+      <span className={cn("absolute inset-x-0 top-0 h-1 opacity-80", accent)} />
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start gap-3">
           <button
