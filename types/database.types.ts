@@ -197,7 +197,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string
+          organization_id: string
           path: string
           slug?: string | null
           sync_base_commit?: string | null
