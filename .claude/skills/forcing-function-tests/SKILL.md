@@ -101,6 +101,15 @@ from reality:
 - Fix, watch green. For guards, commit the sabotage as `--self-test`: plant the violation → exit
   non-zero with file:line and the fix → restore → clean ([strictness-law](/policies/strictness-law.md) §7–8).
 - A test green on its first-ever run has proven nothing yet — sabotage it once.
+- **A multi-rule guard must prove each rule SEPARATELY, and the sabotage is per-rule.** Break one
+  rule at a time and watch the self-test go red *for that rule*. Whole-suite red proves nothing
+  about which rule earned it.
+- **A fixture caught by a rule OTHER than the one it names is a fake proof.** Observed 2026-09-11:
+  a byte-size guard grew four rules; the fixture for the fourth put the unit label three lines from
+  the arithmetic, inside an older rule's six-line window, so the older rule matched it and the new
+  rule was never exercised. Deleting the new rule entirely left the self-test PASSING. The rule was
+  real; only its proof was fake. Write each fixture so it can be caught by nothing but its own rule
+  — then delete that rule and confirm the self-test goes red.
 - New features: test-first order is not mandated; the §3 mutation pass is the proof. Never delete
   working code to replay a red-green ceremony.
 

@@ -135,6 +135,7 @@ Non-obvious homes: live `/chat` → [`features/agents/components/chat/FEATURE.md
 - **Lint debt is repo-wide (~2,400 errors) and almost certainly not yours** — never clear a finding with `eslint-disable`; a wrong rule changes ONCE in `eslint.config.mjs` with a reason ([`scripts/lint-debt/FEATURE.md`](./scripts/lint-debt/FEATURE.md)).
 - **Track what you can't fix:** [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (unrelated discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md`, `.matrx/PATROL_SIGHTINGS.md` — **invoke the `pattern-patrol` skill**: log sightings of registered patterns, nominate recurring classes.
 - **Handoffs:** **invoke the `handoffs` skill** before writing/taking over one or ending a turn that progressed one; the ownerless list is `../common-docs/operations/unassigned-handoffs.md` — delete its row when taking over, add a row when leaving work.
+- **A question for Arman is filed, never just asked:** invoke the `ask-arman` skill — the homework gate (fact? already ruled or delegated? knob? what the best do? a human step?), then a row in `../common-docs/operations/questions.md` with a default you keep working on; the `question-desk` interviewer brings it to him and returns his answer to your chat. Never end a turn waiting on a reversible question.
 - **Built reviewable UI Arman didn't watch? Invoke `agent-review-queue`** — agents review first; only `ready_for_human` reaches him.
 
 ## UI / UX standards

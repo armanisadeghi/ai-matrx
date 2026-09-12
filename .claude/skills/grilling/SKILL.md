@@ -4,7 +4,7 @@ type: Skill
 title: "grilling — interview by design tree, defaults ship"
 description: "The interview primitive for putting open decisions to Arman or any owner. Use on 'grill me' or 'stress-test this', and whenever a plan, scope, spec, vision, or question ledger needs owner rulings. NOT for steps only a human can perform (use a guided session)."
 tags: [interview, decisions, doctrine]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-12T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -40,7 +40,7 @@ plan — then challenge his assumptions too, still never ask facts.
 
 - **Frontier** = surviving nodes whose prerequisites are settled. A question whose answer depends on
   another question open this round waits for a later round.
-- **One complex question per round** (Arman, 2026-09-10: five quick ones or three tough-but-direct ones may share a round; never several in-depth ones — "you're basically guaranteeing that I will give you bs answers"). The rest wait in a queue file the round names; order by how much of the tree each answer unblocks. Never use an older agent-recorded quote of his as evidence against a decision he made today without its source and circumstances.
+- **One complex question per round** (Arman, 2026-09-10: five quick ones or three tough-but-direct ones may share a round; never several in-depth ones — "you're basically guaranteeing that I will give you bs answers"). The rest wait in [the Question Ledger](/operations/questions.md) (the `ask-arman` row shape; the `question-desk` skill runs the rounds that clear it); order by how much of the tree each answer unblocks. Never use an older agent-recorded quote of his as evidence against a decision he made today without its source and circumstances.
 - **Never block on exploration.** Send the fact-independent frontier now; only questions downstream of
   a running subagent wait. If he can step away while you explore, say so.
 - **Number continuously across rounds** (round 2 starts at Q5), so "5 yes" is never ambiguous.
