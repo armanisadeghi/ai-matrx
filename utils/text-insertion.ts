@@ -1,6 +1,7 @@
 export function insertTextAtTextareaCursor(
   textarea: HTMLTextAreaElement,
   text: string,
+  onValueChange?: (nextValue: string) => void,
 ): boolean {
   try {
     if (!textarea) {
@@ -23,6 +24,8 @@ export function insertTextAtTextareaCursor(
     } else {
       textarea.value = newValue;
     }
+
+    onValueChange?.(newValue);
 
     const newCursorPos = start + text.length;
     textarea.setSelectionRange(newCursorPos, newCursorPos);
