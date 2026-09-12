@@ -84,7 +84,7 @@ interface ImportDeclarationPathLike {
  * allowed-imports.ts). Type-only imports carry no runtime value and are
  * dropped without a binding.
  */
-function collectAndStripImportDeclarationsPlugin(
+export function collectAndStripImportDeclarationsPlugin(
   sink: SandboxImportBinding[],
 ) {
   return function collectAndStripImportDeclarations() {

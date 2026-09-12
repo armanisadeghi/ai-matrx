@@ -1,0 +1,49 @@
+/**
+ * The sandbox frame's stylesheet, built to `public/kind-sandbox.css`.
+ *
+ * It imports the APP's own `globals.css` on purpose: the frame must produce
+ * pixel-identical output to the in-page render, and the only way to guarantee
+ * that is to compile the same tokens, the same `@theme`, the same plugins and
+ * the same Tailwind source scan. Anything hand-copied here would drift the
+ * first time someone edits globals.css.
+ *
+ * ⚠️ KNOWN GAP, recorded not hidden (plan §1.8): Tailwind v4 emits utilities by
+ * scanning SOURCE FILES, and the 162 organization-authored component bodies
+ * live in the DATABASE. A class an author used that no repo file uses is
+ * missing from this sheet — exactly as it is missing from the app's sheet
+ * today, so the frame does not regress it. Closing it needs an
+ * `@source inline(...)` safelist generated from the live corpus; that is the
+ * rendering-parity session (S5), not this one.
+ */
+@import "../../../../app/globals.css";
+
+/* The frame is a bare document: no AppShell, no body chrome. It owns nothing
+   but the component, and the HOST page owns scroll (plan §1.8). */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: visible;
+}
+
+/* A refused URL (safe-url.ts) is visible, never silent. */
+.matrx-sandbox-refused-url {
+    text-decoration: line-through;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* A component that failed says so, in the frame, where the reader is. */
+.matrx-sandbox-error {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid hsl(var(--destructive) / 0.4);
+    border-radius: 0.5rem;
+    background: hsl(var(--destructive) / 0.08);
+    color: hsl(var(--foreground));
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}

@@ -1,0 +1,208 @@
+/**
+ * entry — the kind sandbox FRAME RUNTIME.
+ *
+ * This is the whole of what runs inside the `/kind-sandbox` iframe. It is
+ * bundled to `public/kind-sandbox.js` by `build-kind-sandbox.ts` and loaded as
+ * one cacheable script, because the frame's CSP is `connect-src 'none'` and
+ * therefore nothing can be fetched at runtime.
+ *
+ * WHAT IS DELIBERATELY ABSENT (S1 scope, DD-123 §2):
+ *  - no `postMessage`, no `window.top`, no `parent` — the message protocol is
+ *    S2. Until then the runtime is driven through the global below, which is
+ *    exactly what the bare-HTML acceptance harness does.
+ *  - no network of any kind. Nothing in this bundle may reach `fetch`,
+ *    `XMLHttpRequest`, `WebSocket` or `EventSource`; the build script greps
+ *    its own output and FAILS if one appears (that is the real guard, not this
+ *    comment).
+ *
+ * The global is versioned so the host can refuse a stale artifact rather than
+ * silently rendering with the wrong contract.
+ */
+import React from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { executeKindBody } from "./execute-kind-body";
+import type { SandboxBodyPayload } from "../transform/transform-kind-body";
+
+/** Bumped whenever the mount contract changes. The host asserts on it. */
+export const SANDBOX_RUNTIME_VERSION = 1;
+
+export interface SandboxMountOptions {
+    /** Props handed to the component: `data`, `kind`, `config`, `uiOptions`… */
+    props?: Record<string, unknown>;
+    /** CSS custom properties copied from the host document's `:root`. */
+    themeTokens?: Record<string, string>;
+    /** `dark` adds the class the app's `@custom-variant dark` keys off. */
+    colorScheme?: "light" | "dark";
+    /** Called with a human sentence whenever the component fails. */
+    onError?: (message: string) => void;
+}
+
+export interface SandboxHandle {
+    /** Re-render with new props. */
+    update(props: Record<string, unknown>): void;
+    /** Re-apply theme tokens (host theme change). */
+    setTheme(tokens: Record<string, string>, colorScheme?: "light" | "dark"): void;
+    /** Tear the React root down. */
+    unmount(): void;
+}
+
+interface BoundaryProps {
+    onError?: (message: string) => void;
+    children: React.ReactNode;
+}
+
+/**
+ * Law 4: a component that throws shows WHAT failed, never an empty box. The
+ * host relays the same sentence to the incident queue in S2.
+ */
+class FrameErrorBoundary extends React.Component<
+    BoundaryProps,
+    { message: string | null }
+> {
+    constructor(props: BoundaryProps) {
+        super(props);
+        this.state = { message: null };
+    }
+
+    static getDerivedStateFromError(error: unknown) {
+        return {
+            message:
+                error instanceof Error
+                    ? error.message
+                    : "This component threw a value that is not an error.",
+        };
+    }
+
+    override componentDidCatch(error: unknown) {
+        const message =
+            error instanceof Error ? error.message : String(error);
+        this.props.onError?.(message);
+    }
+
+    override render() {
+        if (this.state.message !== null) {
+            return (
+                <div
+                    className="matrx-sandbox-error"
+                    role="alert"
+                    data-matrx-sandbox-error="render"
+                >
+                    <strong>This component could not render.</strong>
+                    <span>{this.state.message}</span>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+function applyTheme(
+    tokens: Record<string, string> | undefined,
+    colorScheme: "light" | "dark" | undefined,
+): void {
+    const root = document.documentElement;
+    if (tokens) {
+        for (const [name, value] of Object.entries(tokens)) {
+            if (!name.startsWith("--")) continue;
+            root.style.setProperty(name, value);
+        }
+    }
+    if (colorScheme === "dark") root.classList.add("dark");
+    else if (colorScheme === "light") root.classList.remove("dark");
+}
+
+function renderFailure(
+    root: Root,
+    message: string,
+    onError?: (message: string) => void,
+): SandboxHandle {
+    onError?.(message);
+    root.render(
+        <div
+            className="matrx-sandbox-error"
+            role="alert"
+            data-matrx-sandbox-error="compile"
+        >
+            <strong>This component could not be prepared.</strong>
+            <span>{message}</span>
+        </div>,
+    );
+    return {
+        update() {
+            /* nothing to update — the failure is terminal for this payload */
+        },
+        setTheme(tokens, colorScheme) {
+            applyTheme(tokens, colorScheme);
+        },
+        unmount() {
+            root.unmount();
+        },
+    };
+}
+
+/**
+ * Compile and mount one organization-authored component into `container`.
+ * Never throws — every failure path renders a named message instead.
+ */
+export function mountKindComponent(
+    container: HTMLElement,
+    payload: SandboxBodyPayload,
+    options: SandboxMountOptions = {},
+): SandboxHandle {
+    applyTheme(options.themeTokens, options.colorScheme);
+
+    const root = createRoot(container);
+    const { Component, error } = executeKindBody(payload);
+
+    if (!Component) {
+        return renderFailure(
+            root,
+            error ?? "The component could not be compiled inside the sandbox.",
+            options.onError,
+        );
+    }
+
+    let props = options.props ?? {};
+
+    const paint = () => {
+        root.render(
+            <FrameErrorBoundary onError={options.onError}>
+                <Component {...props} />
+            </FrameErrorBoundary>,
+        );
+    };
+
+    paint();
+
+    return {
+        update(next) {
+            props = next ?? {};
+            paint();
+        },
+        setTheme(tokens, colorScheme) {
+            applyTheme(tokens, colorScheme);
+        },
+        unmount() {
+            root.unmount();
+        },
+    };
+}
+
+export interface MatrxKindSandboxGlobal {
+    version: number;
+    mount: typeof mountKindComponent;
+    applyTheme: typeof applyTheme;
+}
+
+const api: MatrxKindSandboxGlobal = {
+    version: SANDBOX_RUNTIME_VERSION,
+    mount: mountKindComponent,
+    applyTheme,
+};
+
+// The frame's only entry point. `globalThis` (not `window`) so nothing in this
+// bundle names a cross-document object.
+(globalThis as unknown as { MatrxKindSandbox: MatrxKindSandboxGlobal })
+    .MatrxKindSandbox = api;
+
+export default api;
