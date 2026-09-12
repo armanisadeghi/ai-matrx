@@ -133,6 +133,10 @@ function JsonField({ ladder, disabled, onCommit }: KnobFieldControlProps) {
         <Button size="sm" disabled={disabled} onClick={() => {
           try {
             const parsed: unknown = JSON.parse(raw);
+            if (parsed === null) {
+              setError("Use the reset action to clear this value.");
+              return;
+            }
             setError(null);
             void Promise.resolve(onCommit(parsed)).then((saved) => {
               if (saved !== false) setEditing(false);
