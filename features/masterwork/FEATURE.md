@@ -178,14 +178,19 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
-- `2026-09-12` — **A signed-out Rulebook tab no longer mounted private chat readers as `anon`.**
-  The `/masterwork/[id]` detail route and every working-mode child had no shared server auth
-  boundary, so an expired or signed-out tab could mount its client loaders and emit expected
-  `42501` refusals for private `chat.*` rows. `app/(core)/masterwork/[id]/layout.tsx` now gates
-  the entire dynamic route family through the canonical `getServerAuth` + `loginHref` contract
-  before any child mounts. Database access stays closed to `anon`; this is a routing repair, not
-  a grant. Guard: `app/(core)/masterwork/[id]/__tests__/layout.test.tsx` covers guest redirect
-  and authenticated rendering.
+- `2026-09-12` — **A signed-out Masterwork tab no longer mounts any private reader as `anon`.**
+  The Rulebook `[id]` layout protected only one dynamic branch: sibling
+  `/masterwork/encore/[id]` was client-only and could mount its direct Supabase readers, including
+  an Operator's run history, before authentication. The private-route census also found the same
+  structural risk in every future private sibling beside those branches. The shared
+  `app/(core)/masterwork/layout.tsx` now keeps only the intentional public `/masterwork` landing
+  and the Vision Interview's existing server guest gate outside its boundary; it stops every other
+  Masterwork descendant through `getServerAuth` before a child mounts. Guests use
+  `currentRequestLoginHref`, so the exact deep path and query survive the sign-in trip. Database
+  access stays closed to `anon`; this is a routing repair, not a grant. Guard:
+  `app/(core)/masterwork/__tests__/layout.test.tsx` census-tests the static, Rulebook, and Encore
+  private routes (including deep query preservation), plus the public and Vision Interview
+  exceptions.
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
 
