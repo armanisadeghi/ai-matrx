@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
+import {
+  MetricNavigation,
+  type MetricNavigationItem,
+} from "@/components/navigation/MetricNavigation";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
@@ -62,44 +66,20 @@ function FeaturedCard({
   );
 }
 
-function SecondaryPill({
-  cfg,
-  value,
-  loading,
-}: {
-  cfg: MetricCardConfig;
-  value: number;
-  loading: boolean;
-}) {
-  return (
-    <Link
-      href={cfg.href}
-      data-surface-value={`${cfg.key}_count`}
-      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50"
-    >
-      <span
-        className={cn(
-          "flex h-5 w-5 items-center justify-center rounded-md",
-          chipClass(cfg.color),
-        )}
-      >
-        <ShellIcon name={cfg.iconName} size={12} strokeWidth={2} />
-      </span>
-      {loading ? (
-        <span className="h-4 w-6 animate-pulse rounded bg-muted" />
-      ) : (
-        <span className="font-semibold tabular-nums text-foreground">
-          {value.toLocaleString()}
-        </span>
-      )}
-      <span className="text-muted-foreground">{cfg.label}</span>
-    </Link>
-  );
-}
-
 export function MetricsStrip() {
   const { metrics, isLoading, isError, refetch } = useDashboardMetrics();
   const m = metrics as DashboardMetrics;
+  const secondaryItems: MetricNavigationItem[] = SECONDARY_METRICS.map(
+    (cfg) => ({
+      key: cfg.key,
+      label: cfg.label,
+      href: cfg.href,
+      iconName: cfg.iconName,
+      color: cfg.color,
+      value: m[cfg.key],
+      state: isLoading ? "loading" : "ready",
+    }),
+  );
 
   if (isError) {
     return (
@@ -139,16 +119,7 @@ export function MetricsStrip() {
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-2">
-        {SECONDARY_METRICS.map((cfg) => (
-          <SecondaryPill
-            key={cfg.key}
-            cfg={cfg}
-            value={m[cfg.key]}
-            loading={isLoading}
-          />
-        ))}
-      </div>
+      <MetricNavigation label="More workspace metrics" items={secondaryItems} />
     </section>
   );
 }

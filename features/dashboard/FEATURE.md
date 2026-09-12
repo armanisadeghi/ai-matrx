@@ -23,6 +23,7 @@
 
 - `DashboardClient.tsx` — composes the page (greeting → metrics → quick actions → pinned → discover).
 - `MetricsStrip.tsx` — featured + secondary engagement counts.
+- `components/navigation/MetricNavigation.tsx` — presentation-only compact metric/destination links; each caller retains its own data and access scope.
 - `QuickActions.tsx` — fixed "start something" launchers.
 - `PinnedSection.tsx` — the user's favorites grid + empty state.
 - `DiscoverSection.tsx` — rotating spotlight cards with `<PinButton>`.
@@ -116,6 +117,8 @@
 ---
 
 ## Change log
+
+- `2026-09-11` — Codex: extracted Dashboard secondary metric pills into the shared presentation-only `MetricNavigation` primitive. Dashboard keeps its live RPC, loading/error behavior, and count semantics; other homes can supply their own real destinations and independently honest count states.
 
 - `2026-08-26` — Codex: Repaired pinned-card unpin affordance positioning and polish. The 44 px tap target now sits in an actual trailing overlay wrapper, with an inset, vertically centered glass-circle X that reveals on hover/focus instead of leaking the SVG onto the card border; touch-only devices retain a visible control.
 - `2026-08-25` — Codex: Completed the dashboard surface wiring: added the canonical read-only context menu over the live manifest scope, mapped rendered sections to their surface values, made metrics failures explicit and retryable, and raised pin/unpin/rotation/quick-action controls to visible 44 px touch targets.
