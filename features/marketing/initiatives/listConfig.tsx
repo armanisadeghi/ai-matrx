@@ -50,6 +50,8 @@ function useActions() {
 }
 export const initiativeListConfig: EntityListConfig<InitiativeListRow> = {
   surfaceKey: "marketing-initiatives",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "marketing_initiative",
   entityLabel: { singular: "initiative", plural: "initiatives" },
   sourceFeature: "marketing",
   scopes: INITIATIVE_LIST_SCOPES,

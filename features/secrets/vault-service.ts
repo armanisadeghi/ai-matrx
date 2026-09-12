@@ -662,6 +662,32 @@ export async function fetchVaultItems(
     .order("created_at", { ascending: true });
   assertVaultData(attachmentRows, attachmentsError);
 
+  // 🚨 AN EMPTY READ IS NOT AN EMPTY VAULT (DD-160).
+  //
+  // RLS does not error when it refuses a row — it returns `[]` with
+  // `error === null`. From 2026-07 until 2026-09-12 a RESTRICTIVE
+  // `platform_admin_select_only` policy on `users.user_secrets` and
+  // `users.credential_attachments` ANDed every non-staff read to false, so the
+  // OWNER of a credential read their items and none of their fields, and this
+  // function reported success and rendered an item with nothing in it. Nobody
+  // saw an error for two months because there was none to see.
+  //
+  // A credential item exists to hold something. Items with no readable field
+  // AND no readable attachment, ACROSS THE WHOLE SCOPE, is not a vault that
+  // happens to be empty — it is a read that was filtered out from under us.
+  // Say so, name both possibilities, and name the remedy.
+  const fieldCount = (fieldRows ?? []).length;
+  const attachmentCount = (attachmentRows ?? []).length;
+  if (fieldCount === 0 && attachmentCount === 0) {
+    throw new Error(
+      `Your vault has ${items.length} ${items.length === 1 ? "item" : "items"} but none of their ` +
+        `fields or files could be read. Either every one of these items is genuinely still empty, ` +
+        `or the database refused the read without reporting an error — the second is a known ` +
+        `failure mode of this screen (DD-160). Nothing has been lost: reload, and if the items are ` +
+        `still blank, report it rather than re-entering the credentials.`,
+    );
+  }
+
   // My own grants refine capabilities for rows I don't own (self-read policy).
   let manageGrantItemIds = new Set<string>();
   const needsGrantRefine =

@@ -58,9 +58,11 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  *
  *  - ten tokens `iam.apply_rls` structurally refuses (six are `audit_class='machinery'` and own the
  *    inputs the access resolver consumes, three have no `id` column, one has a type mismatch);
- *  - `user_secret`, whose SELECT is walled by a RESTRICTIVE `platform_admin_select_only`: the staff
- *    lane is the table's ONLY client read path (its owner reads 0 of their own 39), so stripping it
- *    makes the vault readable by nobody. Lane B-46 owns the repair under the chair's DD-160 ruling;
+ *  - ~~`user_secret`~~ CLOSED by DD-160 (2026-09-12). The RESTRICTIVE `platform_admin_select_only`
+ *    wall is gone, the owner reads their own 39 secret field rows again, and a platform admin reads
+ *    0 of 307. `credential_item` left the list in the same edit: DD-137b11 had already closed its
+ *    policies and left `suppress_platform_admin_lane` false, which is the only reason this guard
+ *    kept reporting it. The budget moves 13 -> 11 and may never move back up silently;
  *  - `wc_impairment_definition`, a registered COMPONENT with no composition parent. db-rules §6d-1
  *    requires one, so `iam.apply_rls` refuses the table outright and it keeps `auth_read` +
  *    `platform_admin_all`. It resolves `private` only because a parentless component has nothing to

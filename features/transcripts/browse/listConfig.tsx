@@ -30,6 +30,8 @@ import {
 
 export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
   surfaceKey: "transcripts-browse",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "transcript",
   entityLabel: { singular: "item", plural: "transcripts, sessions & cleanup" },
   sourceFeature: "transcription",
   /**

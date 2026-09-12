@@ -184,6 +184,7 @@ export function EntityListPage<TRow>({
     entityLabelPlural: config.entityLabel.plural,
     defaultFilters: config.defaultFilters,
     defaultScope,
+    registryToken: config.registryToken,
     urlState: config.urlState,
     supportsArchived: config.supportsArchived !== false,
     view: {
