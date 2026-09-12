@@ -145,7 +145,8 @@ capability — not as a SKILL.md file. The description's first trigger is the ba
 ### PROPOSED refactors (exact diffs — a parallel agent owns SKILL.md; do not apply from here)
 
 **R1 — S1 miss: "skill" is ambiguous in the trigger clause.** The title already says `SKILL.md`; the
-description never does. 210 → 216 chars:
+description never does. 210 → **213** chars (re-measured with `len()` on 2026-09-12; the record
+first said 216). The description actually shipped is 218 chars:
 
 ```diff
 -Use when creating a skill, rewriting a description, splitting an oversized skill, or editing one because an agent ignored, misread, or never fired it.

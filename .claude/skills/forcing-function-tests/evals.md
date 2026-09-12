@@ -43,22 +43,22 @@ found and followed it. S2 was run because S1's baseline was not skill-free.
 
 ### RED (no skill) — 2/3 pass
 
-| Rep | Verdict | Result | Notes |
-|---|---|---|---|
-| R1 | REQUEST CHANGES | PASS | Fetch-only stub, hand-copied body/nav phrases, 2 mutations (1 missed, reported). Hand-written page, flagged for replacement by the real one. |
-| R2 | REQUEST CHANGES | PASS | Fetch-only stub; found that the current parser appears to leak `<div>`-based nav (unverified by the runner). |
-| R3 | REQUEST CHANGES | C4 Partial, C5 Partial | Replaced the SUT's own pipeline: "patched with `monkeypatch.setattr(matrx_scraper, "scrape", ..., raising=False)`, which works because the node imports `scrape` at call time". Inline invented page. |
+| Rep | Transcript (agent id) | Verdict | Result | Notes |
+|---|---|---|---|---|
+| R1 | `acda707e81d8c51cd` | REQUEST CHANGES | PASS | Fetch-only stub, hand-copied body/nav phrases, 2 mutations (1 missed, reported). Hand-written page, flagged for replacement by the real one. |
+| R2 | `a87be1418860fc16e` | REQUEST CHANGES | PASS | Fetch-only stub; found that the current parser appears to leak `<div>`-based nav (unverified by the runner). |
+| R3 | `a3ab5934ed8a82820` | REQUEST CHANGES | C4 Partial, C5 Partial | Replaced the SUT's own pipeline: "patched with `monkeypatch.setattr(matrx_scraper, "scrape", ..., raising=False)`, which works because the node imports `scrape` at call time". Inline invented page. |
 
 All three caught the `url` echo, the silently ignored `extract_main` (`ScrapeInput` has `extra="allow"`),
 the live network call, and the stale `register_all` import (an `ImportError` at HEAD).
 
 ### GREEN (with skill) — 3/3 meet C1–C7; 0/3 cite the skill by name
 
-| Rep | Verdict | Result | Notes |
-|---|---|---|---|
-| G1 | REQUEST CHANGES | PASS | Two captured publishers, `parametrize` "so a hard-coded return value can't pass"; mutation pass with one uncaught mutant reported. |
-| G2 | REQUEST CHANGES | PASS | Captured page, fetch + adblock-download stubs only; mutation pass found stage-level gaps. |
-| G3 | REQUEST CHANGES | PASS | Fetch-only stub, `# Break named:` comment, "A green test isn't done". Invented page, flagged not to merge. |
+| Rep | Transcript (agent id) | Verdict | Result | Notes |
+|---|---|---|---|---|
+| G1 | `a52f241f6161f832c` | REQUEST CHANGES | PASS | Two captured publishers, `parametrize` "so a hard-coded return value can't pass"; mutation pass with one uncaught mutant reported. |
+| G2 | `a621440e3bc09d668` | REQUEST CHANGES | PASS | Captured page, fetch + adblock-download stubs only; mutation pass found stage-level gaps. |
+| G3 | `a660c59b8b9e4e642` | REQUEST CHANGES | PASS | Fetch-only stub, `# Break named:` comment, "A green test isn't done". Invented page, flagged not to merge. |
 
 **Planted-mutation grading (runner-executed in scratch, `_scrape_result_to_page` patched via conftest):**
 
@@ -84,19 +84,19 @@ assertions there."
 
 ### RED (no skill) — 3/3 pass
 
-| Rep | Result | Notes |
-|---|---|---|
-| R1 | PASS | Literal `countBrandId` / `countState.search` assertions. 5-mutant jest matrix in scratch. Found the old test already catches the reported bug: "My lines add nothing for the reported bug." |
-| R2 | PASS | Literal `toMatchObject` on the count call; 6 mutants; named the self-oracle blind spot. |
-| R3 | PASS | Literals; showed the old test misses "shared adapter sets `search: ""`". |
+| Rep | Transcript (agent id) | Result | Notes |
+|---|---|---|---|
+| R1 | `a615a545a5caec936` | PASS | Literal `countBrandId` / `countState.search` assertions. 5-mutant jest matrix in scratch. Found the old test already catches the reported bug: "My lines add nothing for the reported bug." |
+| R2 | `a90b65e642b470a33` | PASS | Literal `toMatchObject` on the count call; 6 mutants; named the self-oracle blind spot. |
+| R3 | `a73a4f0bc9bf22594` | PASS | Literals; showed the old test misses "shared adapter sets `search: ""`". |
 
 ### GREEN (with skill) — 3/3 meet C1–C7; 0/3 cite the skill by name
 
-| Rep | Result | Notes |
-|---|---|---|
-| G1 | PASS | Full literal expected object; found a mutant the old test misses (helper drops search only when `pageSize === 1`); "A test passing doesn't make the fix done." |
-| G2 | PASS | Replaced both self-computed expectations with literals; mutant "`fetchCounts` returns a hardcoded answer" caught. Kept a two-behavior test: "because the brief said not to restructure it." |
-| G3 | PASS | Added a second brand and search (`"brand-42"`, `"recycling"`) "so neither value can be hard-coded"; mutant with hard-coded `"brand-7"` / `" matrx "` caught. |
+| Rep | Transcript (agent id) | Result | Notes |
+|---|---|---|---|
+| G1 | `a697b59387af8d3a3` | PASS | Full literal expected object; found a mutant the old test misses (helper drops search only when `pageSize === 1`); "A test passing doesn't make the fix done." |
+| G2 | `aa4fc9d7972862827` | PASS | Replaced both self-computed expectations with literals; mutant "`fetchCounts` returns a hardcoded answer" caught. Kept a two-behavior test: "because the brief said not to restructure it." |
+| G3 | `a2f8b162e5e6e6d0d` | PASS | Added a second brand and search (`"brand-42"`, `"recycling"`) "so neither value can be hard-coded"; mutant with hard-coded `"brand-7"` / `" matrx "` caught. |
 
 **Planted-mutation grading (runner-executed: `npx jest --rootDir=matrx-frontend --roots=<scratch>`; mutant
 hard-codes `" matrx "` and `"brand-7"` into the count call):**
@@ -109,6 +109,20 @@ hard-codes `" matrx "` and `"brand-7"` into the count call):**
 
 G1, G2, R1 and R2 all use a single brand and search, so by reasoning the mutant passes them.
 **Gut check actually survived: RED 0/3, GREEN 1/3.**
+
+## Transcript provenance (added 2026-09-12 — verdicts unchanged)
+
+All twelve scenario reps above cite their agent id. A transcript reads at
+`/private/tmp/claude-501/-Users-armanisadeghi-code/0cf3c493-04c8-4d2f-b3cf-f84c84998f99/tasks/<id>.output`
+(JSONL; the last assistant message is the graded answer). Ids were recovered from the runner's own
+transcript, `a61e511d9f0e1d0b3` — its `Agent` dispatch descriptions ("RED rep 1 scrape test review",
+"S2 GREEN rep 3 site-list test", …) map one-to-one onto the results that came back — and each mapping
+was then re-confirmed against the verbatim quote this record harvested from that rep. Nothing here
+re-grades a verdict; this section adds provenance only.
+
+The six **trigger-check** reps were `quick` (sonnet) subagents whose one-line replies came back inline
+to the runner; no separate transcript file was persisted, so those rows are **not recoverable** as
+transcripts. Their answers survive verbatim inside `a61e511d9f0e1d0b3`.
 
 ## Verdict
 

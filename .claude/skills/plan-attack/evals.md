@@ -167,7 +167,9 @@ Dispatch rules:
 +  plan and newer live state is not a finding against the plan.
 ```
 
-**R3 — trigger 4 false fire.** Description, 281 → 300 chars, still inside the ≤300 target:
+**R3 — trigger 4 false fire.** Description, 281 → **311** chars — re-measured with `len()` on
+2026-09-12; this proposal is **over** the ≤300 target, not inside it as first recorded. The
+description actually shipped was worded differently and is **298** chars, inside the target:
 
 ```diff
 -…or code a new contract or table. NOT for finished work (use subagent-dispatch)."

@@ -127,7 +127,11 @@ description rewrite. Exempt: typo, path, and pointer fixes.
    with the skill installed; record fire / no-fire.
 6. **Record the proof** in `<skill>/evals.md`: scenario, lane, date, RED result, GREEN result,
    rationalizations harvested. It is the regression test — the next editor reruns it. The author never
-   grades a run it performed itself.
+   grades a run it performed itself. **Every recorded rep cites its agent id or transcript path** —
+   a verdict nobody can re-check against the transcript is a claim, not proof; when a rep's transcript
+   genuinely cannot be recovered, its row says "transcript not recoverable" rather than looking
+   auditable. (Two records shipped without ids on 2026-09-10 and had to be reconstructed from runner
+   transcripts two days later.)
 
 ## Before you save — checklist
 
@@ -136,6 +140,7 @@ description rewrite. Exempt: typo, path, and pointer fixes.
 - [ ] Slash-only? `disable-model-invocation: true` after the cross-skill grep.
 - [ ] Body ≤500 lines; branch-only material disclosed one level deep with when-to-read pointers; any
   routing list names every companion file.
+- [ ] Every rep in `evals.md` cites an agent id / transcript path, or says it is not recoverable.
 - [ ] Split a SKILL.md? Every original line survives somewhere in the directory (re-grep or an oracle), an
   agent that did not split it verifies routing, and a §5 scenario run proves no behavior was lost.
 - [ ] Guidance form matches the observed failure (§3).
