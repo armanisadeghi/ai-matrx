@@ -15,6 +15,59 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D314 — Tier-blind `seo.keyword_topic` readers remain beside the fixed Offering read (census 2026-09-12)
+
+`seo.gsc_keyword_topics_for` was fixed on 2026-09-12 to take its candidates from
+`seo.keyword_placement_resolve` (site > brand > organization > system, nearest primary wins). Every
+OTHER `seo` function that reads `keyword_topic` still filters `is_primary` and nothing else — no
+scope ladder, no `organization_id` check — so each one hands a site whatever primary rows exist for
+the keyword, whoever wrote them:
+
+`keyword_value_map` (the lineage CTE), `gsc_topic_keyword_set`, `gsc_topic_offering_split`,
+`gsc_site_meaning_health`, `gsc_ruling_session_queue`, `topic_placement_status`,
+`fn_refresh_topic_placement_queue`, `fn_claim_topic_placement_batch`,
+`fn_complete_topic_placement_batch`, `gsc_topic_delete_impact`. (`gsc_topic_placement_diff` is
+correct but carries its own inline copy of the ladder — a second implementation to collapse onto the
+resolver when these are fixed.)
+
+Live impact, measured 2026-09-12: `keyword_topic` holds 13,624 primary rows — 12,306 system tier,
+935 organization tier for org `5dc930e9…`, 382 organization tier for org `f9cb3e35…`, 1 site tier —
+and 1,317 of the organization-tier primaries have NO system row behind them, so they are not
+shadowed by a platform default. Today every site of org `f9cb3e35…` (e.g. datadestruction.com,
+`38eff4c9…`) is scored through 935 placements ruled by org `5dc930e9…`; every site of org
+`5dc930e9…` (e.g. All Green Recycling, `d0aff5b6…`) gets 382 of `f9cb3e35…`'s; and a site whose org
+has no rows at all (pixelium.uk `4a9dbb85…`; www.reusetek.com `f7f3208d…`) sees 1,317 foreign
+placements.
+
+`keyword_value_map` is the heaviest of these because eight functions score through it —
+`gsc_perf_breakdown`, `gsc_breakdown_keyword_ids`, `gsc_topic_stats`,
+`gsc_topic_unassigned_keywords`, `gsc_topic_proposed_keywords`, `gsc_confirm_keyword_topic`,
+`starter_pack_preview`, and `gsc_set_keyword_topic`'s response — so a foreign placement reaches the
+score, the band, and the counts on almost every keyword surface.
+
+The fix is the one already applied to `gsc_keyword_topics_for`: take candidate rows from
+`seo.keyword_placement_resolve`, or from the ladder it holds, instead of re-selecting
+`keyword_topic` tier-blind. One caveat for `keyword_value_map`: it also runs whole-site (NULL
+keyword ids), and the resolver is a ≤2,000-id door, so that one needs the ladder expressed inline
+(or a set-returning variant), not a direct call. Guard that exists for the fixed half:
+`pnpm check:keyword-placement-tenancy`. Owner: whoever owns the SEO keyword placement ladder.
+
+### D315 — SEO keyword RPC readers that hand PostgREST a page of ids trust a 1,000-row answer (2026-09-12)
+
+PostgREST answers at most `db-max-rows` (1,000 on Matrx Main) rows per request and says nothing
+about the rest (D190). The live case is `seo.gsc_keyword_stamps_for`: it returns one row per keyword
+PER DIMENSION, and the corpus carries ~7.4 stamps per keyword (101,412 facet rows over 13,624
+keywords), so a 200-row keyword page asks for ~1,480 rows and was silently cut at 1,000 for anyone
+who raised the page size past ~135 — stamps rendered as blank. `getKeywordStamps` and
+`getKeywordServices` (`keyword-workbench/data.ts`) now page through `readAllRows`
+(`@ai-matrx/data/db`); the services read is one row per keyword and every caller pages ≤200 ids, so
+that half is defensive headroom (the RPC accepts 2,000 ids, and a 2,000-id admin probe on Data
+Destruction returned 1,077 rows on 2026-09-12). Still bare: `getKeywordLocations`
+(`value-system/locations/data.ts`, `gsc_keyword_locations`, one row per keyword) and any other
+`.rpc(...)` reader under `features/marketing/seo/**` whose result is treated as a complete map.
+Fix: the same `readAllRows` factory with `{ count: "exact" }`, a stable total `.order()`, and
+`.range()`. Owner: whoever next touches those readers.
+
 ### D313 — `components/ui/` holds 22 real components with no importer, several duplicating each other (2026-09-12)
 
 A full-repo import census (every `from`/`require`/`import()` specifier, `next/dynamic` included)
@@ -3772,26 +3825,3 @@ user-scoped, not platform-admin. Whether a user-scoped, RLS-by-user route may ru
 ambient organization is a genuinely different question from the admin one, and the answer binds
 the tenancy model, so it was not decided by either agent. Decides: whoever owns matrx-connect
 auth admission.
-
-## `seo.gsc_keyword_topics_for` is TIER-BLIND and ORG-BLIND (found 2026-09-12)
-
-THE OFFERING COLUMN's read (`seo.gsc_keyword_topics_for`, the RPC behind
-`getKeywordServices`) selects EVERY `is_primary` row for a keyword with no
-scope filtering at all — no site/brand/organization/system ladder, and no
-`organization_id` check. It therefore (a) can return several rows for one
-keyword, which the TS reader collapses by "last row wins" (arbitrary), and (b)
-would hand this site another organization's placement if one existed, because
-nothing in the function is scoped to the caller's org. Its sibling
-`seo.keyword_placement_resolve` does the ladder correctly.
-
-NOT a live symptom today: no keyword currently carries more than one
-`is_primary` row (0 of 13,623, checked live 2026-09-12), so the two RPCs agree
-and the Offering column is showing the governing placement. The inherited
-marker shipped 2026-09-12 only attaches a rung when the resolver names the SAME
-topic the detail row describes, so a future disagreement degrades to "no
-marker", never to a wrong decision-maker.
-
-The real fix is in the DB: `gsc_keyword_topics_for` should take its candidate
-rows from `keyword_placement_resolve` rather than re-selecting them tier-blind.
-That is a migration against a function five surfaces read, so it was not made
-inside the marker task. Decides: whoever owns the SEO keyword placement ladder.

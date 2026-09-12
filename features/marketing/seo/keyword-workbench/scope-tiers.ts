@@ -4,7 +4,7 @@
  * A keyword's Offering is decided on a ladder: site > brand > organization >
  * system, nearest rung wins (`seo.keyword_placement_resolve`). Almost every
  * placement in the product today was decided ABOVE the person reading it —
- * 15,008 rows at the platform tier, 1,324 at an organization, 1 at a site
+ * 15,008 rows at the platform tier, 1,324 at an organization, 2 at a site (1 primary, 1 demoted)
  * (live count, 2026-09-12) — so the rung is not a detail: it is the difference
  * between "I decided this" and "someone else decided this for me".
  *

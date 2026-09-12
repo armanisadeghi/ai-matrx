@@ -64306,6 +64306,15 @@ export type Database = {
           severity: string
         }[]
       }
+      __keyword_placement_tenancy_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       __migration_slot_guard_conformance: {
         Args: never
         Returns: {
@@ -86188,6 +86197,8 @@ export type Database = {
           root_id: string
           root_name: string
           root_type: string
+          scope_organization_id: string
+          scope_tier: string
           topic_id: string
           topic_name: string
           worth_from_id: string
@@ -87392,7 +87403,9 @@ export type Database = {
           assigned_by: string
           confidence: number
           keyword_id: string
+          notes: string
           organization_id: string
+          row_id: string
           scope_tier: string
           topic_id: string
         }[]

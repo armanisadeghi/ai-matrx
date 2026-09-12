@@ -15,6 +15,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { Json } from "@/types/database.types";
 import type {
   GscFilters,
@@ -83,14 +84,38 @@ export async function getKeywordStamps(
 ): Promise<KeywordStampMap> {
   const map: KeywordStampMap = new Map();
   if (keywordIds.length === 0 || dimensionSlugs.length === 0) return map;
-  const response = await (await seoDb())
-    .rpc("gsc_keyword_stamps_for", {
-      p_site_id: siteId,
-      p_keyword_ids: keywordIds,
-      p_dimension_slugs: dimensionSlugs,
-    })
-    .abortSignal(signal ?? new AbortController().signal);
-  const rows = assertData(response.data, response.error, "read your columns");
+  const db = await seoDb();
+  const abort = signal ?? new AbortController().signal;
+  const ids = Array.from(new Set(keywordIds));
+  // One row per keyword PER DIMENSION — ~7.4 stamps per keyword live, so a
+  // 200-row page is ~1,480 rows and PostgREST's 1,000-row cap was silently
+  // dropping the tail. Read to completion, never a confidently truncated map.
+  // (keyword_id, dimension) is a total order only while every dimension is
+  // single-cardinality (23 of 23 live, 2026-09-12); value_id breaks the tie
+  // for a multi-cardinality dimension so paging never repeats or skips a row.
+  const rows = await readAllRows(
+    ({ from, to }) =>
+      db
+        .rpc(
+          "gsc_keyword_stamps_for",
+          {
+            p_site_id: siteId,
+            p_keyword_ids: ids,
+            p_dimension_slugs: dimensionSlugs,
+          },
+          { count: "exact" },
+        )
+        .order("keyword_id", { ascending: true })
+        .order("dimension", { ascending: true })
+        .order("value_id", { ascending: true })
+        .range(from, to)
+        .abortSignal(abort)
+        .then((res) => {
+          if (res.error) assertGoverned(null, res.error, "read your columns");
+          return res;
+        }),
+    { label: "seo.gsc_keyword_stamps_for" },
+  );
   for (const row of rows) {
     let byDimension = map.get(row.keyword_id);
     if (!byDimension) {
@@ -254,14 +279,17 @@ export interface KeywordServicePlacement {
   worthFromId: string | null;
   worthFromName: string | null;
   /**
-   * WHICH RUNG DECIDED THIS — site | brand | organization | system, straight
-   * from `seo.keyword_placement_resolve`. `null` only when the resolver could
-   * not be matched to this placement (see `getKeywordServices`): the surface
-   * then says nothing rather than guessing a rung, because naming the wrong
-   * decision-maker is worse than naming none.
+   * WHICH RUNG DECIDED THIS — site | brand | organization | system, read
+   * straight off the RPC row. `null` only when the database sends a rung this
+   * ladder does not know (`isPlacementScopeTier`): the surface then says
+   * nothing rather than guessing, because naming the wrong decision-maker is
+   * worse than naming none.
    */
   scopeTier: PlacementScopeTier | null;
-  /** The organization whose ruling this is, when the rung is an organization. */
+  /**
+   * The organization whose ruling this is. `null` whenever `scopeTier` is —
+   * an owner without a known rung is not an owner we can name.
+   */
   scopeOrganizationId: string | null;
 }
 
@@ -272,6 +300,15 @@ export type KeywordServiceMap = Map<string, KeywordServicePlacement>;
  * THE SCOPE RULE, again: the RPC refuses more than 2,000 ids, so the caller
  * asks for the page it renders. Resolving 20,000 keywords' lineage to paint 50
  * rows is the mistake the stamp reader already refuses to make.
+ *
+ * ONE READ, ONE LADDER. `seo.gsc_keyword_topics_for` answers WHAT the
+ * placement is (name, root, lineage, worth) AND WHO DECIDED IT (`scope_tier`,
+ * `scope_organization_id`), because its candidate set now comes from
+ * `seo.keyword_placement_resolve` inside the database — the one site > brand >
+ * organization > system ladder. Until 2026-09-12 it had no ladder and no
+ * organization filter, so a site was handed other tenants' placements; a
+ * second client-side read that tried to name the rung could only reconcile
+ * what the first read had already got wrong.
  */
 export async function getKeywordServices(
   siteId: string,
@@ -282,58 +319,34 @@ export async function getKeywordServices(
   if (keywordIds.length === 0) return map;
   const db = await seoDb();
   const abort = signal ?? new AbortController().signal;
-  /**
-   * TWO READS, ONE WINDOW. `gsc_keyword_topics_for` answers WHAT the placement
-   * is (name, root, lineage, worth); `keyword_placement_resolve` answers WHO
-   * DECIDED IT — the rung of the defaults ladder that governs this site. Both
-   * take the same ≤2,000 ids, both assert site access, and they run together
-   * because a placement whose decision-maker is unknown is exactly the state
-   * this reader existed in until 2026-09-12: 15,008 platform-tier rulings
-   * rendered as though the site had made them.
-   */
-  const [response, resolved] = await Promise.all([
-    db
-      .rpc("gsc_keyword_topics_for", {
-        p_site_id: siteId,
-        p_keyword_ids: keywordIds,
-      })
-      .abortSignal(abort),
-    db
-      .rpc("keyword_placement_resolve", {
-        p_site_id: siteId,
-        p_keyword_ids: keywordIds,
-      })
-      .abortSignal(abort),
-  ]);
-  const rows = assertData(
-    response.data,
-    response.error,
-    "read which service these keywords map to",
+  // The RPC unnests the ids it is given, so a duplicate id would come back as a
+  // duplicate row and break the paged read's total order. One id, one row.
+  const ids = Array.from(new Set(keywordIds));
+  // THE 1,000-ROW CAP. PostgREST answers at most `db-max-rows` (1,000) rows per
+  // request and says nothing about the rest. Every caller today pages at most
+  // 200 ids, so this read has never been cut — but the RPC accepts 2,000 and a
+  // 2,000-id admin probe returned 1,077 rows (2026-09-12), so the headroom is
+  // real. A map that is treated as complete is read through `readAllRows`.
+  const rows = await readAllRows(
+    ({ from, to }) =>
+      db
+        .rpc(
+          "gsc_keyword_topics_for",
+          { p_site_id: siteId, p_keyword_ids: ids },
+          { count: "exact" },
+        )
+        .order("keyword_id", { ascending: true })
+        .range(from, to)
+        .abortSignal(abort)
+        // A failed page surfaces the governed sentence, never the machine prefix.
+        .then((res) => {
+          if (res.error) assertGoverned(null, res.error, "read which service these keywords map to");
+          return res;
+        }),
+    { label: "seo.gsc_keyword_topics_for", maxRows: 2000 },
   );
-  const governing = new Map<
-    string,
-    { topicId: string | null; scopeTier: string | null; organizationId: string | null }
-  >();
-  for (const row of assertData(
-    resolved.data,
-    resolved.error,
-    "read which level decided these keywords' service",
-  )) {
-    governing.set(row.keyword_id, {
-      topicId: row.topic_id,
-      scopeTier: row.scope_tier,
-      organizationId: row.organization_id,
-    });
-  }
   for (const row of rows) {
-    // The rung is only attached when the resolver is talking about the SAME
-    // topic this row describes. If they ever disagree the cell shows the
-    // placement and stays silent about who chose it.
-    const rung = governing.get(row.keyword_id);
-    const tier =
-      rung && rung.topicId === row.topic_id && isPlacementScopeTier(rung.scopeTier)
-        ? rung.scopeTier
-        : null;
+    const tier = isPlacementScopeTier(row.scope_tier) ? row.scope_tier : null;
     map.set(row.keyword_id, {
       topicId: row.topic_id,
       topicName: row.topic_name,
@@ -349,7 +362,7 @@ export async function getKeywordServices(
       worthFromId: row.worth_from_id,
       worthFromName: row.worth_from_name,
       scopeTier: tier,
-      scopeOrganizationId: tier ? (rung?.organizationId ?? null) : null,
+      scopeOrganizationId: tier ? row.scope_organization_id : null,
     });
   }
   return map;
