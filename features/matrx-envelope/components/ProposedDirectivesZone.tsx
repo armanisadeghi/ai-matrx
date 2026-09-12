@@ -172,10 +172,10 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       // THE IDEMPOTENCY NAMESPACE, not decoration. Without it the server keys
       // the write on a per-request uuid, so a second Approve writes a second
       // project and "Already applied" can never be reached on this path
-      // (aidream c64f53507). 🚨 This field and `DirectiveConfirmResult.message`
-      // are absent from `api-types.ts` until aidream deploys, because that file
-      // is generated from the LIVE server's OpenAPI — do not delete them to
-      // clear a typecheck error; the generator reproduces them after the deploy.
+      // (aidream c64f53507). 🚨 `api-types.ts` is generated from the aidream
+      // CHECKOUT's contract (never from the live server; `pnpm sync-types`
+      // refuses a server behind the pin) and carries this field — never delete
+      // it to satisfy a stale server; `check:api-types-fresh` guards the file.
       conversation_id: proposal.conversationId,
     };
     try {

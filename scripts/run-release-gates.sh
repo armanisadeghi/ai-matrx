@@ -413,7 +413,7 @@ if $STRICT; then
         # DirectiveConfirmRequest.conversation_id straight out of api-types.ts
         # along with the client code that read it, and every gate here stayed
         # green while a second Approve wrote a second project (DD-128). This
-        # re-emits the contract from ../aidream and compares (~2-3 min), so it is
+        # re-emits the contract from ../aidream and compares (~30 s idle, minutes under load), so it is
         # ADVISORY in both lanes: it also goes red, correctly, whenever that
         # checkout has simply moved ahead of the committed files, and the remedy
         # is the same either way — `pnpm sync-types`.

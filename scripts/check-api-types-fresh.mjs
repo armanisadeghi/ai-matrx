@@ -40,7 +40,7 @@
  * checkout, no `uv`, no generator) — never a pass.
  *
  * Cost: it emits the real 7 MB schema from the aidream tree and runs the real
- * generator, ~2-3 minutes. That is why it sits in the release gates beside
+ * generator, ~30 s on an idle machine (minutes under CPU contention). It sits in the release gates beside
  * `check:generated-contracts` rather than in a pre-commit hook.
  */
 
