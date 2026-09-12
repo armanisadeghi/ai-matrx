@@ -111,54 +111,85 @@ export function usePdfSurfaceLinks(opts: {
   fileId?: string | null;
   processedDocumentId?: string | null;
 }): { ids: PdfSurfaceLinkIds; loading: boolean } {
-  const key = `${opts.fileId ?? ""}|${opts.processedDocumentId ?? ""}`;
-  const cached = cache.get(key);
-  const fresh = cached && Date.now() - cached.at < TTL_MS;
-
-  const [ids, setIds] = useState<PdfSurfaceLinkIds>(
-    fresh
-      ? cached.ids
+  const fileIdInput = opts.fileId ?? null;
+  const processedDocumentIdInput = opts.processedDocumentId ?? null;
+  const key = `${fileIdInput ?? ""}|${processedDocumentIdInput ?? ""}`;
+  const unresolvedIds: PdfSurfaceLinkIds = {
+    // A caller-supplied file id is already a file identity. A caller-supplied
+    // processed-document id is only a claim until the docproc lookup proves a
+    // row exists, so never expose it to page/chunk consumers optimistically.
+    fileId: fileIdInput,
+    processedDocumentId: null,
+  };
+  const [resolution, setResolution] = useState<{
+    key: string;
+    ids: PdfSurfaceLinkIds;
+    loading: boolean;
+  }>({
+    key,
+    ids: unresolvedIds,
+    loading: Boolean(fileIdInput || processedDocumentIdInput),
+  });
+  // Key changes render before effects run. Refuse to leak the previous
+  // document's verified pair into the new caller during that render.
+  const current =
+    resolution.key === key
+      ? resolution
       : {
-          fileId: opts.fileId ?? null,
-          processedDocumentId: opts.processedDocumentId ?? null,
-        },
-  );
-  const [loading, setLoading] = useState(!fresh);
+          key,
+          ids: unresolvedIds,
+          loading: Boolean(fileIdInput || processedDocumentIdInput),
+        };
 
   useEffect(() => {
-    if (!opts.fileId && !opts.processedDocumentId) {
-      setLoading(false);
-      return undefined;
-    }
-    const hit = cache.get(key);
-    if (hit && Date.now() - hit.at < TTL_MS) {
-      setIds(hit.ids);
-      setLoading(false);
-      return undefined;
-    }
     let cancelled = false;
-    let p = inflight.get(key);
-    if (!p) {
-      p = resolveIds(opts).finally(() => inflight.delete(key));
-      inflight.set(key, p);
-    }
-    setLoading(true);
-    p.then((resolved) => {
-      cache.set(key, { at: Date.now(), ids: resolved });
-      if (!cancelled) {
-        setIds(resolved);
-        setLoading(false);
+    void Promise.resolve().then(async () => {
+      const pendingIds: PdfSurfaceLinkIds = {
+        fileId: fileIdInput,
+        processedDocumentId: null,
+      };
+      if (!fileIdInput && !processedDocumentIdInput) {
+        if (!cancelled) {
+          setResolution({ key, ids: pendingIds, loading: false });
+        }
+        return;
       }
-    }).catch(() => {
-      // Resolution failure degrades gracefully: the switcher still shows
-      // the surfaces reachable from the ids the caller already had.
-      if (!cancelled) setLoading(false);
+      const hit = cache.get(key);
+      if (hit && Date.now() - hit.at < TTL_MS) {
+        if (!cancelled) {
+          setResolution({ key, ids: hit.ids, loading: false });
+        }
+        return;
+      }
+      let pending = inflight.get(key);
+      if (!pending) {
+        pending = resolveIds({
+          fileId: fileIdInput,
+          processedDocumentId: processedDocumentIdInput,
+        }).finally(() => inflight.delete(key));
+        inflight.set(key, pending);
+      }
+      if (!cancelled) {
+        setResolution({ key, ids: pendingIds, loading: true });
+      }
+      try {
+        const resolved = await pending;
+        cache.set(key, { at: Date.now(), ids: resolved });
+        if (!cancelled) {
+          setResolution({ key, ids: resolved, loading: false });
+        }
+      } catch {
+        // Resolution failure degrades gracefully to the identities already
+        // proven by the caller. An unverified document id stays unavailable.
+        if (!cancelled) {
+          setResolution({ key, ids: pendingIds, loading: false });
+        }
+      }
     });
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [fileIdInput, key, processedDocumentIdInput]);
 
-  return { ids, loading };
+  return { ids: current.ids, loading: current.loading };
 }
