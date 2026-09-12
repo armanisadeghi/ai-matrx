@@ -22,6 +22,10 @@ let providerProps: {
 let lastPreparationSignal: AbortSignal | undefined;
 let mockAdoptOptions: { abortController?: AbortController } | null = null;
 const mockConsume = jest.fn(() => new Promise<void>(() => {}));
+const mockUpstreamAi: AiPreparation = {
+  supports: () => true,
+  run: async () => ({}) as Awaited<ReturnType<AiPreparation["run"]>>,
+};
 const transportFetch = jest.fn(
   async (_path: string, init: { signal?: AbortSignal }) => {
     lastPreparationSignal = init.signal;
@@ -67,8 +71,15 @@ jest.mock("@ai-matrx/agents/content-transfer/react", () => ({
       status: string;
     }) => void;
   }) => {
+    const { ContentTransferCapabilitiesProvider } = jest.requireActual(
+      "@ai-matrx/design-system/content-transfer",
+    );
     providerProps = props;
-    return children;
+    return (
+      <ContentTransferCapabilitiesProvider value={{ ai: mockUpstreamAi }}>
+        {children}
+      </ContentTransferCapabilitiesProvider>
+    );
   },
 }));
 
@@ -239,6 +250,7 @@ describe("AlchemyHost identity lifecycle", () => {
     });
 
     expect(exposedAi).toBeUndefined();
+    expect(mockUpstreamAi).toBeDefined();
     expect(providerProps).not.toBeNull();
     expect(mockConsume).not.toHaveBeenCalled();
     expect(transportFetch).not.toHaveBeenCalled();

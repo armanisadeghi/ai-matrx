@@ -150,7 +150,10 @@ export function useQuickNoteSave({
       }
     } else {
       if (!selectedNoteForUpdate?.organization_id) {
-        throw new Error("The selected note has no persisted organization.");
+        toast.error(
+          "This note is missing its organization. Reload or reopen it before updating.",
+        );
+        return null;
       }
       organizationId = selectedNoteForUpdate.organization_id;
     }
