@@ -301,6 +301,29 @@ function failNoteSave(
   });
 }
 
+function hasDirtyPhysicalField(record: NoteRecord): boolean {
+  return Array.from(record._dirtyFields).some(
+    (field) => field !== "project_id" && field !== "task_id",
+  );
+}
+
+function receiptBaseSettlement(
+  getState: () => unknown,
+  noteId: string,
+  receipt: { databaseWrite: "saved" | "unchanged"; note: Pick<Note, "updated_at" | "version"> },
+): Pick<Note, "updated_at" | "version"> {
+  if (receipt.databaseWrite === "saved") {
+    return receipt.note;
+  }
+  const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+  // A context-only write does not create a new physical revision. If the user
+  // typed a physical field while its edges were settling, retain the base that
+  // edit was built on rather than adopting the service's earlier readback.
+  return currentRecord && hasDirtyPhysicalField(currentRecord)
+    ? { updated_at: currentRecord.updated_at, version: currentRecord.version }
+    : receipt.note;
+}
+
 export const saveNote = createAsyncThunk<void, string>(
   "notes/saveNote",
   async (noteId, { dispatch, getState }) => {
@@ -319,6 +342,7 @@ export const saveNote = createAsyncThunk<void, string>(
       Record<NoteUndoableField, Note[NoteUndoableField]>
     > = {};
     const dirtyFields = Array.from(record._dirtyFields);
+    const hasPairedFolderId = dirtyFields.includes("folder_id");
     const hasLabelChange = dirtyFields.includes("label");
 
     for (const field of dirtyFields) {
@@ -336,7 +360,16 @@ export const saveNote = createAsyncThunk<void, string>(
         updates.tags = record.tags;
       } else if (field === "visibility") {
         updates.visibility = record.visibility;
-      } else if (field === "folder_name" || field === "organization_id") {
+      } else if (field === "folder_name") {
+        if (hasPairedFolderId) {
+          // folder_name is display projection. The admitted folder ID is the
+          // only persisted move input, but both local dirty values settle.
+        } else {
+          const error = new Error("A persisted note can only move through an admitted folder ID and cannot change organization.");
+          failNoteSave(dispatch, getState, noteId, error.message);
+          throw error;
+        }
+      } else if (field === "organization_id") {
         const error = new Error("A persisted note can only move through an admitted folder ID and cannot change organization.");
         failNoteSave(dispatch, getState, noteId, error.message);
         throw error;
@@ -364,11 +397,12 @@ export const saveNote = createAsyncThunk<void, string>(
       }
 
       clearNoteWriteBlockedToast(noteId);
+      const settledBase = receiptBaseSettlement(getState, noteId, receipt);
       dispatch(
         markNoteSaved({
           id: noteId,
-          updatedAt: receipt.note.updated_at ?? undefined,
-          version: receipt.note.version,
+          updatedAt: settledBase.updated_at ?? undefined,
+          version: settledBase.version,
           savedSnapshot,
         }),
       );
@@ -378,10 +412,11 @@ export const saveNote = createAsyncThunk<void, string>(
         for (const field of error.failedFields) {
           delete acknowledgedSnapshot[field];
         }
+        const settledBase = receiptBaseSettlement(getState, noteId, error.receipt);
         dispatch(markNoteSaved({
           id: noteId,
-          updatedAt: error.actualStoredNote.updated_at ?? undefined,
-          version: error.actualStoredNote.version,
+          updatedAt: settledBase.updated_at ?? undefined,
+          version: settledBase.version,
           savedSnapshot: acknowledgedSnapshot,
         }));
         if (error.receipt.postSaveRecoveryError) {
