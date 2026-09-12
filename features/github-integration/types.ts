@@ -1,8 +1,28 @@
 import type { Tables } from "@/types/database.types";
 
-export type GitHubConnectionRow = Tables<
+type IntegrationConnectionRow = Tables<
   { schema: "users" },
   "integration_connections"
+>;
+
+export type GitHubConnectionRow = Pick<
+  IntegrationConnectionRow,
+  | "id"
+  | "owner_type"
+  | "owner_user_id"
+  | "organization_id"
+  | "provider"
+  | "provider_subject"
+  | "account_email"
+  | "account_name"
+  | "scopes"
+  | "status"
+  | "last_verified_at"
+  | "last_error"
+  | "created_at"
+  | "updated_at"
+  | "metadata"
+  | "deleted_at"
 >;
 
 export type GitHubResourceRow = Tables<

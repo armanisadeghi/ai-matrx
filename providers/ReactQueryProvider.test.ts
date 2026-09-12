@@ -25,4 +25,16 @@ describe("React Query defaults", () => {
 
     expect(REACT_QUERY_DEFAULT_OPTIONS.queries.retry(0, error)).toBe(false);
   });
+
+  it.each([
+    ["direct", { code: "42501", message: "permission denied" }],
+    [
+      "cause-preserving wrapper",
+      new Error("We couldn't load your connections.", {
+        cause: { code: "42501", message: "permission denied" },
+      }),
+    ],
+  ])("does not retry deterministic access denials (%s)", (_label, error) => {
+    expect(REACT_QUERY_DEFAULT_OPTIONS.queries.retry(0, error)).toBe(false);
+  });
 });

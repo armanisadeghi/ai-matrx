@@ -21,6 +21,7 @@ import {
   applyOrganizationContextHeader,
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
+import { operationFailed } from "@/utils/errors";
 // Keep this small exchange control local rather than deriving it from the
 // deployed OpenAPI snapshot: the frontend and backend deploy independently,
 // and a newly added fail-closed purpose must be usable as soon as both source
@@ -86,11 +87,11 @@ export function filterGoogleConnectionInventoryForUser(
   };
 }
 
-// `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
-// vault item id and a key name). Reading them is what lets the UI tell the
-// truth about a connection's health without a server round-trip.
+// The vault reference identifiers are deliberately not client-readable. These
+// generated facts let the UI report connection health without disclosing a
+// credential item id or vault key name.
 const CONNECTION_SELECT =
-  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_item_id, vault_secret_key";
+  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_present, credential_stable";
 const RESOURCE_SELECT =
   "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata";
 
@@ -116,8 +117,8 @@ type ConnectionRow = {
   created_at: string;
   updated_at: string;
   metadata: unknown;
-  credential_item_id: string | null;
-  vault_secret_key: string | null;
+  credential_present: boolean | null;
+  credential_stable: boolean | null;
 };
 
 export type GoogleConnectionResourceRow = {
@@ -136,9 +137,7 @@ function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
     row.status === "needs_attention" || row.status === "revoked"
       ? row.status
       : "connected";
-  const credentialPresent = Boolean(
-    row.credential_item_id || row.vault_secret_key,
-  );
+  const credentialPresent = row.credential_present === true;
   return {
     ...row,
     owner_type: row.owner_type === "organization" ? "organization" : "user",
@@ -146,7 +145,7 @@ function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
     status,
     metadata: recordValue(row.metadata),
     credential_present: credentialPresent,
-    credential_stable: Boolean(row.credential_item_id),
+    credential_stable: row.credential_stable === true,
     // A row whose credential reference is gone CANNOT authorize anything, no
     // matter what `status` claims — parity with aidream's precondition.
     health:
@@ -196,7 +195,9 @@ export async function listGoogleConnectionInventory(
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .abortSignal(signal ?? new AbortController().signal);
-  if (connections.error) throw new Error(connections.error.message);
+  if (connections.error) {
+    throw operationFailed("load your Google connections", connections.error);
+  }
 
   const ids = connections.data.map((connection) => connection.id);
   if (!ids.length) return { connections: [], resources: [] };
@@ -209,7 +210,12 @@ export async function listGoogleConnectionInventory(
     .order("resource_type", { ascending: true })
     .order("display_name", { ascending: true })
     .abortSignal(signal ?? new AbortController().signal);
-  if (resources.error) throw new Error(resources.error.message);
+  if (resources.error) {
+    throw operationFailed(
+      "load your Google connection details",
+      resources.error,
+    );
+  }
 
   return {
     connections: connections.data.map(connectionSummary),

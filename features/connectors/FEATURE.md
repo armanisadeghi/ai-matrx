@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-31`
+**Last updated:** `2026-09-12`
 
 ---
 
@@ -25,7 +25,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 - `features/connectors/useLiveConnectors.ts` — the ONE container for connection state and actions across the strip and full list. Google uses the Google connect window; MCP entries use the canonical route selector and OAuth/no-auth/GitHub/configure path.
 - `features/connectors/live-connectors.ts` — merges seeded Google/Gmail/Notion definitions with the usable MCP catalogue and enforces the live boundary.
 - `features/connectors/rotation.ts` — pure randomized-bag selection and persisted-state parser.
-- `features/marketing/google/hooks.ts` and `service.ts` — the shared Google inventory query is **auth-gated twice**: Redux prevents pre-hydration scheduling, and the service requires a live Supabase bearer token immediately before PostgREST. Redux identity can briefly outlive a signed-out client; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`.
+- `features/marketing/google/hooks.ts` and `service.ts` — the shared Google inventory query is **auth-gated twice**: Redux prevents pre-hydration scheduling, and the service requires a live Supabase bearer token immediately before PostgREST. Redux identity can briefly outlive a signed-out client; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`. The browser selects generated `credential_present` / `credential_stable` facts; `credential_item_id` and `vault_secret_key` remain private server-side references.
 
 **Config**
 
@@ -136,6 +136,9 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-12` — Replaced the Google inventory's forbidden vault-reference
+  projection with database-generated boolean health facts, and stopped the
+  shared query policy from replaying deterministic PostgreSQL `42501` denials.
 - `2026-09-12` — Strengthened the shared Google inventory boundary to require
   a bearer token, not merely a session object, before constructing the
   authenticated-only PostgREST read.

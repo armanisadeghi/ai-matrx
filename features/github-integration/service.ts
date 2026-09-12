@@ -9,9 +9,10 @@ import type {
   GitHubResourceRow,
 } from "./types";
 import { postJson, del as deleteJson } from "@/lib/python-client";
+import { operationFailed } from "@/utils/errors";
 
 const CONNECTION_SELECT =
-  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_item_id, vault_secret_key, deleted_at";
+  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, deleted_at";
 const RESOURCE_SELECT =
   "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata, created_at, updated_at, deleted_at";
 
@@ -82,7 +83,12 @@ export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionI
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (connectionResult.error) throw new Error(connectionResult.error.message);
+  if (connectionResult.error) {
+    throw operationFailed(
+      "load your GitHub connection",
+      connectionResult.error,
+    );
+  }
 
   const connection: GitHubConnectionRow | null = connectionResult.data;
   if (!connection) return { connection: null, repositories: [] };

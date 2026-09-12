@@ -1,5 +1,8 @@
 import { createClient } from "@/utils/supabase/client";
-import { githubRepositoryFromRow, loadGitHubConnectionInventory } from "./service";
+import {
+  githubRepositoryFromRow,
+  loadGitHubConnectionInventory,
+} from "./service";
 import type { GitHubResourceRow } from "./types";
 
 jest.mock("@/utils/supabase/client", () => ({
@@ -44,6 +47,44 @@ describe("GitHub repository inventory", () => {
       repositories: [],
     });
     expect(from).not.toHaveBeenCalled();
+  });
+
+  test("reads only client-safe connection columns", async () => {
+    const select = jest.fn();
+    let query: {
+      eq: jest.Mock;
+      is: jest.Mock;
+      order: jest.Mock;
+      limit: jest.Mock;
+      maybeSingle: jest.Mock;
+    };
+    query = {
+      eq: jest.fn(() => query),
+      is: jest.fn(() => query),
+      order: jest.fn(() => query),
+      limit: jest.fn(() => query),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    select.mockReturnValue(query);
+    const from = jest.fn(() => ({ select }));
+    jest.mocked(createClient).mockReturnValue({
+      auth: {
+        getSession: jest.fn().mockResolvedValue({
+          data: { session: { access_token: "test-token" } },
+          error: null,
+        }),
+      },
+      schema: jest.fn(() => ({ from })),
+    } as never);
+
+    await expect(loadGitHubConnectionInventory()).resolves.toEqual({
+      connection: null,
+      repositories: [],
+    });
+
+    const projection = select.mock.calls[0]?.[0] as string;
+    expect(projection).not.toContain("credential_item_id");
+    expect(projection).not.toContain("vault_secret_key");
   });
 
   test("projects safe database metadata into a cloneable repository", () => {

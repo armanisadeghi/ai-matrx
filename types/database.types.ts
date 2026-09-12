@@ -91033,6 +91033,8 @@ export type Database = {
           account_name: string | null
           created_at: string
           credential_item_id: string | null
+          credential_present: boolean | null
+          credential_stable: boolean | null
           deleted_at: string | null
           id: string
           last_error: string | null
@@ -91053,6 +91055,8 @@ export type Database = {
           account_name?: string | null
           created_at?: string
           credential_item_id?: string | null
+          credential_present?: boolean | null
+          credential_stable?: boolean | null
           deleted_at?: string | null
           id?: string
           last_error?: string | null
@@ -91073,6 +91077,8 @@ export type Database = {
           account_name?: string | null
           created_at?: string
           credential_item_id?: string | null
+          credential_present?: boolean | null
+          credential_stable?: boolean | null
           deleted_at?: string | null
           id?: string
           last_error?: string | null

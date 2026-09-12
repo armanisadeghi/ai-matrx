@@ -16,6 +16,29 @@ const ReactQueryDevtools =
       )
     : () => null;
 
+function errorCode(error: unknown): string | null {
+  let current: unknown = error;
+  const seen = new Set<unknown>();
+  while (
+    typeof current === "object" &&
+    current !== null &&
+    !seen.has(current)
+  ) {
+    seen.add(current);
+    const value = current as { code?: unknown; cause?: unknown };
+    if (typeof value.code === "string") return value.code;
+    current = value.cause;
+  }
+  return null;
+}
+
+export function isDeterministicQueryFailure(error: unknown): boolean {
+  // PostgreSQL 42501 is an authorization/privilege verdict. Repeating the same
+  // read cannot change it and only duplicates diagnostics. The original
+  // structured object may be wrapped as Error.cause for human-facing copy.
+  return errorCode(error) === "42501";
+}
+
 export const REACT_QUERY_DEFAULT_OPTIONS = {
   queries: {
     staleTime: 60 * 1000,
@@ -24,7 +47,9 @@ export const REACT_QUERY_DEFAULT_OPTIONS = {
     // AccessGate can reconcile the first one. Keep the one retry for genuinely
     // transient query failures.
     retry: (failureCount: number, error: unknown) =>
-      !isRecordUnavailableError(error) && failureCount < 1,
+      !isRecordUnavailableError(error) &&
+      !isDeterministicQueryFailure(error) &&
+      failureCount < 1,
     refetchOnWindowFocus: false,
   },
   mutations: {

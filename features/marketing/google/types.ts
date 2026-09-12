@@ -24,12 +24,12 @@ export interface GoogleConnectionSummary {
   updated_at: string;
   metadata: Record<string, unknown>;
   /**
-   * True when the row still references a resolvable vault credential — the
-   * stable `credential_item_id` OR the legacy `vault_secret_key`. This mirrors
-   * aidream's `resolve_connection_credential` precondition EXACTLY (it raises
-   * "has no vault credential — it needs re-authentication" only when both are
-   * null), so the UI can state the failure before a sync is ever attempted
-   * instead of discovering it mid-stream.
+   * Client-safe generated fact: true when the row still references a
+   * resolvable vault credential. The private reference identifiers never need
+   * to enter the browser. This mirrors aidream's
+   * `resolve_connection_credential` precondition EXACTLY, so the UI can state
+   * the failure before a sync is attempted instead of discovering it
+   * mid-stream.
    */
   credential_present: boolean;
   /** True when the credential is the stable vault item, not the legacy key. */
