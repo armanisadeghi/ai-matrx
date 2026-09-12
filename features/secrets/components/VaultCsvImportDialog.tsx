@@ -191,7 +191,7 @@ export function VaultCsvImportDialog({
               browserFillEnabled: enableBrowserFill,
             });
             if (!command) return null;
-            return isPossibleDuplicateRow(row, mapping, existingItems) &&
+            return isPossibleDuplicateRow(row, preview, mapping, existingItems) &&
               !createDuplicateRows.has(row.rowNumber)
               ? null
               : command;
@@ -351,6 +351,7 @@ export function VaultCsvImportDialog({
                 {preview.rows.slice(0, 5).map((row) => {
                   const duplicate = isPossibleDuplicateRow(
                     row,
+                    preview,
                     mapping,
                     existingItems,
                   );
