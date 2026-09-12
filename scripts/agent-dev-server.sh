@@ -65,26 +65,59 @@ fail() { printf '[preview] ERROR: %s\n' "$1" >&2; exit 1; }
 alive() { [[ "${1:-}" =~ ^[0-9]+$ ]] && kill -0 "$1" 2>/dev/null; }
 meta_value() { sed -n "s/^$1=//p" "$META" 2>/dev/null | head -1; }
 server_cwd() { lsof -a -p "$1" -d cwd -Fn 2>/dev/null | awk '/^n/{print substr($0,2); exit}'; }
+# `stat` speaks two dialects and they disagree about `-f`. On BSD/macOS `-f` is
+# the format flag; on GNU coreutils it means "filesystem status", so
+# `stat -f %m FILE` on Linux prints FILE's *filesystem* stats — free blocks and
+# free inodes included — on STDOUT and exits 1. Every `stat -f … || stat -c …`
+# chain therefore captured BOTH halves on Linux: the value carried the disk's
+# free-block count and changed between any two readings. That is one half of why
+# `pnpm check:install-gate:self-test` was red on every CI run (2026-09-12) — two
+# fingerprints of an UNCHANGED node_modules never matched, so the preview
+# accused an install that never ran — and it silently broke the log-size cap and
+# `mtime` on Linux too. Decide the dialect once, then ask for one dialect only.
+stat_fmt() { # stat_fmt <gnu-format> <bsd-format> <path>
+  if [[ -z "${STAT_DIALECT:-}" ]]; then
+    if stat -c %i . >/dev/null 2>&1; then STAT_DIALECT=gnu; else STAT_DIALECT=bsd; fi
+  fi
+  if [[ "$STAT_DIALECT" == "gnu" ]]; then
+    stat -c "$1" "$3" 2>/dev/null
+  else
+    stat -f "$2" "$3" 2>/dev/null
+  fi
+}
+
 mtime() {
-  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
+  stat_fmt %Y %m "$1" || echo 0
 }
 
 # node_modules fingerprint. The 2026-09-12 preview deaths all had the same
 # invisible cause: an install relinked node_modules under the running server
 # and the server died minutes later with a stack that said nothing about it.
 # The server must name its own killer, so we stamp a fingerprint at start and
-# re-read it when the process dies. Cheap on purpose — three stat calls, not a
-# tree walk: `.modules.yaml` is rewritten by every pnpm install, and the native
-# swc binary is the file whose disappearance produced the module-not-found
-# storm in the first place.
+# re-read it when the process dies.
+#
+# It is a function of node_modules CONTENT, never of timing. The first version
+# stat-ed three paths for inode:mtime:size, which made it a clock: `stat` reports
+# whole-second mtimes, directory mtimes move when anything under them is touched,
+# and a relink that changes nothing still bumps them — so it could accuse an
+# install that never ran, and did, on every CI run of
+# `pnpm check:install-gate:self-test`. Content instead, and still cheap (one
+# ~180 KB file plus two directory listings, ~15 ms): `.modules.yaml` is rewritten
+# by every pnpm install and records the store, the hoist pattern and every
+# resolved dependency; the `.pnpm` listing is the installed package set, whose
+# churn is what produced the module-not-found storm; `@next` carries the native
+# swc binding whose disappearance made that storm unrecoverable.
 nm_fingerprint() {
   local nm="$REPO_ROOT/node_modules"
-  local parts=""
-  local target
-  for target in "$nm/.modules.yaml" "$nm/@next/swc-darwin-arm64" "$nm/.pnpm"; do
-    parts+="$(stat -f '%i:%m:%z' "$target" 2>/dev/null || stat -c '%i:%Y:%s' "$target" 2>/dev/null || echo 'missing')|"
-  done
-  printf '%s\n' "$parts"
+  if [[ ! -d "$nm" ]]; then
+    printf 'missing\n'
+    return 0
+  fi
+  {
+    cat "$nm/.modules.yaml" 2>/dev/null
+    ls -1 "$nm/.pnpm" 2>/dev/null
+    ls -1 "$nm/@next" 2>/dev/null
+  } | cksum | awk '{print $1 ":" $2}'
 }
 
 # Called when the server process is gone. If node_modules moved underneath it,
@@ -363,7 +396,7 @@ rotate_oversized_log() {
   local size_bytes cap_bytes tail_file
   [[ -f "$LOG" ]] || return 0
   cap_bytes="$(awk -v gb="$MAX_LOG_GB" 'BEGIN { printf "%d", gb * 1073741824 }')"
-  size_bytes="$(stat -f %z "$LOG" 2>/dev/null || stat -c %s "$LOG" 2>/dev/null || echo 0)"
+  size_bytes="$(stat_fmt %s %z "$LOG" || echo 0)"
   (( size_bytes >= cap_bytes )) || return 0
 
   tail_file="$LOG.tail"
