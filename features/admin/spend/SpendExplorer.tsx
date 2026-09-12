@@ -239,9 +239,7 @@ export function SpendExplorer() {
 
       {windowTooWide ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          That range is {Math.round(windowDays)} days; the explorer reads at
-          most {DATABASE_WINDOW_DAY_CAP} days at a time. Pick a shorter range —
-          the numbers below are from the previous window until you do.
+          Max {DATABASE_WINDOW_DAY_CAP} days — this range is {Math.round(windowDays)}.
         </div>
       ) : null}
 
