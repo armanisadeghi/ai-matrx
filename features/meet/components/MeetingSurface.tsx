@@ -32,7 +32,11 @@ import { Loader2 } from "lucide-react";
 import { Button, Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import {
+  selectAuthReady,
+  selectIsAuthenticated,
+} from "@/lib/redux/selectors/userSelectors";
 
 type Resolution =
   | { readonly state: "loading" }
@@ -57,6 +61,14 @@ export function MeetingSurface({
   isAuthenticated: boolean;
 }) {
   const [resolution, setResolution] = useState<Resolution>({ state: "loading" });
+  // The page's server auth value is a safe first-render snapshot, not a
+  // permanent client identity. GlobalAuthSync resolves the browser session
+  // after hydration into the canonical reactive Redux state.
+  // Keep the server lane only while that authority is unknown; switching
+  // earlier could mount a member runtime before a browser session exists.
+  const authReady = useAppSelector(selectAuthReady);
+  const authenticatedNow = useAppSelector(selectIsAuthenticated);
+  const useMemberRoom = authReady ? authenticatedNow : isAuthenticated;
 
   useEffect(() => {
     let live = true;
@@ -103,7 +115,7 @@ export function MeetingSurface({
     );
   }
 
-  return isAuthenticated ? (
+  return useMemberRoom ? (
     <MemberRoom meeting={resolution.meeting} />
   ) : (
     <GuestRoom meeting={resolution.meeting} slug={slug} />
