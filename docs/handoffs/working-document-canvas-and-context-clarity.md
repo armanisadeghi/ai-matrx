@@ -11,7 +11,9 @@ agent has been HEAVILY refactoring the same area (doc consolidation: the
 links now via `platform.associations`). Coordinate — this zone churns every hour.
 
 Browser verification is set up: dev server at **http://localhost:3050**, one-shot
-auto-login `…:3050/api/dev-login?token=matrx-dev-a2990c472f1cae47864bb936&next=/chat`.
+auto-login via the nonce handshake: `openssl rand -hex 16 > .dev-login-nonce`,
+then `…:3050/api/dev-login?nonce=<that value>&next=/chat`. (A literal token used to
+sit on this line — exactly the leak that got the `?token=` path removed.)
 A playwright harness lives at `/tmp/pw-matrx/` (isolated install) — reuse `nav.mjs`
 (navigate+screenshot) for visual checks.
 
