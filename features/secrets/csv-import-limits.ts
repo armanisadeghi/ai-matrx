@@ -1,0 +1,37 @@
+import { fetchKnobIndex } from "@/lib/scoped-config/service";
+
+import type { CsvImportLimits } from "./csv-import";
+
+const KEYS = [
+  "max_file_bytes",
+  "max_records",
+  "max_columns",
+  "max_cell_bytes",
+] as const;
+
+/** The import is intentionally unavailable until the scoped knob authority is live. */
+export async function fetchCsvImportLimits(
+  organizationId: string,
+  userId: string,
+): Promise<CsvImportLimits> {
+  const knobs = await fetchKnobIndex({
+    organizationId,
+    userId,
+    featurePrefix: "vault.import",
+  });
+  const values = Object.fromEntries(
+    knobs.map((knob) => [knob.key, knob.effective_value]),
+  );
+  const parsed = KEYS.map((key) => Number(values[key]));
+  if (parsed.some((value) => !Number.isSafeInteger(value) || value <= 0)) {
+    throw new Error(
+      "Vault import is not configured for this organization yet.",
+    );
+  }
+  return {
+    maxFileBytes: parsed[0],
+    maxRecords: parsed[1],
+    maxColumns: parsed[2],
+    maxCellBytes: parsed[3],
+  };
+}

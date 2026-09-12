@@ -1,0 +1,347 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { FileUp, Loader2, Upload, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Credenza,
+  CredenzaBody,
+  CredenzaContent,
+  CredenzaHeader,
+  CredenzaTitle,
+} from "@/components/ui/credenza-modal/credenza";
+import { fetchCsvImportLimits } from "../csv-import-limits";
+import {
+  hasAmbiguousCsvMapping,
+  parseCsvFile,
+  runCsvImportCommands,
+  suggestedCsvMapping,
+  toCsvImportCommand,
+  type CsvColumnRole,
+  type CsvImportPreview,
+} from "../csv-import";
+import {
+  createVaultItem,
+  getVaultImportActor,
+  VaultImportTransportError,
+} from "../vault-service";
+import type { VaultPrincipal } from "../types";
+
+const SOURCES = [
+  ["generic", "CSV export"],
+  ["chrome", "Chrome / Google Password Manager"],
+  ["bitwarden", "Bitwarden"],
+  ["1password", "1Password"],
+  ["lastpass", "LastPass"],
+] as const;
+const SOURCE_URLS: Record<string, string> = {
+  chrome: "https://support.google.com/chrome/answer/13068232",
+  bitwarden: "https://bitwarden.com/help/export-your-data/",
+  "1password": "https://support.1password.com/export/",
+  lastpass:
+    "https://support.lastpass.com/s/document-item?language=en_US&bundleId=lastpass&topicId=LastPass/export-your-vault-data.html",
+};
+const ROLES: CsvColumnRole[] = [
+  "keep",
+  "title",
+  "username",
+  "password",
+  "url",
+  "notes",
+  "otp",
+];
+
+export function VaultCsvImportDialog({
+  open,
+  onOpenChange,
+  principal,
+  existingNames,
+  onCommitted,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  principal: VaultPrincipal;
+  existingNames: string[];
+  onCommitted: () => Promise<void>;
+}) {
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const cancelled = useRef(false);
+  const [source, setSource] = useState("generic");
+  const [preview, setPreview] = useState<CsvImportPreview | null>(null);
+  const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<{
+    imported: number;
+    skipped: number;
+    failed: number;
+  } | null>(null);
+
+  useEffect(
+    () => () => {
+      cancelled.current = true;
+    },
+    [],
+  );
+  const close = (next: boolean) => {
+    if (!next && !running) {
+      cancelled.current = true;
+      setPreview(null);
+      setMapping([]);
+      setError(null);
+      setResult(null);
+    }
+    onOpenChange(next);
+  };
+  const load = async (file: File) => {
+    cancelled.current = false;
+    setError(null);
+    setUnavailable(null);
+    setResult(null);
+    try {
+      const actor = await getVaultImportActor();
+      const limits = await fetchCsvImportLimits(
+        actor.organizationId,
+        actor.userId,
+      );
+      if (cancelled.current) return;
+      const parsed = await parseCsvFile(file, limits);
+      if (cancelled.current) return;
+      setPreview(parsed);
+      setMapping(suggestedCsvMapping(parsed.headers));
+    } catch (cause) {
+      if (!cancelled.current)
+        setUnavailable(
+          cause instanceof Error
+            ? cause.message
+            : "Vault import is unavailable.",
+        );
+    }
+  };
+  const importRows = async () => {
+    if (!preview) return;
+    if (hasAmbiguousCsvMapping(mapping)) {
+      setError(
+        "Map each title, username, password, notes, and OTP column once before importing.",
+      );
+      return;
+    }
+    setRunning(true);
+    setError(null);
+    cancelled.current = false;
+    try {
+      const actor = await getVaultImportActor();
+      const commands = preview.rows.map((row) => {
+        const command = toCsvImportCommand({
+          source,
+          preview,
+          row,
+          mapping,
+          principal,
+          expectedActor: actor,
+          rowId: crypto.randomUUID(),
+        });
+        return command && !existingNames.includes(command.body.display_name)
+          ? command
+          : null;
+      });
+      const outcome = await runCsvImportCommands(
+        commands,
+        async (command) => {
+          try {
+            await createVaultItem(command.body, {
+              idempotencyKey: command.rowId,
+              expectedActor: command.expectedActor,
+            });
+          } catch (cause) {
+            if (
+              cause instanceof VaultImportTransportError &&
+              cause.code === "context_changed"
+            ) {
+              setError(cause.message);
+              cancelled.current = true;
+            }
+            throw cause;
+          }
+        },
+        () => cancelled.current,
+      );
+      await onCommitted();
+      setResult(outcome);
+    } finally {
+      setRunning(false);
+    }
+  };
+  return (
+    <Credenza open={open} onOpenChange={close}>
+      <CredenzaContent className="md:max-w-3xl">
+        <CredenzaHeader>
+          <CredenzaTitle>Import passwords from CSV</CredenzaTitle>
+        </CredenzaHeader>
+        <CredenzaBody className="space-y-4 pb-6">
+          <p className="text-sm text-muted-foreground">
+            This import stays in this browser until you confirm each encrypted
+            credential. Passwords and notes are never shown in the preview.
+          </p>
+          {!preview && (
+            <div className="space-y-3">
+              <Label>Export source</Label>
+              <Select value={source} onValueChange={setSource}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCES.map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {SOURCE_URLS[source] && (
+                <a
+                  className="text-xs text-primary underline"
+                  href={SOURCE_URLS[source]}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  How to export from this password manager
+                </a>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInput.current?.click()}
+              >
+                <FileUp className="mr-2 h-4 w-4" />
+                Choose CSV file
+              </Button>
+              <input
+                ref={fileInput}
+                className="hidden"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void load(file);
+                  event.target.value = "";
+                }}
+              />
+            </div>
+          )}
+          {unavailable && (
+            <div className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">
+              {unavailable} Ask an organization administrator to enable Vault
+              import settings, then try again.
+            </div>
+          )}
+          {preview && (
+            <div className="space-y-3">
+              <p className="text-sm">
+                {preview.rows.length} records ready for review.{" "}
+                {preview.issues
+                  ? `${preview.issues} invalid rows will be skipped.`
+                  : ""}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {preview.headers.map((header, index) => (
+                  <div
+                    key={`${header}-${index}`}
+                    className="flex items-center gap-2"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-xs">
+                      {header || `Column ${index + 1}`}
+                    </span>
+                    <Select
+                      value={mapping[index]}
+                      onValueChange={(value) =>
+                        setMapping((current) =>
+                          current.map((role, i) =>
+                            i === index ? (value as CsvColumnRole) : role,
+                          ),
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLES.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role === "keep" ? "Preserve encrypted" : role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
+                Preview is masked:{" "}
+                {preview.rows
+                  .filter((row) => !row.issue)
+                  .slice(0, 5)
+                  .map((row) => (
+                    <div key={row.rowNumber}>
+                      Row {row.rowNumber}: credential detected
+                    </div>
+                  ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Possible duplicates use matching title and URL metadata. They
+                are skipped by default; existing credentials are never
+                overwritten. OTP data is preserved inactive and requires
+                explicit Authenticator setup later.
+              </p>
+            </div>
+          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          {result && (
+            <p className="text-sm">
+              Imported {result.imported}; skipped {result.skipped}; failed{" "}
+              {result.failed}.
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            {running && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  cancelled.current = true;
+                }}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Stop after current row
+              </Button>
+            )}
+            {preview && !result && (
+              <Button
+                type="button"
+                disabled={running}
+                onClick={() => void importRows()}
+              >
+                {running ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                Import selected records
+              </Button>
+            )}
+          </div>
+        </CredenzaBody>
+      </CredenzaContent>
+    </Credenza>
+  );
+}

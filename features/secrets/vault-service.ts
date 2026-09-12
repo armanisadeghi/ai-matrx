@@ -74,16 +74,49 @@ function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
 }
 
-async function authHeaders(): Promise<{
+export type VaultExpectedActor = {
+  userId: string;
+  organizationId: string;
+};
+
+export class VaultImportTransportError extends Error {
+  constructor(
+    public readonly code: "context_changed" | "request_rejected" | "retryable",
+  ) {
+    super(
+      code === "context_changed"
+        ? "Your account or request organization changed. Review the import again before continuing."
+        : code === "retryable"
+          ? "The import could not be confirmed. Retry this row with the same import session."
+          : "This import row was rejected. Review the row without exposing its values.",
+    );
+  }
+}
+
+async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
   organizationId: string;
   headers: Record<string, string>;
 }> {
   const organizationId = requireOrganizationContext(requireSelectedOrgId());
   const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("Not signed in");
+  const [
+    {
+      data: { session },
+    },
+    {
+      data: { user },
+      error: userError,
+    },
+  ] = await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
+  if (!session?.access_token || userError || !user)
+    throw new Error("Not signed in");
+  if (
+    expectedActor &&
+    (expectedActor.userId !== user.id ||
+      expectedActor.organizationId !== organizationId)
+  ) {
+    throw new VaultImportTransportError("context_changed");
+  }
   return {
     organizationId,
     headers: {
@@ -93,8 +126,12 @@ async function authHeaders(): Promise<{
   };
 }
 
-async function vaultFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const { organizationId, headers: auth } = await authHeaders();
+async function vaultFetch<T>(
+  path: string,
+  init?: RequestInit,
+  expectedActor?: VaultExpectedActor,
+): Promise<T> {
+  const { organizationId, headers: auth } = await authHeaders(expectedActor);
   const suppliedHeaders = Object.fromEntries(
     new Headers(init?.headers).entries(),
   );
@@ -109,20 +146,25 @@ async function vaultFetch<T>(path: string, init?: RequestInit): Promise<T> {
       headers,
     });
   } catch {
+    if (expectedActor) throw new VaultImportTransportError("retryable");
     throw new Error(
       "Vault service unreachable — value operations need the backend online",
     );
   }
   if (!resp.ok) {
-    let detail: string | undefined;
-    try {
-      const body = (await resp.json()) as { detail?: unknown };
-      detail =
-        typeof body.detail === "string" ? body.detail : JSON.stringify(body);
-    } catch {
-      detail = await resp.text().catch(() => undefined);
+    if (expectedActor) {
+      if (resp.status === 503) throw new VaultImportTransportError("retryable");
+      if (
+        resp.status === 401 ||
+        resp.status === 403 ||
+        resp.status === 409 ||
+        resp.status === 410
+      ) {
+        throw new VaultImportTransportError("context_changed");
+      }
+      throw new VaultImportTransportError("request_rejected");
     }
-    throw new Error(detail || `HTTP ${resp.status}`);
+    throw new Error(`Vault request failed (${resp.status})`);
   }
   if (resp.status === 204) return undefined as T;
   return (await resp.json()) as T;
@@ -141,11 +183,31 @@ export function checkVaultDestination(
 
 export function createVaultItem(
   body: VaultItemCreateRequest,
+  options?: { idempotencyKey?: string; expectedActor?: VaultExpectedActor },
 ): Promise<VaultItem> {
-  return vaultFetch<VaultItemWire>("/items", {
-    method: "POST",
-    body: JSON.stringify(body),
-  }).then(normalizeWireItem);
+  return vaultFetch<VaultItemWire>(
+    "/items",
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: options?.idempotencyKey
+        ? { "X-Idempotency-Key": options.idempotencyKey }
+        : undefined,
+    },
+    options?.expectedActor,
+  ).then(normalizeWireItem);
+}
+
+/** Freeze actor + request organization at confirmation, then recheck both at every send. */
+export async function getVaultImportActor(): Promise<VaultExpectedActor> {
+  const organizationId = requireOrganizationContext(requireSelectedOrgId());
+  const supabase = createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) throw new Error("Not signed in");
+  return { userId: user.id, organizationId };
 }
 
 export async function importVaultEnv(
