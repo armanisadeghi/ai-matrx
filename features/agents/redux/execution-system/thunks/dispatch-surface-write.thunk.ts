@@ -31,6 +31,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
 import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { resolveAgentName } from "@/features/surfaces/hooks/useAgentNames";
 import { requestInlineApproval } from "@/features/agents/ui-first-tools/redux/request-approval";
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
@@ -118,8 +119,12 @@ export const dispatchSurfaceWrite = createAsyncThunk<
     try {
       const state = getState();
       const agentId = state.conversations.byConversationId[conversationId]?.agentId;
+      // Resolve through the SAME module-cached lookup the header uses
+      // (useAgentNames) so this never opens a second fetch path; fall back
+      // to the agent-definition slice, which may already be hydrated.
       const actorLabel = agentId
-        ? selectAgentById(state, agentId)?.name
+        ? (await resolveAgentName(agentId)) ??
+          selectAgentById(state, agentId)?.name
         : undefined;
 
       const result = await applySurfaceWrite(target, args.value, {

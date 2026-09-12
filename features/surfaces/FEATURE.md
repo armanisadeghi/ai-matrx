@@ -152,27 +152,18 @@ internal platform use — never a washed-down user variant beside a private one:
   `useSurfaceWriteHandlers` from any depth); every caller lands through
   `applySurfaceWrite` (`runtime/surface-writeback.ts`). Mirrored to
   `ui.ui_surface_write_target` by manifest-sync so aidream feeds them to
-  surface-bound agents as a `<surface_write_targets>` block. Live adopters:
-  `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
-  `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
-  `matrx-user/marketing-brand` (`brand_profile`, `brand_identity` — handlers
-  in `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`),
-  `matrx-user/keyword-intelligence` (`keyword_selection`),
-  `matrx-user/agents` (`catalog_filters` — one composite object carrying the
-  whole gallery filter/search/sort state; handler in
-  `features/agents/components/agent-listings/AgentsGrid.tsx`, live only on
-  `/agents/classic`),
-  `matrx-user/crm` + `matrx-user/crm-manager` (`search_query`,
-  `party_kind_filter`, `column_filters`, `list_sort` — handlers on
-  `features/crm/components/CrmListPage.tsx`, the array shared by both
-  manifests because write targets do NOT cross `inheritsFrom`), and
-  `matrx-admin/lookups` (`lookup_draft` — handlers in
-  `features/tool-registry/lookups/components/LookupsSurfaceRuntime.tsx`), and
-  `matrx-user/masterwork-rulebook` (`rule_draft`, which stages the whole Add/Edit Rule form
-  for human review, plus the automatic `search_query` view filter; handlers in
-  `features/masterwork/components/detail/RulebookDetailPage.tsx`). The LSI kind
-  components (`meta_tag_options` / `keyword_relationship_research` /
+  surface-bound agents as a `<surface_write_targets>` block. **This list is no
+  longer enumerated here** — as of 2026-09-11, 117 manifests declare a
+  non-empty `writeTargets` array (up from a handful of pilots), and an
+  inline roster this large only drifts. Read the live, current list from
+  `pnpm check:surface-drift` or the admin drift report at
+  `/administration/ui/surfaces`. Two exemplars worth reading as reference
+  shapes: `matrx-user/tasks` (8 draft/entity targets — `patchTaskEdit` fields
+  plus `add_subtasks`/`save_task` entity actions, handlers in
+  `TaskEditorBody.tsx`) and `matrx-user/marketing-page` (`page_meta_tags`,
+  `page_target_keyword`, `page_supporting_keywords` — handlers in
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`). The
+  LSI kind components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
   components get.
@@ -1999,6 +1990,8 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-09-11 — The "Write targets" adopter list stopped being a hand-maintained roster.** It named ~8 pilots while 117 manifests now declare a non-empty `writeTargets` array — a stale inline enumeration nobody was updating. Replaced with the live count, two exemplars (`matrx-user/tasks`, `matrx-user/marketing-page`), and a pointer to `pnpm check:surface-drift` / the admin drift report at `/administration/ui/surfaces` for the current list.
 
 - **2026-09-08 — `matrx-admin/mandate-workspace` joined the 360 loop, and a kind component can now ASK what it may write.** New manifest for ONE mandate's admin page (`mandate-workspace.manifest.ts`): identity + goal values, one `draft`/`ask` target `mandate_goal_draft`, and a `goal_writer` role carrying `mandateKey: "mandate.goal_writer"`. Provider on `AdminMandateWorkspacePage`, values + handler from `TriadGoalSection` (`useSurfaceScopeContribution` + `useSurfaceWriteHandlers`), route resolver `resolveAdminMandateSurface` (console / `new` / `advanced` stay on `matrx-admin/mandates`). The read twin of the writeback seam is now reachable from the sandbox: kind action `list_surface_write_targets` (features/content-ir) wraps `listLiveWriteTargets`, so a rendered kind component renders an apply control only where its target is mounted AND wired — the agent-mandate-specification component's *Use as goal* is the first adopter. The agent run window can adopt a mounted surface by name (`OpenAgentRunWindowOptions.surfaceName`), which is how a chat ABOUT a page is offered that page's targets. Mirror note: the run door REFUSES a surface missing from `ui.ui_surface`, so a new manifest is not live until synced; `POST /api/admin/surfaces/sync-manifests` 500'd on a poisoned dev-server HTTP/2 session (`ERR_HTTP2_INVALID_SESSION`) and the SQL mirror (`scripts/emit-surface-sync-sql.ts`) was applied instead.
 
