@@ -254,9 +254,10 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 - Cost sources that still measure nothing (the folded "Every cost source"
   section lists each with its last write). Closing any of them is work in the
-  system that spends the money, not here. Remaining: Resend email, hosting and
-  infrastructure, Lulu print fulfilment (captured per order, just not in this
-  ledger), and the handful of tables whose cost column has never been written.
+  system that spends the money, not here. Remaining: Lulu print fulfilment
+  (captured per order, just not in this ledger), `docproc.derive_runs` (its
+  runners return no cost), and the two CRM tables with zero rows. Resend and
+  hosting are invoice-billed and live in the fixed-costs knob (below).
   **Closed 2026-09-12:** the search/SEO data APIs and Twilio SMS, then speech,
   page extraction, document cleaning and knowledge-graph sweeps — see the change
   log entries below.
@@ -267,12 +268,15 @@ Registered in `features/admin/constants/admin-categories.ts` +
   still writes no cost: its runner returns a bare dict across the matrx-rag
   package seam, so the cleaner's spend cannot reach the document row without
   changing that protocol. Both scream where they happen; neither is silent.
-- **Shared logins collapse attribution.** Every developer agent signs into the
-  UI as `admin@admin.com` (the repo's own instruction), so all agent-driven
-  testing lands on one person and one organization ("AI Matrx"). The explorer
-  separates it by conversation, feature and agent, but not by which agent
-  session or which developer drove it. A per-session tag on the conversation
-  (the coding-session bridge already mirrors sessions) would close this.
+- **Shared logins no longer hide the actor.** Closed 2026-09-12: the LOGIN
+  SESSION dimension (`session`) cuts by the Supabase session id on the
+  request's JWT claims, so two agents driving the UI as `admin@admin.com` are
+  two rows ("admin@admin.com · signed in Sep 11, 02:57 AM"). Server-side runs
+  with no sign-in read "No sign-in (server-side run)".
+- **Invoice-billed costs are a knob, not a gap.** Hosting and plan-billed
+  services (Resend) can never be ledger rows; `platform.spend.fixed_monthly_usd`
+  holds the monthly figure and the headline shows it per day, never added in.
+  0 reads as "not entered yet" with where to enter it.
 - `admin_spend_overview` measured 3.95s once on the dev server (2026-09-12)
   while every per-ledger aggregate it runs measures under 100ms in isolation
   (`chat.tool_call` 86ms is the largest; a 48h sum over the whole ledger is

@@ -93,16 +93,16 @@ AS $function$
     ('crm.registry_ingest_run', 'CRM registry ingest', 'crm', 'registry_ingest_run', 'estimated_cost_usd', 'created_at', 'gap',
      'Table has zero rows.'),
 
-    ('unmeasured.email',        'Email (Resend)',                NULL, NULL, NULL, NULL, 'unmeasured',
-     'Every transactional and outreach email. No cost row anywhere.'),
+        ('unmeasured.email',        'Email (Resend)',                NULL, NULL, NULL, NULL, 'unmeasured',
+     'Plan-billed, never per email: part of the fixed monthly figure entered in the platform.spend.fixed_monthly_usd setting, shown per day under the headline.'),
     ('speech.global_execution', 'Text-to-speech and transcription', NULL, NULL, NULL, NULL, 'overlap',
      'Measured, and already inside the primary total — not a gap. STT and TTS are priced by the AI catalog like any model (ai.offering pricing, per audio-second or per character) and settle as global_execution rows with link_kind audio_transcription / audio_speech: 3,364 transcriptions and 29,819 audio seconds for $0.38 since 2026-07-15. That is genuinely near-free: $0.046/hour against Groq whisper-large-v3-turbo''s $0.04/hour list. The 5 zero-cost rows were an unpriced call recorded as a believable $0; since 2026-09-12 such a call records meters.unpriced_calls instead. Meet note-taker STT (LiveKit/Deepgram) is billed by LiveKit and has no row here.'),
     ('search.global_execution', 'Search and SEO data APIs',      NULL, NULL, NULL, NULL, 'overlap',
      'Measured since 2026-09-12, and already inside the primary total — no longer a gap. Every SerpAPI, Brave and DataForSEO call opens its own global_execution row (link_kind external_api, agent_run_label "<provider>:<operation>"), because all three funnel through exactly one transport apiece and the host observes each one. DataForSEO reports its own price in every response envelope and that real figure is recorded; SerpAPI and Brave sell calls in a bundle and report nothing, so they are priced from the platform.external_api_prices knobs (serpapi_search_usd, brave_search_usd) an admin can turn. A call we cannot price is recorded UNPRICED with a screaming log line, never as $0 — a $0 row would have this page claim a paid search was free.'),
     ('unmeasured.print_fulfil', 'Print fulfilment (Lulu)',        NULL, NULL, NULL, NULL, 'unmeasured',
      'Captured per order on commerce.print_order.lulu_total_incl_tax, which the Print orders tile shows — it is not in this ledger total.'),
-    ('unmeasured.infra',        'Hosting and infrastructure',     NULL, NULL, NULL, NULL, 'unmeasured',
-     'AWS ECS/Fargate, sandbox EC2, Supabase, Vercel. Billed by invoice, never by row.')
+        ('unmeasured.infra',        'Hosting and infrastructure',     NULL, NULL, NULL, NULL, 'unmeasured',
+     'AWS ECS/Fargate, sandbox EC2, Supabase, Vercel. Billed by invoice: the fixed monthly figure entered in the platform.spend.fixed_monthly_usd setting, shown per day under the headline.')
   ) AS t(ledger_key, label, schema_name, table_name, cost_column, ts_column, role, note);
 $function$;
 
