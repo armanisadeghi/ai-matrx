@@ -23,6 +23,17 @@ report **what improved in the system**, not what happened to the run. The why, i
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
 a subject so you inherit the fixes instead of re-hitting them.
 
+**"The developer" running a trial can be a dispatched Sonnet 5 subagent (Arman, 2026-09-12).**
+Driving the product as a non-technical Expert, judging outputs, logging walls, and writing the
+register is not complex code — it is exactly the discovery/big-task work the Sonnet lane is for.
+An owning session dispatches a Sonnet driver for the trial itself, and that driver in turn
+dispatches Opus subagents for the bounded platform code fixes each wall needs; Fable/default stays
+reserved for planning and heavy reasoning, never for driving a trial end to end. If you are a
+dispatched Sonnet driver reading this: you are authorized to run the whole trial loop (§4) and
+dispatch your own Opus fixes — do not hand the trial back up as "too big" or "campaign-scale". The
+stop condition in your dispatch brief (a deliverable reached, or a pushed build to wait on — §5) is
+your bound; treat it as the actual scope of the job, not a reason to escalate.
+
 **This skill improves itself.** Everything Arman teaches you during a trial, and every mistake that
 cost you an hour, goes into this file in the same session (§7). A trial that ends without a skill
 edit either learned nothing or lost it.
@@ -51,6 +62,28 @@ layer and log it as platform capability, not as the trial's achievement.
 The source must be freely and legally available (public domain, CC, the author's own site, a blog).
 Record the licence and the link in the register.
 
+**Books are only one of three subject classes (Arman, 2026-09-12) — don't let this become "a
+couple of little books".** Most expertise in a company never made it into a book:
+
+- **(a) Expertise that only lives in a person's head.** The trial extracts it through the
+  product's own **interview lane** (Masterwork guided start interviewing you as the Expert) — not
+  a book, not a transcript you pre-wrote. If the interview does a shitty job, that IS the wall:
+  fix the interview lane itself, in the shared layer, before blaming the subject. This has been
+  reported for a while with nobody fixing it — a trial that hits it and doesn't fix it has failed
+  the trial.
+- **(b) Expertise that lives in someone's past work.** The only input is a body of real examples
+  (a writer's published pieces, a critic's reviews, a designer's portfolio) — never the person's
+  narration of their own method. Distil the standards the examples imply, then reproduce a
+  held-out example blind and compare.
+- **(c) Ground-truth subjects, where the world already holds the right answer.** Feed the system
+  everything it needs except the actual answer, have it produce its own version, and diff it
+  against the real one that already exists — a week-old New York Times or Washington Post article
+  reproduced blind from the same sources, a fashion critic's review reproduced blind against the
+  real one. **No AI judge is needed for the main verdict** here: the ground truth already exists.
+  AI cannot yet write at that level, and closing that gap — YouTube talks and guides from real
+  news editors and media writing coaches feeding a Rulebook for a highly unique, opinionated,
+  non-AI-sounding voice — is exactly the kind of trial this program exists to run.
+
 ## 2. The rules of the trial
 
 - **You are the non-technical Expert.** Product UI only: Masterwork guided start, distillation
@@ -69,6 +102,15 @@ Record the licence and the link in the register.
   (`matrx-frontend/app/api/dev-login/route.ts` explains it). Never type a credential into a field.
 - **Cost is a measured result.** Track model spend from `chat.request`; the comparison bar is a
   fresh vibe-code of the same source on cost, sturdiness, reliability, and reuse on source #2–#5.
+- **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
+  that doesn't need complex code — this explicitly includes driving a whole trial (reading,
+  comparing, distilling, running real cases, judging outputs, logging walls); Opus 5 for complex
+  code and important fixes, dispatched BY the Sonnet driver when a wall needs one; Fable/default
+  reserved for heavy reasoning and planning, never for driving a trial. See the restatement above
+  and `common-docs/policies/subagent-model-ladder.md`.
+- **Committed + confirmed on localhost is done (Arman, 2026-09-12).** Do not wait for a release or
+  a deploy train to call a fix or a step complete — commit it, verify it works on localhost, and
+  move on; the deploy agent's cadence is a separate concern from whether the trial can continue.
 
 ## 3. The register — one file, the single source of state
 
@@ -202,6 +244,36 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
+- 2026-09-12 — Arman: this can't become "a couple of little books". Most expertise lives in a
+  person's head or in their past work, not in a book — the interview lane and the body-of-work
+  lane are first-class subject classes, not fallbacks (see §1). He's also flagged for a while that
+  the product's own interview does a shitty job and nobody has fixed it; a trial that hits that
+  wall must fix the interview lane itself, not route around it. He has started two more trials
+  (7 and 8) remotely himself, contents unknown to us — check for overlap before starting a new one.
+- 2026-09-12 — Arman: a Sonnet 5 subagent dispatched by an owning session IS "the developer" for a
+  trial — driving the product, judging outputs, logging walls, writing the register is not complex
+  code. That driver dispatches its own Opus fixes for the bounded code walls; it must never punt
+  the trial back up as too big. If you are that dispatched driver, this file already authorizes
+  you to run the whole loop yourself.
+- 2026-09-12 — (interview-lane trial) The guided vision-interview / "Talk it through" flow, run
+  straight through a full 9-turn, 26-rule session with two deliberately planted contradictions, hit
+  zero walls: it caught both contradictions unprompted, refused to fabricate a rule for genuinely
+  new territory, cross-referenced two unrelated stories as one underlying question on its own, and
+  refused to answer a meta-question in the Expert's own voice. This directly contradicts the
+  standing complaint that the interview "does a shitty job" — before assuming that report is still
+  true, run a real session and quote it; a stale complaint is not evidence against today's build.
+- 2026-09-12 — (interview-lane trial 2, hard persona) Arman: a cooperative, articulate persona only
+  tests an easy human — his complaint is about a real one (terse, impatient, contradicts itself,
+  refuses, half-answers). Re-running the same interview lane with a terse GM persona (flat refusal,
+  a false "already told you" claim, a cross-turn contradiction, a within-message self-correcting
+  exception) still hit zero blocking walls: it deferred a spotted contradiction to finish a live
+  story, then returned unprompted quoting both original statements verbatim; it told apart a real
+  unresolved exception (refused to fold it in without the axis) from a self-correcting one (its own
+  stated trigger, correctly folded in without manufacturing a false contradiction); it remembered a
+  stated time limit nine turns later unprompted and accepted a flat refusal without nagging. One
+  real miss: it accepted a false "I already told you" claim without checking the record, leaving a
+  genuine gap uncaptured — worth watching across future trials before calling it a pattern. Test the
+  hard persona, not just the easy one, before judging an interviewer's real quality.
 - 2026-09-12 — (trial 8, the unfolding case) A cloud session's environment can carry a STALE credential: the
   Supabase publishable key in the container was not the project's live key (401 on every auth call). Read the
   live publishable key through the Supabase MCP (it is public by design) and log the drift as a wall; never
