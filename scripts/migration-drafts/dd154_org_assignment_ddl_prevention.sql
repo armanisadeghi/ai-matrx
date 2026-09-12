@@ -74,6 +74,66 @@ DECLARE
             v_scan_next_pos := position(v_scan_dollar_delimiter IN substr(v_function_source, v_scan_pos + length(v_scan_dollar_delimiter)));
             v_scan_pos := CASE WHEN v_scan_next_pos = 0 THEN v_scan_len + 1 ELSE v_scan_pos + length(v_scan_dollar_delimiter) + v_scan_next_pos - 1 + length(v_scan_dollar_delimiter) END;
           END IF;
+        ELSIF lower(substr(v_function_source, v_scan_pos, 2)) = 'u&'
+              AND substr(v_function_source, v_scan_pos + 2, 1) = '"' THEN
+          -- PostgreSQL Unicode-escaped quoted identifiers are identifiers, not
+          -- strings. Decode their 4-hex and +6-hex escapes before comparing the
+          -- field name, while retaining quoted-identifier case semantics.
+          v_scan_raw_identifier := '';
+          v_scan_next_pos := v_scan_pos + 3;
+          WHILE v_scan_next_pos <= v_scan_len LOOP
+            IF substr(v_function_source, v_scan_next_pos, 1) = '"' THEN
+              IF substr(v_function_source, v_scan_next_pos + 1, 1) = '"' THEN
+                v_scan_raw_identifier := v_scan_raw_identifier || '"';
+                v_scan_next_pos := v_scan_next_pos + 2;
+              ELSE
+                v_scan_next_pos := v_scan_next_pos + 1;
+                EXIT;
+              END IF;
+            ELSE
+              v_scan_raw_identifier := v_scan_raw_identifier || substr(v_function_source, v_scan_next_pos, 1);
+              v_scan_next_pos := v_scan_next_pos + 1;
+            END IF;
+          END LOOP;
+          IF v_scan_next_pos > v_scan_len + 1 THEN
+            RAISE EXCEPTION 'ddl_guard: malformed Unicode-escaped identifier in %', cmd.object_identity
+              USING ERRCODE = 'check_violation';
+          END IF;
+          v_scan_escape_char := chr(92);
+          v_scan_uescape_match := regexp_match(substr(v_function_source, v_scan_next_pos),
+            $dd154_unicode$^([[:space:]]+[Uu][Ee][Ss][Cc][Aa][Pp][Ee][[:space:]]+'([^0-9A-Fa-f+'[:space:]])')$dd154_unicode$);
+          IF v_scan_uescape_match IS NOT NULL THEN
+            v_scan_escape_char := v_scan_uescape_match[2];
+            v_scan_next_pos := v_scan_next_pos + length(v_scan_uescape_match[1]);
+          END IF;
+          v_scan_decoded_identifier := '';
+          v_scan_decode_pos := 1;
+          WHILE v_scan_decode_pos <= length(v_scan_raw_identifier) LOOP
+            v_scan_token := substr(v_scan_raw_identifier, v_scan_decode_pos, 1);
+            IF v_scan_token <> v_scan_escape_char THEN
+              v_scan_decoded_identifier := v_scan_decoded_identifier || v_scan_token;
+              v_scan_decode_pos := v_scan_decode_pos + 1;
+            ELSIF substr(v_scan_raw_identifier, v_scan_decode_pos + 1, 1) = v_scan_escape_char THEN
+              v_scan_decoded_identifier := v_scan_decoded_identifier || v_scan_escape_char;
+              v_scan_decode_pos := v_scan_decode_pos + 2;
+            ELSIF substr(v_scan_raw_identifier, v_scan_decode_pos + 1, 1) = '+' THEN
+              v_scan_hex := substr(v_scan_raw_identifier, v_scan_decode_pos + 2, 6);
+              IF v_scan_hex !~ '^[0-9A-Fa-f]{6}$' THEN
+                RAISE EXCEPTION 'ddl_guard: malformed Unicode-escaped identifier in %', cmd.object_identity USING ERRCODE = 'check_violation';
+              END IF;
+              v_scan_decoded_identifier := v_scan_decoded_identifier || chr((('x' || lpad(v_scan_hex, 8, '0'))::bit(32))::integer);
+              v_scan_decode_pos := v_scan_decode_pos + 8;
+            ELSE
+              v_scan_hex := substr(v_scan_raw_identifier, v_scan_decode_pos + 1, 4);
+              IF v_scan_hex !~ '^[0-9A-Fa-f]{4}$' THEN
+                RAISE EXCEPTION 'ddl_guard: malformed Unicode-escaped identifier in %', cmd.object_identity USING ERRCODE = 'check_violation';
+              END IF;
+              v_scan_decoded_identifier := v_scan_decoded_identifier || chr((('x' || lpad(v_scan_hex, 8, '0'))::bit(32))::integer);
+              v_scan_decode_pos := v_scan_decode_pos + 5;
+            END IF;
+          END LOOP;
+          v_scan_tokens := array_append(v_scan_tokens, v_scan_decoded_identifier);
+          v_scan_pos := v_scan_next_pos;
         ELSIF v_scan_token = '"' THEN
           v_scan_next_pos := v_scan_pos + 1;
           WHILE v_scan_next_pos <= v_scan_len LOOP
@@ -229,7 +289,7 @@ BEGIN
     v_guard_new := regexp_replace(v_guard_body, v_guard_marker_pattern, v_guard_replacement);
     v_guard_new := replace(v_guard_new,
       '  v_schema text; v_rel text; v_kind "char"; v_ispart boolean;',
-      E'  v_schema text; v_rel text; v_kind "char"; v_ispart boolean;\n  c_known_assignment_oids CONSTANT oid[] := ARRAY[$dd154_assignment_oids$];\n  v_assignment_target_oid oid; v_function_source text; v_default_oid oid; v_default_ref text; v_default_md5 text;\n  v_scan_len integer; v_scan_pos integer; v_scan_next_pos integer; v_scan_comment_depth integer; v_scan_index integer; v_scan_token text; v_scan_tokens text[]; v_scan_dollar_delimiter text; v_direct_assignment boolean;');
+      E'  v_schema text; v_rel text; v_kind "char"; v_ispart boolean;\n  c_known_assignment_oids CONSTANT oid[] := ARRAY[$dd154_assignment_oids$];\n  v_assignment_target_oid oid; v_function_source text; v_default_oid oid; v_default_ref text; v_default_md5 text;\n  v_scan_len integer; v_scan_pos integer; v_scan_next_pos integer; v_scan_comment_depth integer; v_scan_index integer; v_scan_decode_pos integer; v_scan_token text; v_scan_tokens text[]; v_scan_dollar_delimiter text; v_scan_raw_identifier text; v_scan_decoded_identifier text; v_scan_escape_char text; v_scan_hex text; v_scan_uescape_match text[]; v_direct_assignment boolean;');
     v_guard_new := replace(v_guard_new, '$dd154_assignment_oids$', v_frozen_assignment_oid_sql);
     IF position('c_known_assignment_oids CONSTANT oid[]' IN v_guard_new) = 0
        OR position('$dd154_assignment_oids$' IN v_guard_new) > 0 THEN

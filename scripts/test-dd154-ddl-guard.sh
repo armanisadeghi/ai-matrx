@@ -120,9 +120,9 @@ echo 'PASS red control: original production-OID migration refused the local clon
 "${PSQL[@]}" -c "CREATE TABLE public.preexisting_tenth_default (organization_id uuid NOT NULL DEFAULT public.current_personal_org_id())" >/dev/null
 echo 'ATTACK setup: added a tenth pre-existing organization default after the nine-row capture' | tee -a "$RESULTS"
 
-node - "$REPO/scripts/migration-drafts/dd154_org_assignment_ddl_prevention.sql" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" <<'NODE'
+node - "$REPO/scripts/migration-drafts/dd154_org_assignment_ddl_prevention.sql" "$RUN_DIR/defaults.tsv" "$RUN_DIR/mapped.sql" "$REPO/scripts/migration-drafts/dd154_rollback_probes.sql" <<'NODE'
 const fs=require('fs'),crypto=require('crypto');
-const [src,mapfile,out]=process.argv.slice(2);
+const [src,mapfile,out,probes]=process.argv.slice(2);
 const old=new Map([
 ['admin.feature_docs','1702067'],['context.system_context_item','3421071'],['education.learn_doc','1700870'],
 ['platform.output_feedback','1700228'],['seo.keyword','1709788'],['seo.keyword_edge','1709833'],
@@ -135,6 +135,9 @@ const lexicalEmitterProbes = [
   "IF ascii(substr(v_function_source, v_scan_pos, 1)) = 92 THEN",
   "v_scan_pos + length(v_scan_dollar_delimiter) + v_scan_next_pos - 1 + length(v_scan_dollar_delimiter)",
   "array_append(v_scan_tokens, replace(substr(v_function_source, v_scan_pos + 1, v_scan_next_pos - v_scan_pos - 2), '\"\"', '\"'))",
+  "PostgreSQL Unicode-escaped quoted identifiers are identifiers, not",
+  "v_scan_decoded_identifier := v_scan_decoded_identifier || chr",
+  "v_scan_uescape_match := regexp_match",
 ];
 for (const probe of lexicalEmitterProbes) {
   if (!original.includes(probe)) throw new Error(`missing DD154 lexer emitter probe: ${probe}`);
@@ -150,6 +153,7 @@ let reversed=sql;
 for(const [ref,oid] of rows) reversed=reversed.split(`${oid}::oid`).join(`${old.get(ref)}::oid`);
 if(reversed!==original) throw new Error('mapped migration changed bytes beyond nine OID constants');
 fs.writeFileSync(out,sql);
+fs.writeFileSync(`${out}.with-probes.sql`, `${sql}\n${fs.readFileSync(probes,'utf8')}`);
 console.log(`PASS harness transform: only 9 OID constants changed, each in exactly 2 sites; reverse SHA ${crypto.createHash('sha256').update(reversed).digest('hex')}`);
 NODE
 
@@ -170,8 +174,20 @@ fi
 echo 'PASS freeze control: mapped migration refused the tenth organization default' | tee -a "$RESULTS"
 
 "${PSQL[@]}" -c 'DROP TABLE public.preexisting_tenth_default' >/dev/null
-"${PSQL[@]}" -f "$RUN_DIR/mapped.sql" >"$RUN_DIR/mapped.out" 2>&1
-echo 'PASS execution: production-OID-only mapped migration transformed the exact fixture definitions' | tee -a "$RESULTS"
+"${PSQL[@]}" --single-transaction -f "$RUN_DIR/mapped.sql.with-probes.sql" >"$RUN_DIR/mapped.out" 2>&1
+echo 'PASS execution: production-OID-only mapped migration and rollback probes ran in one transaction' | tee -a "$RESULTS"
+
+if [[ $("${PSQL[@]}" -Atc "
+  SELECT count(*)
+  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname NOT LIKE 'pg_temp_%' AND c.relname LIKE 'dd154_probe_%'") != 0 ]] ||
+   [[ $("${PSQL[@]}" -Atc "
+  SELECT count(*)
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname NOT LIKE 'pg_temp_%' AND p.proname LIKE 'dd154_probe_%'") != 0 ]]; then
+  echo 'FAIL rollback probes: persistent probe object survived' | tee -a "$RESULTS"; exit 1
+fi
+echo 'PASS rollback probes: no persistent probe relation or function remains after the appended transaction' | tee -a "$RESULTS"
 
 "${PSQL[@]}" -AtF '|' -c "
 SELECT 'guard',r.rolname,p.prosecdef,coalesce(array_to_string(p.proconfig,','),''),coalesce(array_to_string(p.proacl::text[],','),'') FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid='platform._ddl_guard()'::regprocedure
@@ -220,11 +236,18 @@ SELECT pg_temp.record_reject('direct := assignment', 'CREATE FUNCTION public.dd1
 SELECT pg_temp.record_reject('direct = assignment', 'CREATE FUNCTION public.dd154_direct_equals() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.organization_id = gen_random_uuid(); RETURN NEW; END $b$');
 SELECT pg_temp.record_reject('quoted direct assignment', 'CREATE FUNCTION public.dd154_direct_quoted() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW."organization_id" := gen_random_uuid(); RETURN NEW; END $b$');
 SELECT pg_temp.record_reject('comment-separated direct assignment', 'CREATE FUNCTION public.dd154_direct_comment_gap() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.organization_id /* gap */ := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier default escape direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_default() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organization_id" := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier 4-hex escape direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_4hex() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat\0069on_id" := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier 6-hex escape direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_6hex() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat\+000069on_id" := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier custom escape direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_custom() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat!0069on_id" UESCAPE ''!'' := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_reject('Unicode identifier comment-separated direct assignment', 'CREATE FUNCTION public.dd154_direct_unicode_comments() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW /* record */ . /* field */ U&"organizat\0069on_id" /* assignment */ := gen_random_uuid(); RETURN NEW; END $b$');
+SELECT pg_temp.record_allow('Unicode identifier distinct quoted field', 'CREATE FUNCTION public.dd154_unicode_distinct_quoted() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW.U&"organizat\0069on_Id" := gen_random_uuid(); RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('single-quoted assignment text', 'CREATE FUNCTION public.dd154_single_quote_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM ''NEW.organization_id := gen_random_uuid()''; RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('dollar-quoted assignment text', 'CREATE FUNCTION public.dd154_dollar_quote_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$NEW.organization_id := gen_random_uuid()$q$; RETURN NEW; END $b$');
 SELECT pg_temp.record_allow('nested-comment assignment text', 'CREATE FUNCTION public.dd154_nested_comment_text() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN /* outer /* NEW.organization_id := gen_random_uuid() */ outer */ RETURN NEW; END $b$');
 SELECT pg_temp.record_reject('assignment after dollar string', $case$CREATE FUNCTION public.dd154_after_dollar() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM $q$ordinary text$q$; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after escape string', $case$CREATE FUNCTION public.dd154_after_escape() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM E'it\'s text'; NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
+SELECT pg_temp.record_reject('assignment after Unicode string literal', $case$CREATE FUNCTION public.dd154_after_unicode_literal() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN PERFORM U&'ordinary \0069 text'; NEW.U&"organizat\0069on_id" := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_reject('assignment after line comment', $case$CREATE FUNCTION public.dd154_after_line_comment() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN -- an ordinary comment
 NEW.organization_id := gen_random_uuid(); RETURN NEW; END $b$$case$);
 SELECT pg_temp.record_allow('assignment to distinct quoted field', $case$CREATE FUNCTION public.dd154_distinct_quoted() RETURNS trigger LANGUAGE plpgsql AS $b$ BEGIN NEW."Organization_Id" := gen_random_uuid(); RETURN NEW; END $b$$case$);
@@ -262,9 +285,9 @@ TABLE review_results;
 SELECT 'TOTAL',count(*)::text,'failures',count(*) FILTER (WHERE NOT pass)::text FROM review_results;
 DO $verify$
 BEGIN
-  IF (SELECT count(*) FROM review_results) <> 28
+  IF (SELECT count(*) FROM review_results) <> 35
      OR EXISTS (SELECT 1 FROM review_results WHERE pass IS NOT TRUE) THEN
-    RAISE EXCEPTION 'DD154 executable matrix failed or did not run all 28 cases';
+    RAISE EXCEPTION 'DD154 executable matrix failed or did not run all 35 cases';
   END IF;
 END $verify$;
 SQL
