@@ -178,6 +178,15 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-12` — **A signed-out Rulebook tab no longer mounted private chat readers as `anon`.**
+  The `/masterwork/[id]` detail route and every working-mode child had no shared server auth
+  boundary, so an expired or signed-out tab could mount its client loaders and emit expected
+  `42501` refusals for private `chat.*` rows. `app/(core)/masterwork/[id]/layout.tsx` now gates
+  the entire dynamic route family through the canonical `getServerAuth` + `loginHref` contract
+  before any child mounts. Database access stays closed to `anon`; this is a routing repair, not
+  a grant. Guard: `app/(core)/masterwork/[id]/__tests__/layout.test.tsx` covers guest redirect
+  and authenticated rendering.
+
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
 
 - `2026-09-12` — 🚨 **The Conductor was promised a door that did not exist.** On `/masterwork/[id]/conduct` it reasoned its way to staging a rule through `apply_surface_write` / `rule_draft` and found no handler: the Rulebook surface declares the target, but only `RulebookDetailPage` registered it — every lane route mounted the surface with no write handlers at all. `RulebookLaneRoute` now registers `rule_draft`, validating through the ONE shared validator (`agent-context/ruleDraftInput.ts`, extracted from the detail page so both mounts hold one contract), staging into the SAME `RuleEditorDialog`, and landing the Expert's Save through the SAME canonical CAS upsert (`ruleSave.ts` → `upsertRuleWithRetry`, the Improve verb's existing landing) — saving still is not approving. The lane also publishes the `active_rule_draft` read twin and an honest `editor_open`. The class half lives in aidream: the server now advertises only the write targets the mounted page can actually apply. Guard: `features/masterwork/__tests__/rule-draft-write.test.ts` (agent value → validator → fake Rulebook, including draft-stays-draft and validate-then-apply refusals).

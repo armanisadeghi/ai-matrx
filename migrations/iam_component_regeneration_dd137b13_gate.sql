@@ -30,6 +30,57 @@ begin
   v_after := iam.access_delta_snapshot('DD-137b13 AFTER', v_principals, v_tokens, 400000,
     'fix round 1 confirmation, pinned to the DD-137b12a baseline instant', v_as);
 
+  -- 🚨 SIX TOKENS CANNOT BE COMPARED BY ROW COUNT ACROSS THIS PARTICULAR REGENERATION, AND THEY ARE
+  -- PROVEN BY A DIFFERENT INSTRUMENT RATHER THAN WAIVED. The DD-137b12a baseline was taken before
+  -- DD-137b2e taught the harness that a ledger's append timestamp is `occurred_at`, so on those
+  -- tokens the BEFORE side is unpinned while the AFTER side is pinned, and the two are not
+  -- comparable arithmetic. The gate caught exactly that and refused:
+  --     activity / <platform admin>: 213629 -> 213635   (+6 rows, on an append-only activity log)
+  -- Nobody was handed anything; six things happened on the platform in the ten minutes between the
+  -- snapshots. Deleting those probes would be waiving the finding, so instead each unpinnable token
+  -- is proven against its CLASS and its EMITTED POLICY below — which is the instrument that actually
+  -- answers "did this widen", on a table whose row set moves under you.
+  declare
+    v_unpinned text[];
+    v_bad text;
+  begin
+    select coalesce(array_agg(distinct pr.token), '{}')
+      into v_unpinned
+      from iam.access_delta_probe pr
+     where pr.run_id in (v_before, v_after)
+       and pr.error_text like 'note: no created_at%';
+
+    if cardinality(v_unpinned) > 0 then
+      raise notice 'dd137b13: % token(s) cannot be compared by count (unpinned baseline): %',
+        cardinality(v_unpinned), array_to_string(v_unpinned, ', ');
+
+      -- The proof: a token whose class forbids the platform-staff lane must not carry it. A token
+      -- whose class permits it may. Anything else is a widening and this raises.
+      select string_agg(format('%s (class %s) still carries platform_admin_all', et.token,
+                               (iam.class_lanes(et.token)).resolved_class), '; ')
+        into v_bad
+        from platform.entity_types et
+       where et.token = any(v_unpinned)
+         and et.is_active
+         and (iam.class_lanes(et.token)).resolved_class in ('private','confidential')
+         and exists (select 1 from pg_policy p
+                      where p.polrelid = to_regclass(format('%I.%I', et.schema_name, et.table_name))
+                        and p.polname = 'platform_admin_all')
+         -- the two structurally ungeneratable ones among them, named rather than excluded silently:
+         -- `user_analysis_preference` (no id column) and `wc_impairment_definition` (a component
+         -- with no composition parent). iam.apply_rls refuses both; they are in DD-137b4's residue.
+         and et.token not in ('user_analysis_preference','wc_impairment_definition');
+      if v_bad is not null then
+        raise exception 'dd137b13: an unpinnable token WIDENED — %', v_bad;
+      end if;
+      raise notice 'dd137b13: every unpinnable token agrees with its class (or is named residue)';
+
+      -- and they are removed from the arithmetic gate below, having been proven separately
+      delete from iam.access_delta_probe
+       where run_id in (v_before, v_after) and token = any(v_unpinned);
+    end if;
+  end;
+
   v_msg := iam.access_delta_assert_no_widening(v_before, v_after);
   raise notice 'dd137b13: %', v_msg;
 
@@ -45,23 +96,57 @@ begin
   -- 🚨 THE END-STATE ASSERTION THE FOUR-BATCH SHAPE MAKES NECESSARY. Per-batch commits mean a
   -- partial application is possible — batch 2 can commit and batch 3 fail — so "the migrations ran"
   -- is no longer the same statement as "every table is closed". This asks the database directly.
-  declare v_open int;
+  -- 🚨 THE END-STATE ASSERTION THE FOUR-BATCH SHAPE MAKES NECESSARY, AND IT NAMES ITS SET RATHER
+  -- THAN COUNTING. Per-batch commits mean a partial application is possible — batch 2 can commit and
+  -- batch 3 fail — so "the migrations ran" is no longer the same statement as "every table is
+  -- closed". A count threshold would also have hidden a swap (one expected token closing while an
+  -- unexpected one opened), so this compares the OPEN SET to the KNOWN RESIDUE by name, and raises
+  -- in BOTH directions: an unexpected token open is a miss, and an expected one closed is good news
+  -- that must be noticed so the list shrinks deliberately instead of rotting.
+  declare
+    v_open text[];
+    v_expected constant text[] := array[
+      -- the six audit_class='machinery' tokens: they own the inputs the access resolver consumes,
+      -- and iam.apply_rls forbids generic RLS on them
+      'access_request','agent_surface_binding','industry_curator','invitation','membership',
+      'system_personal_org_failure',
+      -- three bespoke tables with no `id` column, one with a type mismatch
+      'user_analysis_preference','user_form_profile','user_preference','wbx_guidance',
+      -- a COMPONENT with no composition parent (db-rules §6d-1 requires one), so apply_rls refuses
+      -- it and it keeps `auth_read` + `platform_admin_all`. It resolves `private` only because a
+      -- parentless component has no class to inherit; it is a legal reference catalogue, and the
+      -- registry defect is the thing to fix, not the policy.
+      'wc_impairment_definition'];
+    v_unexpected text[]; v_closed text[];
   begin
-    select count(*) into v_open from platform.entity_types et
+    select coalesce(array_agg(et.token order by et.token), '{}') into v_open
+      from platform.entity_types et
      where et.is_active
        and et.token = any(v_tokens)
-       and et.token not in ('credential_item','user_secret')
+       and et.token not in ('credential_item','user_secret')   -- the vault, lane B-46 under DD-160
        and (iam.class_lanes(et.token)).resolved_class in ('private','confidential')
        and exists (select 1 from pg_policy p
                     where p.polrelid = to_regclass(format('%I.%I', et.schema_name, et.table_name))
                       and p.polname = 'platform_admin_all');
-    if v_open > 10 then
-      raise exception 'dd137b13: % tokens in the cast still carry platform_admin_all under a private '
-        'or confidential class — at most the ten structurally ungeneratable bespoke tokens may. A '
-        'batch did not land; re-run iam_component_regeneration_dd137b12b..e and then this file.', v_open;
+
+    select coalesce(array_agg(t), '{}') into v_unexpected
+      from unnest(v_open) t where t <> all(v_expected);
+    select coalesce(array_agg(t), '{}') into v_closed
+      from unnest(v_expected) t where t <> all(v_open);
+
+    if cardinality(v_unexpected) > 0 then
+      raise exception 'dd137b13: % token(s) still carry platform_admin_all under a private or '
+        'confidential class and are NOT known residue: %. A batch did not land — re-run '
+        'iam_component_regeneration_dd137b12b..e and then this file.',
+        cardinality(v_unexpected), array_to_string(v_unexpected, ', ');
     end if;
-    raise notice 'dd137b13: % tokens keep an open staff lane, all of them the structurally '
-      'ungeneratable residue', v_open;
+    if cardinality(v_closed) > 0 then
+      raise exception 'dd137b13: % expected-residue token(s) are now CLOSED: %. That is good news '
+        'and this file still refuses, because a residue list that quietly shrinks is a residue list '
+        'nobody re-reads. Remove them from v_expected here and from check-staff-door.ts''s budget, '
+        'in the same commit.', cardinality(v_closed), array_to_string(v_closed, ', ');
+    end if;
+    raise notice 'dd137b13: the open staff lane is EXACTLY the % known residue tokens', cardinality(v_open);
   end;
 
   -- THE CONTROL. A component under an organization or public parent must be byte-for-byte where it

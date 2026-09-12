@@ -60,9 +60,13 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  *    inputs the access resolver consumes, three have no `id` column, one has a type mismatch);
  *  - `user_secret`, whose SELECT is walled by a RESTRICTIVE `platform_admin_select_only`: the staff
  *    lane is the table's ONLY client read path (its owner reads 0 of their own 39), so stripping it
- *    makes the vault readable by nobody. It needs the vault's own door, not a blind strip.
+ *    makes the vault readable by nobody. Lane B-46 owns the repair under the chair's DD-160 ruling;
+ *  - `wc_impairment_definition`, a registered COMPONENT with no composition parent. db-rules §6d-1
+ *    requires one, so `iam.apply_rls` refuses the table outright and it keeps `auth_read` +
+ *    `platform_admin_all`. It resolves `private` only because a parentless component has nothing to
+ *    inherit; it is a legal reference catalogue, and the registry defect is what wants fixing.
  */
-const RESIDUE_BUDGET = 11;
+const RESIDUE_BUDGET = 12;
 
 function loadEnv(): { url: string; key: string } | null {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
