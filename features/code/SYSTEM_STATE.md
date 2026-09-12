@@ -510,7 +510,14 @@ Naming convention is fixed by the orchestrator: `matrx/auto-stash/<unix-timestam
 git for-each-ref --format='%(refname:short)|%(committerdate:iso-strict)|%(subject)' refs/heads/matrx/auto-stash/
 ```
 
-run through `SandboxProcessAdapter.exec`. We deliberately bypass `SandboxGitAdapter.branch` because that method only handles create/delete/switch — there's no list-with-metadata endpoint on the orchestrator's `/git/branch` route. Apply uses `git checkout <branch> -- .` so the user's current `HEAD` stays put; discarding does both `git branch -D` _and_ a force `git push origin :<branch>` so the cleanup propagates to the remote.
+run through `SandboxProcessAdapter.exec` with safely quoted Git arguments. Restore requires a clean working tree and uses `git restore --source=<branch> --staged --worktree -- .`, keeping HEAD in place. Delete local copy confirms before removing only the local recovery branch; remote backups are retained. Ordinary Git stashes, including local-only Matrx saves, appear separately through `RepositoryStashes`: save includes untracked files, apply retains the stash, and discard requires confirmation.
+
+### 8.3.1 Repository selection and Git workflow
+
+Source Control owns `codeWorkspace.activeRepositoryRoot`, serialized as `repo=` independently of Explorer's `root=`. Same-sandbox metadata updates preserve this choice; changing sandbox identity resets it. `repositoryService` inspects the actual Git root (including linked worktrees), branch, upstream, and redacted remotes. Discovery searches four levels and at most 24 repositories; users can open any deeper absolute path directly. Initialization stays inside the writable workspace. Clone reuses the connected GitHub inventory and sandbox credential helper, then selects the resulting repository and Explorer root.
+
+`SandboxGitWireFormat` translates daemon porcelain status, diffs, and mutation responses into the adapter's typed contract. Only add intentionally permits a success response without output. Unstage uses restore for existing HEAD or cached removal for unborn branches, preserving file contents. Initial push configures upstream through `pushRepository`. Failed operations re-read actual Git state, including a successful commit followed by a failed push. Generation guards prevent stale reads from overwriting a new selection. Comparison tabs are read-only snapshots and refresh when reopened.
+
 
 ### 8.4 Session report
 

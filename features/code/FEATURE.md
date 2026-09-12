@@ -152,6 +152,7 @@ container.
 
 ## Change log
 
+- `2026-09-11` — Source Control selects and deep-links a sandbox repository independently of Explorer (`repo=`), discovers nearby repositories, opens/initializes folders, and clones through the connected GitHub inventory. The Git adapter translates the daemon's porcelain status and mutation responses; unstaging handles unborn branches without deleting files. First push establishes upstream tracking; failed composite operations refresh actual Git state. Commit drafts survive view changes. Saved changes expose real Git stashes as well as Matrx recovery branches, and reopening a read-only diff refreshes its snapshot.
 - `2026-09-11` — **Library and sandbox files now state their save origin and offer explicit copies, never implicit synchronization.** Library/source tabs can copy the live buffer to a chosen absolute path in the connected writable sandbox, with a replacement confirmation. Sandbox tabs can save an independent copy in My Files. The original tab remains attached to its original source. The decommissioned Prompt Apps adapter is no longer registered in Library; Agent Apps, Tool UIs, and HTML Pages remain active sources.
 - `2026-09-11` — The Library header now states that saved files and app source code are separate from sandbox files; each source-root help label identifies its save target. Source Control keeps a typed, in-memory commit-message draft per sandbox and repository root, so switching views does not lose the current message or apply it to another repository.
 
