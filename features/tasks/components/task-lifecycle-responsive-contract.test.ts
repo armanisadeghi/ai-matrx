@@ -230,6 +230,25 @@ describe("task lifecycle responsive contract", () => {
     expect(route).not.toContain("TaskCopyForAiButton");
   });
 
+  it("keeps terminal task content owned by the inner scroll panes, not padded outer shells", () => {
+    const desktopShell = source("TasksDesktopShell.tsx");
+    const desktopEditor = source("TaskEditor.tsx");
+    const desktopBody = source("editor/TaskEditorBody.tsx");
+    const mobileEditor = source("mobile/MobileTaskDetails.tsx");
+
+    // S8's fixed-control rule: the desktop footer remains in normal flex flow,
+    // so the editor body is the only terminal scroll owner. The mobile editor
+    // follows the same structure; neither route wrapper may fake clearance.
+    expect(desktopShell).toContain('className="h-full overflow-hidden pt-[var(--shell-header-h)]"');
+    expect(desktopEditor).toContain('className="flex flex-col h-full min-h-0 bg-background"');
+    expect(desktopBody).toContain('className="flex-1 overflow-y-auto min-h-0"');
+    expect(desktopEditor).toContain('className="shrink-0 border-t border-border/60');
+    expect(desktopEditor).not.toContain("fixed bottom-0");
+    expect(mobileEditor).toContain('className="flex-1 overflow-y-auto overscroll-contain"');
+    expect(mobileEditor).toContain('className="flex-shrink-0 border-t border-border bg-card');
+    expect(mobileEditor).not.toContain("fixed bottom-0");
+  });
+
   it("keeps search on the project task list", () => {
     const projectTasks = projectSource("ProjectTaskList.tsx");
 
