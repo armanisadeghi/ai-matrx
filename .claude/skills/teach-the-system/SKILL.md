@@ -4,7 +4,7 @@ type: Skill
 title: "teach-the-system — teach the platform one body of expertise until it breaks, fix it, continue"
 description: "Trial protocol for teaching AI Matrx a real expert's knowledge as a non-technical user, running it until the platform breaks, fixing the platform, and reporting what improved. Use when asked to distil a book, guide, or expert into a Masterwork, test whether the system can capture a human skill, or run an expertise trial. NOT for building a feature you already know is missing (use build-sub-feature)."
 tags: [masterwork, distillation, expertise, trial, platform-testing, doctrine]
-timestamp: 2026-09-12T16:20:00Z
+timestamp: 2026-09-11T16:30:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -23,12 +23,16 @@ report **what improved in the system**, not what happened to the run. The why, i
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
 a subject so you inherit the fixes instead of re-hitting them.
 
-**How victory is scored (Arman, 2026-09-12): the number of things the system could not do before the
-trial and can do after.** Keep a capability ledger in the register — one row per "could not / can now" —
-and lead the morning report with its count. The best rows are bridges: a way to move a person's or a
-source's unique knowledge into an agent's instructions, a workflow step, a tool or a function. The
-built desk is a by-product; a run that succeeded without a new row is worth nothing here (PROGRAM.md
-ruling 6).
+**"The developer" running a trial can be a dispatched Sonnet 5 subagent (Arman, 2026-09-12).**
+Driving the product as a non-technical Expert, judging outputs, logging walls, and writing the
+register is not complex code — it is exactly the discovery/big-task work the Sonnet lane is for.
+An owning session dispatches a Sonnet driver for the trial itself, and that driver in turn
+dispatches Opus subagents for the bounded platform code fixes each wall needs; Fable/default stays
+reserved for planning and heavy reasoning, never for driving a trial end to end. If you are a
+dispatched Sonnet driver reading this: you are authorized to run the whole trial loop (§4) and
+dispatch your own Opus fixes — do not hand the trial back up as "too big" or "campaign-scale". The
+stop condition in your dispatch brief (a deliverable reached, or a pushed build to wait on — §5) is
+your bound; treat it as the actual scope of the job, not a reason to escalate.
 
 **This skill improves itself.** Everything Arman teaches you during a trial, and every mistake that
 cost you an hour, goes into this file in the same session (§7). A trial that ends without a skill
@@ -49,11 +53,6 @@ three answers below. A subject that fails any of them is rejected.
 3. **Can the result be judged without you?** Prefer subjects with a judge built in: a Fable-written
    blog fed to a "sound human" masterwork; a real viral post fed to a verification desk; a
    described family situation fed to two parenting masterworks. Name the judge (AI or Arman) now.
-4. **Would a frontier model give this answer unprompted?** If yes, reject: it is common knowledge,
-   not expertise. The subject must be a highly opinionated method the best people believe in — an
-   order of operations they refuse to violate, "never X without first Y" gates, their own vocabulary,
-   a result they would recognise as theirs (Arman's examples: his own keyword-research order; an
-   agent equipped with Tony Robbins' systems — PROGRAM.md ruling 7).
 
 Prefer subjects that need **no external service**. Fancy APIs make the distillation neither harder
 nor easier — the barrier is never technology, it is whether the system captures the skill. When the
@@ -62,6 +61,28 @@ layer and log it as platform capability, not as the trial's achievement.
 
 The source must be freely and legally available (public domain, CC, the author's own site, a blog).
 Record the licence and the link in the register.
+
+**Books are only one of three subject classes (Arman, 2026-09-12) — don't let this become "a
+couple of little books".** Most expertise in a company never made it into a book:
+
+- **(a) Expertise that only lives in a person's head.** The trial extracts it through the
+  product's own **interview lane** (Masterwork guided start interviewing you as the Expert) — not
+  a book, not a transcript you pre-wrote. If the interview does a shitty job, that IS the wall:
+  fix the interview lane itself, in the shared layer, before blaming the subject. This has been
+  reported for a while with nobody fixing it — a trial that hits it and doesn't fix it has failed
+  the trial.
+- **(b) Expertise that lives in someone's past work.** The only input is a body of real examples
+  (a writer's published pieces, a critic's reviews, a designer's portfolio) — never the person's
+  narration of their own method. Distil the standards the examples imply, then reproduce a
+  held-out example blind and compare.
+- **(c) Ground-truth subjects, where the world already holds the right answer.** Feed the system
+  everything it needs except the actual answer, have it produce its own version, and diff it
+  against the real one that already exists — a week-old New York Times or Washington Post article
+  reproduced blind from the same sources, a fashion critic's review reproduced blind against the
+  real one. **No AI judge is needed for the main verdict** here: the ground truth already exists.
+  AI cannot yet write at that level, and closing that gap — YouTube talks and guides from real
+  news editors and media writing coaches feeding a Rulebook for a highly unique, opinionated,
+  non-AI-sounding voice — is exactly the kind of trial this program exists to run.
 
 ## 2. The rules of the trial
 
@@ -81,6 +102,15 @@ Record the licence and the link in the register.
   (`matrx-frontend/app/api/dev-login/route.ts` explains it). Never type a credential into a field.
 - **Cost is a measured result.** Track model spend from `chat.request`; the comparison bar is a
   fresh vibe-code of the same source on cost, sturdiness, reliability, and reuse on source #2–#5.
+- **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
+  that doesn't need complex code — this explicitly includes driving a whole trial (reading,
+  comparing, distilling, running real cases, judging outputs, logging walls); Opus 5 for complex
+  code and important fixes, dispatched BY the Sonnet driver when a wall needs one; Fable/default
+  reserved for heavy reasoning and planning, never for driving a trial. See the restatement above
+  and `common-docs/policies/subagent-model-ladder.md`.
+- **Committed + confirmed on localhost is done (Arman, 2026-09-12).** Do not wait for a release or
+  a deploy train to call a fix or a step complete — commit it, verify it works on localhost, and
+  move on; the deploy agent's cadence is a separate concern from whether the trial can continue.
 
 ## 3. The register — one file, the single source of state
 
@@ -102,9 +132,8 @@ Every stop is one of these; do the matching thing and keep the trial moving:
 | The agent (Conductor) is wrong or stuck | Talk to it the way the Expert would; when it repeats a defect class, that is a platform wall (its instructions or tools), not a prompt to fix. |
 | A stream detaches / a turn hangs | Read the server-side truth (request rows, `system_errors`) before re-sending; a hung turn with no message to the person is itself a wall. |
 
-Dispatch subagents for bounded fixes (lane named: Sonnet for recon and basic work, Opus for most
-coding, Fable only for the rare reasoning you yourself would struggle with — that is what YOU are
-here for) and keep driving the trial yourself. Two threads at once is the norm: a fix in flight, the trial advancing.
+Dispatch subagents for bounded fixes (lane named: standard/opus by default) and keep driving the
+trial yourself. Two threads at once is the norm: a fix in flight, the trial advancing.
 
 ## 5. What "done for the night" means
 
@@ -115,8 +144,8 @@ morning report exists (§6). "I got tired" is not a stopping point; a blocked de
 ## 6. The morning report — what improved, in plain English
 
 Written for Arman: plain sentences, no paths, no codes, no doc pointers (law:
-`common-docs/policies/talk-to-arman-like-a-person.md`). Lead with the capability ledger — the count
-of "could not → can now" and each row as a capability the next user inherits — then the trial's honest state, then the cost,
+`common-docs/policies/talk-to-arman-like-a-person.md`). Lead with what improved in the platform
+(each fix as a capability the next user inherits), then the trial's honest state, then the cost,
 then the pending list — items only he can do, each with the prompt already written. Never ask
 him to decide something you can find out or do yourself; never send him a question without your
 recommendation.
@@ -215,9 +244,14 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
-- 2026-09-12 — Arman, launching trials 7 and 8: victory = the count of "could not → can now"; aim at
-  opinionated methods a frontier model would not produce unprompted (his keyword-research order, an
-  agent equipped with Tony Robbins' systems); Sonnet for recon, Opus for coding, Fable rarely. Folded
-  into §1 (test 4), the scoreboard paragraph, §4 and §6; the examples live in PROGRAM.md rulings 6–7.
-- 2026-09-12 — A "write two prompts for two agents" ask is not done when the files exist: either launch
-  the sessions or hand Arman the paste-ready wrapper in chat. Files in a folder read as documentation.
+- 2026-09-12 — Arman: this can't become "a couple of little books". Most expertise lives in a
+  person's head or in their past work, not in a book — the interview lane and the body-of-work
+  lane are first-class subject classes, not fallbacks (see §1). He's also flagged for a while that
+  the product's own interview does a shitty job and nobody has fixed it; a trial that hits that
+  wall must fix the interview lane itself, not route around it. He has started two more trials
+  (7 and 8) remotely himself, contents unknown to us — check for overlap before starting a new one.
+- 2026-09-12 — Arman: a Sonnet 5 subagent dispatched by an owning session IS "the developer" for a
+  trial — driving the product, judging outputs, logging walls, writing the register is not complex
+  code. That driver dispatches its own Opus fixes for the bounded code walls; it must never punt
+  the trial back up as too big. If you are that dispatched driver, this file already authorizes
+  you to run the whole loop yourself.
