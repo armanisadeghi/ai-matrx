@@ -45,7 +45,7 @@ import {
 } from "./windows";
 
 /** Mirrors the database's cap in `admin_spend_breakdown`. */
-const MAX_WINDOW_DAYS = 92;
+const DATABASE_WINDOW_DAY_CAP = 92;
 
 function Section({
   icon: Icon,
@@ -83,7 +83,7 @@ export function SpendExplorer() {
   // The database caps a window at 92 days; say so here in words rather than
   // surfacing its refusal as a raw error after a round trip.
   const windowDays = (window.to.getTime() - window.from.getTime()) / 86_400_000;
-  const windowTooWide = windowDays > MAX_WINDOW_DAYS;
+  const windowTooWide = windowDays > DATABASE_WINDOW_DAY_CAP;
 
   const [data, setData] = useState<SpendBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
@@ -203,7 +203,7 @@ export function SpendExplorer() {
 
       {windowTooWide ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          That range is {Math.round(windowDays)} days; the explorer reads at most {MAX_WINDOW_DAYS} days
+          That range is {Math.round(windowDays)} days; the explorer reads at most {DATABASE_WINDOW_DAY_CAP} days
           at a time. Pick a shorter range — the numbers below are from the previous window until you do.
         </div>
       ) : null}

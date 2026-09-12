@@ -26,8 +26,8 @@
  * The build audits the served bytes for all of them and fails.
  */
 import {
-    MAX_FRAME_HEIGHT,
-    MAX_IN_FLIGHT_ACTIONS,
+    FRAME_HEIGHT_CEILING_PX,
+    IN_FLIGHT_ACTION_CAPACITY,
     SANDBOX_PROTOCOL_VERSION,
     checkHostMessage,
     type FrameMessage,
@@ -182,8 +182,8 @@ function startInstance(
         key: string,
         input: unknown,
     ): Promise<{ ok: boolean; value?: unknown; error?: string }> => {
-        if (pending.size >= MAX_IN_FLIGHT_ACTIONS) {
-            const sentence = `Refused the action "${key}": ${MAX_IN_FLIGHT_ACTIONS} actions from this component are already waiting on the page. Nothing was sent.`;
+        if (pending.size >= IN_FLIGHT_ACTION_CAPACITY) {
+            const sentence = `Refused the action "${key}": ${IN_FLIGHT_ACTION_CAPACITY} actions from this component are already waiting on the page. Nothing was sent.`;
             refuse(sentence);
             return Promise.resolve({ ok: false, error: sentence });
         }
@@ -322,7 +322,7 @@ function startInstance(
     const reportSize = (): void => {
         const contentHeight = measure();
         if (contentHeight <= 0) return;
-        const height = Math.min(contentHeight, MAX_FRAME_HEIGHT);
+        const height = Math.min(contentHeight, FRAME_HEIGHT_CEILING_PX);
         if (height === lastHeight && contentHeight === lastContentHeight) return;
         lastHeight = height;
         lastContentHeight = contentHeight;
@@ -331,7 +331,7 @@ function startInstance(
             instanceId,
             height,
             contentHeight,
-            capped: contentHeight > MAX_FRAME_HEIGHT,
+            capped: contentHeight > FRAME_HEIGHT_CEILING_PX,
         });
     };
 

@@ -221,16 +221,16 @@ export default function HtmlPageGridView({
 }
 
 /** Display thresholds for the grid's "when" column. */
-const ONE_HOUR_MS = 3_600_000;
-const TWO_DAYS_MS = 48 * ONE_HOUR_MS;
-const SEVEN_DAYS_MS = 7 * 24 * ONE_HOUR_MS;
+const MILLISECONDS_PER_HOUR = 3_600_000;
+const TWO_DAYS_MS = 48 * MILLISECONDS_PER_HOUR;
+const SEVEN_DAYS_MS = 7 * 24 * MILLISECONDS_PER_HOUR;
 
 export function formatRelativeDate(iso: string): string {
   try {
     const d = new Date(iso);
     const now = new Date();
     const elapsedMs = now.getTime() - d.getTime();
-    if (elapsedMs < ONE_HOUR_MS) return formatRelativeTime(d, { style: "short" });
+    if (elapsedMs < MILLISECONDS_PER_HOUR) return formatRelativeTime(d, { style: "short" });
     const sameDay = d.toDateString() === now.toDateString();
     if (sameDay) {
       return d.toLocaleTimeString(undefined, {

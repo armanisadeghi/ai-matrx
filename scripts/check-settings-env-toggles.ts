@@ -118,9 +118,11 @@ const ENDPOINT_RE =
 // something about the PRODUCT?" A role, a URL, a key: a value. A validation
 // strictness, a cutover, an engine choice: a toggle. Lane D re-read the call site
 // on 2026-09-11 and upheld the ruling rather than sweeping it up to make a sweep
-// look complete.
+// look complete. GATE_NESTED_INSTALL is likewise process identity: the pnpm
+// launcher stamps its child so the install lock recognizes the same operation;
+// it cannot enable, disable, or configure product behavior.
 const IDENTITY_RE =
-  /^(NODE_ENV|VERCEL_ENV|VERCEL|VERCEL_[A-Z_]*|CI|GITHUB_ACTIONS|ENVIRONMENT|ENV|APP_ENV|DEPLOY_ENV|BUILD_ID|APP_VERSION|INSTANCE_ID|NEXT_RUNTIME|npm_[a-z_]+|HOME|PATH|TMPDIR|PWD|AIDREAM_DIR|TZ|PYTEST_CURRENT_TEST|NO_COLOR|FORCE_COLOR|TERM|MATRX_SEO_LOCAL_DEV)$/;
+  /^(NODE_ENV|VERCEL_ENV|VERCEL|VERCEL_[A-Z_]*|CI|GITHUB_ACTIONS|ENVIRONMENT|ENV|APP_ENV|DEPLOY_ENV|BUILD_ID|APP_VERSION|INSTANCE_ID|NEXT_RUNTIME|npm_[a-z_]+|HOME|PATH|TMPDIR|PWD|AIDREAM_DIR|TZ|PYTEST_CURRENT_TEST|NO_COLOR|FORCE_COLOR|TERM|MATRX_SEO_LOCAL_DEV|GATE_NESTED_INSTALL)$/;
 
 /** The env-toggle guards themselves — their pattern tables are not reads. */
 const GUARD_MODULES = /(check-settings-env-toggles\.ts$|aidream\/scripts\/check_env_toggles\.py$)/;

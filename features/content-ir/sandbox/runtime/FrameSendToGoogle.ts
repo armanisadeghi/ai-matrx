@@ -27,7 +27,7 @@
 import { HOST_RELAY_ACTION_KEYS } from "../protocol";
 import { requestHostAction } from "./host-action-relay";
 
-const MAX_TITLE = 200;
+const GOOGLE_TITLE_CHARACTER_CAP = 200;
 
 export type SendToGoogleResult =
     | { ok: true; name: string; fileId: string; openUrl: string | null }
@@ -39,7 +39,10 @@ export function googleFileTitle(
     title: string | undefined,
     fallback: string,
 ): string {
-    const cleaned = (title ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_TITLE);
+    const cleaned = (title ?? "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, GOOGLE_TITLE_CHARACTER_CAP);
     return cleaned || fallback;
 }
 

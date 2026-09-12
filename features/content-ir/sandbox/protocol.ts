@@ -77,7 +77,7 @@ export const MAX_INBOUND_BYTES = 64 * 1024;
 /** §1.6: outbound props may not exceed 256 KB. */
 export const MAX_OUTBOUND_PROPS_BYTES = 256 * 1024;
 /** §1.6: at most 16 unanswered actions per instance. */
-export const MAX_IN_FLIGHT_ACTIONS = 16;
+export const IN_FLIGHT_ACTION_CAPACITY = 16;
 
 /**
  * THE SIZING CAP (§1.8, S3). The frame measures itself and the host gives the
@@ -88,10 +88,10 @@ export const MAX_IN_FLIGHT_ACTIONS = 16;
  * height. Nothing is hidden silently: the affordance says how tall the thing
  * actually is.
  */
-export const MAX_FRAME_HEIGHT = 4000;
+export const FRAME_HEIGHT_CEILING_PX = 4000;
 
 /** What "expand" grows to. Past this the host says so rather than growing. */
-export const EXPANDED_MAX_FRAME_HEIGHT = 20000;
+export const EXPANDED_FRAME_HEIGHT_CEILING_PX = 20000;
 
 /**
  * Reserved action keys the frame's two host-only copy-bar items relay on
@@ -168,7 +168,7 @@ export interface SandboxReadyMessage {
 export interface SandboxSizeMessage {
     type: "matrx:sandbox:size";
     instanceId: string;
-    /** What the host should give the iframe — never above {@link MAX_FRAME_HEIGHT}. */
+    /** What the host should give the iframe — never above {@link FRAME_HEIGHT_CEILING_PX}. */
     height: number;
     /**
      * What the component ACTUALLY occupies, overlays included. Equal to
@@ -177,7 +177,7 @@ export interface SandboxSizeMessage {
      * number to put in it (S3).
      */
     contentHeight?: number;
-    /** True when `contentHeight > MAX_FRAME_HEIGHT` — the reader is seeing part. */
+    /** True when `contentHeight > FRAME_HEIGHT_CEILING_PX` — the reader is seeing part. */
     capped?: boolean;
 }
 

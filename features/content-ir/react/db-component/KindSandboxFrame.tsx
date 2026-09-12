@@ -35,9 +35,9 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
 import { transformKindComponentBody } from "@/features/content-ir/sandbox/transform/transform-kind-body";
 import {
-    EXPANDED_MAX_FRAME_HEIGHT,
-    MAX_FRAME_HEIGHT,
-    MAX_IN_FLIGHT_ACTIONS,
+    EXPANDED_FRAME_HEIGHT_CEILING_PX,
+    FRAME_HEIGHT_CEILING_PX,
+    IN_FLIGHT_ACTION_CAPACITY,
     MAX_OUTBOUND_PROPS_BYTES,
     SANDBOX_ERROR_TYPES,
     SANDBOX_PROTOCOL_VERSION,
@@ -291,8 +291,8 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                     );
                     return;
                 }
-                if (inFlight.current.size >= MAX_IN_FLIGHT_ACTIONS) {
-                    const sentence = `Refused the action "${message.key}": ${MAX_IN_FLIGHT_ACTIONS} actions from this component are already running.`;
+                if (inFlight.current.size >= IN_FLIGHT_ACTION_CAPACITY) {
+                    const sentence = `Refused the action "${message.key}": ${IN_FLIGHT_ACTION_CAPACITY} actions from this component are already running.`;
                     refuse(sentence);
                     answered.current.add(message.callId);
                     post({
@@ -434,11 +434,11 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     // THE HEIGHT THE IFRAME GETS. Normally the content's own height, so the
     // frame never scrolls and the host page owns scroll. Past the cap the
     // reader is told, in a control, how tall the thing really is (S3).
-    const capped = contentHeight > MAX_FRAME_HEIGHT;
+    const capped = contentHeight > FRAME_HEIGHT_CEILING_PX;
     const shownHeight = expanded
-        ? Math.min(contentHeight, EXPANDED_MAX_FRAME_HEIGHT)
+        ? Math.min(contentHeight, EXPANDED_FRAME_HEIGHT_CEILING_PX)
         : height;
-    const beyondExpanded = contentHeight > EXPANDED_MAX_FRAME_HEIGHT;
+    const beyondExpanded = contentHeight > EXPANDED_FRAME_HEIGHT_CEILING_PX;
     const title = sandboxFrameTitle(kind, resolution.config as Record<string, unknown>);
 
     return (
@@ -472,9 +472,9 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                     <span>
                         {expanded
                             ? beyondExpanded
-                                ? `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${EXPANDED_MAX_FRAME_HEIGHT} pixels and the rest is cut off.`
+                                ? `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${EXPANDED_FRAME_HEIGHT_CEILING_PX} pixels and the rest is cut off.`
                                 : `Showing all ${contentHeight} pixels of this component.`
-                            : `This component is ${contentHeight} pixels tall; ${MAX_FRAME_HEIGHT} are shown.`}
+                            : `This component is ${contentHeight} pixels tall; ${FRAME_HEIGHT_CEILING_PX} are shown.`}
                     </span>
                 </div>
             ) : null}
