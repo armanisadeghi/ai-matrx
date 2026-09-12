@@ -157,7 +157,9 @@ type TaskSummaryRow = {
 };
 
 function workspaceDestinations(): MetricNavigationItem[] {
-  const workspaces = primaryNavItems.find((item) => item.label === "Workspaces");
+  const workspaces = primaryNavItems.find(
+    (item) => item.label === "Workspaces",
+  );
   return (workspaces?.children ?? [])
     .filter((item) => !item.action && !item.actionItem && !item.panelAction)
     .map((item) => ({
@@ -293,7 +295,7 @@ export function ProjectsHub({
           })),
         );
       } catch (error) {
-      if (cancelled) return;
+        if (cancelled) return;
         console.error("[ProjectsHub] load failed:", error);
         setProjectsReadFailed(true);
       }
@@ -456,8 +458,10 @@ export function ProjectsHub({
     teamGroups.set(key, group);
   }
   const groupedTeams = [...teamGroups.entries()].sort(([a], [b]) => {
-    const aName = a === "unassigned" ? "Other projects" : orgMap.get(a)?.name ?? a;
-    const bName = b === "unassigned" ? "Other projects" : orgMap.get(b)?.name ?? b;
+    const aName =
+      a === "unassigned" ? "Other projects" : (orgMap.get(a)?.name ?? a);
+    const bName =
+      b === "unassigned" ? "Other projects" : (orgMap.get(b)?.name ?? b);
     return aName.localeCompare(bName);
   });
   const topLevelTaskCount = filtered.reduce((total, project) => {
@@ -469,7 +473,11 @@ export function ProjectsHub({
       return {
         ...item,
         value: filtered.length,
-        state: projectsReadFailed ? "unavailable" : loading ? "loading" : "ready",
+        state: projectsReadFailed
+          ? "unavailable"
+          : loading
+            ? "loading"
+            : "ready",
         description: "Projects in this view",
       } satisfies MetricNavigationItem;
     }
@@ -815,6 +823,7 @@ export function ProjectsHub({
                     stat={stats.get(p.id)}
                     orgMap={orgMap}
                     statsReadFailed={statsReadFailed}
+                    accent={organizationAccent(p.organizationId)}
                   />
                 ))}
               </div>
@@ -840,7 +849,8 @@ export function ProjectsHub({
                     title={
                       organizationId === "unassigned"
                         ? "Other projects"
-                        : (orgMap.get(organizationId)?.name ?? "Shared projects")
+                        : (orgMap.get(organizationId)?.name ??
+                          "Shared projects")
                     }
                     count={organizationProjects.length}
                     accent={organizationAccent(
@@ -855,7 +865,9 @@ export function ProjectsHub({
                         orgMap={orgMap}
                         statsReadFailed={statsReadFailed}
                         accent={organizationAccent(
-                          organizationId === "unassigned" ? null : organizationId,
+                          organizationId === "unassigned"
+                            ? null
+                            : organizationId,
                         )}
                       />
                     ))}
@@ -885,10 +897,7 @@ function Section({
     <section className="space-y-3">
       <div className="flex items-center gap-2">
         <span
-          className={cn(
-            "h-2.5 w-2.5 rounded-full",
-            accent ?? "bg-primary",
-          )}
+          className={cn("h-2.5 w-2.5 rounded-full", accent ?? "bg-primary")}
         />
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {title}
