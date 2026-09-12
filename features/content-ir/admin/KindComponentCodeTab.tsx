@@ -33,6 +33,7 @@ import type {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
+import SandboxAuthoringRules from "@/features/content-ir/studio/components/SandboxAuthoringRules";
 
 interface KindComponentCodeTabProps {
   detail: KindDetailData;
@@ -220,6 +221,9 @@ export default function KindComponentCodeTab({
       }
     >
       <div className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-card">
+        {/* The rules of the frame this code will render in, where it is
+            written — never only in a document somewhere else (DD-123 S7). */}
+        <SandboxAuthoringRules />
         <div className="flex shrink-0 flex-wrap items-end gap-3 border-b border-border p-3">
           <label className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
             Component

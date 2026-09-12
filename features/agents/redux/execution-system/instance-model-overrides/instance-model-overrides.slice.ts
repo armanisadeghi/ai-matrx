@@ -66,6 +66,13 @@ const instanceModelOverridesSlice = createSlice({
     /**
      * Set one or more override values.
      * If a key was previously in removals, it's moved to overrides.
+     *
+     * 🚨 MERGE-ONLY. It upserts the incoming keys and NEVER removes one, so
+     * re-sending the map without a key does NOT clear that key. Use
+     * `resetOverride` (back to the agent default), `markRemoved` (explicitly
+     * suppress), or `replaceOverrides` (whole-document replace).
+     * (Defect 2026-09-12: the per-column Clear chip re-sent the map minus a
+     * key and silently did nothing.)
      */
     setOverrides(
       state,

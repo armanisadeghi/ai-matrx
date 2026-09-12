@@ -23,6 +23,7 @@
 import {
     EXPANDED_FRAME_HEIGHT_CEILING_PX,
     FRAME_HEIGHT_CEILING_PX,
+    MAX_INBOUND_BYTES,
     checkFrameMessage,
 } from "../protocol";
 import {
@@ -101,6 +102,7 @@ describe("the size message the host acts on", () => {
                 capped: true,
             },
             INSTANCE,
+            MAX_INBOUND_BYTES,
         );
         expect(checked.ok).toBe(true);
     });
@@ -114,6 +116,7 @@ describe("the size message the host acts on", () => {
                 contentHeight: "tall",
             },
             INSTANCE,
+            MAX_INBOUND_BYTES,
         );
         expect(checked.ok).toBe(false);
         if (checked.ok) throw new Error("unreachable");
@@ -126,6 +129,7 @@ describe("the size message the host acts on", () => {
             const checked = checkFrameMessage(
                 { type: "matrx:sandbox:size", instanceId: INSTANCE, height },
                 INSTANCE,
+                MAX_INBOUND_BYTES,
             );
             expect(checked.ok).toBe(false);
         }
@@ -138,9 +142,18 @@ describe("the size message the host acts on", () => {
  * Chrome measured on 2026-09-12 from a LIVE body — `newsjacking_expert_article_default`
  * rendered at 80 px wide reported `height 4000 / contentHeight 5979 / capped`.
  */
+const SEEDED_CEILINGS = {
+    // The values `custom.sandbox_frame_height_px` and
+    // `custom.sandbox_expanded_frame_height_px` were SEEDED with (S7) — the
+    // same numbers the frame compiles in, so these cases still describe the
+    // shipped configuration.
+    frameHeightPx: FRAME_HEIGHT_CEILING_PX,
+    expandedFrameHeightPx: EXPANDED_FRAME_HEIGHT_CEILING_PX,
+};
+
 describe("what the reader gets when a component passes the height ceiling", () => {
     it("shows it whole when it fits, with no control and nothing to explain", () => {
-        const decision = frameHeightDecision(1238, 1238, false);
+        const decision = frameHeightDecision(1238, 1238, false, SEEDED_CEILINGS);
         expect(decision).toEqual({
             height: 1238,
             capped: false,
@@ -150,7 +163,7 @@ describe("what the reader gets when a component passes the height ceiling", () =
     });
 
     it("holds it at the ceiling AND says how tall it really is", () => {
-        const decision = frameHeightDecision(FRAME_HEIGHT_CEILING_PX, 5979, false);
+        const decision = frameHeightDecision(FRAME_HEIGHT_CEILING_PX, 5979, false, SEEDED_CEILINGS);
         expect(decision.height).toBe(FRAME_HEIGHT_CEILING_PX);
         expect(decision.control).toBe("show-all");
         // Never a bare truncation: the reader is told the real number.
@@ -160,7 +173,7 @@ describe("what the reader gets when a component passes the height ceiling", () =
     });
 
     it("expands to the whole thing, and offers the way back", () => {
-        const decision = frameHeightDecision(FRAME_HEIGHT_CEILING_PX, 5979, true);
+        const decision = frameHeightDecision(FRAME_HEIGHT_CEILING_PX, 5979, true, SEEDED_CEILINGS);
         expect(decision.height).toBe(5979);
         expect(decision.control).toBe("show-less");
         expect(decision.sentence).toBe("Showing all 5979 pixels of this component.");
@@ -168,7 +181,7 @@ describe("what the reader gets when a component passes the height ceiling", () =
 
     it("says plainly when even expanded is not the whole thing", () => {
         const tooTall = EXPANDED_FRAME_HEIGHT_CEILING_PX + 4321;
-        const decision = frameHeightDecision(FRAME_HEIGHT_CEILING_PX, tooTall, true);
+        const decision = frameHeightDecision(FRAME_HEIGHT_CEILING_PX, tooTall, true, SEEDED_CEILINGS);
         expect(decision.height).toBe(EXPANDED_FRAME_HEIGHT_CEILING_PX);
         expect(decision.sentence).toContain("the rest is cut off");
         expect(decision.sentence).toContain(String(tooTall));

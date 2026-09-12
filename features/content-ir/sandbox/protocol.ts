@@ -72,7 +72,17 @@ export const FRAME_MESSAGE_TYPES = [
 export type HostMessageType = (typeof HOST_MESSAGE_TYPES)[number];
 export type FrameMessageType = (typeof FRAME_MESSAGE_TYPES)[number];
 
-/** §1.6: a single inbound message may not exceed 64 KB. */
+/**
+ * §1.6: a single inbound message may not exceed 64 KB.
+ *
+ * THIS IS THE FRAME'S COPY, AND THE REGISTER'S DEFAULT — not a host default.
+ * The frame cannot read a setting (`connect-src 'none'`), so its number is
+ * compiled in here; the HOST reads `custom.sandbox_message_bytes` through the
+ * scoped resolver (S7, `useKindSandboxKnob.ts`) and passes it to
+ * {@link checkFrameMessage} on every message. Lowering the row tightens the
+ * host at once; raising it above this constant does nothing until a new bundle
+ * ships, and the seed migration's `basis` says exactly that.
+ */
 export const MAX_INBOUND_BYTES = 64 * 1024;
 /** §1.6: outbound props may not exceed 256 KB. */
 export const MAX_OUTBOUND_PROPS_BYTES = 256 * 1024;
@@ -92,6 +102,18 @@ export const FRAME_HEIGHT_CEILING_PX = 4000;
 
 /** What "expand" grows to. Past this the host says so rather than growing. */
 export const EXPANDED_FRAME_HEIGHT_CEILING_PX = 20000;
+
+/**
+ * BOTH HEIGHTS ABOVE ARE THE FRAME'S COPIES AND THE REGISTER'S DEFAULTS (S7).
+ * The host resolves `custom.sandbox_frame_height_px` and
+ * `custom.sandbox_expanded_frame_height_px` through the scoped resolver and
+ * passes them into `frameHeightDecision`; it holds no default of its own —
+ * a ceiling that does not resolve turns the sandbox OFF with a sentence rather
+ * than quietly reusing a number from this file. The frame caps the `height` it
+ * REPORTS at FRAME_HEIGHT_CEILING_PX but always reports the true
+ * `contentHeight`, so a host ceiling below 4000 is honoured exactly and one
+ * above it needs a new bundle.
+ */
 
 /**
  * Reserved action keys the frame's two host-only copy-bar items relay on
@@ -201,6 +223,15 @@ export const SANDBOX_ERROR_TYPES = [
     "render_throw",
     "compile_error",
     "transform_error",
+    /**
+     * The frame's own CSP refused a resource the component asked for — a
+     * remote image is the live case (chair ruling 2). It has its own type so
+     * the incident queue, which keeps ONE open row per
+     * (kind, error_type, platform, role), does not fold it into a render
+     * throw: "this component cannot show its pictures" and "this component
+     * crashed" are different jobs for the author.
+     */
+    "blocked_resource",
 ] as const;
 export type SandboxErrorType = (typeof SANDBOX_ERROR_TYPES)[number];
 
@@ -286,13 +317,20 @@ function checkEnvelope(
 export function checkFrameMessage(
     raw: unknown,
     instanceId: string,
+    /**
+     * The host's resolved `custom.sandbox_message_bytes`. REQUIRED, so a call
+     * site that forgot the setting is a type error rather than a silently
+     * frozen ceiling. Tests and the frame pass {@link MAX_INBOUND_BYTES}, which
+     * is the same number the register was seeded with.
+     */
+    cap: number,
 ): MessageCheck<FrameMessage> {
     const envelope = checkEnvelope(
         raw,
         FRAME_MESSAGE_TYPES,
         instanceId,
         "frame",
-        MAX_INBOUND_BYTES,
+        cap,
     );
     if (!envelope.ok) return envelope;
     const msg = raw as Record<string, unknown>;

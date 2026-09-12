@@ -106,6 +106,15 @@ const instanceContextSlice = createSlice({
      * Set multiple context entries at once.
      * Used by shortcut scope mapping and the editor → agent bridge.
      *
+     * 🚨 MERGE-ONLY. This upserts every incoming key and NEVER removes one, so
+     * `entries: []` clears NOTHING — it is a silent no-op. To clear, dispatch
+     * `clearInstanceContext(conversationId)` (all keys) or
+     * `removeContextEntry({ conversationId, key })` (one key); to replace only
+     * the surface-owned subset, `replaceSurfaceContextEntries`. Never emulate
+     * removal by re-sending the map without a key.
+     * (Defect 2026-09-12: the agent-app reset path used `entries: []`, so stale
+     * per-turn context leaked into the next conversation.)
+     *
      * See `setContextEntry` for why this auto-initialises the slot.
      */
     setContextEntries(

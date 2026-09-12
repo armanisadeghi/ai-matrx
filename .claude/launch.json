@@ -6,11 +6,6 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
       "port": 3000
-    },
-    {
-      "name": "matrx-frontend-attach-3001",
-      "url": "http://localhost:3001",
-      "port": 3001
     }
   ]
 }

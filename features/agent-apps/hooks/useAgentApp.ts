@@ -42,7 +42,10 @@ import {
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
-import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import {
+  setContextEntries,
+  clearInstanceContext,
+} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 
@@ -594,7 +597,11 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
 
   const clearContext = useCallback(() => {
     if (!conversationId) return;
-    dispatch(setContextEntries({ conversationId, entries: [] }));
+    // `setContextEntries` is MERGE-ONLY — it can never remove a key, so an
+    // empty `entries` array cleared nothing and stale per-turn context leaked
+    // into the next conversation. Clearing goes through the slice's own
+    // clear action.
+    dispatch(clearInstanceContext(conversationId));
   }, [conversationId, dispatch]);
 
   const addResourceCb = useCallback(
@@ -682,7 +689,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     if (!conversationId) return;
     dispatch(resetUserVariableValues(conversationId));
     dispatch(setUserInputText({ conversationId, text: "" }));
-    dispatch(setContextEntries({ conversationId, entries: [] }));
+    dispatch(clearInstanceContext(conversationId));
   }, [conversationId, dispatch]);
 
   // Tag the conversation with this app's id once the conversationId is

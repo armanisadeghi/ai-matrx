@@ -148,3 +148,7 @@ public/kind-sandbox.css
 
 # S3 sandbox parity witness — regenerate with `pnpm witness:kind-sandbox-parity`
 public/__kind-sandbox-*.html
+
+# S5 rendering-parity sweep output (screenshots + report) — regenerate with
+# `pnpm sweep:kind-sandbox-parity`.
+.kind-sandbox-parity/

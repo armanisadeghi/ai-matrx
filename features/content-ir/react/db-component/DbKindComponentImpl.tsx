@@ -41,7 +41,7 @@ import {
 import { DbKindComponentErrorBoundary } from "./DbKindComponentErrorBoundary";
 import { KindHtmlFrame } from "./KindHtmlFrame";
 import { KindSandboxFrame } from "./KindSandboxFrame";
-import { useKindSandboxEnabled } from "./useKindSandboxKnob";
+import { useKindSandboxSettings } from "./useKindSandboxKnob";
 import type { RunKindAction } from "../actions/useKindActionRunner";
 import type {
   KindComponentUiOptions,
@@ -139,7 +139,7 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   // this file has always had; ON renders the same row inside /kind-sandbox.
   // It is read here, at the ONE react-flavor mount, so all three call sites
   // (chat, Kind Request, the directive window) inherit it together.
-  const sandboxEnabled = useKindSandboxEnabled();
+  const sandbox = useKindSandboxSettings();
   const registryVersion = useContentIrKindVersion(kind);
   void registryVersion;
 
@@ -205,10 +205,11 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   }
 
   // ── react flavor, sandboxed: the body never enters this document ──────────
-  if (sandboxEnabled) {
+  if (sandbox.enabled && sandbox.ceilings) {
     return (
       <KindSandboxFrame
         kind={kind}
+        ceilings={sandbox.ceilings}
         resolution={resolution}
         // RAW value: the row's props_transform is organization-authored
         // code too, so the FRAME applies it. Compiling it here would leave

@@ -124,7 +124,6 @@ export function installFrameBridge(mount: FrameMountApi): void {
             );
             return;
         }
-        window.removeEventListener("message", onWindowMessage);
         startInstance(data as unknown as SandboxInitMessage, port, mount);
     };
 
@@ -170,6 +169,44 @@ function startInstance(
         });
         return;
     }
+
+    // ── what the frame's CSP refused, said out loud (S5) ─────────────────
+    //
+    // The frame's `img-src` is `data: blob:` plus the platform image door
+    // (chair ruling 2), so an organization component that renders a REMOTE
+    // image gets a broken-image box and nothing else: the browser refuses the
+    // request, the component does not know, the reader sees a gap, and the
+    // author is never told. That is a silent failure in the exact place the
+    // sandbox was supposed to make failures loud.
+    //
+    // The frame cannot report a CSP violation the usual way — `report-uri`
+    // and the Reporting API are network calls and `connect-src` is `'none'` —
+    // but it does get the DOM event. Relaying it as a normal sandbox error
+    // puts it where every other component failure already goes: the host's
+    // `captureError` and `content_ir.kind_component_incident`, the queue the
+    // component-authoring agent reads.
+    //
+    // Deduped per (directive, blocked URL): one broken image in a list of
+    // thirty must not file thirty incidents.
+    const reportedViolations = new Set<string>();
+    document.addEventListener("securitypolicyviolation", (event) => {
+        const violation = event as SecurityPolicyViolationEvent;
+        const blocked = String(violation.blockedURI ?? "");
+        const directive = String(violation.effectiveDirective ?? violation.violatedDirective ?? "");
+        const key = `${directive}|${blocked}`;
+        if (reportedViolations.has(key)) return;
+        reportedViolations.add(key);
+        const what =
+            directive.startsWith("img")
+                ? `This component tried to load an image from ${blocked || "another site"}. Components stored in the database may only show images the platform itself serves, so nothing was displayed. Put the image through the platform's image door, or store it with the Shape.`
+                : `This component tried to reach ${blocked || "another site"} (${directive || "a blocked resource"}), which components stored in the database may not do. Nothing was loaded.`;
+        send({
+            type: "matrx:sandbox:error",
+            instanceId,
+            message: what,
+            errorType: "blocked_resource",
+        });
+    });
 
     // ── the action bridge (§1.7) ──────────────────────────────────────────
     const pending = new Map<

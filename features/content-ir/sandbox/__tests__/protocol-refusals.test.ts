@@ -41,7 +41,7 @@ describe("frame → host messages", () => {
         ];
         expect(samples).toHaveLength(FRAME_MESSAGE_TYPES.length);
         for (const sample of samples) {
-            expect(checkFrameMessage(sample, INSTANCE).ok).toBe(true);
+            expect(checkFrameMessage(sample, INSTANCE, MAX_INBOUND_BYTES).ok).toBe(true);
         }
     });
 
@@ -49,6 +49,7 @@ describe("frame → host messages", () => {
         const checked = checkFrameMessage(
             { type: "matrx:sandbox:exfiltrate", instanceId: INSTANCE },
             INSTANCE,
+            MAX_INBOUND_BYTES,
         );
         expect(checked.ok).toBe(false);
         if (checked.ok) return;
@@ -59,7 +60,7 @@ describe("frame → host messages", () => {
     it("drops a host-only type arriving from the frame", () => {
         // The frame may never tell the host to init, or answer its own call.
         for (const type of HOST_MESSAGE_TYPES) {
-            const checked = checkFrameMessage({ type, instanceId: INSTANCE }, INSTANCE);
+            const checked = checkFrameMessage({ type, instanceId: INSTANCE }, INSTANCE, MAX_INBOUND_BYTES);
             expect(checked.ok).toBe(false);
         }
     });
@@ -68,6 +69,7 @@ describe("frame → host messages", () => {
         const checked = checkFrameMessage(
             { type: "matrx:sandbox:size", instanceId: "someone-else", height: 10 },
             INSTANCE,
+            MAX_INBOUND_BYTES,
         );
         expect(checked.ok).toBe(false);
         if (checked.ok) return;
@@ -81,7 +83,7 @@ describe("frame → host messages", () => {
             value: "x".repeat(MAX_INBOUND_BYTES + 1),
         };
         expect(measureBytes(message)).toBeGreaterThan(MAX_INBOUND_BYTES);
-        const checked = checkFrameMessage(message, INSTANCE);
+        const checked = checkFrameMessage(message, INSTANCE, MAX_INBOUND_BYTES);
         expect(checked.ok).toBe(false);
         if (checked.ok) return;
         expect(checked.refusal).toContain(String(MAX_INBOUND_BYTES));
@@ -93,19 +95,21 @@ describe("frame → host messages", () => {
             checkFrameMessage(
                 { type: "matrx:sandbox:action", instanceId: INSTANCE, key: "k" },
                 INSTANCE,
+                MAX_INBOUND_BYTES,
             ).ok,
         ).toBe(false);
         expect(
             checkFrameMessage(
                 { type: "matrx:sandbox:action", instanceId: INSTANCE, callId: "c" },
                 INSTANCE,
+                MAX_INBOUND_BYTES,
             ).ok,
         ).toBe(false);
     });
 
     it("drops a non-object, including null and an array", () => {
         for (const raw of [null, undefined, 42, "matrx:sandbox:ready", [1, 2]]) {
-            expect(checkFrameMessage(raw, INSTANCE).ok).toBe(false);
+            expect(checkFrameMessage(raw, INSTANCE, MAX_INBOUND_BYTES).ok).toBe(false);
         }
     });
 });

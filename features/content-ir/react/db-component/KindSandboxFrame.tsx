@@ -35,8 +35,6 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
 import { transformKindComponentBody } from "@/features/content-ir/sandbox/transform/transform-kind-body";
 import {
-    EXPANDED_FRAME_HEIGHT_CEILING_PX,
-    FRAME_HEIGHT_CEILING_PX,
     IN_FLIGHT_ACTION_CAPACITY,
     MAX_OUTBOUND_PROPS_BYTES,
     SANDBOX_ERROR_TYPES,
@@ -58,6 +56,7 @@ import type {
     ResolveKindValue,
 } from "./dbKindComponentCache";
 import { reportKindComponentIncident } from "./kindComponentIncident";
+import type { KindSandboxCeilings } from "./useKindSandboxKnob";
 
 /** The sandbox document. Same origin; the `sandbox` attribute opaques it. */
 export const KIND_SANDBOX_ROUTE = "/kind-sandbox";
@@ -162,24 +161,33 @@ export function frameHeightDecision(
     measuredHeight: number,
     contentHeight: number,
     expanded: boolean,
+    /**
+     * The RESOLVED ceilings (S7) — `custom.sandbox_frame_height_px` and
+     * `custom.sandbox_expanded_frame_height_px` from the settings register.
+     * Required: this function holds no default, because a host-side default is
+     * exactly the frozen number the knob system exists to end.
+     */
+    ceilings: Pick<KindSandboxCeilings, "frameHeightPx" | "expandedFrameHeightPx">,
 ): FrameHeightDecision {
-    if (contentHeight <= FRAME_HEIGHT_CEILING_PX) {
+    const ceiling = ceilings.frameHeightPx;
+    const expandedCeiling = ceilings.expandedFrameHeightPx;
+    if (contentHeight <= ceiling) {
         return { height: measuredHeight, capped: false, control: "none", sentence: null };
     }
     if (!expanded) {
         return {
-            height: Math.min(measuredHeight, FRAME_HEIGHT_CEILING_PX),
+            height: Math.min(measuredHeight, ceiling),
             capped: true,
             control: "show-all",
-            sentence: `This component is ${contentHeight} pixels tall; ${FRAME_HEIGHT_CEILING_PX} are shown.`,
+            sentence: `This component is ${contentHeight} pixels tall; ${ceiling} are shown.`,
         };
     }
-    if (contentHeight > EXPANDED_FRAME_HEIGHT_CEILING_PX) {
+    if (contentHeight > expandedCeiling) {
         return {
-            height: EXPANDED_FRAME_HEIGHT_CEILING_PX,
+            height: expandedCeiling,
             capped: true,
             control: "show-less",
-            sentence: `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${EXPANDED_FRAME_HEIGHT_CEILING_PX} pixels and the rest is cut off.`,
+            sentence: `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${expandedCeiling} pixels and the rest is cut off.`,
         };
     }
     return {
@@ -215,6 +223,12 @@ export interface KindSandboxFrameProps {
     onResolve?: ResolveKindValue;
     uiOptions?: KindComponentUiOptions;
     className?: string;
+    /**
+     * The ceilings this host enforces, resolved from the settings register by
+     * `useKindSandboxSettings()`. The gate and the ceilings come from the SAME
+     * read, so a frame can never mount without them.
+     */
+    ceilings: KindSandboxCeilings;
 }
 
 export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
@@ -226,6 +240,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     onResolve,
     uiOptions,
     className,
+    ceilings,
 }) => {
     const frameRef = React.useRef<HTMLIFrameElement | null>(null);
     const portRef = React.useRef<MessagePort | null>(null);
@@ -253,6 +268,12 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     // and callbacks through this ref instead of re-subscribing.
     const latest = React.useRef({ runAction, onResolve, kind, data, resolution });
     latest.current = { runAction, onResolve, kind, data, resolution };
+
+    // The port handler outlives a settings change too: an admin lowering
+    // `custom.sandbox_message_bytes` tightens live frames within the resolver's
+    // TTL, without a remount.
+    const latestCeilings = React.useRef(ceilings);
+    latestCeilings.current = ceilings;
 
     function refuse(sentence: string): void {
         refusalCounts.set(sentence, (refusalCounts.get(sentence) ?? 0) + 1);
@@ -285,7 +306,11 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     }
 
     function onPortMessage(event: MessageEvent): void {
-        const checked = checkFrameMessage(event.data, instanceId);
+        const checked = checkFrameMessage(
+            event.data,
+            instanceId,
+            latestCeilings.current.messageBytes,
+        );
         if (!checked.ok) {
             refuse(checked.refusal);
             return;
@@ -482,7 +507,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     // THE HEIGHT THE IFRAME GETS. Normally the content's own height, so the
     // frame never scrolls and the host page owns scroll. Past the ceiling the
     // reader is told, in a control, how tall the thing really is (S3).
-    const decision = frameHeightDecision(height, contentHeight, expanded);
+    const decision = frameHeightDecision(height, contentHeight, expanded, ceilings);
     const title = sandboxFrameTitle(kind, resolution.config as Record<string, unknown>);
 
     return (

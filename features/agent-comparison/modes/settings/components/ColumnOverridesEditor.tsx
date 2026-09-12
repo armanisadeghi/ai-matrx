@@ -23,7 +23,10 @@
 
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import {
+  setOverrides,
+  resetOverride,
+} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   selectActiveModels,
@@ -69,15 +72,10 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
 
   const isOverridden = (key: string) => key in overrides;
   const clearKey = (key: string) => {
-    // Remove from overrides by re-setting the whole map without that key.
-    const next: Record<string, unknown> = { ...overrides };
-    delete next[key];
-    dispatch(
-      setOverrides({
-        conversationId,
-        changes: next,
-      }),
-    );
+    // `setOverrides` is MERGE-ONLY — re-setting the map without the key never
+    // removed it, so the Clear chip silently did nothing and the override
+    // stayed live on every run. `resetOverride` is the slice's real removal.
+    dispatch(resetOverride({ conversationId, key }));
   };
 
   const allowedModelIds = models
