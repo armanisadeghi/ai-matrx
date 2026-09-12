@@ -26,6 +26,7 @@ import {
 import {
   NoteContextLinkPartialError,
   NoteContextPartialSaveError,
+  type NoteSaveReceipt,
   NoteUpdateConflictError,
 } from "./noteSaveErrors";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
@@ -295,11 +296,11 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
  * always derived from the authorized persisted row, never from active UI
  * context. Legacy callers without an edit-base version retain LWW behavior.
  */
-export async function updateNote(
+export async function persistNoteUpdate(
   id: string,
   updates: UpdateNoteInput,
   options?: UpdateNoteOptions,
-): Promise<Note> {
+): Promise<NoteSaveReceipt> {
   const untypedUpdates = updates as Record<string, unknown>;
   if (untypedUpdates.organization_id !== undefined) {
     throw new Error("Moving a note to another organization is not available yet. Keep this note in its current organization.");
@@ -467,7 +468,25 @@ export async function updateNote(
     }
     throw error;
   }
-  return storedNote;
+  return {
+    note: storedNote,
+    databaseWrite,
+    succeededFields: projectId === undefined && taskId === undefined ? [] : [
+      ...(projectId === undefined ? [] : ["project_id" as const]),
+      ...(taskId === undefined ? [] : ["task_id" as const]),
+    ],
+    failedFields: [],
+    safeCauses: {},
+  };
+}
+
+/** Temporary compatibility adapter while direct editors migrate to receipts. */
+export async function updateNote(
+  id: string,
+  updates: UpdateNoteInput,
+  options?: UpdateNoteOptions,
+): Promise<Note> {
+  return (await persistNoteUpdate(id, updates, options)).note;
 }
 
 /**

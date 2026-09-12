@@ -2,6 +2,15 @@ import type { Note, NoteRow } from "../types";
 
 export type NoteContextField = "project_id" | "task_id";
 
+export interface NoteSaveReceipt {
+  note: Note;
+  databaseWrite: "saved" | "unchanged";
+  succeededFields: NoteContextField[];
+  failedFields: NoteContextField[];
+  safeCauses: Partial<Record<NoteContextField, string>>;
+  postSaveRecoveryError?: Error;
+}
+
 export class NoteUpdateConflictError extends Error {
   readonly expectedVersion: number;
   readonly currentVersion: number;
@@ -38,6 +47,7 @@ export class NoteContextLinkPartialError extends Error {
 }
 
 export class NoteContextPartialSaveError extends Error {
+  readonly receipt: NoteSaveReceipt;
   readonly databaseWrite: "saved" | "unchanged";
   readonly actualStoredNote: Note;
   readonly succeededFields: NoteContextField[];
@@ -58,5 +68,12 @@ export class NoteContextPartialSaveError extends Error {
     this.succeededFields = args.succeededFields;
     this.failedFields = args.failedFields;
     this.safeCauses = args.safeCauses;
+    this.receipt = {
+      note: args.actualStoredNote,
+      databaseWrite: args.databaseWrite,
+      succeededFields: args.succeededFields,
+      failedFields: args.failedFields,
+      safeCauses: args.safeCauses,
+    };
   }
 }
