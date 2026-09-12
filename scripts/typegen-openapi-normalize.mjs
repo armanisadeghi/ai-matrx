@@ -49,4 +49,59 @@ export function normalizeDuplicateOperationIds(document) {
     return normalized;
 }
 
+/**
+ * CANONICAL ENUM ORDER. A JSON Schema `enum` is a SET — its member order carries
+ * no meaning — but the generated TypeScript union is written in that order, so an
+ * order that wobbles makes the generated files un-reproducible and a freshness
+ * check unusable.
+ *
+ * It really does wobble: emitting through `scripts/emit_openapi.py` alone gives
+ * `JsonSchemaProperty.type` as ["string","number",…] while emitting through
+ * `scripts/generate_types.py all --direct` — which imports more of the app first —
+ * gives it alphabetically. Same tree, same contract, different bytes (observed
+ * 2026-09-12). Sorting every all-string `enum` makes both roads agree without
+ * hiding anything: a member ADDED or REMOVED still changes the file loudly.
+ *
+ * Returns how many enum arrays were reordered.
+ */
+export function canonicalizeEnumOrder(node) {
+    let reordered = 0;
+    const walk = (value) => {
+        if (Array.isArray(value)) {
+            for (const item of value) walk(item);
+            return;
+        }
+        if (!value || typeof value !== 'object') return;
+        for (const [key, child] of Object.entries(value)) {
+            if (
+                key === 'enum'
+                && Array.isArray(child)
+                && child.length > 1
+                && child.every((member) => typeof member === 'string')
+            ) {
+                const sorted = [...child].sort();
+                if (sorted.some((member, i) => member !== child[i])) {
+                    value[key] = sorted;
+                    reordered += 1;
+                }
+                continue;
+            }
+            walk(child);
+        }
+    };
+    walk(node);
+    return reordered;
+}
+
+/**
+ * Everything a raw emitted document needs before the generator sees it, applied
+ * identically by `sync-types.mjs` and `check-api-types-fresh.mjs`.
+ */
+export function normalizeOpenApiDocument(document) {
+    return {
+        operationIds: normalizeDuplicateOperationIds(document),
+        enums: canonicalizeEnumOrder(document),
+    };
+}
+
 export { OPENAPI_METHODS };

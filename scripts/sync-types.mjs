@@ -41,7 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { assertServerMeetsContractPin } from './aidream-contract-pin.mjs';
-import { normalizeDuplicateOperationIds as normalizeOperationIds } from './typegen-openapi-normalize.mjs';
+import { normalizeOpenApiDocument } from './typegen-openapi-normalize.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -99,11 +99,12 @@ const BUNDLE_FILES = {
  */
 function normalizeDuplicateOperationIds(openapiPath) {
     const document = JSON.parse(readFileSync(openapiPath, 'utf-8'));
-    const normalized = normalizeOperationIds(document);
-    if (normalized > 0) {
-        writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
-    }
-    return normalized;
+    const { operationIds, enums } = normalizeOpenApiDocument(document);
+    // Always rewritten: the staged file must be the EXACT document the generator
+    // reads, because `check:api-types-fresh` re-derives it through this same code.
+    writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
+    if (enums > 0) console.log(`  ✓ Canonicalized ${enums} enum ordering(s).\n`);
+    return operationIds;
 }
 
 function generateApiTypes(openapiPath, apiTypesPath) {

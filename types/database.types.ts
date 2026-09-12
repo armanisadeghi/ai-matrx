@@ -59633,6 +59633,7 @@ export type Database = {
       }
       matrx_action_ledger: {
         Row: {
+          applied_at: string | null
           conversation_id: string | null
           created_at: string
           item_index: number | null
@@ -59644,6 +59645,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          applied_at?: string | null
           conversation_id?: string | null
           created_at?: string
           item_index?: number | null
@@ -59655,6 +59657,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          applied_at?: string | null
           conversation_id?: string | null
           created_at?: string
           item_index?: number | null

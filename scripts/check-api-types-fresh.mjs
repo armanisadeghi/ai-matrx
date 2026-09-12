@@ -45,7 +45,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { normalizeDuplicateOperationIds } from './typegen-openapi-normalize.mjs';
+import { normalizeOpenApiDocument } from './typegen-openapi-normalize.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
@@ -104,7 +104,7 @@ function generateReference() {
     }
 
     const document = JSON.parse(readFileSync(emitted, 'utf-8'));
-    normalizeDuplicateOperationIds(document);
+    normalizeOpenApiDocument(document);
     const openapiPath = join(dir, 'openapi.json');
     writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
 
