@@ -62,6 +62,14 @@ Read-only sibling: **Entitlements & Usage** (`/administration/users/entitlements
 `features/admin/users/components/EntitlementsTableClient.tsx`) — enforcement
 flags and the 30-day usage rollup.
 
+## Propagation (2026-09-11)
+
+A knob write publishes nothing from this UI. `platform.feature_knob.propagation` decides per key:
+`next_load` (default) rides the 60s knob TTL; `instant` fires the platform client-directive
+channel from a DB trigger, and `FeatureKnobsPanel` opts in with one
+`registerDirectiveHandler("settings_changed", …)` so an open table re-reads without a reload.
+Contract: `../../../../common-docs/systems/platform/realtime/CLIENT-DIRECTIVES.md`.
+
 ## Scoped configuration (2026-08-29)
 
 Every knob row now shows **who may override it** — `overridable_by`
