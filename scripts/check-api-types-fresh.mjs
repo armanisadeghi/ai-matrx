@@ -30,6 +30,11 @@
  * Usage:
  *   node scripts/check-api-types-fresh.mjs             # RED if the committed files are not fresh
  *   node scripts/check-api-types-fresh.mjs --self-test # proves it can fail: replays 4c827d5530
+ *   node scripts/check-api-types-fresh.mjs --committed-dir <dir>
+ *                                                      # judge a COPY of the generated files
+ *                                                      # instead of the repo's own — how the
+ *                                                      # refusal itself is demonstrated without
+ *                                                      # dirtying a shared checkout
  *
  * Exit 0 = fresh. Exit 1 = stale or hand-edited. Exit 2 = UNMEASURED (no aidream
  * checkout, no `uv`, no generator) — never a pass.
@@ -300,6 +305,10 @@ function selfTest(reference) {
 
 function main() {
     const selfTestMode = process.argv.includes('--self-test');
+    const dirFlag = process.argv.indexOf('--committed-dir');
+    const committedDir = dirFlag !== -1 && dirFlag + 1 < process.argv.length
+        ? resolve(process.argv[dirFlag + 1])
+        : COMMITTED_DIR;
     console.log(
         selfTestMode
             ? '\n  check:api-types-fresh — self-test (replaying the 2026-09-12 hand edit)\n'
@@ -309,7 +318,7 @@ function main() {
     const reference = generateReference();
     let code;
     try {
-        code = selfTestMode ? selfTest(reference) : report(compareAgainstReference(COMMITTED_DIR, reference));
+        code = selfTestMode ? selfTest(reference) : report(compareAgainstReference(committedDir, reference));
     } finally {
         // Before process.exit — a finally never runs after it.
         rmSync(reference.dir, { recursive: true, force: true });
