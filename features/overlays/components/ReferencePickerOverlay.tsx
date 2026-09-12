@@ -6,6 +6,7 @@
  * pick handler from the callback group the opener registered.
  */
 
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,10 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getReferencePickerCallbackGroup } from "@/features/overlays/callbacks/referencePicker";
+import {
+  disposeReferencePickerCallbackGroup,
+  getReferencePickerCallbackGroup,
+} from "@/features/overlays/callbacks/referencePicker";
 import { ReferencePickerBody } from "@/features/matrx-envelope/components/reference-picker/ReferencePickerBody";
 import type {
   ReferenceDelivery,
@@ -46,6 +50,10 @@ export default function ReferencePickerOverlay({
   mode,
 }: ReferencePickerOverlayProps) {
   const isMobile = useIsMobile();
+  useEffect(
+    () => () => disposeReferencePickerCallbackGroup(callbackGroupId),
+    [callbackGroupId],
+  );
   if (!isOpen) return null;
 
   const group = getReferencePickerCallbackGroup(callbackGroupId);

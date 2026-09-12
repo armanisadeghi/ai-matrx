@@ -5,11 +5,12 @@
  *
  * `useOpenReferencePicker()` returns an imperative opener. The pick handler is
  * registered as a callback group (`features/overlays/callbacks/referencePicker`)
- * and only its id travels through Redux. The group is disposed when the picker
- * reports a pick or a cancel, and on unmount of the owning component.
+ * and only its id travels through Redux. The overlay owns the callback group's
+ * lifetime so a transient opener (such as the mobile menu sheet) may unmount
+ * while the picker remains open.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createReferencePickerCallbackGroup } from "@/features/overlays/callbacks/referencePicker";
@@ -38,26 +39,17 @@ export interface ReferencePickerOverlayData {
   mode: ReferenceDelivery;
 }
 
-type HandleRef = { callbackGroupId: string; dispose: () => void };
-
 export function useOpenReferencePicker() {
   const dispatch = useAppDispatch();
-  const handlesRef = useRef<Set<HandleRef>>(new Set());
-
-  useEffect(() => {
-    const handles = handlesRef.current;
-    return () => {
-      for (const h of handles) h.dispose();
-      handles.clear();
-    };
-  }, []);
 
   return useCallback(
     (opts: OpenReferencePickerOptions): ReferencePickerHandle => {
-      const handleRef: HandleRef = { callbackGroupId: "", dispose: () => {} };
+      let disposed = false;
+      let disposeGroup = () => {};
       const detach = () => {
-        handleRef.dispose();
-        handlesRef.current.delete(handleRef);
+        if (disposed) return;
+        disposed = true;
+        disposeGroup();
       };
       const { callbackGroupId, dispose } = createReferencePickerCallbackGroup({
         onPicked: (pick) => {
@@ -69,9 +61,7 @@ export function useOpenReferencePicker() {
           detach();
         },
       });
-      handleRef.callbackGroupId = callbackGroupId;
-      handleRef.dispose = dispose;
-      handlesRef.current.add(handleRef);
+      disposeGroup = dispose;
 
       const data: ReferencePickerOverlayData = { callbackGroupId, mode: opts.mode };
       dispatch(openOverlay({ overlayId: OVERLAY_ID, data }));

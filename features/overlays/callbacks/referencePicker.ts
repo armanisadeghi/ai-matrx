@@ -38,3 +38,9 @@ export function getReferencePickerCallbackGroup(
     callbackManager.get<ReferencePickerCallbackGroup>(callbackGroupId) ?? null
   );
 }
+
+export function disposeReferencePickerCallbackGroup(
+  callbackGroupId: string | null | undefined,
+): void {
+  if (callbackGroupId) callbackManager.unregister(callbackGroupId);
+}
