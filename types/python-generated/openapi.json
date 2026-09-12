@@ -8985,17 +8985,35 @@
           "Meet"
         ],
         "summary": "Intelligence Ask",
-        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\njoin decision exactly, including the org's `meet.guest_join_enabled` knob.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nExpected refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n409 for an empty transcript, 422 for a blank question, and 503 naming the\nMandate admin when nothing is bound to answer.",
+        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\nadmission decision, including a verified room pass and the org's\n`meet.guest_join_enabled` knob. The pass rides `x-meet-room-token`, never a URL.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nExpected refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n409 for an empty transcript, 422 for a blank question, and 503 naming the\nMandate admin when nothing is bound to answer.",
         "operationId": "intelligence_ask_v1_meet_intelligence_ask_post",
+        "parameters": [
+          {
+            "name": "x-meet-room-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Meet-Room-Token"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MeetQuestionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -124472,6 +124490,22 @@
             "title": "Model Guidance",
             "description": "Model preference/guidance, e.g. cost vs speed vs intelligence.",
             "default": ""
+          },
+          "model_profile": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "balanced",
+                  "strongest"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Profile",
+            "description": "Optional database-owned model class. 'balanced' selects a primary, non-premium mid-cost text model; 'strongest' selects a primary premium text model."
           },
           "tools": {
             "items": {

@@ -18907,6 +18907,14 @@ export type Database = {
           node_outcome_payload: number
         }[]
       }
+      owned_child_instances: {
+        Args: { p_ids: string[] }
+        Returns: {
+          depth: number
+          id: string
+          parent_id: string
+        }[]
+      }
       resolve_kind_version: {
         Args: { p_kind: string; p_organization_id: string; p_version?: number }
         Returns: {

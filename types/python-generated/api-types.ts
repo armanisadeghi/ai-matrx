@@ -3754,7 +3754,8 @@ export interface paths {
          *     Like `/token`, this route takes NO authentication dependency: a guest holding
          *     the meeting link is a first-class participant (D6), and it is the SERVICE
          *     that decides what a guest may do — `authorize_meeting_question` mirrors the
-         *     join decision exactly, including the org's `meet.guest_join_enabled` knob.
+         *     admission decision, including a verified room pass and the org's
+         *     `meet.guest_join_enabled` knob. The pass rides `x-meet-room-token`, never a URL.
          *
          *     The body is `{meeting_id, question}` and nothing else. No transcript, no
          *     context, no agent id crosses the wire — the answer is built server-side from
@@ -54768,6 +54769,11 @@ export interface components {
              * @default
              */
             model_guidance?: string;
+            /**
+             * Model Profile
+             * @description Optional database-owned model class. 'balanced' selects a primary, non-premium mid-cost text model; 'strongest' selects a primary premium text model.
+             */
+            model_profile?: ("balanced" | "strongest") | null;
             /**
              * Tools
              * @description Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.
@@ -123367,7 +123373,9 @@ export interface operations {
     intelligence_ask_v1_meet_intelligence_ask_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
