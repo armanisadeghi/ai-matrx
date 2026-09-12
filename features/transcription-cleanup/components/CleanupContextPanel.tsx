@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import {
   NotePickerPopover,
   invalidateNotePickerCache,
@@ -257,7 +257,8 @@ export function CleanupContextPanel({
         );
         invalidateNotePickerCache();
         toast.success("Saved as note in Transcription Contexts");
-      } catch {
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return;
         toast.error("Could not create note");
       } finally {
         setSavingId(null);

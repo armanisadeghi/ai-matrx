@@ -35,7 +35,7 @@ import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
@@ -384,14 +384,13 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
 
   const handleSaveToScratch = async () => {
     if (isAuthenticated) {
-      const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
-      await NotesAPI.create({
-        label: "New Note",
-        content,
-        folder_name: "Scratch",
-        tags: [],
-        organization_id: capturedOrganizationId,
-      });
+      try {
+        const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
+        await NotesAPI.create({ label: "New Note", content, folder_name: "Scratch", tags: [], organization_id: capturedOrganizationId });
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return;
+        throw error;
+      }
     } else {
       requireAuth(
         "save-scratch",

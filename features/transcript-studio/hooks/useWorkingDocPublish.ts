@@ -27,7 +27,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { create as createNote } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export interface UseWorkingDocPublishArgs {
   /** Current working-document content to publish. */
@@ -65,9 +65,9 @@ export function useWorkingDocPublish({
       return false;
     }
     if (publishing) return false;
-    const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
     setPublishing(true);
     try {
+      const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
       // 1) Persist durably to a note the user owns + sees in their notes list.
       const note = await createNote({
         content: text,
@@ -96,6 +96,7 @@ export function useWorkingDocPublish({
       toast.success("Published to a note and cleared for the next draft");
       return true;
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return false;
       console.error("[working-doc/publish] publish failed:", err);
       toast.error("Couldn't publish the working document");
       return false;

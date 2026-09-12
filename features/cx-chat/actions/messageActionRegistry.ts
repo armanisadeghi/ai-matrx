@@ -41,7 +41,7 @@ import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContent
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -514,14 +514,13 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
           )
         )
           return;
-        const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
-        await NotesAPI.create({
-          label: "New Note",
-          content,
-          folder_name: "Scratch",
-          tags: [],
-          organization_id: organizationId,
-        });
+        try {
+          const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
+          await NotesAPI.create({ label: "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) return;
+          throw error;
+        }
       },
       category: "Actions",
       successMessage: "Saved to Scratch!",

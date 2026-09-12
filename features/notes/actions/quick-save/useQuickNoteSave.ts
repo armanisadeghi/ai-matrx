@@ -23,7 +23,7 @@ import {
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 // Vocabulary lives in a pure module so the surface manifest can import the
 // same constants this hook validates against (see quickNoteSaveVocabulary).
@@ -142,7 +142,12 @@ export function useQuickNoteSave({
     // active selection must never block an update or open a destination picker.
     let organizationId: string;
     if (isCreate) {
-      organizationId = await ensureOrganizationContext({ organizationId: selectedOrganizationId });
+      try {
+        organizationId = await ensureOrganizationContext({ organizationId: selectedOrganizationId });
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return null;
+        throw error;
+      }
     } else {
       if (!selectedNoteForUpdate?.organization_id) {
         throw new Error("The selected note has no persisted organization.");
@@ -238,6 +243,7 @@ export function useQuickNoteSave({
       setSavedNote(result);
       return result;
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return null;
       console.error("QuickNoteSave: save failed", err);
       toast.error("Failed to save — saved to Recovery");
       return null;

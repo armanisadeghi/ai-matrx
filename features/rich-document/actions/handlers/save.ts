@@ -16,7 +16,7 @@ import {
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { registerAction } from "../registry";
@@ -110,6 +110,7 @@ registerAction({
       });
       toast.success("Saved to Scratch!");
     } catch (error) {
+      if (isOrganizationSelectionCancelled(error)) return;
       toast.error(getErrorMessage(error, "Failed to save"));
     }
   },

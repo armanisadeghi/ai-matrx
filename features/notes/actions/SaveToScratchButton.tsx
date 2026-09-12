@@ -14,7 +14,7 @@ import { NotesAPI } from "../service/notesApi";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 interface SaveToScratchButtonProps {
   content: string;
@@ -63,6 +63,7 @@ export function SaveToScratchButton({
       // Reset success indicator after 2 seconds
       setTimeout(() => setJustSaved(false), 2000);
     } catch (error) {
+      if (isOrganizationSelectionCancelled(error)) return;
       console.error("Error saving to scratch:", error);
       toast.error("Failed to save");
     } finally {

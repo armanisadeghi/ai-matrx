@@ -36,7 +36,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action_content";
@@ -526,14 +526,13 @@ function saveItems(ctx: ContentActionContext): MenuItem[] {
           )
         )
           return;
-        const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
-        await NotesAPI.create({
-          label: title ?? "New Note",
-          content,
-          folder_name: "Scratch",
-          tags: [],
-          organization_id: organizationId,
-        });
+        try {
+          const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
+          await NotesAPI.create({ label: title ?? "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) return;
+          throw error;
+        }
       },
       category: "Actions",
       successMessage: "Saved to Scratch!",

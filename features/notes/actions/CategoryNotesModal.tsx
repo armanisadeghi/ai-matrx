@@ -28,7 +28,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 function noteUpdatedAtMs(updatedAt: string | null): number {
     return updatedAt ? new Date(updatedAt).getTime() : 0;
@@ -155,6 +155,7 @@ export function CategoryNotesModal({
             setNewNoteLabel('');
             setNewNoteContent('');
         } catch (error) {
+            if (isOrganizationSelectionCancelled(error)) return;
             console.error('Error creating:', error);
             toast.error('Failed to create');
         } finally {
@@ -248,6 +249,7 @@ export function CategoryNotesModal({
             setSelectedNoteId(imported.id);
             setImportSearchQuery('');
         } catch (error) {
+            if (isOrganizationSelectionCancelled(error)) return;
             console.error('Error importing:', error);
             toast.error('Failed to import');
         } finally {

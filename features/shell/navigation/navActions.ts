@@ -40,7 +40,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
@@ -89,7 +89,8 @@ export function useNavActions(): ShellNavActionHandlers {
             await import("@/features/notes/redux/thunks");
           const note = await dispatch(createNewNote({ organization_id: capturedOrganizationId })).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
-        } catch {
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) return;
           toast.error("Couldn't create the note");
         }
       })();
