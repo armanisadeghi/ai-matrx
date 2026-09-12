@@ -30,7 +30,10 @@ import {
 } from "../react/kind-route";
 import { componentRegistry } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";
-import { envelopeFromCompleteValue, IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
+import {
+  envelopeFromCompleteValue,
+  IR_ENVELOPE_KEY,
+} from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
 import FlowStepResultBlock from "@/components/mardown-display/blocks/result-kinds/FlowStepResultBlock";
 import CollectionResultBlock from "@/components/mardown-display/blocks/result-kinds/CollectionResultBlock";
@@ -74,6 +77,46 @@ const FIXTURES: Fixture[] = [
     },
     visible: ["Wave 3", "succeeded", "failed", "more to come"],
   },
+  {
+    kind: "meet_intelligence_result",
+    componentKey: "flow_step_result",
+    Component: FlowStepResultBlock,
+    data: {
+      status: "written",
+      meeting_id: "meeting-1",
+      rows_written: 3,
+      segment_count: 14,
+    },
+    visible: ["Meet intelligence", "written", "notes written", "segments read"],
+  },
+  {
+    kind: "meet_recording_landing_result",
+    componentKey: "flow_step_result",
+    Component: FlowStepResultBlock,
+    data: {
+      outcome: "landed",
+      recording_id: "recording-1",
+      file_id: "file-1",
+    },
+    visible: ["Meet recording landing", "landed", "recording-1", "file-1"],
+  },
+  {
+    kind: "meet_recording_transcription_result",
+    componentKey: "flow_step_result",
+    Component: FlowStepResultBlock,
+    data: {
+      status: "skipped",
+      recording_id: "recording-2",
+      segment_count: 0,
+      reason: "No audible speech.",
+    },
+    visible: [
+      "Meet recording transcription",
+      "skipped",
+      "segments read",
+      "No audible speech.",
+    ],
+  },
   // ── collection_result ───────────────────────────────────────────────────
   {
     kind: "filter_result",
@@ -110,7 +153,12 @@ const FIXTURES: Fixture[] = [
       next_offset: 4096,
       truncated: true,
     },
-    visible: ["settings.yaml", "region: us-east-1", "truncated", "resume at 4,096"],
+    visible: [
+      "settings.yaml",
+      "region: us-east-1",
+      "truncated",
+      "resume at 4,096",
+    ],
   },
   {
     kind: "file_edit_failure",
@@ -128,7 +176,11 @@ const FIXTURES: Fixture[] = [
     kind: "hash_result",
     componentKey: "value_result",
     Component: ValueResultBlock,
-    data: { algorithm: "sha256", digest: "9f86d081884c7d659a2feaa0c55ad015", truncated_to: null },
+    data: {
+      algorithm: "sha256",
+      digest: "9f86d081884c7d659a2feaa0c55ad015",
+      truncated_to: null,
+    },
     visible: ["9f86d081884c7d659a2feaa0c55ad015", "sha256"],
   },
   {
@@ -153,7 +205,10 @@ const FIXTURES: Fixture[] = [
 ];
 
 /** The registered family row, as the warm loader projects it. */
-function registeredRow(kind: string, componentKey: string): KindComponentProjection {
+function registeredRow(
+  kind: string,
+  componentKey: string,
+): KindComponentProjection {
   return {
     kind,
     platform: "web",
@@ -217,7 +272,9 @@ describe("the four runtime-result families route to their registered component",
         schemaSource: "content_ir",
         tier: "warm",
       });
-      componentRegistry.ingestDbRows([registeredRow(kind, fixture.componentKey)]);
+      componentRegistry.ingestDbRows([
+        registeredRow(kind, fixture.componentKey),
+      ]);
 
       const routed = applyIrKindRoute(kindBlock(kind, fixture.data));
 
@@ -272,7 +329,11 @@ describe("the four runtime-result families route to their registered component",
     // disappearing between the headline and the payload.
     const markup = renderToStaticMarkup(
       <FlowStepResultBlock
-        content={JSON.stringify({ __kind: "dispatch_result", dispatched: 3, batch_label: "nightly" })}
+        content={JSON.stringify({
+          __kind: "dispatch_result",
+          dispatched: 3,
+          batch_label: "nightly",
+        })}
         metadata={undefined}
       />,
     );

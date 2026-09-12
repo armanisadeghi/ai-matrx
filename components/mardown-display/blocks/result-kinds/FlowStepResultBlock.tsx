@@ -61,6 +61,8 @@ const COUNTERS: ReadonlyArray<{
   { key: "discovered", label: "discovered", tone: "neutral" },
   { key: "total_discovered", label: "discovered", tone: "neutral" },
   { key: "duplicates", label: "duplicates", tone: "neutral" },
+  { key: "rows_written", label: "notes written", tone: "good" },
+  { key: "segment_count", label: "segments read", tone: "neutral" },
 ];
 
 /** Payload fields, in the order a family would carry one. */
@@ -71,12 +73,19 @@ const FlowStepResultBlock: React.FC<ResultKindBlockProps> = ({
   metadata,
   className,
 }) => {
-  const { value, recovered, kind, streaming } = readKindValue(content, metadata);
+  const { value, recovered, kind, streaming } = readKindValue(
+    content,
+    metadata,
+  );
   if (!recovered || !isRecord(value)) {
     return <RawRegion content={content} className={className} />;
   }
 
   const direction = readText(value.direction);
+  // Durable operations often name their settled state `status` or `outcome`
+  // rather than a control-flow `direction`. They still answer the same reader
+  // question, so promote that state without a Meet-specific renderer.
+  const status = readText(value.status) ?? readText(value.outcome);
   const wave = readNumber(value.wave);
   const iteration = readNumber(value.iteration);
   const done = readBool(value.done);
@@ -93,6 +102,8 @@ const FlowStepResultBlock: React.FC<ResultKindBlockProps> = ({
 
   const shown = [
     "direction",
+    "status",
+    "outcome",
     "wave",
     "iteration",
     "done",
@@ -136,6 +147,13 @@ const FlowStepResultBlock: React.FC<ResultKindBlockProps> = ({
             )}
             {stepName}
           </span>
+        ) : null}
+
+        {status ? (
+          <StateChip
+            label={status}
+            tone={status === "skipped" ? "neutral" : "good"}
+          />
         ) : null}
 
         {done !== null ? (
