@@ -690,7 +690,10 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   destructive confirmation, row actions, context menu, and canonical brand/site
   doors. Cards and table consume the same paged query; cards surface per-brand
   sites plus social, asset, fact, and pending-review dimensions rather than a
-  decorative dashboard metric.
+  decorative dashboard metric. The query controls stay mounted when changing
+  views, so an in-flight search cannot restore a cleared term; the table hides
+  its duplicate search field. Mobile view and creation controls meet the 44px
+  touch floor, and the icon-only creation control has its accessible name.
 
 - 2026-09-10 — Codex: **Industry-pack review controls retain their dense desktop geometry and meet the shared 44px touch floor on tablet and phone.** The review root now opts into `matrx-touch-targets`, covering per-section all/none actions, keyword doors, rationale disclosures, navigation, and the sticky adoption footer. Row checkboxes keep their 14px visual chrome while gaining an invisible 44px hit area, matching the canonical table and research patterns. A source contract guards both pieces so later pack rows cannot silently shrink the interaction surface again.
 

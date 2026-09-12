@@ -458,7 +458,7 @@ export function BrandsPortfolio({
               type="button"
               variant={view === "cards" ? "secondary" : "ghost"}
               size="icon"
-              className="h-9 w-9"
+              className="h-11 w-11"
               aria-label="Show brand cards"
               title="Cards"
               onClick={() => setView("cards")}
@@ -469,14 +469,19 @@ export function BrandsPortfolio({
               type="button"
               variant={view === "table" ? "secondary" : "ghost"}
               size="icon"
-              className="h-9 w-9"
+              className="h-11 w-11"
               aria-label="Show brand table"
               title="Table"
               onClick={() => setView("table")}
             >
               <TableIcon className="h-4 w-4" />
             </Button>
-            <Button size="sm" className="h-9" onClick={openCreate}>
+            <Button
+              size="sm"
+              className="h-11 w-11 p-0 sm:w-auto sm:px-3"
+              aria-label="Add brand"
+              onClick={openCreate}
+            >
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Add brand</span>
             </Button>
@@ -488,7 +493,17 @@ export function BrandsPortfolio({
             onRetry={() => void brands.refetch()}
           />
         ) : (
-          <div className={cn("min-h-0", presentation === "route" && "flex-1")}>
+          <div
+            className={cn(
+              "min-h-0 space-y-3",
+              presentation === "route" && "flex-1",
+            )}
+          >
+            <BrandCardQueryControls
+              state={table.state}
+              total={brands.data?.total}
+              onStateChange={table.onStateChange}
+            />
             <NonEditableContextMenu
               sourceFeature="marketing"
               contentSource={{ type: "raw" }}
@@ -510,6 +525,7 @@ export function BrandsPortfolio({
                     onStateChange: table.onStateChange,
                   }}
                   toolbar={{
+                    search: false,
                     searchPlaceholder: "Search brand name or website…",
                   }}
                   copy={{
@@ -584,22 +600,15 @@ export function BrandsPortfolio({
                   }}
                 />
               ) : (
-                <div className="space-y-3">
-                  <BrandCardQueryControls
-                    state={table.state}
-                    total={brands.data?.total}
-                    onStateChange={table.onStateChange}
-                  />
-                  <BrandCards
-                    rows={listRows}
-                    loading={brands.isLoading}
-                    onEdit={(row) => {
-                      setEditing(row);
-                      setEditorOpen(true);
-                    }}
-                    onDelete={setDeleting}
-                  />
-                </div>
+                <BrandCards
+                  rows={listRows}
+                  loading={brands.isLoading}
+                  onEdit={(row) => {
+                    setEditing(row);
+                    setEditorOpen(true);
+                  }}
+                  onDelete={setDeleting}
+                />
               )}
             </NonEditableContextMenu>
           </div>
