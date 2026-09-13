@@ -35,6 +35,7 @@ registerAction({
     // can't survive Redux; only the `callbackGroupId` string travels.
     const callbackGroupId = canSave
       ? createFullScreenEditorCallbackGroup({
+          retainAfterSuccess: true,
           onSave: async (newContent: string) => {
             try {
               preparedSource = await savePreparedContentEdit({

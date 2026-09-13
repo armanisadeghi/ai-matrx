@@ -604,6 +604,8 @@ export async function persistNoteUpdate(
         receipt,
         actorId: options.expectedActorId,
         kind: "actor-changed-after-ack",
+        sourceId: options.expectedSourceId,
+        snapshotId: options.expectedSnapshotId,
         cause: cause instanceof Error ? cause : new Error("The sign-in changed."),
       });
     }
@@ -613,6 +615,8 @@ export async function persistNoteUpdate(
       receipt,
       actorId: options.expectedActorId,
       kind: "post-save-recovery",
+      sourceId: options.expectedSourceId,
+      snapshotId: options.expectedSnapshotId,
       cause: receipt.postSaveRecoveryError,
     });
   }

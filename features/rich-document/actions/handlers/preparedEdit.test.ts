@@ -32,7 +32,7 @@ describe("prepared Notes receipt settlement", () => {
     const partial = new NoteContextPartialSaveError(receipt({ failedFields: ["task_id"] }));
     const settledPartial = acknowledgedPreparedSource(source(), partial, "saved");
     expect(settledPartial).toMatchObject({ type: "note", mode: "editable", editBase: { version: 1 } });
-    const postAck = new NotePostAcknowledgementError({ receipt: receipt(), actorId: "actor", kind: "actor-changed-after-ack", cause: new Error("changed") });
+    const postAck = new NotePostAcknowledgementError({ receipt: receipt(), actorId: "actor", sourceId: "editor", snapshotId: "snapshot", kind: "actor-changed-after-ack", cause: new Error("changed") });
     expect(acknowledgedPreparedSource(source(), postAck, "saved")).toMatchObject({ editBase: { version: 1 } });
   });
 

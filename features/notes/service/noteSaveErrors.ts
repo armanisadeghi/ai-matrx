@@ -57,11 +57,15 @@ export class NotePostAcknowledgementError extends Error {
   readonly receipt: NoteSaveReceipt;
   readonly actorId: string;
   readonly kind: "actor-changed-after-ack" | "post-save-recovery";
+  readonly sourceId?: string;
+  readonly snapshotId?: string;
 
   constructor(args: {
     receipt: NoteSaveReceipt;
     actorId: string;
     kind: "actor-changed-after-ack" | "post-save-recovery";
+    sourceId?: string;
+    snapshotId?: string;
     cause: Error;
   }) {
     super("The note was acknowledged, but the editor must remain open to recover.", {
@@ -71,5 +75,7 @@ export class NotePostAcknowledgementError extends Error {
     this.receipt = args.receipt;
     this.actorId = args.actorId;
     this.kind = args.kind;
+    this.sourceId = args.sourceId;
+    this.snapshotId = args.snapshotId;
   }
 }

@@ -175,7 +175,7 @@ class CallbackManager {
   async triggerGroupCommand<T, C extends CallbackContext = CallbackContext>(
     groupId: string,
     data: T,
-    options?: { context?: C },
+    options?: { context?: C; removeAfterSuccess?: boolean },
   ): Promise<void> {
     const group = this.groups.get(groupId);
     const callbackIds = group ? [...group] : [];
@@ -204,8 +204,10 @@ class CallbackManager {
       }
     }
 
-    this.callbacks.delete(callbackId);
-    this.groups.delete(groupId);
+    if (options?.removeAfterSuccess !== false) {
+      this.callbacks.delete(callbackId);
+      this.groups.delete(groupId);
+    }
   }
   /**
    * Update progress for a callback or group

@@ -4,7 +4,7 @@
 // are async network calls that surface their errors back to the caller.
 
 import type { ContentSource, ContentSourceAdapter } from "../../types";
-import { supabase } from "@/utils/supabase/client";
+import { requireUserId } from "@/utils/auth/getUserId";
 import {
   isPreparedEditableNoteSource,
   noteEditableContentSource,
@@ -24,27 +24,24 @@ export const noteAdapter: ContentSourceAdapter = {
     if (source.type !== "note" || !isAuthenticated) {
       throw new Error("Sign in before editing this note.");
     }
+    const { assertInitiatingNotesUser } = await import("@/features/notes/service/notesService");
     if (source.mode === "editable") {
       if (!isPreparedEditableNoteSource(source)) {
         throw new Error("This note editor has no valid acknowledged base. Reload it before saving.");
       }
+      await assertInitiatingNotesUser(source.editBase.actorId);
       return { source, content: source.displayedPhysicalSnapshot.content };
     }
-    const { data: before, error: beforeError } = await supabase.auth.getSession();
-    if (beforeError || !before.session?.user.id) {
-      throw new Error("Sign in before editing this note.");
-    }
+    const actorId = requireUserId();
+    await assertInitiatingNotesUser(actorId);
     const { fetchNoteById } = await import("@/features/notes/service/notesService");
     const note = await fetchNoteById(source.noteId);
-    const { data: after, error: afterError } = await supabase.auth.getSession();
-    if (afterError || after.session?.user.id !== before.session.user.id) {
-      throw new Error("Your sign-in changed while this note was opening. Try again.");
-    }
+    await assertInitiatingNotesUser(actorId);
     if (!note) throw new Error("This note is unavailable or you no longer have access.");
     return {
       source: noteEditableContentSource({
         note,
-        actorId: before.session.user.id,
+        actorId,
         sourceId: source.sourceId,
         snapshotId: `${source.sourceId}:${note.version}`,
       }),
@@ -65,6 +62,8 @@ export const noteAdapter: ContentSourceAdapter = {
       expectedVersion: source.editBase.version,
       expectedOrganizationId: source.editBase.organizationId,
       expectedActorId: source.editBase.actorId,
+      expectedSourceId: source.sourceId,
+      expectedSnapshotId: source.snapshotId,
     });
   },
 

@@ -12,6 +12,35 @@ function validVersion(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
 }
 
+function isSerializableJson(value: unknown, seen = new Set<object>()): boolean {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) {
+    if (seen.has(value)) return false;
+    seen.add(value);
+    return Object.keys(value).length === value.length && value.every((item) => isSerializableJson(item, seen));
+  }
+  if (typeof value !== "object") return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]") return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  return Object.values(value).every((item) => isSerializableJson(item, seen));
+}
+
+function freezeSerializable<T>(value: T): T {
+  const copy = structuredClone(value);
+  if (!isSerializableJson(copy)) {
+    throw new Error("A Notes edit source must contain only serializable physical fields.");
+  }
+  const freeze = (item: unknown): void => {
+    if (!item || typeof item !== "object" || Object.isFrozen(item)) return;
+    for (const child of Object.values(item)) freeze(child);
+    Object.freeze(item);
+  };
+  freeze(copy);
+  return copy;
+}
+
 function displayedPhysicalSnapshot(note: Note): NoteDisplayedPhysicalSnapshot {
   return {
     id: note.id,
@@ -21,8 +50,8 @@ function displayedPhysicalSnapshot(note: Note): NoteDisplayedPhysicalSnapshot {
     label: note.label,
     folder_name: note.folder_name,
     folder_id: note.folder_id,
-    tags: structuredClone(note.tags),
-    metadata: structuredClone(note.metadata),
+    tags: freezeSerializable(note.tags),
+    metadata: freezeSerializable(note.metadata),
     visibility: note.visibility,
     position: note.position,
     project_id: note.project_id,
@@ -81,7 +110,7 @@ export function captureNoteEditSource(args: {
   ) {
     throw new Error("A Notes editable source requires an acknowledged note, actor, source, and revision.");
   }
-  return {
+  return freezeSerializable({
     type: "note",
     mode: "editable",
     noteId: acknowledgedNote.id,
@@ -96,7 +125,7 @@ export function captureNoteEditSource(args: {
     acknowledgedPhysicalSnapshot: displayedPhysicalSnapshot(acknowledgedNote),
     displayedPhysicalSnapshot: displayedPhysicalSnapshot(displayedNote),
     ...(actingSelection === undefined ? {} : { actingSelection }),
-  };
+  });
 }
 
 /** Compatibility name for callers that currently display their acknowledged row. */
@@ -118,17 +147,26 @@ export function noteEditableContentSource(args: {
 }
 
 export function isPreparedEditableNoteSource(source: ContentSource): source is NoteEditableContentSource {
-  if (source.type !== "note" || source.mode !== "editable") return false;
-  const { editBase, displayedPhysicalSnapshot } = source;
+  if (!source || typeof source !== "object" || source.type !== "note" || source.mode !== "editable") return false;
+  const { editBase, displayedPhysicalSnapshot, acknowledgedPhysicalSnapshot } = source;
+  if (
+    !editBase || typeof editBase !== "object" ||
+    !displayedPhysicalSnapshot || typeof displayedPhysicalSnapshot !== "object" ||
+    !acknowledgedPhysicalSnapshot || typeof acknowledgedPhysicalSnapshot !== "object"
+  ) return false;
   return (
     editBase.noteId === source.noteId &&
     editBase.noteId === displayedPhysicalSnapshot.id &&
     editBase.organizationId === displayedPhysicalSnapshot.organization_id &&
-    editBase.noteId === source.acknowledgedPhysicalSnapshot.id &&
-    editBase.organizationId === source.acknowledgedPhysicalSnapshot.organization_id &&
-    editBase.version === source.acknowledgedPhysicalSnapshot.version &&
+    editBase.noteId === acknowledgedPhysicalSnapshot.id &&
+    editBase.organizationId === acknowledgedPhysicalSnapshot.organization_id &&
+    editBase.version === acknowledgedPhysicalSnapshot.version &&
     editBase.version === displayedPhysicalSnapshot.version &&
-    Boolean(editBase.actorId) &&
+    Boolean(editBase.actorId) && Boolean(source.sourceId) && Boolean(source.snapshotId) &&
+    isSerializableJson(acknowledgedPhysicalSnapshot.tags) &&
+    isSerializableJson(acknowledgedPhysicalSnapshot.metadata) &&
+    isSerializableJson(source.displayedPhysicalSnapshot.tags) &&
+    isSerializableJson(source.displayedPhysicalSnapshot.metadata) &&
     validVersion(editBase.version)
   );
 }
