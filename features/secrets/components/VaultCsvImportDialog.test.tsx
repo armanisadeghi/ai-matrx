@@ -12,14 +12,19 @@ import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultWorkspace } from "./VaultWorkspace";
 import { fetchBitwardenJsonImportLimits, fetchCsvImportLimits } from "../csv-import-limits";
 import { createVaultItem, VaultImportTransportError } from "../vault-service";
+import type { StructuredImportRecord } from "../structured-import";
 
-let mockAuthStateListener: ((event: string) => void) | undefined;
+let mockAuthStateListener:
+  | ((event: string, session?: { user: { id: string } } | null) => void)
+  | undefined;
 let mockOrganizationId = "11111111-1111-4111-8111-111111111111";
 
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
-      onAuthStateChange: (listener: (event: string) => void) => {
+      onAuthStateChange: (
+        listener: (event: string, session?: { user: { id: string } } | null) => void,
+      ) => {
         mockAuthStateListener = listener;
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       },
@@ -134,19 +139,20 @@ function jsonFile(text: string, size = text.length): File {
   return file;
 }
 
-function jsonRecord(overrides: Partial<Record<string, unknown>> = {}) {
+type WebsiteImportRecord = Extract<StructuredImportRecord, { status: "supported"; kind: "website_login" }>;
+
+function jsonRecord(overrides: Partial<WebsiteImportRecord> = {}): WebsiteImportRecord {
   return {
     ordinal: 0,
     title: "Example",
     kind: "website_login",
     status: "supported",
+    sourceState: "active",
     sourceRecord: '{"source_vendor":"bitwarden"}',
     urls: ["https://example.test"],
     hasOtp: false,
     username: "user",
     password: "password",
-    deleted: false,
-    hasVisiblePublicKey: false,
     ...overrides,
   };
 }
@@ -405,6 +411,32 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).not.toContain("late");
   });
 
+  it("terminates a mounted JSON worker before a SIGNED_IN actor replacement can return its draft", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    const input = await chooseBitwardenJson();
+    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}")] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    if (!mockAuthStateListener) throw new Error("auth listener missing");
+    await act(async () => mockAuthStateListener?.("SIGNED_IN", { user: { id: "user-b" } }));
+    expect(workers[0]?.terminate).toHaveBeenCalled();
+    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "late signed in" })] } } as MessageEvent));
+    expect(document.body.textContent).not.toContain("late signed in");
+    expect(document.body.textContent).toContain("account changed");
+  });
+
+  it("keeps a loaded draft through a same-actor token refresh", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    if (!mockAuthStateListener) throw new Error("auth listener missing");
+    await act(async () => mockAuthStateListener?.("INITIAL_SESSION", { user: { id: "user-1" } }));
+    const input = document.body.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+    Object.defineProperty(input, "files", { configurable: true, value: [csvFile("title\nCredential")] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    expect(document.body.textContent).toContain("Masked preview:");
+    await act(async () => mockAuthStateListener?.("TOKEN_REFRESHED", { user: { id: "user-1" } }));
+    expect(document.body.textContent).toContain("Masked preview:");
+  });
+
   it("refuses an oversized JSON file before reading it", async () => {
     fetchBitwardenJsonImportLimitsMock.mockResolvedValueOnce({ maxFileBytes: 1, maxRecords: 20, maxColumns: 20, maxCellBytes: 1_000, maxFields: 202, maxPlaintextFieldBytes: 1_000, maxRequestBodyBytes: 10_000, maxJsonDepth: 64, jsonWorkerTimeoutMs: 50 });
     await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
@@ -488,9 +520,9 @@ describe("VaultCsvImportDialog", () => {
     await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
     await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [
       jsonRecord(),
-      jsonRecord({ ordinal: 1, title: "Invalid", status: "invalid", reason: "Bad shape", sourceRecord: undefined }),
-      jsonRecord({ ordinal: 2, title: "Unsupported", status: "unsupported", reason: "Passkey", sourceRecord: undefined }),
-      jsonRecord({ ordinal: 3, title: "Deleted", status: "skipped", deleted: true }),
+      { ordinal: 1, title: "Invalid", status: "invalid", reason: "Bad shape" },
+      { ordinal: 2, title: "Unsupported", status: "unsupported", reason: "Passkey" },
+      jsonRecord({ ordinal: 3, title: "Deleted", sourceState: "deleted" }),
     ] } } as MessageEvent));
     expect(document.body.textContent).toContain("0 selected; 1 skipped; 1 invalid; 1 unsupported; 1 deleted.");
     expect(document.body.textContent).toContain("destination https://example.test");

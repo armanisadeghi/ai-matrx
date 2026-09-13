@@ -1,10 +1,10 @@
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
 import {
   mergeRuleFieldValues,
-  POLICY_ACTION_KINDS,
-  POLICY_LEVELS,
-  type PolicyActionKind,
-  type PolicyLevel,
+  RULE_ACTION_KINDS,
+  RULE_POLICY_LEVELS,
+  type RuleActionKind,
+  type RulePolicyLevel,
   type RuleFieldValues,
   type RulebookRule,
   type RulebookSections,
@@ -53,9 +53,9 @@ export interface RuleImproveResult {
 export interface RuleImprovePolicy {
   precondition: string;
   next_action: string;
-  action_kind: PolicyActionKind;
-  cost: PolicyLevel;
-  risk: PolicyLevel;
+  action_kind: RuleActionKind;
+  cost: RulePolicyLevel;
+  risk: RulePolicyLevel;
 }
 
 const POLICY_RESULT_KEYS = [
@@ -66,12 +66,12 @@ const POLICY_RESULT_KEYS = [
   "risk",
 ] as const;
 
-function isActionKind(value: unknown): value is PolicyActionKind {
-  return POLICY_ACTION_KINDS.some((option) => option.value === value);
+function isActionKind(value: unknown): value is RuleActionKind {
+  return (RULE_ACTION_KINDS as readonly unknown[]).includes(value);
 }
 
-function isPolicyLevel(value: unknown): value is PolicyLevel {
-  return POLICY_LEVELS.some((option) => option.value === value);
+function isPolicyLevel(value: unknown): value is RulePolicyLevel {
+  return (RULE_POLICY_LEVELS as readonly unknown[]).includes(value);
 }
 
 /**
@@ -330,15 +330,15 @@ export function readRuleEditorDraft(
       policy.nextAction = candidate.nextAction;
     }
     if (
-      POLICY_ACTION_KINDS.some((option) => option.value === candidate.actionKind)
+      isActionKind(candidate.actionKind)
     ) {
-      policy.actionKind = candidate.actionKind as PolicyActionKind;
+      policy.actionKind = candidate.actionKind;
     }
-    if (POLICY_LEVELS.some((option) => option.value === candidate.cost)) {
-      policy.cost = candidate.cost as PolicyLevel;
+    if (isPolicyLevel(candidate.cost)) {
+      policy.cost = candidate.cost;
     }
-    if (POLICY_LEVELS.some((option) => option.value === candidate.risk)) {
-      policy.risk = candidate.risk as PolicyLevel;
+    if (isPolicyLevel(candidate.risk)) {
+      policy.risk = candidate.risk;
     }
 
     return {

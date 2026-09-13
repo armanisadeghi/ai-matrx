@@ -4,6 +4,9 @@
  * Flow:
  *   1. Capture current content for rollback.
  *   2. Optimistic `updateMessageRecord` → UI reflects the edit instantly.
+ *      User-message edits update both `content` and the pristine
+ *      `userContent` projection; leaving the latter stale makes every shared
+ *      renderer show the pre-edit text even though the model sees the edit.
  *   3. Call `cx_message_edit(p_message_id, p_new_content)` — the RPC
  *      auto-archives the previous content into `content_history` on the row,
  *      so no client-side history management is needed.
@@ -31,6 +34,7 @@ import {
 } from "../active-requests/active-requests.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 interface EditMessageArgs {
   conversationId: string;
@@ -76,15 +80,19 @@ export const editMessage = createAsyncThunk<
       });
     }
     const previousContent = prevRecord.content;
+    const previousUserContent = prevRecord.userContent;
     const previousContentHistory = prevRecord.contentHistory;
     const previousStatus = prevRecord.status;
     const requestId = prevRecord._streamRequestId;
     const previousEditedText = requestId
       ? getState().activeRequests.byRequestId[requestId]?.editedText
       : null;
+    const nextUserContent =
+      prevRecord.role === "user" ? newContent : prevRecord.userContent;
     const optimisticEditedText = extractFlatText({
       ...prevRecord,
       content: newContent,
+      userContent: nextUserContent,
     });
 
     // eslint-disable-next-line no-console
@@ -104,6 +112,7 @@ export const editMessage = createAsyncThunk<
         messageId,
         patch: {
           content: newContent,
+          userContent: nextUserContent,
           status: "edited",
           _clientStatus: "pending",
         },
@@ -114,9 +123,7 @@ export const editMessage = createAsyncThunk<
     // into that render source too; patching messages.byId alone persists the
     // right value while leaving the old streamed text visible until reload.
     if (requestId) {
-      dispatch(
-        setRequestEditedText({ requestId, text: optimisticEditedText }),
-      );
+      dispatch(setRequestEditedText({ requestId, text: optimisticEditedText }));
     }
 
     // ── 2. Fire the DB RPC ──────────────────────────────────────────────
@@ -135,6 +142,7 @@ export const editMessage = createAsyncThunk<
           messageId,
           patch: {
             content: previousContent,
+            userContent: previousUserContent,
             contentHistory: previousContentHistory,
             status: previousStatus,
             _clientStatus: "error",
@@ -195,19 +203,43 @@ export const editMessage = createAsyncThunk<
     // ── 3. Patch with authoritative row from the RPC return ─────────────
     // The RPC returns the full chat.message row after the edit (including the
     // updated `content_history` with the prior content archived). The generated
-    // Returns for cx_message_edit mis-resolves to `graveyard.message`: the
-    // Supabase type generator can't disambiguate the bare `message` composite
-    // return between the live chat.message and the retired graveyard.message and
-    // picks the wrong one. The RPC genuinely returns chat.message, so the
-    // `.returns<chat.message Row>()` on the call above pins the correct type and
-    // `data` is the real row here — no cast needed.
+    // signature now resolves the live chat.message row correctly; keeping the
+    // explicit `.returns<chat.message Row>()` at the call site makes the
+    // authoritative projection expected by this thunk unambiguous.
     if (data) {
+      let authoritativeUserContent = data.user_content;
+      if (
+        prevRecord.role === "user" &&
+        JSON.stringify(data.user_content) !== JSON.stringify(data.content)
+      ) {
+        // This exact mismatch was previously silent: the model rebuilt from
+        // `content`, while every human-facing selector rendered the stale
+        // `user_content`. Keep the mounted transcript on the edited text and
+        // file a durable incident so a persistence regression cannot hide.
+        authoritativeUserContent = data.content;
+        captureError({
+          source: "data-shape",
+          schema: "chat",
+          relation: "message",
+          code: "edited-user-content-projection-mismatch",
+          message:
+            "cx_message_edit returned different content and user_content for an edited user message",
+          userMessage:
+            "Your edited message is visible here, but its saved display copy needs repair.",
+          conversationId,
+          callSite: "message-crud/edit-message.thunk",
+          details: `messageId=${messageId}`,
+          recoverable: false,
+          level: "high",
+        });
+      }
       dispatch(
         updateMessageRecord({
           conversationId,
           messageId,
           patch: {
             content: data.content,
+            userContent: authoritativeUserContent,
             contentHistory: data.content_history,
             status: data.status,
             agentId: data.agent_id,
@@ -222,7 +254,11 @@ export const editMessage = createAsyncThunk<
         dispatch(
           setRequestEditedText({
             requestId,
-            text: extractFlatText({ ...prevRecord, content: data.content }),
+            text: extractFlatText({
+              ...prevRecord,
+              content: data.content,
+              userContent: authoritativeUserContent,
+            }),
           }),
         );
       }
@@ -257,10 +293,11 @@ export const editMessage = createAsyncThunk<
     if (prevRecord.role === "assistant") {
       void (async () => {
         try {
-          const [{ saveOutputFeedback }, { extractFlatText }] = await Promise.all([
-            import("@/lib/output-feedback/service"),
-            import("../messages/messages.selectors"),
-          ]);
+          const [{ saveOutputFeedback }, { extractFlatText }] =
+            await Promise.all([
+              import("@/lib/output-feedback/service"),
+              import("../messages/messages.selectors"),
+            ]);
           const originalText = extractFlatText(prevRecord);
           const correctedText = extractFlatText({
             ...prevRecord,
@@ -280,10 +317,7 @@ export const editMessage = createAsyncThunk<
         } catch (error) {
           // Loud: a silent miss here is a permanently lost training pair.
           // eslint-disable-next-line no-console
-          console.error(
-            "[editMessage] corrected-output capture failed",
-            error,
-          );
+          console.error("[editMessage] corrected-output capture failed", error);
         }
       })();
     }

@@ -11,7 +11,13 @@ import {
 } from "@ai-matrx/kit/content-transfer";
 import { cn } from "@/lib/utils";
 
-type Position = "top-right" | "top-left" | "bottom-right" | "bottom-left";
+type Position =
+  | "top-right"
+  | "top-left"
+  | "bottom-right"
+  | "bottom-left"
+  | "center-right"
+  | "center-left";
 type Size = "xs" | "sm" | "md" | "lg" | "xl";
 
 const positions: Record<Position, string> = {
@@ -19,6 +25,8 @@ const positions: Record<Position, string> = {
   "top-left": "absolute top-1 left-1",
   "bottom-right": "absolute bottom-1 right-1",
   "bottom-left": "absolute bottom-1 left-1",
+  "center-right": "absolute top-1/2 right-1 -translate-y-1/2",
+  "center-left": "absolute top-1/2 left-1 -translate-y-1/2",
 };
 
 export interface InlineCopyButtonGoogleProps {
@@ -42,7 +50,7 @@ export interface InlineCopyButtonGoogleProps {
 }
 
 /**
- * Staged thin adapter for the legacy Google-aware button.
+ * Shared adapter for inline plain, structured, and Google-aware content.
  *
  * Markdown is passed as markdown so Alchemy can offer rich/Google Docs copy;
  * JSON is passed as JSON so formatting stays semantic instead of pre-serialized.

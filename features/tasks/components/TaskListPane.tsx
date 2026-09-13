@@ -421,7 +421,6 @@ export default function TaskListPane() {
               size="xs"
               unified
               label="Task list"
-              primarySource="table"
               human={() => taskListHuman(allVisibleTasks, listView)}
               json={() => allVisibleTasks.map(taskRow)}
               agent={() =>

@@ -1,4 +1,5 @@
-import { isPossibleBitwardenDuplicate, parseBitwardenExport, prepareBitwardenCommand } from "../bitwarden-json";
+import { parseBitwardenExport } from "../bitwarden-json";
+import { isPossibleStructuredImportDuplicate, prepareStructuredImportCommand } from "../structured-import";
 
 const limits = { maxFileBytes: 100_000, maxRecords: 20, maxColumns: 20, maxCellBytes: 10_000, maxFields: 202, maxPlaintextFieldBytes: 1_048_576, maxRequestBodyBytes: 12_582_912, maxJsonDepth: 64 };
 const source = (items: string) => `{\"encrypted\":false,\"folders\":[{\"id\":\"11111111-1111-4111-8111-111111111111\",\"name\":\"Personal\"}],\"items\":[${items}]}`;
@@ -8,7 +9,7 @@ describe("plain Bitwarden JSON", () => {
   test("preserves source strings exactly and pairs browser-fill host mode with the opt-in", () => {
     const [record] = parseBitwardenExport(source(login('"notes":"unicode ✓ and 900719925474099312345"')), limits);
     if (!record) throw new Error("missing parsed record");
-    const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000001", browserFillEnabled: true, includeTrash: false, limits });
+    const prepared = prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000001", browserFillEnabled: true, includeDeleted: false, includeArchived: false, limits });
     expect(prepared.status).toBe("ready");
     if (prepared.status !== "ready") throw new Error("missing command");
     expect(prepared.command.body).toMatchObject({ definition_key: "website_login", browser_fill_enabled: true, uri_match_mode: "host", login_urls: ["https://example.com"] });
@@ -39,7 +40,7 @@ describe("plain Bitwarden JSON", () => {
   test("maps an ordinary SSH key without sandbox injection and exposes only its public key metadata", () => {
     const [record] = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"deploy","type":5,"sshKey":{"privateKey":"PRIVATE","publicKey":"PUBLIC","keyFingerprint":"SHA256:x"}}'), limits);
     if (!record) throw new Error("missing SSH record");
-    const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000002", browserFillEnabled: false, includeTrash: false, limits });
+    const prepared = prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000002", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits });
     expect(prepared.status).toBe("ready");
     if (prepared.status !== "ready") throw new Error("missing command");
     expect(prepared.command.body.fields).toEqual(expect.arrayContaining([expect.objectContaining({ field_key: "private_key", handling: "revealable", inject_into_sandbox: false }), expect.objectContaining({ field_key: "public_key", handling: "visible", inject_into_sandbox: false })]));
@@ -47,23 +48,23 @@ describe("plain Bitwarden JSON", () => {
 
   test("accounts for optional login members, schema variants, UTF-8 limits, and referenced folders", () => {
     const optional = parseBitwardenExport(source(login().replace('"username":"me","password":" p@ss ","totp":null,"uris":[{"uri":"https://example.com/login","match":0}]', "")), limits)[0];
-    expect(optional?.status).toBe("supported");
+    if (!optional || optional.status !== "supported") throw new Error("missing optional record");
     const secureNote = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"note","type":2,"secureNote":{"type":0}}'), limits)[0];
     expect(secureNote?.status).toBe("supported");
     const unknown = parseBitwardenExport(source(login('"unknown":"value"')), limits)[0];
     expect(unknown?.status).toBe("unsupported");
     const tiny = { ...limits, maxCellBytes: 100 };
     expect(parseBitwardenExport(source(login('"notes":"' + "✓".repeat(100) + '"')), tiny)[0]?.status).toBe("invalid");
-    expect(optional?.sourceRecord).toContain('"folders"');
-    expect(optional?.sourceRecord).toContain('"Personal"');
+    expect(optional.sourceRecord).toContain('"folders"');
+    expect(optional.sourceRecord).toContain('"Personal"');
   });
 
   test("prepares one destination and accounts for possible duplicates before confirmation", () => {
     const [record] = parseBitwardenExport(source(login().replace('"https://example.com/login","match":0', '"https://example.com/login","match":0},{"uri":"https://second.example/login","match":0')), limits);
     if (!record) throw new Error("missing record");
-    const prepared = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: true, includeTrash: false, limits, existingItems: [{ displayName: "Example", loginUrls: ["https://example.com"] }], skipPossibleDuplicate: true });
+    const prepared = prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: true, includeDeleted: false, includeArchived: false, limits, existingItems: [{ displayName: "Example", loginUrls: ["https://example.com"] }], skipPossibleDuplicate: true });
     expect(prepared).toMatchObject({ status: "skipped", reason: "possible_duplicate" });
-    const create = prepareBitwardenCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: true, includeTrash: false, limits, existingItems: [], skipPossibleDuplicate: false });
+    const create = prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: true, includeDeleted: false, includeArchived: false, limits, existingItems: [], skipPossibleDuplicate: false });
     expect(create.status).toBe("ready");
     if (create.status === "ready") expect(create.command.body.login_urls).toEqual(["https://example.com"]);
   });
@@ -72,14 +73,24 @@ describe("plain Bitwarden JSON", () => {
     const [note] = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"Example","type":2,"secureNote":{"type":0}}'), limits);
     const [ssh] = parseBitwardenExport(source('{"id":"44444444-4444-4444-8444-444444444444","name":"deploy","type":5,"sshKey":{"privateKey":"PRIVATE","publicKey":"PUBLIC","keyFingerprint":"SHA256:x"}}'), limits);
     if (!note || !ssh) throw new Error("missing parsed records");
-    expect(isPossibleBitwardenDuplicate(note, [{ displayName: "Example", loginUrls: [] }])).toBe(true);
-    expect(isPossibleBitwardenDuplicate(ssh, [{ displayName: "deploy", loginUrls: [] }])).toBe(true);
-    expect(isPossibleBitwardenDuplicate(note, [{ displayName: "Different", loginUrls: [] }])).toBe(false);
-    expect(isPossibleBitwardenDuplicate(note, [{ displayName: "Example", loginUrls: ["https://example.test"] }])).toBe(false);
-    expect(isPossibleBitwardenDuplicate({ ...note, status: "unsupported" }, [{ displayName: "Example", loginUrls: [] }])).toBe(false);
-    const skipped = prepareBitwardenCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeTrash: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: true });
+    expect(isPossibleStructuredImportDuplicate(note, [{ displayName: "Example", loginUrls: [] }])).toBe(true);
+    expect(isPossibleStructuredImportDuplicate(ssh, [{ displayName: "deploy", loginUrls: [] }])).toBe(true);
+    expect(isPossibleStructuredImportDuplicate(note, [{ displayName: "Different", loginUrls: [] }])).toBe(false);
+    expect(isPossibleStructuredImportDuplicate(note, [{ displayName: "Example", loginUrls: ["https://example.test"] }])).toBe(false);
+    expect(isPossibleStructuredImportDuplicate({ status: "unsupported", ordinal: note.ordinal, title: note.title, reason: "Unsupported" }, [{ displayName: "Example", loginUrls: [] }])).toBe(false);
+    const skipped = prepareStructuredImportCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: true });
     expect(skipped).toMatchObject({ status: "skipped", reason: "possible_duplicate" });
-    const create = prepareBitwardenCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeTrash: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: false });
+    const create = prepareStructuredImportCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: false });
     expect(create.status).toBe("ready");
+  });
+
+  test("does not return an oversized rejected title or any source payload", () => {
+    const [record] = parseBitwardenExport(source(`{"id":"33333333-3333-4333-8333-333333333333","name":"${"x".repeat(80)}","type":99}`), { ...limits, maxCellBytes: 40 });
+    expect(record).toEqual({ status: "unsupported", ordinal: 0, title: "Item 1", reason: "The item type is unsupported." });
+  });
+
+  test.each([undefined, "", 42])('refuses a malformed supported record without source (%p)', (sourceRecord) => {
+    const record = JSON.parse(JSON.stringify({ status: "supported", ordinal: 0, title: "Example", sourceState: "active", sourceRecord, hasOtp: false, kind: "custom" }));
+    expect(prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits })).toEqual({ status: "invalid", diagnostic: "The record has no source representation." });
   });
 });

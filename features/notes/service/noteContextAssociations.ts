@@ -4,7 +4,6 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import type { NoteContextLinks } from "../types";
 import {
-  NoteContextLinkPartialError,
   type NoteContextField,
 } from "./noteSaveErrors";
 
@@ -12,6 +11,13 @@ type IdentifiedRow = { id: string };
 
 function emptyLinks(): NoteContextLinks {
   return { project_id: null, task_id: null };
+}
+
+export interface NoteContextSettlement {
+  succeededFields: NoteContextField[];
+  failedFields: NoteContextField[];
+  safeCauses: Partial<Record<NoteContextField, string>>;
+  postSaveRecoveryError?: Error;
 }
 
 /**
@@ -74,7 +80,8 @@ export async function syncNoteContextLinks(args: {
   organizationId: string;
   projectId?: string | null;
   taskId?: string | null;
-}): Promise<void> {
+}): Promise<NoteContextSettlement> {
+  let postSaveRecoveryError: Error | undefined;
   const writes: Array<{ field: NoteContextField; write: Promise<unknown> }> = [];
 
   if (args.projectId !== undefined) {
@@ -133,10 +140,15 @@ export async function syncNoteContextLinks(args: {
     } catch (error) {
       // The durable RPC already settled. A cache refresh failure is recovery
       // evidence, never evidence that a successful edge was not saved.
-      console.error("Could not invalidate the note association cache", error);
+      postSaveRecoveryError = error instanceof Error
+        ? error
+        : new Error("Could not invalidate the note association cache.");
     }
   }
-  if (failedFields.length > 0) {
-    throw new NoteContextLinkPartialError({ succeededFields, failedFields, safeCauses });
-  }
+  return {
+    succeededFields,
+    failedFields,
+    safeCauses,
+    postSaveRecoveryError,
+  };
 }

@@ -35,7 +35,14 @@
  * never happen again is the FIRST read being a tool call.
  */
 
-import { ruleState, type Rulebook, type RulebookRule, isPolicyRule } from "../types";
+import {
+  isPolicyRule,
+  ruleActionKind,
+  rulePolicyLevel,
+  ruleState,
+  type Rulebook,
+  type RulebookRule,
+} from "../types";
 import { openTensions } from "../coherence/types";
 
 /** The variable name every Rulebook-reading agent declares. */
@@ -72,27 +79,44 @@ function ruleBlock(rule: RulebookRule): string[] {
     `State: ${ruleState(rule)} · Severity: ${rule.severity}`,
     rule.statement,
   ];
-  // A policy rule (W58) is a DECISION, not a statement: the agents that read
-  // this document (Conductor, Scout, improver, triage) must see the shape
-  // field by field, or a distilled judgment flattens back into one sentence
-  // nobody can correct at the field level (Bugbot, ca7e6aba).
-  if (isPolicyRule(rule)) {
-    lines.push(
-      `Decision rule — given: ${rule.precondition || "(precondition not stated)"}`,
-      `Next action (${rule.action_kind ?? "unspecified"}; cost ${rule.cost ?? "unspecified"}, risk ${rule.risk ?? "unspecified"}): ${rule.next_action || "(next action not stated)"}`,
-    );
-  }
+  // 🚨 THE DECISION HALF (W58). An agent handed only `statement` for a policy
+  // rule is handed a commandment where the Expert taught a judgment — the
+  // whole "if → then, at this cost and this risk" is the operational form.
+  if (isPolicyRule(rule)) lines.push("Kind: a DECISION, not a standing rule");
+  if (rule.precondition) lines.push(`When: ${rule.precondition}`);
+  if (rule.next_action) lines.push(`Then do: ${rule.next_action}`);
+  const actionKind = ruleActionKind(rule);
+  if (actionKind) lines.push(`Kind of move: ${actionKind}`);
+  const cost = rulePolicyLevel(rule.cost);
+  const risk = rulePolicyLevel(rule.risk);
+  if (cost) lines.push(`Cost of the action: ${cost}`);
+  if (risk) lines.push(`Risk of the action: ${risk}`);
   if (rule.rationale) lines.push(`Why: ${rule.rationale}`);
   if (rule.detection) lines.push(`Detection: ${rule.detection}`);
   if (rule.quote) lines.push(`Source words: ${rule.quote}`);
   if (rule.relates_to?.length) {
     for (const rel of rule.relates_to) {
       lines.push(
-        `Connected: ${rel.kind} ${rel.rule_id}${rel.note ? ` — ${rel.note}` : ""}`,
+        `Connected: ${rel.kind} ${rel.rule_id}${rel.note ? ` — ${rel.note}` : ""}` +
+          // A RETAINED DISAGREEMENT reaches the agent WITH the line the Expert
+          // drew between the two positions, or it reads as a contradiction the
+          // agent has to resolve on its own — which is exactly what it must not do.
+          (rel.kind === "disagrees_with"
+            ? rel.condition
+              ? ` — when each applies: ${rel.condition}`
+              : " — the Expert holds both; neither replaces the other"
+            : ""),
       );
     }
   }
   if (rule.feedback) lines.push(`Review feedback: ${rule.feedback}`);
+  // What this rule used to say. An agent about to rewrite it has to know it was
+  // already rewritten once, and what the Expert held before.
+  for (const entry of rule.history ?? []) {
+    lines.push(
+      `Earlier position: "${entry.statement}"${entry.reason ? ` — changed because ${entry.reason}` : ""}`,
+    );
+  }
   return lines;
 }
 
@@ -195,7 +219,12 @@ export function renderRulebookDocument(rulebook: Rulebook): string {
         "as written, offer the options, say which you would pick. Record the " +
         "answer with `rulebook action=settle_tension` in their VERBATIM words. " +
         "Nothing waits on these — an unanswered question is not a problem, and " +
-        "'it depends' is a real answer.",
+        "'it depends' is a real answer. \u{1F6A8} A contradiction between two of " +
+        "their rules is NOT a defect to close: if they still hold both, settle " +
+        "it as `accepted` with the condition they named (both rules are kept " +
+        "and linked), or add the new position with `add_rules` linked " +
+        "`disagrees_with`. Rewrite an existing rule only when they say the " +
+        "earlier one was wrong.",
     );
     for (const tension of questions) {
       lines.push(
@@ -206,8 +235,17 @@ export function renderRulebookDocument(rulebook: Rulebook): string {
         ...(tension.options.length
           ? [`Options to offer: ${tension.options.map((o) => `"${o}"`).join(" | ")}`]
           : []),
-        ...(tension.recommendation
+        // Never a recommendation on a contradiction: "keep this one" is the
+        // consensus collapse Arman's mandate forbids, and the agent repeats
+        // whatever it is handed.
+        ...(tension.recommendation && tension.kind !== "contradiction"
           ? [`Your recommendation: ${tension.recommendation}`]
+          : []),
+        ...(tension.kind === "contradiction"
+          ? [
+              "Both positions can stand: ask what separates them, never which " +
+                "to keep.",
+            ]
           : []),
       );
     }

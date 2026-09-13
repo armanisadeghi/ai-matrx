@@ -109,6 +109,10 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
   const workingIdentity = useRef<string | null>(null);
   const copiedIdentity = useRef<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // `undefined` is deliberately distinct from a signed-out `null`: until the
+  // auth client reports an actor, any first actor observation revokes pending
+  // value work conservatively.
+  const authenticatedActorId = useRef<string | null | undefined>(undefined);
   const invalidateOperations = () => {
     operationGeneration.current += 1;
     heldIdentity.current = null;
@@ -176,10 +180,20 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
   useEffect(() => {
     const {
       data: { subscription },
-    } = createClient().auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT" || event === "USER_UPDATED") {
+    } = createClient().auth.onAuthStateChange((event, session) => {
+      const nextActorId = session?.user.id ?? null;
+      const actorChanged = authenticatedActorId.current !== nextActorId;
+      const actorWasUnknown = authenticatedActorId.current === undefined;
+      authenticatedActorId.current = nextActorId;
+      if (
+        actorChanged ||
+        actorWasUnknown ||
+        event === "SIGNED_OUT" ||
+        event === "USER_UPDATED"
+      ) {
         // Auth events revoke authority before React has a chance to schedule
-        // the rerender that clears this component's old props.
+        // the rerender that clears this component's old props. A token refresh
+        // for the same identified actor does not cross this boundary.
         invalidateOperations();
         held.clear();
         setAuthGeneration((generation) => generation + 1);

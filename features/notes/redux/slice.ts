@@ -588,6 +588,8 @@ const notesSlice = createSlice({
         savedSnapshot?: Partial<
           Record<NoteUndoableField, Note[NoteUndoableField]>
         >;
+        /** The service may return a canonical display name for an admitted folder ID. */
+        acknowledgedValues?: { folder_name?: Note["folder_name"] };
       }>,
     ) {
       const record = state.notes[action.payload.id];
@@ -605,7 +607,16 @@ const notesSlice = createSlice({
         record.version = action.payload.version;
       }
       if (action.payload.savedSnapshot) {
-        markSavedSnapshotClean(record, action.payload.savedSnapshot);
+        const settledSnapshot = { ...action.payload.savedSnapshot };
+        const acknowledgedFolderName = action.payload.acknowledgedValues?.folder_name;
+        if (
+          acknowledgedFolderName !== undefined &&
+          record.folder_name === action.payload.savedSnapshot.folder_name
+        ) {
+          record.folder_name = acknowledgedFolderName;
+          settledSnapshot.folder_name = acknowledgedFolderName;
+        }
+        markSavedSnapshotClean(record, settledSnapshot);
       } else {
         markRecordClean(record);
       }
@@ -635,6 +646,24 @@ const notesSlice = createSlice({
       state._savingNoteIds = state._savingNoteIds.filter(
         (id) => id !== action.payload.id,
       );
+    },
+
+    settlePartialNoteCreate(
+      state,
+      action: PayloadAction<{ note: Note; failedValues: Partial<Pick<Note, "project_id" | "task_id">>; error: string }>,
+    ) {
+      applyServerNoteUpsert(state.notes, { note: action.payload.note, fetchStatus: "full" });
+      const record = state.notes[action.payload.note.id];
+      if (!record) return;
+      for (const [field, value] of Object.entries(action.payload.failedValues) as Array<["project_id" | "task_id", string | null]>) {
+        if (field === "project_id") record.project_id = value;
+        else record.task_id = value;
+        record._dirtyFields.add(field);
+      }
+      record._dirty = record._dirtyFields.size > 0;
+      record._saving = false;
+      record._error = action.payload.error;
+      state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
     },
 
     /** Resolve a save conflict without touching dirty state.
@@ -1246,6 +1275,7 @@ export const {
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
+  settlePartialNoteCreate,
   clearSavingNoteId,
   setActiveNote,
   addTab,

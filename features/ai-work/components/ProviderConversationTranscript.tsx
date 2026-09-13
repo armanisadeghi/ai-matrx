@@ -44,6 +44,11 @@ import type { ProviderConversationMessage } from "../lib/providerConversationMes
 import { buildProviderTimeline } from "../lib/providerTimeline";
 import { ConversationAnalyzePanel } from "../analysis/ConversationAnalyzePanel";
 import { ConversationProvenancePanel } from "../conversations/components/ConversationProvenancePanel";
+import {
+  artifactCountLabel,
+  ConversationArtifactsPanel,
+} from "../conversations/components/ConversationArtifactsPanel";
+import { useCodingSessionArtifacts } from "../conversations/artifacts/useCodingSessionArtifacts";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 import {
   useLiveProviderTranscript,
@@ -90,6 +95,15 @@ export function ProviderConversationTranscript({
   });
   const [workspace, setWorkspace] = useState<string | null>(null);
   /**
+   * The provider's own session id from the newest binding — the key every
+   * artifact row carries in `metadata.cli_session_id`. `null` until the
+   * binding read lands, or forever when no binding exists.
+   */
+  const [providerSessionId, setProviderSessionId] = useState<string | null>(
+    null,
+  );
+  const [bindingRead, setBindingRead] = useState(false);
+  /**
    * Rows that arrived AFTER the server render, counted separately so the
    * "showing N of M" line stays truthful while a session keeps writing — the
    * server totals were correct only at first paint.
@@ -104,11 +118,15 @@ export function ProviderConversationTranscript({
 
   useEffect(() => {
     let cancelled = false;
-    // Owner-scoped binding read purely for the workspace/project provenance
-    // chip; sessions without the workspace_name contract simply show nothing.
+    // Owner-scoped binding read for the workspace/project provenance chip and
+    // the provider session id the artifact panel keys on; sessions without
+    // the workspace_name contract simply show no chip.
     void fetchCodingSessionBindings(conversation.id)
       .then((bindings) => {
         if (cancelled) return;
+        setBindingRead(true);
+        const newest = bindings.find((binding) => binding.provider_session_id);
+        setProviderSessionId(newest?.provider_session_id ?? null);
         for (const binding of bindings) {
           const name = workspaceName(binding.metadata);
           if (name) {
@@ -118,6 +136,8 @@ export function ProviderConversationTranscript({
         }
       })
       .catch((error: unknown) => {
+        if (cancelled) return;
+        setBindingRead(true);
         console.error(
           "[ProviderConversationTranscript] workspace binding read failed",
           error,
@@ -296,6 +316,16 @@ export function ProviderConversationTranscript({
     activity.totalCount === null ? null : activity.totalCount + liveToolCallsAdded;
   const hasEarlierAnything = hasEarlierMessages || activity.hasMore;
 
+  const artifacts = useCodingSessionArtifacts(providerSessionId);
+  const artifactSummary =
+    artifacts.state === "ready"
+      ? artifactCountLabel(artifacts.rows.length)
+      : artifacts.state === "error"
+        ? "artifacts unavailable"
+        : bindingRead && !providerSessionId
+          ? null
+          : "counting artifacts…";
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6">
       <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -334,6 +364,7 @@ export function ProviderConversationTranscript({
                     totalToolCalls === 1 ? "action" : "actions"
                   }`
                 : null}
+              {artifactSummary ? ` · ${artifactSummary}` : null}
             </p>
             <LiveTranscriptIndicator status={live} />
           </div>
@@ -378,6 +409,16 @@ export function ProviderConversationTranscript({
           Claude Code shows, and no gap analysis is possible. */}
       <section className="rounded-xl border border-border bg-card p-4">
         <ConversationProvenancePanel conversation={conversation} />
+      </section>
+
+      {/* Every file the session wrote, mirrored into AI Matrx files by the
+          desktop publisher. Keyed on the provider session id, never on the
+          conversation, because that is what the publisher stamps. */}
+      <section className="rounded-xl border border-border bg-card p-4">
+        <ConversationArtifactsPanel
+          artifacts={artifacts}
+          hasSession={!bindingRead || providerSessionId !== null}
+        />
       </section>
 
       <ConversationAnalyzePanel

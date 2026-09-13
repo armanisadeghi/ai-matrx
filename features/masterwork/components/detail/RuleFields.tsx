@@ -21,10 +21,13 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { GitBranch } from "lucide-react";
 import {
-  POLICY_ACTION_KINDS,
-  POLICY_LEVELS,
-  type PolicyActionKind,
-  type PolicyLevel,
+  RULE_ACTION_KIND_HINTS,
+  RULE_ACTION_KIND_LABELS,
+  RULE_ACTION_KINDS,
+  RULE_POLICY_LEVEL_LABELS,
+  RULE_POLICY_LEVELS,
+  type RuleActionKind,
+  type RulePolicyLevel,
   type RuleFieldValues,
   type RulebookSections,
   type RuleSeverity,
@@ -239,16 +242,17 @@ export function RuleFields({
               <Select
                 value={values.actionKind}
                 onValueChange={(v) =>
-                  onChange({ actionKind: v as PolicyActionKind })
+                  onChange({ actionKind: v as RuleActionKind })
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {POLICY_ACTION_KINDS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {RULE_ACTION_KINDS.map((kind) => (
+                    <SelectItem key={kind} value={kind}>
+                      {RULE_ACTION_KIND_LABELS[kind]} —{" "}
+                      {RULE_ACTION_KIND_HINTS[kind]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -259,15 +263,15 @@ export function RuleFields({
                 <Label>What does it cost to do?</Label>
                 <Select
                   value={values.cost}
-                  onValueChange={(v) => onChange({ cost: v as PolicyLevel })}
+                  onValueChange={(v) => onChange({ cost: v as RulePolicyLevel })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {POLICY_LEVELS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                    {RULE_POLICY_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {RULE_POLICY_LEVEL_LABELS[level]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -277,15 +281,15 @@ export function RuleFields({
                 <Label>How risky is doing it?</Label>
                 <Select
                   value={values.risk}
-                  onValueChange={(v) => onChange({ risk: v as PolicyLevel })}
+                  onValueChange={(v) => onChange({ risk: v as RulePolicyLevel })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {POLICY_LEVELS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                    {RULE_POLICY_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {RULE_POLICY_LEVEL_LABELS[level]}
                       </SelectItem>
                     ))}
                   </SelectContent>

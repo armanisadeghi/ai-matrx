@@ -14,8 +14,8 @@
  */
 
 import {
-  POLICY_ACTION_KINDS,
-  POLICY_LEVELS,
+  RULE_ACTION_KINDS,
+  RULE_POLICY_LEVELS,
   type Rulebook,
   type RulebookRule,
 } from "../types";
@@ -113,10 +113,10 @@ export function requireRuleDraftInput(
     draft.isPolicy = input.isPolicy;
   }
   if (input.actionKind !== undefined) {
-    const kinds = POLICY_ACTION_KINDS.map((entry) => entry.value);
+    const kinds = RULE_ACTION_KINDS;
     if (
       typeof input.actionKind !== "string" ||
-      !kinds.includes(input.actionKind as (typeof kinds)[number])
+      !(kinds as readonly string[]).includes(input.actionKind)
     ) {
       throw new Error(
         `Rule draft actionKind must be one of ${kinds.join(", ")}.`,
@@ -127,10 +127,10 @@ export function requireRuleDraftInput(
   for (const key of ["cost", "risk"] as const) {
     const field = input[key];
     if (field === undefined) continue;
-    const levels = POLICY_LEVELS.map((entry) => entry.value);
+    const levels = RULE_POLICY_LEVELS;
     if (
       typeof field !== "string" ||
-      !levels.includes(field as (typeof levels)[number])
+      !(levels as readonly string[]).includes(field)
     ) {
       throw new Error(
         `Rule draft ${key} must be one of ${levels.join(", ")} — the ${key} OF THE ACTION, not of the situation.`,

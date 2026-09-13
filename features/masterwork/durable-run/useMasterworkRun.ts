@@ -68,6 +68,10 @@ export type MasterworkRunSurface =
   | "timeline"
   | "triage"
   | "audition"
+  // The BLIND PAIRWISE Audition (`/masterworks/audition-pairwise`) — two of the
+  // Expert's own answers judged against each other with no reference. Its own
+  // surface and pointer: it never rejoins the reference Audition's dialog.
+  | "compare_two"
   | "checkup"
   | "clean_corpus";
 
@@ -95,6 +99,7 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // not an ingest, and a reload must never rejoin one as the other.
   triage: "masterwork_triage_complete",
   audition: "masterwork_audition_verdict",
+  compare_two: "masterwork_pairwise_verdict",
   checkup: "masterwork_checkup_complete",
   // The manual "clean up what I said" pass (`/masterworks/clean-corpus`) — a
   // paid pass the Expert asks for, so it gets its own surface and pointer and
@@ -130,6 +135,10 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   dump: 90_000,
   corpus: 160_000,
   audition: 30_000,
+  // Measured against the reference Audition's single judge call (30s); the
+  // faithfulness mode makes TWO, so the promise is doubled rather than guessed
+  // downward. Re-measure once this lane has runs of its own on the ledger.
+  compare_two: 60_000,
   checkup: 80_000,
   clean_corpus: 60_000,
   // Trial 8, 2026-09-12: 56 timeline ingests (one case each) ran 31–103 s

@@ -34,6 +34,7 @@ import {
 } from "@/features/workflow-runtime/run-doors";
 import { ScoutInterviewPanel } from "../detail/ScoutInterviewPanel";
 import { AuditionDialog } from "./AuditionDialog";
+import { CompareTwoDialog } from "./CompareTwoDialog";
 import { MasterworkDriftDialog } from "./MasterworkDriftDialog";
 import { TryMasterworkBox } from "./TryMasterworkBox";
 import {
@@ -184,6 +185,9 @@ export function MasterworksPage({
   const [auditionCandidate, setAuditionCandidate] = useState<string | null>(
     null,
   );
+  // The BLIND PAIRWISE Audition, optionally prefilled with a finished run's own
+  // output as the FIRST of two answers. `null` = closed.
+  const [compareFirst, setCompareFirst] = useState<string | null>(null);
   // THE DOOR ON THE DRIFT FLAG: "the Rulebook has newer rules" is a timestamp,
   // not a verdict, until the Expert can see WHICH rules moved. Holds the
   // drifted Masterwork.
@@ -572,6 +576,11 @@ export function MasterworksPage({
                         ? (candidate) => setAuditionCandidate(candidate)
                         : undefined
                     }
+                    onCompareTwo={
+                      isOwner
+                        ? (candidate) => setCompareFirst(candidate)
+                        : undefined
+                    }
                   />
                 </div>
                 {(runsByMasterwork[masterwork.id] ?? []).length > 0 ? (
@@ -637,6 +646,16 @@ export function MasterworksPage({
               ?.intake?.benchmark
           }
           initialCandidate={auditionCandidate ?? undefined}
+        />
+      ) : null}
+      {isOwner ? (
+        <CompareTwoDialog
+          open={compareFirst !== null}
+          onOpenChange={(open) => {
+            if (!open) setCompareFirst(null);
+          }}
+          rulebookId={rulebookId}
+          initialFirst={compareFirst ?? undefined}
         />
       ) : null}
       {isOwner ? (

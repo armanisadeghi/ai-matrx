@@ -29,9 +29,9 @@ import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
-import { PolicyRuleShape } from "./PolicyRuleShape";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BulkApproveDialog } from "./BulkApproveDialog";
 import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
@@ -70,22 +70,29 @@ import {
 } from "../../service";
 import {
   applyManualRuleEdit,
-  evidenceFor,
-  isEvidenceRule,
+  disagreesWith,
+  heldByOneSourceOnly,
   intakeGoal,
-  isPolicyRule,
-  promoteEvidenceRule,
+  recurrencePieces,
   ruleState,
   SEVERITY_LABELS,
+  stampRuled,
   type Masterwork,
   type Rulebook,
   type RulebookRule,
+  type RuleReview,
   type RuleSeverity,
   type RuleSourceRef,
 } from "../../types";
 import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
-import { RuleEvidenceDisclosure } from "./RuleEvidenceDisclosure";
+import { RuleHistory } from "./RuleHistory";
+import {
+  RuleKeptExpressions,
+  RuleRecurrenceBadge,
+  useRecurrenceThreshold,
+} from "./RuleRecurrenceBadge";
+import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
@@ -120,6 +127,7 @@ import {
   computeKpis,
   computeMasterworkKpis,
   MasterworkKpiStrip,
+  LARGE_RULEBOOK,
   RulebookKpiStrip,
   type RuleKpiFilter,
 } from "./RulebookKpiStrip";
@@ -298,7 +306,8 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   );
 }
 
-function RuleRow({
+// Exported ONLY so the policy-rule guard can drive the real card.
+export function RuleRow({
   rule,
   allRules,
   canEdit,
@@ -309,7 +318,9 @@ function RuleRow({
   onImprove,
   onRequestChanges,
   onReconsider,
-  onPromoteEvidence,
+  selected,
+  onToggleSelected,
+  recurrenceThreshold,
 }: {
   rule: RulebookRule;
   /** Every rule in the Rulebook — a `relates_to` link resolves its sibling's
@@ -323,8 +334,11 @@ function RuleRow({
   onImprove: () => void;
   onRequestChanges: () => void;
   onReconsider: () => void;
-  /** Raise one of this rule's evidence observations to a rule of its own. */
-  onPromoteEvidence: (rule: RulebookRule) => void;
+  /** In the current bulk selection — the scope of any bulk verb, made visible. */
+  selected: boolean;
+  onToggleSelected: () => void;
+  /** From `useRecurrenceThreshold`; `null` renders no badge. */
+  recurrenceThreshold: number | null;
 }) {
   const [openRow, setOpenRow] = useState(false);
   const state = ruleState(rule);
@@ -344,6 +358,15 @@ function RuleRow({
       }`}
     >
       <div className="flex w-full items-start gap-2 px-3 py-2">
+        {canEdit ? (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggleSelected}
+            aria-label={`Select "${rule.name}" for a bulk action`}
+            className="mt-1 h-4 w-4 shrink-0 accent-primary"
+          />
+        ) : null}
         <button
           type="button"
           className="flex min-w-0 flex-1 items-start gap-2 text-left"
@@ -361,14 +384,7 @@ function RuleRow({
                 {rule.name}
               </span>
               {severityBadge(rule.severity)}
-              {isPolicyRule(rule) ? (
-                <Badge
-                  variant="outline"
-                  className="px-1.5 py-0 text-[10px] text-muted-foreground"
-                >
-                  Decision rule
-                </Badge>
-              ) : null}
+              <RuleDecisionBadge rule={rule} />
               {state === "draft" ? (
                 <Badge
                   variant="outline"
@@ -401,11 +417,27 @@ function RuleRow({
                   Retired
                 </Badge>
               ) : null}
+              <RuleRecurrenceBadge
+                rule={rule}
+                threshold={recurrenceThreshold}
+              />
+              {/* 🚨 NOTHING FAILS SILENTLY. A rule approved in a bulk action
+              says so, with how much of that batch a person actually read —
+              never wearing a decision it did not get. */}
+              {rule.reviewed?.mode === "sampled" ? (
+                <Badge
+                  variant="outline"
+                  className="border-amber-500/50 px-1.5 py-0 text-[10px] text-amber-600 dark:text-amber-400"
+                  title="This rule was approved as part of a bulk action, not opened on its own."
+                >
+                  Approved in bulk, {rule.reviewed.sample_size ?? 0} of{" "}
+                  {rule.reviewed.of ?? 0} read
+                </Badge>
+              ) : null}
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {rule.statement}
             </p>
-            <PolicyRuleShape rule={rule} />
           </div>
         </button>
         {canEdit && state === "draft" ? (
@@ -447,6 +479,8 @@ function RuleRow({
       ) : null}
       {openRow ? (
         <div className="space-y-2 border-t border-border px-9 py-2 text-sm">
+          {/* 🚨 THE DECISION HALF first — for a policy rule it IS the rule. */}
+          <RuleDecision rule={rule} />
           {rule.rationale ? (
             <div>
               <div className="text-xs font-medium text-muted-foreground">
@@ -474,13 +508,12 @@ function RuleRow({
             </div>
           ) : null}
           <RuleRelations rule={rule} allRules={allRules} />
-          {/* 🚨 THE EVIDENCE STANDING: the per-piece observations this pattern
-              was built from, behind one click — never 416 questions. */}
-          <RuleEvidenceDisclosure
-            evidence={evidenceFor(rule, allRules)}
-            canEdit={canEdit}
-            onPromote={onPromoteEvidence}
-          />
+          {/* What this rule used to say, when a machine rewrote it. */}
+          <RuleHistory rule={rule} />
+          {/* 🚨 NEITHER EXPRESSION WINS: the other ways this rule's own source
+              stated the same judgment, kept instead of thrown away as a
+              duplicate. */}
+          <RuleKeptExpressions rule={rule} />
           {rule.source_ref ? (
             <RuleProvenance sourceRef={rule.source_ref} />
           ) : null}
@@ -534,7 +567,22 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
-  const [ruleFilter, setRuleFilter] = useState<RuleKpiFilter>("all");
+  // 🚨 THE DEFAULT VIEW IS NOT EVERYTHING. `null` means "nobody has chosen a
+  // view yet", and the effective view is computed from the Rulebook's size the
+  // moment it loads: a Rulebook past LARGE_RULEBOOK rules opens on `attention`.
+  // Kept as an explicit null rather than set in the load effect so a person's
+  // own click is never overwritten by a refresh.
+  const [chosenFilter, setChosenFilter] = useState<RuleKpiFilter | null>(null);
+  // 🚨 BULK ACTIONS TAKE AN EXPLICIT SELECTION (Notion/Airtable). Nothing
+  // world-class ships a destructive bulk verb whose scope is invisible, which
+  // is what "Approve all" was.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState<{
+    rules: RulebookRule[];
+    pairs: [RulebookRule, RulebookRule][];
+  } | null>(null);
+  const [readCount, setReadCount] = useState("");
+  const recurrenceThreshold = useRecurrenceThreshold();
   const rulesSectionRef = useRef<HTMLDivElement | null>(null);
   const descriptionRef = useRef<HTMLParagraphElement | null>(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
@@ -928,20 +976,39 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     [rulebook?.rules],
   );
 
+  // Every rule this Rulebook holds that only ONE source states — computed once
+  // over the whole Rulebook, because "nobody else said this" is a statement
+  // about the Rulebook, not about the rules currently on screen.
+  const onlyOneSourceHolds = useMemo(
+    () => heldByOneSourceOnly(rulebook?.rules ?? []),
+    [rulebook?.rules],
+  );
+
+  /**
+   * 🚨 THE OPENING VIEW. A small Rulebook opens on everything, because
+   * everything is reviewable. A large one opens on `attention`: the
+   * disagreements and the rules only one source holds — the judgments a bulk
+   * approve would otherwise swallow without anyone reading them.
+   */
+  const ruleFilter: RuleKpiFilter =
+    chosenFilter ??
+    ((rulebook?.rules.length ?? 0) > LARGE_RULEBOOK ? "attention" : "all");
+  const setRuleFilter = setChosenFilter;
+  const isLargeRulebook = (rulebook?.rules.length ?? 0) > LARGE_RULEBOOK;
+
+  const inAttentionView = useCallback(
+    (r: RulebookRule) =>
+      disagreesWith(r).length > 0 || onlyOneSourceHolds.has(r.id),
+    [onlyOneSourceHolds],
+  );
+
   const grouped = useMemo(() => {
     if (!rulebook)
       return [] as { code: string; label: string; rules: RulebookRule[] }[];
     const q = search.trim().toLowerCase();
     const match = (r: RulebookRule) => {
-      // 🚨 THE EVIDENCE STANDING: per-piece observations are never rows in this
-      // list. They are reached behind the synthesized rule that cites them
-      // (RuleEvidenceDisclosure) — that is what stops a body of work from
-      // becoming 416 questions. A SEARCH still reaches them, so nothing the
-      // Rulebook holds is unreachable.
-      if (isEvidenceRule(r) && !q) return false;
       const state = ruleState(r);
       const matchesFilter =
-        isEvidenceRule(r) ||
         ruleFilter === "all" ||
         (ruleFilter === "approved" && state === "approved") ||
         (ruleFilter === "draft" && state === "draft") ||
@@ -949,7 +1016,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         (ruleFilter === "changes" &&
           Boolean(r.feedback) &&
           state !== "rejected" &&
-          state !== "retired");
+          state !== "retired") ||
+        // ── the saved views ──────────────────────────────────────────────
+        (ruleFilter === "attention" && inAttentionView(r)) ||
+        (ruleFilter === "disagreements" && disagreesWith(r).length > 0) ||
+        (ruleFilter === "seen_once" && recurrencePieces(r) <= 1) ||
+        (ruleFilter === "only_source" && onlyOneSourceHolds.has(r.id));
       return (
         matchesFilter &&
         (!q ||
@@ -972,7 +1044,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       groups.push({ code: "?", label: "Unsorted", rules: orphans });
     }
     return groups;
-  }, [rulebook, ruleFilter, search]);
+  }, [rulebook, ruleFilter, search, inAttentionView, onlyOneSourceHolds]);
 
   const showRules = useCallback((filter: RuleKpiFilter) => {
     setRuleFilter(filter);
@@ -1184,14 +1256,33 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     [canEdit, openYourWords, refreshWorkspace, rulebookId],
   );
 
+  /**
+   * 🚨 THE ONE WRITE PATH, and the one place a ruling is stamped. Every rule
+   * whose review state or words this save changes gets `ruled_by`/`ruled_at`
+   * here — a caller cannot forget to, and a caller cannot claim a ruling it did
+   * not make. `reviewed` rides along only when the caller knows HOW the rules
+   * were read (one opened and approved, or a bulk approve over a selection);
+   * it is applied only to the rules this save actually changed.
+   */
   const persist = useCallback(
-    async (next: RulebookRule[]) => {
+    async (next: RulebookRule[], reviewed?: RuleReview) => {
       if (!rulebook) return;
+      const before = new Map(rulebook.rules.map((r) => [r.id, r]));
+      const stamped = next.map((rule) => {
+        const prev = before.get(rule.id);
+        if (!prev) return rule;
+        const changed =
+          ruleState(prev) !== ruleState(rule) ||
+          prev.statement !== rule.statement ||
+          prev.name !== rule.name ||
+          (prev.feedback ?? "") !== (rule.feedback ?? "");
+        return changed ? stampRuled(rule, userId, reviewed) : rule;
+      });
       try {
         const saved = await saveRules({
           rulebookId: rulebook.id,
           expectedVersion: rulebook.version,
-          rules: next,
+          rules: stamped,
         });
         setRulebook(saved);
       } catch (err) {
@@ -1202,7 +1293,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         throw err;
       }
     },
-    [rulebook, reloadRulebook],
+    [rulebook, reloadRulebook, userId],
   );
 
   // 🚨 SAVING AN EDIT IS NOT APPROVING (Arman, 2026-08-17 — "You're updating
@@ -1251,7 +1342,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         return { ...rest, draft: false };
       });
       try {
-        await persist(next);
+        // One rule, opened and approved: the honest record is "read".
+        await persist(next, { mode: "read" });
         recordToast.success(
           { type: "rulebook_rule", id: rule.id, title: rule.name },
           `"${rule.name}" approved`,
@@ -1307,45 +1399,99 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     setImproveOpen(true);
   }, []);
 
-  // Promote one evidence observation to a rule of its own. It raises STANDING
-  // only: the rule stays a draft awaiting the Expert's Approve, and not one
-  // word of it changes. (Saving an edit is not approving — Arman, 2026-08-17.)
-  const promoteEvidence = useCallback(
-    async (rule: RulebookRule) => {
-      if (!rulebook) return;
-      try {
-        await persist(
-          rulebook.rules.map((r) =>
-            r.id === rule.id ? promoteEvidenceRule(r) : r,
-          ),
-        );
-        toast.success("Now a rule waiting for your approval", {
-          description: rule.name,
-        });
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Could not promote");
-      }
-    },
-    [rulebook, persist],
+  // ── BULK APPROVE OVER AN EXPLICIT SELECTION ──────────────────────────────
+  //
+  // 🚨 What this replaced, and why (2026-09-12). `approveAllDrafts` flipped
+  // every draft in the Rulebook with no selection, no count and no record. On
+  // the one Rulebook where the volume actually occurred it fired on all 416
+  // (Newsroom Desk: 416 rules, zero drafts), and on Watson's 206 twice — each
+  // recorded as a cheat. The result on screen was indistinguishable from 416
+  // real decisions.
+  //
+  // Three things changed, all of them load-bearing:
+  //   1. the scope is an EXPLICIT selection the Expert made and can see
+  //      ("37 selected → Approve");
+  //   2. a selection containing a `disagrees_with` pair NAMES the pair before
+  //      anything fires — approving both sides of a disagreement without
+  //      reading it is exactly the consensus collapse the mandate forbids;
+  //   3. every rule it touches records `reviewed: {mode: "sampled",
+  //      sample_size, of}`, so the rule says "approved in bulk, 12 of 416 read"
+  //      on its own face instead of wearing a real decision it never got.
+  const selectedRules = useMemo(
+    () => (rulebook?.rules ?? []).filter((r) => selectedIds.has(r.id)),
+    [rulebook?.rules, selectedIds],
   );
 
-  // "Approve all" means the rules WAITING ON the Expert — never rejected ones
-  // (those are the interviewer's queue, and approving them would erase the
-  // Expert's own written reasons).
-  const approveAllDrafts = useCallback(async () => {
-    if (!rulebook) return;
+  const toggleSelected = useCallback((ruleId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(ruleId)) next.delete(ruleId);
+      else next.add(ruleId);
+      return next;
+    });
+  }, []);
+
+  /** The `disagrees_with` pairs BOTH of whose sides are in this selection. */
+  const pairsIn = useCallback(
+    (rules: RulebookRule[]): [RulebookRule, RulebookRule][] => {
+      const byId = new Map(rules.map((r) => [r.id, r]));
+      const seen = new Set<string>();
+      const pairs: [RulebookRule, RulebookRule][] = [];
+      for (const rule of rules) {
+        for (const otherId of disagreesWith(rule)) {
+          const other = byId.get(otherId);
+          if (!other) continue;
+          const key = [rule.id, other.id].sort().join("|");
+          if (seen.has(key)) continue;
+          seen.add(key);
+          pairs.push([rule, other]);
+        }
+      }
+      return pairs;
+    },
+    [],
+  );
+
+  const openBulkApprove = useCallback(() => {
+    const approvable = selectedRules.filter((r) => ruleState(r) === "draft");
+    if (approvable.length === 0) {
+      toast.error("Nothing in this selection is waiting on you.");
+      return;
+    }
+    setReadCount("");
+    setBulkConfirm({ rules: approvable, pairs: pairsIn(approvable) });
+  }, [selectedRules, pairsIn]);
+
+  const confirmBulkApprove = useCallback(async () => {
+    if (!rulebook || !bulkConfirm) return;
+    const ids = new Set(bulkConfirm.rules.map((r) => r.id));
+    const sampleSize = Math.max(
+      0,
+      Math.min(bulkConfirm.rules.length, Number.parseInt(readCount, 10) || 0),
+    );
     const next = rulebook.rules.map((r) => {
-      if (ruleState(r) !== "draft") return r;
+      if (!ids.has(r.id)) return r;
       const { feedback: _feedback, ...rest } = r;
       return { ...rest, draft: false };
     });
     try {
-      await persist(next);
-      toast.success("All suggested rules approved");
+      await persist(next, {
+        mode: "sampled",
+        sample_size: sampleSize,
+        of: bulkConfirm.rules.length,
+      });
+      setBulkConfirm(null);
+      setSelectedIds(new Set());
+      toast.success(
+        `${bulkConfirm.rules.length} rule(s) approved in bulk`,
+        {
+          description: `Each one now says "approved in bulk, ${sampleSize} of ${bulkConfirm.rules.length} read" — so nobody later mistakes this for ${bulkConfirm.rules.length} decisions.`,
+        },
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not approve");
     }
-  }, [rulebook, persist]);
+  }, [rulebook, bulkConfirm, readCount, persist]);
 
   // Reject: the rule leaves the Expert's queue and waits for the interviewer,
   // who must rewrite it per this feedback (fresh draft) or withdraw it. A
@@ -1729,6 +1875,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   </TooltipContent>
                 </Tooltip>
               ) : null}
+              {/* 🚨 "Approve all" is GONE (2026-09-12). It flipped every draft
+              in the Rulebook with no selection, no count and no record, and on
+              the one Rulebook where the volume occurred it fired on all 416.
+              Bulk approval now lives below the rules, on an explicit selection
+              the Expert can see. Nothing replaces it here. */}
               {draftCount > 0 && canEdit ? (
                 <>
                   <Button
@@ -1768,15 +1919,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                       </p>
                     </TooltipContent>
                   </Tooltip>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 w-full min-w-0 justify-center px-2 text-xs"
-                    onClick={() => void approveAllDrafts()}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Approve all
-                  </Button>
                 </>
               ) : null}
             </div>
@@ -1994,11 +2136,24 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 data-surface-value="search_query"
               />
               <div className="flex min-w-0 flex-wrap gap-1">
+                {/* 🚨 SAVED VIEWS, not one-off filters (Airtable). On a large
+                Rulebook "Start here" is where the page OPENS and "All N" is a
+                deliberate click — the count is on the chip so the size of what
+                you are asking for is never a surprise. */}
                 {(
                   [
-                    ["all", "All"],
+                    ...(isLargeRulebook
+                      ? ([["attention", "Start here"]] as [
+                          RuleKpiFilter,
+                          string,
+                        ][])
+                      : []),
+                    ["all", `All ${rulebook.rules.length}`],
                     ["approved", "Approved"],
                     ["draft", "Waiting"],
+                    ["disagreements", "Disagreements"],
+                    ["only_source", "Only this source holds"],
+                    ["seen_once", "Seen once"],
                     ...(kpis.rejected > 0
                       ? [["rejected", "With interviewer"]]
                       : []),
@@ -2037,6 +2192,21 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 </Tooltip>
               ) : null}
             </div>
+
+            {/* 🚨 A DEFAULT VIEW THAT IS NOT EVERYTHING says so, out loud —
+            a screen that silently shows a subset is a screen that lies. */}
+            {ruleFilter === "attention" && isLargeRulebook ? (
+              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                This Rulebook holds {rulebook.rules.length} rules, so it opens
+                on the ones worth your eyes first: where two sources disagree,
+                and where only one source holds the judgment. Everything else is
+                one click away under{" "}
+                <span className="font-medium text-foreground">
+                  All {rulebook.rules.length}
+                </span>
+                .
+              </p>
+            ) : null}
 
             {/* Sections */}
             <div data-surface-value="rules" className="space-y-6">
@@ -2128,9 +2298,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                               setFeedbackTarget({ rule, mode: "request" })
                             }
                             onReconsider={() => void reconsiderRule(rule)}
-                            onPromoteEvidence={(evidenceRule) =>
-                              void promoteEvidence(evidenceRule)
-                            }
+                            selected={selectedIds.has(rule.id)}
+                            onToggleSelected={() => toggleSelected(rule.id)}
+                            recurrenceThreshold={recurrenceThreshold}
                           />
                         ))}
                       </div>
@@ -2140,6 +2310,37 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               )}
             </div>
           </div>
+
+          {/* 🚨 BULK ACTIONS TAKE AN EXPLICIT SELECTION. The bar only exists
+          when rules are selected, and it says exactly how many — the scope of
+          a bulk verb is never invisible. */}
+          {canEdit && selectedIds.size > 0 ? (
+            <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-lg">
+              <span className="text-sm font-medium text-foreground">
+                {selectedIds.size} selected
+              </span>
+              <Button size="sm" onClick={openBulkApprove}>
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setSelectedIds(new Set(visibleRules.map((r) => r.id)))
+                }
+              >
+                Select all {visibleRules.length} shown
+              </Button>
+            </div>
+          ) : null}
 
           {/* AMBIENT, NEVER THE HEADLINE — the improvement brain's chips
           (aidream/services/masterwork_assists/) sit BELOW the work, not in the
@@ -2253,6 +2454,17 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setDraftRevision((revision) => revision + 1);
               setEditorOpen(true);
             }}
+          />
+          <BulkApproveDialog
+            open={bulkConfirm !== null}
+            onOpenChange={(next) => {
+              if (!next) setBulkConfirm(null);
+            }}
+            rules={bulkConfirm?.rules ?? []}
+            pairs={bulkConfirm?.pairs ?? []}
+            readCount={readCount}
+            onReadCountChange={setReadCount}
+            onConfirm={() => void confirmBulkApprove()}
           />
           <ConfirmDialog
             open={confirmActivate}

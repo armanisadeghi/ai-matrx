@@ -25,7 +25,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
-import { isPossibleBitwardenDuplicate, prepareBitwardenCommand, type BitwardenImportRecord } from "../bitwarden-json";
+import { type StructuredImportRecord, hasVisiblePublicKey, isPossibleStructuredImportDuplicate, prepareStructuredImportCommand } from "../structured-import";
 import {
   hasAmbiguousCsvMapping,
   isPossibleDuplicateRow,
@@ -135,8 +135,11 @@ export function VaultCsvImportDialog({
   // State updates do not cover the interval before actor lookup or worker setup.
   // This ref marks a locally selected file synchronously for lifecycle invalidation.
   const hasActiveFileIntake = useRef(false);
+  // `undefined` is distinct from a signed-out `null`: the first observed
+  // actor conservatively invalidates any draft created before auth hydrated.
+  const authenticatedActorId = useRef<string | null | undefined>(undefined);
   const [source, setSource] = useState("generic");
-  const [jsonRecords, setJsonRecords] = useState<BitwardenImportRecord[]>([]);
+  const [jsonRecords, setJsonRecords] = useState<StructuredImportRecord[]>([]);
   const [jsonLoaded, setJsonLoaded] = useState(false);
   const [includeTrash, setIncludeTrash] = useState(false);
   const [metadataApproved, setMetadataApproved] = useState(false);
@@ -214,8 +217,17 @@ export function VaultCsvImportDialog({
   useEffect(() => {
     const {
       data: { subscription },
-    } = createClient().auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT" || event === "USER_UPDATED")
+    } = createClient().auth.onAuthStateChange((event, session) => {
+      const nextActorId = session?.user.id ?? null;
+      const actorChanged = authenticatedActorId.current !== nextActorId;
+      const actorWasUnknown = authenticatedActorId.current === undefined;
+      authenticatedActorId.current = nextActorId;
+      if (
+        actorChanged ||
+        actorWasUnknown ||
+        event === "SIGNED_OUT" ||
+        event === "USER_UPDATED"
+      )
         invalidateActiveDraft(
           "Your account changed. Choose the file and review the import again.",
         );
@@ -299,7 +311,7 @@ export function VaultCsvImportDialog({
         jsonWorkerTimeout.current = window.setTimeout(() => settle("The JSON export took too long to parse. Choose a smaller export and try again."), limits.jsonWorkerTimeoutMs ?? 5_000);
         parser.onerror = () => settle("The JSON export could not be read.");
         parser.onmessageerror = () => settle("The JSON export could not be read.");
-        parser.onmessage = (event: MessageEvent<{ ok: boolean; records?: BitwardenImportRecord[]; error?: string }>) => {
+        parser.onmessage = (event: MessageEvent<{ ok: boolean; records?: StructuredImportRecord[]; error?: string }>) => {
           if (!event.data.ok) {
             settle(jsonImportErrorMessage(event.data.error));
             return;
@@ -352,9 +364,9 @@ export function VaultCsvImportDialog({
   ]);
   const preparedJsonRows = useMemo(() => {
     if (source !== "bitwarden_json" || !limitsRef.current || !previewActor.current) return [];
-    return jsonRecords.map((record) => prepareBitwardenCommand({
+    return jsonRecords.map((record) => prepareStructuredImportCommand({
       record, principal, expectedActor: previewActor.current!, rowId: `preview-json-${record.ordinal}`,
-      browserFillEnabled: enableBrowserFill, includeTrash, limits: limitsRef.current!, existingItems,
+      browserFillEnabled: enableBrowserFill, includeDeleted: includeTrash, includeArchived: false, limits: limitsRef.current!, existingItems,
       skipPossibleDuplicate: !createDuplicateRows.has(record.ordinal),
     }));
   }, [createDuplicateRows, enableBrowserFill, existingItems, includeTrash, jsonRecords, principal, source]);
@@ -740,10 +752,10 @@ export function VaultCsvImportDialog({
             <div className="space-y-3">
               <p className="text-sm">{jsonPreflightCounts.selected} selected; {jsonPreflightCounts.skipped} skipped; {jsonPreflightCounts.invalid} invalid; {jsonPreflightCounts.unsupported} unsupported; {jsonPreflightCounts.deleted} deleted. Unsupported records stay local and are never sent.</p>
               {jsonRecords.length === 0 && <p className="text-sm text-muted-foreground">This valid export has no items to import.</p>}
-              <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">{jsonRecords.map((record, index) => { const prepared = preparedJsonRows[index]; const duplicate = isPossibleBitwardenDuplicate(record, existingItems); return <div key={record.ordinal} className="flex items-center justify-between gap-2"><span>#{record.ordinal + 1}: {record.title} · {record.kind === "custom" ? "encrypted-only custom record" : record.kind.replace("_", " ")}{record.kind === "website_login" && record.urls[0] ? ` · destination ${record.urls[0]}` : ""} · {prepared?.status ?? record.status}{record.reason ? ` — ${record.reason}` : ""}{duplicate ? " · possible duplicate" : ""}</span>{duplicate && <label className="flex shrink-0 items-center gap-1"><Switch checked={createDuplicateRows.has(record.ordinal)} onCheckedChange={(checked) => setCreateDuplicateRows((current) => { const next = new Set(current); if (checked) next.add(record.ordinal); else next.delete(record.ordinal); return next; })}/><span>Create</span></label>}{prepared?.status === "invalid" && <Button type="button" variant="outline" size="sm" onClick={() => setSkipInvalidRows((current) => { const next = new Set(current); if (next.has(record.ordinal)) next.delete(record.ordinal); else next.add(record.ordinal); return next; })}>{skipInvalidRows.has(record.ordinal) ? "Review" : "Skip"}</Button>}</div>; })}</div>
+              <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">{jsonRecords.map((record, index) => { const prepared = preparedJsonRows[index]; const duplicate = isPossibleStructuredImportDuplicate(record, existingItems); const kind = record.status === "supported" ? record.kind : "unavailable"; const destination = record.status === "supported" && record.kind === "website_login" ? record.urls[0] : undefined; const reason = record.status === "supported" ? undefined : record.reason; return <div key={record.ordinal} className="flex items-center justify-between gap-2"><span>#{record.ordinal + 1}: {record.title} · {kind === "custom" ? "encrypted-only custom record" : kind.replace("_", " ")}{destination ? ` · destination ${destination}` : ""} · {prepared?.status ?? record.status}{reason ? ` — ${reason}` : ""}{duplicate ? " · possible duplicate" : ""}</span>{duplicate && <label className="flex shrink-0 items-center gap-1"><Switch checked={createDuplicateRows.has(record.ordinal)} onCheckedChange={(checked) => setCreateDuplicateRows((current) => { const next = new Set(current); if (checked) next.add(record.ordinal); else next.delete(record.ordinal); return next; })}/><span>Create</span></label>}{prepared?.status === "invalid" && <Button type="button" variant="outline" size="sm" onClick={() => setSkipInvalidRows((current) => { const next = new Set(current); if (next.has(record.ordinal)) next.delete(record.ordinal); else next.add(record.ordinal); return next; })}>{skipInvalidRows.has(record.ordinal) ? "Review" : "Skip"}</Button>}</div>; })}</div>
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={includeTrash} onCheckedChange={setIncludeTrash}/><span>Include deleted source items. They are skipped by default.</span></label>
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={enableBrowserFill} onCheckedChange={setEnableBrowserFill}/><span>Enable browser fill only for eligible logins with a username, password, and HTTPS or loopback destination. Matching destinations become visible credential metadata.</span></label>
-              {jsonRecords.some((record) => record.hasVisiblePublicKey) && <p className="text-xs text-muted-foreground">SSH public keys are visible metadata. Private keys and source records are revealable only, and none are injected into a sandbox.</p>}
+              {jsonRecords.some(hasVisiblePublicKey) && <p className="text-xs text-muted-foreground">SSH public keys are visible metadata. Private keys and source records are revealable only, and none are injected into a sandbox.</p>}
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={metadataApproved} onCheckedChange={setMetadataApproved}/><span>I approve disclosure of the listed destination and public-key metadata.</span></label>
             </div>
           )}

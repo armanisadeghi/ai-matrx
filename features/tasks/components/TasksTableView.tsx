@@ -497,7 +497,6 @@ export default function TasksTableView() {
                 size="xs"
                 unified
                 label="Task table"
-                primarySource="table"
                 human={() => taskListHuman(sorted)}
                 json={() => sorted.map(taskRow)}
                 agent={() =>

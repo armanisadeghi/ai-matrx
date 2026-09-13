@@ -5,6 +5,7 @@
 // Backed by the notes Redux slice instead of React Context.
 
 import { useCallback, useEffect, useRef } from "react";
+import { unwrapResult } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { Note, CreateNoteInput, FolderReference, UpdateNoteInput } from "../types";
 import {
@@ -34,6 +35,10 @@ import {
   moveNoteToFolder,
   moveNoteToNewFolder as moveNoteToNewFolderThunk,
 } from "../redux/thunks";
+import {
+  NoteContextPartialSaveError,
+  type NoteSaveReceipt,
+} from "../service/noteSaveErrors";
 
 /**
  * Drop-in replacement for useNotesContext().
@@ -116,8 +121,31 @@ export function useNotesRedux() {
 
   const createNote = useCallback(
     async (input: CreateNoteInput): Promise<Note> => {
-      const result = await dispatch(createNewNote(input)).unwrap();
-      return result;
+      const action = await dispatch(createNewNote(input));
+      if (createNewNote.fulfilled.match(action)) return action.payload;
+
+      // The thunk has already opened the durable note and retained only the
+      // failed context values as dirty. Preserve that receipt for generic
+      // consumers instead of turning it into an indistinguishable rollback.
+      if (
+        createNewNote.rejected.match(action) &&
+        action.payload?.code === "context_partial"
+      ) {
+        const serializedReceipt = action.payload.receipt;
+        const receipt: NoteSaveReceipt = {
+          note: serializedReceipt.note,
+          databaseWrite: serializedReceipt.databaseWrite,
+          succeededFields: serializedReceipt.succeededFields,
+          failedFields: serializedReceipt.failedFields,
+          safeCauses: serializedReceipt.safeCauses,
+          ...(serializedReceipt.postSaveRecoveryError
+            ? { postSaveRecoveryError: new Error(serializedReceipt.postSaveRecoveryError) }
+            : {}),
+        };
+        throw new NoteContextPartialSaveError(receipt);
+      }
+
+      return unwrapResult(action);
     },
     [dispatch],
   );

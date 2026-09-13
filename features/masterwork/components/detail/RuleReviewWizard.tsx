@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
-import { PolicyRuleShape } from "./PolicyRuleShape";
+import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import type { Rulebook, RulebookRule } from "../../types";
 import { ruleState, SEVERITY_LABELS } from "../../types";
 
@@ -214,9 +214,12 @@ export function RuleReviewWizard({
             <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
               <div className="grid gap-6 md:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] md:gap-8">
                 <section className="min-w-0 space-y-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                    Rule to approve · {SEVERITY_LABELS[rule.severity]}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                      Rule to approve · {SEVERITY_LABELS[rule.severity]}
+                    </p>
+                    <RuleDecisionBadge rule={rule} />
+                  </div>
                   <h3 className="text-xl font-semibold leading-snug text-foreground sm:text-2xl">
                     {rule.name}
                   </h3>
@@ -225,10 +228,8 @@ export function RuleReviewWizard({
                       {rule.statement}
                     </p>
                   </div>
-                  {/* 🚨 A decision rule is APPROVED here, so its decision shape
-                      is read here — the same ONE renderer the rule row uses,
-                      never a second one. */}
-                  <PolicyRuleShape rule={rule} />
+                  {/* 🚨 THE DECISION HALF — never approve half a rule. */}
+                  <RuleDecision rule={rule} />
                   {rule.quote ? (
                     <div className="pt-2">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">

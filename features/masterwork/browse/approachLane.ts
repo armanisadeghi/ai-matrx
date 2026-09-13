@@ -29,7 +29,20 @@ import type { DistillationApproach } from "./approaches";
  * literal `intake_query.ingest` of a registry row, and the literal `?ingest=`
  * deep link on `/masterwork/[id]`.
  */
-export const INGEST_LANES = ["source", "exemplar", "file", "timeline"] as const;
+export const INGEST_LANES = [
+  "source",
+  "exemplar",
+  "file",
+  "timeline",
+  // The VOICE-FIRST door (2026-09-12). The `monologue` Approach's server lane
+  // has existed since the recording lane shipped — transcribe, chunk by time
+  // range, distill through `masterwork.monologue_distiller`, anchor every rule
+  // to the moment it was said — and the row sat `enabled=false` for the one
+  // reason a row ever does: the product had no door. It is a lane of its own
+  // and not a mode of `file` because an Expert who wants to TALK must not be
+  // asked to go away and make a recording first.
+  "monologue",
+] as const;
 
 export type IngestLane = (typeof INGEST_LANES)[number];
 

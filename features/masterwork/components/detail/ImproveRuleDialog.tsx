@@ -37,7 +37,12 @@ import { applyRuleImprove } from "../../agent-context/ruleImprove";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import type { RulebookRule, RulebookSections } from "../../types";
-import { isPolicyRule, POLICY_ACTION_KINDS, SEVERITY_LABELS } from "../../types";
+import {
+  isPolicyRule,
+  RULE_ACTION_KIND_LABELS,
+  ruleActionKind,
+  SEVERITY_LABELS,
+} from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface ImproveRuleDialogProps {
@@ -72,8 +77,8 @@ interface ImproveReview {
 /** "Test · cost medium · risk low" — the decision classifications on one line, blank for an ordinary rule. */
 function policyShapeLabel(rule: RulebookRule): string {
   if (!isPolicyRule(rule)) return "";
-  const kind = POLICY_ACTION_KINDS.find((option) => option.value === rule.action_kind);
-  const kindLabel = kind ? kind.label.split(" — ")[0] : (rule.action_kind ?? "");
+  const kind = ruleActionKind(rule);
+  const kindLabel = kind ? RULE_ACTION_KIND_LABELS[kind] : "";
   return `${kindLabel} · cost ${rule.cost ?? "?"} · risk ${rule.risk ?? "?"}`;
 }
 

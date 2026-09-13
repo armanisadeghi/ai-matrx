@@ -100,6 +100,22 @@ describe("checkup relationship round trip", () => {
     expect(written?.statement).toContain("higher authority");
   });
 
+  it("keeps the words an approved suggestion replaces", () => {
+    // 🚨 THE PRIOR POSITION (Arman's expertise mandate, 2026-09-12). The
+    // replacement was drafted by the Checkup; the words it replaces were the
+    // rule. Delete the `pushRuleHistory` call in `service.ts` and this fails.
+    const finding = parseFinding(wireFinding)!;
+    const projection = projectCheckup({
+      rulebook,
+      findings: [finding],
+      dispositions: { [finding.id]: { decision: "approve" } },
+      runId: null,
+    });
+    const written = projection.rules.find((r) => r.id === TARGET.id);
+    expect(written?.history?.[0].statement).toBe(TARGET.statement);
+    expect(written?.history?.[0].changed_by).toBe("lane:masterwork_checkup");
+  });
+
   it("leaves existing relations alone when a finding carries none", () => {
     const linked = { ...TARGET, relates_to: [{ rule_id: SIBLING.id, kind: "refines" as const }] };
     const finding = parseFinding({

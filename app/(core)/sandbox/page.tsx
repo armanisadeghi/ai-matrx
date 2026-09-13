@@ -6,37 +6,18 @@ import { extractErrorMessage } from "@/utils/errors";
 import {
   Container,
   Plus,
-  Square,
   Trash2,
   RefreshCw,
-  Timer,
   Loader2,
   CheckCircle2,
-  History,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import {
-  TapTargetButton,
-  TapTargetButtonSolid,
-} from "@ai-matrx/tap-target";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -44,49 +25,17 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
-import {
-  sandboxDisplayName,
-  sandboxInstanceSummary,
-} from "@/lib/sandbox/format";
+import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { toast } from "@/lib/toast";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
-import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
-import {
-  LIST_ACTIVE_STATUSES,
-  STATUS_BADGE_VARIANT,
-  STATUS_LABELS,
-  getEffectiveStatus,
-} from "@/lib/sandbox/status";
+import { LIST_ACTIVE_STATUSES, getEffectiveStatus } from "@/lib/sandbox/status";
 import { CreateSandboxFormFields } from "@/features/code/views/sandboxes/CreateSandboxFormFields";
+import { SandboxInstancesTable } from "@/features/code/views/sandboxes/SandboxInstancesTable";
 import { useSandboxCreate } from "@/features/code/views/sandboxes/useSandboxCreate";
-import type {
-  SandboxCreateRequest,
-  SandboxInstance,
-  SandboxStatus,
-} from "@/types/sandbox";
-
-function StatusBadge({ status }: { status: SandboxStatus }) {
-  return (
-    <Badge variant={STATUS_BADGE_VARIANT[status] ?? "default"}>
-      {STATUS_LABELS[status] ?? status}
-    </Badge>
-  );
-}
-
-function TimeRemaining({ expiresAt }: { expiresAt: string | null }) {
-  const remaining = useTimeRemaining(expiresAt, "minute");
-  return (
-    <span className="flex items-center gap-1 text-sm text-muted-foreground">
-      <Timer className="w-3 h-3" />
-      {remaining.text}
-    </span>
-  );
-}
+import type { SandboxCreateRequest, SandboxInstance } from "@/types/sandbox";
 
 export default function SandboxListPage() {
   const router = useRouter();
@@ -144,8 +93,15 @@ export default function SandboxListPage() {
 
   // Auto-refresh instances, but pause during creation to prevent modal/background desync
   useEffect(() => {
-    if (creating || createSuccess) {
-      console.log("[SandboxListPage] Auto-refresh paused during creation");
+    if (
+      creating ||
+      createOpen ||
+      createSuccess ||
+      loading ||
+      refreshing ||
+      deleteTarget ||
+      historyDeleteMode
+    ) {
       return undefined;
     }
 
@@ -154,7 +110,16 @@ export default function SandboxListPage() {
       fetchInstances();
     }, 15000);
     return () => clearInterval(interval);
-  }, [fetchInstances, creating, createSuccess]);
+  }, [
+    fetchInstances,
+    creating,
+    createOpen,
+    createSuccess,
+    loading,
+    refreshing,
+    deleteTarget,
+    historyDeleteMode,
+  ]);
 
   // Auto-dismiss create error after 8 seconds
   useEffect(() => {
@@ -195,6 +160,7 @@ export default function SandboxListPage() {
     const result = await createInstance(request);
 
     if (result.instance) {
+      const createdId = result.instance.id;
       console.log("[SandboxListPage] handleCreate: Instance created", {
         id: result.instance.id,
         status: result.instance.status,
@@ -211,7 +177,7 @@ export default function SandboxListPage() {
         setCreateOpen(false);
         setCreateSuccess(false);
         setCreatedInstanceId(null);
-        router.push(`/sandbox/${result.instance!.id}`);
+        router.push(`/sandbox/${createdId}`);
       }, 800);
     } else {
       console.error(
@@ -284,37 +250,23 @@ export default function SandboxListPage() {
     (i) => !LIST_ACTIVE_STATUSES.includes(getEffectiveStatus(i)),
   );
   const activeCount = activeInstances.length;
-  const selectedHistoryCount = selectedHistoryIds.size;
-  const allHistorySelected =
-    historicalInstances.length > 0 &&
-    historicalInstances.every((i) => selectedHistoryIds.has(i.id));
+  const currentSelectedHistoryIds = new Set(
+    historicalInstances
+      .filter((instance) => selectedHistoryIds.has(instance.id))
+      .map((instance) => instance.id),
+  );
+  const selectedHistoryCount = currentSelectedHistoryIds.size;
   const historyDeleteCount =
     historyDeleteMode === "all"
       ? historicalInstances.length
       : selectedHistoryCount;
-
-  const toggleHistorySelection = (id: string) => {
-    setSelectedHistoryIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAllHistorySelection = () => {
-    setSelectedHistoryIds((prev) => {
-      if (allHistorySelected) return new Set();
-      return new Set(historicalInstances.map((i) => i.id));
-    });
-  };
 
   const handleHistoryBatchDelete = async () => {
     if (!historyDeleteMode || historyDeleting) return;
     const ids =
       historyDeleteMode === "all"
         ? historicalInstances.map((i) => i.id)
-        : Array.from(selectedHistoryIds);
+        : Array.from(currentSelectedHistoryIds);
     if (ids.length === 0) {
       setHistoryDeleteMode(null);
       return;
@@ -363,7 +315,7 @@ export default function SandboxListPage() {
           <div className="flex items-center gap-2 min-w-0 px-1.5">
             <Container className="w-4 h-4 text-orange-500 shrink-0" />
             <span className="truncate text-sm font-medium text-foreground">
-              Sandbox Instances
+              Sandboxes
             </span>
             <span className="hidden sm:inline text-xs text-muted-foreground shrink-0">
               {activeCount} active of {total} total
@@ -372,31 +324,6 @@ export default function SandboxListPage() {
         }
         right={
           <>
-            {uniqueInstances.length > 0 && (
-              <CopyButtons
-                size="icon"
-                label="My sandboxes"
-                human={() =>
-                  uniqueInstances
-                    .map(
-                      (i, idx) =>
-                        `--- [${idx + 1}] ---\n${sandboxInstanceSummary(i)}`,
-                    )
-                    .join("\n\n")
-                }
-                agent={() => ({
-                  kind: "sandbox-instances",
-                  location: "AI Matrx — My Sandboxes",
-                  description: "All sandbox instances in the user's list.",
-                  data: uniqueInstances,
-                  attributes: {
-                    count: uniqueInstances.length,
-                    active: activeCount,
-                    total,
-                  },
-                })}
-              />
-            )}
             <TapTargetButton
               icon={
                 <RefreshCw
@@ -410,363 +337,89 @@ export default function SandboxListPage() {
             <TapTargetButtonSolid
               icon={<Plus className="w-4 h-4" />}
               label="New Sandbox"
+              mobileIconOnly
               onClick={() => setCreateOpen(true)}
             />
           </>
         }
       />
-      <div className="h-full flex flex-col overflow-hidden bg-textured">
-        <div className="flex-1 overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+1rem)]">
-          <div className="max-w-6xl mx-auto space-y-4">
-            {loading && uniqueInstances.length === 0 ? (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Sandbox</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Time Remaining</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[1, 2, 3].map((i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Skeleton className="h-4 w-36" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-5 w-16 rounded-full" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-32" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Skeleton className="h-8 w-16 ml-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : uniqueInstances.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Container className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">
-                    No Sandbox Instances
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Create your first sandbox to get started with an isolated
-                    development environment.
-                  </p>
-                  <Button onClick={() => setCreateOpen(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Sandbox
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                {/* Active Sandboxes */}
-                {activeInstances.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-8 text-center">
-                      <Container className="w-8 h-8 mx-auto mb-3 text-muted-foreground/30" />
-                      <p className="text-sm text-muted-foreground">
-                        No active sandboxes
-                      </p>
-                      <Button
-                        size="sm"
-                        className="mt-3"
-                        onClick={() => setCreateOpen(true)}
-                      >
-                        <Plus className="w-3.5 h-3.5 mr-1.5" />
-                        New Sandbox
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="relative rounded-md border">
-                    {/* Subtle refresh indicator */}
-                    {refreshing && (
-                      <div className="absolute top-2 right-2 z-10">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
-                      </div>
-                    )}
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Sandbox</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Time Remaining</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {activeInstances.map((instance) => {
-                          const effectiveStatus = getEffectiveStatus(instance);
-                          const isEffectivelyActive = [
-                            "ready",
-                            "running",
-                          ].includes(effectiveStatus);
-                          return (
-                            <TableRow
-                              key={instance.id}
-                              className="cursor-pointer hover:bg-muted/50"
-                              onClick={() =>
-                                router.push(`/sandbox/${instance.id}`)
-                              }
-                            >
-                              <TableCell>
-                                <div className="font-medium">
-                                  {sandboxDisplayName(instance)}
-                                </div>
-                                {instance.name && (
-                                  <div className="font-mono text-xs text-muted-foreground">
-                                    {instance.sandbox_id}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <StatusBadge status={effectiveStatus} />
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {new Date(instance.created_at).toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                {isEffectivelyActive ? (
-                                  <TimeRemaining
-                                    expiresAt={instance.expires_at}
-                                  />
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">
-                                    --
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div
-                                  className="flex items-center justify-end gap-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <CopyButtons
-                                    size="icon"
-                                    label={`Sandbox ${sandboxDisplayName(instance)}`}
-                                    human={() =>
-                                      sandboxInstanceSummary(instance)
-                                    }
-                                    agent={() => ({
-                                      kind: "sandbox-instance",
-                                      location: "AI Matrx — My Sandboxes",
-                                      description:
-                                        "A sandbox instance row from the user's sandbox list.",
-                                      data: instance,
-                                      summary: sandboxInstanceSummary(instance),
-                                      attributes: {
-                                        id: instance.id,
-                                        "sandbox-id": instance.sandbox_id,
-                                        status: effectiveStatus,
-                                      },
-                                    })}
-                                  />
-                                  {isEffectivelyActive && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleStop(instance)}
-                                      disabled={stoppingIds.has(instance.id)}
-                                    >
-                                      {stoppingIds.has(instance.id) ? (
-                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                      ) : (
-                                        <Square className="w-3 h-3 mr-1" />
-                                      )}
-                                      Stop
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setDeleteTarget(instance)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-
-                {/* History — stopped/expired/failed sandboxes */}
-                {historicalInstances.length > 0 && (
-                  <div className="rounded-md border border-dashed border-border/60">
-                    <button
-                      onClick={() => setHistoryOpen(!historyOpen)}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-md transition-colors"
-                    >
-                      <History className="w-4 h-4" />
-                      <span className="font-medium flex-1 text-left">
-                        History
-                      </span>
-                      <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                        {historicalInstances.length}
-                      </span>
-                      {historyOpen ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </button>
-                    {historyOpen && (
-                      <>
-                        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-2">
-                          <div className="text-xs text-muted-foreground max-w-3xl">
-                            Ended sandboxes — containers were destroyed when the
-                            session closed. Anything saved in{" "}
-                            <code className="font-mono">/home/agent</code> stays
-                            on this tier and mounts on your next sandbox.
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={
-                                selectedHistoryCount === 0 || historyDeleting
-                              }
-                              onClick={() => setHistoryDeleteMode("selected")}
-                            >
-                              <Trash2 className="w-3 h-3 mr-1.5" />
-                              Delete selected
-                              {selectedHistoryCount > 0
-                                ? ` (${selectedHistoryCount})`
-                                : ""}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={historyDeleting}
-                              onClick={() => setHistoryDeleteMode("all")}
-                            >
-                              <Trash2 className="w-3 h-3 mr-1.5" />
-                              Delete all history
-                            </Button>
-                          </div>
-                        </div>
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/20">
-                              <TableHead className="w-10">
-                                <Checkbox
-                                  checked={allHistorySelected}
-                                  onCheckedChange={toggleAllHistorySelection}
-                                  aria-label="Select all history rows"
-                                />
-                              </TableHead>
-                              <TableHead>Sandbox</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Created</TableHead>
-                              <TableHead>Stopped</TableHead>
-                              <TableHead className="text-right">
-                                Actions
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {historicalInstances.map((instance) => {
-                              const effectiveStatus =
-                                getEffectiveStatus(instance);
-                              const selected = selectedHistoryIds.has(
-                                instance.id,
-                              );
-                              return (
-                                <TableRow
-                                  key={instance.id}
-                                  className="cursor-pointer hover:bg-muted/30 opacity-75 hover:opacity-100 transition-opacity"
-                                  onClick={() =>
-                                    router.push(`/sandbox/${instance.id}`)
-                                  }
-                                >
-                                  <TableCell
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-10"
-                                  >
-                                    <Checkbox
-                                      checked={selected}
-                                      onCheckedChange={() =>
-                                        toggleHistorySelection(instance.id)
-                                      }
-                                      aria-label={`Select ${sandboxDisplayName(instance)}`}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    <div>{sandboxDisplayName(instance)}</div>
-                                    {instance.name && (
-                                      <div className="font-mono text-xs">
-                                        {instance.sandbox_id}
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <StatusBadge status={effectiveStatus} />
-                                  </TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {new Date(
-                                      instance.created_at,
-                                    ).toLocaleString()}
-                                  </TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {instance.stopped_at
-                                      ? new Date(
-                                          instance.stopped_at,
-                                        ).toLocaleString()
-                                      : instance.expires_at &&
-                                          new Date(instance.expires_at) <
-                                            new Date()
-                                        ? new Date(
-                                            instance.expires_at,
-                                          ).toLocaleString()
-                                        : "--"}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div
-                                      className="flex items-center justify-end gap-1"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          setDeleteTarget(instance)
-                                        }
-                                        className="text-destructive hover:text-destructive"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+      <div className="h-full min-h-0 flex flex-col overflow-hidden bg-textured px-3 pb-3 pt-[var(--shell-header-h)] sm:px-4">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 py-2">
+          <ToggleGroup
+            type="single"
+            value={historyOpen ? "history" : "active"}
+            onValueChange={(value) => {
+              if (value) setHistoryOpen(value === "history");
+            }}
+            aria-label="Sandbox lifecycle"
+          >
+            <ToggleGroupItem
+              value="active"
+              aria-label={`Active sandboxes (${activeCount})`}
+            >
+              Active ({activeCount})
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="history"
+              aria-label={`Sandbox history (${historicalInstances.length})`}
+            >
+              History ({historicalInstances.length})
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {historyOpen && historicalInstances.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={
+                  selectedHistoryCount === 0 ||
+                  historyDeleting ||
+                  loading ||
+                  refreshing ||
+                  Boolean(error)
+                }
+                onClick={() => setHistoryDeleteMode("selected")}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Delete selected ({selectedHistoryCount})
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={
+                  historyDeleting || loading || refreshing || Boolean(error)
+                }
+                onClick={() => setHistoryDeleteMode("all")}
+              >
+                Delete all history
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <SandboxInstancesTable
+            key={historyOpen ? "history" : "active"}
+            instances={historyOpen ? historicalInstances : activeInstances}
+            loading={loading}
+            isFetching={refreshing}
+            showingHistory={historyOpen}
+            error={error}
+            onRetry={() => {
+              void fetchInstances();
+            }}
+            onOpen={(instance) => router.push(`/sandbox/${instance.id}`)}
+            onStop={handleStop}
+            onDelete={setDeleteTarget}
+            stoppingIds={stoppingIds}
+            selection={
+              historyOpen
+                ? {
+                    selectedIds: currentSelectedHistoryIds,
+                    onSelectionChange: setSelectedHistoryIds,
+                  }
+                : undefined
+            }
+          />
         </div>
       </div>
 

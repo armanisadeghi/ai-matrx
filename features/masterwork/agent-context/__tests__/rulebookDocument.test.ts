@@ -107,12 +107,16 @@ describe("renderRulebookDocument", () => {
         ],
       }),
     );
+    // The wording is the ONE renderer's (`rulebookDocument`, kept from main on
+    // the 2026-09-13 merge); the same strings the decision-half guard asserts.
+    expect(doc).toContain("Kind: a DECISION, not a standing rule");
     expect(doc).toContain(
-      "Decision rule — given: Confusion of unknown cause; sodium not yet measured.",
+      "When: Confusion of unknown cause; sodium not yet measured.",
     );
-    expect(doc).toContain(
-      "Next action (test; cost low, risk low): Order a serum sodium.",
-    );
+    expect(doc).toContain("Then do: Order a serum sodium.");
+    expect(doc).toContain("Kind of move: test");
+    expect(doc).toContain("Cost of the action: low");
+    expect(doc).toContain("Risk of the action: low");
   });
 
   it("renders documented connections, so a rule is never read as standalone", () => {

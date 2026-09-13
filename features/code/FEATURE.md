@@ -18,6 +18,7 @@ A first-class in-app coding environment that runs against either a remote sandbo
 
 ## Entry points
 
+- **Sandbox management:** [`/sandbox`](<../../app/(core)/sandbox/page.tsx>) uses [`SandboxInstancesTable`](./views/sandboxes/SandboxInstancesTable.tsx), an adapter over `@ai-matrx/design-system/data-table`. Active/history share its query controls and responsive rendering; lifecycle mutations remain owned by the route.
 - **Route:** [`app/(core)/code/page.tsx`](<../../app/(core)/code/page.tsx>) → [`CodeWorkspaceRoute`](./host/CodeWorkspaceRoute.tsx) → [`CodeWorkspace`](./CodeWorkspace.tsx) → [`WorkspaceLayout`](./layout/WorkspaceLayout.tsx).
 - **Shell sidebar:** [`shell/CodeSidebarMenu.tsx`](./shell/CodeSidebarMenu.tsx) registered in [`route-menu-registry`](../shell/constants/route-menu-registry.ts) — activity-view icons inject into the main sidebar (same pattern as `/chat`). File trees stay in the workspace side panel. Lazy-loaded only on `/code`.
 - **Layout:** [`app/(core)/code/layout.tsx`](<../../app/(core)/code/layout.tsx>). **Loading skeleton:** [`app/(core)/code/loading.tsx`](<../../app/(core)/code/loading.tsx>).
@@ -127,6 +128,8 @@ and the unified compute-target picker all use the stored name first. Renaming
 updates only the owned database row; it never renames or replaces the running
 container.
 
+The management list exposes stored template/tier, resources, heartbeat, expiry, and storage fields without opening a sandbox. A heartbeat timestamp is not a health verdict; missing resource settings remain explicitly unrecorded. `useSandboxInstances` exhausts source pages for default list reads before local table filtering/paging, rejects incomplete snapshots, and cancels superseded requests. Explicit limit/offset callers retain one-page reads. Refresh preserves the current table controls; polling pauses during loading and confirmation dialogs. History batch selection is intersected with the currently loaded history records.
+
 ---
 
 ## Invariants & gotchas
@@ -152,12 +155,14 @@ container.
 ## Related features
 
 - **Depends on:** [`features/agents/`](../agents/) (runtime + AgentRunnerPage), [`features/agent-shortcuts/`](../agent-shortcuts/) (UI-context contract consumer), the orchestrator services described in [`SANDBOX_DIRECT_ENDPOINTS.md`](./SANDBOX_DIRECT_ENDPOINTS.md).
-- **Depended on by:** the `/code` route exclusively. Other surfaces use [`features/code-editor/`](../code-editor/FEATURE.md).
+- **Depended on by:** the `/code` workspace and `/sandbox` management route. Embedded editors use [`features/code-editor/`](../code-editor/FEATURE.md).
 - **Cross-links:** [`SYSTEM_STATE.md`](./SYSTEM_STATE.md), [`QA_CHECKLIST.md`](./QA_CHECKLIST.md), [`features/code-editor/FEATURE.md`](../code-editor/FEATURE.md), [`features/agents/migration/phases/phase-21-code-workspace-resource-pills.md`](../agents/migration/phases/phase-21-code-workspace-resource-pills.md), [`features/agents/migration/phases/phase-15-native-code-editor.md`](../agents/migration/phases/phase-15-native-code-editor.md).
 
 ---
 
 ## Change log
+
+- `2026-09-12` — Replaced both bespoke `/sandbox` tables with the shared package table, exposing runtime configuration, timestamps and storage inline, with searchable columns, lifecycle selection and responsive cards. Complete-list reads now exhaust pagination and refuse incomplete snapshots. Desktop and phone checks passed with eight real active records, including search, refresh retention and empty history. Final acceptance remains open for a shared draggable-header hydration defect; multi-page live data and lifecycle mutations have not been verified.
 
 - `2026-09-12` — Fixed the Code page's impossible image-update gate: a confirmed owner update now explicitly permits idle PTY/watch attachments while the orchestrator still fences new calls and refuses executing work. Expected `busy_deferred` responses are informational; actionable failures retain structured status/reason evidence in the Error Inspector and do not create a second context-free toast record.
 - `2026-09-12` — Monaco now forwards the canonical context-menu trigger handlers and positioning ref to its editor shell, including while Monaco initializes. The disabled native Monaco menu therefore opens the existing `CodeWorkspaceContextMenu` rather than leaving right-click inert; a component regression test dispatches the slotted event and proves it reaches the shell.

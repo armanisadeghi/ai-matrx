@@ -2,6 +2,15 @@ import type { Note, NoteRow } from "../types";
 
 export type NoteContextField = "project_id" | "task_id";
 
+export interface NoteSaveReceipt {
+  note: Note;
+  databaseWrite: "saved" | "unchanged";
+  succeededFields: NoteContextField[];
+  failedFields: NoteContextField[];
+  safeCauses: Partial<Record<NoteContextField, string>>;
+  postSaveRecoveryError?: Error;
+}
+
 export class NoteUpdateConflictError extends Error {
   readonly expectedVersion: number;
   readonly currentVersion: number;
@@ -19,44 +28,22 @@ export class NoteUpdateConflictError extends Error {
   }
 }
 
-export class NoteContextLinkPartialError extends Error {
-  readonly succeededFields: NoteContextField[];
-  readonly failedFields: NoteContextField[];
-  readonly safeCauses: Partial<Record<NoteContextField, string>>;
-
-  constructor(args: {
-    succeededFields: NoteContextField[];
-    failedFields: NoteContextField[];
-    safeCauses: Partial<Record<NoteContextField, string>>;
-  }) {
-    super("The note was saved, but one or more context links could not be saved.");
-    this.name = "NoteContextLinkPartialError";
-    this.succeededFields = args.succeededFields;
-    this.failedFields = args.failedFields;
-    this.safeCauses = args.safeCauses;
-  }
-}
-
 export class NoteContextPartialSaveError extends Error {
+  readonly receipt: NoteSaveReceipt;
   readonly databaseWrite: "saved" | "unchanged";
   readonly actualStoredNote: Note;
   readonly succeededFields: NoteContextField[];
   readonly failedFields: NoteContextField[];
   readonly safeCauses: Partial<Record<NoteContextField, string>>;
 
-  constructor(args: {
-    databaseWrite: "saved" | "unchanged";
-    actualStoredNote: Note;
-    succeededFields: NoteContextField[];
-    failedFields: NoteContextField[];
-    safeCauses: Partial<Record<NoteContextField, string>>;
-  }) {
+  constructor(receipt: NoteSaveReceipt) {
     super("The note was saved, but one or more context links could not be saved.");
     this.name = "NoteContextPartialSaveError";
-    this.databaseWrite = args.databaseWrite;
-    this.actualStoredNote = args.actualStoredNote;
-    this.succeededFields = args.succeededFields;
-    this.failedFields = args.failedFields;
-    this.safeCauses = args.safeCauses;
+    this.receipt = receipt;
+    this.databaseWrite = receipt.databaseWrite;
+    this.actualStoredNote = receipt.note;
+    this.succeededFields = receipt.succeededFields;
+    this.failedFields = receipt.failedFields;
+    this.safeCauses = receipt.safeCauses;
   }
 }

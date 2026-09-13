@@ -24384,6 +24384,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/audition-pairwise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Audition Pairwise Endpoint
+         * @description The BLIND PAIRWISE Audition — two candidates, no reference.
+         *
+         *     ``/audition`` ranks one candidate against the Expert's real published work.
+         *     This ranks two answers written from the same inputs against EACH OTHER, with
+         *     a judge that is never told which is which: the A/B assignment is randomised
+         *     and SEALED on the run row before the judge is called, and revealed only with
+         *     the verdict. ``mode="faithfulness"`` asks the other question the two-schools
+         *     shape needs — is each answer true to its own Rulebook — rather than which is
+         *     better.
+         */
+        post: operations["audition_pairwise_endpoint_masterworks_audition_pairwise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/clean-corpus": {
         parameters: {
             query?: never;
@@ -84283,6 +84311,107 @@ export interface components {
             run_count?: number;
         };
         /** PantheonServiceStatus */
+        /**
+         * PairwiseCandidate
+         * @description ONE arm of a blind pairwise Audition, and where its text comes from.
+         *
+         *     ``label`` is the OPERATOR's name for this arm ("the Masterwork", "the simple
+         *     path", "Watson"). It is how the unsealed verdict is read back and it NEVER
+         *     reaches the judge — a label is a tell, and the whole point of this mode is a
+         *     judge that cannot know which desk it is reading.
+         *
+         *     Exactly one source: pasted ``text``, a finished ``run_id``
+         *     (``platform.masterwork_run`` — its stored output), or a sealed case worked by
+         *     a run (``case_id`` + ``run_scope`` — the answer that run committed to).
+         */
+        PairwiseCandidate: {
+            /**
+             * Label
+             * @description The operator's name for this arm.
+             */
+            label: string;
+            /**
+             * Text
+             * @description Pasted output text.
+             */
+            text?: string | null;
+            /**
+             * Run Id
+             * @description platform.masterwork_run id.
+             */
+            run_id?: string | null;
+            /**
+             * Case Id
+             * @description platform.masterwork_corpus_item id (sealed_case).
+             */
+            case_id?: string | null;
+            /**
+             * Run Scope
+             * @description With case_id: the run whose committed answer is the arm.
+             */
+            run_scope?: string | null;
+            /**
+             * Rulebook Id
+             * @description faithfulness mode: this arm's OWN school. Defaults to the request's rulebook_id when both arms come from the same Rulebook.
+             */
+            rulebook_id?: string | null;
+        };
+        /**
+         * PairwiseCompareRequest
+         * @description Judge TWO candidate outputs BLIND against each other — no reference.
+         *
+         *     The Audition's other two modes both have a reference (the Expert's published
+         *     work; the case's held-out resolution). This one does not: both texts are
+         *     candidates, written from the same inputs, and the question is either which a
+         *     practitioner would rather have received (``preference``) or whether each is
+         *     true to its own school (``faithfulness``).
+         *
+         *     The service randomises which arm the judge sees as A and seals that key on
+         *     the run row BEFORE the judge is called. The key is never in the prompt, and
+         *     it is revealed to the caller only alongside the verdict.
+         */
+        PairwiseCompareRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rulebook Id
+             * @description The Rulebook this Audition belongs to — the run's home, the ownership check, and (unless an arm names its own) the school both arms are judged against.
+             */
+            rulebook_id: string;
+            /**
+             * Mode
+             * @description preference: which answer would a practitioner rather have received. faithfulness: is each answer true to ITS OWN school (each arm scored against its own Rulebook) — the mandate's two-schools shape.
+             * @default preference
+             * @enum {string}
+             */
+            mode?: "preference" | "faithfulness";
+            candidate_one: components["schemas"]["PairwiseCandidate"];
+            candidate_two: components["schemas"]["PairwiseCandidate"];
+            /**
+             * Case Note
+             * @description The shared inputs both arms answered ('the shoes/kitchen-counter case').
+             */
+            case_note?: string | null;
+            /**
+             * Judge By Rules
+             * @description preference mode: also give the judge the Rulebook's approved rules and ask for a rule-by-rule reading. Ignored in faithfulness mode, where the rules ARE the question.
+             * @default true
+             */
+            judge_by_rules?: boolean;
+        };
         PantheonServiceStatus: {
             /**
              * Kind
@@ -153426,6 +153555,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AuditionCompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audition_pairwise_endpoint_masterworks_audition_pairwise_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairwiseCompareRequest"];
             };
         };
         responses: {

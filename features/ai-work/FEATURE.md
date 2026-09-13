@@ -216,6 +216,16 @@ Compose and Saved Requests shipped 2026-08-15 (TASK-005). Open work, in the plan
 
 ## Change log
 
+- `2026-09-12` — Coding-session conversations show an **Artifacts** panel: every
+  `files.files` row the desktop publisher stamped `metadata.kind =
+  coding_session_artifact` for the binding's `provider_session_id`, read direct
+  from Supabase under RLS (`conversations/artifacts/service.ts`), grouped into a
+  folder tree (`artifacts/tree.ts`), with preview (`openFilePreview`), open in a
+  new tab (`/files/f/<id>`, the default for HTML), and download
+  (`downloadFile`). The header counts "N artifacts"; an empty session says "No
+  artifacts captured for this session"; a failed read names the error and
+  retries. Keyed on the provider session id, never the conversation id.
+
 - `2026-09-11` — Audience chips now keep their counts in an explicit loading
   or unavailable state until the matching facets request completes. A failed
   facets request states its service error and retries through the canonical
