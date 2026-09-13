@@ -94,6 +94,31 @@ const POINTER_MAX_AGE_MS = 60 * 60 * 1000;
 export const STREAM_LOST_MESSAGE =
   "Lost the live view — the run is still going on the server. Reconnecting…";
 
+/**
+ * What a stopped run says when the server sent no sentence of its own. It names
+ * the one thing a person wonders after stopping something mid-way: whether what
+ * had already landed survived.
+ */
+export const STOPPED_MESSAGE =
+  "Stopped. Anything that already landed before you stopped it is saved.";
+
+/**
+ * 🚨 A DEPLOY IS NOT A LOSS — SAY SO, DON'T JUST SURVIVE IT.
+ *
+ * The aidream deploy train replaces the ECS task under a run every ~20-30
+ * minutes. Before the 2026-09-12 recovery sweep that orphaned the run; now the
+ * row is re-queued from its checkpoint and the person never loses work — but
+ * silently reconnecting through `STREAM_LOST_MESSAGE` ("Reconnecting…") reads
+ * as generic network trouble, not as the specific, reassuring fact that the
+ * server itself restarted and nothing already paid for is being repeated.
+ * This is that fact, told plainly, both while it is still happening (the live
+ * `masterwork_run_draining` event) and after a reload lands on a snapshot
+ * whose `metadata._drain` / `metadata._recovery` says the same thing.
+ */
+export const RESUMING_AFTER_RESTART_MESSAGE = "Resuming after a server restart";
+export const RESUMING_AFTER_RESTART_DETAIL =
+  "Nothing you've already paid for is repeated.";
+
 /** First reconnect wait; doubles per attempt up to the cap. */
 const RECONNECT_BASE_DELAY_MS = 1_500;
 const RECONNECT_MAX_DELAY_MS = 15_000;
@@ -170,13 +195,22 @@ const IN_FLIGHT_STATUSES = new Set([
 /** Durable-row statuses that mean the run is over WITHOUT a result. */
 const FAILED_STATUSES = new Set([
   "failed",
-  "cancelled",
-  "canceled",
   "abandoned",
   "timed_out",
   "expired",
   "error",
 ]);
+
+/**
+ * 🚨 A STOP IS NOT A FAILURE.
+ *
+ * `cancelled` used to sit in the set above, so a run somebody deliberately
+ * stopped came back as a red error sentence with a "Try it again" under it —
+ * the screen telling a person something went wrong when what actually happened
+ * is that they changed their mind. These statuses settle to `stopped`: no
+ * alarm, no retry pressure, and the server's own sentence about what was kept.
+ */
+const CANCELLED_STATUSES = new Set(["cancelled", "canceled"]);
 
 function waitFor(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
@@ -213,10 +247,28 @@ export interface DurableRunWire {
   snapshotEvent: string;
   /** The event announcing a live run's failure. */
   failedEvent: string;
+  /**
+   * Optional: the event a run releases on the LIVE stream the instant a
+   * deploy is about to tear down the process under it (aidream's
+   * `masterwork_run_draining`). Present only for domains whose runs survive
+   * a deploy via checkpoint/resume — absent means this domain has no such
+   * recovery and the hook never invents one.
+   */
+  drainingEvent?: string;
   /** Optional: "this identity is already running elsewhere" (SEO reuses runs). */
   inProgressEvent?: string;
   /** The rejoin endpoint. Takes `run_id` as its only path param. */
   rejoinPath: keyof paths;
+  /**
+   * The CANCEL endpoint, `run_id` as its only path param. Present = this
+   * domain's runs can really be stopped, and `cancel` below is non-null while
+   * one is in flight. Absent = the surface must not show a Stop control at all;
+   * a button that looks like a stop and only closes a dialog is the lying-screen
+   * defect this field exists to make impossible to ship by accident.
+   */
+  cancelPath?: keyof paths;
+  /** The event a LIVE run emits when somebody stops it. */
+  cancelledEvent?: string;
   /** The ledger name, for error reporting. */
   relation: string;
   /**
@@ -241,7 +293,24 @@ export type DurableRunStatus =
   | "rejoining"
   | "running"
   | "done"
+  /** A person stopped it. Terminal, and deliberately NOT `error`. */
+  | "stopped"
   | "error";
+
+/**
+ * The server restarted under this run and it is picking back up. Distinct
+ * from `stage`/`waitMessage`: it is a FACT about what happened to the
+ * process, not a narration of what the run is doing, and it must read
+ * identically whether it arrived live (mid-stream) or was reconstructed from
+ * a rejoin snapshot after a reload — so both paths always produce this exact
+ * shape, never a paraphrase of the server's own wording.
+ */
+export interface RunInterruption {
+  /** Always exactly `RESUMING_AFTER_RESTART_MESSAGE`. */
+  message: string;
+  /** Always exactly `RESUMING_AFTER_RESTART_DETAIL`. */
+  detail: string;
+}
 
 export interface DurableRunState<TResult> {
   status: DurableRunStatus;
@@ -251,9 +320,24 @@ export interface DurableRunState<TResult> {
   stages: string[];
   result: TResult | null;
   error: string | null;
+  /**
+   * What the server said about a run a person stopped. Non-null only in
+   * `stopped`. It is separate from `error` on purpose: a surface that showed
+   * this through the failure channel would be telling somebody their own
+   * decision went wrong.
+   */
+  stoppedMessage: string | null;
   runId: string | null;
   /** What the rejoined run was working on, for "still reading <file>" copy. */
   rejoinedTarget: string | null;
+  /**
+   * Non-null exactly when the server itself restarted under this run — a live
+   * `drainingEvent`, or a rejoin snapshot whose `metadata._drain`/`_recovery`
+   * says so. Never cleared back to null while the SAME run keeps going, so it
+   * stays true through the reconnect that usually follows a drain; a fresh
+   * `launch()` or `reset()` clears it like every other field.
+   */
+  interruption: RunInterruption | null;
   /**
    * The adopted stream's canonical request id — only with `live`. Everything
    * the model writes is read off this through the canonical selectors; a
@@ -375,7 +459,10 @@ export function durableRunErrorMessage(raw: unknown): string | null {
     for (const field of ["user_message", "message"]) {
       const value = record[field];
       if (typeof value === "string" && value.trim()) {
-        return withDetail(value, durableRunErrorDetail(raw));
+        return withDetail(
+          withRemedy(value, record.remedy),
+          durableRunErrorDetail(raw),
+        );
       }
     }
   }
@@ -387,6 +474,19 @@ function withDetail(headline: string, detail: string | null): string {
   if (!detail) return headline;
   if (headline.toLowerCase().includes(detail.toLowerCase())) return headline;
   return `${headline} (${detail})`;
+}
+
+/**
+ * A run genuinely lost to a deploy (`type: "run_lost"`) is failed with the
+ * server's OWN sentence AND its own remedy — what to actually do about it.
+ * Dropping the remedy is exactly the class this closes: a `user_message`
+ * that already says "this was not your fault" with no next step attached is
+ * still a dead end. Never invented, never reworded — appended verbatim.
+ */
+function withRemedy(headline: string, remedy: unknown): string {
+  if (typeof remedy !== "string" || !remedy.trim()) return headline;
+  if (headline.toLowerCase().includes(remedy.toLowerCase())) return headline;
+  return `${headline} ${remedy.trim()}`;
 }
 
 export interface UseDurableRunOptions<TResult> {
@@ -493,6 +593,19 @@ export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
   /** Set an error the surface detected itself (a bad URL, a rejected result). */
   fail: (message: string) => void;
   /**
+   * STOP the run on the server. Non-null only while one is actually in flight
+   * AND this domain's wire declares a `cancelPath` — so a surface can ask
+   * `cancel ? ... : ...` and is structurally unable to render a Stop button
+   * over a domain that cannot stop anything.
+   *
+   * It is not "close the dialog": the durable row goes terminal with the
+   * person's reason and the worker stops at its next chunk. What had already
+   * been written stays written, which is what the stopped sentence says.
+   */
+  cancel: ((reason?: string) => Promise<void>) | null;
+  /** True from the click until the server has answered. */
+  cancelling: boolean;
+  /**
    * Run the LAST launch again, exactly as it was sent. Every surface that can
    * show a failure owes the reader a way out of it; before this, a failed
    * ingest left the person to rebuild their input by hand. Null until this tab
@@ -523,10 +636,48 @@ function initialState<TResult>(): DurableRunState<TResult> {
     stages: [],
     result: null,
     error: null,
+    stoppedMessage: null,
     runId: null,
     rejoinedTarget: null,
+    interruption: null,
     requestId: null,
   };
+}
+
+/**
+ * The rejoin/live-snapshot half of `RESUMING_AFTER_RESTART_MESSAGE`: the
+ * durable row's own `metadata` after a deploy drain, per the CONTEXT this
+ * hook was built against — `_drain: { reason: "deploy_drain" }` while still
+ * draining, `_recovery: { reason: "resumed_after_shutdown" }` once the
+ * recovery sweep has re-queued it. Either shape reads the same way to a
+ * person: the server restarted, and this is the same run continuing.
+ */
+function interruptionFromMetadata(raw: unknown): RunInterruption | null {
+  if (!raw || typeof raw !== "object") return null;
+  const metadata = raw as Record<string, unknown>;
+  const drain = metadata._drain;
+  const drainReason =
+    drain && typeof drain === "object"
+      ? (drain as Record<string, unknown>).reason
+      : null;
+  if (drainReason === "deploy_drain") {
+    return {
+      message: RESUMING_AFTER_RESTART_MESSAGE,
+      detail: RESUMING_AFTER_RESTART_DETAIL,
+    };
+  }
+  const recovery = metadata._recovery;
+  const recoveryReason =
+    recovery && typeof recovery === "object"
+      ? (recovery as Record<string, unknown>).reason
+      : null;
+  if (recoveryReason === "resumed_after_shutdown") {
+    return {
+      message: RESUMING_AFTER_RESTART_MESSAGE,
+      detail: RESUMING_AFTER_RESTART_DETAIL,
+    };
+  }
+  return null;
 }
 
 export function useDurableRun<TResult>(
@@ -587,6 +738,8 @@ export function useDurableRun<TResult>(
   const reconnectingRef = useRef(false);
   /** Set below; `handleEvent` reaches the loop through this. */
   const startReconnectRef = useRef<((runId: string) => void) | null>(null);
+  /** Same, for stopping it: a cancelled run must not keep being asked about. */
+  const stopReconnectRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     statusRef.current = state.status;
   });
@@ -686,6 +839,21 @@ export function useDurableRun<TResult>(
       // must see them whether they arrived live or in a rejoin replay.
       onDomainEvent?.(name, data, ctx);
 
+      // The server restarted under a still-open stream. The work is not lost
+      // — it says so, in place, without touching `status` or `stage`: the run
+      // is still `running` and still narrating itself, this is additional
+      // fact, not a replacement for what it was already saying.
+      if (wire.drainingEvent && name === wire.drainingEvent) {
+        setState((prev) => ({
+          ...prev,
+          interruption: {
+            message: RESUMING_AFTER_RESTART_MESSAGE,
+            detail: RESUMING_AFTER_RESTART_DETAIL,
+          },
+        }));
+        return;
+      }
+
       // The durable row now exists — remember the receipt before anything else.
       if (name === wire.runStartedEvent && typeof data.run_id === "string") {
         const runId = data.run_id;
@@ -703,6 +871,24 @@ export function useDurableRun<TResult>(
         }
         return;
       }
+
+      /**
+       * Settle a run somebody STOPPED. Terminal like `done` and `error`, and
+       * loud about the one thing the person will wonder: what happened to the
+       * work that had already landed.
+       */
+      const settleStopped = (raw: unknown): void => {
+        clearPointer(wire, key);
+        stopReconnectRef.current?.();
+        statusRef.current = "stopped";
+        setState((prev) => ({
+          ...prev,
+          status: "stopped",
+          stage: null,
+          error: null,
+          stoppedMessage: durableRunErrorMessage(raw) ?? STOPPED_MESSAGE,
+        }));
+      };
 
       const settleResult = (rawResult: unknown): void => {
         const parsed = parseResult
@@ -760,7 +946,19 @@ export function useDurableRun<TResult>(
         if (status && IN_FLIGHT_STATUSES.has(status) && snapshotRunId) {
           // Still working on the server. Say that, keep the receipt, and keep
           // asking — never offer "start it again" over a live run.
+          //
+          // A REJOIN AFTER A RESTART IS THE SAME FACT AS THE LIVE DRAIN EVENT
+          // — the row's own `metadata._drain`/`_recovery` says the deploy
+          // train, not this tab's socket, is why we are reconnecting.
+          const interruption = interruptionFromMetadata(data.metadata);
+          if (interruption) {
+            setState((prev) => ({ ...prev, interruption }));
+          }
           startReconnectRef.current?.(snapshotRunId);
+          return;
+        }
+        if (status && CANCELLED_STATUSES.has(status)) {
+          settleStopped(data.error);
           return;
         }
         clearPointer(wire, key);
@@ -777,6 +975,14 @@ export function useDurableRun<TResult>(
                 // saved — say exactly what the server said.
                 `This run ended without a recorded result (the server reported "${status ?? "unknown"}").`),
         }));
+        return;
+      }
+
+      // A live run that was stopped. Published by the server the instant the
+      // row flips, so every tab following this run — not just the one that
+      // clicked — stops saying "working".
+      if (wire.cancelledEvent && name === wire.cancelledEvent) {
+        settleStopped(data.error);
         return;
       }
 
@@ -933,7 +1139,8 @@ export function useDurableRun<TResult>(
   );
   useEffect(() => {
     startReconnectRef.current = startReconnect;
-  }, [startReconnect]);
+    stopReconnectRef.current = stopReconnect;
+  }, [startReconnect, stopReconnect]);
 
   const launch = useCallback(
     async (
@@ -1112,6 +1319,76 @@ export function useDurableRun<TResult>(
     [stopReconnect],
   );
 
+  /**
+   * THE STOP. The server's cancel endpoint is the decision — it flips the
+   * durable row — so this never guesses: it settles from what came back, and a
+   * run that had already finished settles from that instead (its result is
+   * safe, and saying "stopped" over it would be a lie).
+   */
+  const [cancelling, setCancelling] = useState(false);
+  const cancel = useCallback(
+    async (reason?: string): Promise<void> => {
+      const { wire, key } = optionsRef.current;
+      const runId = runIdRef.current;
+      if (!wire.cancelPath || !runId) return;
+      setCancelling(true);
+      try {
+        const response = await dispatch(
+          callApi({
+            path: wire.cancelPath,
+            method: "POST",
+            pathParams: { run_id: runId },
+            ...(reason ? { body: { reason } as never } : {}),
+          }),
+        );
+        if (response.error) {
+          // The run may well have stopped anyway, so we do not claim it did —
+          // and we do not claim it failed either. Say what we know.
+          captureError({
+            source: "durable-run",
+            relation: wire.relation,
+            message: `Could not stop ${wire.relation} run ${runId}: ${response.error.message}`,
+            userMessage: "Could not stop this run.",
+            raw: { runId, key },
+          });
+          statusRef.current = "error";
+          setState((prev) => ({
+            ...prev,
+            status: "error",
+            stage: null,
+            error:
+              "We could not stop this run — it may still be going on the server. Reload this page to see where it got to.",
+          }));
+          return;
+        }
+        const answer = (response.data ?? {}) as {
+          cancelled?: boolean;
+          status?: string;
+          message?: string;
+        };
+        stopReconnect();
+        clearPointer(wire, key);
+        if (answer.status === "completed") {
+          // It beat us to the finish line. Leave the result alone and let the
+          // rejoin path settle it rather than overwriting an answer.
+          startReconnectRef.current?.(runId);
+          return;
+        }
+        statusRef.current = "stopped";
+        setState((prev) => ({
+          ...prev,
+          status: "stopped",
+          stage: null,
+          error: null,
+          stoppedMessage: answer.message?.trim() || STOPPED_MESSAGE,
+        }));
+      } finally {
+        setCancelling(false);
+      }
+    },
+    [dispatch, stopReconnect],
+  );
+
   // Nothing may keep asking the server on behalf of a screen that is gone.
   useEffect(
     () => () => {
@@ -1244,6 +1521,8 @@ export function useDurableRun<TResult>(
     reset,
     fail,
     retry: lastLaunchRef.current ? retry : null,
+    cancel: options.wire.cancelPath && running && state.runId ? cancel : null,
+    cancelling,
     elapsedMs: running ? elapsedMs : 0,
     overdue,
     waitMessage,

@@ -1,4 +1,6 @@
 {
   "_why": "A property the generated API types DELIBERATELY lose. The guard (scripts/typegen-drop-guard.mjs) refuses any other drop that this repo's sources still read. Each key is a wire property name; each value is the reason it is gone, in a sentence a reader can act on. Empty is the correct state.",
-  "allowed_drops": {}
+  "allowed_drops": {
+    "standing": "Retired on purpose (aidream migration 0658 'masterwork frequency is not existence'; rationale in aidream/services/distillation/distill.py, which ends 'Nothing reads standing any more. Do not reintroduce it.'). It admitted a distilled rule as mere 'evidence' until it recurred across N pieces, which is consensus collapse with a threshold on it — the opposite of the mandate it was written under. Volume is now handled by sectioning plus the review surface's explicit-selection bulk actions; recurrence is a derived BADGE ('seen in 3 pieces') off source_ref.evidence_pieces, never a gate. The guard's hits in this repo are the English word 'standing' and an unrelated VersionStanding badge, not reads of this wire field."
+  }
 }

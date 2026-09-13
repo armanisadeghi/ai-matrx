@@ -27,6 +27,11 @@ import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { describeMissingIngestParts } from "./IngestSourceDialog";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
+import {
+  DurableRunStopButton,
+  DurableRunStopped,
+} from "@/lib/durable-run/DurableRunStop";
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
 
 /**
@@ -313,6 +318,9 @@ export function BodyOfWorkDialog({
           running={run.running}
         />
 
+        {/* A stop is not a failure: its own quiet notice, saying what survived. */}
+        <DurableRunStopped message={run.stoppedMessage} retry={run.retry} />
+
         {summary ? (
           <div className="space-y-3">
             {missingChunkSummary ? (
@@ -377,6 +385,9 @@ export function BodyOfWorkDialog({
                   {run.waitMessage ?? "Uploading your files…"}
                 </p>
               </div>
+            ) : null}
+            {run.running ? (
+              <DurableRunInterruption interruption={run.interruption} />
             ) : null}
           </div>
         ) : (
@@ -515,16 +526,17 @@ export function BodyOfWorkDialog({
 
         {!summary ? (
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
+            <DurableRunStopButton
+              cancel={run.cancel}
+              cancelling={run.cancelling}
+              running={running}
+              leaveLabel={variant === "page" ? "Back to the Rulebook" : "Cancel"}
+              reason="stopped from the Everything you've published dialog"
+              onLeave={() => {
                 reset();
                 onOpenChange(false);
               }}
-              disabled={running}
-            >
-              {variant === "page" ? "Back to the Rulebook" : "Cancel"}
-            </Button>
+            />
             <Button onClick={() => void launch()} disabled={running}>
               {running
                 ? "Distilling…"
