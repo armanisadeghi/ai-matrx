@@ -10,7 +10,7 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { ControllerBanner } from "./ControllerBanner";
+import { ControllerBanner, MORPH_GUARD_MS } from "./ControllerBanner";
 import type { ControllerState } from "../types";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean })
@@ -140,5 +140,63 @@ describe("ControllerBanner", () => {
     expect(v.text()).toContain("Dana asked to take over");
     expect(v.button("Return control")).toBeDefined();
     await v.unmount();
+  });
+});
+
+describe("ControllerBanner — a button that changes meaning under the cursor", () => {
+  /**
+   * Found live 2026-09-13: the person clicked "Take over immediately" as the
+   * agent reached its boundary; control arrived first, "Return control" drew in
+   * the same spot, and the click handed control straight back to the agent.
+   */
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it("ignores a click on Return control that lands just as control arrives", async () => {
+    const onReturn = jest.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const draw = (controller: ControllerState) =>
+      act(async () => {
+        root.render(
+          <ControllerBanner
+            controller={controller}
+            onTake={noop}
+            onReturn={onReturn}
+            canTake
+            waitingForAgent={controller.kind === "agent"}
+            onTakeImmediately={noop}
+          />,
+        );
+      });
+    const returnButton = () =>
+      Array.from(container.querySelectorAll("button")).find((b) =>
+        (b.textContent ?? "").includes("Return control"),
+      );
+
+    // The wait notice is showing…
+    await draw(AGENT_DRIVING);
+    // …and control arrives: Return control now sits where the escape was.
+    await draw({ ...AGENT_DRIVING, kind: "human", isMe: true, controlRevision: 4 });
+
+    const early = returnButton();
+    expect(early).toBeDefined();
+    await act(async () => {
+      early!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(onReturn).not.toHaveBeenCalled(); // the reversal did not happen
+
+    // After the guard, Return control works normally.
+    await act(async () => {
+      jest.advanceTimersByTime(MORPH_GUARD_MS);
+    });
+    await act(async () => {
+      returnButton()!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(onReturn).toHaveBeenCalledTimes(1);
+
+    await act(async () => root.unmount());
+    container.remove();
   });
 });
