@@ -49,6 +49,7 @@ import type { FolderReference, Note, CreateNoteInput, UpdateNoteInput } from "..
 import type { NoteEditableContentSource } from "@/features/rich-document/types";
 import { captureNoteEditSourceFromRecord, isPreparedEditableNoteSource } from "../richDocumentSource";
 import { equalNoteSnapshotValue } from "../noteSnapshotEquality";
+import { validateNoteSaveReceipt } from "../service/validateNoteSaveReceipt";
 import type {
   NoteRecord,
   NoteScopeAssignment,
@@ -110,6 +111,8 @@ interface ReviewedPermitState {
   organizationId: string;
   version: number;
   fields: readonly ReviewedFieldKey[];
+  attempt?: SaveAttempt;
+  result?: NoteReviewedSaveResult;
 }
 
 const reviewedSavePermits = new WeakMap<object, ReviewedPermitState>();
@@ -123,7 +126,7 @@ function reviewedFields(source: NoteEditableContentSource): readonly ReviewedFie
   const fields: ReviewedFieldKey[] = [];
   for (const key of writablePhysicalKeys) if (!equalNoteSnapshotValue(acknowledged[key], displayed[key])) fields.push(key);
   for (const key of contextKeys) if (!equalNoteSnapshotValue(acknowledged[key], displayed[key])) fields.push(key);
-  if (acknowledged.folder_name !== displayed.folder_name) {
+  if ((acknowledged.folder_name || "Draft") !== (displayed.folder_name || "Draft")) {
     if (!fields.includes("folder_id")) return null;
     fields.push("folder_name");
   }
@@ -148,8 +151,9 @@ export const captureReviewedNoteSave = (source: NoteEditableContentSource) => (
   if (!equalNoteSnapshotValue(current.acknowledgedPhysicalSnapshot, source.acknowledgedPhysicalSnapshot) || !equalNoteSnapshotValue(current.displayedPhysicalSnapshot, source.displayedPhysicalSnapshot)) return { status: "refused", reason: "source-changed" };
   const fields = reviewedFields(source);
   if (fields === null) return { status: "refused", reason: "unsupported-fields" };
+  if (!equalNoteSnapshotValue([...record._dirtyFields].sort(), [...fields].sort()) || record._dirty !== (fields.length > 0)) return { status: "refused", reason: "source-changed" };
   const permit: NoteReviewedSavePermit = Object.freeze({});
-  reviewedSavePermits.set(permit, Object.freeze({ getState, source, actorId, noteId: source.noteId, organizationId: source.editBase.organizationId, version: source.editBase.version, fields }));
+  reviewedSavePermits.set(permit, { getState, source: immutableCopy(source), actorId, noteId: source.noteId, organizationId: source.editBase.organizationId, version: source.editBase.version, fields: Object.freeze([...fields]) });
   return { status: "captured", permit };
 };
 
@@ -551,11 +555,12 @@ function receiptBaseSettlement(
     : receipt.note;
 }
 
-const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: string; expectedQueueUserId: string }>(
+const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: string; expectedQueueUserId: string; operationId: string }>(
   "notes/saveNote",
-  async ({ noteId, expectedQueueUserId }, { dispatch, getState }) => {
-    const state = getState() as RootState;
-    const record = state.notes.notes[noteId] as NoteRecord | undefined;
+  async ({ noteId, expectedQueueUserId, operationId }, { dispatch, getState }) => {
+    const attempt = saveQueues.get(getState)?.get(noteId)?.attempt;
+    if (!attempt || attempt.operationId !== operationId) throw new Error("The Notes save attempt is no longer registered.");
+    const record = attempt.record;
     const expectedUserId = getUserId(getState);
     const expectedOrganizationId = record?.organization_id;
     if (expectedUserId !== expectedQueueUserId) throw new SessionUnavailableError();
@@ -655,6 +660,8 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
         expectedVersion: record.version,
         expectedOrganizationId: record.organization_id,
       });
+      retainAttemptReceipt(attempt, receipt);
+      if (receipt.failedFields.length > 0) throw new NoteContextPartialSaveError(receipt);
       await assertCurrentNotesUser(expectedUserId);
       if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
       if (receipt.postSaveRecoveryError) {
@@ -679,7 +686,9 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
       );
       acknowledgedReceipt = receipt;
     } catch (error) {
+      attempt.error = error;
       if (error instanceof NoteContextPartialSaveError) {
+        retainAttemptReceipt(attempt, error.receipt);
         await assertCurrentNotesUser(expectedUserId);
         if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
         const acknowledgedSnapshot = { ...savedSnapshot };
@@ -753,47 +762,146 @@ type QueuedSaveResult = Promise<SaveResultAction> & { unwrap: () => Promise<void
 
 type QueuedSaveThunk = ThunkAction<QueuedSaveResult, unknown, unknown, UnknownAction>;
 
+type ReviewedRefusalReason = "invalid-permit" | "source-changed" | "session-changed" | "not-persisted" | "queue-busy" | "snapshot-changed" | "unsupported-fields" | "conflict" | "unavailable" | "invalid-receipt";
+export interface NoteReviewedSentFields {
+  physical: Partial<Pick<Note, WritablePhysicalKey>>;
+  context: Partial<Pick<Note, ContextKey>>;
+  folderName?: Note["folder_name"];
+}
+interface ReviewedResultIdentity {
+  operationId: string | null;
+  sourceId: string | null;
+  snapshotId: string | null;
+  actorId: string | null;
+  noteId: string | null;
+  organizationId: string | null;
+  attemptedFields: NoteReviewedSentFields;
+}
+export type NoteReviewedSaveResult = ReviewedResultIdentity & (
+  | { status: "physical-saved"; receipt: NoteSaveReceipt & { databaseWrite: "saved" } }
+  | { status: "context-settled"; receipt: NoteSaveReceipt & { databaseWrite: "unchanged" } }
+  | { status: "partial"; receipt: NoteSaveReceipt }
+  | { status: "recovery-required"; receipt: NoteSaveReceipt; reason: "session-changed" | "cache-recovery" }
+  | { status: "no-write"; reason: "clean"; receipt?: never }
+  | { status: "refused"; reason: ReviewedRefusalReason; receipt?: never }
+  | { status: "observation-released"; receipt?: never }
+);
+export interface NoteSaveObservation { result: Promise<NoteReviewedSaveResult>; release(): void; }
+interface SaveAttempt {
+  operationId: string;
+  actorId: string;
+  record: NoteRecord | undefined;
+  sent: NoteReviewedSentFields;
+  permit?: ReviewedPermitState;
+  phase: "captured" | "settling" | "settled";
+  receipt?: NoteSaveReceipt;
+  error?: unknown;
+  invalidReceipt?: boolean;
+  observers: Set<(result: NoteReviewedSaveResult) => void>;
+}
 interface SaveQueueEntry {
   result: QueuedSaveResult;
   resolve: (action: SaveResultAction) => void;
   expectedUserId: string;
+  attempt?: SaveAttempt;
 }
-
 const saveQueues = new WeakMap<() => unknown, Map<string, SaveQueueEntry>>();
-const reviewedObservations = new WeakMap<object, Promise<NoteReviewedSaveResult>>();
 
-export type NoteReviewedSaveResult =
-  | { status: "physical-saved"; receipt: NoteSaveReceipt; operationId: string; sourceId: string; snapshotId: string }
-  | { status: "refused"; reason: "invalid-permit" | "source-changed" | "queue-busy" | "unavailable"; operationId: null; sourceId: string | null; snapshotId: string | null };
-export interface NoteSaveObservation { result: Promise<NoteReviewedSaveResult>; release(): void; }
-
-function reviewedRefusal(reason: "invalid-permit" | "source-changed" | "queue-busy" | "unavailable", permit?: ReviewedPermitState): NoteSaveObservation {
-  return { result: Promise.resolve({ status: "refused", reason, operationId: null, sourceId: permit?.source.sourceId ?? null, snapshotId: permit?.source.snapshotId ?? null }), release() {} };
+function immutableCopy<T>(value: T): T {
+  const copy = structuredClone(value);
+  const freeze = (item: unknown): void => {
+    if (!item || typeof item !== "object" || Object.isFrozen(item)) return;
+    for (const child of Object.values(item)) freeze(child);
+    Object.freeze(item);
+  };
+  freeze(copy);
+  return copy;
+}
+function sentFields(record: NoteRecord | undefined): NoteReviewedSentFields {
+  const physical: NoteReviewedSentFields["physical"] = {};
+  const context: NoteReviewedSentFields["context"] = {};
+  if (record?._dirty) {
+    for (const field of writablePhysicalKeys) {
+      if (record._dirtyFields.has(field)) Object.assign(physical, { [field]: record[field] });
+    }
+    for (const field of contextKeys) {
+      if (record._dirtyFields.has(field)) Object.assign(context, { [field]: record[field] });
+    }
+  }
+  return immutableCopy({ physical, context, ...(record?._dirtyFields.has("folder_name") ? { folderName: record.folder_name } : {}) });
+}
+function resultIdentity(permit?: ReviewedPermitState, attempt?: SaveAttempt): ReviewedResultIdentity {
+  return { operationId: attempt?.operationId ?? null, sourceId: permit?.source.sourceId ?? null, snapshotId: permit?.source.snapshotId ?? null, actorId: permit?.actorId ?? null, noteId: permit?.noteId ?? null, organizationId: permit?.organizationId ?? null, attemptedFields: attempt?.sent ?? { physical: {}, context: {} } };
+}
+function reviewedRefusal(reason: ReviewedRefusalReason, permit?: ReviewedPermitState): NoteSaveObservation {
+  return { result: Promise.resolve(immutableCopy({ ...resultIdentity(permit), status: "refused", reason })), release() {} };
+}
+function observeAttempt(permit: ReviewedPermitState): NoteSaveObservation {
+  if (permit.result) return { result: Promise.resolve(permit.result), release() {} };
+  const attempt = permit.attempt;
+  if (!attempt) return reviewedRefusal("unavailable", permit);
+  let finish: ((value: NoteReviewedSaveResult) => void) | undefined;
+  let pending = true;
+  const result = new Promise<NoteReviewedSaveResult>((resolve) => { finish = resolve; });
+  if (!finish) throw new Error("Could not initialize Notes save observation.");
+  const resolve = finish;
+  const subscriber = (value: NoteReviewedSaveResult) => { if (!pending) return; pending = false; attempt.observers.delete(subscriber); resolve(value); };
+  attempt.observers.add(subscriber);
+  return { result, release() { subscriber(immutableCopy({ ...resultIdentity(permit, attempt), status: "observation-released" })); } };
+}
+function captureSaveAttempt(getState: () => unknown, noteId: string, actorId: string, permit?: ReviewedPermitState): SaveAttempt {
+  const current = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+  const record = current ? immutableCopy({ ...current, version: permit?.version ?? current.version }) : undefined;
+  const attempt: SaveAttempt = { operationId: crypto.randomUUID(), actorId, record, sent: sentFields(record), permit, phase: "captured", observers: new Set() };
+  if (permit) permit.attempt = attempt;
+  return attempt;
+}
+function retainAttemptReceipt(attempt: SaveAttempt, receipt: NoteSaveReceipt): void {
+  if (!attempt.permit) return;
+  try {
+    const validated = validateNoteSaveReceipt({ base: attempt.permit.source.editBase, receipt, submittedPhysical: attempt.sent.physical, contextFields: Object.keys(attempt.sent.context) as ContextKey[], requirePhysicalWrite: true });
+    attempt.receipt = immutableCopy(validated);
+    attempt.phase = "settling";
+  } catch (error) { attempt.invalidReceipt = true; throw error; }
+}
+function settleAttempt(attempt: SaveAttempt, rejected: boolean, getState: () => unknown): void {
+  attempt.phase = "settled";
+  const permit = attempt.permit;
+  if (!permit) return;
+  const identity = resultIdentity(permit, attempt);
+  let result: NoteReviewedSaveResult;
+  let actorChanged = false;
+  try { actorChanged = getUserId(getState) !== attempt.actorId; } catch { actorChanged = true; }
+  const receipt = attempt.receipt;
+  if (receipt && actorChanged) result = { ...identity, status: "recovery-required", receipt, reason: "session-changed" };
+  else if (receipt && (receipt.postSaveRecoveryError || rejected && !(attempt.error instanceof NoteContextPartialSaveError))) result = { ...identity, status: "recovery-required", receipt, reason: "cache-recovery" };
+  else if (receipt?.failedFields.length) result = { ...identity, status: "partial", receipt };
+  else if (receipt?.databaseWrite === "saved") result = { ...identity, status: "physical-saved", receipt: { ...receipt, databaseWrite: "saved" } };
+  else if (receipt?.databaseWrite === "unchanged") result = { ...identity, status: "context-settled", receipt: { ...receipt, databaseWrite: "unchanged" } };
+  else if (!rejected && !attempt.record?._dirty) result = { ...identity, status: "no-write", reason: "clean" };
+  else result = { ...identity, status: "refused", reason: actorChanged ? "session-changed" : attempt.invalidReceipt ? "invalid-receipt" : attempt.error instanceof NoteUpdateConflictError ? "conflict" : "unavailable" };
+  permit.result = immutableCopy(result);
+  for (const subscriber of attempt.observers) subscriber(permit.result);
+  attempt.observers.clear();
 }
 
-/**
- * The reviewed API joins the existing store/note queue only after the source
- * captured synchronously by captureReviewedNoteSave still matches the mounted
- * editor. Its one-operation vertical deliberately reads the payload receipt,
- * never the ordinary queue's final drain action.
- */
+/** Reviewed observers subscribe to an exact captured attempt, never the drain. */
 export const saveReviewedNoteSnapshot = (args: { permit: NoteReviewedSavePermit; currentSource: NoteEditableContentSource }) => (
   dispatch: ThunkDispatch<RootState, unknown, UnknownAction>, getState: () => RootState,
 ): NoteSaveObservation => {
   const permit = reviewedSavePermits.get(args.permit);
   if (!permit || permit.getState !== getState) return reviewedRefusal("invalid-permit");
-  if (!equalNoteSnapshotValue(permit.source, args.currentSource)) return reviewedRefusal("source-changed", permit);
-  const existing = reviewedObservations.get(args.permit);
-  if (existing) return { result: existing, release() {} };
+  try {
+    if (!isPreparedEditableNoteSource(args.currentSource) || !equalNoteSnapshotValue(permit.source, args.currentSource)) return reviewedRefusal("source-changed", permit);
+    if (getUserId(getState) !== permit.actorId) return reviewedRefusal("session-changed", permit);
+  } catch { return reviewedRefusal("invalid-permit", permit); }
+  if (permit.attempt || permit.result) return observeAttempt(permit);
   if (saveQueues.get(getState)?.has(permit.noteId)) return reviewedRefusal("queue-busy", permit);
-  const operationId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const result = (async (): Promise<NoteReviewedSaveResult> => {
-    const action = await dispatch(saveNote(permit.noteId));
-    if (!saveNotePayload.fulfilled.match(action) || !action.payload || action.payload.databaseWrite !== "saved" || action.payload.failedFields.length) return { status: "refused", reason: "unavailable", operationId: null, sourceId: permit.source.sourceId, snapshotId: permit.source.snapshotId };
-    return { status: "physical-saved", receipt: action.payload, operationId, sourceId: permit.source.sourceId, snapshotId: permit.source.snapshotId };
-  })();
-  reviewedObservations.set(args.permit, result);
-  return { result, release() {} };
+  const admitted = captureReviewedNoteSave(args.currentSource)(dispatch, getState);
+  if (admitted.status === "refused") return reviewedRefusal(admitted.reason, permit);
+  reviewedSavePermits.delete(admitted.permit);
+  beginSaveQueue(permit.noteId, dispatch, getState, permit);
+  return observeAttempt(permit);
 };
 
 function isUnknownRecord(value: unknown): value is Record<string, unknown> {
@@ -833,57 +941,44 @@ function createQueuedSaveResult(): SaveQueueEntry {
  * exists before the inner RTK thunk emits `pending`, so synchronous
  * subscribers cannot issue a second CAS against the same revision.
  */
+function beginSaveQueue(
+  noteId: string, dispatch: ThunkDispatch<unknown, unknown, UnknownAction>, getState: () => unknown, permit?: ReviewedPermitState,
+): QueuedSaveResult {
+  let queue = saveQueues.get(getState);
+  if (!queue) { queue = new Map(); saveQueues.set(getState, queue); }
+  const existing = queue.get(noteId);
+  if (existing) return existing.result;
+  const entry = createQueuedSaveResult();
+  entry.expectedUserId = getUserId(getState);
+  queue.set(noteId, entry);
+  void (async () => {
+    let finalAction: SaveResultAction | undefined;
+    try {
+      do {
+        // Capture synchronously before RTK emits pending and any subscriber
+        // can re-enter. The payload looks up this immutable private attempt.
+        entry.attempt = captureSaveAttempt(getState, noteId, entry.expectedUserId, permit);
+        permit = undefined;
+        finalAction = await dispatch(saveNotePayload({ noteId, expectedQueueUserId: entry.expectedUserId, operationId: entry.attempt.operationId }));
+        settleAttempt(entry.attempt, saveNotePayload.rejected.match(finalAction), getState);
+        if (saveNotePayload.rejected.match(finalAction)) break;
+      } while (hasQueuedDirtyNote(getState, noteId));
+    } catch (error) {
+      if (entry.attempt) { entry.attempt.error = error; settleAttempt(entry.attempt, true, getState); }
+      const rejection = saveNotePayload.rejected(error instanceof Error ? error : new Error("Notes save queue failed."), "notes-save-queue", { noteId, expectedQueueUserId: entry.expectedUserId, operationId: entry.attempt?.operationId ?? "uncaptured" });
+      finalAction = rejection;
+      try { dispatch(rejection); } catch { /* The deferred result retains the rejection. */ }
+    } finally {
+      queue.delete(noteId);
+      if (queue.size === 0) saveQueues.delete(getState);
+      if (finalAction) entry.resolve(finalAction);
+    }
+  })();
+  return entry.result;
+}
 export const saveNote = Object.assign(
-  (noteId: string): QueuedSaveThunk =>
-    (dispatch: ThunkDispatch<unknown, unknown, UnknownAction>, getState): QueuedSaveResult => {
-      let queue = saveQueues.get(getState);
-      if (!queue) {
-        queue = new Map();
-        saveQueues.set(getState, queue);
-      }
-      const existing = queue.get(noteId);
-      if (existing) return existing.result;
-
-      const entry = createQueuedSaveResult();
-      entry.expectedUserId = getUserId(getState);
-      queue.set(noteId, entry);
-      void (async () => {
-        let finalAction: SaveResultAction | undefined;
-        try {
-          do {
-            finalAction = await dispatch(saveNotePayload({ noteId, expectedQueueUserId: entry.expectedUserId }));
-            if (saveNotePayload.rejected.match(finalAction)) break;
-          } while (hasQueuedDirtyNote(getState, noteId));
-        } catch (error) {
-          // Thunk middleware normally converts payload exceptions into a
-          // rejected action. This preserves that public result contract even
-          // if another middleware throws while the inner action is observed.
-          const rejection = saveNotePayload.rejected(
-            error instanceof Error ? error : new Error("Notes save queue failed."),
-            "notes-save-queue",
-            { noteId, expectedQueueUserId: entry.expectedUserId },
-          );
-          finalAction = rejection;
-          try {
-            dispatch(rejection);
-          } catch {
-            // The deferred result still resolves as the rejected RTK action.
-          }
-        } finally {
-          // Keep the entry through inner fulfilled/rejected subscribers. A
-          // subscriber's immediate save joins this promise; its dirty edit is
-          // observed by the loop above before the queue is released.
-          queue.delete(noteId);
-          if (queue.size === 0) saveQueues.delete(getState);
-          if (finalAction) entry.resolve(finalAction);
-        }
-      })();
-      return entry.result;
-    },
-  {
-    fulfilled: saveNotePayload.fulfilled,
-    rejected: saveNotePayload.rejected,
-  },
+  (noteId: string): QueuedSaveThunk => (dispatch, getState) => beginSaveQueue(noteId, dispatch, getState),
+  { fulfilled: saveNotePayload.fulfilled, rejected: saveNotePayload.rejected },
 );
 
 // ---------------------------------------------------------------------------

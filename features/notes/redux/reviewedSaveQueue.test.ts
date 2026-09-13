@@ -8,6 +8,7 @@ jest.mock("@/features/scopes/service/associationsService", () => ({ associations
 
 import { configureStore } from "@reduxjs/toolkit";
 import { enableMapSet } from "immer";
+import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import notesReducer, { setNoteField, upsertNoteFromServer } from "./slice";
 import { captureReviewedNoteSave, saveReviewedNoteSnapshot } from "./thunks";
 import { captureNoteEditSourceFromRecord } from "../richDocumentSource";
@@ -24,12 +25,22 @@ function query(result: unknown) {
   value.select.mockReturnValue(value); value.eq.mockReturnValue(value); value.is.mockReturnValue(value); value.update.mockReturnValue(value); value.single.mockResolvedValue(result); value.maybeSingle.mockResolvedValue(result);
   return value;
 }
+function reducer(state: RootState | undefined, action: { type: string }): RootState {
+  const next = createSlimRootReducer()(state, action);
+  if (action.type === "test/seed-user") return { ...next, userAuth: { ...next.userAuth, id: USER } };
+  return next;
+}
+function storeWithNote() {
+  const store = configureStore({ reducer, middleware: (gdm) => gdm({ serializableCheck: false }) });
+  store.dispatch({ type: "test/seed-user" });
+  store.dispatch(upsertNoteFromServer({ note: note(), fetchStatus: "full" }));
+  return store;
+}
 
 describe("reviewed Notes queue receipt", () => {
   beforeEach(() => { jest.clearAllMocks(); getSession.mockResolvedValue({ data: { session: { user: { id: USER } } }, error: null }); listForSources.mockResolvedValue({ ok: true, data: { edges: [] } }); setTargets.mockResolvedValue({ ok: true, data: null }); });
   it("settles duplicate observers from one actual queued physical write", async () => {
-    const store = configureStore({ reducer: { notes: notesReducer, userAuth: (state = { id: USER }) => state } as never, middleware: (gdm) => gdm({ serializableCheck: false }) });
-    store.dispatch(upsertNoteFromServer({ note: note(), fetchStatus: "full" }));
+    const store = storeWithNote();
     store.dispatch(setNoteField({ id: ID, field: "content", value: "reviewed" }));
     const record = store.getState().notes.notes[ID];
     const source = captureNoteEditSourceFromRecord({ record, displayedNote: record, actorId: USER, sourceId: "source", snapshotId: "snapshot" });
@@ -42,6 +53,39 @@ describe("reviewed Notes queue receipt", () => {
     const second = store.dispatch(saveReviewedNoteSnapshot({ permit: capture.permit, currentSource: source }));
     await expect(first.result).resolves.toMatchObject({ status: "physical-saved", receipt: { databaseWrite: "saved", note: { content: "reviewed", version: 8 } } });
     await expect(second.result).resolves.toMatchObject({ status: "physical-saved" });
+    expect(updated.update).toHaveBeenCalledTimes(1);
+  });
+  it("refuses a newer editor snapshot before any transport write", async () => {
+    const store = storeWithNote();
+    store.dispatch(setNoteField({ id: ID, field: "content", value: "reviewed" }));
+    const record = store.getState().notes.notes[ID];
+    const captured = captureNoteEditSourceFromRecord({ record, displayedNote: record, actorId: USER, sourceId: "source", snapshotId: "first" });
+    const current = captureNoteEditSourceFromRecord({ record, displayedNote: record, actorId: USER, sourceId: "source", snapshotId: "second" });
+    const permit = store.dispatch(captureReviewedNoteSave(captured));
+    if (permit.status !== "captured") throw new Error("capture unexpectedly refused");
+    const observation = store.dispatch(saveReviewedNoteSnapshot({ permit: permit.permit, currentSource: current }));
+    await expect(observation.result).resolves.toMatchObject({ status: "refused", reason: "source-changed" });
+    expect(schema).not.toHaveBeenCalled();
+  });
+  it("releases one observer without cancelling the shared physical write", async () => {
+    const store = storeWithNote(); store.dispatch(setNoteField({ id: ID, field: "content", value: "reviewed" }));
+    const record = store.getState().notes.notes[ID]; const source = captureNoteEditSourceFromRecord({ record, displayedNote: record, actorId: USER, sourceId: "release", snapshotId: "release" });
+    const capture = store.dispatch(captureReviewedNoteSave(source)); if (capture.status !== "captured") throw new Error("capture unexpectedly refused");
+    let resolveUpdate: ((value: unknown) => void) | undefined;
+    let entered: (() => void) | undefined;
+    const enteredUpdate = new Promise<void>((resolve) => { entered = resolve; });
+    const existing = query({ data: note(), error: null }); const updated = query(undefined); updated.maybeSingle.mockImplementation(() => new Promise((resolve) => { resolveUpdate = resolve; entered?.(); }));
+    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const first = store.dispatch(saveReviewedNoteSnapshot({ permit: capture.permit, currentSource: source }));
+    const second = store.dispatch(saveReviewedNoteSnapshot({ permit: capture.permit, currentSource: source }));
+    expect(first).not.toBe(second); first.release();
+    await expect(first.result).resolves.toMatchObject({ status: "observation-released" });
+    await enteredUpdate;
+    if (!resolveUpdate) throw new Error("reviewed transport never entered");
+    resolveUpdate({ data: note({ content: "reviewed", version: 8 }), error: null });
+    await expect(second.result).resolves.toMatchObject({ status: "physical-saved" });
+    const third = store.dispatch(saveReviewedNoteSnapshot({ permit: capture.permit, currentSource: source }));
+    await expect(third.result).resolves.toMatchObject({ status: "physical-saved" });
     expect(updated.update).toHaveBeenCalledTimes(1);
   });
 });
