@@ -268,6 +268,7 @@ function SettingDetailPanel({
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0 shrink-0"
+                  aria-label="Close setting details"
                   onClick={requestClose}
                 >
                   <X className="h-4 w-4" />
