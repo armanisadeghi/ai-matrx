@@ -7,8 +7,16 @@ type ObjectValue = Record<string, unknown>;
 const object = (value: unknown): ObjectValue | null => value !== null && typeof value === "object" && !Array.isArray(value) ? value as ObjectValue : null;
 const only = (value: ObjectValue, keys: readonly string[]) => Object.keys(value).every((key) => keys.includes(key));
 const bytes = (value: string) => typeof TextEncoder !== "undefined" ? new TextEncoder().encode(value).byteLength : unescape(encodeURIComponent(value)).length;
-const integer = (value: unknown) => value instanceof LosslessNumber && /^(0|[1-9][0-9]*)$/.test(value.value) && Number(value.value) <= Number.MAX_SAFE_INTEGER;
-const nonnegativeNumber = (value: unknown) => value instanceof LosslessNumber && Number.isFinite(Number(value.value)) && Number(value.value) >= 0;
+function numericLexeme(value: unknown): { negative: boolean; integral: boolean; isThree: boolean } | null {
+  if (!(value instanceof LosslessNumber)) return null;
+  const match = value.value.match(/^(-?)(\d+)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/); if (!match) return null;
+  const negative = match[1] === "-" && !/^0*(?:\.0*)?$/.test(value.value.slice(1).replace(/[eE].*$/, ""));
+  const digits = `${match[2]}${match[3] ?? ""}`.replace(/^0+/, "") || "0"; const exponent = BigInt(match[4] ?? "0") - BigInt((match[3] ?? "").length);
+  const integral = digits === "0" || exponent >= 0n || -exponent <= BigInt((digits.match(/0*$/)?.[0].length ?? 0));
+  return { negative, integral, isThree: digits === "3" && exponent === 0n };
+}
+const integer = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative && parsed.integral; };
+const nonnegativeNumber = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative; };
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.every((entry) => typeof entry === "string");
 const textBytes = (value: string) => typeof TextEncoder === "undefined" ? unescape(encodeURIComponent(value)).length : new TextEncoder().encode(value).byteLength;
 function stringsWithin(value: unknown, max: number): boolean { if (typeof value === "string") return textBytes(value) <= max; if (Array.isArray(value)) return value.every((entry) => stringsWithin(entry, max)); const row = object(value); return !row || Object.values(row).every((entry) => stringsWithin(entry, max)); }
@@ -74,7 +82,7 @@ export function parseOnePuxData(exportAttributesText: string, exportDataText: st
   if (bytes(exportAttributesText) + bytes(exportDataText) > limits.maxFileBytes) throw new Error("The 1Password export exceeds this organization’s import size limit.");
   let exportAttributes: ObjectValue;
   try { exportAttributes = object(parse(exportAttributesText)) ?? {}; } catch { throw new Error("The 1Password export attributes could not be read safely."); }
-  if (!only(exportAttributes, ["version", "description", "createdAt"]) || !integer(exportAttributes.version) || (exportAttributes.version as LosslessNumber).value !== "3" || exportAttributes.description !== "1Password Unencrypted Export" || !integer(exportAttributes.createdAt)) throw new Error("This is not a supported unencrypted 1Password v3 export.");
+  if (!only(exportAttributes, ["version", "description", "createdAt"]) || !numericLexeme(exportAttributes.version)?.isThree || exportAttributes.description !== "1Password Unencrypted Export" || !integer(exportAttributes.createdAt)) throw new Error("This is not a supported unencrypted 1Password v3 export.");
   let root: ObjectValue;
   try { root = object(parse(exportDataText)) ?? {}; } catch { throw new Error("The 1Password export could not be read safely."); }
   if (!stringsWithin(exportAttributes, maxCellBytes)) throw new Error("The 1Password export exceeds this organization’s field limit.");
