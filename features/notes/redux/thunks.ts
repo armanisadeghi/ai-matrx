@@ -448,6 +448,8 @@ const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUs
       );
     } catch (error) {
       if (error instanceof NoteContextPartialSaveError) {
+        await assertCurrentNotesUser(expectedUserId);
+        if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
         const acknowledgedSnapshot = { ...savedSnapshot };
         for (const field of error.failedFields) {
           delete acknowledgedSnapshot[field];
