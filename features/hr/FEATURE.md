@@ -186,10 +186,20 @@ wrapper added in another lane's file.
   `hr_l9_02_org_rule_rounding_contract.sql` normalizes legacy callers to the native
   stored contract, projects native data into the validator's established compatibility
   shape (surfacing any non-`nearest` mode), and makes a remaining `22000` an honest
-  `invalid_rule_parameters` refusal.
+  `invalid_rule_parameters` refusal. Follow-up migration
+  `hr_l9_03_org_rule_rounding_validation_shape.sql` also keeps malformed scalar
+  `allowed_modes` on that caught schema-validation path rather than expanding it in
+  the compatibility projection.
   The all-rules disclosure now says `<n> tracked`, never falsely `<n> applies`; the
   current-jurisdiction `applies / removed / overridden` accounting is unchanged.
   Guard: `features/hr/compliance/__tests__/law-portal-summary.test.ts`.
+
+- **2026-09-13 (law portal row controls name their own rows)** — Rule application
+  decisions remain class × jurisdiction, but records-retention can render multiple
+  platform rows in one decision scope. `AppliesControl` therefore includes the stable
+  platform rule ID in its DOM `id`; labels continue to target exactly their own switch
+  without changing the shared decision the switch writes. Guard:
+  `features/hr/compliance/__tests__/law-portal-control-id.test.ts`.
 
 - **2026-09-11 (the HR Fields page shows what the database actually enables, DD-097)** —
   `features/hr/settings/service.ts` asked `platform.custom_field_target` about a

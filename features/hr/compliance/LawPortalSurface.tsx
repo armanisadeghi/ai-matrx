@@ -61,6 +61,7 @@ import { HrPageState } from "../shared/HrStates";
 import { useHrContext } from "../shared/useHrContext";
 import { OrgLawRuleEditor, type LawJurisdictionOption } from "./OrgLawRuleEditor";
 import { LawCitationLine, OrgLawRuleRow, PlatformLawRuleRow } from "./LawRuleRow";
+import { platformRuleAppliesControlId } from "./law-portal-control-id";
 import { ruleClassSummary } from "./law-portal-summary";
 
 type EditorTarget = { mode: "add" } | { mode: "edit"; rule: HrOrgLawRule } | null;
@@ -557,7 +558,7 @@ function AppliesControl({
   onRemove: () => void;
   onRestore: () => void;
 }) {
-  const id = `applies-${rule.rule_class}-${rule.jurisdiction_key}`;
+  const id = platformRuleAppliesControlId(rule);
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin text-foreground" /> : null}
