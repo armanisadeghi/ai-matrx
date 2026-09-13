@@ -37,7 +37,6 @@ import {
 import { formatKnobValue, type KnobLadder } from "./ladder";
 import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
-import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import {
   Select,
@@ -280,28 +279,28 @@ export function KnobOverrideRow(props: {
       : null;
 
   return (
-    <SettingAnchor id={knob.full_key}>
-      <SettingsRow
-        id={knob.full_key}
-        label={knob.label}
-        description={knob.description}
-        helpText={knob.ui.help}
-        error={
-          inlineError ??
-          (!canWrite
-            ? (ladder?.cannotWriteBecause ??
-              "This setting cannot be changed here.")
-            : undefined)
-        }
-        modified={
-          system
-            ? JSON.stringify(knob.platform_default) !==
-              JSON.stringify(system.registeredDefault)
-            : isSetHere
-        }
-        controlLayout="wide"
-        variant="inline"
-      >
+    <SettingsRow
+      id={`${knob.full_key}-input`}
+      anchorId={knob.full_key}
+      label={knob.label}
+      description={knob.description}
+      helpText={knob.ui.help}
+      error={
+        inlineError ??
+        (!canWrite
+          ? (ladder?.cannotWriteBecause ??
+            "This setting cannot be changed here.")
+          : undefined)
+      }
+      modified={
+        system
+          ? JSON.stringify(knob.platform_default) !==
+            JSON.stringify(system.registeredDefault)
+          : isSetHere
+      }
+      controlLayout="wide"
+      variant="inline"
+    >
       <div className="flex w-80 min-w-0 max-w-full flex-col items-stretch gap-1 @[40rem]/settings:items-end">
         {stateOnly ? (
           <div className="text-sm text-muted-foreground">
@@ -360,7 +359,7 @@ export function KnobOverrideRow(props: {
                 onValueChange={setDraft}
               >
                 <SelectTrigger
-                  id={knob.full_key}
+                  id={`${knob.full_key}-input`}
                   aria-label={knob.label}
                   size="default"
                   className="w-full max-w-40"
@@ -383,7 +382,7 @@ export function KnobOverrideRow(props: {
             ) : (
               <Input
                 className="w-full max-w-40"
-                id={knob.full_key}
+                id={`${knob.full_key}-input`}
                 aria-label={knob.label}
                 placeholder={formatKnobValue(knob.effective_value, knob.unit)}
                 value={draft}
@@ -479,7 +478,6 @@ export function KnobOverrideRow(props: {
           </Popover>
         </div>
       </div>
-      </SettingsRow>
-    </SettingAnchor>
+    </SettingsRow>
   );
 }

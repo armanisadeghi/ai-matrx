@@ -24,6 +24,12 @@ export interface AuditionRunSummary {
   /** null = two-way run (no vanilla arm). */
   beatVanilla: boolean | null;
   verdict: string | null;
+  /**
+   * The verdict document the run stored, verbatim. Every Audition costs real
+   * money and real minutes; a past one must REOPEN, not be re-run to be read
+   * again (W37c). Null for a row whose result predates the stored shape.
+   */
+  result: Record<string, unknown> | null;
 }
 
 /** The Expert's 3-option call, on the same scale as quality_score:
@@ -65,6 +71,7 @@ export async function listAuditionRuns(
           ? beat > lost
           : null,
       verdict: typeof result.verdict === "string" ? result.verdict : null,
+      result: row.result ? (row.result as Record<string, unknown>) : null,
     };
   });
 }

@@ -32,6 +32,8 @@ type SettingsRowProps = SettingsCommonProps & {
   last?: boolean;
   /** Wide controls stack below their label on narrow screens. */
   controlLayout?: "compact" | "wide";
+  /** Stable row anchor used by settings search and deep links. */
+  anchorId?: string;
 };
 
 const densityStyles: Record<SettingsRowDensity, string> = {
@@ -89,6 +91,7 @@ export function SettingsRow({
   children,
   last,
   controlLayout = "compact",
+  anchorId,
 }: SettingsRowProps) {
   const { variant: designVariant } = useSettingsDesign();
   const sectionTitle = useSettingsSectionTitle();
@@ -97,6 +100,7 @@ export function SettingsRow({
   // only the authored section + label, so they survive remounts and markup.
   const inputId = id ?? `settings-input-${reactId}`;
   const controlId = settingsControlSearchId(sectionTitle ?? "Settings", label);
+  const rowAnchorId = anchorId ?? controlId;
 
   const labelBlock = (
     <div className="min-w-0 flex-1">
@@ -174,7 +178,7 @@ export function SettingsRow({
 
   if (variant === "block") {
     return (
-      <SettingAnchor id={controlId}>
+      <SettingAnchor id={rowAnchorId}>
         <div
           className={cn(
             "px-4 border-b border-border/40",
@@ -194,7 +198,7 @@ export function SettingsRow({
 
   if (variant === "stacked") {
     return (
-      <SettingAnchor id={controlId}>
+      <SettingAnchor id={rowAnchorId}>
         <div
           className={cn(
             "px-4 border-b border-border/40",
@@ -214,7 +218,7 @@ export function SettingsRow({
   }
 
   return (
-    <SettingAnchor id={controlId}>
+    <SettingAnchor id={rowAnchorId}>
       <div
         className={cn(
           controlLayout === "wide"
