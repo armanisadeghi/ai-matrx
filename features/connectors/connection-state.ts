@@ -27,6 +27,7 @@
  */
 
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
+import type { components } from "@/types/python-generated/api-types";
 
 /** What a person may be told about one MCP server. Exactly three states. */
 export type McpConnectionState =
@@ -46,13 +47,7 @@ export interface McpConnectionTruth {
 }
 
 /** The server's per-user answer (`GET /api/mcp-connections/availability`). */
-export interface McpAvailability {
-  slug: string;
-  server_id: string | null;
-  state: McpConnectionState;
-  reason: string | null;
-  tool_count: number;
-}
+export type McpAvailability = components["schemas"]["McpAvailability"];
 
 /**
  * A first-party integration connection's status, as
@@ -86,6 +81,14 @@ const REAUTH_FIRST_PARTY_STATUSES = new Set([
   "needs_reauth",
 ]);
 
+function isMcpConnectionState(value: string): value is McpConnectionState {
+  return (
+    value === "connected" ||
+    value === "needs_reauth" ||
+    value === "not_connected"
+  );
+}
+
 function formatDate(value: string): string {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime())
@@ -108,6 +111,13 @@ export function deriveMcpConnectionState(
 ): McpConnectionTruth {
   const availability = options.availability;
   if (availability) {
+    if (!isMcpConnectionState(availability.state)) {
+      return {
+        state: "not_connected",
+        reason: `The server returned an unsupported MCP availability state: ${availability.state}.`,
+        source: "server",
+      };
+    }
     return {
       state: availability.state,
       reason: availability.reason,
