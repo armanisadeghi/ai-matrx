@@ -23,7 +23,7 @@ const MUTE_KEY = "matrx.platform-outage.muted";
 /** One click of the X. Deliberately short — an outage is worth re-asking. */
 export const MUTE_MS = 60 * 60 * 1000;
 
-type MuteMap = Record<string, number>;
+export type MuteMap = Record<string, number>;
 
 function read(): MuteMap {
   try {
@@ -53,10 +53,17 @@ function write(map: MuteMap): void {
 }
 
 /**
- * The ids currently silent, with every expired entry pruned on the way out —
- * so the map cannot grow without bound as outages come and go.
+ * The live mute map — id -> the epoch-ms it wakes at — with every expired entry
+ * pruned on the way out, so the map cannot grow without bound as outages come
+ * and go and an expiry that has passed can never silence anything.
+ *
+ * The EXPIRY, not just the id, is what the notice needs: it re-reads this on
+ * every poll and arms a timer for the nearest wake-up, so a mute that runs out
+ * while the tab stays open returns the outage on its own (Bugbot, 2026-09-13 —
+ * the banner is a session-long singleton, so "until the next reload" meant
+ * "possibly never").
  */
-export function readMutedIds(now: number = Date.now()): Set<string> {
+export function readMuteMap(now: number = Date.now()): MuteMap {
   const map = read();
   const live: MuteMap = {};
   let pruned = false;
@@ -65,7 +72,15 @@ export function readMutedIds(now: number = Date.now()): Set<string> {
     else pruned = true;
   }
   if (pruned) write(live);
-  return new Set(Object.keys(live));
+  return live;
+}
+
+/**
+ * The ids currently silent. The same read as `readMuteMap`, for callers that
+ * only need the set.
+ */
+export function readMutedIds(now: number = Date.now()): Set<string> {
+  return new Set(Object.keys(readMuteMap(now)));
 }
 
 /** Silence one outage for `MUTE_MS`, returning the epoch-ms it wakes at. */

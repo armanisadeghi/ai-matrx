@@ -72,7 +72,7 @@ import {
   OUTAGE_DETAILS_HREF,
   type OpenOutage,
 } from "./open-outages";
-import { muteOutage, readMutedIds } from "./outage-mute";
+import { muteOutage, readMuteMap, type MuteMap } from "./outage-mute";
 
 /**
  * How often the notice re-asks the server whether the provider is still down.
@@ -91,7 +91,7 @@ export default function PlatformOutageBanner() {
   const accessToken = useAppSelector(selectAccessToken);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [muted, setMuted] = useState<Set<string>>(() => new Set());
+  const [muted, setMuted] = useState<MuteMap>(() => ({}));
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   const canRead = Boolean(isSuperAdmin && authReady && accessToken);
@@ -105,7 +105,7 @@ export default function PlatformOutageBanner() {
     anchor: { top: "0.75rem", centerX: true },
   });
 
-  const { data } = useQuery<OpenOutage[]>({
+  const { data, dataUpdatedAt } = useQuery<OpenOutage[]>({
     queryKey: ["platform-open-outages"],
     queryFn: fetchOpenOutages,
     enabled: canRead,
@@ -116,15 +116,58 @@ export default function PlatformOutageBanner() {
     retry: false,
   });
 
-  // Muted ids are read once on mount (and pruned of expiries as they pass),
-  // never during render: `localStorage` is not available on the server and
-  // reading it while rendering would differ between SSR and hydration.
+  /**
+   * 🚨 A MUTE THAT HAS RUN OUT IS NOT A MUTE (Bugbot, 2026-09-13).
+   *
+   * The mute store was read ONCE, on mount. This notice is a session-long
+   * singleton mounted in `DeferredSingletonCore`, so "once on mount" meant
+   * "once per full page load" — an expired one-hour mute never left React
+   * state, and a provider that was still down an hour later stayed hidden for
+   * as long as the tab lived, while the poll below reported it open every
+   * minute. The one thing the mute promised ("it comes back on its own if the
+   * provider is still down") was the thing it could not do.
+   *
+   * So the store is re-read on EVERY poll result — `dataUpdatedAt` moves on
+   * each successful fetch even when the rows are byte-identical and React
+   * Query hands back the same array — and `readMuteMap` prunes what has
+   * expired as it reads. `localStorage` is still never touched during render:
+   * it does not exist on the server and would differ across hydration.
+   */
   useEffect(() => {
-    setMuted(readMutedIds());
-  }, []);
+    setMuted(readMuteMap());
+  }, [dataUpdatedAt]);
+
+  /**
+   * And a poll is not the only clock. Between two polls a mute can run out, so
+   * the nearest expiry among the outages ON SCREEN arms a timer that re-reads
+   * the store at that moment — the outage returns by itself, exactly as its
+   * button promised, with no reload and no poll of its own.
+   */
+  const nextExpiry = (data ?? [])
+    .map((outage) => muted[outage.id])
+    .filter((until): until is number => typeof until === "number")
+    .reduce<number | null>(
+      (soonest, until) => (soonest === null || until < soonest ? until : soonest),
+      null,
+    );
+
+  useEffect(() => {
+    if (nextExpiry === null) return;
+    // +1ms so the timer lands strictly after the expiry `readMuteMap` compares
+    // against (`until > now`), never on the same millisecond.
+    const delay = Math.max(0, nextExpiry - Date.now()) + 1;
+    const timer = window.setTimeout(() => setMuted(readMuteMap()), delay);
+    return () => window.clearTimeout(timer);
+  }, [nextExpiry]);
 
   const notice = useMemo(() => {
-    const outages = (data ?? []).filter((outage) => !muted.has(outage.id));
+    // Expiry is compared HERE too, not just when the store was read: state
+    // holding a mute that has since run out must never hide a live outage.
+    const now = Date.now();
+    const outages = (data ?? []).filter((outage) => {
+      const until = muted[outage.id];
+      return until === undefined || until <= now;
+    });
     return buildOutageNotice(outages);
   }, [data, muted]);
 
@@ -133,7 +176,7 @@ export default function PlatformOutageBanner() {
 
   const mute = (id: string) => {
     muteOutage(id);
-    setMuted(readMutedIds());
+    setMuted(readMuteMap());
   };
 
   return (

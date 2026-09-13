@@ -14,6 +14,12 @@
  *  4. A failed poll renders nothing. A fetch error is not an outage — it is
  *     already captured once by `lib/python-client`, and a loud bar on a
  *     60-second timer is the "complains constantly" defect in its purest form.
+ *  5. A MUTE THAT HAS RUN OUT IS NOT A MUTE. The mute store used to be read
+ *     once on mount, and this notice is a session-long singleton — so an
+ *     expired mute never left React state and the outage stayed hidden until a
+ *     full reload. The last two tests hold the clock: an expiry already in the
+ *     past is never honoured, and a live mute returns the outage by itself the
+ *     moment its hour is up.
  *
  * Rendered with `createRoot` + `act`, the repo's component-test convention
  * (there is no @testing-library in this workspace).
@@ -25,7 +31,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import PlatformOutageBanner from "../PlatformOutageBanner";
-import { clearMutes, readMutedIds } from "../outage-mute";
+import { clearMutes, MUTE_MS, readMutedIds } from "../outage-mute";
 import type { OpenOutage } from "../open-outages";
 
 const push = jest.fn();
@@ -83,10 +89,43 @@ async function mount(): Promise<void> {
   // resolves across several microtask turns; flush until the tree stops
   // changing rather than guessing a tick count.
   for (let i = 0; i < 12; i += 1) {
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    await tick();
   }
+}
+
+/**
+ * One turn of the loop. Under fake timers the clock has to be DRIVEN — a
+ * `setTimeout(…, 0)` awaited against a frozen clock never resolves, so the
+ * flush hangs instead of failing (which is how this helper first hid the
+ * regression test it exists to run).
+ */
+let fakeClock = false;
+async function tick(): Promise<void> {
+  await act(async () => {
+    if (fakeClock) {
+      await jest.advanceTimersByTimeAsync(0);
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  });
+}
+
+/** Freeze the clock for a test that has to watch an expiry pass. */
+function useFrozenClock(): void {
+  // Only the CLOCK is faked. React's scheduler and React Query's internals
+  // ride microtasks / MessageChannel — faking those deadlocks `act`.
+  jest.useFakeTimers({
+    doNotFake: [
+      "queueMicrotask",
+      "nextTick",
+      "setImmediate",
+      "clearImmediate",
+      "performance",
+      "requestAnimationFrame",
+      "cancelAnimationFrame",
+    ],
+  });
+  fakeClock = true;
 }
 
 function rows(): Element[] {
@@ -118,6 +157,8 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+  jest.useRealTimers();
+  fakeClock = false;
 });
 
 describe("PlatformOutageBanner", () => {
@@ -175,5 +216,54 @@ describe("PlatformOutageBanner", () => {
 
     expect(fetchOpenOutages).toHaveBeenCalled();
     expect(container.innerHTML).toBe("");
+  });
+
+  it("never honours a stored mute whose hour is already up", async () => {
+    // A mute written before the tab was opened, expired before it renders.
+    window.localStorage.setItem(
+      "matrx.platform-outage.muted",
+      JSON.stringify({ "o-anthropic": Date.now() - 1_000 }),
+    );
+    fetchOpenOutages.mockResolvedValue([
+      outage({ id: "o-anthropic", provider: "anthropic" }),
+    ]);
+    await mount();
+
+    expect(rows()).toHaveLength(1);
+    // And the dead entry is pruned rather than carried forever.
+    expect(readMutedIds().has("o-anthropic")).toBe(false);
+  });
+
+  it("brings the outage back by itself when the mute runs out — no reload", async () => {
+    // THE REGRESSION (Bugbot, 2026-09-13): `muted` was written only on mount
+    // and on a click, so the hour passing changed nothing on a singleton that
+    // never remounts. Restore that and this test fails at the last assertion.
+    useFrozenClock();
+    fetchOpenOutages.mockResolvedValue([
+      outage({ id: "o-anthropic", provider: "anthropic" }),
+    ]);
+    await mount();
+    expect(rows()).toHaveLength(1);
+
+    await act(async () => {
+      buttonByLabel("Mute the anthropic outage for 1 hour").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+    });
+    expect(rows()).toHaveLength(0);
+
+    // Half an hour later it is still muted — the mute is real, not a no-op.
+    await act(async () => {
+      jest.advanceTimersByTime(MUTE_MS / 2);
+    });
+    expect(rows()).toHaveLength(0);
+
+    // Past the hour, with the provider still down, it is loud again.
+    await act(async () => {
+      jest.advanceTimersByTime(MUTE_MS / 2 + 5_000);
+    });
+    await tick();
+    expect(rows()).toHaveLength(1);
+    expect(container.textContent ?? "").toContain("Anthropic is refusing");
   });
 });

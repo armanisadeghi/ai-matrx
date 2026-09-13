@@ -103,6 +103,8 @@ links to — is already declared in the admin navigation registry.
 
 ## Change Log
 
+- **2026-09-13** — 🚨 **A mute that has run out is not a mute (Bugbot).** The banner read the mute store once, on mount, and it is a session-long singleton — so an expired one-hour mute never left React state and a provider that was still down stayed hidden until a full page reload, while the poll reported it open every minute. The visible set is now derived from the outages AND the mute store on every poll result (`dataUpdatedAt` moves on each successful fetch even when the rows are identical), the nearest expiry among the outages on screen arms a timer that re-reads at that moment, and the render-time filter compares the expiry again so state holding a dead mute can never hide a live outage. `outage-mute.ts` exports `readMuteMap` (id -> wake-up time, expired entries pruned as they are read); `readMutedIds` is now a thin wrapper on it. Tests: two more in `__tests__/PlatformOutageBanner.test.tsx` — a stored expiry already in the past is never honoured, and a live mute returns the outage by itself on a frozen clock (proven RED against the mount-only read).
+
 - **2026-09-13** — Added `PlatformOutageBanner`, `open-outages.ts`,
   `outage-mute.ts` and their test, and mounted the banner in
   `app/DeferredSingletonCore.tsx`. Built for the 2026-09-12 incident in which

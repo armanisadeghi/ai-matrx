@@ -238,14 +238,25 @@ export function IngestSourceDialog({
   const [uploading, setUploading] = useState(false);
 
   /**
-   * ONE durable run for both lanes — they emit the SAME terminal event
-   * (`masterwork_ingest_complete`; the file lane hands off to the text lane
-   * for a transcript), so they are one run to the user and one pointer to
-   * rejoin. `path` is read at launch time, which is what lets the current lane
-   * choose its endpoint without a second hook.
+   * ONE durable run for the paste and upload lanes — they emit the SAME
+   * terminal event (`masterwork_ingest_complete`; the file lane hands off to
+   * the text lane for a transcript), so they are one run to the user and one
+   * pointer to rejoin. `path` is read at launch time, which is what lets the
+   * current lane choose its endpoint without a second hook.
+   *
+   * 🚨 THE TIMELINE LANE IS A DIFFERENT SURFACE, NOT A DIFFERENT PATH (Bugbot,
+   * 2026-09-13). `useMasterworkRun` declares `timeline` as its own surface with
+   * its own measured expectation precisely so a case distillation never shares
+   * a durable-run pointer with a paste/upload distillation — and this dialog
+   * launched every lane, timeline included, as `surface: "ingest"`. The pointer
+   * key is `${surface}:${rulebookId}`, so one Rulebook's timeline run and its
+   * source run wrote the SAME browser receipt: a reload could reopen the wrong
+   * lane, and a later ingest could rejoin and report a timeline run's answer as
+   * its own. The surface is the dialog the user is looking at, so it is chosen
+   * here from the same `timeline` flag that chooses the copy and the endpoint.
    */
   const run = useMasterworkRun<IngestSummary>({
-    surface: "ingest",
+    surface: timeline ? "timeline" : "ingest",
     rulebookId: rulebook.id,
     path: timeline
       ? INGEST_TIMELINE_PATH
