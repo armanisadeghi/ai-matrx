@@ -52,6 +52,10 @@ describe("1PUX archive reader", () => {
     expect(file.size).toBeLessThan(1_000);
     await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 900, maxRecords: 10 })).rejects.toThrow();
   });
+  test("combines declared archive bytes with streamed decoded JSON bytes", async () => {
+    const file = await archive([["export.attributes", "a".repeat(300)], ["export.data", "d".repeat(300)]]);
+    await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 900, maxRecords: 10 })).rejects.toThrow("size limit");
+  });
   test("refuses a mutated binary local-header name", async () => {
     const file = await archive([["export.attributes", "a"], ["export.data", "d"], ["files/icon", "x"]]);
     const bytes = new Uint8Array(await file.arrayBuffer()); const name = new TextEncoder().encode("files/icon");

@@ -51,7 +51,8 @@ export async function readOnePuxArchive(file: Blob, limits: Pick<CsvImportLimits
       if (entry.filename !== "export.attributes" && entry.filename !== "export.data") continue;
       const output = boundedText(limits.maxFileBytes, used);
       if (!isFileEntry(entry)) throw new Error("The 1Password archive is unsafe.");
-      await entry.getData(output, { checkCrc32: true, signal });
+      try { await entry.getData(output, { checkCrc32: true, signal }); }
+      catch (error) { if (used.value >= limits.maxFileBytes) throw new Error("The 1Password export exceeds this organization’s import size limit."); throw error; }
       stopIfCancelled(signal);
       if (warnings(reader, entry)) throw new Error("The 1Password archive is unsafe.");
       const text = output.text(); if (entry.filename === "export.attributes") attributesText = text; else dataText = text;
