@@ -25,6 +25,7 @@ import type { Rulebook } from "../../types";
 import {
   DEFAULT_INGEST_LANE,
   findLiveIngestLane,
+  useIngestDialogSession,
   useLiveIngestLane,
 } from "../liveIngestLane";
 
@@ -81,6 +82,8 @@ function writePointer(
 const mounted: { surface: string }[] = [];
 /** Which surface the fake durable run reports as still in flight. */
 let runningSurface: string | null = null;
+/** Which surface has a FINISHED run whose summary is on screen. */
+let settledSurface: string | null = null;
 
 jest.mock("../useMasterworkRun", () => {
   const actual = jest.requireActual("../useMasterworkRun");
@@ -89,10 +92,20 @@ jest.mock("../useMasterworkRun", () => {
     useMasterworkRun: (options: { surface: string }) => {
       mounted.push({ surface: options.surface });
       const running = options.surface === runningSurface;
+      const settled = options.surface === settledSurface;
       return {
         running,
         stages: running ? ["Reading the case step by step…"] : [],
-        result: null,
+        result: settled
+          ? {
+              added: 11,
+              duplicatesSkipped: 0,
+              quotesUnverified: 0,
+              failedChunks: 0,
+              skippedWords: 0,
+              followupSeed: null,
+            }
+          : null,
         status: running ? "running" : "idle",
         error: null,
         waitMessage: running ? "Picking this back up" : null,
@@ -123,6 +136,8 @@ beforeEach(() => {
   window.localStorage.clear();
   mounted.length = 0;
   runningSurface = null;
+  settledSurface = null;
+  lastTimelineOpen = false;
 });
 
 describe("findLiveIngestLane", () => {
@@ -163,11 +178,13 @@ describe("findLiveIngestLane", () => {
 });
 
 /**
- * The page's own resolution, in the page's own order: an explicit lane (deep
- * link or the in-page picker) outranks the probe; the probe answers the case
- * where nobody asked. `key` follows the same expression, so the dialog
- * remounts onto the lane that is running.
+ * THE PAGE'S OWN WIRING, through the one session primitive the page uses
+ * (`useIngestDialogSession`): the dialog's remount `key`, its `initialLane`,
+ * its open state and `workspace_state.timeline_open` all read the session, and
+ * the explicit doors call `openOn` with a named lane.
  */
+let lastTimelineOpen = false;
+
 function PageWiring({
   requested = null,
   onOpenChange,
@@ -175,34 +192,40 @@ function PageWiring({
   requested?: IngestLane | null;
   onOpenChange: (open: boolean) => void;
 }) {
-  const live = useLiveIngestLane(RULEBOOK_ID);
-  // The page's own state twin for an explicitly requested lane.
-  const [asked, setAsked] = React.useState<IngestLane | null>(requested);
-  const lane = asked ?? live;
-  const [open, setOpen] = React.useState(false);
+  const ingest = useIngestDialogSession(RULEBOOK_ID);
+  lastTimelineOpen = ingest.timelineOpen;
+  const openOn = ingest.openOn;
+  // A deep link (`?ingest=file`) opens on its own lane, like the page's effect.
+  React.useEffect(() => {
+    if (requested) openOn(requested);
+  }, [requested, openOn]);
   return (
     <TooltipProvider>
       {/* The page's explicit doors — "From a source" and the assist
-          `open: "ingest"` chip — both name their lane (`openIngestLane`). */}
+          `open: "ingest"` chip — both name their lane. */}
       <button
         type="button"
         data-testid="from-a-source"
-        onClick={() => {
-          setAsked(DEFAULT_INGEST_LANE);
-          setOpen(true);
-        }}
+        onClick={() => ingest.openOn(DEFAULT_INGEST_LANE)}
       >
         From a source
       </button>
+      <button
+        type="button"
+        data-testid="close-dialog"
+        onClick={() => ingest.setOpen(false)}
+      >
+        Close
+      </button>
       <IngestSourceDialog
-        key={`ingest-${lane ?? "default"}`}
-        open={open}
+        key={`ingest-${ingest.lane ?? "default"}`}
+        open={ingest.open}
         onOpenChange={(next) => {
-          setOpen(next);
+          ingest.setOpen(next);
           onOpenChange(next);
         }}
         rulebook={RULEBOOK}
-        initialLane={lane}
+        initialLane={ingest.lane}
       />
     </TooltipProvider>
   );
@@ -358,6 +381,82 @@ describe("the Rulebook page after a refresh", () => {
     expect(mounted.at(-1)?.surface).toBe("ingest");
   });
 
+  it("keeps the rejoined timeline dialog on screen when the run settles", async () => {
+    // 🚨 THE DEFECT (Bugbot HIGH, 2026-09-13). Nothing named a lane after a
+    // refresh, so the dialog's remount key tracked the PROBE — and the probe
+    // drops its answer a beat after the pointer is marked settled. The dialog
+    // the person was reading remounted onto an empty source form and the
+    // finished summary was gone. The session latch is what keeps it.
+    useFrozenClock();
+    writePointer("timeline");
+    runningSurface = "timeline";
+    await mountPage(null);
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+    expect(lastTimelineOpen).toBe(true);
+
+    // The run finishes: the pointer is kept and marked settled, and the dialog
+    // now shows its answer.
+    writePointer("timeline", { settled: true });
+    runningSurface = null;
+    settledSurface = "timeline";
+    await act(async () => {
+      jest.advanceTimersByTime(6_000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Still the timeline dialog, still open, still showing the summary.
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+    expect(lastTimelineOpen).toBe(true);
+    expect(document.body.textContent ?? "").toContain(
+      "11 suggested rules added as drafts",
+    );
+  });
+
+  it("clears the latch on close, so the next open resolves again", async () => {
+    // The mirror defect (Bugbot MEDIUM): an explicitly requested lane was never
+    // cleared, so one click on "From a source" outranked the probe for the rest
+    // of the session and a case started in another tab was never rejoined.
+    useFrozenClock();
+    await mountPage(null);
+
+    click("from-a-source");
+    expect(mounted.at(-1)?.surface).toBe("ingest");
+    expect(lastTimelineOpen).toBe(false);
+
+    click("close-dialog");
+    expect(lastTimelineOpen).toBe(false);
+
+    // Another tab starts a case on this Rulebook.
+    writePointer("timeline");
+    runningSurface = "timeline";
+    await act(async () => {
+      jest.advanceTimersByTime(6_000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // It is rejoined — the earlier click does not outrank it any more.
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+    expect(lastTimelineOpen).toBe(true);
+  });
+
+  it("reports timeline_open from the latched session, not from the probe", async () => {
+    // A live case with the dialog CLOSED is not a timeline dialog on screen.
+    useFrozenClock();
+    writePointer("timeline", { settled: true });
+    await mountPage(null);
+    expect(lastTimelineOpen).toBe(false);
+
+    click("from-a-source");
+    expect(lastTimelineOpen).toBe(false);
+
+    click("close-dialog");
+    expect(lastTimelineOpen).toBe(false);
+  });
+
   it("opens the ingest lane from an explicit door even while a case is still running", async () => {
     // The assist chip's `open: "ingest"` path and the "From a source" menu item
     // are the same door: both name `DEFAULT_INGEST_LANE`, so a live — or stale —
@@ -375,31 +474,36 @@ describe("the Rulebook page after a refresh", () => {
 });
 
 /**
- * THE CLASS, held in the page itself: a door that opens the ingest dialog with
- * a bare `setIngestOpen(true)` inherits whatever lane the probe is holding. The
- * only two lawful sites are `openIngestLane` (which names a lane) and the
- * deep-link effect, whose lane IS the `?ingest=` param.
+ * THE CLASS, held in the page itself: the ingest dialog's lane is owned by ONE
+ * session primitive. A second source of truth for "which lane is on screen" —
+ * a local `useState` twin, a bare boolean open flag, a re-derivation at the
+ * call site — is how the lane changed under an open dialog in the first place.
  */
 describe("RulebookDetailPage's ingest doors", () => {
-  it("never opens the ingest dialog without naming a lane", () => {
-    const source = readFileSync(
-      join(__dirname, "..", "..", "components", "detail", "RulebookDetailPage.tsx"),
-      "utf8",
-    );
-    const lines = source.split("\n");
-    const offenders = lines
-      .map((line, i) => ({ line: line.trim(), n: i + 1 }))
-      .filter(({ line }) => line.includes("setIngestOpen(true)"))
-      // The deep link names its lane in the same statement.
-      .filter(({ line }) => !line.startsWith("if (ingestLane)"))
-      // The one namer: `openIngestLane`, whose body is the next line after the
-      // `setRequestedIngestLane(lane)` call.
-      .filter(
-        ({ n }) => !lines[n - 2]?.includes("setRequestedIngestLane(lane)"),
-      )
-      // Prose in a comment is not a door.
-      .filter(({ line }) => !line.startsWith("*") && !line.startsWith("//"));
+  const source = readFileSync(
+    join(__dirname, "..", "..", "components", "detail", "RulebookDetailPage.tsx"),
+    "utf8",
+  );
+  const code = source
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => !line.startsWith("*") && !line.startsWith("//"));
 
-    expect(offenders).toEqual([]);
+  it("owns the ingest dialog's lane in one session, never a second flag", () => {
+    expect(code.some((l) => l.includes("useIngestDialogSession("))).toBe(true);
+    // No boolean open-state twin, and no local requested-lane twin: both were
+    // the old shape, and both could disagree with the session.
+    expect(code.filter((l) => l.includes("useState(false)") && l.includes("ingest"))).toEqual([]);
+    expect(code.filter((l) => l.includes("setRequestedIngestLane"))).toEqual([]);
+  });
+
+  it("never opens the dialog without naming a lane", () => {
+    // Every explicit door goes through `openIngestLane` (the session's `openOn`)
+    // with a lane. `setIngestOpen(true)` — open on whatever the probe holds — is
+    // exactly the call this class forbids.
+    expect(code.filter((l) => l.includes("setIngestOpen(true)"))).toEqual([]);
+    expect(code.some((l) => l.includes("openIngestLane(DEFAULT_INGEST_LANE)"))).toBe(
+      true,
+    );
   });
 });

@@ -25,7 +25,7 @@
  */
 
 import { peekDurableRun } from "@/lib/durable-run/useDurableRun";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { IngestLane } from "../browse/approachLane";
 import {
@@ -129,4 +129,66 @@ export function useLiveIngestLane(
     };
   }, [rulebookId]);
   return lane;
+}
+
+/**
+ * THE INGEST DIALOG SESSION — one lane, owned from open to close.
+ *
+ * ## The defect this closes (Bugbot HIGH, 2026-09-13)
+ *
+ * The lane was re-derived on every render from three sources at once (an
+ * explicit request, the `?ingest=` param, and the probe above). The dialog
+ * mounts on ONE durable-run surface chosen by that lane, so the lane is not a
+ * preference — it is the identity of what is on screen, and it was allowed to
+ * change UNDERNEATH an open dialog. After a refresh rejoined a case
+ * distillation, the probe held `timeline` only until the run settled; a beat
+ * later it reported nothing, the dialog remounted onto an empty source form,
+ * and the finished summary the person was reading was gone. The mirror defect:
+ * an explicitly requested lane was never cleared, so one click on "From a
+ * source" outranked the probe for the rest of the session and a case started in
+ * another tab was never rejoined.
+ *
+ * ## The rule
+ *
+ * Resolve the lane ONCE, at open time, and latch it for the life of that open
+ * dialog. Closing clears the latch, so the next open resolves from scratch.
+ * While closed the dialog still follows the probe — that is how a run started
+ * before a refresh is picked back up — and while open the probe is ignored.
+ * `lane`, `open` and `timelineOpen` all read the one latched value, so the
+ * remount key, the dialog's `initialLane` and the agent surface scope cannot
+ * disagree about what is on screen.
+ */
+export interface IngestDialogSession {
+  /** The lane this open session was opened on; null when the dialog is closed. */
+  session: IngestLane | null;
+  /** The lane on screen: latched while open, the probe's answer while closed. */
+  lane: IngestLane | null;
+  open: boolean;
+  /** `workspace_state.timeline_open` — true only for a timeline session. */
+  timelineOpen: boolean;
+  /** An explicit door: open on THIS lane, whatever the probe is holding. */
+  openOn: (lane: IngestLane) => void;
+  /** The dialog opening itself (a rejoin) or closing; closing clears the latch. */
+  setOpen: (next: boolean) => void;
+}
+
+export function useIngestDialogSession(
+  rulebookId: string | null,
+): IngestDialogSession {
+  const live = useLiveIngestLane(rulebookId);
+  const [session, setSession] = useState<IngestLane | null>(null);
+  const lane = session ?? live;
+  const openOn = useCallback((next: IngestLane) => setSession(next), []);
+  const setOpen = useCallback(
+    (next: boolean) => setSession(next ? (lane ?? DEFAULT_INGEST_LANE) : null),
+    [lane],
+  );
+  return {
+    session,
+    lane,
+    open: session !== null,
+    timelineOpen: session === "timeline",
+    openOn,
+    setOpen,
+  };
 }

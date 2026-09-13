@@ -108,7 +108,7 @@ import {
 } from "@/features/masterwork/browse/approachLane";
 import {
   DEFAULT_INGEST_LANE,
-  useLiveIngestLane,
+  useIngestDialogSession,
 } from "@/features/masterwork/durable-run/liveIngestLane";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
@@ -605,7 +605,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // there, and only for the platform admins who issue grants.
   const [libraryOrgId, setLibraryOrgId] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
-  const [ingestOpen, setIngestOpen] = useState(false);
+  // The ingest dialog's lane is owned by ONE session primitive
+  // (`durable-run/liveIngestLane.ts` § THE INGEST DIALOG SESSION), declared
+  // below once `rulebook` exists: null means closed, and a latched lane is the
+  // identity of what is on screen.
   const [wizardOpen, setWizardOpen] = useState(false);
   // W59 + W61: sorting the DRAFT pile by what the Rulebook is FOR.
   const [triageOpen, setTriageOpen] = useState(false);
@@ -646,6 +649,29 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpParam = searchParams.get("dump") === "1";
+  /**
+   * 🚨 THE INGEST DIALOG SESSION. One lane, resolved at open time and latched
+   * until close — the remount `key`, the dialog's `initialLane` and
+   * `timeline_open` in the agent surface scope all read it, so they cannot
+   * disagree about what is on screen. While the dialog is CLOSED the lane
+   * follows the live-run probe, which is how a case distillation started before
+   * a refresh is picked back up instead of running invisibly; while it is OPEN
+   * the probe is ignored, so a run settling can never remount the dialog out
+   * from under the summary its owner is reading. Full story + the two Bugbot
+   * defects: `features/masterwork/durable-run/liveIngestLane.ts`.
+   */
+  const ingest = useIngestDialogSession(rulebook?.id ?? null);
+  const ingestOpen = ingest.open;
+  const activeIngestLane = ingest.lane;
+  /**
+   * 🚨 EVERY EXPLICIT DOOR NAMES ITS LANE. "From a source", the assist
+   * `open: "ingest"` chip and the Approach picker all come through here. A door
+   * that opened the dialog without a lane inherited whatever the probe was
+   * holding, and could launch a case distillation from a menu item that says
+   * "From a source".
+   */
+  const openIngestLane = ingest.openOn;
+  const setIngestOpen = ingest.setOpen;
   // The Approach picker's deep link (`platform.approach.intake_query`): choosing
   // the source / exemplar / file Approach must land ON that lane. Before this
   // param existed (2026-08-19) those three enabled Approaches dead-ended on a
@@ -656,42 +682,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // exist — the drift that left `timeline` with a live card and no capture UI.
   const ingestLane = toIngestLane(ingestParam);
   useEffect(() => {
-    if (ingestLane) setIngestOpen(true);
-  }, [ingestLane]);
+    if (ingestLane) openIngestLane(ingestLane);
+  }, [ingestLane, openIngestLane]);
   // THE APPROACH PICKER (2026-08-20). Every lane below is opened by a query
   // param read ONCE at mount, so the in-page picker cannot reach them by
   // changing the URL. Each param therefore gets a state twin the picker sets;
   // the param stays the deep-link entry and the twin is the in-page one, and
   // `launchApproach` is the ONE place that maps a registry row to a lane.
   const [approachPickerOpen, setApproachPickerOpen] = useState(false);
-  const [requestedIngestLane, setRequestedIngestLane] =
-    useState<IngestLane | null>(null);
-  /**
-   * 🚨 A REFRESH REJOINS THE LANE THAT IS RUNNING, NOT THE LANE STATE NAMES
-   * (Bugbot, 2026-09-13). The ingest dialog mounts on ONE surface — the one its
-   * lane picks — and `timeline` and `ingest` are deliberately separate durable
-   * pointers. So a reload that names no lane used to mount on `ingest`, watch
-   * the ingest pointer, find nothing and stay silent while a case distillation
-   * kept running on the server, with Start live again and ready to charge for
-   * it twice. `useLiveIngestLane` reads BOTH pointers for this Rulebook and
-   * reports whichever still has a run in flight; an explicit lane (deep link or
-   * the in-page picker) always outranks it.
-   */
-  const liveIngestLane = useLiveIngestLane(rulebook?.id ?? null);
-  /**
-   * 🚨 EVERY EXPLICIT DOOR NAMES ITS LANE. The probe above is the answer to
-   * "nobody asked, and something is still running" — it must never decide which
-   * pipeline a person's click starts. So "From a source", the assist
-   * `open: "ingest"` chip and the Approach picker all come through here with a
-   * lane, which outranks the probe in the resolution below. A door that opened
-   * the dialog with a bare `setIngestOpen(true)` inherited whatever the probe
-   * was holding, and could launch a case distillation from a menu item that
-   * says "From a source" (Bugbot, 2026-09-13).
-   */
-  const openIngestLane = useCallback((lane: IngestLane) => {
-    setRequestedIngestLane(lane);
-    setIngestOpen(true);
-  }, []);
   const [dumpRequested, setDumpRequested] = useState(false);
   const [chatImportTab, setChatImportTab] = useState<"upload" | "matrx">(
     searchParams.get("tab") === "matrx" ? "matrx" : "upload",
@@ -1098,11 +1096,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         editor_open: editorOpen,
         interview_open: interviewOpen,
         ingest_open: ingestOpen,
-        // The timeline lane is a mode of the source dialog (main folded it in);
-        // it is live exactly when that dialog is open on the timeline lane.
-        timeline_open:
-          ingestOpen &&
-          (requestedIngestLane ?? ingestLane ?? liveIngestLane) === "timeline",
+        // The timeline lane is a mode of this dialog, so it is live exactly
+        // when the session on screen was opened on that lane.
+        timeline_open: ingest.timelineOpen,
         triage_open: triageOpen,
         corpus_open: corpusOpen,
         chat_import_open: chatImportOpen,
@@ -1134,10 +1130,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     search,
     visibleRules,
     wizardOpen,
-      requestedIngestLane,
-      ingestLane,
+    ingest.timelineOpen,
     triageOpen,
-]);
+  ]);
 
   const getPageApplicationScope = useCallback(
     () =>
@@ -2479,10 +2474,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               the in-page Approach picker must remount it to land the Expert on
               the exemplar/file lane rather than the instructional default. */}
           <IngestSourceDialog
-            key={`ingest-${requestedIngestLane ?? ingestLane ?? liveIngestLane ?? "default"}`}
+            key={`ingest-${activeIngestLane ?? "default"}`}
             open={ingestOpen}
             onOpenChange={setIngestOpen}
-            initialLane={requestedIngestLane ?? ingestLane ?? liveIngestLane}
+            initialLane={activeIngestLane}
             rulebook={rulebook}
             onIngested={() => {
               void getRulebook(rulebook.id)
