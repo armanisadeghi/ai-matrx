@@ -89,6 +89,14 @@ export interface UnderstudyRefreshState {
    * your rules" the moment a rebuild lands, without reloading the workflow row.
    */
   result: UnderstudyRefreshResult | null;
+  /**
+   * When that SUCCESSFUL rebuild landed (epoch ms) — never the same thing as
+   * `at`, which moves on every attempt. `at` is cleared when a new poke starts
+   * and rewritten when one FAILS, so dating the surviving `result` by `at`
+   * would stamp a build that landed at 23:40 with the time a later failure
+   * gave up. The card says "rebuilt <time>" about a build, so it reads this.
+   */
+  resultAt: number | null;
 }
 
 const IDLE: UnderstudyRefreshState = {
@@ -97,6 +105,7 @@ const IDLE: UnderstudyRefreshState = {
   message: null,
   at: null,
   result: null,
+  resultAt: null,
 };
 
 const states = new Map<string, UnderstudyRefreshState>();
@@ -157,18 +166,21 @@ export async function refreshUnderstudyTracked(
     message: null,
     at: null,
     result: previous.result,
+    resultAt: previous.resultAt,
   });
   try {
     const result = await refreshUnderstudy(rulebookId);
     // A poke that started earlier may land later. It still did its work on the
     // server, but it is no longer what the card should report.
     if (isCurrent(rulebookId, generation)) {
+      const landedAt = Date.now();
       setState(rulebookId, {
         pending: false,
         failed: false,
         message: null,
-        at: Date.now(),
+        at: landedAt,
         result,
+        resultAt: landedAt,
       });
     }
     return result;
@@ -181,8 +193,10 @@ export async function refreshUnderstudyTracked(
         message,
         at: Date.now(),
         // The stand-in is still performing from the last build that landed —
-        // keep it, so the banner can name the version it is actually running.
+        // keep it, AND keep the time it landed, so the banner can name the
+        // version it is actually running without dating it to this failure.
         result: getUnderstudyRefreshState(rulebookId).result,
+        resultAt: getUnderstudyRefreshState(rulebookId).resultAt,
       });
     }
     throw err;
@@ -240,9 +254,11 @@ export function readUnderstudyStandIn(
     unconfirmed: useRebuild
       ? rebuilt.unconfirmed_rules
       : (row?.unconfirmed ?? null),
+    // `resultAt`, never `at`: the time the surviving build LANDED, not when
+    // the last attempt (which may have failed, or may still be running) ended.
     rebuiltAt: useRebuild
-      ? refresh.at !== null
-        ? new Date(refresh.at).toISOString()
+      ? refresh.resultAt !== null
+        ? new Date(refresh.resultAt).toISOString()
         : (row?.refreshed_at ?? null)
       : (row?.refreshed_at ?? null),
     behind: builtFromVersion !== null && builtFromVersion < rulebookVersion,

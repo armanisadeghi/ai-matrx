@@ -8,6 +8,10 @@
 //      workflow row (loaded before the save) with the bumped Rulebook version
 //      and nothing reloaded the row. The success payload already carries the
 //      version it built, so the card must believe it.
+//   3. "Rebuilt <time>" dated the SURVIVING successful build by `at`, the time
+//      the last ATTEMPT finished — cleared when a new poke starts and rewritten
+//      when one fails. So after a failed follow-up the card kept the successful
+//      version and counts and stamped them with the failure's clock.
 //   2. The staleness ledger had no generation token, so two in-flight pokes —
 //      the NORMAL case here, the review wizard saves once per rule (95 pokes
 //      in two hours on 2026-09-12) — could settle out of order and let an
@@ -151,5 +155,67 @@ describe("overlapping refreshes never clobber the ledger", () => {
     expect(
       readUnderstudyStandIn(state, STALE_ROW, 9).behind,
     ).toBe(true);
+  });
+});
+
+describe("the rebuild time belongs to the build, not to the last attempt", () => {
+  it("a failure after a success keeps the success's own timestamp", async () => {
+    const rulebookId = "rb-rebuilt-at";
+    // A real clock can hand both settles the same millisecond, which would let
+    // the defect pass by luck. Drive it by hand so the two moments differ.
+    const clock = jest
+      .spyOn(Date, "now")
+      .mockReturnValue(Date.parse("2026-09-12T23:40:00.000Z"));
+    const first = refreshUnderstudyTracked(rulebookId);
+    settleOk(0, 6);
+    await first;
+
+    const afterSuccess = readUnderstudyStandIn(
+      getUnderstudyRefreshState(rulebookId),
+      STALE_ROW,
+      6,
+    );
+    expect(afterSuccess.rebuiltAt).not.toBeNull();
+
+    // Time moves on, then a later poke fails.
+    clock.mockReturnValue(Date.parse("2026-09-13T02:15:00.000Z"));
+    const second = refreshUnderstudyTracked(rulebookId);
+    settleFail(1, "the server refused the rebuild");
+    await expect(second).rejects.toThrow();
+
+    const afterFailure = readUnderstudyStandIn(
+      getUnderstudyRefreshState(rulebookId),
+      STALE_ROW,
+      6,
+    );
+    // The stand-in still performs from the build that landed, so the card must
+    // still name that build — and date it to when it landed, not to the moment
+    // a later attempt gave up.
+    expect(afterFailure.builtFromVersion).toBe(6);
+    expect(afterFailure.rebuiltAt).toBe(afterSuccess.rebuiltAt);
+    expect(afterFailure.rebuiltAt).toBe("2026-09-12T23:40:00.000Z");
+    expect(getUnderstudyRefreshState(rulebookId).failed).toBe(true);
+    clock.mockRestore();
+  });
+
+  it("a rebuild still in flight does not lose the last build's timestamp", async () => {
+    const rulebookId = "rb-rebuilt-at-pending";
+    const first = refreshUnderstudyTracked(rulebookId);
+    settleOk(0, 6);
+    await first;
+    const landed = readUnderstudyStandIn(
+      getUnderstudyRefreshState(rulebookId),
+      STALE_ROW,
+      6,
+    ).rebuiltAt;
+
+    // A new save pokes again; nothing has settled yet.
+    void refreshUnderstudyTracked(rulebookId);
+    const whilePending = readUnderstudyStandIn(
+      getUnderstudyRefreshState(rulebookId),
+      STALE_ROW,
+      6,
+    );
+    expect(whilePending.rebuiltAt).toBe(landed);
   });
 });

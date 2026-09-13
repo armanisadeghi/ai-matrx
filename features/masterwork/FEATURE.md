@@ -236,6 +236,19 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-13` — **"Rebuilt <time>" dated the surviving build by the wrong clock (Bugbot, PR #222,
+  low severity, real).** The staleness ledger keeps two different moments and they were conflated:
+  `at` is when the last ATTEMPT finished — cleared when a new poke starts, rewritten when one
+  FAILS — while `result` deliberately survives a later failure, because the stand-in really is
+  still performing from the build that landed. `readUnderstudyStandIn` dated `result` by `at`, so
+  after a failed follow-up the card kept the right version and counts and stamped them with the
+  failure's clock, and during a pending poke it fell back to the workflow row's older timestamp.
+  The state now carries `resultAt` beside `result` (set on success, preserved through pending and
+  through failure) and `rebuiltAt` reads that. Guard
+  `features/masterwork/__tests__/understudy-refresh.test.ts` — two cases, both proven RED against
+  the old expression with `Date.now` driven by hand, because a real clock can hand two settles the
+  same millisecond and let the defect pass by luck.
+
 - `2026-09-12` — **Six review findings on the unfolding-case lane (Bugbot, PR #222), each fixed
   at its class with a guard proven failing-then-passing.** **(1) A held-out timeline could show
   the answer.** `parseTimelineSummary` kept the server's timeline byte for byte and handed it to
