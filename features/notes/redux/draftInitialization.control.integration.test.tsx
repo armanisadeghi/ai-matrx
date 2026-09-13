@@ -11,29 +11,25 @@ jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: getUserId }));
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { listForSources },
 }));
-// The dialog is unrelated presentational chrome; the real picker and its
-// initializer remain mounted for this control-to-store proof.
-jest.mock("../components/CreateFolderDialog", () => ({
-  CreateFolderDialog: () => null,
-}));
 jest.mock("../components/NoteTabItem", () => ({ NoteTabItem: () => null }));
 jest.mock("../components/SplitNotePicker", () => ({ SplitNotePicker: () => null }));
 jest.mock("@/lib/redux/slices/userSlice", () => ({
   selectUser: () => mockUser,
+  selectIsSuperAdmin: () => false,
 }));
 jest.mock("@/components/matrx/Tooltip", () => ({ SimpleTooltip: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock("@/features/overlays/openers/noteKnowledgePanel", () => ({
   useOpenNoteKnowledgePanel: () => jest.fn(),
 }));
+jest.mock("@/features/audio/service/useSpeech", () => ({
+  useSpeech: () => ({ speak: jest.fn(), isSpeaking: false, stop: jest.fn() }),
+}));
+jest.mock("@/features/surfaces/hooks/useSurfaceBoundAgents", () => ({
+  useSurfaceBoundAgents: () => ({ sections: [], loading: false, error: null, hasAgents: false, refresh: jest.fn() }),
+}));
 jest.mock("../components/RenameFolderDialog", () => ({ RenameFolderDialog: () => null }));
 jest.mock("../components/NoteSidebarRow", () => ({ NoteSidebarRow: () => null }));
 jest.mock("../components/NoteSidebarBulkBar", () => ({ NoteSidebarBulkBar: () => null }));
-jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
-  NonEditableContextMenu: ({ children, extraSections = [] }: { children: React.ReactNode; extraSections?: Array<{ items: Array<{ id: string; label: string; onSelect?: () => void }> }> }) => {
-    const React = require("react") as typeof import("react");
-    return React.createElement(React.Fragment, null, children, ...extraSections.flatMap((section) => section.items.map((item) => React.createElement("button", { key: item.id, onClick: item.onSelect }, item.label))));
-  },
-}));
 jest.mock("@/features/window-panels/WindowPanel", () => ({ WindowPanel: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock("../components/NoteViewControls", () => ({ NoteViewControls: () => null }));
 jest.mock("../components/NoteStatsFooter", () => ({ NoteStatsFooter: () => null }));
@@ -66,9 +62,19 @@ import { NoteTabBar } from "../components/NoteTabBar";
 import { NoteSidebar } from "../components/NoteSidebar";
 import { NotesWindow } from "@/features/window-panels/windows/notes/NotesWindow";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
+import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
+import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
+import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
+import diffCompareReducer from "@/lib/redux/slices/diffCompareSlice";
+import adminDebugReducer from "@/lib/redux/preferences/adminDebugSlice";
+import overlaysReducer from "@/lib/redux/slices/overlaySlice";
 
 enableMapSet();
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: () => ({ matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() }),
+});
 
 const ORG_A = "11111111-1111-4111-8111-111111111111";
 const ORG_B = "22222222-2222-4222-8222-222222222222";
@@ -96,6 +102,12 @@ function store(activeOrganizationId = ORG_A) {
       notes: notesReducer,
       appContext: appContextReducer,
       userAuth: userAuthReducer,
+      agentShortcut: agentShortcutReducer,
+      agentShortcutCategory: agentShortcutCategoryReducer,
+      skl: sklReducer,
+      diffCompare: diffCompareReducer,
+      adminDebug: adminDebugReducer,
+      overlays: overlaysReducer,
     },
     preloadedState: {
       appContext: { organization_id: activeOrganizationId, organization_name: null, personal_organization_id: null, scope_selections: {}, active_scope_type_ids: [], project_id: null, project_name: null, task_id: null, task_name: null, conversation_id: null, orgBootstrapResolved: true },
@@ -108,7 +120,13 @@ function switchableStore(activeOrganizationId = ORG_A) {
   const userAuthReducer = (state: Pick<UserAuthState, "id"> = { id: USER }, action: { type: string }) =>
     action.type === "test/switch-user" ? { id: "other-user" } : state;
   return configureStore({
-    reducer: { notes: notesReducer, appContext: appContextReducer, userAuth: userAuthReducer },
+    reducer: {
+      notes: notesReducer, appContext: appContextReducer, userAuth: userAuthReducer,
+      agentShortcut: agentShortcutReducer, agentShortcutCategory: agentShortcutCategoryReducer, skl: sklReducer,
+      diffCompare: diffCompareReducer,
+      adminDebug: adminDebugReducer,
+      overlays: overlaysReducer,
+    },
     preloadedState: {
       appContext: { organization_id: activeOrganizationId, organization_name: null, personal_organization_id: null, scope_selections: {}, active_scope_type_ids: [], project_id: null, project_name: null, task_id: null, task_name: null, conversation_id: null, orgBootstrapResolved: true },
     },
@@ -325,9 +343,15 @@ describe("autogenerated draft control admission and first save", () => {
     const host = document.createElement("div");
     const root = createRoot(host);
     await act(async () => { root.render(<Provider store={configured}><NotesWindow id="notes-test" windowInstanceId="control" onClose={jest.fn()} /></Provider>); });
-    const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent === "New note");
-    expect(button).toBeDefined();
-    await act(async () => { button?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await act(async () => {
+      host.firstElementChild?.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true, cancelable: true, button: 2, clientX: 20, clientY: 20,
+      }));
+    });
+    const menuItem = [...document.body.querySelectorAll<HTMLElement>("[role='menuitem']")]
+      .find((candidate) => candidate.textContent === "New note");
+    expect(menuItem).toBeDefined();
+    await act(async () => { menuItem?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     const id = Object.keys(configured.getState().notes.notes)[0];
     expect(configured.getState().notes.notes[id]).toMatchObject({ id, organization_id: ORG_A, folder_id: FOLDER_B, folder_name: "Draft", _isAutogenerated: true });
     await act(async () => {
@@ -336,6 +360,152 @@ describe("autogenerated draft control admission and first save", () => {
     });
     expect(inserted.insert).toHaveBeenCalledWith(expect.objectContaining({ id, organization_id: ORG_A, folder_id: FOLDER_B, folder_name: "Draft" }));
     await act(async () => { root.unmount(); });
+  });
+
+  it.each([
+    ["FolderQuickPick", (configured: ReturnType<typeof store>) => <FolderQuickPick instanceId="missing-org-picker" />, (host: HTMLElement) => [...host.querySelectorAll("button")].find((button) => button.title === "New note in Draft")],
+    ["NoteTabBar", (configured: ReturnType<typeof store>) => {
+      configured.dispatch(registerInstance("missing-org-tabs"));
+      return <NoteTabBar instanceId="missing-org-tabs" syncUrl={false} />;
+    }, (host: HTMLElement) => host.querySelector("button")],
+    ["NoteSidebar", (configured: ReturnType<typeof store>) => {
+      configured.dispatch(registerInstance("missing-org-sidebar"));
+      return <NoteSidebar instanceId="missing-org-sidebar" />;
+    }, (host: HTMLElement) => [...host.querySelectorAll("button")].find((button) => button.textContent?.includes("New Note"))],
+  ])("%s renders a missing-organization refusal with zero IO and admits a selected-org retry", async (_name, renderControl, findAction) => {
+    const configured = store(null as never);
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    await act(async () => { root.render(<Provider store={configured}>{renderControl(configured)}</Provider>); });
+    const action = findAction(host);
+    expect(action).toBeDefined();
+    await act(async () => { action?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(host.querySelector("[role='alert']")?.textContent).toContain("organization");
+    expect(schema).not.toHaveBeenCalled();
+
+    const created = chain({ data: { id: FOLDER_B, name: "Draft", deleted_at: null }, error: null });
+    schema.mockReturnValue({ from: jest.fn().mockReturnValue(created) });
+    await act(async () => { configured.dispatch(setOrganization({ id: ORG_A })); });
+    await act(async () => { findAction(host)?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(created.upsert).toHaveBeenCalledTimes(1);
+    expect(Object.keys(configured.getState().notes.notes)).toHaveLength(1);
+    await act(async () => { root.unmount(); });
+  });
+
+  it.each([
+    ["FolderQuickPick", (configured: ReturnType<typeof store>) => <FolderQuickPick instanceId="reject-picker" />, (host: HTMLElement) => [...host.querySelectorAll("button")].find((button) => button.title === "New note in Draft")],
+    ["NoteTabBar", (configured: ReturnType<typeof store>) => {
+      configured.dispatch(registerInstance("reject-tabs"));
+      return <NoteTabBar instanceId="reject-tabs" syncUrl={false} />;
+    }, (host: HTMLElement) => host.querySelector("button")],
+    ["NoteSidebar", (configured: ReturnType<typeof store>) => {
+      configured.dispatch(registerInstance("reject-sidebar"));
+      return <NoteSidebar instanceId="reject-sidebar" />;
+    }, (host: HTMLElement) => [...host.querySelectorAll("button")].find((button) => button.textContent?.includes("New Note"))],
+  ])("%s disables during one delayed admission, renders its rejection, and releases retry without an unhandled event", async (_name, renderControl, findAction) => {
+    let rejectAdmission: ((reason?: unknown) => void) | undefined;
+    const created = chain(new Promise((_, reject) => { rejectAdmission = reject; }));
+    schema.mockReturnValue({ from: jest.fn().mockReturnValue(created) });
+    const configured = store();
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    const unhandled = jest.fn();
+    window.addEventListener("unhandledrejection", unhandled);
+    await act(async () => { root.render(<Provider store={configured}>{renderControl(configured)}</Provider>); });
+    await act(async () => {
+      findAction(host)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      findAction(host)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(created.upsert).toHaveBeenCalledTimes(1);
+    expect(findAction(host)).toHaveProperty("disabled", true);
+    await act(async () => { rejectAdmission?.(new Error("transport refused")); });
+    expect(host.querySelector("[role='alert']")?.textContent).toContain("transport refused");
+    expect(findAction(host)).toHaveProperty("disabled", false);
+    await Promise.resolve();
+    expect(unhandled).not.toHaveBeenCalled();
+    window.removeEventListener("unhandledrejection", unhandled);
+    await act(async () => { root.unmount(); });
+  });
+
+  it("uses the actual NotesWindow context menu's pending disabled item and visible missing-org retry", async () => {
+    const configured = store(null as never);
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => { root.render(<Provider store={configured}><NotesWindow id="notes-matrix" windowInstanceId="matrix" onClose={jest.fn()} /></Provider>); });
+    await act(async () => { host.firstElementChild?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: 20, clientY: 20 })); });
+    const missingItem = [...document.body.querySelectorAll<HTMLElement>("[role='menuitem']")].find((item) => item.textContent === "New note");
+    expect(missingItem).toBeDefined();
+    await act(async () => { missingItem?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(host.querySelector("[role='alert']")?.textContent).toContain("organization");
+    expect(schema).not.toHaveBeenCalled();
+    const created = chain({ data: { id: FOLDER_B, name: "Draft", deleted_at: null }, error: null });
+    schema.mockReturnValue({ from: jest.fn().mockReturnValue(created) });
+    await act(async () => { configured.dispatch(setOrganization({ id: ORG_A })); });
+    await act(async () => { host.firstElementChild?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: 20, clientY: 20 })); });
+    const retryItem = [...document.body.querySelectorAll<HTMLElement>("[role='menuitem']")].find((item) => item.textContent === "New note");
+    await act(async () => { retryItem?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(created.upsert).toHaveBeenCalledTimes(1);
+    await act(async () => { root.unmount(); });
+    host.remove();
+  });
+
+  it("keeps the real FolderQuickPick custom-folder dialog open with its name when a concurrent admission is busy", async () => {
+    let rejectAdmission: ((reason?: unknown) => void) | undefined;
+    const created = chain(new Promise((_, reject) => { rejectAdmission = reject; }));
+    schema.mockReturnValue({ from: jest.fn().mockReturnValue(created) });
+    const configured = store();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => { root.render(<Provider store={configured}><FolderQuickPick instanceId="dialog-busy" /></Provider>); });
+    const custom = [...host.querySelectorAll("button")].find((button) => button.title === "Create a new folder");
+    await act(async () => { custom?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    const input = document.getElementById("note-folder-name") as HTMLInputElement;
+    expect(input).toBeDefined();
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(input, "Retained folder");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const draft = [...host.querySelectorAll("button")].find((button) => button.title === "New note in Draft");
+    await act(async () => { draft?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await act(async () => { input.closest("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+    expect(created.upsert).toHaveBeenCalledTimes(1);
+    expect((document.getElementById("note-folder-name") as HTMLInputElement).value).toBe("Retained folder");
+    expect(document.body.textContent).toContain("already being started");
+    await act(async () => { rejectAdmission?.(new Error("transport refused")); });
+    await act(async () => { root.unmount(); });
+    host.remove();
+  });
+
+  it("uses the actual NotesWindow context-menu disabled contract during a delayed rejection and then releases retry", async () => {
+    let rejectAdmission: ((reason?: unknown) => void) | undefined;
+    const created = chain(new Promise((_, reject) => { rejectAdmission = reject; }));
+    schema.mockReturnValue({ from: jest.fn().mockReturnValue(created) });
+    const configured = store();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const unhandled = jest.fn();
+    window.addEventListener("unhandledrejection", unhandled);
+    await act(async () => { root.render(<Provider store={configured}><NotesWindow id="notes-pending" windowInstanceId="pending" onClose={jest.fn()} /></Provider>); });
+    await act(async () => { host.firstElementChild?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: 20, clientY: 20 })); });
+    const first = [...document.body.querySelectorAll<HTMLElement>("[role='menuitem']")].find((item) => item.textContent === "New note");
+    await act(async () => { first?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(created.upsert).toHaveBeenCalledTimes(1);
+    expect(host.textContent).toContain("Starting new note");
+    await act(async () => { host.firstElementChild?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: 20, clientY: 20 })); });
+    const disabled = [...document.body.querySelectorAll<HTMLElement>("[role='menuitem']")].find((item) => item.textContent === "New note");
+    expect(disabled?.getAttribute("data-disabled")).toBe("");
+    await act(async () => { rejectAdmission?.(new Error("menu transport refused")); });
+    expect(host.querySelector("[role='alert']")?.textContent).toContain("menu transport refused");
+    await Promise.resolve();
+    expect(unhandled).not.toHaveBeenCalled();
+    window.removeEventListener("unhandledrejection", unhandled);
+    await act(async () => { root.unmount(); });
+    host.remove();
   });
 
   it("keeps every production draft producer on the typed initializer boundary", () => {
