@@ -139,7 +139,9 @@ function jsonFile(text: string, size = text.length): File {
   return file;
 }
 
-function jsonRecord(overrides: Partial<Extract<StructuredImportRecord, { status: "supported" }>> = {}): Extract<StructuredImportRecord, { status: "supported" }> {
+type WebsiteImportRecord = Extract<StructuredImportRecord, { status: "supported"; kind: "website_login" }>;
+
+function jsonRecord(overrides: Partial<WebsiteImportRecord> = {}): WebsiteImportRecord {
   return {
     ordinal: 0,
     title: "Example",
