@@ -25,9 +25,9 @@ export type SettingsNumberInputProps = SettingsCommonProps & {
 };
 
 const widthClass = {
-  sm: "w-full max-w-20",
-  md: "w-full max-w-24",
-  lg: "w-full max-w-32",
+  sm: "w-20 max-w-full min-w-0",
+  md: "w-24 max-w-full min-w-0",
+  lg: "w-32 max-w-full min-w-0",
 };
 
 export function SettingsNumberInput({

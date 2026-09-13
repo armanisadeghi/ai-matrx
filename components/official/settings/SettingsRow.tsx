@@ -231,7 +231,9 @@ export function SettingsRow({
         {labelBlock}
         <div
           className={cn(
-            "w-full min-w-0 max-w-full [&_button]:max-w-full [&_input]:max-w-full @[40rem]/settings:w-auto @[40rem]/settings:shrink-0",
+            controlLayout === "wide"
+              ? "w-full min-w-0 max-w-full [&_button]:max-w-full [&_input]:max-w-full @[40rem]/settings:w-auto @[40rem]/settings:shrink-0"
+              : "w-auto min-w-0 max-w-full shrink-0 [&_button]:max-w-full [&_input]:max-w-full",
             disabled && "opacity-50",
           )}
         >
@@ -263,7 +265,7 @@ function CompactHelpPopover({
           side="bottom"
           align="start"
           sideOffset={6}
-          className="z-50 w-72 rounded-md border border-border bg-popover p-3 text-xs leading-snug text-popover-foreground shadow-md"
+          className="z-50 w-72 max-w-[calc(100vw-2rem)] break-words rounded-md border border-border bg-popover p-3 text-xs leading-snug text-popover-foreground shadow-md [overflow-wrap:anywhere]"
         >
           {description && <div>{description}</div>}
           {helpText && (

@@ -265,7 +265,7 @@ function SliderField({
   const shown = dragging ?? settled;
 
   return (
-    <div className="w-full max-w-56 space-y-1.5 py-1">
+    <div className="w-56 max-w-full min-w-0 space-y-1.5 py-1">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-medium tabular-nums">
           {formatKnobValue(shown, knob.unit)}
@@ -319,7 +319,7 @@ function ModelField({
       outputModalities={["text"]}
       placeholder="Choose a model"
       disabled={disabled}
-      className="w-full max-w-56 justify-between"
+      className="w-56 max-w-full min-w-0 justify-between"
     />
   );
 }
@@ -370,7 +370,7 @@ function VoiceField({
   };
 
   return (
-    <div className="w-full max-w-64 space-y-1.5">
+    <div className="w-64 max-w-full min-w-0 space-y-1.5">
       <div className="flex flex-wrap items-center gap-2">
         <Select
           value={current || undefined}
@@ -434,7 +434,7 @@ function SecretField({ knob }: { knob: ScopedKnob }) {
   const isSet = state === "set";
   const isUnknown = state === "unknown";
   return (
-    <div className="flex w-full max-w-56 flex-col items-stretch gap-1.5 @[40rem]/settings:items-end">
+    <div className="flex w-56 max-w-full min-w-0 flex-col items-stretch gap-1.5 @[40rem]/settings:items-end">
       <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant={isSet ? "default" : "outline"}

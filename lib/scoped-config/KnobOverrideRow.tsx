@@ -37,6 +37,7 @@ import {
 import { formatKnobValue, type KnobLadder } from "./ladder";
 import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
+import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import {
   Select,
@@ -279,28 +280,29 @@ export function KnobOverrideRow(props: {
       : null;
 
   return (
-    <SettingsRow
-      id={knob.full_key}
-      label={knob.label}
-      description={knob.description}
-      helpText={knob.ui.help}
-      error={
-        inlineError ??
-        (!canWrite
-          ? (ladder?.cannotWriteBecause ??
-            "This setting cannot be changed here.")
-          : undefined)
-      }
-      modified={
-        system
-          ? JSON.stringify(knob.platform_default) !==
-            JSON.stringify(system.registeredDefault)
-          : isSetHere
-      }
-      controlLayout="wide"
-      variant="inline"
-    >
-      <div className="flex w-full min-w-0 max-w-80 flex-col items-stretch gap-1 @[40rem]/settings:items-end">
+    <SettingAnchor id={knob.full_key}>
+      <SettingsRow
+        id={knob.full_key}
+        label={knob.label}
+        description={knob.description}
+        helpText={knob.ui.help}
+        error={
+          inlineError ??
+          (!canWrite
+            ? (ladder?.cannotWriteBecause ??
+              "This setting cannot be changed here.")
+            : undefined)
+        }
+        modified={
+          system
+            ? JSON.stringify(knob.platform_default) !==
+              JSON.stringify(system.registeredDefault)
+            : isSetHere
+        }
+        controlLayout="wide"
+        variant="inline"
+      >
+      <div className="flex w-80 min-w-0 max-w-full flex-col items-stretch gap-1 @[40rem]/settings:items-end">
         {stateOnly ? (
           <div className="text-sm text-muted-foreground">
             This preference is not available yet.
@@ -454,6 +456,7 @@ export function KnobOverrideRow(props: {
               <Button
                 size="sm"
                 variant="ghost"
+                aria-label={`Details for ${knob.label}`}
                 className="h-auto px-1.5 py-0.5 text-[11px]"
               >
                 Details
@@ -476,6 +479,7 @@ export function KnobOverrideRow(props: {
           </Popover>
         </div>
       </div>
-    </SettingsRow>
+      </SettingsRow>
+    </SettingAnchor>
   );
 }

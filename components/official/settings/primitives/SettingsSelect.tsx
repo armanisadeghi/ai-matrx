@@ -19,9 +19,9 @@ type Width = "auto" | "sm" | "md" | "lg" | "full";
 
 const widthClass: Record<Width, string> = {
   auto: "w-full max-w-full @[40rem]/settings:w-auto @[40rem]/settings:min-w-32",
-  sm: "w-full max-w-32",
-  md: "w-full max-w-44",
-  lg: "w-full max-w-64",
+  sm: "w-32 max-w-full min-w-0",
+  md: "w-44 max-w-full min-w-0",
+  lg: "w-64 max-w-full min-w-0",
   full: "w-full",
 };
 
