@@ -2,7 +2,7 @@
   "$comment": "WRITTEN BY aidream/scripts/sync_ts_package_guard.mjs. Never edit by hand. It names the aidream commit each guard family in this directory was distributed FROM, so this root can always say where its guard came from.",
   "originRepo": "aidream",
   "packagesGuard": {
-    "commit": "51f17f60d874a21027f712496b93eeb454d30172",
+    "commit": "7c786d4fed45010727850d2e6f573c13c4399e88",
     "files": [
       "check-matrx-packages.mjs"
     ]
