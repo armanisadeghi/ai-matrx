@@ -2,6 +2,8 @@
 
 // Component identities only: all table state, rows, filters, copy orchestration,
 // and row-window contents belong to the design-system package. No startup IO.
+// Table UI feedback: /Users/armanisadeghi/code/common-docs/projects/npm-package-extraction/TABLE-UI-ISSUES.md
+// Read and update that checklist before fixing table UI feedback in any host.
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
