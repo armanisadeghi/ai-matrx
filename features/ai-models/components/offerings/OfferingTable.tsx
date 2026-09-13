@@ -183,6 +183,7 @@ export default function OfferingTable({
       accessorKey: "priority",
       header: "Priority",
       width: 90,
+      align: "right",
       cell: (offering) => (
         <span className="block text-right font-mono text-xs tabular-nums">
           {offering.priority}
@@ -194,6 +195,7 @@ export default function OfferingTable({
       header: "Input Price",
       accessorFn: (offering) => priceFor(offering, "input_price"),
       width: 140,
+      align: "right",
       cell: (offering) => (
         <ProviderPriceCell
           value={priceFor(offering, "input_price")}
@@ -207,6 +209,7 @@ export default function OfferingTable({
       header: "Cached Input",
       accessorFn: (offering) => priceFor(offering, "cached_input_price"),
       width: 150,
+      align: "right",
       cell: (offering) => (
         <ProviderPriceCell
           value={priceFor(offering, "cached_input_price")}
@@ -220,6 +223,7 @@ export default function OfferingTable({
       header: "Output Price",
       accessorFn: (offering) => priceFor(offering, "output_price"),
       width: 140,
+      align: "right",
       cell: (offering) => (
         <ProviderPriceCell
           value={priceFor(offering, "output_price")}
