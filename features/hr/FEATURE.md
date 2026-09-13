@@ -201,6 +201,16 @@ wrapper added in another lane's file.
   without changing the shared decision the switch writes. Guard:
   `features/hr/compliance/__tests__/law-portal-control-id.test.ts`.
 
+- **2026-09-13 (law portal lifecycle refusals stay in product language)** — The
+  active one-per-window exclusion constraint remains the temporal integrity boundary:
+  it blocks a second active org rule over the same jurisdiction and effective period,
+  while retired rows are already excluded. Migration
+  `hr_l9_04_org_rule_overlap_refusal.sql` maps its `23P01` to
+  `rule_window_conflict` with an actionable sentence rather than exposing database
+  constraint text. `OrgLawRuleRow` action controls are siblings of its expansion
+  button; the direct interaction guard proves Edit and Retire fire once without
+  expanding the row.
+
 - **2026-09-11 (the HR Fields page shows what the database actually enables, DD-097)** —
   `features/hr/settings/service.ts` asked `platform.custom_field_target` about a
   hand-written list of seven `hr_*` tokens, filtered to the active employer. Live,
