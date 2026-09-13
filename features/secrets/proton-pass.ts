@@ -45,14 +45,18 @@ const itemTitle = (item: Obj, ordinal: number) => {
   return typeof meta?.name === "string" ? meta.name : `Item ${ordinal + 1}`;
 };
 
-function validDisplay(x: unknown) {
+function displayStatus(x: unknown): "valid" | "invalid" | "unsupported" {
   const d = object(x);
-  return (
-    !!d &&
-    exact(d, [], ["icon", "color"]) &&
-    (d.icon === undefined || integer(d.icon, 31)) &&
-    (d.color === undefined || integer(d.color, 11))
-  );
+  if (!d || !exact(d, [], ["icon", "color"])) return "invalid";
+  if (
+    (d.icon !== undefined && !integer(d.icon)) ||
+    (d.color !== undefined && !integer(d.color))
+  )
+    return "invalid";
+  return (d.icon !== undefined && n(d.icon) > 31) ||
+    (d.color !== undefined && n(d.color) > 11)
+    ? "unsupported"
+    : "valid";
 }
 function validExtra(x: unknown, max: number) {
   return (
@@ -189,8 +193,10 @@ function canonical(item: Obj): Obj {
             },
       ...(data.platformSpecific === undefined
         ? {}
-        : { platformSpecific: data.platformSpecific }),
-      extraFields: data.extraFields,
+        : {
+            platformSpecific: canonicalPlatform(data.platformSpecific as Obj),
+          }),
+      extraFields: (data.extraFields as Obj[]).map(canonicalExtra),
       metadata: { name: meta.name, note: meta.note, itemUuid: meta.itemUuid },
     },
     state: item.state,
@@ -201,8 +207,34 @@ function canonical(item: Obj): Obj {
     pinned: item.pinned,
   };
   if (item.shareCount !== undefined) out.shareCount = item.shareCount;
-  out.files = item.files;
+  out.files = [...(item.files as string[])];
   return out;
+}
+function canonicalExtra(field: Obj): Obj {
+  const data = field.data as Obj;
+  return {
+    fieldName: field.fieldName,
+    type: field.type,
+    data:
+      field.type === "totp"
+        ? { totpUri: data.totpUri }
+        : field.type === "timestamp"
+          ? { timestamp: data.timestamp }
+          : { content: data.content },
+  };
+}
+function canonicalPlatform(platform: Obj): Obj {
+  if (platform.android === undefined) return {};
+  const android = platform.android as Obj;
+  return {
+    android: {
+      allowedApps: (android.allowedApps as Obj[]).map((app) => ({
+        packageName: app.packageName,
+        hashes: [...(app.hashes as string[])],
+        appName: app.appName,
+      })),
+    },
+  };
 }
 function source(
   version: string,
@@ -220,13 +252,26 @@ function source(
   value.vault = {
     id: vaultId,
     description: vault.description,
-    display: vault.display,
+    display: {
+      ...((vault.display as Obj).icon === undefined
+        ? {}
+        : { icon: (vault.display as Obj).icon }),
+      ...((vault.display as Obj).color === undefined
+        ? {}
+        : { color: (vault.display as Obj).color }),
+    },
     name: vault.name,
   };
   value.item = canonical(item);
   return stringify(value);
 }
-type Entry = { item: Obj; vault: Obj; vaultId: string; ordinal: number };
+type Entry = {
+  item: Obj;
+  vault: Obj;
+  vaultId: string;
+  ordinal: number;
+  vaultUnsupported?: boolean;
+};
 function validate(
   entry: Entry,
   version: string,
@@ -236,25 +281,21 @@ function validate(
   const { item, vault, vaultId, ordinal } = entry,
     title = itemTitle(item, ordinal);
   if (
-    !exact(
-      item,
-      [
-        "itemId",
-        "shareId",
-        "data",
-        "state",
-        "aliasEmail",
-        "contentFormatVersion",
-        "createTime",
-        "modifyTime",
-        "pinned",
-        "files",
-      ],
-      ["shareCount"],
-    ) ||
+    ![
+      "itemId",
+      "shareId",
+      "data",
+      "state",
+      "aliasEmail",
+      "contentFormatVersion",
+      "createTime",
+      "modifyTime",
+      "pinned",
+      "files",
+    ].every((key) => key in item) ||
     !string(item.itemId, max, true) ||
     item.shareId !== vaultId ||
-    !integer(item.state, 2) ||
+    !integer(item.state) ||
     !integer(item.contentFormatVersion) ||
     !integer(item.createTime) ||
     !integer(item.modifyTime) ||
@@ -271,6 +312,30 @@ function validate(
       title,
       "The Proton Pass item is invalid.",
     );
+  if (
+    !exact(
+      item,
+      [
+        "itemId",
+        "shareId",
+        "data",
+        "state",
+        "aliasEmail",
+        "contentFormatVersion",
+        "createTime",
+        "modifyTime",
+        "pinned",
+        "files",
+      ],
+      ["shareCount"],
+    )
+  )
+    return reject(
+      "unsupported",
+      ordinal,
+      title,
+      "This Proton Pass item has unsupported fields.",
+    );
   if (n(item.contentFormatVersion) !== 8 || ![1, 2].includes(n(item.state)))
     return reject(
       "unsupported",
@@ -285,6 +350,9 @@ function validate(
     !data ||
     !meta ||
     !content ||
+    !["type", "content", "extraFields", "metadata"].every(
+      (key) => key in data,
+    ) ||
     !exact(
       data,
       ["type", "content", "extraFields", "metadata"],
@@ -323,6 +391,13 @@ function validate(
         title,
         "Proton Pass attachments are unsupported.",
       );
+    if (entry.vaultUnsupported)
+      return reject(
+        "unsupported",
+        ordinal,
+        title,
+        "This Proton Pass vault display format is unsupported.",
+      );
     return {
       status: "supported",
       ordinal,
@@ -333,7 +408,16 @@ function validate(
       kind: "custom",
     };
   }
+  const contentRequired = [
+    "itemEmail",
+    "password",
+    "urls",
+    "totpUri",
+    "passkeys",
+    "itemUsername",
+  ];
   if (
+    !contentRequired.every((key) => key in content) ||
     !exact(content, [
       "itemEmail",
       "password",
@@ -350,13 +434,25 @@ function validate(
     !content.urls.every((v) => string(v, max)) ||
     !Array.isArray(content.autofillUrls) ||
     !Array.isArray(content.passkeys)
-  )
+  ) {
+    if (
+      contentRequired.every((key) => key in content) &&
+      !("autofillUrls" in content) &&
+      Object.keys(content).every((key) => contentRequired.includes(key))
+    )
+      return reject(
+        "unsupported",
+        ordinal,
+        title,
+        "This Proton Pass legacy login shape is unsupported.",
+      );
     return reject(
       "invalid",
       ordinal,
       title,
       "The Proton Pass login is invalid.",
     );
+  }
   if (!validPasskeys(content.passkeys, max))
     return reject(
       "invalid",
@@ -371,7 +467,7 @@ function validate(
         !!u &&
         exact(u, ["url", "mode"]) &&
         string(u.url, max) &&
-        integer(u.mode, 6)
+        integer(u.mode)
       );
     })
   )
@@ -380,6 +476,13 @@ function validate(
       ordinal,
       title,
       "The Proton Pass URL list is invalid.",
+    );
+  if ((content.autofillUrls as Obj[]).some((raw) => n(raw.mode) > 6))
+    return reject(
+      "unsupported",
+      ordinal,
+      title,
+      "This Proton Pass URL mode is unsupported.",
     );
   const legacyUrls = content.urls as string[];
   const defaults = content.autofillUrls
@@ -405,6 +508,13 @@ function validate(
   const urls = legacyUrls
     .map(safeDestination)
     .flatMap((value) => (value.metadata ? [value.metadata] : []));
+  if (entry.vaultUnsupported)
+    return reject(
+      "unsupported",
+      ordinal,
+      title,
+      "This Proton Pass vault display format is unsupported.",
+    );
   return {
     status: "supported",
     ordinal,
@@ -465,10 +575,24 @@ export function parseProtonPassExport(
       !exact(vault, ["description", "display", "name", "items"]) ||
       !string(vault.description, limits.maxCellBytes) ||
       !string(vault.name, limits.maxCellBytes) ||
-      !validDisplay(vault.display) ||
+      displayStatus(vault.display) === "invalid" ||
       !Array.isArray(vault.items)
     )
       throw new Error("The Proton Pass vault is invalid.");
+    if (displayStatus(vault.display) === "unsupported") {
+      for (const raw of vault.items) {
+        if (entries.length >= limits.maxRecords)
+          throw new Error("The Proton Pass export has too many records.");
+        entries.push({
+          item: object(raw) ?? {},
+          vault,
+          vaultId,
+          ordinal: entries.length,
+          vaultUnsupported: true,
+        });
+      }
+      continue;
+    }
     for (const raw of vault.items) {
       if (entries.length >= limits.maxRecords)
         throw new Error("The Proton Pass export has too many records.");
@@ -481,22 +605,10 @@ export function parseProtonPassExport(
           );
         identities.add(id);
       }
-      if (Array.isArray(item.files))
-        for (const file of item.files)
-          if (typeof file === "string")
-            claims.set(file, (claims.get(file) ?? 0) + 1);
       entries.push({ item, vault, vaultId, ordinal: entries.length });
     }
   }
-  if (binaryNames) {
-    for (const [name, count] of claims)
-      if (count !== 1 || !binaryNames.has(name))
-        throw new Error("The Proton Pass archive is invalid.");
-    for (const name of binaryNames)
-      if (claims.get(name) !== 1)
-        throw new Error("The Proton Pass archive is invalid.");
-  }
-  return entries.map((entry) =>
+  const records = entries.map((entry) =>
     validate(
       entry,
       root.version as string,
@@ -504,4 +616,23 @@ export function parseProtonPassExport(
       limits.maxCellBytes,
     ),
   );
+  if (binaryNames) {
+    entries.forEach((entry, index) => {
+      if (
+        records[index]?.status === "invalid" ||
+        !Array.isArray(entry.item.files)
+      )
+        return;
+      for (const file of entry.item.files as unknown[])
+        if (typeof file === "string")
+          claims.set(file, (claims.get(file) ?? 0) + 1);
+    });
+    for (const [name, count] of claims)
+      if (count !== 1 || !binaryNames.has(name))
+        throw new Error("The Proton Pass archive is invalid.");
+    for (const name of binaryNames)
+      if (claims.get(name) !== 1)
+        throw new Error("The Proton Pass archive is invalid.");
+  }
+  return records;
 }

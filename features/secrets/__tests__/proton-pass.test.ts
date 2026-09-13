@@ -154,4 +154,29 @@ describe("Proton Pass export parser", () => {
       ),
     ).toThrow("invalid");
   });
+  test("classifies future login enums and legacy omission as source-free unsupported", () => {
+    const futureState = parseProtonPassExport(
+      source(login({ state: 3 })),
+      limits,
+    )[0];
+    const legacy = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: Object.fromEntries(
+              Object.entries((login().data as any).content).filter(
+                ([key]) => key !== "autofillUrls",
+              ),
+            ),
+          },
+        }),
+      ),
+      limits,
+    )[0];
+    expect(futureState).toMatchObject({ status: "unsupported" });
+    expect(legacy).toMatchObject({ status: "unsupported" });
+    expect(futureState).not.toHaveProperty("sourceRecord");
+    expect(legacy).not.toHaveProperty("sourceRecord");
+  });
 });

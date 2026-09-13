@@ -938,7 +938,7 @@ export function VaultCsvImportDialog({
                 {jsonPreflightCounts.invalid} invalid;{" "}
                 {jsonPreflightCounts.unsupported} unsupported;{" "}
                 {jsonPreflightCounts.deleted} deleted
-                {source === "1password_1pux"
+                {structuredImportSource(source)?.supportsArchived
                   ? `; ${jsonPreflightCounts.archived} archived`
                   : ""}
                 . Unsupported records stay local and are never sent.
@@ -1049,13 +1049,15 @@ export function VaultCsvImportDialog({
                   </span>
                 </label>
               )}
-              {source === "1password_1pux" && binaryMembers > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {binaryMembers} binary archive member
-                  {binaryMembers === 1 ? "" : "s"} and icon data are not
-                  imported.
-                </p>
-              )}
+              {structuredImportSource(source)?.binaryMemberNotice &&
+                binaryMembers > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {binaryMembers} binary archive member
+                    {binaryMembers === 1 ? "" : "s"}
+                    {source === "1password_1pux" ? " and icon data" : ""} are
+                    not imported.
+                  </p>
+                )}
               <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Switch
                   checked={enableBrowserFill}
