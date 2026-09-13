@@ -173,6 +173,9 @@ export async function materializeNote(input: Note): Promise<Note> {
   if (input.created_by !== userId) {
     throw new Error("The signed-in user changed before this note could be saved.");
   }
+  if (input.folder_name?.trim() && !input.folder_id) {
+    throw new Error("This draft still names a folder that has not been admitted in this organization. Keep the draft open, choose the folder again, and retry.");
+  }
   if (input.folder_id) {
     const { data: folder, error: folderError } = await supabase
       .schema("workbench")

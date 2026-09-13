@@ -60,6 +60,7 @@ import {
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
+  clearSavingNoteId,
   materializeNote,
   settlePartialNoteCreate,
   setListStatus,
@@ -363,6 +364,10 @@ const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUs
         const friendly = error instanceof Error ? error.message : "Could not save this new note.";
         failNoteSave(dispatch, getState, noteId, friendly);
         throw error;
+      } finally {
+        // An acknowledgement can arrive after auth changed. Never use receipt
+        // settlement to clear that state: only clear this payload's busy flag.
+        dispatch(clearSavingNoteId(noteId));
       }
       return;
     }
@@ -478,6 +483,11 @@ const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUs
         error instanceof Error ? error.message : "Could not save note context.";
       failNoteSave(dispatch, getState, noteId, friendly);
       throw error;
+    } finally {
+      // This is deliberately independent of receipt/error settlement. An auth
+      // boundary can throw while handling a partial receipt, and stale receipt
+      // data must never be used merely to release the local save indicator.
+      dispatch(clearSavingNoteId(noteId));
     }
 
     // Dispatch label change event if label was dirty
