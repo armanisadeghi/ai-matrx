@@ -264,7 +264,11 @@ export function useDiscoverAgentMcpTools(serverIds: string[]) {
 export function useMcpServerTruth(
   entry: Pick<
     McpCatalogEntry,
-    "slug" | "authStrategy" | "connectionStatus" | "tokenExpiresAt"
+    | "slug"
+    | "authStrategy"
+    | "connectionStatus"
+    | "tokenExpiresAt"
+    | "serverStatus"
   >,
 ): McpConnectionTruth {
   const availability = useAppSelector(selectMcpAvailability);
@@ -285,6 +289,7 @@ export function useMcpServerTruth(
       entry.authStrategy,
       entry.connectionStatus,
       entry.tokenExpiresAt,
+      entry.serverStatus,
     ],
   );
 }

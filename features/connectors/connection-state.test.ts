@@ -28,8 +28,10 @@ function entry(over: {
   authStrategy?: "none" | "oauth_discovery" | "api_key";
   connectionStatus?: string | null;
   tokenExpiresAt?: string | null;
+  serverStatus?: string;
 }) {
   return {
+    serverStatus: (over.serverStatus ?? "active") as never,
     slug: over.slug,
     authStrategy: (over.authStrategy ??
       "oauth_discovery") as "none" | "oauth_discovery" | "api_key",
@@ -182,5 +184,33 @@ describe("deriveMcpConnectionState — the server's answer wins", () => {
     );
     expect(truth.state).toBe("needs_reauth");
     expect(truth.reason).toContain("no refresh token stored");
+  });
+});
+
+describe("deriveMcpConnectionState — server status", () => {
+  it("keeps a beta server usable (ScreenshotOne and Plane are beta rows)", () => {
+    const truth = deriveMcpConnectionState(
+      entry({
+        slug: "plane",
+        serverStatus: "beta",
+        connectionStatus: "connected",
+      }),
+      { now: NOW },
+    );
+    expect(truth.state).toBe("connected");
+  });
+
+  it("never calls a coming-soon server connected, row or no row", () => {
+    const truth = deriveMcpConnectionState(
+      entry({
+        slug: "future-thing",
+        serverStatus: "coming_soon",
+        authStrategy: "none",
+        connectionStatus: "connected",
+      }),
+      { now: NOW },
+    );
+    expect(truth.state).toBe("not_connected");
+    expect(truth.reason).toContain("not usable yet");
   });
 });

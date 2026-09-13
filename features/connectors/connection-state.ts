@@ -77,6 +77,8 @@ export interface DeriveOptions {
 }
 
 const REAUTH_CONNECTION_STATUSES = new Set(["refresh_failed", "error"]);
+/** Server statuses a user can actually use — the same set aidream enforces. */
+const USABLE_SERVER_STATUSES = new Set(["active", "beta", "community"]);
 const REAUTH_FIRST_PARTY_STATUSES = new Set([
   "expired",
   "revoked",
@@ -101,7 +103,7 @@ export function deriveMcpConnectionState(
   entry: Pick<
     McpCatalogEntry,
     "slug" | "authStrategy" | "connectionStatus" | "tokenExpiresAt"
-  >,
+  > & { serverStatus?: McpCatalogEntry["serverStatus"] },
   options: DeriveOptions = {},
 ): McpConnectionTruth {
   const availability = options.availability;
@@ -110,6 +112,16 @@ export function deriveMcpConnectionState(
       state: availability.state,
       reason: availability.reason,
       source: "server",
+    };
+  }
+
+  // A server nobody can use yet is never "connected", whatever a leftover
+  // connection row says. Mirrors aidream's USABLE_SERVER_STATUSES.
+  if (entry.serverStatus && !USABLE_SERVER_STATUSES.has(entry.serverStatus)) {
+    return {
+      state: "not_connected",
+      reason: `The ${entry.slug} server is ${entry.serverStatus.replace("_", " ")}, not usable yet.`,
+      source: "catalog",
     };
   }
 
