@@ -68,7 +68,6 @@ import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { createDocument } from "@/features/data-tables/document-service";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import type { Visibility } from "@/features/files/types";
 import { getAssociationsStore } from "./associationsStore";
 
@@ -115,8 +114,7 @@ const UI_PORTS: AssociationsUiPorts = {
       });
     },
     openFilePicker: (opts) => openFilePicker(opts),
-    createDataTable: async ({ name }) => {
-      const organizationId = await ensureOrganizationContext();
+    createDataTable: async ({ name, organizationId }) => {
       const result = await createDocument({ name, organizationId });
       return result.success ? { id: result.data.id } : null;
     },

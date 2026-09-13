@@ -632,6 +632,7 @@ export function RulebookSourcesPanel({
                   description:
                     "Pick existing files from your cloud storage — exports from other tools are perfect here.",
                 }}
+                organizationId={rulebook.organization_id}
                 openCreatedDocument
                 extraActions={
                   <>
