@@ -54,13 +54,17 @@ feature. There is no cross-employer HR view, in v1 or later.
   gate; every page under `/hr/compliance` renders its own server refusal in place.
 - `LawPortalSurface.tsx` — the portal itself: the operating-jurisdiction line, the
   per-rule-class collapsible sections (count + `applies / removed / overridden`
-  summary), the D26 remove/restore control and its confirm dialog, the all-rules
-  toggle, and the org's own rules with add / edit / retire.
+  summary for current jurisdictions; `tracked` for the all-rules library), the D26
+  remove/restore control and its confirm dialog, the all-rules toggle, and the
+  org's own rules with add / edit / retire.
 - `LawRuleRow.tsx` — `PlatformLawRuleRow` · `OrgLawRuleRow` · `LawParameterList` ·
   `LawCitationLine` · `LawStatusBadge` · `LawRawParameters`. ONE rule is ONE row,
   collapsed by default; parameters, citation and `basis` live behind the chevron.
 - `OrgLawRuleEditor.tsx` — authoring an org rule, with the server's refusal
-  (`unlawful_configuration` / `warnings_unacknowledged`) rendered verbatim.
+  (`unlawful_configuration` / `warnings_unacknowledged`) rendered verbatim. The
+  save door persists the rule-class schema's native parameters; rounding-bounds
+  accepts legacy `increment_minutes` / `mode` callers only as a compatibility input
+  and normalizes them to `max_increment_minutes` / `allowed_modes` before writing.
 - `law-parameters.ts` — flat-schema form fields, or `null` meaning "show JSON and
   say why". Never a partial form.
 
@@ -173,6 +177,19 @@ wrapper added in another lane's file.
 ---
 
 ## Change log
+
+- **2026-09-13 (law portal contract and scope labels)** — The rounding-bounds
+  class schema has always required `max_increment_minutes` and `allowed_modes`, but
+  the org-rule save door passed legacy configuration-validator names through to the
+  row trigger. A California advisory warning could therefore reach the explicit
+  "Save anyway" retry and then leak schema-validation SQLSTATE `22000`. Migration
+  `hr_l9_02_org_rule_rounding_contract.sql` normalizes legacy callers to the native
+  stored contract, projects native data into the validator's established compatibility
+  shape (surfacing any non-`nearest` mode), and makes a remaining `22000` an honest
+  `invalid_rule_parameters` refusal.
+  The all-rules disclosure now says `<n> tracked`, never falsely `<n> applies`; the
+  current-jurisdiction `applies / removed / overridden` accounting is unchanged.
+  Guard: `features/hr/compliance/__tests__/law-portal-summary.test.ts`.
 
 - **2026-09-11 (the HR Fields page shows what the database actually enables, DD-097)** —
   `features/hr/settings/service.ts` asked `platform.custom_field_target` about a

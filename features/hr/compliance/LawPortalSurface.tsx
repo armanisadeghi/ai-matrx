@@ -61,6 +61,7 @@ import { HrPageState } from "../shared/HrStates";
 import { useHrContext } from "../shared/useHrContext";
 import { OrgLawRuleEditor, type LawJurisdictionOption } from "./OrgLawRuleEditor";
 import { LawCitationLine, OrgLawRuleRow, PlatformLawRuleRow } from "./LawRuleRow";
+import { ruleClassSummary } from "./law-portal-summary";
 
 type EditorTarget = { mode: "add" } | { mode: "edit"; rule: HrOrgLawRule } | null;
 
@@ -342,7 +343,12 @@ export function LawPortalSurface() {
                 </p>
               ) : (
                 others.map((group) => (
-                  <RuleClassSection key={group.slug} group={group} overridden={overridden} />
+                  <RuleClassSection
+                    key={group.slug}
+                    group={group}
+                    overridden={overridden}
+                    reachesOrganization={false}
+                  />
                 ))
               )}
             </div>
@@ -469,12 +475,15 @@ function RuleClassSection({
   deciding,
   onRemove,
   onRestore,
+  reachesOrganization = true,
 }: {
   group: RuleClassGroup;
   overridden: Set<string>;
   deciding?: string | null;
   onRemove?: (rule: HrPlatformLawRule) => void;
   onRestore?: (rule: HrPlatformLawRule) => void;
+  /** False only for the all-rules library disclosure. */
+  reachesOrganization?: boolean;
 }) {
   const [open, setOpen] = useState(true);
 
@@ -482,8 +491,6 @@ function RuleClassSection({
   const overrides = group.rules.filter((rule) =>
     overridden.has(decisionKey(rule.rule_class, rule.jurisdiction_key)),
   ).length;
-  const applied = group.rules.length - removed;
-
   return (
     <section className="border-t border-border first:border-t-0">
       <button
@@ -500,11 +507,11 @@ function RuleClassSection({
         <span className="truncate text-sm font-semibold text-foreground">{group.label}</span>
         <span className="text-xs text-foreground">{group.rules.length}</span>
         <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-foreground">
-          <span>{applied} applies</span>
-          {removed > 0 ? (
+          <span>{ruleClassSummary(group.rules, reachesOrganization)}</span>
+          {reachesOrganization && removed > 0 ? (
             <span className="font-semibold text-destructive">{removed} removed</span>
           ) : null}
-          {overrides > 0 ? <span>{overrides} overridden</span> : null}
+          {reachesOrganization && overrides > 0 ? <span>{overrides} overridden</span> : null}
         </span>
       </button>
       {open ? (
