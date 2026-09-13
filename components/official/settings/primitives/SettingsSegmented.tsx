@@ -44,6 +44,7 @@ export function SettingsSegmented<T extends string = string>({
       {...rowProps}
       id={id}
       variant={fullWidth ? "stacked" : "inline"}
+      controlLayout="wide"
       last={last}
     >
       <div
