@@ -226,6 +226,7 @@ export function HrDeliveryState({
                        see the CHANNEL_LABEL comment for why a tooltip is not allowed back. */
                     <span
                         key={`${notice.channel}-${state.label}-${index}`}
+                        data-testid="hr-delivery-chip"
                         className={
                             "inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-xs " +
                             (state.tone === "warn"
@@ -242,7 +243,7 @@ export function HrDeliveryState({
                     </span>
                 );
             })}
-            {hiddenCompactGroups > 0 ? <span className="text-xs text-muted-foreground">+{hiddenCompactGroups} more</span> : null}
+            {hiddenCompactGroups > 0 ? <span data-testid="hr-delivery-more" className="text-xs text-muted-foreground">+{hiddenCompactGroups} more</span> : null}
         </div>
     );
 
@@ -256,6 +257,7 @@ export function HrDeliveryState({
             {bodies.map((body) => (
                 <p
                     key={body}
+                    data-testid="hr-delivery-body"
                     className={
                         showBody
                             ? "text-xs text-muted-foreground"
