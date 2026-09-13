@@ -732,6 +732,30 @@ function fillArgs(door: Door, catalog: Catalog, cast: Cast, victimUserId: string
     const isRequired = i < required;
     const bare = name.replace(/^p_/, "");
 
+    // The inventory RPC takes a column name plus a generic container UUID.
+    // Neither parameter names its entity in isolation, so ordinary derivation
+    // correctly refuses to guess.  Its fixed, documented contract does: use a
+    // victim project with the matching project_id discriminator.  This gives
+    // the door guard a real cross-container authorization probe instead of
+    // permanently leaving the RPC unmeasured.
+    if (door.schema === "public" && door.fn === "container_resource_counts") {
+      if (name === "p_column" && /^(text|character varying|citext)$/.test(type)) {
+        push(name, "text", "project_id");
+        continue;
+      }
+      if (name === "p_container_id" && type === "uuid") {
+        const hit = pickEntity(catalog, door.schema, ["project"]);
+        if (hit) {
+          crossed = true;
+          injectedIds.push(hit.id);
+          push(name, "uuid", hit.id);
+        } else if (isRequired) {
+          unresolved.push(`${name} ${type}`);
+        }
+        continue;
+      }
+    }
+
     // uuid-shaped arguments are the ones that carry identity.
     if (type === "uuid" || type === "uuid[]") {
       const arr = type === "uuid[]";
