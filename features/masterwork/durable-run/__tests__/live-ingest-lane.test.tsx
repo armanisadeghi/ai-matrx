@@ -196,6 +196,7 @@ describe("findLiveIngestLane", () => {
  */
 let lastTimelineOpen = false;
 let lastReady = false;
+let lastOpen = false;
 
 function PageWiring({
   requested = null,
@@ -210,6 +211,7 @@ function PageWiring({
   const ingest = useIngestDialogSession(rulebookId);
   lastTimelineOpen = ingest.timelineOpen;
   lastReady = ingest.ready;
+  lastOpen = ingest.open;
   const openOn = ingest.openOn;
   // A deep link (`?ingest=file`) opens on its own lane, like the page's effect.
   React.useEffect(() => {
@@ -542,6 +544,21 @@ describe("the Rulebook page after a refresh", () => {
 
     expect(mounted.at(-1)?.surface).toBe("timeline");
     expect(lastTimelineOpen).toBe(true);
+  });
+
+  it("does not reopen a dialog left open on a Rulebook the person came back to", async () => {
+    // Bugbot 2026-09-13: the latch used to survive the navigation away and
+    // match again on return, so an empty dialog remounted by itself.
+    runningSurface = [];
+    await mountPage(null, RULEBOOK_ID);
+    click("from-a-source");
+    expect(lastOpen).toBe(true);
+
+    await renderPage(null, OTHER_ID);
+    expect(lastOpen).toBe(false);
+
+    await renderPage(null, RULEBOOK_ID);
+    expect(lastOpen).toBe(false);
   });
 
   it("keeps the rejoined timeline dialog on screen when the run settles", async () => {

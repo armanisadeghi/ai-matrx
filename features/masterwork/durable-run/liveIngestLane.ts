@@ -216,6 +216,17 @@ export function useIngestDialogSession(
     rulebookId: string;
     lane: IngestLane;
   } | null>(null);
+  /**
+   * 🚨 AND A SESSION DIES WITH ITS RULEBOOK, NOT MERELY HIDES (Bugbot, 2026-09-13).
+   * Filtering `held` by id was only half of it: leaving for another Rulebook
+   * hid the open dialog but kept the latch, so coming BACK matched the id
+   * again, `open` flipped true, and a fresh empty dialog remounted on its own.
+   * The state is adjusted during render (React's sanctioned pattern for state
+   * derived from a prop) the instant the id no longer matches.
+   */
+  if (session && session.rulebookId !== rulebookId) {
+    setSession(null);
+  }
   const held =
     session && rulebookId && session.rulebookId === rulebookId
       ? session.lane
