@@ -4,7 +4,7 @@ type: Skill
 title: "teach-the-system — teach the platform one body of expertise until it breaks, fix it, continue"
 description: "Trial protocol for teaching AI Matrx a real expert's knowledge as a non-technical user, running it until the platform breaks, fixing the platform, and reporting what improved. Use when asked to distil a book, guide, or expert into a Masterwork, test whether the system can capture a human skill, or run an expertise trial. NOT for building a feature you already know is missing (use build-sub-feature)."
 tags: [masterwork, distillation, expertise, trial, platform-testing, doctrine]
-timestamp: 2026-09-12T16:20:00Z
+timestamp: 2026-09-12T17:40:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -20,6 +20,12 @@ expertise, teach it to AI Matrx exactly the way a non-technical Expert would, ru
 until the platform stops or breaks, fix the platform (never the trial), and continue — and who
 report **what improved in the system**, not what happened to the run. The why, in his words, is
 `common-docs/projects/expert-book-challenge/PROGRAM.md` — read it once before your first trial.
+**The architecture mandate every trial serves is his brief
+`common-docs/projects/expert-book-challenge/OVERVIEW.md` (authority: owner, 2026-09-12):** capture the
+tacit and the controversial across modalities, atomize with provenance, keep schools of thought and
+dissent navigable, treat "weirdness" as the asset. The measured gap between that brief and the live
+platform is `OVERVIEW-GAP-CENSUS.md` beside it — read its ranked table so you know which walls are
+already owned.
 Night 1's full evidence trail is the sibling `REGISTER.md`; read its walls table before choosing
 a subject so you inherit the fixes instead of re-hitting them.
 
@@ -45,6 +51,21 @@ your bound; treat it as the actual scope of the job, not a reason to escalate.
 cost you an hour, goes into this file in the same session (§7). A trial that ends without a skill
 edit either learned nothing or lost it.
 
+## 0. The mandate every trial is measured against
+
+🚨 Read `common-docs/projects/expert-book-challenge/MANDATE.md` (Arman, 2026-09-12, `authority: owner`)
+before choosing a subject, and answer its seven checks in your register before you build: which acquisition
+**modality** you add; whether the knowledge is genuinely **tacit** (if the expert could have written it down,
+you are working on the cheap half); whether the output is **executable** (rubrics, checklists, if-then rules,
+decision trees, annotated exemplars — never prose a desk must re-interpret); whether every atom carries
+**provenance** and opens to it; **how you resist consensus collapse**; whether the expert can **validate in
+their own modality**; and whether the platform can now execute something **previously inexpressible**.
+
+🚨 The trap with a name: **pooling**. Fitting several experts — or several sittings of one expert — into one
+merged model, one averaged verdict, or one consensus rulebook destroys exactly what the mandate calls the
+principal source of value. Keep per-expert or per-school profiles as the unit, be able to show a minority
+position that survived, and never resolve a disagreement by averaging.
+
 ## 1. Choose the subject — the opposite of what computers are good at
 
 REQUIRED before anything else: write the subject choice into your trial register (§3) with the
@@ -65,6 +86,13 @@ three answers below. A subject that fails any of them is rejected.
    order of operations they refuse to violate, "never X without first Y" gates, their own vocabulary,
    a result they would recognise as theirs (Arman's examples: his own keyword-research order; an
    agent equipped with Tony Robbins' systems — PROGRAM.md ruling 7).
+
+5. **Does the subject hold more than one school, and will you keep both?** Two sources that
+   disagree are two schools of one body of knowledge, not one Rulebook to reconcile. Name the
+   schools in the register before distilling; a rule that one source holds and the other rejects
+   is the trial's most valuable output, never a "coherence tension" to settle. Trial 3 planned the
+   pair and attached both to one Rulebook — 139 drafts, one desk, every disagreement resolved to a
+   side: that is the consensus trap, and it is now a wall (§4).
 
 Prefer subjects that need **no external service**. Fancy APIs make the distillation neither harder
 nor easier — the barrier is never technology, it is whether the system captures the skill. When the
@@ -107,11 +135,30 @@ couple of little books".** Most expertise in a company never made it into a book
   distils, the Conductor authors, you answer questions the way the author would.
 - **Real cases from the world this week.** Never self-authored easy examples. Find them the way the
   job would (a viral post, a real family scenario from a forum, a real blog post).
+- **Never collapse consensus (Arman's brief, 2026-09-12).** The platform's principal value is the
+  tacit, the idiosyncratic and the disputed. A rule seen once is a rule; recurrence is a signal on
+  it, not a gate to existence. You never Approve-all a corpus, never answer a contradiction by
+  picking a side when both could be true (say so — "both are right" with the condition that
+  separates them), never let the Conductor fold two schools into one desk, and never let an
+  interviewer rewrite the earlier position out of existence. Record every place the product pushed
+  you toward one of these as a wall.
 - **Cheat honestly.** A browser instead of an email tool, a pasted chapter instead of the whole
   PDF — allowed, logged as a cheat in the register with what the honest version would need.
-- **Sign in without typing a password.** Production browser pane signed out? Use the local preview
-  (`pnpm preview:start`, port 3001) with the single-use `.dev-login-nonce` handshake
-  (`matrx-frontend/app/api/dev-login/route.ts` explains it). Never type a credential into a field.
+- **Sign in without typing a password, ON YOUR OWN HOSTNAME.** Production browser pane signed out?
+  Use the local preview (`pnpm preview:start`, port 3001) and then `pnpm dev-login /<route>`, which
+  mints your session's single-use nonce and prints the URL to open. Never type a credential into a
+  field.
+- **🚨 Never open `localhost:3001` — open the hostname the harness prints.** Several trials run on
+  one machine at once, and cookies are scoped to a HOST and ignore the PORT: on 2026-09-12 five
+  sessions shared one cookie jar on `localhost`, so one agent's dev-login signed every other agent
+  in as somebody else mid-form and the page correctly paused itself with "Account Changed…". Each
+  session now gets its own `<label>.localhost` (printed by `pnpm preview:start` and
+  `pnpm preview:status`; set `MATRX_PREVIEW_SESSION=<name>` to claim a readable one), which gives it
+  its own cookie jar, storage and dev-login nonce on the SAME one server. Two more consequences for
+  a trial: the slot being "taken" by a server serving THIS checkout is no longer a refusal — take
+  the hostname it offers you — and your failed navigation can no longer burn another trial's nonce.
+  Mechanics and forcing proof: `matrx-frontend/docs/official/browser-testing.md`,
+  `pnpm check:preview-session`.
 - **Cost is a measured result.** Track model spend from `chat.request`; the comparison bar is a
   fresh vibe-code of the same source on cost, sturdiness, reliability, and reuse on source #2–#5.
 - **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
@@ -141,6 +188,7 @@ Every stop is one of these; do the matching thing and keep the trial moving:
 | Platform defect (silent drop, dead default, wrong error, stale cache, engine gap) | Root cause → census of siblings → shared-layer fix → guard proven failing-then-passing → push → wait for the deploy train (never run a release; >60 min = bug against the deploy agent) → rerun on the live build. Never patch the instance. |
 | Missing primitive the method needs | Build it as a platform node/tool in the shared layer (lane named, subagent if it is bounded), wire it through the Conductor by conversation, never by hand. |
 | Third-party switch (enable an API, approve an app, a console toggle) | Fix it yourself if you can (you have Arman's machine and logins), else write a ten-minute prompt for a Codex agent, hand it to Arman, start a watcher that wakes you when it is done, and **continue on the parts that do not need it**. It never stops the trial. |
+| **Consensus collapse** — the product merged, deduped, synthesized-by-recurrence, excluded a once-seen rule from a build, framed two positions as a problem to settle, or offered Approve-all as the only way through a large review | A wall of the shared layer, not a review step. Keep BOTH positions verbatim in the register, log the wall with the mechanism (`OVERVIEW-GAP-CENSUS.md` names the live ones: the evidence standing and its 3-piece knob, statement-key dedupe, cross-piece-only synthesis, the tension card's recommendation, in-place `update_rule`), fix the class on the rule atom (retained dissent, school, history), continue with both schools alive. |
 | The agent (Conductor) is wrong or stuck | Talk to it the way the Expert would; when it repeats a defect class, that is a platform wall (its instructions or tools), not a prompt to fix. |
 | A stream detaches / a turn hangs | Read the server-side truth (request rows, `system_errors`) before re-sending; a hung turn with no message to the person is itself a wall. |
 
@@ -158,7 +206,9 @@ morning report exists (§6). "I got tired" is not a stopping point; a blocked de
 
 Written for Arman: plain sentences, no paths, no codes, no doc pointers (law:
 `common-docs/policies/talk-to-arman-like-a-person.md`). Lead with the capability ledger — the count
-of "could not → can now" and each row as a capability the next user inherits — then the trial's honest state, then the cost,
+of "could not → can now" and each row as a capability the next user inherits — and the **tacit
+ledger**: how many rules the trial kept that a frontier model would not have produced unprompted,
+how many disagreements it kept alive as two positions, and how many the product tried to collapse — then the trial's honest state, then the cost,
 then the pending list — items only he can do, each with the prompt already written. Never ask
 him to decide something you can find out or do yourself; never send him a question without your
 recommendation.
@@ -171,6 +221,28 @@ If a lesson changes a rule above, edit the rule — do not only append. Keep the
 lines by relocating trial-specific detail into the trial's register.
 
 ## 8. Lessons (append, dated)
+
+- 2026-09-13 — **A commit that claims changes is not a commit that contains them.** `git add`
+  fails the WHOLE add on one unmatched pathspec and stages nothing; with `2>/dev/null` on the
+  command, that failure is invisible. A `git mv` had already moved one of the listed paths, so a
+  "fix" commit landed as `1 file changed, 0 insertions, 0 deletions` — the rename without its
+  importer, leaving the branch un-compilable while the real work sat uncommitted. Never silence
+  stderr on `git add`; read `git show --stat` before believing a commit's own message.
+- 2026-09-13 — **A guard can test the wrong thing and feel like proof.** A test written for "a
+  successful heal clears an older failure" drove the ledger directly and PASSED on the broken
+  code, because the ledger was never the broken part — the caller reaching past it was. Putting
+  the original defect back and watching the test stay green is the only thing that catches this.
+  Prove every guard RED, on the real defect, not on a nearby one.
+- 2026-09-13 — **When a rule recurs a third time, the fix is where the primitive LIVES.** Two
+  dialogs had already been fixed for per-Rulebook state; a third reproduced it because the shared
+  hook sat under `triage/` and read as that feature's property. Moving it to a neutral home and
+  writing the call-site half into its docstring is the fix; a fourth comment saying "remember to
+  do this" is not.
+- 2026-09-13 — **Watch for the reviewer moving from the feature to the INSTRUMENT.** Two findings
+  landed in the surfaces that decide whether a desk passed: the Audition's safety column showed
+  the SAFEST verdict in the same red as the worst one, and the stand-in card showed a failure over
+  a rebuild that had just succeeded. A broken feature wastes a run; a broken exam sends the Expert
+  to fix something that was never broken. Audit the instrument before trusting any trial verdict.
 
 - 2026-09-10 — Rules-only sources (style guides, ad checklists) are rejected: "idiotic", almost
   digital. Pick judgment.
@@ -257,6 +329,62 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
+- 2026-09-12 — (trial 7, the unfolding case) Write the cross-repo CONTRACT before dispatching the build:
+  one document with the kind shapes, the rule fields, the node's handles and the Audition's request,
+  then five lanes (three aidream, two frontend) landed in about ninety minutes with no merge conflict.
+  The price is contract drift between halves — give every frontend lane a "consumer contract check"
+  against the pydantic models and expect a small alignment lane after.
+- 2026-09-12 — (trial 7) Prove the capability gate on the real thing FIRST and write down exactly what
+  the old lane lost (W57: 19 static rules, one flat section, alphabetical, no known/unknown, half
+  literature). That paragraph became the contract's §0 and the guard's pinned failure.
+- 2026-09-12 — (trial 7) Headless on the live build: ONE browser context at a time — two contexts from
+  one saved state rotate the refresh token and sign each other out ("Sign in to open this rulebook");
+  make the driver re-login when it sees that page. The guided start's approach cards are buttons whose
+  names begin "Start now…", so match Start exactly.
+- 2026-09-12 — (trial 7) A training workbook or a guideline PDF distils its PACKAGING as craft — course
+  attendance, exam pass marks, licence boilerplate, publisher disclaimers (W59). Reject by class with
+  one reason each; the platform fix is a source-frame on every rule (method vs packaging).
+- 2026-09-12 — (trial 7) Budget the paste lane: about one rule per fifty words from a checklist-style
+  source and about $6 per ten thousand words on the Opus distiller (189 rules from 9,900 words).
+- 2026-09-12 — (trial 7) The coherence pass asks about REJECTED drafts as if they were live (W62);
+  answer "set aside, not part of the desk" and log it — do not re-litigate a rejection.
+- 2026-09-12 — (trial 7) Check the MCP door in the first minute (`agent_catalog list_models`): it is a
+  per-account flag (W61), and when it is off the product's own New-agent builder is the path; the flag
+  is a ten-second item for Arman, never a reason to stop.
+- 2026-09-12 — (trial 7) From a cloud container there is no door to the two publish scripts (mandate
+  Holders, kind registry rows) — they need direct Postgres (W60). Plan every new mandate or kind as
+  "declared in code, synced at boot, Holder authored in the product, rows published by one command on a
+  machine with DB access" and put that command on the pending list from the start.
+- 2026-09-12 — (trial 7) Bugbot findings on your PR are bug reports: one fix lane with red-first
+  guards closed seven; the reload loop it named was a class across four ingest dialogs.
+- 2026-09-12 — (trial 7) Main was red twice on gates the PR never touched; compare the generated files
+  byte for byte with main before treating a CI red as yours, then one standing-down comment.
+- 2026-09-12 — (trial 7) Take every timestamp from the database clock; my first timeline entries were
+  guesses twenty minutes ahead of reality and had to be rewritten.
+- 2026-09-12 — (trial 7) The review wizard has no class-level action: 400 drafts meant 400 clicks, done
+  by a script walking the product's own wizard with a decisions file written after reading every
+  statement (logged as a cheat). Class-level review ("reject every course-logistics draft") is a gap.
+- 2026-09-12 — (trial 12) A Rulebook's free-text DESCRIPTION is a smuggling channel. The desk built from
+  88 approved dispositions still opened with one question and refused to advise — because the run quoted
+  the description back to itself as "the doctrine" and derived its deliverables from it. Before you credit
+  a Rulebook for a behaviour, read the run's own report and see which text it is actually obeying.
+- 2026-09-12 — (trial 12) The Understudy could not rebuild, for any Rulebook, because an automated write
+  declared `actor_tier=code` without naming a system and the provenance CHECK refused it — and the browser
+  caught the 500 and wrote it to the console. Two lessons: a fire-and-forget "poke" is a silent-failure
+  machine unless the surface shows the staleness it causes; and when a stand-in's behaviour disagrees with
+  the page's counters, read the built definition's own metadata before believing either.
+- 2026-09-12 — (trial 12) Approve/reject every draft one at a time through the wizard and the loop is
+  cheap to script, but check the counts in the database afterwards — the wizard's last card can be left
+  undecided and "reached last" is not "all decided".
+- 2026-09-12 — (trial 12) A run's report that opens with its own PRE-EXECUTION PROTOCOL, a rule
+  cross-reference table and a self-audit is not a deliverable, it is homework. Judge what the person is
+  shown, not what the agent produced.
+- 2026-09-13 — (trial 12) The coherence questions come with a RECOMMENDATION, and it is stated with the same
+  confidence whether it was read off the source or inferred. Six of seven were faithful; the seventh urged
+  writing clinical red flags into a rule the source never attached them to, justified as what the Expert
+  "clearly already has in mind". Accepting it would have stored the system's guess under the Expert's name
+  with the Expert's provenance. Check every recommendation against the source before clicking, and log the
+  ones you decline — that is a platform finding, not a preference.
 - 2026-09-12 — Arman, launching trials 7 and 8: victory = the count of "could not → can now"; aim at
   opinionated methods a frontier model would not produce unprompted (his keyword-research order, an
   agent equipped with Tony Robbins' systems); Sonnet for recon, Opus for coding, Fable rarely. Folded
@@ -316,4 +444,94 @@ lines by relocating trial-specific detail into the trial's register.
   actually had; otherwise the verdict measures access, not craft.
 
 
+- 2026-09-12 — (trial 8, the unfolding case) A cloud session's environment can carry a STALE credential: the
+  Supabase publishable key in the container was not the project's live key (401 on every auth call). Read the
+  live publishable key through the Supabase MCP (it is public by design) and log the drift as a wall; never
+  spend an hour on "auth is broken".
+- 2026-09-12 — (trial 8) The honest headless path is THE SAME CALLS THE UI MAKES: a password grant for the
+  session, aidream `/api/...` with the bearer AND `X-Organization-Id` (the server never picks an org), PostgREST
+  for what the UI writes directly, a browser user agent (Cloudflare 1010 refuses the default Python one), and
+  the Rulebook rendered as the `rulebook_document` variable exactly as the client renders it. Log it as a cheat.
+- 2026-09-12 — (trial 8) Take every timestamp from the database clock (`select now()`), never from your own
+  sense of elapsed time: three register lines were 10–25 minutes ahead of the truth before the correction.
+- 2026-09-12 — (trial 8) The capability gate is the cheapest, sharpest evidence of the night: one real case
+  through the old lane, 74 seconds, $0.22, and the loss is visible in the rules themselves (every rule citing
+  `chunk: 1`, hindsight written as method). Do it first, quote the rules.
+- 2026-09-12 — (trial 8) Guidance texts distil into piles (336 drafts from 18k words; 83 from a back-pain
+  guideline) because the chunk distiller never sees the Rulebook's PURPOSE. Do not review a pile by hand and do
+  not "Approve all": the Expert says what the Rulebook is for, and the platform sorts the pile (the triage
+  primitive). Asking the Scout to "retire these classes" dies at its output ceiling with zero tool calls.
+- 2026-09-12 — (trial 8) When the AI Dream MCP refuses the account ("does not have full MCP access"), the
+  product's own agent service is the lawful route (`POST /api/agent-service/agents` is the same trained builder
+  the form calls; `PUT /api/mandates/{key}/binding` with `principal_type: global` binds the Holder). Declare the
+  mandate seedless in code; never insert an `agent.definition` row by hand. The builder picks its own model
+  (it chose Gemini Flash three times) — move judgment-heavy agents to the tier you meant; a model move is safe
+  by default.
+- 2026-09-12 — (trial 8) A cloud container reaches nothing but HTTPS: raw Postgres times out, so the "offline"
+  type emitter (which imports the app, which loads domain config from the database) cannot run, and any unit
+  test that touches the live pooler hangs forever. Expect both; log them as the generator's and the test's
+  defects, never hand-edit a generated file.
+- 2026-09-12 — (trial 8) Five parallel builders on one branch worked when each owned named files and the
+  cross-cutting names (the policy rule fields) were fixed in the briefs up front; the one collision was a
+  router hunk swept into a sibling's commit (shared-checkout normal) and one duplicated vocabulary, both caught
+  by guards the builders wrote. Add a census guard for every "each lane must declare X" rule the night creates.
+- 2026-09-12 — (trial 8) Review bots are free verifiers: Cursor Bugbot found five real defects in tonight's
+  frontend (state dropped on reopen, an effect loop, a hidden rejoined run) that no builder's tests caught.
+  Treat every bot finding as a bug report and fix the class before the morning report.
+
 - **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.
+
+- **2026-09-12 — Arman's architecture brief (`OVERVIEW.md`) and the gap census.** The mandate is tacit,
+  multi-modal, provenance-tagged, dissent-preserving expertise. The census found the platform had
+  built the opposite the same week and three trials had walked into it: trial 9 turned 416
+  observations into 4 rules and shipped "evidence standing" as the fix; trial 3 collapsed its planned
+  two-school pair into one Rulebook and settled every tension to a side; the interview lane rewrote a
+  contradicted rule in place and the register called it the best moment. Trial 2 met the mandate only
+  by duplicating the whole machine (two Rulebooks, 11 runs, 13 fixes). New rule in §1 (test 5), §2
+  (never collapse consensus), §4 (the wall row), §6 (the tacit ledger). Fixes dispatched the same
+  night: retained dissent on the rule atom, the invisible policy rules, the voice-first and YouTube
+  doors, the blind pairwise Audition arm; the `school` dimension is under design and attack
+  (`DESIGN-schools-on-the-rule-atom.md`).
+- 2026-09-13 — (trial 12, found at a PR check-in) 🚨 **Trials run concurrently against ONE platform, and two
+  of them built the same primitive on the same night, on the same field names, in the same files.** Trial 8
+  landed a flat `precondition`/`next_action` policy shape on `main` while trial 7 was building a structured
+  one on the same keys; the collision surfaced only as 22 conflicted files at merge time, after both nights
+  of work were done. **Before you build a shared-layer primitive, read the other live trials' registers for
+  what they are building right now — not just their walls tables** — and name your new fields in your own
+  namespace when the concept is one another trial could plausibly reach for. When the collision has already
+  happened, the LIVE DATA decides who keeps the key names (here: 592 rules already carried the string form,
+  zero carried the object), which makes it a correction you resolve, not a question for Arman. Abort a blind
+  merge rather than resolve 22 semantic conflicts at speed.
+- 2026-09-13 — (trial 12) A local `pnpm type-check` on a SHARED checkout is not the verdict. After the merge
+  it reported 183 errors; 182 were `Cannot find module '@ai-matrx/*/content-transfer'` because the checkout's
+  installed packages lag what main's code imports, and 1 was main's own unpublished mandate key. CI installs
+  fresh and its type-check job passed on the same commit. Check the CI job before reporting a local type
+  failure as the branch's, and say which one you are quoting.
+- 2026-09-13 — **A refusal is not a permission wall until you have checked the credential.** A lane spent hours
+  blocked on "no MCP access" and filed it as a wall for Arman; the configured grant was already on both
+  accounts and the token in hand was simply stale. Before recording any access refusal as a human step,
+  re-issue the credential and re-try — routine access refusal is repair work, not a page.
+- 2026-09-13 — **Review found the same defect twice, one level apart, in the session's own convergence code.**
+  A converter rebuilt a record from the subset of fields one form owns, then the fix rebuilt a nested half the
+  same way. Fix these as the CLASS — carry every key the surface does not own — never by naming the key that
+  was reported; and expect a merge that reconciles two data shapes to be exactly where a field falls out,
+  because every test the merging lane runs will pass.
+- 2026-09-13 — (trial 7) **Read the CI LOG, never the check's NAME.** Three guards named "(UNMEASURED without the secret)" were red WITH the secret present and returning real verdicts — one of them a live security finding. Triaging by title, I told the pull request they carried no information. A guard named for its failure mode is a trap for whoever triages it. Also: when a failure COUNT moves, find out which item changed — assuming the set is still the known one is how a real regression walks through behind familiar noise.
+- 2026-09-13 — (trial 9) **Run every ARM of a comparison before you conclude anything from it.** The newsroom
+  exam judged the desk against the published piece twice and drew capability conclusions from it, while the
+  raw frontier model had never been handed the same bundle. A workflow's score against ground truth alone
+  cannot tell you whether the workflow is doing the work — Arman's benchmark brief names four arms (frontier,
+  small, workflow+small, workflow+frontier) plus ground truth for exactly this reason. Missing arms are
+  missing measurement, not a detail.
+- 2026-09-13 — (trial 9) **When an agent says "I am blocked by system policy", read the tool trace.** The same
+  Conductor claimed "all changes made now and live" twice having made no tool call at all, and then on the
+  third turn genuinely was refused by the database: its agent write declared an automated actor with no system
+  name, and a 120-second tool ceiling had already killed the slower attempt. Two lies and one true refusal
+  wearing the same words. The trace is the evidence; the agent's paraphrase turned a missing header into an
+  imaginary rule, and a non-technical Expert would have believed it.
+- 2026-09-13 — (trial 9) **A failure classified from text will read the user's own documents as its cause.**
+  A checkpoint write timed out; the cause ladder ran a regex for "guardian|age undeclared" over a technical
+  string that embedded the legal complaint, and the run box told the admin "this account needs an age check
+  before AI can run". Classify by exception CLASS first, and never let a classifier see argument payloads.
+  Its sibling: a resumable chat pause (the tool loop guard) reaching an unattended workflow step is a blind
+  failure — "no error detail recorded" while the guard knew the tool, the count and the error.
