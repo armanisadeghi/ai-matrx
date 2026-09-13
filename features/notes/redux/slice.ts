@@ -660,7 +660,8 @@ const notesSlice = createSlice({
         action.payload.currentRow.organization_id !== action.payload.organizationId ||
         !isCanonicalNoteRevision(action.payload.expectedVersion) ||
         !isCanonicalNoteRevision(action.payload.currentVersion) ||
-        !isCanonicalNoteRevision(action.payload.currentRow.version)
+        !isCanonicalNoteRevision(action.payload.currentRow.version) ||
+        action.payload.currentVersion !== action.payload.currentRow.version
       ) return;
       const observedVersion = record._remoteObservation?.version ?? null;
       if (observedVersion !== null && !isCanonicalNoteRevision(observedVersion)) return;
@@ -712,7 +713,9 @@ const notesSlice = createSlice({
         action.payload.currentRow.id !== action.payload.id ||
         decision.organizationId !== record.organization_id ||
         action.payload.currentRow.organization_id !== decision.organizationId ||
-        !isCanonicalNoteRevision(action.payload.currentRow.version)
+        !isCanonicalNoteRevision(action.payload.currentRow.version) ||
+        !isCanonicalNoteRevision(decision.currentVersion) ||
+        action.payload.currentRow.version < decision.currentVersion
       ) { refuse("This saved comparison is unavailable. Reopen the note before refreshing."); return; }
       const observedVersion = record._remoteObservation?.version;
       if (observedVersion !== null && observedVersion !== undefined && (!isCanonicalNoteRevision(observedVersion) || observedVersion > action.payload.currentRow.version)) {

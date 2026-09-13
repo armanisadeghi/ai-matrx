@@ -67,7 +67,9 @@ with a non-negative safe-integer revision. Missing, fractional, unsafe,
 non-finite, string, or moved-row revisions refuse the request-scoped receipt
 before rotating a review or changing the editor's reviewed package. Realtime
 upserts also discard supplied malformed revisions so they cannot poison the
-highest-remote-observation comparison.
+highest-remote-observation comparison. A Refresh row may equal or advance the
+reviewed revision, never regress it; the CAS decision records a full row only
+when its declared current revision exactly equals that row's revision.
 
 ### Flow 1 — Create / edit a note
 

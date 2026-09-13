@@ -160,18 +160,45 @@ describe("Notes CAS conflict decision contract", () => {
     expect(moved.notes[ID]._conflictDecision).toMatchObject({ reviewId: beforeMoved.reviewId, currentVersion: 5, reviewedLiveContent: "mine" });
   });
 
-  it("accepts zero and positive integer Refresh revisions", () => {
-    for (const version of [0, 6]) {
-      let state = conflicted();
-      state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
-      const before = state.notes[ID]._conflictDecision;
-      if (!before) throw new Error("Expected a decision");
-      state = notesReducer(state, refreshNoteConflictComparison({
-        id: ID, decisionId: before.decisionId, reviewId: before.reviewId, nextReviewId: `valid-${version}`, requestId: `valid-${version}`, liveContent: "mine", currentRow: row({ content: `revision-${version}`, version }),
-      }));
-      expect(state.conflictResolutionReceipts[`valid-${version}`]).toMatchObject({ status: "applied" });
-      expect(state.notes[ID]._conflictDecision).toMatchObject({ reviewId: `valid-${version}`, currentVersion: version, reviewedLiveContent: "mine" });
-    }
+  it("accepts zero only from an initial zero review and accepts later positive revisions", () => {
+    let zero = notesReducer(undefined, upsertNoteFromServer({ note: row({ version: 0 }), fetchStatus: "full" }));
+    zero = notesReducer(zero, setNoteField({ id: ID, field: "content", value: "mine" }));
+    zero = notesReducer(zero, recordNoteConflict({
+      id: ID, expectedVersion: 0, currentVersion: 0, currentRow: row({ content: "remote zero", version: 0 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "zero", reviewId: "zero-review",
+    }));
+    zero = notesReducer(zero, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    zero = notesReducer(zero, refreshNoteConflictComparison({
+      id: ID, decisionId: "zero", reviewId: "zero-review", nextReviewId: "zero-next", requestId: "zero-next", liveContent: "mine", currentRow: row({ content: "revision-zero", version: 0 }),
+    }));
+    expect(zero.conflictResolutionReceipts["zero-next"]).toMatchObject({ status: "applied" });
+
+    let positive = conflicted();
+    positive = notesReducer(positive, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const before = positive.notes[ID]._conflictDecision;
+    if (!before) throw new Error("Expected a decision");
+    positive = notesReducer(positive, refreshNoteConflictComparison({
+      id: ID, decisionId: before.decisionId, reviewId: before.reviewId, nextReviewId: "valid-six", requestId: "valid-six", liveContent: "mine", currentRow: row({ content: "revision-six", version: 6 }),
+    }));
+    expect(positive.conflictResolutionReceipts["valid-six"]).toMatchObject({ status: "applied" });
+    expect(positive.notes[ID]._conflictDecision).toMatchObject({ reviewId: "valid-six", currentVersion: 6, reviewedLiveContent: "mine" });
+  });
+
+  it("refuses lower canonical Refresh rows and mismatched CAS row revisions", () => {
+    let state = conflicted();
+    state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const before = state.notes[ID]._conflictDecision;
+    if (!before) throw new Error("Expected a decision");
+    state = notesReducer(state, refreshNoteConflictComparison({
+      id: ID, decisionId: before.decisionId, reviewId: before.reviewId, nextReviewId: "lower", requestId: "lower", liveContent: "mine", currentRow: row({ content: "old", version: 0 }),
+    }));
+    expect(state.conflictResolutionReceipts.lower).toMatchObject({ status: "refused" });
+    expect(state.notes[ID]._conflictDecision).toMatchObject({ reviewId: before.reviewId, currentVersion: 5, reviewedLiveContent: "mine" });
+
+    let mismatch = notesReducer(undefined, upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
+    mismatch = notesReducer(mismatch, recordNoteConflict({
+      id: ID, expectedVersion: 4, currentVersion: 5, currentRow: row({ version: 6 }), sentSnapshot: {}, actorId: "user-1", organizationId: ORG, decisionId: "mismatch", reviewId: "mismatch-review",
+    }));
+    expect(mismatch.notes[ID]._conflictDecision).toBeNull();
   });
 
   it("does not retain malformed realtime revisions as remote observations", () => {
