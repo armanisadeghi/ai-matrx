@@ -179,4 +179,37 @@ describe("Proton Pass export parser", () => {
     expect(futureState).not.toHaveProperty("sourceRecord");
     expect(legacy).not.toHaveProperty("sourceRecord");
   });
+  test("classifies future URL and vault display enums as unsupported", () => {
+    const mode = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: {
+              ...(login().data as any).content,
+              autofillUrls: [{ url: "https://example.test", mode: 7 }],
+            },
+          },
+        }),
+      ),
+      limits,
+    )[0];
+    const icon = parseProtonPassExport(
+      JSON.stringify({
+        version: "1",
+        vaults: {
+          share: {
+            description: "",
+            display: { icon: 32 },
+            name: "Vault",
+            items: [login()],
+          },
+        },
+      }),
+      limits,
+    )[0];
+    expect(mode).toMatchObject({ status: "unsupported" });
+    expect(icon).toMatchObject({ status: "unsupported" });
+    expect(icon).not.toHaveProperty("sourceRecord");
+  });
 });
