@@ -83,4 +83,9 @@ describe("plain Bitwarden JSON", () => {
     const create = prepareStructuredImportCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: false });
     expect(create.status).toBe("ready");
   });
+
+  test("does not return an oversized rejected title or any source payload", () => {
+    const [record] = parseBitwardenExport(source(`{"id":"33333333-3333-4333-8333-333333333333","name":"${"x".repeat(80)}","type":99}`), { ...limits, maxCellBytes: 40 });
+    expect(record).toEqual({ status: "unsupported", ordinal: 0, title: "Item 1", reason: "The item type is unsupported." });
+  });
 });
