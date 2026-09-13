@@ -15,6 +15,33 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D317 — the `shell_execution` KIND is still inactive and routed to the generic floor
+
+`ShellInline` (2026-09-13) fixed the TOOL layer: a `shell_execute` / `shell_python` /
+`code_execute_python` tool CALL now renders as a real terminal card in the thread. The parallel
+CONTENT-IR layer is untouched and still wrong. Live DB (`brsgrqvjdzwihsvnfqkf`,
+`content_ir.evaluate_kind_activation`, read 2026-09-13):
+
+```
+kind shell_execution  is_active=false  component_key=generic_structured (bundled, active)
+reason: "render: the only active role='output' component is 'generic_structured' — that IS the
+generic viewer, i.e. no component. A reader would get a key/value dump. Author a real source='db'
+component (or register a compiled one), then retire the generic row."
+```
+
+So anywhere a `shell_execution` payload arrives as a `__kind` REGION rather than as a tool call
+(an agent embedding one in markdown, a persisted artifact, a workflow emission), the reader still
+gets the key/value dump — and the kind is inactive, so it reaches them by the SILENT
+`routeToGeneric` fallback the tool-result-kind-routes suite exists to forbid.
+
+**The fix** is one migration in the shape of `migrations/content_ir_tool_result_kind_routes.sql`:
+point that row's `component_key` at a compiled key registered in
+`components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx` (a thin block wrapper
+over the same presentation `ShellInline` already implements), then `content_ir.set_kind_activation`.
+NOT done here: migrations are applied by `pnpm db:apply` only, and the classifier blocks that path
+for an agent (Arman, 2026-09-12 — he never runs migrations). Needs a permission decision, not more
+engineering.
+
 ### D316 — TWO hooks now enforce the fire-once law for a masterwork run, and the merge had to pick one
 
 Two trials independently fixed the same defect — a run's completion callback firing again on every re-render — with two different primitives, and BOTH survived the 2026-09-13 merge into `claude/trial-7`:
