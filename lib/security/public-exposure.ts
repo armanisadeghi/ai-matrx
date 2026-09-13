@@ -2792,3 +2792,283 @@ export function classifyAnonColumns(live: LiveAnonColumn[]): ColumnSurfaceDrift[
   }
   return drift;
 }
+
+/* ===============================================================================
+ * THE ANON WRITE SURFACE (DD-193) - what a signed-out caller may CHANGE.
+ *
+ * DD-186 decided which COLUMNS a signed-out visitor may read. This is the other
+ * axis, and its answer is shorter: an anonymous caller writes ONLY through a
+ * declared SECURITY DEFINER door - `record_guest_execution`, `outreach_unsubscribe`,
+ * `log_client_error`, `meet_record_consent`, the eight `hr_kiosk_*` functions - every
+ * one of which is a row in `platform.client_callable_door` with a recorded gate.
+ * NEVER through a table privilege. There is no allowlist of blanket anon INSERT /
+ * UPDATE / DELETE grants here, because the correct number of them is zero and an
+ * allowlist is how it stops being zero.
+ *
+ * Measured before this register existed (2026-09-13): 286 relations in a
+ * PostgREST-exposed schema granted `anon` a write privilege, seven schemas granted
+ * it on every table created in them from then on, and `iam.organizations` carried
+ * two write policies written `TO PUBLIC`.
+ * =============================================================================== */
+
+/** Schemas whose grants Supabase maintains, not us. */
+export const VENDOR_MANAGED_SCHEMAS = [
+  "graphql", "graphql_public", "storage", "realtime", "net", "cron", "extensions",
+] as const;
+
+export interface PublicWritePolicyOfRecord {
+  /** `schema.relation` the policy sits on. */
+  relation: string;
+  /** The policy's exact name. */
+  policy: string;
+  /** `pg_policy.polcmd`: a = INSERT, w = UPDATE, d = DELETE, * = ALL. */
+  cmd: string;
+  /** WHO this policy is really for, and the predicate that says so. */
+  reason: string;
+}
+
+/**
+ * Write-capable RLS policies that are written `TO PUBLIC` - i.e. to every role,
+ * `anon` included - and are KNOWN to be identity-gated, each triaged by reading its
+ * predicate on 2026-09-13. Every one requires `is_platform_admin()`, `auth.role() =
+ * 'service_role'`, or `auth.uid()` matching an owner; `auth.uid()` is null for a
+ * signed-out caller, so none of them can ever admit one.
+ *
+ * They are recorded rather than rewritten because the thing that made them dangerous
+ * was the PAIR - a `TO PUBLIC` write policy standing beside an anon table grant - and
+ * DD-193 removed the grants. `iam.organizations` was the exception: its two were
+ * rescoped to `authenticated` through DD-147's supersede path, because that table's
+ * policy set already named the role on its other four policies and the two odd ones
+ * out were plainly an oversight.
+ *
+ * A write policy reaching PUBLIC or `anon` that is NOT in this list is a finding: say
+ * who it is for and why a null `auth.uid()` cannot satisfy it, or scope it to a role.
+ */
+export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfRecord> = [
+  { relation: "admin.admin_markdown_samples", policy: "admin_markdown_samples_super_admin_all", cmd: "*", reason: "A platform-admin-only sample store. Predicate: is_platform_admin() or is_super_admin() - both null-uid false." },
+  { relation: "communication.sms_rate_limits", policy: "Service role only", cmd: "*", reason: "Service-role bookkeeping. Predicate: is_platform_admin() or auth.role() = service_role." },
+  { relation: "communication.sms_webhook_logs", policy: "Service role only for webhook logs", cmd: "*", reason: "Service-role webhook log. Predicate: is_platform_admin() or auth.role() = service_role." },
+  { relation: "context.scope_dataset_instances", policy: "scope_dataset_instances_internal_only", cmd: "*", reason: "Platform-internal dataset instances. Predicate: is_platform_admin()." },
+  { relation: "docproc.page_extraction_results", policy: "page_extraction_results_owner_write", cmd: "*", reason: "Owner of the parent extraction job. Predicate: is_platform_admin() or the job owner_id = auth.uid()." },
+  { relation: "docproc.page_extraction_runs", policy: "page_extraction_runs_owner_write", cmd: "*", reason: "Owner of the parent extraction job. Predicate: is_platform_admin() or the job owner_id = auth.uid()." },
+  { relation: "extend.wbx_demo", policy: "wbx_demo_owner_delete", cmd: "d", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid(). (Defect D257 tracks this table separately.)" },
+  { relation: "extend.wbx_demo", policy: "wbx_demo_owner_insert", cmd: "a", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid(). (Defect D257 tracks this table separately.)" },
+  { relation: "extend.wbx_demo", policy: "wbx_demo_owner_update", cmd: "w", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid(). (Defect D257 tracks this table separately.)" },
+  { relation: "extend.wbx_guidance", policy: "wbx_guidance_owner_delete", cmd: "d", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid()." },
+  { relation: "extend.wbx_guidance", policy: "wbx_guidance_owner_insert", cmd: "a", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid()." },
+  { relation: "extend.wbx_guidance", policy: "wbx_guidance_owner_update", cmd: "w", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid()." },
+  { relation: "files.analysis", policy: "file_analysis_insert", cmd: "a", reason: "File-analysis owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
+  { relation: "files.analysis", policy: "file_analysis_update", cmd: "w", reason: "File-analysis owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
+  { relation: "files.analysis_result", policy: "file_analysis_result_insert", cmd: "a", reason: "Owner of the parent file. Predicate: is_platform_admin() or files.files.created_by = auth.uid()." },
+  { relation: "files.webhooks", policy: "cld_webhooks_owner_all", cmd: "*", reason: "Webhook owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
+  { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_insert", cmd: "a", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
+  { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_update", cmd: "w", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
+  { relation: "rag.data_store_members", policy: "data_store_members_via_store_all", cmd: "*", reason: "Creator or org member of the parent data store. Predicate: is_platform_admin() or data_stores.created_by = auth.uid() or is_member_of_organization(...)." },
+  { relation: "users.feedback_comments", policy: "Users can comment on own feedback", cmd: "a", reason: "Author of the parent feedback row. Predicate: is_platform_admin() or feedback_id in (the caller own user_feedback)." },
+  { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_delete", cmd: "d", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
+  { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_insert", cmd: "a", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
+  { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_update", cmd: "w", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
+  { relation: "users.user_follows", policy: "Users can follow others", cmd: "a", reason: "The follower themselves. Predicate: is_platform_admin() or auth.uid() = follower_id." },
+  { relation: "users.user_follows", policy: "Users can unfollow", cmd: "d", reason: "The follower themselves. Predicate: is_platform_admin() or auth.uid() = follower_id." },
+  { relation: "users.user_form_profile", policy: "user_form_profile_delete", cmd: "d", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
+  { relation: "users.user_form_profile", policy: "user_form_profile_insert", cmd: "a", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
+  { relation: "users.user_form_profile", policy: "user_form_profile_update", cmd: "w", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
+  { relation: "users.user_secrets", policy: "Users manage own secrets", cmd: "*", reason: "The user themselves. Predicate: auth.uid() = user_id." },
+  { relation: "workbench.udt_document_snapshots", policy: "udt_document_snapshots_insert", cmd: "a", reason: "Creator or editor of the parent document. Predicate: is_platform_admin() or udt_documents.created_by = auth.uid() or iam.has_access(editor)." },
+  { relation: "workbench.udt_workbook_snapshots", policy: "udt_workbook_snapshots_insert", cmd: "a", reason: "Creator or editor of the parent workbook. Predicate: is_platform_admin() or udt_workbooks.created_by = auth.uid() or iam.has_access(editor)." },];
+
+export interface AnonWriteFinding {
+  /** Which arm found it - the five questions this surface is made of. */
+  arm: "relation" | "sequence" | "default" | "policy" | "door";
+  /** The object: `schema.relation`, `schema.sequence`, a default-privilege entry, `relation :: policy`, or `schema.function`. */
+  object: string;
+  /** What is live and wrong, in one sentence. */
+  detail: string;
+  /** What to do about it, naming the real command or the real register. */
+  remedy: string;
+}
+
+/**
+ * ARM 1 - every relation in a PostgREST-exposed schema on which `anon` or PUBLIC holds
+ * INSERT, UPDATE, DELETE or MAINTAIN. MAINTAIN is in the list because PostgreSQL 17
+ * folded REFRESH MATERIALIZED VIEW into it, and a historical `grant all ... to anon`
+ * hands it out with the rest.
+ */
+export const ANON_WRITE_RELATION_QUERY = `
+  select n.nspname || '.' || c.relname as object,
+         case when a.grantee = 0 then 'PUBLIC' else 'anon' end as grantee,
+         string_agg(distinct a.privilege_type, ', ' order by a.privilege_type) as privileges
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  cross join lateral aclexplode(c.relacl) a
+  where c.relkind in ('r','p','v','m','f')
+    and a.privilege_type in ('INSERT','UPDATE','DELETE','MAINTAIN')
+    and (a.grantee = 0 or pg_get_userbyid(a.grantee) = 'anon')
+    and n.nspname = any($1::text[])
+  group by 1, 2
+  order by 1
+`;
+
+/** ARM 2 - UPDATE or USAGE on a sequence is `nextval`/`setval`: a write. */
+export const ANON_WRITE_SEQUENCE_QUERY = `
+  select n.nspname || '.' || c.relname as object,
+         string_agg(distinct a.privilege_type, ', ' order by a.privilege_type) as privileges
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  cross join lateral aclexplode(c.relacl) a
+  where c.relkind = 'S'
+    and pg_get_userbyid(a.grantee) = 'anon'
+    and a.privilege_type in ('UPDATE','USAGE')
+    and not (n.nspname = any($1::text[]))
+  group by 1
+  order by 1
+`;
+
+/**
+ * ARM 3 - the default privileges, which is where this surface came from and where it
+ * would silently come back. A default ACL granting `anon` a write means the NEXT
+ * `create table` in that schema re-opens the door with nobody deciding anything.
+ */
+export const ANON_WRITE_DEFAULT_QUERY = `
+  select coalesce(n.nspname, '(all schemas)') || ' (' ||
+         case d.defaclobjtype when 'r' then 'tables' when 'S' then 'sequences' else d.defaclobjtype::text end ||
+         ', granted by ' || pg_get_userbyid(d.defaclrole) || ')' as object,
+         string_agg(distinct a.privilege_type, ', ' order by a.privilege_type) as privileges
+  from pg_default_acl d
+  left join pg_namespace n on n.oid = d.defaclnamespace
+  cross join lateral aclexplode(d.defaclacl) a
+  where d.defaclobjtype in ('r','S')
+    and pg_get_userbyid(a.grantee) = 'anon'
+    and a.privilege_type in ('INSERT','UPDATE','DELETE','MAINTAIN','USAGE')
+    and not (coalesce(n.nspname, '') = any($1::text[]))
+  group by 1
+  order by 1
+`;
+
+/** ARM 4 - every write-capable policy that reaches PUBLIC or `anon`. */
+export const ANON_WRITE_POLICY_QUERY = `
+  select n.nspname || '.' || c.relname as relation,
+         p.polname as policy,
+         p.polcmd::text as cmd,
+         case when 0 = any(p.polroles) then 'PUBLIC'
+              else array_to_string(array(select rolname from pg_roles where oid = any(p.polroles)), ',') end as roles
+  from pg_policy p
+  join pg_class c on c.oid = p.polrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where p.polcmd::text in ('a','w','d','*')
+    and (0 = any(p.polroles) or (select oid from pg_roles where rolname = 'anon') = any(p.polroles))
+    and n.nspname = any($1::text[])
+  order by 1, 2
+`;
+
+/**
+ * ARM 5 - the doors themselves. A SECURITY DEFINER function a signed-out caller can
+ * EXECUTE, whose body writes, is the ONLY legitimate anonymous write path - and it is
+ * only legitimate when `platform.client_callable_door` records it with its gate. A
+ * door with no row is a write nobody declared, which is the same defect as a table
+ * grant wearing a different hat.
+ */
+export const ANON_WRITE_DOOR_QUERY = `
+  select n.nspname || '.' || p.proname as object,
+         (select count(*) from platform.client_callable_door d
+           where d.schema_name = n.nspname and d.function_name = p.proname)::int as door_rows
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where p.prosecdef
+    and p.prorettype <> 'trigger'::regtype::oid
+    and exists (select 1 from aclexplode(p.proacl) a
+                 where a.privilege_type = 'EXECUTE' and pg_get_userbyid(a.grantee) = 'anon')
+    and p.prosrc ~* '(^|[^a-z_.])(insert into|update |delete from|merge into)'
+    and not (n.nspname = any($1::text[]))
+  order by 1
+`;
+
+export interface LiveAnonWrite {
+  relations: Array<{ object: string; privileges: string; grantee: string }>;
+  sequences: Array<{ object: string; privileges: string }>;
+  defaults: Array<{ object: string; privileges: string }>;
+  policies: Array<{ relation: string; policy: string; cmd: string; roles: string }>;
+  doors: Array<{ object: string; door_rows: number }>;
+}
+
+const policyKey = (relation: string, policy: string) => `${relation} ${policy}`;
+
+/**
+ * The whole comparison, in one place so the guard and its self-test cannot disagree.
+ * Every finding carries the command that fixes it - a refusal that does not say what
+ * to do is the same defect this register exists to end.
+ */
+export function classifyAnonWrites(live: LiveAnonWrite): AnonWriteFinding[] {
+  const findings: AnonWriteFinding[] = [];
+
+  for (const r of live.relations) {
+    findings.push({
+      arm: "relation",
+      object: r.object,
+      detail: `${r.grantee} holds ${r.privileges} on it.`,
+      remedy:
+        `revoke insert, update, delete, maintain on ${r.object} from ${r.grantee === "PUBLIC" ? "public" : "anon"};  ` +
+        `If a signed-out caller genuinely must write here, the write goes through a SECURITY DEFINER door ` +
+        `recorded in platform.client_callable_door (the record_guest_execution pattern) - never a table grant.`,
+    });
+  }
+
+  for (const s of live.sequences) {
+    findings.push({
+      arm: "sequence",
+      object: s.object,
+      detail: `anon holds ${s.privileges} on this sequence, which is nextval/setval - a write.`,
+      remedy: `revoke update, usage on sequence ${s.object} from anon;`,
+    });
+  }
+
+  for (const d of live.defaults) {
+    findings.push({
+      arm: "default",
+      object: d.object,
+      detail: `default privileges grant anon ${d.privileges} on every object created here from now on.`,
+      remedy:
+        `alter default privileges for role postgres in schema <schema> revoke insert, update, delete, maintain on tables from anon;  ` +
+        `This is how the anon write surface re-opens with nobody deciding anything (DD-193).`,
+    });
+  }
+
+  const declaredPolicies = new Set(PUBLIC_WRITE_POLICIES_OF_RECORD.map((p) => policyKey(p.relation, p.policy)));
+  const livePolicies = new Set(live.policies.map((p) => policyKey(p.relation, p.policy)));
+  for (const p of live.policies) {
+    if (declaredPolicies.has(policyKey(p.relation, p.policy))) continue;
+    findings.push({
+      arm: "policy",
+      object: `${p.relation} :: ${p.policy}`,
+      detail: `a write-capable policy (polcmd '${p.cmd}') reaches ${p.roles} - every role on this database, anon included - and nothing declares it.`,
+      remedy:
+        `Scope it to the role that uses it (create policy ... to authenticated) through iam.supersede_bespoke_policies, ` +
+        `or add it to PUBLIC_WRITE_POLICIES_OF_RECORD in lib/security/public-exposure.ts saying who it is for and why a null auth.uid() cannot satisfy it.`,
+    });
+  }
+  for (const p of PUBLIC_WRITE_POLICIES_OF_RECORD) {
+    if (livePolicies.has(policyKey(p.relation, p.policy))) continue;
+    findings.push({
+      arm: "policy",
+      object: `${p.relation} :: ${p.policy}`,
+      detail: "the register declares this PUBLIC write policy and it is not on the database.",
+      remedy:
+        `Delete the row from PUBLIC_WRITE_POLICIES_OF_RECORD in lib/security/public-exposure.ts. ` +
+        `The register must not describe a database that no longer exists - a stale row is how the next reader mistakes a closed door for an open one.`,
+    });
+  }
+
+  for (const d of live.doors) {
+    if (d.door_rows > 0) continue;
+    findings.push({
+      arm: "door",
+      object: d.object,
+      detail: "a SECURITY DEFINER function anon can EXECUTE writes to the database, and platform.client_callable_door has no row for it.",
+      remedy:
+        `Declare it: insert the door row with its gate_predicate and reason, the way DD-169 declared the others. ` +
+        `If no signed-out caller needs it, revoke execute on the function from anon instead.`,
+    });
+  }
+
+  return findings;
+}
