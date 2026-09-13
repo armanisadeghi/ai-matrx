@@ -11,7 +11,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   ).parseTableViewSnapshot,
 }));
 
-import { createPersonalTableView, updatePersonalTableView } from "./table-saved-views-service";
+import { createPersonalTableView, listPersonalTableViews, updatePersonalTableView } from "./table-saved-views-service";
 
 function query(response: { data: unknown; error: unknown }) {
   const calls: Array<[string, unknown[]]> = [];
@@ -24,6 +24,8 @@ function query(response: { data: unknown; error: unknown }) {
     maybeSingle: () => { calls.push(["maybeSingle", []]); return builder; },
     eq: (...args: unknown[]) => { calls.push(["eq", args]); return builder; },
     is: (...args: unknown[]) => { calls.push(["is", args]); return builder; },
+    order: (...args: unknown[]) => { calls.push(["order", args]); return builder; },
+    range: (...args: unknown[]) => { calls.push(["range", args]); return builder; },
     setHeader: (...args: unknown[]) => { calls.push(["setHeader", args]); return builder; },
     abortSignal: (...args: unknown[]) => { calls.push(["abortSignal", args]); return Promise.resolve(response); },
   };
@@ -45,6 +47,23 @@ describe("table saved views service wiring", () => {
   it("requires an explicit organization before create", async () => {
     await expect(createPersonalTableView({ ...actor, organizationId: null }, "sandboxes/active", "Name", snapshot, new AbortController().signal)).rejects.toThrow("Choose an organization");
     expect(mockSchema).not.toHaveBeenCalled();
+  });
+
+  it("uses the supplied captured token, owner and signal for a complete table-scoped list", async () => {
+    const controller = new AbortController();
+    mockReadAllRows.mockImplementationOnce(async (read) => {
+      const result = await read({ from: 0, to: 999 });
+      expect(result.data).toEqual(row);
+      return [row];
+    });
+
+    await expect(listPersonalTableViews(actor, "sandboxes/active", controller.signal)).resolves.toHaveLength(1);
+    const calls = chains[0]!.calls;
+    expect(calls).toEqual(expect.arrayContaining([
+      ["eq", ["surface_key", "matrx/table/sandboxes/active"]], ["eq", ["created_by", "actor-a"]],
+      ["eq", ["visibility", "personal"]], ["is", ["deleted_at", null]],
+      ["setHeader", ["Authorization", "Bearer token-a"]], ["abortSignal", [controller.signal]],
+    ]));
   });
 
   it("writes the captured actor, org, table and Authorization header", async () => {
