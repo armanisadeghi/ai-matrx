@@ -4,6 +4,10 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
+import {
+  StopTapButton,
+  TrashTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AlertTriangle, OctagonX, Square, Trash2 } from "lucide-react";
+import { AlertTriangle, OctagonX } from "lucide-react";
 import {
   sandboxDisplayName,
   sandboxInstanceSummary,
@@ -158,46 +162,25 @@ function SandboxRowActions({
   const canStop = ACTIVE_EFFECTIVE_STATUSES.includes(getEffectiveStatus(row));
 
   return (
-    <div className="inline-flex items-center gap-1">
+    <>
       {canStop ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 sm:h-7 sm:w-7"
-              disabled={stopping}
-              aria-label={stopping ? "Stopping sandbox" : "Stop sandbox"}
-              onClick={() => onStop(row)}
-            >
-              <Square className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {stopping ? "Stopping sandbox" : "Stop sandbox"}
-          </TooltipContent>
-        </Tooltip>
+        <StopTapButton
+          variant="transparent"
+          ariaLabel={stopping ? "Stopping sandbox" : "Stop sandbox"}
+          tooltip={stopping ? "Stopping sandbox" : "Stop sandbox"}
+          disabled={stopping}
+          onClick={() => onStop(row)}
+        />
       ) : null}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7"
-            disabled={stopping}
-            aria-label="Delete sandbox"
-            onClick={() => onDelete(row)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          {stopping ? "Wait for stop to finish" : "Delete sandbox"}
-        </TooltipContent>
-      </Tooltip>
-    </div>
+      <TrashTapButton
+        variant="transparent"
+        className="text-destructive"
+        ariaLabel="Delete sandbox"
+        tooltip={stopping ? "Wait for stop to finish" : "Delete sandbox"}
+        disabled={stopping}
+        onClick={() => onDelete(row)}
+      />
+    </>
   );
 }
 
