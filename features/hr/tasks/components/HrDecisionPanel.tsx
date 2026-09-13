@@ -10,6 +10,11 @@ import { toast } from "@/lib/toast";
 import { HrActionDialog } from "@/features/hr/tasks/components/HrActionDialog";
 import { HrCorrectiveAckPanel } from "@/features/hr/tasks/components/HrCorrectiveAckPanel";
 import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState";
+import {
+    HR_FAILURE_INITIAL_LIMIT,
+    HR_FAILURE_PAGE_INCREMENT,
+    nextHrFailureLimit,
+} from "@/features/hr/tasks/failure-window";
 import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
 import {
     HrRefusalNotice,
@@ -138,6 +143,10 @@ export function HrDecisionPanel({
     const [pickedFailure, setPickedFailure] = useState<{ id: string; failureClass: string } | null>(
         null,
     );
+    const [failureWindow, setFailureWindow] = useState({
+        instanceId,
+        limit: HR_FAILURE_INITIAL_LIMIT,
+    });
 
     async function load() {
         setLoading(true);
@@ -261,6 +270,12 @@ export function HrDecisionPanel({
     const openFailures = (detail?.failures ?? []).filter(
         (f) => f.state === "open" || f.state === "retrying",
     );
+    const failureVisibleLimit =
+        failureWindow.instanceId === instanceId
+            ? failureWindow.limit
+            : HR_FAILURE_INITIAL_LIMIT;
+    const visibleOpenFailures = openFailures.slice(0, failureVisibleLimit);
+    const hiddenOpenFailureCount = openFailures.length - visibleOpenFailures.length;
 
     async function act(intent: HrDecisionIntent) {
         if (!activeStep) return;
@@ -612,7 +627,7 @@ export function HrDecisionPanel({
                             <section className="space-y-2">
                                 <h2 className="text-sm font-semibold">Holding this request</h2>
                                 <ul className="divide-y divide-border rounded-lg border border-destructive/40 bg-card text-sm">
-                                    {openFailures.map((f) => (
+                                    {visibleOpenFailures.map((f) => (
                                         <li key={String(f.id)} className="flex items-center gap-3 p-3">
                                             <span className="truncate font-medium">
                                                 {str(f, "failure_class")}
@@ -652,6 +667,31 @@ export function HrDecisionPanel({
                                         </li>
                                     ))}
                                 </ul>
+                                {hiddenOpenFailureCount > 0 ? (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() =>
+                                            setFailureWindow({
+                                                instanceId,
+                                                limit: nextHrFailureLimit(
+                                                    openFailures.length,
+                                                    failureVisibleLimit,
+                                                ),
+                                            })
+                                        }
+                                    >
+                                        Show next{" "}
+                                        {Math.min(
+                                            hiddenOpenFailureCount,
+                                            HR_FAILURE_PAGE_INCREMENT,
+                                        )}{" "}
+                                        failures
+                                        <span className="ml-1 text-muted-foreground">
+                                            ({hiddenOpenFailureCount} remaining)
+                                        </span>
+                                    </Button>
+                                ) : null}
                             </section>
                         ) : null}
 
