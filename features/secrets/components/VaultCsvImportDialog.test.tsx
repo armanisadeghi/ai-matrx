@@ -1170,8 +1170,13 @@ describe("VaultCsvImportDialog", () => {
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing");
     const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
     await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], binaryMemberCount: 0 } } as MessageEvent));
+    expect(document.body.textContent).toContain("0 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 1 archived.");
     expect(document.body.textContent).toContain("Include archived source items");
     expect(document.body.textContent).not.toContain("Include deleted source items");
+    const archivedToggle = [...document.querySelectorAll('[role="switch"]')].find((node) => node.parentElement?.textContent?.includes("Include archived"));
+    if (!(archivedToggle instanceof HTMLElement)) throw new Error("archived toggle missing");
+    await act(async () => archivedToggle.click());
+    expect(document.body.textContent).toContain("1 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 0 archived.");
   });
 
   it("shows no lifecycle controls for active-only 1PUX records", async () => {

@@ -31,16 +31,17 @@ describe("1PUX archive reader", () => {
     await expect(pending).rejects.toThrow("cancelled");
   });
   test("classifies cancellation after an actual decoded stream chunk", async () => {
+    const file = await archive([["export.attributes", "a".repeat(200_000)], ["export.data", "d".repeat(200_000)]]);
     const controller = new AbortController(); const NativeWritableStream = globalThis.WritableStream;
-    let writes = 0;
+    let decodedWrites = 0;
     class AbortAfterChunk extends NativeWritableStream<Uint8Array> {
-      constructor(sink?: UnderlyingSink<Uint8Array>) { super({ ...sink, async write(chunk, writer) { await sink?.write?.call(sink, chunk, writer); if (sink?.write && chunk.byteLength > 0) { writes += 1; controller.abort(); } } }); }
+      constructor(sink?: UnderlyingSink<Uint8Array>) { super({ ...sink, async write(chunk, writer) { await sink?.write?.call(sink, chunk, writer); if (sink?.write && chunk.byteLength > 0) { decodedWrites += 1; controller.abort(); } } }); }
     }
     Object.defineProperty(globalThis, "WritableStream", { configurable: true, value: AbortAfterChunk });
     try {
-      const file = await archive([["export.attributes", "a".repeat(200_000)], ["export.data", "d".repeat(200_000)]]);
+      expect(controller.signal.aborted).toBe(false);
       await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 1_000_000, maxRecords: 10 }, controller.signal)).rejects.toThrow("cancelled");
-      expect(writes).toBeGreaterThan(0);
+      expect(decodedWrites).toBeGreaterThanOrEqual(1);
     } finally { Object.defineProperty(globalThis, "WritableStream", { configurable: true, value: NativeWritableStream }); }
   });
   test("rejects a byte-corrupted selected JSON member", async () => {
