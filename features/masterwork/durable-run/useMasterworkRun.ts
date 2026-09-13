@@ -76,6 +76,17 @@ export type MasterworkRunSurface =
   | "dump"
   | "corpus"
   | "timeline"
+  // The UNFOLDING lane (`/masterworks/ingest-unfolding`) — a SEPARATE
+  // surface from `timeline`, and the separation is load-bearing. Two
+  // trials built a case lane at the same time: trial 8's lives in the
+  // source dialog on `/masterworks/ingest-timeline`, trial 7's in its own
+  // dialog on `/masterworks/ingest-unfolding`, and they parse their
+  // results with DIFFERENT parsers. While both declared `timeline` they
+  // shared one pointer key (`${surface}:${rulebookId}`), so a reload could
+  // rejoin an unfolding run inside the source dialog — wrong parser, and
+  // no seal-and-strip on a HELD-OUT case, which is the one run whose
+  // resolution must never reach the screen (Bugbot, 2026-09-13).
+  | "unfolding"
   | "triage"
   | "audition"
   | "audition_unfolding"
@@ -107,6 +118,10 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // vice versa, even though its terminal event type matches the other ingest
   // lanes'.
   timeline: "masterwork_ingest_complete",
+  // The UNFOLDING lane (`/masterworks/ingest-unfolding`) — the same
+  // terminal event as the other ingest lanes, its own surface + pointer so
+  // it can never rejoin the source dialog's timeline lane.
+  unfolding: "masterwork_ingest_complete",
   // Sorting the DRAFT pile by what the Rulebook is FOR
   // (`/masterworks/triage`, W59 + W61). Its own surface + pointer: a triage is
   // not an ingest, and a reload must never rejoin one as the other.
@@ -169,6 +184,11 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   // 56 timeline ingests (one case each) ran 31–103 s, median ~60 s. The
   // measurement wins, as the header of this table says it must.
   timeline: 90_000,
+  // The unfolding lane does the same work as `timeline` plus the sealing
+  // and window pass, and has no runs of its own on the ledger yet, so it
+  // inherits the measured timeline figure rather than a guess. Re-measure
+  // once it has runs of its own, as the header of this table requires.
+  unfolding: 90_000,
   // Trial 8, 2026-09-12: the two live triage passes of ~900 drafts took 89 s.
   triage: 90_000,
 };

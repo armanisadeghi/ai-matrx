@@ -57,7 +57,15 @@ export function UnderstudyCard({
 }) {
   const [healing, setHealing] = useState(false);
   const [healFailed, setHealFailed] = useState(false);
-  const healedRef = useRef(false);
+  // 🚨 The latch holds a RULEBOOK ID, not a boolean (Bugbot, 2026-09-13).
+  // `RulebookDetailPage` renders this card at the same position across route
+  // changes, so React keeps ONE instance and only swaps the props. A boolean
+  // latch therefore survived the move: a Rulebook whose self-heal had already
+  // run — or had FAILED — left the next Rulebook showing the first one's
+  // failure copy and never minting its own stand-in. Keying the latch by the
+  // Rulebook it was set for makes "already tried" mean "already tried for THIS
+  // Rulebook", which is what it always claimed to mean.
+  const healedForRef = useRef<string | null>(null);
 
   // THE STAND-IN NEVER LIES ABOUT WHAT IT KNOWS (trial 12, 2026-09-12). Two
   // independent truths, both shown, because either one alone hides the defect:
@@ -116,10 +124,16 @@ export function UnderstudyCard({
   }, [rulebookId, onCreated]);
 
   useEffect(() => {
-    if (understudy || !canEdit || healedRef.current) return;
-    healedRef.current = true;
+    if (healedForRef.current !== null && healedForRef.current !== rulebookId) {
+      // A different Rulebook is on screen now: the previous one's outcome says
+      // nothing about this one, so the failure copy goes with it.
+      healedForRef.current = null;
+      setHealFailed(false);
+    }
+    if (understudy || !canEdit || healedForRef.current === rulebookId) return;
+    healedForRef.current = rulebookId;
     heal();
-  }, [understudy, canEdit, heal]);
+  }, [understudy, canEdit, heal, rulebookId]);
 
   if (!understudy) {
     if (!canEdit) return null;

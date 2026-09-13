@@ -70,7 +70,13 @@ import type { Rulebook } from "../../types";
  * split the lanes. Until it does, the run fails loudly with the real HTTP error
  * and everything else stays typed. Remedy: `pnpm sync-types`.
  */
-const INGEST_TIMELINE_PATH = "/masterworks/ingest-unfolding" as keyof paths;
+/*
+ * Named for the lane it serves, never `INGEST_TIMELINE_PATH`: that exact name
+ * ALSO exists in `IngestSourceDialog` holding a DIFFERENT path
+ * (`/masterworks/ingest-timeline`), which is precisely how the two lanes came
+ * to be treated as one.
+ */
+const INGEST_UNFOLDING_PATH = "/masterworks/ingest-unfolding" as keyof paths;
 
 /** The shortest narrative worth unfolding — below this there is no order. */
 const MIN_NARRATIVE_CHARS = 400;
@@ -244,9 +250,17 @@ export function IngestTimelineDialog({
   const [externalId, setExternalId] = useState("");
 
   const run = useMasterworkRun<TimelineIngestSummary>({
-    surface: "timeline",
+    // 🚨 `unfolding`, NOT `timeline` (Bugbot, 2026-09-13). `IngestSourceDialog`
+    // declares `timeline` for the incumbent lane, and the durable-run pointer
+    // key is `${surface}:${rulebookId}` — so while both said `timeline`, one
+    // Rulebook's two case dialogs wrote the SAME browser receipt. A reload
+    // could rejoin THIS lane's run inside that dialog, which parses the result
+    // with a different parser and performs no seal-and-strip: a HELD-OUT case,
+    // whose whole point is that its resolution never reaches the screen, could
+    // have been rendered by the one door that does not hide it.
+    surface: "unfolding",
     rulebookId: rulebook.id,
-    path: INGEST_TIMELINE_PATH,
+    path: INGEST_UNFOLDING_PATH,
     parseResult: parseTimelineSummary,
   });
   const running = run.running;
@@ -266,9 +280,18 @@ export function IngestTimelineDialog({
   // A run picked back up after a reload has to be VISIBLE — rejoining behind a
   // closed dialog reads as "nothing is happening", the defect durability
   // exists to kill.
+  // It latches so a person who deliberately CLOSES a running dialog is not
+  // fought with on every render — and it CLEARS when the run ends, or the same
+  // latch would hide the next live run behind a closed dialog with Start still
+  // armed, and the Expert would pay for the same unfold twice. The sibling
+  // ingest dialogs already clear it on the same edge (Bugbot, 2026-09-13).
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (reopenedRef.current || open || !run.running) return;
+    if (!run.running) {
+      reopenedRef.current = false;
+      return;
+    }
+    if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
