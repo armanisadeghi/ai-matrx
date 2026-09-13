@@ -127,7 +127,9 @@ function ruleRow(rule: RulebookRule) {
       onImprove={noop}
       onRequestChanges={noop}
       onReconsider={noop}
-      onPromoteEvidence={noop}
+      selected={false}
+      onToggleSelected={noop}
+      recurrenceThreshold={null}
     />
   );
 }

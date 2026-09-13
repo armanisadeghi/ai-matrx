@@ -102,17 +102,37 @@ export interface RuleSourceRef {
   /** The pieces a synthesized rule cites as proof — `corpus_piece` keys. */
   pieces?: string[];
   /**
-   * The distinct pieces that have produced this evidence rule. Its length is
-   * the rule's support; the promotion knob
-   * (`masterwork_distillation.evidence_promotion_pieces`) is the threshold.
+   * The distinct pieces of this rule's own source that produced the same
+   * judgment. Its length is the rule's RECURRENCE, rendered as a
+   * "seen in N pieces" badge once it reaches
+   * `masterwork_distillation.recurrence_badge_pieces`. A badge, never a gate:
+   * a judgment stated once is a rule (`distill.py` § FREQUENCY IS NOT
+   * EXISTENCE).
    */
   evidence_pieces?: string[];
-  /** Support at the moment the server promoted this rule out of evidence. */
-  promoted_from_evidence?: number;
+  /**
+   * 🚨 NEITHER EXPRESSION WINS. The OTHER ways this rule's own source stated
+   * the same judgment, kept when a second piece of that source repeated it.
+   * Before this, the first expression won on append order and every other one
+   * was counted as a duplicate and thrown away.
+   */
+  quotes?: RuleKeptExpression[];
+}
+
+/** One kept second expression of a rule — see `RuleSourceRef.quotes`. */
+export interface RuleKeptExpression {
+  statement: string;
+  quote?: string;
+  detection?: string;
+  /** Which piece of the source said it this way. */
+  piece?: string;
+  chunk?: number;
+  source_pages?: number[];
+  step?: number;
 }
 
 /**
- * THE RELATIONSHIP VOCABULARY — four kinds, and only four. Mirrors
+ * THE RELATIONSHIP VOCABULARY — six kinds, and only six. Mirrors
  * `aidream/services/distillation/distill.py::RELATION_KINDS`; keep them
  * byte-identical.
  */
@@ -122,6 +142,7 @@ export const RULE_RELATION_KINDS = [
   "exception_to",
   "contrast_with",
   "disagrees_with",
+  "agrees_with",
 ] as const;
 
 export type RuleRelationKind = (typeof RULE_RELATION_KINDS)[number];
@@ -133,6 +154,7 @@ export const RULE_RELATION_LABELS: Record<RuleRelationKind, string> = {
   exception_to: "Is the exception to",
   contrast_with: "Easy to confuse with",
   disagrees_with: "Disagrees with",
+  agrees_with: "Agrees with",
 };
 
 /**
@@ -296,22 +318,25 @@ export interface RulebookRule {
    */
   feedback?: string;
   /**
-   * 🚨 THE EVIDENCE STANDING (2026-09-12). `"evidence"` means this rule is what
-   * ONE piece of a body of work showed — the proof behind a cross-piece rule,
-   * not a question the Expert owes an answer on.
+   * 🚨 HOW THIS RULE WAS REVIEWED — the honest record of what a person
+   * actually read before it was approved (Google Docs suggestion mode's
+   * record of who accepted, applied to a review queue).
    *
-   * The incident: 20 published pieces produced 416 per-piece drafts plus 4
-   * synthesized rules, all of them "Waiting on you", and the only controls were
-   * Approve-all or one-by-one — so the Expert pressed Approve-all, which is the
-   * failure this lane exists to prevent. Evidence rules are still drafts (a
-   * machine never activates anything), are excluded from the counters, the
-   * review queue and every built Masterwork, and are reached behind the
-   * synthesized rule that cites them. They become ordinary drafts when the
-   * Expert promotes one, or when the server sees the same judgment recur across
-   * enough distinct pieces. Absent on every rule written before 2026-09-12 and
-   * on every other lane — absence means "an ordinary rule".
+   * The incident it closes (2026-09-12, live): Newsroom Desk, 416 rules, zero
+   * drafts — Approve-all had fired on the whole pile, and the result was
+   * indistinguishable on screen from 416 real decisions. `mode: "read"` is one
+   * rule the Expert opened and approved; `mode: "sampled"` is a bulk approve,
+   * and it carries how many of the selection were actually read so the rule
+   * can say "approved in bulk, 12 of 416 read" on its own face. Absent means
+   * nobody has approved it through this surface yet.
    */
-  standing?: "evidence";
+  reviewed?: RuleReview;
+  /**
+   * Who last ruled on this rule and when — stamped by the ONE write path on
+   * every approve, reject and edit, never by a caller.
+   */
+  ruled_by?: string;
+  ruled_at?: string;
   /** Back-reference to the source location this rule was distilled from. */
   source_ref?: RuleSourceRef;
   /**
@@ -357,65 +382,100 @@ export interface RulebookRule {
 }
 
 /**
- * The one review state of a rule — precedence
- * retired > rejected > evidence > draft > approved.
- *
- * `evidence` sits above `draft` deliberately: an evidence rule IS a draft in
- * the database (nothing a machine writes is ever active), and every surface
- * that asks "is this waiting on the Expert?" must get NO for it.
+ * How a rule was reviewed before it was approved. `sample_size` and `of` are
+ * present only on `"sampled"`.
  */
-export type RuleState =
-  | "approved"
-  | "draft"
-  | "evidence"
-  | "rejected"
-  | "retired";
+export interface RuleReview {
+  mode: "read" | "sampled";
+  sample_size?: number;
+  of?: number;
+  by?: string;
+  at?: string;
+}
+
+/**
+ * The one review state of a rule — precedence
+ * retired > rejected > draft > approved.
+ *
+ * 🚨 There is no `evidence` state any more. For a few hours a rule read from
+ * ONE piece of a body of work sat here as `"evidence"`, below `draft`, hidden
+ * from the queue and the counters until it recurred. Frequency is not
+ * existence: a judgment stated once is a rule, and volume is answered by the
+ * default view, sections, and a bulk approve that records what was read.
+ */
+export type RuleState = "approved" | "draft" | "rejected" | "retired";
 
 export function ruleState(rule: RulebookRule): RuleState {
   if (rule.retired === true) return "retired";
   if (rule.rejected === true) return "rejected";
-  if (rule.standing === "evidence") return "evidence";
   if (rule.draft === true) return "draft";
   return "approved";
 }
 
-/** THE ONE predicate — mirrors `distill.is_evidence_rule` on the server. */
-export function isEvidenceRule(rule: RulebookRule): boolean {
-  return rule.standing === "evidence";
-}
-
-/** How many distinct pieces have produced this evidence rule. */
-export function evidenceSupport(rule: RulebookRule): number {
+/**
+ * How many distinct pieces of this rule's own source produced it. The
+ * recurrence BADGE's number — it gates nothing.
+ */
+export function recurrencePieces(rule: RulebookRule): number {
   return new Set(rule.source_ref?.evidence_pieces ?? []).size;
 }
 
+/** The ids this rule is documented as disagreeing with. */
+export function disagreesWith(rule: RulebookRule): string[] {
+  return (rule.relates_to ?? [])
+    .filter((r) => r.kind === "disagrees_with")
+    .map((r) => r.rule_id);
+}
+
+/** The source identity this rule was read from — "" when it carries none. */
+export function ruleSource(rule: RulebookRule): string {
+  return rule.source_ref?.source ?? "";
+}
+
 /**
- * The evidence rules a synthesized rule is built on: every evidence rule whose
- * piece the synthesized rule cites. A rule with no citations has no evidence to
- * show — never a guess.
+ * The rules only ONE source holds: every rule whose statement no other source
+ * in this Rulebook also states. These plus the disagreements are what a large
+ * Rulebook opens on — the judgments nobody else corroborated are exactly the
+ * ones a bulk approve must not swallow.
  */
-export function evidenceFor(
-  synthesized: RulebookRule,
+export function heldByOneSourceOnly(
   rules: readonly RulebookRule[],
-): RulebookRule[] {
-  const cited = new Set(synthesized.source_ref?.pieces ?? []);
-  if (cited.size === 0) return [];
-  return rules.filter(
-    (rule) =>
-      isEvidenceRule(rule) &&
-      Boolean(rule.source_ref?.corpus_piece) &&
-      cited.has(rule.source_ref!.corpus_piece!),
+): Set<string> {
+  const sourcesByStatement = new Map<string, Set<string>>();
+  for (const rule of rules) {
+    const key = rule.statement.trim().toLowerCase();
+    const set = sourcesByStatement.get(key) ?? new Set<string>();
+    set.add(ruleSource(rule));
+    sourcesByStatement.set(key, set);
+  }
+  return new Set(
+    rules
+      .filter(
+        (rule) =>
+          (sourcesByStatement.get(rule.statement.trim().toLowerCase())?.size ??
+            1) <= 1,
+      )
+      .map((rule) => rule.id),
   );
 }
 
 /**
- * Promoting an evidence rule to an ordinary draft — the Expert's one click.
- * It raises standing only: the rule stays a draft awaiting their Approve, and
- * not one word of it changes.
+ * 🚨 THE ONE STAMP. Every approve, reject and edit that goes through the write
+ * path carries who ruled and when — and, on an approval, what they actually
+ * read. A caller never writes these fields itself.
  */
-export function promoteEvidenceRule(rule: RulebookRule): RulebookRule {
-  const { standing: _standing, ...rest } = rule;
-  return { ...rest, draft: true };
+export function stampRuled(
+  rule: RulebookRule,
+  by: string | null,
+  reviewed?: RuleReview,
+): RulebookRule {
+  const at = new Date().toISOString();
+  return {
+    ...rule,
+    ...(by ? { ruled_by: by } : {}),
+    ruled_at: at,
+    ...(reviewed ? { reviewed: { ...reviewed, ...(by ? { by } : {}), at } } : {}),
+  };
 }
 
 /** The fields an edit can change — the content of a rule, as opposed to its review state. */

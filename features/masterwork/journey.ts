@@ -349,10 +349,6 @@ export function ruleFacts(rules: RulebookRule[]): Pick<
   for (const rule of rules) {
     const state = ruleState(rule);
     if (state === "retired") continue;
-    // Evidence is not a rule and not a question — it never moves the journey
-    // (types.ts § standing). A Rulebook whose only rows are per-piece
-    // observations has not started, and must not be told it is caught up.
-    if (state === "evidence") continue;
     liveRules += 1;
     const ref = rule.source_ref as Record<string, unknown> | undefined;
     if (ref && (ref.approach === "interview" || ref.interview))
