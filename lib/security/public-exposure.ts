@@ -677,13 +677,20 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "is_archived", "tags", "session_id", "source_message_id", "task_id", "is_public",
       "created_at", "updated_at", "last_accessed_at", "content_hash", "project_id", "conversation_id",
       "artifact_index", "parent_canvas_id", "source_type", "external_system", "external_id", "deleted_at",
-      "visibility", "source_system", "source_id",
+      "visibility", "source_system", "source_id", "version",
     ],
     why:
-      "Anon-readable by the policy `pub_read`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
+      "Anon-readable by the policy `pub_read`. `version` is deliberately IN this list and is the one "
+      + "exception on the whole surface: the canvas UI reads it on a SHARED artifact "
+      + "(features/canvas/core/CanvasBody.tsx keys its render on row.version; "
+      + "ensureArtifactPersisted.ts reports it), and canvasArtifactService.getById / .getBySource are "
+      + "the shared-view path a signed-out visitor reaches on /s/[token] and /canvas/shared. It is a "
+      + "monotonic integer on a row the visitor may already see and names no person, organization or "
+      + "secret — do not revoke it on the strength of the column's name "
+      + "(migrations/dd186_canvas_item_version_is_public.sql). Still revoked here: user_id, "
+      + "organization_id, created_by, updated_by, metadata.",
   },
+
   {
     relation: "canvas.shared_canvas_items",
     columns: [
