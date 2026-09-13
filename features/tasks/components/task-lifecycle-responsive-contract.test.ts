@@ -102,6 +102,9 @@ describe("task lifecycle responsive contract", () => {
     const mobileList = source("mobile/MobileTasksList.tsx");
 
     expect(mobileList).toContain("after:-inset-[15px]");
+    expect(mobileList).toContain(
+      'className="flex-1 overflow-y-auto overscroll-contain pb-20"',
+    );
     expect(mobileList).not.toContain(
       'className="flex min-h-11 min-w-11 items-center justify-center"',
     );

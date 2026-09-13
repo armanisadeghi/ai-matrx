@@ -172,6 +172,11 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
   contract test now rejects outer-shell clearance or a second terminal scroll
   region before the S8 live geometry matrix runs.
 
+- `2026-09-13` — **The mobile task list now clears global fixed controls at its
+  real terminal scroll position.** Its single vertical scroll owner reserves
+  bottom padding so the last task can move fully above the schedule alarm and
+  other fixed helpers instead of being covered by them.
+
 - `2026-09-12` — **Task copy actions use one borderless dropdown trigger.** List, table,
   row, and schedule-style task surfaces now compose the shared `CopyButtons` unified
   mode so human copy, Copy for AI, JSON/graded variants, and downloads live behind one
