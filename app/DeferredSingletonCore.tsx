@@ -28,6 +28,7 @@ import CloudBrowserHandoffDeepLink from "@/features/cloud-browser/components/Clo
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
 import SystemScheduleAlarmBanner from "@/features/scheduling/components/alarm/SystemScheduleAlarmBanner";
+import PlatformOutageBanner from "@/features/admin/system-errors/PlatformOutageBanner";
 import { FirstSignInAgeGateMount } from "@/features/education/compliance/FirstSignInAgeGateMount";
 import { DailySpendPopoverMount } from "@/features/admin/spend/DailySpendPopoverMount";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
@@ -138,6 +139,13 @@ export default function DeferredSingletonCore() {
           six critical suspended schedules sat unread for seventeen days on the
           one admin page that showed them (see the component's header). */}
       <SystemScheduleAlarmBanner />
+      {/* Super-admin only; renders nothing for everyone else, issues no request
+          for them, and renders nothing while every provider is healthy. Global
+          on purpose: on 2026-09-12 Anthropic refused every call for nearly
+          three hours (20:31Z-23:21Z) and no screen in the product said so.
+          It FLOATS — see the component header and styles/shell.css
+          § NO GLOBAL BANNER CLEARANCE. */}
+      <PlatformOutageBanner />
       <LiveCaptureIndicator />
       {/* Render-free. Asks a signed-in account with no declared age band for
           it ONCE, after they are in the app — never during signup (Arman,
