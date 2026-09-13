@@ -84,6 +84,16 @@ export const selectRunStatus = (runId: string) =>
     (byRunId): WorkflowRunStatus | null => byRunId[runId]?.status ?? null,
   );
 
+/**
+ * Why this run could not be READ right now — never the run's own failure. Null
+ * on the happy path; a sentence when the attach read was refused (W39).
+ */
+export const selectRunReadFailure = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): string | null => byRunId[runId]?.readFailure ?? null,
+  );
+
 export const selectRunError = (runId: string) =>
   createSelector(
     [selectByRunId],

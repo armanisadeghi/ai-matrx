@@ -23,6 +23,7 @@ import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { nextRuleId } from "../../ruleIds";
+import { findIdenticalRule } from "../../duplicateRules";
 import type { RulebookDraftSnapshot } from "../../agent-context/rulebookSurfaceScope";
 import {
   applyRuleTidy,
@@ -49,6 +50,13 @@ export interface RuleEditorDialogProps {
   sections: RulebookSections;
   /** Ids already in the Rulebook — new rules must not collide. */
   existingIds: Set<string>;
+  /**
+   * The rules already in the Rulebook, so an ADD that is word-for-word one of
+   * them is caught HERE — before the button is pressed — rather than refused
+   * by the write path after the fact (wall W50). Optional: a host that has no
+   * list still gets the write path's refusal.
+   */
+  existingRules?: readonly RulebookRule[];
   /** Editing an existing rule; undefined = adding a new one. */
   initial?: RulebookRule;
   defaultSection?: string;
@@ -89,6 +97,7 @@ function RuleEditorForm({
   onOpenChange,
   sections,
   existingIds,
+  existingRules,
   initial,
   defaultSection,
   onSave,
@@ -257,6 +266,21 @@ function RuleEditorForm({
     else if (activeId === "rule-quote") setQuote(text);
     else throw new Error("Focus a Rulebook text field before replacing text.");
   }, []);
+
+  /**
+   * The rule already in this Rulebook that says exactly this, or null. An
+   * agent re-staging the same draft (W50) is the case that matters: the words
+   * come back identical with a fresh id, so the id check catches nothing.
+   */
+  const alreadyInRulebook = useMemo(
+    () =>
+      findIdenticalRule(
+        existingRules ?? [],
+        { name, statement },
+        initial?.id,
+      ),
+    [existingRules, name, statement, initial?.id],
+  );
 
   const save = async () => {
     if (!name.trim() || !statement.trim()) {
@@ -429,6 +453,18 @@ function RuleEditorForm({
               bodyClassName="max-h-40"
             />
           ) : null}
+          {alreadyInRulebook ? (
+            <p
+              role="status"
+              className="rounded-lg border border-border bg-muted/40 p-2.5 text-sm text-muted-foreground"
+            >
+              <span className="font-medium text-foreground">
+                &ldquo;{alreadyInRulebook.name}&rdquo;
+              </span>{" "}
+              is already in this Rulebook, word for word. Nothing to add — close
+              this, or change the wording to make it a different rule.
+            </p>
+          ) : null}
           <DialogFooter className="gap-2 sm:justify-between">
             <div className="flex flex-wrap gap-2 sm:mr-auto">
               <Button
@@ -469,12 +505,22 @@ function RuleEditorForm({
               >
                 Cancel
               </Button>
-              <Button
-                onClick={() => void save()}
-                disabled={saving || cleanupRun.isRunning}
-              >
-                {saving ? "Saving…" : isNew ? "Add rule" : "Save rule"}
-              </Button>
+              {/* A CONTROL IS ABSENT OR HONEST (law 4). When this Rulebook
+                  already holds this exact rule, "Add rule" would be refused by
+                  the write path, so it is not offered: the door becomes Close,
+                  and the line above says why. */}
+              {alreadyInRulebook ? (
+                <Button variant="outline" onClick={cancel} disabled={saving}>
+                  Close
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => void save()}
+                  disabled={saving || cleanupRun.isRunning}
+                >
+                  {saving ? "Saving…" : isNew ? "Add rule" : "Save rule"}
+                </Button>
+              )}
             </div>
           </DialogFooter>
         </div>

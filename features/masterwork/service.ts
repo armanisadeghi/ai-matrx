@@ -3,6 +3,7 @@ import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { presentedPreview } from "@/features/workflow-runtime/run-result/presented-result";
 import { pokeUnderstudy } from "./understudy/refresh";
+import { DuplicateRuleError, findIdenticalRule } from "./duplicateRules";
 import {
   parseRulebook,
   type DumpUrlSource,
@@ -196,6 +197,14 @@ export async function upsertRuleWithRetry(opts: {
     const rulebook = await getRulebook(opts.rulebookId);
     if (!rulebook) throw new Error("That Rulebook no longer exists.");
     const exists = rulebook.rules.some((r) => r.id === opts.rule.id);
+    // 🚨 AN IDENTICAL ADD IS REFUSED HERE, not in a dialog (wall W50). A rule
+    // re-staged by an agent comes back with a FRESH id, so the id check above
+    // does not catch it; the words do. Editing a rule in place is untouched —
+    // a rule is never a duplicate of itself.
+    if (!exists) {
+      const identical = findIdenticalRule(rulebook.rules, opts.rule);
+      if (identical) throw new DuplicateRuleError(identical);
+    }
     const rules = exists
       ? rulebook.rules.map((r) => (r.id === opts.rule.id ? opts.rule : r))
       : [...rulebook.rules, opts.rule];
