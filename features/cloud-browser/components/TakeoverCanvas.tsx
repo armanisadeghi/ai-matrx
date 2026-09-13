@@ -15,7 +15,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
-import { Loader2, RotateCw } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCw } from "lucide-react";
 import type { ControllerState, StreamTicketEnvelope } from "../types";
 import { renewStreamTicket } from "../service";
 
@@ -23,12 +23,20 @@ export function TakeoverCanvas({
   controller,
   ticket,
   connecting,
+  openError,
   onReconnect,
   className,
 }: {
   controller: ControllerState;
   ticket: StreamTicketEnvelope | null;
   connecting?: boolean;
+  /**
+   * Why the live view could not be opened (the ticket mint/claim failed).
+   * Without this the canvas treated "no ticket" as "still connecting" and spun
+   * forever — observed 2026-09-13 as "Connecting to the live browser…" over
+   * "No live session" while the server had already refused the connection.
+   */
+  openError?: string | null;
   onReconnect: () => void;
   className?: string;
 }) {
@@ -67,10 +75,28 @@ export function TakeoverCanvas({
             : undefined,
         }}
       >
-        {connecting || !ticket ? (
+        {connecting ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300">
             <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
             <span className="text-sm">Connecting to the live browser…</span>
+          </div>
+        ) : !ticket ? (
+          // Not connecting and no ticket is a FINISHED attempt, never a pending
+          // one. Say what happened and point at the way back.
+          <div
+            role="alert"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-slate-300"
+          >
+            <AlertTriangle className="h-6 w-6 text-amber-400" aria-hidden />
+            <span className="text-sm font-medium">
+              The live view could not open
+            </span>
+            <span className="max-w-sm text-xs text-slate-400">
+              {openError ??
+                "The connection to the live browser was not established."}{" "}
+              You are still in control — use Reconnect below, or return control
+              to the agent.
+            </span>
           </div>
         ) : (
           <>
