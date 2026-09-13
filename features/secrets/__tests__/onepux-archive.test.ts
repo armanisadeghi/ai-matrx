@@ -23,6 +23,13 @@ describe("1PUX archive reader", () => {
     const controller = new AbortController(); controller.abort();
     await expect(read(await archive([["export.attributes", "a"], ["export.data", "d"]]), controller.signal)).rejects.toThrow("cancelled");
   });
+  test("classifies cancellation after archive reading begins", async () => {
+    const controller = new AbortController();
+    const file = await archive([["export.attributes", "a".repeat(500_000)], ["export.data", "d".repeat(500_000)]]);
+    const pending = (await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 2_000_000, maxRecords: 10 }, controller.signal);
+    controller.abort();
+    await expect(pending).rejects.toThrow("cancelled");
+  });
   test("rejects a byte-corrupted selected JSON member", async () => {
     const file = await archive([["export.attributes", "attrs"], ["export.data", "data"]]);
     const bytes = new Uint8Array(await file.arrayBuffer()); bytes[40] = bytes[40]! ^ 1;
@@ -55,6 +62,9 @@ describe("1PUX archive reader", () => {
   test("combines declared archive bytes with streamed decoded JSON bytes", async () => {
     const file = await archive([["export.attributes", "a".repeat(300)], ["export.data", "d".repeat(300)]]);
     await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 900, maxRecords: 10 })).rejects.toThrow("size limit");
+  });
+  test.each(["files/\u0001name", "files/name\u007f"])("refuses a control-character member name from the maintained writer: %s", async (name) => {
+    await expect(read(await archive([["export.attributes", "a"], ["export.data", "d"], [name, "x"]]))).rejects.toThrow();
   });
   test("refuses a mutated binary local-header name", async () => {
     const file = await archive([["export.attributes", "a"], ["export.data", "d"], ["files/icon", "x"]]);
