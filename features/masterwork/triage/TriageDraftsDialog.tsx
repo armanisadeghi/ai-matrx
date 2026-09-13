@@ -88,9 +88,22 @@ export function TriageDraftsDialog({
   // A sort survives a refresh on the durable spine, so the dialog reopens onto
   // the run in flight rather than leaving the Expert with no sign of it — the
   // same rejoin the sibling ingest dialogs do.
+  //
+  // 🚨 The latch is per RUN, not per mount (Bugbot, 2026-09-13). It used to be
+  // set on the first auto-open and never cleared, so the dialog rejoined
+  // exactly once in the life of the page: a second sort — started in another
+  // tab, or on a fresh pointer after `reset` — stayed hidden with the Start
+  // button armed, and the Expert could pay for the same sort twice. Clearing it
+  // the moment the run is no longer running lets the NEXT live run reopen in
+  // its turn, while the `open` guard still keeps it from re-firing on the run
+  // that is already on screen.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (reopenedRef.current || open || !run.running) return;
+    if (!run.running) {
+      reopenedRef.current = false;
+      return;
+    }
+    if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
