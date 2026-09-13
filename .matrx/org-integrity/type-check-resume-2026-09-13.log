@@ -1,0 +1,4 @@
+
+> app-matrx@0.4.1892 type-check /Users/armanisadeghi/code/matrx-frontend
+> tsc --noEmit -p tsconfig.typecheck.json
+
