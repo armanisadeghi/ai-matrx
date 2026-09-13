@@ -15,10 +15,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   MoreHorizontal,
-  Pencil,
-  Trash2,
-  Check,
-  X,
   Search,
   MessageSquare,
   Share2,
@@ -33,7 +29,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -82,14 +77,11 @@ const fetchConversationListMore = createAsyncThunk<
   void,
   { offset: number; searchTerm?: string }
 >("legacy/fetchConversationListMore", async () => undefined);
-const renameConversationMutation = createAsyncThunk<
-  void,
-  { id: string; title: string }
->("legacy/renameConversationMutation", async () => undefined);
-const deleteConversationMutation = createAsyncThunk<void, string>(
-  "legacy/deleteConversationMutation",
-  async () => undefined,
-);
+// Rename/delete controls were removed from this deprecated sidebar (DD-157):
+// the mutations they would have dispatched were already no-ops (mutations
+// resolve to no-ops per the legacy stub note above), so the menu items were
+// dead controls. Real rename/delete live in the conversation-list rebuild
+// (features/agents/redux/conversation-list/).
 import type { SharedCxConversationSummary } from "@/features/cx-chat/types/cx-tables";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
