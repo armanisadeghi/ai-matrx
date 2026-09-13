@@ -34,6 +34,8 @@ type SettingsRowProps = SettingsCommonProps & {
   controlLayout?: "compact" | "wide";
   /** Stable row anchor used by settings search and deep links. */
   anchorId?: string;
+  /** Override the label target; pass null when the row exposes a labelled group. */
+  labelFor?: string | null;
 };
 
 const densityStyles: Record<SettingsRowDensity, string> = {
@@ -92,6 +94,7 @@ export function SettingsRow({
   last,
   controlLayout = "compact",
   anchorId,
+  labelFor,
 }: SettingsRowProps) {
   const { variant: designVariant } = useSettingsDesign();
   const sectionTitle = useSettingsSectionTitle();
@@ -99,6 +102,7 @@ export function SettingsRow({
   // Input ids are React-instance ids. Search/deep-link ids intentionally use
   // only the authored section + label, so they survive remounts and markup.
   const inputId = id ?? `settings-input-${reactId}`;
+  const labelId = `${inputId}-label`;
   const controlId = settingsControlSearchId(sectionTitle ?? "Settings", label);
   const rowAnchorId = anchorId ?? controlId;
 
@@ -114,15 +118,27 @@ export function SettingsRow({
         {Icon && (
           <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         )}
-        <label
-          htmlFor={inputId}
-          className={cn(
-            "min-w-0 break-words text-sm font-medium leading-snug text-foreground",
-            disabled && "opacity-50",
-          )}
-        >
-          {label}
-        </label>
+        {labelFor === null ? (
+          <span
+            id={labelId}
+            className={cn(
+              "min-w-0 break-words text-sm font-medium leading-snug text-foreground",
+              disabled && "opacity-50",
+            )}
+          >
+            {label}
+          </span>
+        ) : (
+          <label
+            htmlFor={labelFor ?? inputId}
+            className={cn(
+              "min-w-0 break-words text-sm font-medium leading-snug text-foreground",
+              disabled && "opacity-50",
+            )}
+          >
+            {label}
+          </label>
+        )}
         {badge && <BadgePill badge={badge} />}
         {designVariant === "compact" && (description || helpText) && (
           <CompactHelpPopover
