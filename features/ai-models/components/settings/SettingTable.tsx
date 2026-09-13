@@ -235,7 +235,7 @@ export default function SettingTable({
         isFetching={isLoading && settings.length > 0}
         columns={columns}
         getRowId={(item) => item.id}
-        pageSize={25}
+        pageSize={50}
         pageSizeOptions={[10, 25, 50, 100]}
         defaultSort={null}
         onRowOpen={onSelect}
@@ -266,6 +266,10 @@ export default function SettingTable({
         toolbar={{
           title: "Settings Vocabulary",
           searchPlaceholder: "Search settings…",
+          intelligentSearch: {
+            roles: { key: "name", description: "description" },
+            scopes: [{ id: "value_type", label: "Type", fields: ["value_type"] }],
+          },
           refresh: { onRefresh: onRetry },
           add: { onAdd: onCreate },
         }}
