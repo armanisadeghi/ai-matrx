@@ -53,7 +53,15 @@ export function createProtonPassWorkerMessageHandler(
         ok: true,
         requestId: request.requestId,
         records,
-        binaryMemberCount: archive?.binaryNames.size ?? 0,
+        fileNotices:
+          archive && archive.binaryNames.size > 0
+            ? [
+                {
+                  code: "unsupported_archive_members",
+                  count: archive.binaryNames.size,
+                },
+              ]
+            : [],
       });
     } catch {
       if (active === operation && !operation.controller.signal.aborted)

@@ -13,7 +13,7 @@ async function archive(entries: Array<[string, string]>) {
 describe("1PUX archive reader", () => {
   test("reads maintained-writer JSON and counts binary members without inflating them", async () => {
     const file = await archive([["export.attributes", "attrs"], ["export.data", "data"], ["files/icon", "binary"]]);
-    await expect(read(file)).resolves.toEqual({ attributesText: "attrs", dataText: "data", binaryMemberCount: 1 });
+    await expect(read(file)).resolves.toEqual({ attributesText: "attrs", dataText: "data", attachmentMemberCount: 1 });
   });
   test("rejects missing required members, traversal, and entry budget", async () => {
     await expect(read(await archive([["export.data", "data"]]))).rejects.toThrow();

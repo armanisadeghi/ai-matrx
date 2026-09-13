@@ -36,7 +36,7 @@ export function createBitwardenJsonWorkerMessageHandler(
         ok: true,
         requestId: request.requestId,
         records,
-        binaryMemberCount: 0,
+        fileNotices: [],
       });
     } catch {
       if (active !== operation || operation.controller.signal.aborted) return;

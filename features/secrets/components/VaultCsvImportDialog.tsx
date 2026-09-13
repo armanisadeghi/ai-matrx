@@ -25,7 +25,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
-import type { StructuredImportWorkerResponse } from "../structured-import-worker-protocol";
+import {
+  hasValidStructuredImportFileNotices,
+  type StructuredImportFileNotice,
+  type StructuredImportWorkerResponse,
+} from "../structured-import-worker-protocol";
 import { structuredImportSource } from "../structured-import-source-registry";
 import {
   type StructuredImportRecord,
@@ -117,6 +121,18 @@ type JsonPreflightCounts = {
   archived: number;
 };
 
+const fileNoticeText: Record<
+  StructuredImportFileNotice["code"],
+  (count: number) => string
+> = {
+  unsupported_archive_members: (count) =>
+    `This export includes ${count} archive files that cannot be imported.`,
+  unsupported_binary_definitions: (count) =>
+    `This export includes ${count} unreferenced attachment definitions that cannot be imported.`,
+  deleted_tombstones: (count) =>
+    `This export records ${count} deleted items without saved contents; these cannot be restored by importing.`,
+};
+
 export function VaultCsvImportDialog({
   open,
   onOpenChange,
@@ -155,7 +171,7 @@ export function VaultCsvImportDialog({
   const [jsonLoaded, setJsonLoaded] = useState(false);
   const [includeTrash, setIncludeTrash] = useState(false);
   const [includeArchived, setIncludeArchived] = useState(false);
-  const [binaryMembers, setBinaryMembers] = useState(0);
+  const [fileNotices, setFileNotices] = useState<StructuredImportFileNotice[]>([]);
   const [metadataApproved, setMetadataApproved] = useState(false);
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
   const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
@@ -192,7 +208,7 @@ export function VaultCsvImportDialog({
     setJsonLoaded(false);
     setIncludeTrash(false);
     setIncludeArchived(false);
-    setBinaryMembers(0);
+    setFileNotices([]);
     setMetadataApproved(false);
     setMapping([]);
     setUnavailable(null);
@@ -349,9 +365,18 @@ export function VaultCsvImportDialog({
             settle(descriptor.parseError);
             return;
           }
+          if (
+            !hasValidStructuredImportFileNotices(
+              event.data.fileNotices,
+              limits.maxRecords,
+            )
+          ) {
+            settle(descriptor.parseError);
+            return;
+          }
           if (!settle()) return;
           setJsonRecords(event.data.records);
-          setBinaryMembers(event.data.binaryMemberCount);
+          setFileNotices(event.data.fileNotices);
           setJsonLoaded(true);
         };
         parser.postMessage({
@@ -974,15 +999,14 @@ export function VaultCsvImportDialog({
                   </span>
                 </label>
               )}
-              {structuredImportSource(source)?.binaryMemberNotice &&
-                binaryMembers > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {binaryMembers} binary archive member
-                    {binaryMembers === 1 ? "" : "s"}
-                    {source === "1password_1pux" ? " and icon data" : ""} are
-                    not imported.
-                  </p>
-                )}
+              {fileNotices.map((notice) => (
+                <p
+                  key={notice.code}
+                  className="text-xs text-muted-foreground"
+                >
+                  {fileNoticeText[notice.code](notice.count)}
+                </p>
+              ))}
               <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Switch
                   checked={enableBrowserFill}

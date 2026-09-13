@@ -54,7 +54,9 @@ describe("Proton Pass worker", () => {
       expect.objectContaining({
         ok: true,
         requestId: "p",
-        binaryMemberCount: 1,
+        fileNotices: [
+          { code: "unsupported_archive_members", count: 1 },
+        ],
         records: [expect.objectContaining({ status: "unsupported" })],
       }),
     ]);

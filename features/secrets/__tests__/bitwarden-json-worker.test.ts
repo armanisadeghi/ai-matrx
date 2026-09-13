@@ -45,7 +45,7 @@ describe("Bitwarden worker production handler", () => {
       expect.objectContaining({
         ok: true,
         requestId: "bitwarden-request",
-        binaryMemberCount: 0,
+        fileNotices: [],
         records: [
           expect.objectContaining({ title: "Example", username: "person" }),
         ],

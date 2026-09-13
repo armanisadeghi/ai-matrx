@@ -48,7 +48,15 @@ export function createOnePuxWorkerMessageHandler(
         ok: true,
         requestId: request.requestId,
         records,
-        binaryMemberCount: archive.binaryMemberCount,
+        fileNotices:
+          archive.attachmentMemberCount > 0
+            ? [
+                {
+                  code: "unsupported_archive_members",
+                  count: archive.attachmentMemberCount,
+                },
+              ]
+            : [],
       });
     } catch {
       if (active !== operation || operation.controller.signal.aborted) return;

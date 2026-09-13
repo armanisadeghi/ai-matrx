@@ -100,7 +100,9 @@ describe("1PUX worker production handler", () => {
       expect.objectContaining({
         ok: true,
         requestId: "request-1",
-        binaryMemberCount: 1,
+        fileNotices: [
+          { code: "unsupported_archive_members", count: 1 },
+        ],
         records: [
           expect.objectContaining({
             status: "supported",

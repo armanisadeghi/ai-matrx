@@ -4,7 +4,7 @@ import { openBoundedZip } from "./bounded-zip";
 export type OnePuxArchive = {
   attributesText: string;
   dataText: string;
-  binaryMemberCount: number;
+  attachmentMemberCount: number;
 };
 
 function invalid(): never {
@@ -20,7 +20,7 @@ export async function readOnePuxArchive(
   let archive;
   try {
     archive = await openBoundedZip(file, limits, signal);
-    let binaryMemberCount = 0;
+    let attachmentMemberCount = 0;
     let hasAttributes = false;
     let hasData = false;
     for (const entry of archive.entries) {
@@ -44,7 +44,7 @@ export async function readOnePuxArchive(
         entry.filename.slice(6) &&
         !entry.filename.slice(6).includes("/")
       ) {
-        binaryMemberCount += 1;
+        attachmentMemberCount += 1;
         continue;
       }
       invalid();
@@ -65,7 +65,7 @@ export async function readOnePuxArchive(
       else dataText = text;
     }
     if (!attributesText || !dataText) invalid();
-    return { attributesText, dataText, binaryMemberCount };
+    return { attributesText, dataText, attachmentMemberCount };
   } catch (error) {
     if (signal?.aborted) throw new Error("The 1Password import was cancelled.");
     if (error instanceof Error && /size limit/.test(error.message))

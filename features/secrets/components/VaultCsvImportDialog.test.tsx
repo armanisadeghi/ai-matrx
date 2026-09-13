@@ -692,6 +692,7 @@ describe("VaultCsvImportDialog", () => {
           requestId: workers[1]?.postMessage.mock.calls[0]?.[0]?.requestId,
           ok: true,
           records: [jsonRecord({ title: "fresh" })],
+          fileNotices: [],
         },
       } as MessageEvent),
     );
@@ -902,11 +903,21 @@ describe("VaultCsvImportDialog", () => {
               sourceState: "deleted",
             }),
           ],
+          fileNotices: [
+            { code: "unsupported_binary_definitions", count: 2 },
+            { code: "deleted_tombstones", count: 1 },
+          ],
         },
       } as MessageEvent),
     );
     expect(document.body.textContent).toContain(
       "0 selected; 1 skipped; 1 invalid; 1 unsupported; 1 deleted.",
+    );
+    expect(document.body.textContent).toContain(
+      "This export includes 2 unreferenced attachment definitions that cannot be imported.",
+    );
+    expect(document.body.textContent).toContain(
+      "This export records 1 deleted items without saved contents; these cannot be restored by importing.",
     );
     expect(document.body.textContent).toContain(
       "destination https://example.test",
@@ -988,6 +999,7 @@ describe("VaultCsvImportDialog", () => {
               urls: ["https://second.test"],
             }),
           ],
+          fileNotices: [],
         },
       } as MessageEvent),
     );
@@ -1073,7 +1085,9 @@ describe("VaultCsvImportDialog", () => {
           ok: true,
           requestId: request.requestId,
           records: [jsonRecord({ sourceState: "active" })],
-          binaryMemberCount: 2,
+          fileNotices: [
+            { code: "unsupported_archive_members", count: 2 },
+          ],
         },
       } as MessageEvent),
     );
@@ -1081,7 +1095,7 @@ describe("VaultCsvImportDialog", () => {
       "1 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 0 archived.",
     );
     expect(document.body.textContent).toContain(
-      "2 binary archive members and icon data are not imported.",
+      "This export includes 2 archive files that cannot be imported.",
     );
   });
 
@@ -1134,7 +1148,9 @@ describe("VaultCsvImportDialog", () => {
           ok: true,
           requestId,
           records: [jsonRecord({ title: "late 1pux", sourceState: "active" })],
-          binaryMemberCount: 1,
+          fileNotices: [
+            { code: "unsupported_archive_members", count: 1 },
+          ],
         },
       } as MessageEvent),
     );
@@ -1191,7 +1207,7 @@ describe("VaultCsvImportDialog", () => {
           records: [
             jsonRecord({ title: "organization late", sourceState: "active" }),
           ],
-          binaryMemberCount: 0,
+          fileNotices: [],
         },
       } as MessageEvent),
     );
@@ -1206,7 +1222,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing");
     const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
-    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], binaryMemberCount: 0 } } as MessageEvent));
+    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], fileNotices: [] } } as MessageEvent));
     expect(document.body.textContent).toContain("0 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 1 archived.");
     expect(document.body.textContent).toContain("Include archived source items");
     expect(document.body.textContent).not.toContain("Include deleted source items");
@@ -1221,7 +1237,7 @@ describe("VaultCsvImportDialog", () => {
     const input = await chooseOnePux(); Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
     await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing"); const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
-    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], binaryMemberCount: 0 } } as MessageEvent));
+    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], fileNotices: [] } } as MessageEvent));
     expect(document.body.textContent).not.toContain("Include deleted source items"); expect(document.body.textContent).not.toContain("Include archived source items");
   });
 });

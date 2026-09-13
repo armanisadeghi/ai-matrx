@@ -3,7 +3,6 @@ export type StructuredImportSource = {
   accept: string;
   supportsDeleted: boolean;
   supportsArchived: boolean;
-  binaryMemberNotice: boolean;
   parseError: string;
   timeoutError: string;
   loadWorker: () => Promise<{
@@ -18,7 +17,6 @@ const sources: Record<StructuredImportSource["id"], StructuredImportSource> = {
     accept: ".json,application/json",
     supportsDeleted: true,
     supportsArchived: false,
-    binaryMemberNotice: false,
     parseError: "The JSON export could not be read.",
     timeoutError:
       "The JSON export took too long to parse. Choose a smaller export and try again.",
@@ -35,7 +33,6 @@ const sources: Record<StructuredImportSource["id"], StructuredImportSource> = {
     accept: ".1pux,application/zip",
     supportsDeleted: true,
     supportsArchived: true,
-    binaryMemberNotice: true,
     parseError: "The 1Password archive could not be read.",
     timeoutError:
       "The 1Password archive took too long to parse. Choose a smaller export and try again.",
@@ -52,7 +49,6 @@ const sources: Record<StructuredImportSource["id"], StructuredImportSource> = {
     accept: ".json,.zip,application/json,application/zip",
     supportsDeleted: true,
     supportsArchived: false,
-    binaryMemberNotice: true,
     parseError: "The Proton Pass export could not be read.",
     timeoutError:
       "The Proton Pass export took too long to parse. Choose a smaller export and try again.",
