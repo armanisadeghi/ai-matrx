@@ -4,6 +4,7 @@ DO $dd154_lexer_character_array$
 DECLARE
   v_oid oid := 'platform._ddl_guard()'::regprocedure;
   v_before text;
+  v_initial_source text;
   v_after text;
   v_definition text;
   v_header text;
@@ -11,44 +12,40 @@ DECLARE
   v_event_meta jsonb;
   v_post_meta jsonb;
   v_post_events jsonb;
-  v_cost real;
+  v_initial_meta jsonb;
+  v_initial_events jsonb;
+  v_expected_meta constant jsonb := '{"proacl":null,"probin":null,"procost":100,"prokind":"f","prolang":"13619","proname":"_ddl_guard","prorows":0,"pronargs":0,"proowner":"16388","proconfig":null,"proretset":false,"prosecdef":false,"prorettype":"3838","prosqlbody":null,"prosupport":"-","proargmodes":null,"proargnames":null,"proargtypes":[],"proisstrict":false,"proparallel":"u","protrftypes":null,"provariadic":"0","provolatile":"v","proleakproof":false,"pronamespace":"1697874","proallargtypes":null,"proargdefaults":null,"pronargdefaults":0}'::jsonb;
+  v_expected_event constant jsonb := '{"evtfoid":"1700135","evtname":"ddl_guard","evttags":["CREATE TABLE","ALTER TABLE","CREATE FUNCTION","CREATE TRIGGER"],"evtevent":"ddl_command_end","evtowner":"16388","evtenabled":"O"}'::jsonb;
 BEGIN
   SET LOCAL lock_timeout = '2s';
-
-  -- The initial cost check is deliberately before the owner-DDL lock. The
-  -- ALTER below has the same cost and is the supported pg_proc tuple lock.
-  SELECT p.prosrc, p.procost INTO v_before, v_cost FROM pg_proc p WHERE p.oid = v_oid;
-  IF v_cost <> 100 THEN
-    RAISE EXCEPTION 'DD154 lexer draft: expected _ddl_guard COST 100, found %', v_cost;
+  SELECT p.prosrc, to_jsonb(p) - 'prosrc'
+    INTO STRICT v_initial_source, v_initial_meta FROM pg_proc p WHERE p.oid = v_oid;
+  SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid) INTO v_initial_events FROM pg_event_trigger e;
+  SELECT to_jsonb(e) - 'oid' INTO STRICT v_event_meta FROM pg_event_trigger e WHERE e.evtname = 'ddl_guard';
+  IF (v_initial_meta - 'oid') IS DISTINCT FROM v_expected_meta
+     OR v_event_meta IS DISTINCT FROM v_expected_event THEN
+    RAISE EXCEPTION 'DD154 lexer draft: semantic pg_proc/event metadata drifted before owner-DDL lock';
   END IF;
-  IF encode(digest(v_before, 'sha256'), 'hex') =
-       '5a7457cbdc7aae16cbc720aeeaecfa038c999b67e4a5f5c0e09ad0d1c8a60e4d' THEN
-    -- Exact postimage idempotence: verify the expected function/event identity
-    -- without taking the same-cost lock.  This accepts existing postimage
-    -- metadata; it does not make a before/after preservation assertion.
-    SELECT to_jsonb(p) - 'prosrc', to_jsonb(e)
-      INTO v_meta, v_event_meta
-      FROM pg_proc p
-      JOIN pg_event_trigger e ON e.evtfoid = p.oid
-      WHERE p.oid = v_oid AND e.evtname = 'ddl_guard';
-    IF v_meta IS NULL OR v_event_meta IS NULL THEN
-      RAISE EXCEPTION 'DD154 lexer draft: postimage lacks expected ddl_guard function/event identity';
-    END IF;
-    RETURN;
-  END IF;
-  IF encode(digest(v_before, 'sha256'), 'hex') <>
-       'db595feedc5bcc3840345e16fb982c6bcebaa91a9c5b997140d69ed9106dd3a6' THEN
+  IF encode(digest(v_initial_source, 'sha256'), 'hex') NOT IN (
+       'db595feedc5bcc3840345e16fb982c6bcebaa91a9c5b997140d69ed9106dd3a6',
+       '5a7457cbdc7aae16cbc720aeeaecfa038c999b67e4a5f5c0e09ad0d1c8a60e4d') THEN
     RAISE EXCEPTION 'DD154 lexer draft: unknown _ddl_guard source; refuse surgical transform';
   END IF;
 
+  -- Supported owner DDL takes the function tuple lock on BOTH initial and
+  -- idempotent paths. Pin checks above precede any possible DDL side effect.
   ALTER FUNCTION platform._ddl_guard() COST 100;
   SELECT p.prosrc, pg_get_functiondef(p.oid), to_jsonb(p) - 'prosrc'
-    INTO v_before, v_definition, v_meta FROM pg_proc p WHERE p.oid = v_oid;
-  SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid) INTO v_event_meta
-    FROM pg_event_trigger e;
-  IF encode(digest(v_before, 'sha256'), 'hex') <>
-       'db595feedc5bcc3840345e16fb982c6bcebaa91a9c5b997140d69ed9106dd3a6' THEN
-    RAISE EXCEPTION 'DD154 lexer draft: _ddl_guard changed while waiting for owner-DDL lock';
+    INTO STRICT v_before, v_definition, v_meta FROM pg_proc p WHERE p.oid = v_oid;
+  SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid) INTO v_event_meta FROM pg_event_trigger e;
+  IF v_before IS DISTINCT FROM v_initial_source
+     OR v_meta IS DISTINCT FROM v_initial_meta
+     OR v_event_meta IS DISTINCT FROM v_initial_events THEN
+    RAISE EXCEPTION 'DD154 lexer draft: source or metadata changed while waiting for owner-DDL lock';
+  END IF;
+  IF encode(digest(v_before, 'sha256'), 'hex') =
+       '5a7457cbdc7aae16cbc720aeeaecfa038c999b67e4a5f5c0e09ad0d1c8a60e4d' THEN
+    RETURN;
   END IF;
 
   -- The full source pin plus computed postimage makes these two fixed-width
@@ -78,12 +75,12 @@ BEGIN
   END IF;
   EXECUTE v_header || '$function$' || v_after || '$function$';
 
-  SELECT p.prosrc, to_jsonb(p) - 'prosrc' INTO v_after, v_post_meta FROM pg_proc p WHERE p.oid = v_oid;
+  SELECT p.prosrc, to_jsonb(p) - 'prosrc' INTO STRICT v_after, v_post_meta FROM pg_proc p WHERE p.oid = v_oid;
   SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid) INTO v_post_events FROM pg_event_trigger e;
   IF encode(digest(v_after, 'sha256'), 'hex') <>
        '5a7457cbdc7aae16cbc720aeeaecfa038c999b67e4a5f5c0e09ad0d1c8a60e4d'
-     OR v_post_meta IS DISTINCT FROM v_meta
-     OR v_post_events IS DISTINCT FROM v_event_meta THEN
+     OR v_post_meta IS DISTINCT FROM v_initial_meta
+     OR v_post_events IS DISTINCT FROM v_initial_events THEN
     RAISE EXCEPTION 'DD154 lexer draft: source or full pg_proc/event-trigger metadata did not survive';
   END IF;
 END

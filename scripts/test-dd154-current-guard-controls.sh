@@ -5,10 +5,11 @@ base="$repo/scripts/test-dd154-ddl-guard.sh"
 current="$repo/../common-docs/projects/no-db-assigned-org/census/guard-performance/live-guard.sql"
 draft="$repo/scripts/migration-drafts/dd154_lexer_character_array.sql"
 current_sha=02035098f9091d7ffae24bd7dfe150e098db3eb518f66fec6a0b94c4e3d7b3d0
-draft_sha=fd778f6535f8a1c75353a4980b0daa59e1678a35cb75fe2db0fbe27bbec11547
+draft_sha=2e07e76cd406e52a63727b2a035f094ae45ebc9d2adf377396d3aa53e0befad0
 [[ $(shasum -a 256 "$current" | awk '{print $1}') == "$current_sha" ]] || { echo 'current guard file hash changed; refresh captured fixture'; exit 2; }
 [[ $(shasum -a 256 "$draft" | awk '{print $1}') == "$draft_sha" ]] || { echo 'DD154 lexer draft hash changed; refresh captured fixture'; exit 2; }
-work=$(mktemp -d "$repo/scripts/dd154-current-controls.XXXXXX")
+work=$(mktemp -d /tmp/dd154-current-controls.XXXXXX)
+trap 'rm -rf "$work"' EXIT
 patched="$work/current-controls.sh"
 python3 - "$base" "$patched" "$current" "$draft" "$current_sha" "$draft_sha" <<'PY'
 import sys
@@ -24,13 +25,121 @@ DRAFT=${DD154_CURRENT_DRAFT_OVERRIDE:-$CAPTURED_DRAFT}
 DRAFT_SHA=${DD154_CURRENT_DRAFT_SHA:-$DRAFT_SHA}
 [[ $(shasum -a 256 "$DRAFT" | awk '{print $1}') == "$DRAFT_SHA" ]] || fail "fixture draft hash mismatch: $DRAFT"
 echo "PASS current source proof: live guard sha256=$CURRENT_GUARD_SHA; DD154 draft sha256=$DRAFT_SHA" | tee -a "$RESULTS"
+"${PSQL[@]}" -AtF '|' -c "SELECT evtevent,evtenabled,array_to_string(evttags,',') FROM pg_event_trigger WHERE evtname='ddl_guard'" > "$RUN_DIR/ddl-guard-event.tsv"
+[[ $(wc -l < "$RUN_DIR/ddl-guard-event.tsv" | tr -d ' ') == 1 ]] || fail 'fixture must have exactly one ddl_guard event before supported rebuild'
+IFS='|' read -r event_kind event_enabled event_tags < "$RUN_DIR/ddl-guard-event.tsv"
+[[ $event_kind == ddl_command_end && $event_enabled == O && $event_tags == 'CREATE TABLE,ALTER TABLE,CREATE FUNCTION,CREATE TRIGGER' ]] || fail 'fixture ddl_guard event metadata differs before supported rebuild'
+"${PSQL[@]}" -c "DROP EVENT TRIGGER ddl_guard; DROP FUNCTION platform._ddl_guard()" >/dev/null
 "${PSQL[@]}" -f "$CURRENT_GUARD" >/dev/null
+"${PSQL[@]}" -c "ALTER FUNCTION platform._ddl_guard() OWNER TO fixture_function_owner; CREATE EVENT TRIGGER ddl_guard ON ddl_command_end WHEN TAG IN ('CREATE TABLE','ALTER TABLE','CREATE FUNCTION','CREATE TRIGGER') EXECUTE FUNCTION platform._ddl_guard(); ALTER EVENT TRIGGER ddl_guard OWNER TO fixture_guard_owner" >/dev/null
+"${PSQL[@]}" -Atc "SELECT jsonb_build_object('proc',to_jsonb(p)-'prosrc'-'oid','event',to_jsonb(e)-'oid') FROM pg_proc p JOIN pg_event_trigger e ON e.evtname='ddl_guard' WHERE p.oid='platform._ddl_guard()'::regprocedure" > "$RUN_DIR/local-semantic.json"
+node - "$DRAFT" "$RUN_DIR/local-semantic.json" "$RUN_DIR/mapped-draft.sql" <<'NODE'
+const fs=require('fs'); const [draftPath,localPath,out]=process.argv.slice(2);
+const draft=fs.readFileSync(draftPath,'utf8'); const local=JSON.parse(fs.readFileSync(localPath,'utf8'));
+const matches=[...draft.matchAll(/v_expected_(meta|event) constant jsonb := '([^']+)'::jsonb;/g)];
+if(matches.length!==2) throw new Error('expected exactly two production semantic JSON literals');
+const production=Object.fromEntries(matches.map(m=>[m[1]==='meta'?'proc':'event',JSON.parse(m[2])]));
+const mapKeys={proc:['pronamespace','proowner','prolang','prorettype'],event:['evtfoid','evtowner']};
+for(const kind of ['proc','event']) { for(const [key,value] of Object.entries(production[kind])) if(!mapKeys[kind].includes(key)&&JSON.stringify(value)!==JSON.stringify(local[kind][key])) throw new Error(`fixture ${kind}.${key} differs outside explicit map: production=${JSON.stringify(value)} local=${JSON.stringify(local[kind][key])}`); }
+for(const key of mapKeys.proc) if(local.proc[key]===undefined) throw new Error(`missing fixture proc ${key}`);
+for(const key of mapKeys.event) if(local.event[key]===undefined) throw new Error(`missing fixture event ${key}`);
+const mapped={proc:{...production.proc},event:{...production.event}}; for(const k of mapKeys.proc)mapped.proc[k]=local.proc[k]; for(const k of mapKeys.event)mapped.event[k]=local.event[k];
+let output=draft; for(const m of matches){const kind=m[1]==='meta'?'proc':'event'; output=output.replace(m[2],JSON.stringify(mapped[kind]));}
+let reversed=output; for(const m of matches){const kind=m[1]==='meta'?'proc':'event'; reversed=reversed.replace(JSON.stringify(mapped[kind]),m[2]);}
+if(reversed!==draft) throw new Error('semantic fixture mapping changed draft bytes beyond two JSON literals'); fs.writeFileSync(out,output); console.log('PASS semantic fixture mapping: only 6 explicit production identifiers mapped');
+NODE
+DRAFT="$RUN_DIR/mapped-draft.sql"
+DRAFT_SHA=$(shasum -a 256 "$DRAFT" | awk '{print $1}')
 if [[ -n ${DD154_CURRENT_BEFORE_DRAFT_SQL:-} ]]; then
   [[ -f $DD154_CURRENT_BEFORE_DRAFT_SQL ]] || fail "DD154_CURRENT_BEFORE_DRAFT_SQL is not a file: $DD154_CURRENT_BEFORE_DRAFT_SQL"
   "${PSQL[@]}" -f "$DD154_CURRENT_BEFORE_DRAFT_SQL" >/dev/null
 fi
 if [[ ${DD154_CURRENT_SKIP_DRAFT:-0} != 1 ]]; then
-  { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | "${PSQL[@]}" >/dev/null
+  if [[ ${DD154_CURRENT_A_FIRST:-0} == 1 ]]; then
+    { printf "BEGIN; SET statement_timeout TO 20000;\n"; cat "$DRAFT"; printf "\\! touch \"$RUN_DIR/a-first-ready\"\n\\! while [ ! -f \"$RUN_DIR/a-first-release\" ]; do sleep 0.02; done\nCOMMIT;\n"; } | "${PSQL[@]}" >"$RUN_DIR/a-first.out" 2>&1 &
+    a_first_pid=$!
+    for _ in $(seq 1 200); do [[ -f "$RUN_DIR/a-first-ready" ]] && break; sleep 0.02; done
+    [[ -f "$RUN_DIR/a-first-ready" ]] || fail 'A-first exact mapped DO did not reach held postimage state'
+    set +e
+    "${PSQL[@]}" -v VERBOSITY=verbose -c "SET lock_timeout='2s'; ALTER FUNCTION platform._ddl_guard() COST 100" >"$RUN_DIR/a-first-b.out" 2>&1
+    a_first_rc=$?
+    set -e
+    touch "$RUN_DIR/a-first-release"
+    wait "$a_first_pid"
+    [[ $a_first_rc -ne 0 ]] && grep -q '55P03' "$RUN_DIR/a-first-b.out" || fail 'A-first exact mapped DO did not block competing ALTER with 55P03'
+    echo 'PASS A-first exact mapped DO: competing same-owner ALTER refused with 55P03' | tee -a "$RESULTS"
+  elif [[ ${DD154_CURRENT_B_FIRST:-0} == 1 ]]; then
+    cat > "$RUN_DIR/b-first.sql" <<SQL
+BEGIN;
+ALTER FUNCTION platform._ddl_guard() COST 100;
+\\! touch "$RUN_DIR/b-first-ready"
+DO \$b\$ DECLARE d text; h text; s text; BEGIN SELECT pg_get_functiondef('platform._ddl_guard()'::regprocedure),prosrc INTO d,s FROM pg_proc WHERE oid='platform._ddl_guard()'::regprocedure; h:=split_part(d,'\$function\$',1); EXECUTE h||'\$function\$'||s||E'\\n-- B-first competing source change'||'\$function\$'; END \$b\$;
+\\! while [ ! -f "$RUN_DIR/b-first-release" ]; do sleep 0.02; done
+COMMIT;
+SQL
+    PGAPPNAME=dd154_b_first_b "${PSQL[@]}" -f "$RUN_DIR/b-first.sql" >"$RUN_DIR/b-first.out" 2>&1 & b_first_pid=$!
+    for _ in $(seq 1 40); do [[ -f "$RUN_DIR/b-first-ready" ]] && break; sleep 0.05; done
+    [[ -f "$RUN_DIR/b-first-ready" ]] || fail 'B-first did not acquire owner-DDL lock'
+    # Keep the observer connected before A begins.  This avoids spending A's
+    # intentional 2s lock budget on connection setup after it has reached ALTER.
+    cat > "$RUN_DIR/b-first-observer.sql" <<SQL
+\\! touch "$RUN_DIR/b-first-observer-ready"
+\\! while [ ! -f "$RUN_DIR/b-first-observer-start" ]; do sleep 0.01; done
+DO \$wait\$
+DECLARE
+  i integer;
+  waiting boolean;
+BEGIN
+  FOR i IN 1..300 LOOP
+    PERFORM pg_stat_clear_snapshot();
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_stat_activity AS a
+      JOIN pg_stat_activity AS b
+        ON b.datname = a.datname
+       AND b.application_name = 'dd154_b_first_b'
+       AND b.pid <> a.pid
+      WHERE a.datname = current_database()
+        AND a.application_name = 'dd154_b_first_a'
+        AND a.wait_event_type = 'Lock'
+    ) INTO waiting;
+    IF waiting THEN
+      RAISE NOTICE 'DD154 B-first observed named A lock wait';
+      RETURN;
+    END IF;
+    PERFORM pg_sleep(0.005);
+  END LOOP;
+  RAISE EXCEPTION 'DD154 B-first did not observe named A lock wait';
+END
+\$wait\$;
+SQL
+    PGAPPNAME=dd154_b_first_observer "${PSQL[@]}" -v ON_ERROR_STOP=1 -f "$RUN_DIR/b-first-observer.sql" >"$RUN_DIR/b-first-observer.out" 2>&1 &
+    b_first_observer_pid=$!
+    for _ in $(seq 1 100); do [[ -f "$RUN_DIR/b-first-observer-ready" ]] && break; sleep 0.01; done
+    [[ -f "$RUN_DIR/b-first-observer-ready" ]] || fail 'B-first observer did not establish its database session'
+    { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | PGAPPNAME=dd154_b_first_a "${PSQL[@]}" -v VERBOSITY=verbose >"$RUN_DIR/b-first-a.out" 2>&1 &
+    b_first_a_pid=$!
+    touch "$RUN_DIR/b-first-observer-start"
+    set +e
+    wait "$b_first_observer_pid"
+    b_first_wait_rc=$?
+    set -e
+    [[ $b_first_wait_rc -eq 0 ]] && grep -q 'DD154 B-first observed named A lock wait' "$RUN_DIR/b-first-observer.out" || fail 'B-first did not observe A waiting on guard tuple lock'
+    touch "$RUN_DIR/b-first-release"
+    set +e
+    wait "$b_first_a_pid"; b_first_rc=$?
+    set -e
+    wait "$b_first_pid"
+    if [[ $b_first_rc -eq 0 ]] || ! grep -Eq 'tuple concurrently updated|changed while waiting for owner-DDL lock' "$RUN_DIR/b-first-a.out"; then
+      cat "$RUN_DIR/b-first.out" "$RUN_DIR/b-first-a.out" >&2
+      fail 'B-first exact mapped DO did not refuse competing source change'
+    fi
+    "${PSQL[@]}" -Atc "SELECT prosrc LIKE '%%B-first competing source change%%' FROM pg_proc WHERE oid='platform._ddl_guard()'::regprocedure" | grep -qx t || fail 'B-first competing source change was not preserved'
+    echo 'PASS B-first exact mapped DO: competing source change was preserved and A refused after tuple lock' | tee -a "$RESULTS"
+    exit 0
+  else
+    { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | "${PSQL[@]}" >/dev/null
+  fi
   if [[ ${DD154_CURRENT_REPEAT_DRAFT:-0} == 1 ]]; then
     before_repeat=$("${PSQL[@]}" -Atc "SELECT md5((to_jsonb(p) - 'prosrc')::text || coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid)::text FROM pg_event_trigger e), '[]')) FROM pg_proc p WHERE p.oid='platform._ddl_guard()'::regprocedure")
     { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | "${PSQL[@]}" >/dev/null

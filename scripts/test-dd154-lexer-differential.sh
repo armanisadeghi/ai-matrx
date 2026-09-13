@@ -28,7 +28,7 @@ set +e
 DD154_CURRENT_BEFORE_DRAFT_SQL="$work/mutate.sql" "$runner" >"$work/unknown" 2>&1; unknown=$?
 DD154_CURRENT_BEFORE_DRAFT_SQL="$work/mutate.sql" DD154_CURRENT_DRAFT_OVERRIDE="$work/draft.sql" DD154_CURRENT_DRAFT_SHA="$alt_sha" "$runner" >"$work/anchor" 2>&1; anchor=$?
 set -e
-[[ $unknown -ne 0 ]] && grep -q 'unknown _ddl_guard source' "$work/unknown"
-[[ $anchor -ne 0 ]] && grep -q 'fixed-width source anchors are ambiguous' "$work/anchor"
+if [[ $unknown -eq 0 ]] || ! grep -q 'unknown _ddl_guard source' "$work/unknown"; then tail -60 "$work/unknown" >&2; exit 1; fi
+if [[ $anchor -eq 0 ]] || ! grep -q 'fixed-width source anchors are ambiguous' "$work/anchor"; then tail -60 "$work/anchor" >&2; exit 1; fi
 grep 'PASS current idempotence:' "$work/opt"
 echo 'PASS DD154 lexer proof: 13 literal expected DDL outcomes, baseline/optimized differential, idempotence, unknown-preimage and re-pinned ambiguous-anchor refusals'
