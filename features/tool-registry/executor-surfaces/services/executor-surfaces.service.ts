@@ -12,10 +12,8 @@
  *                                     `chrome-extension`, `matrx-user`, or
  *                                     `mcp.<slug>`. Hierarchy via
  *                                     `parent_executor_name` self-FK.
- *   `tool.binding` (PK = tool_id, executor_name) — pure M2M. Columns are
- *                  exactly: `tool_id`, `executor_name`, `is_active`,
- *                  `created_at`, `updated_at`. Doctrine R1: nothing else,
- *                  ever.
+ *   `tool.binding` — tool/executor membership. Creation carries the named
+ *                  tool's explicit organization through the shared writer.
  *
  * Routing: "active executor + binding = capability." Dispatcher policy lives
  * in code (client > MCP > server). The DB does not participate in routing
@@ -214,24 +212,6 @@ export async function listUnboundToolsForExecutor(
 }
 
 // ─── Mutations ───────────────────────────────────────────────────────────────
-
-export async function addBinding(args: {
-  executorName: string;
-  toolId: string;
-  isActive?: boolean;
-}): Promise<ToolBindingRow> {
-  const { data, error } = await sb()
-    .schema("tool").from("binding")
-    .insert({
-      tool_id: args.toolId,
-      executor_name: args.executorName,
-      is_active: args.isActive ?? true,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
 
 export async function updateBinding(args: {
   toolId: string;

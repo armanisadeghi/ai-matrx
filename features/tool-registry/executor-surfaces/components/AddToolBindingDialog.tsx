@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef } from "react";
+import { addToolBinding } from "@/features/tool-registry/shared/toolBindings.service";
 import { recordToast } from "@/lib/toast";
 import {
   ToolSearchDialog,
   type ToolSearchOption,
 } from "@/features/tool-registry/shared/ToolSearchDialog";
 import {
-  addBinding,
   listUnboundToolsForExecutor,
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 
@@ -33,7 +33,7 @@ export function AddToolBindingDialog({
 
   const handleAdd = async (tool: ToolSearchOption) => {
     if (!tool.id) throw new Error(`Tool ${tool.name} has no id`);
-    await addBinding({ executorName, toolId: tool.id, isActive: true });
+    await addToolBinding({ executorName, toolId: tool.id, isActive: true });
     recordToast.success(
       { type: "tool", id: tool.id, title: tool.name },
       `${tool.name} bound to ${executorName}`,
