@@ -51,9 +51,6 @@ import { QuestionDeskRail } from "./QuestionDeskRail";
 import { QuestionScreen } from "./QuestionScreen";
 import { ReviewTable } from "./ReviewTable";
 
-/** How long the just-saved line keeps its Undo. */
-const UNDO_WINDOW_MS = 30_000;
-
 export interface InterviewClientProps {
   interviewId: string;
   /** `?q=<slug>` from the notification deep link — opens that question. */
@@ -256,11 +253,14 @@ export function InterviewClient({
   }, [undoRow, applyRow, currentId]);
 
   // The Undo expires with the sentence that offered it.
+  // How long it lasts is `question_desk.undo_window_ms`, not taste — and with
+  // no code fallback: an answer only exists once the knobs are ready, so an
+  // unresolved knob simply has no undo to expire.
   useEffect(() => {
-    if (!undoRow) return undefined;
-    const timer = setTimeout(() => setUndoRow(null), UNDO_WINDOW_MS);
+    if (!undoRow || knobs.state !== "ready") return undefined;
+    const timer = setTimeout(() => setUndoRow(null), knobs.undoWindowMs);
     return () => clearTimeout(timer);
-  }, [undoRow]);
+  }, [undoRow, knobs]);
 
   // ---- the write box -----------------------------------------------------
   const openWrite = useCallback(() => {
