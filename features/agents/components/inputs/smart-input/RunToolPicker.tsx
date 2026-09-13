@@ -83,7 +83,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
   const tools = useAppSelector(selectAllTools);
   const status = useAppSelector(selectToolsStatus);
-  const { serverStates } = useMcpCatalog();
+  const { serverStates, availabilityStatus } = useMcpCatalog();
   const { connect: connectMcp, connectingSlug } = useConnectMcpServer();
   // What the LAST run actually got. A chip claims nothing the run denies.
   const primaryRequest = useAppSelector(selectPrimaryRequest(conversationId));
@@ -375,6 +375,16 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             Add a connected MCP server to this conversation without changing
             the agent&apos;s saved definition.
           </p>
+          {/* A stand-in announces itself: when the health check cannot be
+              reached these states come from saved connection rows alone, and
+              that is said out loud rather than passed off as the truth. */}
+          {availabilityStatus === "failed" && (
+            <p className="mb-1.5 flex items-start gap-1 text-[11px] leading-tight text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+              Live connection health is unavailable right now — the states
+              below come from your saved connections and may be out of date.
+            </p>
+          )}
           <div className="flex flex-wrap gap-1">
             {relevantServers.map((server) => (
               <McpServerChip
