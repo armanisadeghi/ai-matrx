@@ -29,6 +29,10 @@ type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
 
 type TimeRange = { start: string; end: string };
 type LoadMode = "selection" | "refresh" | "continue";
+type UsageScope =
+  | { kind: "model"; model: string | null; effort?: string | null }
+  | { kind: "project"; project: string | null }
+  | { kind: "conversation" | "worker"; conversationId: string | null };
 
 const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const credits = new Intl.NumberFormat("en-US", {
@@ -135,10 +139,14 @@ function UsageTable({
   title,
   rows,
   empty,
+  onSelect,
+  selected,
 }: {
   title: string;
   rows: CodexUsageRow[];
   empty: string;
+  onSelect?: (row: CodexUsageRow) => void;
+  selected?: (row: CodexUsageRow) => boolean;
 }) {
   return (
     <section className="min-w-0 rounded-lg border bg-card">
@@ -170,9 +178,18 @@ function UsageTable({
                 return (
                   <tr
                     key={`${row.task_id ?? row.conversation_id ?? row.id ?? row.label ?? index}-${row.model ?? ""}-${row.effort ?? ""}`}
+                    className={selected?.(row) ? "bg-primary/5" : undefined}
                   >
                     <td className="max-w-[24rem] px-4 py-3">
-                      {row.href ? (
+                      {onSelect ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelect(row)}
+                          className="max-w-full truncate text-left font-medium text-primary hover:underline"
+                        >
+                          {name}
+                        </button>
+                      ) : row.href ? (
                         <a
                           href={row.href}
                           className="inline-flex max-w-full items-center gap-1 font-medium text-primary hover:underline"
@@ -222,7 +239,7 @@ function optionalActivity(
 ): Array<{ label: string; value: number }> {
   const values = [
     {
-      label: "Outbound peer messages",
+      label: "Submitted peer-send expressions",
       value: metrics.peer_message_invocations,
     },
     {
@@ -247,6 +264,7 @@ export function CodexUsageDashboard() {
   const [snapshot, setSnapshot] = useState<CodexUsageSnapshot | null>(null);
   const [allowance, setAllowance] = useState<CodexUsageAllowance | null>(null);
   const [allowanceError, setAllowanceError] = useState<string | null>(null);
+  const [scope, setScope] = useState<UsageScope | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -333,7 +351,10 @@ export function CodexUsageDashboard() {
 
   const activity = snapshot ? optionalActivity(snapshot.totals) : [];
   const canResume = snapshot?.coverage.can_resume === true;
+  const isIncomplete = snapshot?.coverage.complete !== true;
   const completedCandidates = snapshot?.coverage.completed_candidates;
+  const successfullyReadCandidates =
+    snapshot?.coverage.successfully_read_candidates;
   const totalCandidates = snapshot?.coverage.total_candidates;
   const collectionProgress =
     typeof completedCandidates === "number" &&
@@ -345,6 +366,42 @@ export function CodexUsageDashboard() {
           percent: Math.round((completedCandidates / totalCandidates) * 100),
         }
       : null;
+  const collectedCount =
+    typeof successfullyReadCandidates === "number"
+      ? successfullyReadCandidates
+      : null;
+  const scopeRows = snapshot?.cells.filter((row) => {
+    if (!scope) return false;
+    if (scope.kind === "model")
+      return (
+        row.model === scope.model &&
+        (scope.effort === undefined || row.effort === scope.effort)
+      );
+    if (scope.kind === "project") return row.project === scope.project;
+    return row.conversation_id === scope.conversationId;
+  });
+  const scopeCredits = scopeRows?.reduce(
+    (total, row) => total + (row.estimated_standard_credits ?? 0),
+    0,
+  );
+  const scopeResponses = scopeRows?.reduce(
+    (total, row) => total + (row.response_count ?? 0),
+    0,
+  );
+  const scopeShare =
+    scopeCredits != null &&
+    snapshot?.credits.estimated_standard != null &&
+    snapshot.credits.estimated_standard > 0
+      ? (scopeCredits / snapshot.credits.estimated_standard) * 100
+      : null;
+  const scopeTitle =
+    scope?.kind === "model"
+      ? `${scope.model ?? "Unknown model"}${scope.effort ? ` · ${scope.effort}` : ""}`
+      : scope?.kind === "project"
+        ? (scope.project ?? "Unknown project")
+        : scopeRows?.[0]
+          ? labelFor(scopeRows[0], "Unnamed conversation")
+          : "Selected conversation";
   const coverageText = snapshot
     ? Object.entries(snapshot.coverage)
         .filter(
@@ -516,14 +573,18 @@ export function CodexUsageDashboard() {
 
       {snapshot ? (
         <>
-          {canResume && collectionProgress ? (
+          {isIncomplete ? (
             <section className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:text-amber-100">
               <p className="font-medium">Collection is partial</p>
               <p className="mt-1">
-                Processed {collectionProgress.completed} of{" "}
-                {collectionProgress.total} candidates. All shares, totals, and
-                rankings currently reflect only this collected subset and may
-                change when collection continues.
+                {collectionProgress
+                  ? `Processed ${collectionProgress.completed} of ${collectionProgress.total} candidates.`
+                  : "The indexed candidate set was not fully collected."}{" "}
+                {collectedCount != null
+                  ? `${collectedCount} candidates were successfully read.`
+                  : "Some candidates may be unreadable or missing."}{" "}
+                All shares, totals, and rankings reflect only the successfully
+                collected subset and may change.
               </p>
             </section>
           ) : null}
@@ -587,6 +648,9 @@ export function CodexUsageDashboard() {
               <p className="mt-2 text-xs text-muted-foreground">
                 {collectionProgress.completed} of {collectionProgress.total}{" "}
                 candidates processed ({collectionProgress.percent}%).
+                {collectedCount != null
+                  ? ` ${collectedCount} successfully read.`
+                  : ""}
                 {canResume
                   ? " Continue collection to keep this exact frozen range."
                   : ""}
@@ -647,7 +711,7 @@ export function CodexUsageDashboard() {
                 {snapshot.activity.classification}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Peer counts describe submitted tool-call expressions, not
+                Peer counts are submitted peer-send expressions, not messages or
                 confirmed delivery. Titles and recipient titles are only
                 supplied through this authenticated owner connection.
               </p>
@@ -674,6 +738,47 @@ export function CodexUsageDashboard() {
             </section>
           ) : null}
 
+          {scope ? (
+            <section className="rounded-lg border bg-card p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">Selected scope</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {scopeTitle}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setScope(null)}
+                >
+                  Clear selection
+                </Button>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <CountCard
+                  label="Scope estimate"
+                  value={estimatedCredits(scopeCredits)}
+                  detail="Estimated standard credits in this selected scope"
+                />
+                <CountCard
+                  label="Share of report"
+                  value={
+                    scopeShare == null
+                      ? "Not available"
+                      : percentage(scopeShare)
+                  }
+                  detail="Of the displayed report estimate"
+                />
+                <CountCard
+                  label="Scope responses"
+                  value={metric(scopeResponses)}
+                  detail="Captured responses in this selected scope"
+                />
+              </div>
+            </section>
+          ) : null}
+
           <UsageTable
             title={
               grouping === "model" ? "Model usage" : "Model and effort usage"
@@ -682,21 +787,63 @@ export function CodexUsageDashboard() {
               grouping === "model" ? snapshot.models : snapshot.model_effort
             }
             empty="No model activity was captured in this range."
+            onSelect={(row) =>
+              setScope({
+                kind: "model",
+                model: row.model ?? null,
+                ...(grouping === "model_effort"
+                  ? { effort: row.effort ?? null }
+                  : {}),
+              })
+            }
+            selected={(row) =>
+              scope?.kind === "model" &&
+              scope.model === (row.model ?? null) &&
+              (scope.effort === undefined ||
+                scope.effort === (row.effort ?? null))
+            }
           />
           <UsageTable
             title="Projects"
             rows={snapshot.projects}
             empty="No project rollups were returned in this range."
+            onSelect={(row) =>
+              setScope({ kind: "project", project: row.project ?? null })
+            }
+            selected={(row) =>
+              scope?.kind === "project" &&
+              scope.project === (row.project ?? null)
+            }
           />
           <UsageTable
             title="Conversations"
             rows={snapshot.conversations}
             empty="No conversation rollups were returned in this range."
+            onSelect={(row) =>
+              setScope({
+                kind: "conversation",
+                conversationId: row.conversation_id ?? null,
+              })
+            }
+            selected={(row) =>
+              scope?.kind === "conversation" &&
+              scope.conversationId === (row.conversation_id ?? null)
+            }
           />
           <UsageTable
             title="Workers"
             rows={snapshot.workers}
             empty="No worker rollups were returned in this range."
+            onSelect={(row) =>
+              setScope({
+                kind: "worker",
+                conversationId: row.conversation_id ?? null,
+              })
+            }
+            selected={(row) =>
+              scope?.kind === "worker" &&
+              scope.conversationId === (row.conversation_id ?? null)
+            }
           />
         </>
       ) : null}
