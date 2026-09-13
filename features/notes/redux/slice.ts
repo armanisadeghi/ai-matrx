@@ -655,7 +655,8 @@ const notesSlice = createSlice({
       const record = state.notes[action.payload.note.id];
       if (!record) return;
       for (const [field, value] of Object.entries(action.payload.failedValues) as Array<["project_id" | "task_id", string | null]>) {
-        record[field] = value;
+        if (field === "project_id") record.project_id = value;
+        else record.task_id = value;
         record._dirtyFields.add(field);
       }
       record._dirty = record._dirtyFields.size > 0;

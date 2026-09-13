@@ -401,7 +401,7 @@ export const saveNote = createAsyncThunk<void, string>(
       clearNoteWriteBlockedToast(noteId);
       const settledBase = receiptBaseSettlement(getState, noteId, receipt);
       const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
-      const acknowledgedValues = receipt.databaseWrite === "saved" && currentRecord?.folder_id === savedSnapshot.folder_id && currentRecord.folder_name === savedSnapshot.folder_name
+      const acknowledgedValues = receipt.databaseWrite === "saved" && currentRecord?.folder_id === savedSnapshot.folder_id && currentRecord?.folder_name === savedSnapshot.folder_name
         ? { ...(savedSnapshot.folder_id !== undefined && savedSnapshot.folder_name !== undefined ? { folder_name: receipt.note.folder_name } : {}) }
         : {};
       dispatch(
@@ -421,7 +421,7 @@ export const saveNote = createAsyncThunk<void, string>(
         }
         const settledBase = receiptBaseSettlement(getState, noteId, error.receipt);
         const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
-        const acknowledgedValues = error.databaseWrite === "saved" && currentRecord?.folder_id === acknowledgedSnapshot.folder_id && currentRecord.folder_name === acknowledgedSnapshot.folder_name
+        const acknowledgedValues = error.databaseWrite === "saved" && currentRecord?.folder_id === acknowledgedSnapshot.folder_id && currentRecord?.folder_name === acknowledgedSnapshot.folder_name
           ? { ...(acknowledgedSnapshot.folder_id !== undefined && acknowledgedSnapshot.folder_name !== undefined ? { folder_name: error.actualStoredNote.folder_name } : {}) }
           : {};
         dispatch(markNoteSaved({
@@ -485,12 +485,13 @@ export const createNewNote = createAsyncThunk<
       dispatch(settlePartialNoteCreate({ note: error.actualStoredNote, failedValues, error: error.message }));
       dispatch(addTab(error.actualStoredNote.id));
       dispatch(setActiveNote(error.actualStoredNote.id));
+      const { postSaveRecoveryError, ...serializableReceipt } = error.receipt;
       return rejectWithValue({
         code: "context_partial",
         message: error.message,
         receipt: {
-          ...error.receipt,
-          ...(error.receipt.postSaveRecoveryError ? { postSaveRecoveryError: error.receipt.postSaveRecoveryError.message } : {}),
+          ...serializableReceipt,
+          ...(postSaveRecoveryError ? { postSaveRecoveryError: postSaveRecoveryError.message } : {}),
         },
       });
     }
