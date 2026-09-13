@@ -287,6 +287,11 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Change Log
 
+- **2026-09-12 (hydration boundary)** — The explorer now mounts only after
+  hydration because its initial window and IANA zone come from the browser.
+  This keeps server HTML from disagreeing with the reader's local calendar
+  (React #418), while preserving the same local-window request after mount.
+
 - **2026-09-12 (data-density and table-wheel repair)** — Removed the repeated body title and explanatory paragraphs from the dashboard's normal state. The surface now leads with spend values, compact attribution/status labels, filters, charts, diagnostic totals, and drillable tables; deeper explanations remain attached as hover help where useful. Table timestamps use the single-line `MM/DD/YY · h:mm AM/PM` format. The canonical `MatrxDataTable` also forwards vertical wheel input from content-height horizontal wrappers to the real page scroller while preserving horizontal gestures and bounded-table scrolling.
 
 - **2026-09-12 (speech, docproc, sweeps — and the silent-zero class)** — Four

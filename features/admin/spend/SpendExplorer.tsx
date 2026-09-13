@@ -31,6 +31,8 @@ import {
 
 import { Button } from "@ai-matrx/design-system";
 
+import { useIsMounted } from "@/hooks/use-is-mounted";
+
 import { DigHerePanel } from "./explorer/DigHerePanel";
 import { DimensionTables } from "./explorer/DimensionTables";
 import { FilterChips } from "./explorer/FilterChips";
@@ -78,6 +80,17 @@ function Section({
 }
 
 export function SpendExplorer() {
+  // The explorer derives its default window and its IANA timezone from the
+  // viewer's browser. Rendering either on the server creates text that can
+  // differ from the browser's first render (for example around midnight or
+  // when the deployment host is in another zone), which makes React abandon
+  // hydration. Keep this browser-derived surface out of the server paint.
+  const mounted = useIsMounted();
+
+  return mounted ? <MountedSpendExplorer /> : null;
+}
+
+function MountedSpendExplorer() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
