@@ -16,7 +16,7 @@ import { useAppSelector } from '@/lib/redux/hooks';
 import {
   selectListeningLanguage,
   selectListeningSpeed,
-  selectListeningVoice,
+  useListeningVoice,
 } from '@/features/audio/service/listeningConfig';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
 import {
@@ -66,8 +66,8 @@ export function useCartesiaSpeaker({
   const hasPlayedRef = useRef(false);
   const mountedRef = useRef(true);
 
-  // Tiered listening config (system → org → user; legacy prefs = boot fallback).
-  const rawVoice = useAppSelector(selectListeningVoice);
+  // Voice: the settings ladder (org → user → device). Speed/language: the tiered listening config.
+  const rawVoice = useListeningVoice();
   const voiceId = resolveVoiceId(rawVoice, purpose);
   const language = useAppSelector(selectListeningLanguage);
   const speed = useAppSelector(selectListeningSpeed);
