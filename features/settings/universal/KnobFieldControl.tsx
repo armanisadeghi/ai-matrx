@@ -413,7 +413,8 @@ function VoiceField({
       {open && (
         <PopoverContent
           align="start"
-          className="w-[20rem] max-h-[min(32rem,var(--radix-popover-content-available-height))] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
+          side="top"
+          className="w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
         >
           <VoiceChooser
             current={current}
@@ -474,7 +475,7 @@ function VoiceChooser({
   };
 
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex min-h-0 max-h-[min(32rem,var(--radix-popover-content-available-height))] flex-col">
       <div className="shrink-0 border-b p-2">
         <Input
           autoFocus
@@ -485,7 +486,7 @@ function VoiceChooser({
           className="h-8"
         />
       </div>
-      <div className="max-h-[calc(min(32rem,var(--radix-popover-content-available-height))-5rem)] min-h-0 overflow-y-auto">
+      <div className="min-h-0 flex-auto overflow-y-auto">
         {matchingVoices.length === 0 ? (
           <p className="px-3 py-4 text-sm text-muted-foreground">
             No voices match “{query}”.
