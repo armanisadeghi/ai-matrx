@@ -15,6 +15,65 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D319 — 32 HR client doors are ungranted, so those surfaces 403 for EVERY signed-in user (2026-09-13)
+
+🚨 **Live product breakage, measured on Matrx Main, not inferred.** Of the 166
+`public.hr_*` SECURITY DEFINER wrappers, **32 give `authenticated` no EXECUTE**, so
+every client surface calling them fails for every signed-in user. `anon` has no
+execute either, so this is not an anon-exposure problem — it is an availability one.
+
+**Root cause, with a perfect correlation and zero exceptions in either direction:**
+all 32 ungranted functions have **no `platform.client_callable_door` row**, and every
+`hr_*` function that HAS a door row IS granted. That is precisely the DB-wide guard
+documented in `CLAUDE.md` § Migrations and
+`../common-docs/systems/platform/db-rules/FEATURE.md` §6d-4: *a new client-callable
+`SECURITY DEFINER` function needs a `platform.client_callable_door` row in the same
+migration BEFORE the GRANT, or a DB-wide guard revokes the client EXECUTE inside your
+GRANT.* Thirty-two doors were granted without the row first, so the guard revoked them
+— exactly as designed, and nobody noticed.
+
+Control that proves the mechanism: `hr_punch_record` has a door row and IS executable;
+`hr_authority_delegate`, `hr_role_assign`, `hr_transfer` and `hr_wf_submit` have no row
+and are not.
+
+```
+select p.proname,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') as authed,
+       exists(select 1 from platform.client_callable_door c
+              where c.function_name = p.proname) as has_door_row
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname like 'hr\_%' and p.prosecdef
+  and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
+```
+
+**The 32:** `hr_authority_delegate`, `hr_authority_delegation_end`,
+`hr_authority_delegation_request`, `hr_authority_revoke`, `hr_calendar_upsert`,
+`hr_code_upsert`, `hr_emergency_contact_remove`, `hr_employee_grant_missing_membership`,
+`hr_employer_profile_update`, `hr_establishment_upsert`, `hr_holiday_upsert`,
+`hr_incident_assign`, `hr_leave_accrual_apply`, `hr_leave_case_entitlement`,
+`hr_leave_case_get`, `hr_leave_case_list`, `hr_leave_case_open`,
+`hr_leave_policy_deactivate`, `hr_leave_reinstate_on_rehire`,
+`hr_mint_investigation_token`, `hr_mint_records_request_token`,
+`hr_reporting_line_upsert`, `hr_resolve_rules`, `hr_role_assign`, `hr_role_revoke`,
+`hr_structure_deactivate`, `hr_tax_registration_upsert`,
+`hr_time_rounding_config_check`, `hr_transfer`, `hr_wf_publish_definition`,
+`hr_wf_request`, `hr_wf_submit`.
+
+That list is most of leave-case management, the whole authority-delegation family, role
+assignment, transfers and workflow submission.
+
+**How it surfaced:** `check:hr-punch-write-path:strict` reported it as 30 blocking
+`client_doors_well_formed` violations on armanisadeghi/ai-matrx#225 — a PR whose entire
+diff is two lines of a markdown skill file. The check's own `grandfathered_owner` note
+calls these SECURITY INVOKER; live `pg_proc.prosecdef` says they are SECURITY DEFINER,
+so that note is stale and should be corrected with the fix.
+
+**Not fixed here.** The remedy is a migration adding the 32 `client_callable_door` rows
+and re-granting, which is HR-lane and access-layer work; `docs/official/db-rules.md` §6
+forbids changing a security layer on your own authority, and the session that found it
+was branch-restricted. **This needs an owner today** — it is not latent, it is 32 dead
+buttons in production.
+
 ### D317 — the `shell_execution` KIND is still inactive and routed to the generic floor
 
 `ShellInline` (2026-09-13) fixed the TOOL layer: a `shell_execute` / `shell_python` /
