@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
-import { captureNoteEditSource } from "../richDocumentSource";
+import { captureNoteEditSourceFromRecord } from "../richDocumentSource";
 import type { EditorMode as SurfaceEditorMode } from "./NoteEditorCore";
 import {
   buildNotesEditorContextData,
@@ -124,7 +124,6 @@ export function NoteEditor({
   const [localFolder, setLocalFolder] = useState(note?.folder_name || "Draft");
   const [localTags, setLocalTags] = useState<string[]>(note?.tags || []);
   const [localLabel, setLocalLabel] = useState(note?.label || "");
-  const [acknowledgedNote, setAcknowledgedNote] = useState(note);
   const [editorMode, setEditorMode] = useState<EditorMode>("plain");
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   // Live textarea selection, mirrored into React so the surface scope reflects
@@ -137,11 +136,9 @@ export function NoteEditor({
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toast = useToastManager("notes");
 
-  useEffect(() => {
-    setAcknowledgedNote(note);
-  }, [note?.id]);
   const { refreshNotes, setActiveNoteDirty, openTabs, moveNoteToNewFolder } = useNotesRedux();
   const notesMap = useAppSelector(selectNotesMap);
+  const acknowledgedRecord = note?.id ? notesMap[note.id] : undefined;
 
   // Use refs to avoid callback dependencies
   const localContentRef = useRef(localContent);
@@ -266,11 +263,11 @@ export function NoteEditor({
   // Task linking) resolve the note adapter instead of the save-less `raw`
   // default (D33). Phantom (unsaved) notes stay raw — there is no row to save.
   const menuContentSource: ContentSource | undefined =
-    note?.id && note.id !== "__phantom__" && acknowledgedNote && editingActorId
-      ? captureNoteEditSource({
-          acknowledgedNote,
+    note?.id && note.id !== "__phantom__" && acknowledgedRecord?._acknowledgedPhysicalSnapshot && editingActorId
+      ? captureNoteEditSourceFromRecord({
+          record: acknowledgedRecord,
           displayedNote: {
-            ...acknowledgedNote,
+            ...note,
             content: localContent,
             label: localLabel,
             folder_name: localFolder,
@@ -278,7 +275,7 @@ export function NoteEditor({
           },
           actorId: editingActorId,
           sourceId: `legacy-editor:${note.id}`,
-          snapshotId: `legacy-editor:${note.id}:${acknowledgedNote.version}:${localContent.length}`,
+          snapshotId: `legacy-editor:${note.id}:${acknowledgedRecord._acknowledgedPhysicalSnapshot.version}:${localContent.length}`,
         })
       : undefined;
 

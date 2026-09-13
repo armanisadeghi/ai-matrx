@@ -14,7 +14,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
-import { captureNoteEditSource, noteIdentityContentSource } from "../../richDocumentSource";
+import { captureNoteEditSourceFromRecord, noteIdentityContentSource } from "../../richDocumentSource";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
@@ -76,20 +76,16 @@ export default function MobileNoteEditor({
   const [localContent, setLocalContent] = useState(note.content || "");
   const [localFolder, setLocalFolder] = useState(note.folder_name || "Draft");
   const [localTags, setLocalTags] = useState<string[]>(note.tags || []);
-  const [acknowledgedNote, setAcknowledgedNote] = useState(note);
   const editingActorId = useAppSelector((state) => state.userAuth.id);
+  const acknowledgedRecord = useAppSelector((state) => state.notes.notes[note.id]);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    setAcknowledgedNote(note);
-  }, [note.id]);
-
-  const editableContentSource: ContentSource | undefined = editingActorId
-    ? captureNoteEditSource({
-        acknowledgedNote,
+  const editableContentSource: ContentSource | undefined = editingActorId && acknowledgedRecord?._acknowledgedPhysicalSnapshot
+    ? captureNoteEditSourceFromRecord({
+        record: acknowledgedRecord,
         displayedNote: {
-          ...acknowledgedNote,
+          ...note,
           label: localLabel,
           content: localContent,
           folder_name: localFolder,
@@ -97,7 +93,7 @@ export default function MobileNoteEditor({
         },
         actorId: editingActorId,
         sourceId: `mobile-editor:${note.id}`,
-        snapshotId: `mobile-editor:${note.id}:${acknowledgedNote.version}:${localContent.length}`,
+        snapshotId: `mobile-editor:${note.id}:${acknowledgedRecord._acknowledgedPhysicalSnapshot.version}:${localContent.length}`,
       })
     : undefined;
 
