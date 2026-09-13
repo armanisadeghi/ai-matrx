@@ -18,10 +18,12 @@
  * The owned counts come from a single `container_resource_counts(p_column,
  * p_container_id)` RPC (migration `container_resource_counts.sql`) instead of
  * ~20 separate PostgREST head-count queries fired per mount. The RPC is
- * SECURITY INVOKER, so every count is RLS-filtered exactly as the old per-table
- * queries were; it counts a whitelisted set of tables, detects each container
- * column dynamically, and omits any table that's moved / lacks the column —
- * which the UI still renders as an informational tile (null), not a fake 0.
+ * SECURITY DEFINER, but before reading any table it requires
+ * `iam.has_access(container_type, container_id, 'viewer')` for the requested
+ * organization, project, or task. It counts a whitelisted set of tables,
+ * detects each container column dynamically, and omits any table that's moved
+ * / lacks the column — which the UI still renders as an informational tile
+ * (null), not a fake 0.
  *
  * `useOrgResourceInventory` is a thin wrapper over this (column =
  * "organization_id"), preserving the org "shared-with-org" pass.
