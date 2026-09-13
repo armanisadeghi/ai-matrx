@@ -344,6 +344,10 @@ export const refreshNoteConflict = createAsyncThunk<Note, { noteId: string; orga
     await assertCurrentNotesUser(actorId);
     if (getUserId(getState) !== actorId) throw new SessionUnavailableError();
     const [note] = await hydrateNoteContextLinks([data]);
+    // Hydration can await association reads. Do not admit its result into a
+    // reviewed comparison after its original session/principal has changed.
+    await assertCurrentNotesUser(actorId);
+    if (getUserId(getState) !== actorId) throw new SessionUnavailableError();
     return note;
   },
 );
