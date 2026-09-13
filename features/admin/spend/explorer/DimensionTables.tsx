@@ -178,7 +178,10 @@ function columnsFor(
       accessorFn: (r) => r.lastAt ?? "",
       width: 160,
       cell: (r) => (
-        <span className="whitespace-nowrap tabular-nums text-muted-foreground">
+        <span
+          className="whitespace-nowrap tabular-nums text-muted-foreground"
+          style={{ whiteSpace: "nowrap" }}
+        >
           {timestamp(r.lastAt)}
         </span>
       ),

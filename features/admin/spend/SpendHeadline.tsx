@@ -56,13 +56,13 @@ function Tile({
   return (
     <div
       className={[
-        "flex h-full min-w-0 flex-col justify-between rounded-md border px-3 py-2",
+        "relative flex h-full min-w-0 flex-col justify-between rounded-md border px-3 py-2",
         alarm
           ? "border-destructive/50 bg-destructive/10"
           : "border-border bg-card",
       ].join(" ")}
     >
-      <div className="flex min-w-0 items-center justify-between gap-1">
+      <div className={actions ? "min-w-0 pr-14" : "min-w-0"}>
         <div
           className={[
             "truncate text-[11px] font-medium uppercase tracking-wide",
@@ -71,8 +71,10 @@ function Tile({
         >
           {label}
         </div>
-        {actions ? <div className="shrink-0">{actions}</div> : null}
       </div>
+      {actions ? (
+        <div className="absolute right-2 top-1.5">{actions}</div>
+      ) : null}
       <div
         className={[
           "truncate font-semibold tabular-nums",

@@ -46,7 +46,7 @@ importers:
         version: 0.13.4(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system':
         specifier: latest
-        version: 0.18.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.18.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/diff':
         specifier: latest
         version: 0.3.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -923,8 +923,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/design-system@0.18.15':
-    resolution: {integrity: sha512-atInyD9yU8FYrndXGK6h7RGwurehlKximYyXwFHeW+qpG//A98zmKap7/+3GYbPGTeIFEj2uD2LFPoNfmn7New==}
+  '@ai-matrx/design-system@0.18.16':
+    resolution: {integrity: sha512-1uob6gFKy7G21o9TcvN3UXJUtAd/alzJv5+VTMtDBLjCwqXjkzSvM8+ggF34Dbw/juifxIl525VG7jsjsf+Dkg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -11849,6 +11849,9 @@ packages:
   tailwind-merge@3.6.0:
     resolution: {integrity: sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==}
 
+  tailwind-merge@3.7.0:
+    resolution: {integrity: sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==}
+
   tailwind-scrollbar-hide@4.0.0:
     resolution: {integrity: sha512-gobtvVcThB2Dxhy0EeYSS1RKQJ5baDFkamkhwBvzvevwX6L4XQfpZ3me9s25Ss1ecFVT5jPYJ50n+7xTBJG9WQ==}
     peerDependencies:
@@ -12758,6 +12761,9 @@ packages:
   zod@4.6.2:
     resolution: {integrity: sha512-lh5RCAGFa1Cm2hjtNwLQhSs/AsqdWnTQaBER9fEwN/88pSh7KOtJavtBx/0VlkN/uFd61SwYmljLMDAsHlvzBQ==}
 
+  zod@4.6.4:
+    resolution: {integrity: sha512-AXSD6hvGdvRjajG/l1cC+d6IrhH+sjmPKtYeQdJIK8MFJl3LyClzS+o/YsVC+zQZPupAaeH5skwwm8YqYH7BqA==}
+
   zustand@4.5.7:
     resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
     engines: {node: '>=12.7.0'}
@@ -12799,7 +12805,7 @@ snapshots:
   '@ai-matrx/agents@0.11.3(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/data': 0.13.4(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.3.0)
-      '@ai-matrx/design-system': 0.18.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/design-system': 0.18.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.13.11(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
@@ -12811,7 +12817,7 @@ snapshots:
 
   '@ai-matrx/associations@0.9.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/design-system': 0.18.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/design-system': 0.18.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/kit': 0.13.11(react@19.3.0)
     optionalDependencies:
       react: 19.3.0
@@ -12851,7 +12857,7 @@ snapshots:
       - '@supabase/supabase-js'
       - react-native
 
-  '@ai-matrx/design-system@0.18.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/design-system@0.18.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/kit': 0.13.11(react@19.3.0)
       '@dnd-kit/core': 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -12885,10 +12891,10 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       react-resizable-panels: 4.12.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      tailwind-merge: 3.6.0
+      tailwind-merge: 3.7.0
       vaul: 1.1.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       xlsx: 0.18.5
-      zod: 4.6.2
+      zod: 4.6.4
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
@@ -12986,7 +12992,7 @@ snapshots:
 
   '@ai-matrx/tap-target@0.2.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/design-system': 0.18.15(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/design-system': 0.18.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-tooltip': 1.2.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react: 19.3.0
     transitivePeerDependencies:
@@ -27078,6 +27084,8 @@ snapshots:
 
   tailwind-merge@3.6.0: {}
 
+  tailwind-merge@3.7.0: {}
+
   tailwind-scrollbar-hide@4.0.0(tailwindcss@4.3.3):
     dependencies:
       tailwindcss: 4.3.3
@@ -28121,6 +28129,8 @@ snapshots:
       zod: 4.6.2
 
   zod@4.6.2: {}
+
+  zod@4.6.4: {}
 
   zustand@4.5.7(@types/react@19.3.0)(immer@11.1.18)(react@19.3.0):
     dependencies:

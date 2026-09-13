@@ -51,22 +51,22 @@ export function SeriesBars({
 
   return (
     <div className="rounded-md border border-border bg-card p-2">
-      <div className="mb-1 flex items-center gap-3 text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1">
+      <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1 whitespace-nowrap">
           <span
             aria-hidden
             className="inline-block h-2 w-2 rounded-sm bg-chart-2"
           />{" "}
           Manual
         </span>
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1 whitespace-nowrap">
           <span
             aria-hidden
             className="inline-block h-2 w-2 rounded-sm bg-chart-1"
           />{" "}
           Automated
         </span>
-        <span className="ml-auto">
+        <span className="ml-auto whitespace-nowrap max-sm:w-full max-sm:text-right">
           per {granularity} · peak {usd(peak)} at{" "}
           {shortLocal(points[peakIndex]?.at ?? "")}
         </span>
@@ -137,7 +137,9 @@ export function SeriesBars({
           return (
             <div key={p.at} className="relative min-w-[3px] flex-1">
               <span
-                className={`absolute top-0 whitespace-nowrap ${anchorRight ? "right-0" : "left-0"}`}
+                className={`absolute top-0 whitespace-nowrap ${
+                  i % (tickEvery * 2) === 0 ? "" : "max-sm:hidden"
+                } ${anchorRight ? "right-0" : "left-0"}`}
               >
                 {shortLocal(p.at)}
               </span>
