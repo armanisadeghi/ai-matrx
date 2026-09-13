@@ -26,6 +26,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
 import type { StructuredImportWorkerResponse } from "../structured-import-worker-protocol";
+import { structuredImportSource } from "../structured-import-source-registry";
 import {
   type StructuredImportRecord,
   hasVisiblePublicKey,
@@ -74,6 +75,7 @@ const SOURCE_URLS: Record<string, string> = {
   bitwarden: "https://bitwarden.com/help/export-your-data/",
   "1password": "https://support.1password.com/export/",
   "1password_1pux": "https://support.1password.com/export/",
+  proton_pass: "https://proton.me/support/pass-export",
   lastpass:
     "https://support.lastpass.com/s/document-item?language=en_US&bundleId=lastpass&topicId=LastPass/export-your-vault-data.html",
   apple: "https://support.apple.com/en-au/guide/passwords/mchl35b12625/mac",
@@ -298,7 +300,7 @@ export function VaultCsvImportDialog({
       const actor = await getVaultImportActor();
       if (generation !== parseGeneration.current) return;
       const limits = await (
-        source === "bitwarden_json" || source === "1password_1pux"
+        structuredImportSource(source)
           ? fetchBitwardenJsonImportLimits
           : fetchCsvImportLimits
       )(actor.organizationId, actor.userId);
@@ -369,18 +371,30 @@ export function VaultCsvImportDialog({
         });
         return;
       }
-      if (source === "1password_1pux") {
+      if (source === "1password_1pux" || source === "proton_pass") {
         if (file.size > limits.maxFileBytes)
           throw new Error(
-            "The 1Password export exceeds this organization’s import size limit.",
+            source === "proton_pass"
+              ? "The Proton Pass export exceeds this organization’s import size limit."
+              : "The 1Password export exceeds this organization’s import size limit.",
           );
-        const { cancelOnePuxWorker, createOnePuxWorker } =
-          await import("../onepux-worker-client");
         if (generation !== parseGeneration.current || cancelled.current) return;
-        const parser = createOnePuxWorker();
+        const descriptor = structuredImportSource(source)!;
+        const workerClient =
+          source === "1password_1pux"
+            ? await import("../onepux-worker-client").then((client) => ({
+                create: client.createOnePuxWorker,
+                cancel: client.cancelOnePuxWorker,
+              }))
+            : await descriptor.loadWorker();
+        const parser = workerClient.create();
         const requestId = crypto.randomUUID();
+        const cancelParser = () =>
+          source === "1password_1pux"
+            ? parser.postMessage({ type: "cancel", requestId })
+            : workerClient.cancel(parser, requestId);
         jsonWorker.current = parser;
-        cancelJsonParse.current = () => cancelOnePuxWorker(parser, requestId);
+        cancelJsonParse.current = cancelParser;
         let settled = false;
         const settle = (message?: string) => {
           if (settled) return false;
@@ -397,22 +411,17 @@ export function VaultCsvImportDialog({
           return !message;
         };
         jsonWorkerTimeout.current = window.setTimeout(
-          () =>
-            settle(
-              "The 1Password archive took too long to parse. Choose a smaller export and try again.",
-            ),
+          () => settle(descriptor.timeoutError),
           limits.jsonWorkerTimeoutMs ?? 5_000,
         );
-        parser.onerror = () =>
-          settle("The 1Password archive could not be read.");
-        parser.onmessageerror = () =>
-          settle("The 1Password archive could not be read.");
+        parser.onerror = () => settle(descriptor.parseError);
+        parser.onmessageerror = () => settle(descriptor.parseError);
         parser.onmessage = (
           event: MessageEvent<StructuredImportWorkerResponse>,
         ) => {
           if (event.data.requestId !== requestId) return;
           if (!event.data.ok) {
-            settle("The 1Password archive could not be read.");
+            settle(descriptor.parseError);
             return;
           }
           if (!settle()) return;
@@ -474,7 +483,7 @@ export function VaultCsvImportDialog({
   ]);
   const preparedJsonRows = useMemo(() => {
     if (
-      (source !== "bitwarden_json" && source !== "1password_1pux") ||
+      !structuredImportSource(source) ||
       !limitsRef.current ||
       !previewActor.current
     )
@@ -537,10 +546,7 @@ export function VaultCsvImportDialog({
   const importRows = async (retry = false) => {
     const limits = limitsRef.current;
     if ((!preview && !jsonLoaded) || !limits) return;
-    if (
-      (source === "bitwarden_json" || source === "1password_1pux") &&
-      !metadataApproved
-    ) {
+    if (structuredImportSource(source) && !metadataApproved) {
       setError(
         "Confirm the visible destination and public-key metadata before importing.",
       );
@@ -578,7 +584,7 @@ export function VaultCsvImportDialog({
       }
       const commands = retry
         ? frozenCommands.current
-        : source === "bitwarden_json" || source === "1password_1pux"
+        : structuredImportSource(source)
           ? preparedJsonRows.map((prepared) =>
               prepared.status === "ready"
                 ? {
@@ -657,8 +663,7 @@ export function VaultCsvImportDialog({
       if (!invalidated.current) {
         progressCursor.current = outcome.progressCursor;
         setResult((previous) => {
-          const jsonAccounting =
-            source === "bitwarden_json" || source === "1password_1pux";
+          const jsonAccounting = Boolean(structuredImportSource(source));
           const excluded = jsonAccounting
             ? jsonPreflightCounts.invalid +
               jsonPreflightCounts.unsupported +
@@ -748,6 +753,9 @@ export function VaultCsvImportDialog({
                   <SelectItem value="1password_1pux">
                     1Password 1PUX (unencrypted export)
                   </SelectItem>
+                  <SelectItem value="proton_pass">
+                    Proton Pass JSON or ZIP
+                  </SelectItem>
                 </SelectContent>
               </Select>
               {SOURCE_URLS[source] && (
@@ -773,11 +781,7 @@ export function VaultCsvImportDialog({
                 className="hidden"
                 type="file"
                 accept={
-                  source === "bitwarden_json"
-                    ? "application/json,.json"
-                    : source === "1password_1pux"
-                      ? ".1pux,application/zip"
-                      : ".csv,text/csv"
+                  structuredImportSource(source)?.accept ?? ".csv,text/csv"
                 }
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -1098,8 +1102,8 @@ export function VaultCsvImportDialog({
               <p>
                 Imported {result.imported}; skipped {result.skipped}; failed{" "}
                 {result.failed}.
-                {source === "bitwarden_json" || source === "1password_1pux"
-                  ? ` Invalid ${result.invalid}; unsupported ${result.unsupported}; deleted ${result.deleted}${source === "1password_1pux" ? `; archived ${result.archived}` : ""}.`
+                {structuredImportSource(source)
+                  ? ` Invalid ${result.invalid}; unsupported ${result.unsupported}; deleted ${result.deleted}${structuredImportSource(source)?.supportsArchived ? `; archived ${result.archived}` : ""}.`
                   : ""}
                 {result.cancelled
                   ? " Stopped after the confirmed current row."

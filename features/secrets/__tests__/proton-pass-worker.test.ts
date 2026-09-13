@@ -29,7 +29,7 @@ const json = JSON.stringify({
           createTime: 1,
           modifyTime: 1,
           pinned: false,
-          files: [],
+          files: ["x"],
         },
       ],
     },
@@ -55,7 +55,7 @@ describe("Proton Pass worker", () => {
         ok: true,
         requestId: "p",
         binaryMemberCount: 1,
-        records: [expect.objectContaining({ kind: "custom" })],
+        records: [expect.objectContaining({ status: "unsupported" })],
       }),
     ]);
   });
