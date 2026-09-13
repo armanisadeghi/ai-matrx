@@ -570,6 +570,18 @@ ruling — a notification is never a chip; `scheduler_` is dispositioned
 right destination once it has an in-app channel — today email/SMS only, server
 producers only), and the Error Inspector (client errors, no record door).
 
+**2026-09-13 — global fixed-alert runway.** The schedule alarm is still a
+movable, snoozable global operational door, but its bottom-right default may
+not cover an unrelated page's final action. While it is present it publishes a
+compact/expanded document state; `styles/shell.css` consumes that state on the
+actual `.shell-main` scroll owner with responsive bottom and scroll padding
+(phone expanded: at least `36dvh`; desktop: at least `24dvh`). The marker is
+removed on zero alarms, failed read recovery, snooze, and unmount. The shared
+toast viewport consumes the same clearance so a success/error toast cannot
+stack over the persistent alarm. Guard:
+`styles/__tests__/no-overlay-layout-reservation.test.ts` checks the semantic
+state, responsive runway, no measurement feedback loop, and toast separation.
+
 ## A system schedule's record page (2026-09-11)
 
 **The refusal was the CLIENT's, not the database's.** `scheduler.sch_task`

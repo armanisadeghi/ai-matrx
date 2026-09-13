@@ -22,22 +22,16 @@
  *     schedule is not a browser error.
  *   - `SessionIntegrityBanner` + `CalloutBanner` — the precedent this follows.
  *
- * THE SECOND DEFECT, AND THE ONE THAT RULES THIS FILE (Arman, 2026-09-12).
- * The first version was a fixed strip that RESERVED ITS OWN SPACE: it measured
- * itself, published `--shell-alarm-h`, and the shell turned that into padding
- * on every scroll container. So an internal alarm — visible to super-admins
- * alone — permanently changed the layout of the product for the one person who
- * most needs to see what everyone else sees. It moved his content down, it
- * could not be closed, and neither of its two controls ("Review all", collapse)
- * got rid of it.
- *
- *   THE LAW: A NOTICE NEVER MODIFIES THE PAGE UNDERNEATH IT.
- *   It floats over the product. It reserves nothing, publishes no height, and
- *   shifts nothing. The person can MOVE it anywhere (`useDraggableFloat`,
- *   remembered across sessions), CLOSE it (one click = snooze three hours), or
- *   SNOOZE it for a chosen span. Because the alarm is operational, no door is
- *   permanent: every snooze expires and the alarm comes back on its own, and
- *   the only thing that ends it for good is turning the schedules back on.
+ * THE SECOND DEFECT, AND THE ONE THAT RULES THIS FILE (2026-09-13). The
+ * global fixed alarm covered the active bottom-right controls of unrelated
+ * portals, especially on a 390px phone. A movable alarm is not enough: the
+ * default location must leave a real scroll runway behind it. While this
+ * component is visible it marks the document with its compact/expanded state;
+ * `styles/shell.css` reserves responsive space on the actual shell scroll
+ * owner. The reservation disappears immediately when the alarm snoozes or the
+ * server reports none. It is deliberately a size class, not a measured card
+ * height: no ResizeObserver feedback loop and no layout shift for people who
+ * have no alarm.
  *
  * REMAINING INVARIANTS
  *   - Super-admin only, gated BEFORE the read: the RPC refuses everyone else
@@ -48,6 +42,8 @@
  *   - A failed read is SAID, not swallowed: a super-admin sees "could not be
  *     read" with Retry, because silence here would read as healthy.
  *   - Collapse (to a pill) is per tab; snooze is per browser and timed.
+ *   - The shared toast viewport uses the same clearance, so transient feedback
+ *     never stacks over this persistent operational door.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -135,16 +131,13 @@ export default function SystemScheduleAlarmBanner() {
   const accessToken = useAppSelector(selectAccessToken);
   const pathname = usePathname();
   const [state, setState] = useState<ReadState>({ kind: "idle" });
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [loading, setLoading] = useState(false);
   const [snoozedUntil, setSnoozedUntil] = useState<number | null>(null);
   const wakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  /**
-   * It FLOATS. The alarm is fixed, movable, and remembered — and it publishes
-   * NO height, because nothing under it is allowed to move on its account.
-   */
+  /** The card floats, while the shell reserves a responsive scroll runway. */
   const float = useDraggableFloat({
     storageKey: POSITION_KEY,
     elementRef: cardRef,
@@ -205,6 +198,21 @@ export default function SystemScheduleAlarmBanner() {
     return () => window.removeEventListener("focus", onFocus);
   }, [canRead, load]);
 
+  // The singleton lives outside every route's React tree, so this document
+  // marker is the one shared contract every shell scroll owner can consume.
+  useEffect(() => {
+    const root = document.documentElement;
+    const visible = state.kind === "failed" || (state.kind === "ok" && state.notice !== null);
+    if (!visible || snoozedUntil !== null) {
+      delete root.dataset.scheduleAlarm;
+      return;
+    }
+    root.dataset.scheduleAlarm = collapsed ? "compact" : "expanded";
+    return () => {
+      delete root.dataset.scheduleAlarm;
+    };
+  }, [collapsed, snoozedUntil, state]);
+
   if (!canRead) return null;
   if (state.kind === "idle") return null;
   // Snoozed: silent, and silent on purpose — it returns on its own.
@@ -220,7 +228,6 @@ export default function SystemScheduleAlarmBanner() {
     setSnoozedUntil(writeSnooze(ms));
   };
 
-  /** Nothing here reserves space: `pointer-events` are the card's own only. */
   const shell = "z-50 w-[min(44rem,calc(100vw-1.5rem))] shadow-xl";
 
   const dragHandle = (

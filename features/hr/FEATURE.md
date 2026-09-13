@@ -275,6 +275,15 @@ wrapper added in another lane's file.
   rule names, parameter keys and values, statuses, citations, refusal sentences — was
   raised to `text-foreground`; muted tone now survives only on timestamps and the
   source-confidence annotation. `LawRuleCard.tsx` was replaced by `LawRuleRow.tsx`.
+- **2026-09-13 (D25 org-rule edit advisory parity)** — The law portal save
+  door validates every candidate organization rule against the statutory
+  baseline, not a previously saved organization override. Create and edit now
+  share the same advisory contract: an unverified CA rounding candidate is
+  returned as `warnings_unacknowledged` until the current save receives the
+  explicit `Save anyway` acknowledgement; ordinary legal edits still save and
+  unlawful candidates still refuse. `hr_l9_05_org_rule_edit_advisory_contract.sql`
+  patches the canonical validator and proves the shared door cannot return to
+  self-referential validation.
 - **2026-08-28 (D25)** — The org **law portal** shipped at `/hr/compliance/laws`:
   the platform's employment-law baseline shown read-only and grouped by rule class,
   with advisory rules visually distinct ("flags only, never computes pay"), a
