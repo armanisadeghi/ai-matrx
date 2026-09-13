@@ -99,6 +99,7 @@ import {
   toIngestLane,
   type IngestLane,
 } from "@/features/masterwork/browse/approachLane";
+import { useLiveIngestLane } from "@/features/masterwork/durable-run/liveIngestLane";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { RulebookVersionHistory } from "./RulebookVersionHistory";
@@ -614,6 +615,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [approachPickerOpen, setApproachPickerOpen] = useState(false);
   const [requestedIngestLane, setRequestedIngestLane] =
     useState<IngestLane | null>(null);
+  /**
+   * 🚨 A REFRESH REJOINS THE LANE THAT IS RUNNING, NOT THE LANE STATE NAMES
+   * (Bugbot, 2026-09-13). The ingest dialog mounts on ONE surface — the one its
+   * lane picks — and `timeline` and `ingest` are deliberately separate durable
+   * pointers. So a reload that names no lane used to mount on `ingest`, watch
+   * the ingest pointer, find nothing and stay silent while a case distillation
+   * kept running on the server, with Start live again and ready to charge for
+   * it twice. `useLiveIngestLane` reads BOTH pointers for this Rulebook and
+   * reports whichever still has a run in flight; an explicit lane (deep link or
+   * the in-page picker) always outranks it.
+   */
+  const liveIngestLane = useLiveIngestLane(rulebook?.id ?? null);
   const [dumpRequested, setDumpRequested] = useState(false);
   const [chatImportTab, setChatImportTab] = useState<"upload" | "matrx">(
     searchParams.get("tab") === "matrx" ? "matrx" : "upload",
@@ -997,7 +1010,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         ingest_open: ingestOpen,
         // The timeline lane is a mode of the source dialog (main folded it in);
         // it is live exactly when that dialog is open on the timeline lane.
-        timeline_open: ingestOpen && (requestedIngestLane ?? ingestLane) === "timeline",
+        timeline_open:
+          ingestOpen &&
+          (requestedIngestLane ?? ingestLane ?? liveIngestLane) === "timeline",
         triage_open: triageOpen,
         corpus_open: corpusOpen,
         chat_import_open: chatImportOpen,
@@ -2234,10 +2249,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               the in-page Approach picker must remount it to land the Expert on
               the exemplar/file lane rather than the instructional default. */}
           <IngestSourceDialog
-            key={`ingest-${requestedIngestLane ?? ingestLane ?? "default"}`}
+            key={`ingest-${requestedIngestLane ?? ingestLane ?? liveIngestLane ?? "default"}`}
             open={ingestOpen}
             onOpenChange={setIngestOpen}
-            initialLane={requestedIngestLane ?? ingestLane}
+            initialLane={requestedIngestLane ?? ingestLane ?? liveIngestLane}
             rulebook={rulebook}
             onIngested={() => {
               void getRulebook(rulebook.id)

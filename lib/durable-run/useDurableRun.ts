@@ -311,6 +311,32 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
   }
 }
 
+/**
+ * Is there a run worth rejoining under this key — WITHOUT mounting the hook?
+ *
+ * A surface that owns several keys (the Masterwork "add rules from a source"
+ * dialog owns `ingest` and `timeline`) has to know which one is alive BEFORE it
+ * decides which one to mount, or it watches the wrong pointer and hides a live
+ * run. `settled: true` is a FINISHED run whose answer the hook re-reads when
+ * the user comes back to that lane; it is not a reason to drag the page
+ * somewhere by itself, so it is reported as `live: false`.
+ *
+ * Reads (and prunes) exactly what the hook reads — never a second pointer
+ * format. Returns null on the server, where there is no storage.
+ */
+export function peekDurableRun(
+  wire: DurableRunWire,
+  key: string,
+): { runId: string; startedAt: number; live: boolean } | null {
+  const pointer = readPointer(wire, key);
+  if (!pointer) return null;
+  return {
+    runId: pointer.runId,
+    startedAt: pointer.startedAt,
+    live: pointer.settled !== true,
+  };
+}
+
 function writePointer(
   wire: DurableRunWire,
   key: string,
