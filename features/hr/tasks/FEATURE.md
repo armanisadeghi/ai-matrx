@@ -85,8 +85,12 @@ intersection reads better at a call site and cannot be *built* without a cast �
 a generic `T` does not typecheck — so every constructor of one ends up asserting a shape instead of
 proving it. One extra `.data` at seven call sites buys a narrowing the compiler verifies end to end.
 
-**Proof: `pnpm hr:envelope-check`** — 24 assertions over a `hr_wf_inbox` envelope captured verbatim
-from the live database, six of which feed the parser broken input to prove it can fail.
+**Proof: `pnpm hr:envelope-check`** — assertions over a `hr_wf_inbox` envelope captured from the
+database, including broken pagination metadata. A page is replaced, never appended: all six arrays
+carry `{offset, limit, total}`, while `page_offsets` stays inside the existing `p_filters` argument
+so the one inbox remains one RPC. The `hr.workflow.inbox_page_size` knob starts at 50 and is due for
+review 2026-12-12; every SQL arm applies its flow filter, deterministic order, limit and offset
+before JSON construction or display/notice decoration.
 
 ## 🚨 EVERY `hr.wf_*` CALL RETURNS AN ENVELOPE, AND A REFUSAL IS NOT AN ERROR
 
@@ -225,3 +229,8 @@ the fix is in that pillar's flow declaration — never a second list on this pag
   extracted from `hr._wf_project_step` so the mirror and the inbox cannot disagree, and
   `hr.wf_pending` was passing an organization id where `hr.capability` expects an employment id,
   which had made "read another person's queue" refuse every capability holder.
+- 2026-09-12 — Bounded all six inbox sections with independent server-side pagination. The existing
+  `hr_wf_inbox` door remains the one read path; page metadata and strict client parsing prevent a
+  large queue from mounting every row or a malformed envelope from claiming an empty queue.
+  Consumers that need a count use section totals; the leave manager projection follows its two
+  filtered inbox sections page by page through the same door, with a non-progress safety bound.

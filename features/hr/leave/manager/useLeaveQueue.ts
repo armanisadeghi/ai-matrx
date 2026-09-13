@@ -90,6 +90,37 @@ function dedupeBySteps(rows: HrInboxRow[]): HrInboxRow[] {
   return out;
 }
 
+/** The leave projection is complete by contract, so follow both independently paged inbox arms. */
+async function fetchCompleteLeaveInbox(scope: HrInboxScope, flowKey: string) {
+  let offsets = {} as { needs_my_decision?: number; scope_rows?: number };
+  const mine: HrInboxRow[] = [];
+  const others: HrInboxRow[] = [];
+  let meta: HrInbox | null = null;
+  const seen = new Set<string>();
+  for (let guard = 0; guard < 1000; guard += 1) {
+    const envelope = await fetchHrInbox(scope, { flowKey, pageOffsets: offsets });
+    if (isRefusal(envelope)) return envelope;
+    const inbox = envelope.data;
+    meta ??= inbox;
+    mine.push(...inbox.needs_my_decision);
+    others.push(...inbox.scope_rows);
+    const needs = inbox.pagination.needs_my_decision;
+    const scopeRows = inbox.pagination.scope_rows;
+    const needsMore = needs.offset + needs.limit < needs.total;
+    const scopeMore = scopeRows.offset + scopeRows.limit < scopeRows.total;
+    if (!needsMore && !scopeMore) return { granted: true as const, data: meta, mine, others };
+    const next = {
+      needs_my_decision: needsMore ? needs.offset + needs.limit : needs.offset,
+      scope_rows: scopeMore ? scopeRows.offset + scopeRows.limit : scopeRows.offset,
+    };
+    const key = JSON.stringify(next);
+    if (seen.has(key)) throw new Error("The HR inbox pagination did not advance.");
+    seen.add(key);
+    offsets = next;
+  }
+  throw new Error("The HR inbox pagination exceeded its safety bound.");
+}
+
 export function useLeaveQueue(scope: HrInboxScope) {
   const [state, setState] = useState<LeaveQueueState>(INITIAL);
 
@@ -99,7 +130,7 @@ export function useLeaveQueue(scope: HrInboxScope) {
 
       try {
         const envelopes = await Promise.all(
-          LEAVE_FLOW_KEYS.map((flowKey) => fetchHrInbox(scope, { flowKey })),
+          LEAVE_FLOW_KEYS.map((flowKey) => fetchCompleteLeaveInbox(scope, flowKey)),
         );
 
         // A refusal on the FIRST call is the scope refusing (`no_queue_authority`) and is the
@@ -112,11 +143,11 @@ export function useLeaveQueue(scope: HrInboxScope) {
         }
 
         const inboxes = envelopes.filter(
-          (envelope): envelope is { granted: true; data: HrInbox } => !isRefusal(envelope),
+          (envelope): envelope is { granted: true; data: HrInbox; mine: HrInboxRow[]; others: HrInboxRow[] } => !isRefusal(envelope),
         );
         const meta = inboxes[0]?.data ?? null;
-        const mine = dedupeBySteps(inboxes.flatMap((e) => e.data.needs_my_decision));
-        const others = dedupeBySteps(inboxes.flatMap((e) => e.data.scope_rows));
+        const mine = dedupeBySteps(inboxes.flatMap((e) => e.mine));
+        const others = dedupeBySteps(inboxes.flatMap((e) => e.others));
 
         // One hydration read per distinct subject, in parallel.
         const subjects = Array.from(
