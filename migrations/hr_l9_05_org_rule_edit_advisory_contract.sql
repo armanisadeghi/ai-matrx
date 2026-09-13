@@ -9,10 +9,15 @@
 do $migration$
 declare
   v_definition text;
-  v_from text := E"  v_action text; v_bound_rule jsonb;\n";
-  v_to text := E"  v_action text; v_bound_rule jsonb;\n  v_sys constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';\n";
-  v_call_from text := E"    v_res := hr.resolve_rules(null, null, p_as_of, array[p_class], '{}'::jsonb,\n                              p_organization_id, v_key);";
-  v_call_to text := E"    v_res := hr.resolve_rules(null, null, p_as_of, array[p_class], '{}'::jsonb,\n                              v_sys, v_key);";
+  v_from text := $source$  v_action text; v_bound_rule jsonb;
+$source$;
+  v_to text := $source$  v_action text; v_bound_rule jsonb;
+  v_sys constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
+$source$;
+  v_call_from text := $source$    v_res := hr.resolve_rules(null, null, p_as_of, array[p_class], '{}'::jsonb,
+                              p_organization_id, v_key);$source$;
+  v_call_to text := $source$    v_res := hr.resolve_rules(null, null, p_as_of, array[p_class], '{}'::jsonb,
+                              v_sys, v_key);$source$;
 begin
   select pg_get_functiondef('hr.validate_org_config(uuid,text,jsonb,text[],date)'::regprocedure)
     into v_definition;
