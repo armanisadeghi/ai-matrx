@@ -92,6 +92,21 @@ describe("notesService versioned write convergence", () => {
     expect(saved.version).toBe(8);
   });
 
+  it("accepts an authoritative stored revision zero for a guarded update", async () => {
+    const existing = query({ data: noteRow({ version: 0 }), error: null });
+    const updated = query({ data: noteRow({ label: "After zero", version: 1 }), error: null });
+    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+
+    const receipt = await persistNoteUpdate(NOTE_ID, { label: "After zero" }, {
+      expectedVersion: 0,
+      expectedOrganizationId: ORGANIZATION_A,
+    });
+
+    expect(updated.update).toHaveBeenCalledWith({ label: "After zero", version: 1 });
+    expect(updated.eq).toHaveBeenCalledWith("version", 0);
+    expect(receipt.note.version).toBe(1);
+  });
+
   it("returns a typed conflict with the complete current server row", async () => {
     const current = noteRow({ label: "Changed elsewhere", version: 9 });
     const existing = query({ data: noteRow(), error: null });

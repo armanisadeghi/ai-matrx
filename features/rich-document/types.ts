@@ -11,6 +11,8 @@
 
 import type { LucideIcon } from "lucide-react";
 import type { AppDispatch } from "@/lib/redux/store";
+import type { Note } from "@/features/notes/types";
+import type { NoteSaveReceipt } from "@/features/notes/service/noteSaveErrors";
 
 // ============================================================================
 // CONTENT SOURCE — discriminated union; each variant carries enough to drive
@@ -27,6 +29,51 @@ export type ContentSourceType =
   | "working-document"
   | "raw";
 
+export interface NoteEditBase {
+  noteId: string;
+  organizationId: string;
+  /** The persisted CAS revision. Revision zero is valid. */
+  version: number;
+  actorId: string;
+}
+
+/** Full physical values displayed when a Notes editor was opened. */
+export type NoteDisplayedPhysicalSnapshot = Omit<Pick<
+  Note,
+  | "id"
+  | "organization_id"
+  | "version"
+  | "content"
+  | "label"
+  | "folder_name"
+  | "folder_id"
+  | "tags"
+  | "metadata"
+  | "visibility"
+  | "position"
+  | "project_id"
+  | "task_id"
+>, "content"> & { content: string };
+
+export type NoteIdentityContentSource = {
+  type: "note";
+  mode: "identity";
+  noteId: string;
+  sourceId: string;
+};
+
+export type NoteEditableContentSource = {
+  type: "note";
+  mode: "editable";
+  noteId: string;
+  sourceId: string;
+  snapshotId: string;
+  editBase: NoteEditBase;
+  displayedPhysicalSnapshot: NoteDisplayedPhysicalSnapshot;
+  /** A selection is an action target only; it is never the persisted body. */
+  actingSelection?: string;
+};
+
 export type ContentSource =
   | {
       type: "chat-message";
@@ -34,7 +81,8 @@ export type ContentSource =
       conversationId: string;
       streamRequestId?: string | null;
     }
-  | { type: "note"; noteId: string }
+  | NoteIdentityContentSource
+  | NoteEditableContentSource
   | { type: "prompt-result"; executionId: string; promptId?: string }
   | { type: "artifact"; artifactId: string }
   | { type: "scraper-result"; runId: string }
@@ -150,7 +198,19 @@ export interface ContentSourceAdapter {
     newContent: string;
     source: ContentSource;
     dispatch: AppDispatch;
-  }) => Promise<void>;
+  }) => Promise<void | NoteSaveReceipt>;
+
+  /**
+   * Resolves an action's editable snapshot before an overlay or callback group
+   * exists. Non-note adapters may omit this; Notes uses it to turn an identity
+   * trigger into one authorized, actor-bound physical snapshot.
+   */
+  prepareEdit?: (args: {
+    source: ContentSource;
+    actionText: string;
+    dispatch: AppDispatch;
+    isAuthenticated: boolean;
+  }) => Promise<{ source: ContentSource; content: string }>;
 
   /** Delete the source record. */
   delete?: (args: {
@@ -171,6 +231,12 @@ export interface ContentSourceAdapter {
    * collide. Used by ctx.instanceKey(prefix).
    */
   instanceKeyPrefix: (source: ContentSource) => string;
+}
+
+export interface PreparedContentEdit {
+  source: ContentSource;
+  /** Always the complete displayed physical body for prepared Notes sources. */
+  content: string;
 }
 
 // ============================================================================

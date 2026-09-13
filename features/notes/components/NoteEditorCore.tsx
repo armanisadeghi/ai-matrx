@@ -35,6 +35,7 @@ import {
 } from "../utils/writeErrors";
 import { cn } from "@/lib/utils";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import { noteIdentityContentSource } from "../richDocumentSource";
 
 const TuiEditorContent = dynamic(
   () =>
@@ -229,7 +230,7 @@ export function NoteEditorCore({
   // An explicit `actionsSource` (working document, etc.) wins; otherwise derive
   // from noteId.
   const richSource: ContentSource =
-    actionsSource ?? (noteId ? { type: "note", noteId } : { type: "raw" });
+    actionsSource ?? (noteId ? noteIdentityContentSource(noteId, `editor-core:${noteId}`) : { type: "raw" });
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const internalTuiRef = useRef<TuiEditorContentRef>(null);
 

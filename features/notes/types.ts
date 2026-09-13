@@ -147,6 +147,8 @@ export type UpdateNoteInput = NoteContentUpdate & PersistedFolderUpdate;
 export interface UpdateNoteOptions {
   expectedVersion?: number;
   expectedOrganizationId?: string;
+  /** Optional explicit actor binding for a prepared direct-editor save. */
+  expectedActorId?: string;
 }
 
 export interface FolderGroup {

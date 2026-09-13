@@ -22,6 +22,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";
 import { getErrorMessage, serializeError } from "../utils";
+import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 
 registerAction({
   id: "edit",
@@ -33,24 +34,25 @@ registerAction({
   renderSlot: "overflow",
   order: 0,
   visible: (ctx) => Boolean(ctx.sourceAdapter.edit),
-  run: (ctx) => {
+  run: async (ctx) => {
     // Save is source-agnostic via `ctx.sourceAdapter.edit` (chat → editMessage,
     // note → NotesAPI.update, …), so the bridge's editMessage self-handle is
     // NOT the right path. Route onSave through the callback registry — a
     // function can never travel through Redux (the controller drops it, which
     // silently broke note/prompt saves). The group auto-disposes on save.
+    const prepared = await prepareContentEdit(ctx);
+    let preparedSource = prepared.source;
     const { callbackGroupId } = createFullScreenEditorCallbackGroup({
       onSave: async (newContent: string) => {
         try {
-          const edit = ctx.sourceAdapter.edit;
-          if (!edit) throw new Error("This content no longer has a save target");
-          await edit({
+          preparedSource = await savePreparedContentEdit({
+            ctx,
+            source: preparedSource,
             newContent,
-            source: ctx.source,
-            dispatch: ctx.dispatch,
           });
           toast.success("Changes saved");
         } catch (err) {
+          preparedSource = acknowledgedPreparedSource(preparedSource, err) ?? preparedSource;
           console.error(
             "[edit] save failed",
             JSON.stringify(serializeError(err), null, 2),
@@ -65,17 +67,17 @@ registerAction({
         overlayId: "fullScreenEditor",
         instanceId: ctx.instanceKey("edit-content"),
         data: {
-          content: ctx.content,
+          content: prepared.content,
           mode: "free",
           callbackGroupId,
           // IDs passed for metadata display only; the save goes through the
           // source adapter via the callback above, not the self-handle.
           messageId:
-            ctx.source.type === "chat-message"
-              ? ctx.source.messageId
+            preparedSource.type === "chat-message"
+              ? preparedSource.messageId
               : undefined,
           noteId:
-            ctx.source.type === "note" ? ctx.source.noteId : undefined,
+            preparedSource.type === "note" ? preparedSource.noteId : undefined,
           tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
           initialTab: "matrx_split",
           analysisData: ctx.metadata as

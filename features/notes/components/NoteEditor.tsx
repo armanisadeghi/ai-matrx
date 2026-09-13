@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
+import { noteIdentityContentSource } from "../richDocumentSource";
 import type { EditorMode as SurfaceEditorMode } from "./NoteEditorCore";
 import {
   buildNotesEditorContextData,
@@ -260,7 +261,7 @@ export function NoteEditor({
   // default (D33). Phantom (unsaved) notes stay raw — there is no row to save.
   const menuContentSource: ContentSource | undefined =
     note?.id && note.id !== "__phantom__"
-      ? { type: "note", noteId: note.id }
+      ? noteIdentityContentSource(note.id, `legacy-editor:${note.id}`)
       : undefined;
 
   // Same phantom-note guard as `menuContentSource` — an unsaved note has no
@@ -948,7 +949,7 @@ export function NoteEditor({
                     content={localContent}
                     source={
                       note?.id && note.id !== "__phantom__"
-                        ? ({ type: "note", noteId: note.id } as ContentSource)
+                        ? noteIdentityContentSource(note.id, `legacy-preview:${note.id}`)
                         : ({ type: "raw" } as ContentSource)
                     }
                     actionsVariant="bar"
