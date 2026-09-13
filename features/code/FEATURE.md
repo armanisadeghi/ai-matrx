@@ -136,6 +136,18 @@ The management list exposes stored template/tier, resources, heartbeat, expiry, 
 
 ## Invariants & gotchas
 
+- **The file watcher is direct and recovery-aware.** `SandboxFilesystemAdapter`
+  obtains an ownership-checked, reusable `fs.watch` token from the existing
+  access-token route, then connects to the returned orchestrator WSS endpoint
+  directly; it never asks a Vercel route to upgrade a WebSocket. Every reopened
+  watcher mints a fresh credential and emits the transport-only `resync` event.
+  Explorer invalidates its root and mounted directory subscriptions on that
+  event, so changes missed during a sandbox restart are re-read without
+  pretending a particular file changed.
+  Transient mint outages retry with a fresh token; refused or malformed
+  credentials stop once with an explicit refresh/reopen remedy instead of
+  churning an unauthorized request forever.
+
 - **Explorer follows file activation, not every navigation.** Active filesystem tabs expand their ancestors, select the matching row, and scroll it into view. The tab must belong to the active adapter. Explicit folder browsing remains where the user navigates until another file is activated. New-file and new-folder actions validate the name and reject existing entries rather than overwriting them.
 - **Sandbox identity is visible in the route header at every viewport.** The connected instance supplies its stored name, effective status, detail link, and copyable ID; desktop also shows the root and supplied resource metadata. The ownership-scoped detail read refreshes this metadata. A delayed report or probe from a prior sandbox cannot change the newly selected sandbox.
 - **Compact workspaces stack their tools below the editor.** Below `lg`, `MobilePanelShell` uses its opt-in `stacked` presentation; native disclosures keep terminal children mounted while collapsed. Workspace tools use one selector, terminal sessions stack below the terminal, and desktop-only panel toggles are hidden. Desktop keeps resizable panes.
