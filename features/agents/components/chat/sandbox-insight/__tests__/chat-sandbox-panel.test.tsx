@@ -393,6 +393,46 @@ describe("shell_execution inline rendering", () => {
     expect(badge?.className).toContain("text-red-700");
   });
 
+  /**
+   * A VERBATIM production payload — `chat.tool_call`, 2026-09-13 06:15:07Z,
+   * read live from brsgrqvjdzwihsvnfqkf. Two things this pins that a
+   * hand-written fixture would not: the result carries `__kind` as a field
+   * (accept-and-ignore, per the kind-marker law) and it carries NO `backend`
+   * at all — older rows predate that field, and a renderer that assumed it
+   * would either crash or, worse, raise a false "not your sandbox" alarm.
+   */
+  it("renders a verbatim production shell_execution payload", () => {
+    act(() => {
+      root.render(
+        <ShellInline
+          entry={shellEntry({
+            arguments: { command: "sleep 8; echo done" },
+            result: {
+              __kind: "shell_execution",
+              stdout: "done",
+              stderr: "",
+              exit_code: 0,
+              stdout_truncated: false,
+              stderr_truncated: false,
+              cwd: "/home/agent",
+              log_path:
+                "~/.matrx/runtime/tool-calls/99d5b990-9b66-4035-b9b4-af0f18b95847/1789280115-shell_execute-2FD3xVv3.md",
+            },
+          })}
+        />,
+      );
+    });
+    expect(container.textContent).toContain("sleep 8; echo done");
+    expect(container.textContent).toContain("exit 0");
+    expect(container.textContent).toContain("done");
+    expect(container.textContent).toContain("/home/agent");
+    // No `backend` on the row → no backend claim, and NO false alarm.
+    expect(container.textContent).not.toContain("ran in");
+    expect(
+      container.querySelector('[data-testid="shell-durable-vfs-warning"]'),
+    ).toBe(null);
+  });
+
   it("does not badge a command that really ran in the sandbox", () => {
     act(() => {
       root.render(<ShellInline entry={shellEntry()} />);
