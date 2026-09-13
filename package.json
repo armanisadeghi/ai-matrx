@@ -360,8 +360,6 @@
     "check:staff-door": "tsx scripts/check-staff-door.ts",
     "check:stale-rowtype-triggers": "tsx scripts/check-stale-rowtype-triggers.ts",
     "check:stale-rowtype-triggers:self-test": "tsx scripts/check-stale-rowtype-triggers.ts --self-test",
-    "check:stale-rowtype-triggers": "tsx scripts/check-stale-rowtype-triggers.ts",
-    "check:stale-rowtype-triggers:self-test": "tsx scripts/check-stale-rowtype-triggers.ts --self-test",
     "check:staff-door:strict": "tsx scripts/check-staff-door.ts --strict",
     "check:staff-door:self-test": "tsx scripts/check-staff-door.ts --self-test",
     "check:list-scope": "tsx scripts/check-list-scope.ts",
