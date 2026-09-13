@@ -305,6 +305,8 @@
     "check:db-guards:strict": "tsx scripts/check-db-guards.ts --strict",
     "check:rls-on": "tsx scripts/check-rls-on.ts",
     "check:policy-of-record": "tsx scripts/check-policy-of-record.ts",
+    "check:anon-column-surface": "tsx scripts/check-anon-column-surface.ts",
+    "check:anon-column-surface:self-test": "tsx scripts/check-anon-column-surface.ts --self-test",
     "check:policy-of-record:self-test": "tsx scripts/check-policy-of-record.ts --self-test",
     "check:rls-on:strict": "tsx scripts/check-rls-on.ts --strict",
     "check:rls-on:self-test": "tsx scripts/check-rls-on.ts --self-test",

@@ -108,10 +108,12 @@ const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
   { relation: "users.user_follows", policy: "Follows are viewable by everyone", cmd: "SELECT", why: "follow graph is public on creator profiles (/c/{handle})" },
   { relation: "extend.wbx_recipe", policy: "wbx_recipe_read_all", cmd: "SELECT", why: "browser-automation recipe catalogue; no credentials — discloses which sites/routes we automate, accepted" },
 
-  // — Anonymous WRITES: each is a public form or the guest flow. INSERT only. —
-  { relation: "communication.emails", policy: "form_insert", cmd: "INSERT", why: "public contact form submits without an account; INSERT only, anon cannot read the table back" },
-  { relation: "users.guest_executions", policy: "Allow guest execution inserts", cmd: "INSERT", why: "a guest must be able to create their own usage row before signing up; INSERT only — the anon READ of this table was the 2026-08-25 leak and is closed" },
-  { relation: "users.guest_execution_log", policy: "Allow guest execution inserts", cmd: "INSERT", why: "per-execution guest usage log; INSERT only, same guest flow" },
+  // — Anonymous WRITES: none. All three are closed (DD-181a, 2026-09-13,
+  //   migrations/dd181_dd182_recorded_doors_bounded_or_closed.sql). `communication.emails`
+  //   never had a writer — the public contact form writes `communication.contact_submissions`
+  //   as the service role behind a per-IP rate limit — and the guest flow's real signed-out
+  //   writer is `public.record_guest_execution`, a SECURITY DEFINER function owned by the
+  //   tables' owner, which never consulted their RLS. A row returns here only with a caller. —
 
   // — KNOWN WRONG, tracked. These warn until fixed, then get deleted from here. —
   {
@@ -288,4 +290,127 @@ export function classifyUnprotected(live: UnprotectedRelation[]): {
     tracked: rows.filter((r) => r.status === "tracked"),
     stale: UNPROTECTED_ALLOWED.filter((d) => !liveNames.has(d.relation)),
   };
+}
+
+/* ===========================================================================
+ * THE THIRD ARM — WHICH COLUMNS A SIGNED-OUT VISITOR CAN READ (DD-182).
+ *
+ * The two arms above ask WHICH RELATIONS anon can reach. Neither asks WHICH
+ * COLUMNS, and a table can be legitimately public row-wise while carrying a
+ * column that is nobody's business. That is not hypothetical: on 2026-09-13
+ * `public.catalog_entries` — the remote-catalog table the matrx-local desktop
+ * app MUST read before anyone signs in — was serving `updated_by`, a platform
+ * admin's user uuid, to the publishable key over HTTPS, while the SAME
+ * feature's other public path (aidream's unauthenticated
+ * `GET /api/catalogs/{app}`) deliberately stripped that column as "server
+ * bookkeeping, not client data". The two public paths of one feature
+ * disagreed, and nothing could see it, because both arms above were green:
+ * the row predicate was fine, RLS was on, the policy was declared.
+ *
+ * It got wider the same morning without anyone deciding to. The DD-173 base
+ * retrofit added `organization_id`, `created_by`, `metadata`, `version` and
+ * `visibility` to that table, and `select=*` handed every one of them to
+ * anonymous callers the moment the column existed. A column added to a table
+ * that happens to be anon-readable is a publishing decision, and nobody was
+ * making it.
+ *
+ * RLS CANNOT EXPRESS THIS. A policy filters rows, never columns. The only
+ * layer that bounds columns is the GRANT — which is also why this arm is
+ * durable: `iam.apply_rls` issues no GRANT of any kind, so a regeneration
+ * cannot quietly undo a column bound.
+ *
+ * WHAT A ROW HERE MEANS: this relation is readable by `anon`, on purpose, and
+ * these are the ONLY columns a signed-out visitor may see. The guard
+ * (`pnpm check:anon-column-surface`) fails when the live grant and this list
+ * differ in EITHER direction — a widened surface is a leak, and a narrowed one
+ * means a client is about to get a 42501 nobody predicted.
+ *
+ * SCOPE, STATED HONESTLY. This list covers the relations DD-182 named, not the
+ * whole database. The wider census, measured 2026-09-13: 176 relations have a
+ * SELECT-capable policy reaching `anon` together with an `anon` SELECT grant,
+ * and a name-pattern sweep over their columns returns hundreds of `created_by`
+ * / `updated_by` / `user_id` / `email` / `ip_address` hits. Declaring all of
+ * that is a campaign with a triage behind it, not a line in a file, and a gate
+ * that fails on a number nobody has triaged is a gate that gets switched off.
+ * So this arm holds the relations somebody has actually decided about, and the
+ * rest is tracked in the Data Doctrine register.
+ * =========================================================================== */
+
+export interface AnonColumnSurface {
+  /** `schema.table` */
+  relation: string;
+  /** Exactly the columns `anon` may SELECT. Order is irrelevant. */
+  columns: readonly string[];
+  why: string;
+}
+
+export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
+  {
+    relation: "public.catalog_entries",
+    columns: [
+      "id", "app", "kind", "key", "schema_version", "payload",
+      "artifact_url", "artifact_sha256", "artifact_size_bytes", "min_app_version",
+      "is_active", "sort_order", "notes", "updated_at",
+    ],
+    why:
+      "The matrx-local desktop app fetches its remote catalogs pre-login with the publishable key " +
+      "(matrx-local/app/services/catalogs/client.py), so the read itself is correct and must stay. " +
+      "These fourteen columns are the feature's own declared public contract — the exact set " +
+      "aidream's unauthenticated GET /api/catalogs/{app} publishes in services/catalogs/service.py. " +
+      "Deliberately absent: updated_by, created_by, organization_id, metadata, version, visibility.",
+  },
+];
+
+export interface LiveAnonColumn {
+  relation: string;
+  column: string;
+}
+
+/**
+ * Every (relation, column) a signed-out visitor can actually SELECT: the
+ * relation is reachable (schema USAGE), has a permissive SELECT-capable policy
+ * naming `anon` or PUBLIC, and `anon` holds the column privilege. Restricted to
+ * the relations declared above — this arm reports on decisions somebody made,
+ * not on the whole database (see the scope note).
+ */
+export const ANON_COLUMN_SURFACE_QUERY = `
+  select n.nspname || '.' || c.relname as relation,
+         a.attname as column
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+  where n.nspname || '.' || c.relname = any($1::text[])
+    and has_schema_privilege('anon', n.nspname, 'USAGE')
+    and has_column_privilege('anon', c.oid, a.attnum, 'SELECT')
+    and exists (
+      select 1 from pg_policy p
+       where p.polrelid = c.oid and p.polpermissive and p.polcmd in ('r','*')
+         and (p.polroles = '{0}'::oid[]
+              or 'anon' = any(select pg_get_userbyid(x) from unnest(p.polroles) x)))
+  order by 1, 2
+`;
+
+export interface ColumnSurfaceDrift {
+  relation: string;
+  /** Anon can read these and nobody declared them. */
+  extra: string[];
+  /** Declared but anon cannot read them — a client is about to get a 42501. */
+  missing: string[];
+}
+
+export function classifyAnonColumns(live: LiveAnonColumn[]): ColumnSurfaceDrift[] {
+  const byRelation = new Map<string, Set<string>>();
+  for (const l of live) {
+    if (!byRelation.has(l.relation)) byRelation.set(l.relation, new Set());
+    byRelation.get(l.relation)!.add(l.column);
+  }
+  const drift: ColumnSurfaceDrift[] = [];
+  for (const d of ANON_COLUMN_SURFACE) {
+    const actual = byRelation.get(d.relation) ?? new Set<string>();
+    const declared = new Set(d.columns);
+    const extra = [...actual].filter((c) => !declared.has(c)).sort();
+    const missing = [...declared].filter((c) => !actual.has(c)).sort();
+    if (extra.length || missing.length) drift.push({ relation: d.relation, extra, missing });
+  }
+  return drift;
 }
