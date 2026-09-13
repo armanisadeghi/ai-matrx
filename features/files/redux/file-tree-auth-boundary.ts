@@ -14,9 +14,7 @@ export async function hasMatchingFileTreeSession(
     data: { session },
   } = await supabase.auth.getSession();
 
-  return Boolean(
-    session?.access_token && session.user.id === requestedUserId,
-  );
+  return Boolean(session?.access_token && session.user.id === requestedUserId);
 }
 
 /** Close the time-of-check/time-of-use gap around the authenticated RPC. */
