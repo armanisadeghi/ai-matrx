@@ -64,6 +64,11 @@ describe("sanitized upstream 1PUX ordinary login shape", () => {
   test("accepts exact numeric version 30e-1", () => {
     expect(parseOnePuxData(attrs.replace('"version":3', '"version":30e-1'), data(), limits)[0]).toMatchObject({ status: "supported" });
   });
+  test("refuses signed version three and bounds unsupported titles", () => {
+    expect(() => parseOnePuxData(attrs.replace('"version":3', '"version":-3'), data(), limits)).toThrow();
+    const [record] = parseOnePuxData(attrs, data(item().replace('"Example"', `"${"x".repeat(80)}"`).replace('"details"', '"unknown":true,"details"')), { ...limits, maxCellBytes: 40 });
+    expect(record).toMatchObject({ status: "unsupported", title: "Item 1" }); expect(record).not.toHaveProperty("sourceRecord");
+  });
   test.each([
     ['negative underflow', data(item().replace('"url":"https://example.com"', '"url":"https://example.com","ps":-1e-9999'))],
     ['fractional integer', data(item().replace('"favIndex":0', '"favIndex":1e-1'))],

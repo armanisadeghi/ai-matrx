@@ -1,8 +1,9 @@
 import { BlobReader, TextWriter, ZipReader } from "@zip.js/zip.js";
 
 import { parseOnePuxData } from "./onepux";
+import type { CsvImportLimits } from "./csv-import";
 
-self.onmessage = async (event: MessageEvent<{ file: File; limits: Parameters<typeof parseOnePuxData>[1] }>) => {
+self.onmessage = async (event: MessageEvent<{ file: File; limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords" | "maxCellBytes"> }>) => {
   const reader = new ZipReader(new BlobReader(event.data.file), { strictness: "strict", filenameValidation: "strict", checkAmbiguity: true });
   try {
     const entries = await reader.getEntries();

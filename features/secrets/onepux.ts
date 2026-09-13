@@ -15,7 +15,7 @@ function numericLexeme(value: unknown): { negative: boolean; integral: boolean; 
   const zero = BigInt(0); const trailing = BigInt(digits.match(/0*$/)?.[0].length ?? 0);
   const integral = digits === "0" || exponent >= zero || -exponent <= trailing;
   const normalized = digits.replace(/0+$/, "") || "0";
-  return { negative, integral, isThree: normalized === "3" && exponent + trailing === zero };
+  return { negative, integral, isThree: !negative && normalized === "3" && exponent + trailing === zero };
 }
 const integer = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative && parsed.integral; };
 const nonnegativeNumber = (value: unknown) => { const parsed = numericLexeme(value); return !!parsed && !parsed.negative; };
@@ -45,7 +45,8 @@ function sectionsValid(value: unknown): "valid" | "invalid" | "unsupported" {
 function loginRecord(item: ObjectValue, ordinal: number, attrs: ObjectValue, account: ObjectValue, vault: ObjectValue, maxCellBytes: number): StructuredImportRecord {
   const overview = object(item.overview);
   const details = object(item.details);
-  const title = typeof overview?.title === "string" ? overview.title : `Item ${ordinal + 1}`;
+  const rawTitle = typeof overview?.title === "string" ? overview.title : `Item ${ordinal + 1}`;
+  const title = textBytes(rawTitle) <= maxCellBytes ? rawTitle : `Item ${ordinal + 1}`;
   if (!overview || !details || !only(item, ["uuid", "favIndex", "createdAt", "updatedAt", "state", "categoryUuid", "overview", "details"])) return rejected("unsupported", ordinal, title, "The 1Password item has an unsupported field.");
   if (!stringsWithin(item, maxCellBytes)) return rejected("invalid", ordinal, `Item ${ordinal + 1}`, "The 1Password item exceeds the import limits.");
   if (typeof item.uuid !== "string" || !item.uuid || !integer(item.favIndex) || !integer(item.createdAt) || !integer(item.updatedAt) || (item.state !== "active" && item.state !== "archived") || typeof item.categoryUuid !== "string") return rejected("invalid", ordinal, title, "The 1Password item shape is invalid.");
