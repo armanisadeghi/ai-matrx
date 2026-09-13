@@ -76,7 +76,7 @@ function StatusBadge({ status }: { status: string | null }) {
       ) : failed ? (
         <XCircle className="h-3 w-3" />
       ) : (
-        <Loader2 className="h-3 w-3" />
+        <Loader2 className="h-3 w-3 animate-spin" />
       )}
       {status ?? "unknown"}
     </span>

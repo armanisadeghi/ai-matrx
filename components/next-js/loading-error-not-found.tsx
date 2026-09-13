@@ -18,13 +18,7 @@ import {
 const LoadingSkeleton = () => {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center space-y-8 min-h-[50dvh]">
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        className="relative"
-      >
-        <Loader2 className="w-12 h-12 text-primary" />
-      </motion.div>
+      <Loader2 className="w-12 h-12 animate-spin text-primary" />
 
       <div className="space-y-3 w-full max-w-md">
         <div className="w-3/4 h-4 bg-muted rounded animate-pulse mx-auto" />

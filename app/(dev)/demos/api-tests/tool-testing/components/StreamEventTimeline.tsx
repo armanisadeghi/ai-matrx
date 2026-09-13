@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
   Play,
+  BrainCircuit,
   Loader2,
   CheckCircle,
   XCircle,
@@ -46,7 +47,7 @@ function getEventIcon(eventType: string) {
     case "phase":
       return <Wifi className="h-3 w-3 text-muted-foreground" />;
     case "reasoning_chunk":
-      return <Loader2 className="h-3 w-3 text-info" />;
+      return <BrainCircuit className="h-3 w-3 text-info" />;
     case "warning":
       return <AlertTriangle className="h-3 w-3 text-warning" />;
     case "info":
