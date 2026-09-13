@@ -1348,6 +1348,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Codex usage",
+        description:
+          "Your sanitized local Codex activity by estimated standard-credit cost, model, project, conversation, and worker. Matrx Local is the only source.",
+        iconName: "Laptop",
+        link: "/administration/reporting/codex-usage",
+        isNew: true,
+      },
+      {
         title: "Agent Drift Report",
         description:
           "Red flags across all agents system-wide — master-detail drift report.",

@@ -1,0 +1,515 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  CalendarDays,
+  CircleAlert,
+  ExternalLink,
+  Laptop,
+  Loader2,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
+import {
+  readCodexUsage,
+  type CodexUsageGrouping,
+  type CodexUsageMetrics,
+  type CodexUsageRow,
+  type CodexUsageSnapshot,
+} from "@/features/admin/codex-usage/service";
+import { useDesktopPresence } from "@/features/agents/hooks/useDesktopPresence";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
+
+type TimeRange = { start: string; end: string };
+
+const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const credits = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function localDate(date: Date): string {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function localMidnight(value: string): Date {
+  return new Date(`${value}T00:00:00`);
+}
+
+function addDays(value: Date, days: number): Date {
+  const next = new Date(value);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function rangeForPreset(preset: Exclude<RangePreset, "custom">): TimeRange {
+  const now = new Date();
+  if (preset === "last-12-hours") {
+    return {
+      start: new Date(now.getTime() - 12 * 60 * 60_000).toISOString(),
+      end: now.toISOString(),
+    };
+  }
+  const startOfToday = localMidnight(localDate(now));
+  const start =
+    preset === "yesterday" ? addDays(startOfToday, -1) : startOfToday;
+  return { start: start.toISOString(), end: addDays(start, 1).toISOString() };
+}
+
+function dateRange(startDate: string, endDate: string): TimeRange | null {
+  const start = localMidnight(startDate);
+  const end = addDays(localMidnight(endDate), 1);
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime()) ||
+    start >= end
+  )
+    return null;
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+function metric(value: number | null | undefined): string {
+  return value == null ? "—" : number.format(value);
+}
+
+function estimatedCredits(value: number | null | undefined): string {
+  return value == null
+    ? "Not available"
+    : `${credits.format(value)} standard credits`;
+}
+
+function timestamp(value: string | null | undefined): string {
+  if (!value || Number.isNaN(new Date(value).getTime())) return "Unknown";
+  return new Date(value).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function labelFor(row: CodexUsageRow, fallback: string): string {
+  return (
+    row.label ??
+    row.title ??
+    row.conversation_title ??
+    row.project ??
+    row.model ??
+    row.worker ??
+    fallback
+  );
+}
+
+function CountCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border bg-card p-4">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate text-2xl font-semibold tabular-nums">
+        {value}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function UsageTable({
+  title,
+  rows,
+  empty,
+}: {
+  title: string;
+  rows: CodexUsageRow[];
+  empty: string;
+}) {
+  return (
+    <section className="min-w-0 rounded-lg border bg-card">
+      <header className="flex min-h-12 items-center justify-between gap-3 border-b px-4">
+        <h2 className="text-sm font-semibold">{title}</h2>
+        <Badge variant="outline" className="tabular-nums">
+          {metric(rows.length)}
+        </Badge>
+      </header>
+      {rows.length === 0 ? (
+        <p className="p-4 text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="bg-muted/40 text-xs text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2 font-medium">Name</th>
+                <th className="px-4 py-2 font-medium">Model</th>
+                <th className="px-4 py-2 font-medium">Effort</th>
+                <th className="px-4 py-2 text-right font-medium">Responses</th>
+                <th className="px-4 py-2 text-right font-medium">
+                  Estimated standard credits
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {rows.map((row, index) => {
+                const name = labelFor(row, "Unnamed activity");
+                return (
+                  <tr
+                    key={`${row.task_id ?? row.conversation_id ?? row.id ?? row.label ?? index}-${row.model ?? ""}-${row.effort ?? ""}`}
+                  >
+                    <td className="max-w-[24rem] px-4 py-3">
+                      {row.href ? (
+                        <a
+                          href={row.href}
+                          className="inline-flex max-w-full items-center gap-1 font-medium text-primary hover:underline"
+                        >
+                          <span className="truncate">{name}</span>
+                          <ExternalLink
+                            className="h-3.5 w-3.5 shrink-0"
+                            aria-hidden
+                          />
+                        </a>
+                      ) : (
+                        <span className="block truncate font-medium">
+                          {name}
+                        </span>
+                      )}
+                      {row.project && row.project !== name ? (
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {row.project}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {row.model ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {row.effort ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {metric(row.response_count)}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {estimatedCredits(row.estimated_standard_credits)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function optionalActivity(
+  metrics: CodexUsageMetrics,
+): Array<{ label: string; value: number }> {
+  const values = [
+    { label: "Peer messages", value: metrics.peer_messages },
+    { label: "Task wakes", value: metrics.task_wakes },
+  ];
+  return values.filter(
+    (item): item is { label: string; value: number } =>
+      typeof item.value === "number",
+  );
+}
+
+export function CodexUsageDashboard() {
+  const presence = useDesktopPresence();
+  const [preset, setPreset] = useState<RangePreset>("today");
+  const [grouping, setGrouping] = useState<CodexUsageGrouping>("model");
+  const [startDate, setStartDate] = useState(() => localDate(new Date()));
+  const [endDate, setEndDate] = useState(() => localDate(new Date()));
+  const [snapshot, setSnapshot] = useState<CodexUsageSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load(refresh = false) {
+    const range =
+      preset === "custom"
+        ? dateRange(startDate, endDate)
+        : rangeForPreset(preset);
+    if (!range) {
+      setError(
+        "Choose a date range whose end date is on or after its start date.",
+      );
+      setLoading(false);
+      return;
+    }
+    refresh ? setRefreshing(true) : setLoading(true);
+    try {
+      const next = await readCodexUsage(presence, {
+        ...range,
+        grouping,
+        refresh,
+      });
+      setSnapshot(next);
+      setError(null);
+    } catch (cause) {
+      setSnapshot(null);
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Matrx Local could not provide usage right now.",
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    // Defer the proxy read out of the effect commit. `load` changes local UI
+    // state when a reply arrives; starting it synchronously here violates the
+    // React effect contract and causes a needless cascading render.
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [preset, grouping, startDate, endDate, presence]);
+
+  const activity = snapshot ? optionalActivity(snapshot.totals) : [];
+  const coverageText = snapshot
+    ? Object.entries(snapshot.coverage)
+        .filter(
+          ([, value]) =>
+            typeof value === "boolean" || typeof value === "number",
+        )
+        .map(([key, value]) => `${key.replaceAll("_", " ")}: ${String(value)}`)
+        .join(" · ")
+    : "";
+
+  return (
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 pb-10 md:p-6">
+      <header className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Laptop className="h-5 w-5 text-primary" aria-hidden />
+            <h1 className="text-xl font-semibold tracking-tight">
+              Codex usage
+            </h1>
+          </div>
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+            Local activity captured by Matrx Local. Cost is an estimated
+            standard-credit scenario, not your measured Pro allowance debit.
+          </p>
+        </div>
+        <div
+          className={cn(
+            "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+            presence
+              ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+              : "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-400",
+          )}
+        >
+          {presence ? (
+            <Wifi className="h-4 w-4" aria-hidden />
+          ) : (
+            <WifiOff className="h-4 w-4" aria-hidden />
+          )}
+          <span>
+            {presence
+              ? `${presence.instanceName || "Matrx Local"} connected`
+              : "Matrx Local is disconnected"}
+          </span>
+        </div>
+      </header>
+
+      <section className="flex flex-col gap-3 rounded-lg border bg-card p-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap gap-2" aria-label="Usage time range">
+          {(
+            [
+              ["today", "Today"],
+              ["yesterday", "Yesterday"],
+              ["last-12-hours", "Last 12 hours"],
+              ["custom", "Date range"],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              variant={preset === value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPreset(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {preset === "custom" ? (
+            <>
+              <CalendarDays
+                className="h-4 w-4 text-muted-foreground"
+                aria-hidden
+              />
+              <input
+                aria-label="Start date"
+                type="date"
+                value={startDate}
+                max={endDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <input
+                aria-label="End date"
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(event) => setEndDate(event.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              />
+            </>
+          ) : null}
+          <select
+            aria-label="Usage grouping"
+            value={grouping}
+            onChange={(event) =>
+              setGrouping(event.target.value as CodexUsageGrouping)
+            }
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+          >
+            <option value="model">By model</option>
+            <option value="model_effort">By model and effort</option>
+          </select>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={refreshing}
+            onClick={() => void load(true)}
+          >
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <RefreshCw className="h-4 w-4" aria-hidden />
+            )}{" "}
+            Refresh
+          </Button>
+        </div>
+      </section>
+
+      {error ? (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+        >
+          <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+          <div>
+            <p className="font-medium">Usage is unavailable</p>
+            <p className="mt-1">{error}</p>
+            <p className="mt-1 text-xs">
+              Start Matrx Local and make sure it is signed in, then refresh this
+              page.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {loading && !error ? (
+        <div className="flex min-h-52 items-center justify-center gap-2 rounded-lg border text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Reading
+          sanitized activity from Matrx Local…
+        </div>
+      ) : null}
+
+      {snapshot ? (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <CountCard
+              label="Estimated standard credits"
+              value={estimatedCredits(snapshot.credits.estimated_standard)}
+              detail="Scenario estimate; not allowance debits"
+            />
+            <CountCard
+              label="Responses"
+              value={metric(snapshot.totals.response_count)}
+              detail="Captured responses in this range"
+            />
+            <CountCard
+              label="Conversations"
+              value={metric(snapshot.conversations.length)}
+              detail="Sanitized conversation rollups"
+            />
+            <CountCard
+              label="Projects"
+              value={metric(snapshot.projects.length)}
+              detail="Projects represented in this range"
+            />
+          </div>
+
+          <section className="rounded-lg border bg-muted/20 p-4 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span className="font-medium">Coverage and freshness</span>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Collected {timestamp(snapshot.collected_at)} · Range{" "}
+                  {timestamp(snapshot.range.start)} to{" "}
+                  {timestamp(snapshot.range.end)} (end exclusive)
+                </p>
+              </div>
+              <Badge variant="outline">
+                Measured allowance: unavailable by design
+              </Badge>
+            </div>
+            {coverageText ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {coverageText}
+              </p>
+            ) : null}
+          </section>
+
+          {activity.length > 0 ? (
+            <section className="grid gap-3 sm:grid-cols-2">
+              <CountCard
+                label={activity[0].label}
+                value={metric(activity[0].value)}
+                detail="Captured only when Local reports it"
+              />
+              {activity.slice(1).map((item) => (
+                <CountCard
+                  key={item.label}
+                  label={item.label}
+                  value={metric(item.value)}
+                  detail="Captured only when Local reports it"
+                />
+              ))}
+            </section>
+          ) : null}
+
+          <UsageTable
+            title={
+              grouping === "model" ? "Model usage" : "Model and effort usage"
+            }
+            rows={
+              grouping === "model" ? snapshot.models : snapshot.model_effort
+            }
+            empty="No model activity was captured in this range."
+          />
+          <UsageTable
+            title="Projects"
+            rows={snapshot.projects}
+            empty="No project rollups were returned in this range."
+          />
+          <UsageTable
+            title="Conversations"
+            rows={snapshot.conversations}
+            empty="No conversation rollups were returned in this range."
+          />
+          <UsageTable
+            title="Workers"
+            rows={snapshot.workers}
+            empty="No worker rollups were returned in this range."
+          />
+        </>
+      ) : null}
+    </main>
+  );
+}

@@ -734,6 +734,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "BarChart3",
         destinations: [
           destination("/administration/reporting/reports"),
+          destination("/administration/reporting/codex-usage"),
           destination("/administration/reporting/events"),
           destination("/administration/reporting/public-exposure"),
           destination("/administration/reporting/dead-ends"),

@@ -30,6 +30,8 @@ const LIVE_WINDOW_MS = 11 * 60_000;
 const CACHE_TTL_MS = 30_000;
 
 export interface DesktopPresence {
+  /** Database row id used by the authenticated local-proxy resolver. */
+  recordId?: string;
   /** cloud_sync identity — `app_instances.instance_id`, NOT the row PK. */
   instanceId: string;
   instanceName: string;
@@ -66,7 +68,9 @@ async function fetchPresence(): Promise<DesktopPresence | null> {
   // VIEW LAW: container-scoped via RLS — app_instances rows are keyed (user_id, instance_id), see docblock above
   const { data, error } = await supabase
     .from("app_instances")
-    .select("instance_id,instance_name,platform,metadata,tunnel_active,last_seen")
+    .select(
+      "id,instance_id,instance_name,platform,metadata,tunnel_active,last_seen",
+    )
     .is("deleted_at", null)
     .eq("is_active", true)
     .gte("last_seen", cutoff)
@@ -85,6 +89,7 @@ async function fetchPresence(): Promise<DesktopPresence | null> {
   }
   if (!data) return null;
   return {
+    recordId: data.id,
     instanceId: data.instance_id,
     instanceName: data.instance_name,
     platform: data.platform ?? "",
@@ -112,6 +117,7 @@ export function getLiveDesktopInstance(): Promise<DesktopPresence | null> {
       const unchanged =
         prev != null &&
         fresh != null &&
+        prev.recordId === fresh.recordId &&
         prev.instanceId === fresh.instanceId &&
         prev.instanceName === fresh.instanceName &&
         prev.platform === fresh.platform &&
