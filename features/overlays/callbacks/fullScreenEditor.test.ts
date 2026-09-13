@@ -52,4 +52,11 @@ describe("full-screen editor callback settlement", () => {
     await expect(emitFullScreenEditorSave(callbackGroupId, "draft")).rejects.toThrow("must return a Promise");
     expect(invalidVoidSave).toHaveBeenCalledTimes(2);
   });
+
+  it("rejects a runtime void primary-action owner before acknowledgement", async () => {
+    const invalidVoidAction = jest.fn(() => undefined) as unknown as (action: string, content: string) => Promise<void>;
+    const { callbackGroupId } = createFullScreenEditorCallbackGroup({ onAction: invalidVoidAction });
+    await expect(emitFullScreenEditorSave(callbackGroupId, "draft", "resubmit")).rejects.toThrow("must return a Promise");
+    expect(invalidVoidAction).toHaveBeenCalledWith("resubmit", "draft");
+  });
 });

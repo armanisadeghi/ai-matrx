@@ -532,8 +532,8 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
               )}
               <div
                 ref={contentRef}
-                aria-busy={undefined}
-                inert={undefined}
+                aria-busy={isPending}
+                inert={isPending ? true : undefined}
                 className="flex flex-1 flex-col overflow-hidden min-h-0"
               >
                 <div
