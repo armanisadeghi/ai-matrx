@@ -68,6 +68,7 @@ import { writeDumpUrlSources } from "../../service";
 import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
 import type { PastedSourceMetadata } from "../../record/pastedSource";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 /**
@@ -775,6 +776,9 @@ export function RulebookSourcesPanel({
                         {run.waitMessage}
                       </p>
                     </div>
+                  ) : null}
+                  {run.running ? (
+                    <DurableRunInterruption interruption={run.interruption} />
                   ) : null}
                 </div>
               ) : null}

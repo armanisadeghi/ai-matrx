@@ -42,6 +42,7 @@ import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDicta
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { RulebookRule } from "../../types";
 import {
@@ -410,6 +411,9 @@ export function AuditionDialog({
           </Button>
           {run.running && run.stages.length > 0 ? (
             <p className="text-xs text-muted-foreground">{run.stage}</p>
+          ) : null}
+          {run.running ? (
+            <DurableRunInterruption interruption={run.interruption} />
           ) : null}
           {/* A failed Audition spent the person's time and, on a three-way
               run, their money. It stays on screen with the server's own reason
