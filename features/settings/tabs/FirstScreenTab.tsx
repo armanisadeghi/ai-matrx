@@ -64,9 +64,18 @@ export default function FirstScreenTab() {
     FIRST_SCREEN_VOICE_KEY,
     ...FIRST_SCREEN_MORE_KEYS,
   ]);
-  const missingKeys = settings.isLoading
-    ? []
-    : absent([FIRST_SCREEN_MODEL_KEY, FIRST_SCREEN_VOICE_KEY, ...FIRST_SCREEN_MORE_KEYS]);
+  // "Missing from the register" is a strong claim, so it is made only when the
+  // register was actually consulted: an organization was in context, the read
+  // finished, and the rows still were not there. Before an organization is
+  // chosen the ladder has nothing to resolve against — that is not a missing
+  // row, and saying so was a false sentence (seen live 2026-09-12).
+  const registerConsulted =
+    !settings.isLoading && !settings.error && Boolean(settings.organizationId);
+  const missingKeys = registerConsulted
+    ? absent([FIRST_SCREEN_MODEL_KEY, FIRST_SCREEN_VOICE_KEY, ...FIRST_SCREEN_MORE_KEYS])
+    : [];
+  const noOrganizationYet =
+    !settings.isLoading && !settings.error && !settings.organizationId;
 
   return (
     <>
@@ -111,6 +120,12 @@ export default function FirstScreenTab() {
       {settings.error && (
         <SettingsCallout tone="error" title="Your AI and voice defaults could not be read">
           {settings.error}
+        </SettingsCallout>
+      )}
+      {noOrganizationYet && (
+        <SettingsCallout tone="info" title="Choose an organization to see your AI and voice defaults">
+          These settings live on your organization&apos;s ladder. Pick one from the header, or set a
+          default organization above, and they appear here.
         </SettingsCallout>
       )}
       {missingKeys.length > 0 && (
