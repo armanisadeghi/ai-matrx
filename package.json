@@ -658,6 +658,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
     "@babel/parser": "^7.29.8",
     "@babel/types": "^7.29.8",
     "@iconify/react": "^6.0.2",
