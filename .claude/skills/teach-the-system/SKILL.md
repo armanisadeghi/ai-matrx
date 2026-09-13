@@ -426,3 +426,4 @@ lines by relocating trial-specific detail into the trial's register.
   previously inexpressible to either humans or AI, and make them available, editable and testable". Rules 5
   and 6 in §1 came from it; trial 8 is honestly a consensus-source trial that built the operationalization
   and validation halves.
+- 2026-09-13 — (trial 8) COST IS A CONTEXT-SIZE PROBLEM BEFORE IT IS A MODEL-TIER PROBLEM: the night's biggest bill was one Conductor conversation at up to 559K tokens of context per call ($95), because tool-call ARGUMENTS (a 50K-char workflow definition on every save) were never trimmed. Read `chat.request` (`input_tokens + cached_tokens` per call, `trim_summary`) before blaming the model; a holder whose context passes ~150K tokens is a platform wall, not a cost of doing business. And the mechanical per-chunk holders (segmenter, distillers) run on Sonnet 5; Opus 5 is for the paths that reason (Conductor, judge); Fable never runs inside the app.
