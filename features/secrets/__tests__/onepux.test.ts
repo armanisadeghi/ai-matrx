@@ -33,6 +33,18 @@ describe("sanitized upstream 1PUX ordinary login shape", () => {
     expect(record?.status).toBe("supported");
     if (record?.status === "supported") expect(record.sourceRecord).toContain('"passwordHistory"');
   });
+  test("sets OTP only from a nonempty section totp value", () => {
+    const section = '"sections":[{"title":"extra","fields":[{"title":"otp","id":"otp","guarded":false,"multiline":false,"dontGenerate":false,"inputTraits":{"keyboard":"text","correction":"yes","capitalization":"none"},"value":{"totp":"otpauth://x"}}]}],';
+    const [record] = parseOnePuxData(attrs, data(item().replace('"loginFields"', `${section}"loginFields"`)), limits);
+    expect(record).toMatchObject({ status: "supported", hasOtp: true });
+    const [guessed] = parseOnePuxData(attrs, data(item().replace('"fieldType":"T","designation":"username"', '"fieldType":"T","designation":null')), limits);
+    expect(guessed).toMatchObject({ status: "supported", hasOtp: false });
+  });
+  test("refuses an overlong known item string without a source record", () => {
+    const [record] = parseOnePuxData(attrs, data(item().replace('"Example"', `"${"x".repeat(80)}"`)), { ...limits, maxCellBytes: 40 });
+    expect(record).toEqual(expect.objectContaining({ status: "invalid", title: "Item 1" }));
+    expect(record).not.toHaveProperty("sourceRecord");
+  });
   test.each([
     ["unknown value", '"value":{"sshKey":"x"}'],
     ["multiple values", '"value":{"string":"x","url":"x"}'],

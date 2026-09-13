@@ -10,6 +10,8 @@ const bytes = (value: string) => typeof TextEncoder !== "undefined" ? new TextEn
 const integer = (value: unknown) => value instanceof LosslessNumber && /^(0|[1-9][0-9]*)$/.test(value.value) && Number(value.value) <= Number.MAX_SAFE_INTEGER;
 const nonnegativeNumber = (value: unknown) => value instanceof LosslessNumber && Number.isFinite(Number(value.value)) && Number(value.value) >= 0;
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.every((entry) => typeof entry === "string");
+const textBytes = (value: string) => typeof TextEncoder === "undefined" ? unescape(encodeURIComponent(value)).length : new TextEncoder().encode(value).byteLength;
+function stringsWithin(value: unknown, max: number): boolean { if (typeof value === "string") return textBytes(value) <= max; if (Array.isArray(value)) return value.every((entry) => stringsWithin(entry, max)); const row = object(value); return !row || Object.values(row).every((entry) => stringsWithin(entry, max)); }
 const rejected = (status: "invalid" | "unsupported", ordinal: number, title: string, reason: string): StructuredImportRecord => ({ status, ordinal, title, reason });
 function sectionsValid(value: unknown): "valid" | "invalid" | "unsupported" {
   if (value === undefined || value === null) return "valid";
@@ -30,10 +32,11 @@ function sectionsValid(value: unknown): "valid" | "invalid" | "unsupported" {
   return "valid";
 }
 
-function loginRecord(item: ObjectValue, ordinal: number, attrs: ObjectValue, account: ObjectValue, vault: ObjectValue): StructuredImportRecord {
+function loginRecord(item: ObjectValue, ordinal: number, attrs: ObjectValue, account: ObjectValue, vault: ObjectValue, maxCellBytes: number): StructuredImportRecord {
   const overview = object(item.overview);
   const details = object(item.details);
   const title = typeof overview?.title === "string" ? overview.title : `Item ${ordinal + 1}`;
+  if (!stringsWithin(item, maxCellBytes)) return rejected("invalid", ordinal, `Item ${ordinal + 1}`, "The 1Password item exceeds the import limits.");
   if (!overview || !details || !only(item, ["uuid", "favIndex", "createdAt", "updatedAt", "state", "categoryUuid", "overview", "details"])) return rejected("unsupported", ordinal, title, "The 1Password item has an unsupported field.");
   if (typeof item.uuid !== "string" || !item.uuid || !integer(item.favIndex) || !integer(item.createdAt) || !integer(item.updatedAt) || (item.state !== "active" && item.state !== "archived") || typeof item.categoryUuid !== "string") return rejected("invalid", ordinal, title, "The 1Password item shape is invalid.");
   if (item.categoryUuid !== "001") return rejected("unsupported", ordinal, title, "Only 1Password login items are supported.");
@@ -52,8 +55,8 @@ function loginRecord(item: ObjectValue, ordinal: number, attrs: ObjectValue, acc
     if (!field || !only(field, ["id", "name", "value", "fieldType", "designation"]) || typeof field.id !== "string" || typeof field.name !== "string" || typeof field.value !== "string" || !["T", "E", "U", "N", "P", "A", "TEL", "C"].includes(String(field.fieldType)) || (field.designation !== undefined && field.designation !== null && field.designation !== "username" && field.designation !== "password")) return rejected("invalid", ordinal, title, "The 1Password login fields are invalid.");
     if (field.designation === "username") { if (username !== null) return rejected("invalid", ordinal, title, "The 1Password login has duplicate username fields."); username = field.value; }
     if (field.designation === "password") { if (password !== null) return rejected("invalid", ordinal, title, "The 1Password login has duplicate password fields."); password = field.value; }
-    if (field.fieldType === "T" && field.name.toLowerCase().includes("one-time") && field.value) hasOtp = true;
   }
+  if (Array.isArray(details.sections)) for (const section of details.sections) { const fields = object(section)?.fields; if (Array.isArray(fields) && fields.some((field) => { const value = object(object(field)?.value); return typeof value?.totp === "string" && value.totp.length > 0; })) hasOtp = true; }
   const rawUrls = [overview.url, ...(Array.isArray(overview.urls) ? overview.urls.map((entry) => (entry as ObjectValue).url).filter((url): url is string => typeof url === "string") : [])];
   return { status: "supported", ordinal, title, sourceState: item.state === "archived" ? "archived" : "active", sourceRecord: stringify({ source_vendor: "1password", format: "1pux-v3", export_attributes: attrs, account_attributes: account, vault_attributes: vault, item }), hasOtp, kind: "website_login", urls: rawUrls.map(safeDestination).flatMap((url) => url.metadata ? [url.metadata] : []), username, password };
 }
@@ -64,13 +67,15 @@ function attributes(value: ObjectValue, account: boolean): boolean {
   return only(value, keys) && keys.every((key) => typeof value[key] === "string") && typeof value[idKey] === "string" && (value[idKey] as string).length > 0 && (!account ? ["P", "E", "U"].includes(value.type as string) : true);
 }
 
-export function parseOnePuxData(exportAttributesText: string, exportDataText: string, limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords">): StructuredImportRecord[] {
+export function parseOnePuxData(exportAttributesText: string, exportDataText: string, limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords" | "maxCellBytes">): StructuredImportRecord[] {
+  const maxCellBytes = limits.maxCellBytes ?? limits.maxFileBytes;
   if (bytes(exportAttributesText) + bytes(exportDataText) > limits.maxFileBytes) throw new Error("The 1Password export exceeds this organization’s import size limit.");
   let exportAttributes: ObjectValue;
   try { exportAttributes = object(parse(exportAttributesText)) ?? {}; } catch { throw new Error("The 1Password export attributes could not be read safely."); }
   if (!only(exportAttributes, ["version", "description", "createdAt"]) || !integer(exportAttributes.version) || (exportAttributes.version as LosslessNumber).value !== "3" || exportAttributes.description !== "1Password Unencrypted Export" || !integer(exportAttributes.createdAt)) throw new Error("This is not a supported unencrypted 1Password v3 export.");
   let root: ObjectValue;
   try { root = object(parse(exportDataText)) ?? {}; } catch { throw new Error("The 1Password export could not be read safely."); }
+  if (!stringsWithin(exportAttributes, maxCellBytes)) throw new Error("The 1Password export exceeds this organization’s field limit.");
   if (!only(root, ["accounts"]) || !Array.isArray(root.accounts)) throw new Error("This is not a supported 1Password 1PUX export.");
   const records: StructuredImportRecord[] = [];
   const accountIds = new Set<string>();
@@ -82,7 +87,7 @@ export function parseOnePuxData(exportAttributesText: string, exportDataText: st
       const vault = object(vaultRow); const vaultAttrs = object(vault?.attrs);
       if (!vault || !vaultAttrs || !attributes(vaultAttrs, false) || !only(vault, ["attrs", "items"]) || !Array.isArray(vault.items) || vaultIds.has(vaultAttrs.uuid as string)) throw new Error("The 1Password vault structure is invalid.");
       vaultIds.add(vaultAttrs.uuid as string); const itemIds = new Set<string>();
-      for (const item of vault.items) { if (records.length >= limits.maxRecords) throw new Error("The export has more records than this organization allows."); const row = object(item); if (row && typeof row.uuid === "string" && itemIds.has(row.uuid)) throw new Error("The 1Password vault has duplicate item IDs."); if (row && typeof row.uuid === "string") itemIds.add(row.uuid); records.push(row ? loginRecord(row, records.length, exportAttributes, attrs, vaultAttrs) : rejected("invalid", records.length, `Item ${records.length + 1}`, "The 1Password item is invalid.")); }
+      for (const item of vault.items) { if (records.length >= limits.maxRecords) throw new Error("The export has more records than this organization allows."); const row = object(item); if (row && typeof row.uuid === "string" && itemIds.has(row.uuid)) throw new Error("The 1Password vault has duplicate item IDs."); if (row && typeof row.uuid === "string") itemIds.add(row.uuid); records.push(row ? loginRecord(row, records.length, exportAttributes, attrs, vaultAttrs, maxCellBytes) : rejected("invalid", records.length, `Item ${records.length + 1}`, "The 1Password item is invalid.")); }
     }
   }
   return records;
