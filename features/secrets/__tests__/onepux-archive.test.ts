@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-const limits = { maxFileBytes: 100_000, maxRecords: 10 } as never;
+const limits = { maxFileBytes: 100_000, maxRecords: 10 };
 async function read(file: Blob, signal?: AbortSignal) {
   return (await import("../onepux-archive")).readOnePuxArchive(file, limits, signal);
 }
@@ -13,7 +13,7 @@ async function archive(entries: Array<[string, string]>) {
 describe("1PUX archive reader", () => {
   test("reads maintained-writer JSON and counts binary members without inflating them", async () => {
     const file = await archive([["export.attributes", "attrs"], ["export.data", "data"], ["files/icon", "binary"]]);
-    try { await expect(read(file)).resolves.toEqual({ attributesText: "attrs", dataText: "data", binaryMemberCount: 1 }); } catch (error) { console.error(error); throw error; }
+    await expect(read(file)).resolves.toEqual({ attributesText: "attrs", dataText: "data", binaryMemberCount: 1 });
   });
   test("rejects missing required members, traversal, and entry budget", async () => {
     await expect(read(await archive([["export.data", "data"]]))).rejects.toThrow();
@@ -47,8 +47,9 @@ describe("1PUX archive reader", () => {
     await writer.add("export.attributes", new TextReader("attributes")); await writer.add("export.data", new TextReader("data")); await writer.close();
     await expect(read(await disks[0]!.getData())).rejects.toThrow();
   });
-  test("shares actual JSON expansion budget across both selected entries", async () => {
-    const file = await archive([["export.attributes", "12345"], ["export.data", "67890"]]);
-    await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 9, maxRecords: 10 } as never)).rejects.toThrow();
+  test("refuses declared expansion above the budget even when compressed", async () => {
+    const file = await archive([["export.attributes", "a".repeat(500)], ["export.data", "d".repeat(500)]]);
+    expect(file.size).toBeLessThan(1_000);
+    await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 900, maxRecords: 10 })).rejects.toThrow();
   });
 });

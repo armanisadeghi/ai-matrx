@@ -11,7 +11,7 @@ function boundedText(limit: number, used: { value: number }) {
   return { writable: new WritableStream<Uint8Array>({ write(chunk) { if (used.value > limit - chunk.byteLength) throw new Error("The 1Password export exceeds this organization’s import size limit."); used.value += chunk.byteLength; size += chunk.byteLength; parts.push(chunk); } }), text: () => { const bytes = new Uint8Array(size); let offset = 0; for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; } return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } };
 }
 
-export async function readOnePuxArchive(file: Blob, limits: CsvImportLimits, signal?: AbortSignal): Promise<OnePuxArchive> {
+export async function readOnePuxArchive(file: Blob, limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords">, signal?: AbortSignal): Promise<OnePuxArchive> {
   if (file.size > limits.maxFileBytes) throw new Error("The 1Password export exceeds this organization’s import size limit.");
   const reader = new ZipReader(new BlobReader(file), { strictness: "strict", filenameValidation: "strict", checkAmbiguity: true });
   try {
@@ -21,7 +21,7 @@ export async function readOnePuxArchive(file: Blob, limits: CsvImportLimits, sig
     let declared = 0; let attributesText: string | undefined; let dataText: string | undefined; let binaryMemberCount = 0; const names = new Set<string>(); const actual = { value: 0 };
     for (const entry of entries) {
       const unixType = (entry.externalFileAttributes >>> 16) & 0o170000;
-      if (signal?.aborted || names.has(entry.filename) || entry.filename.includes("\\") || entry.filename.includes("\0") || !safe(entry.compressedSize) || !safe(entry.uncompressedSize) || !safe(entry.offset) || declared > limits.maxFileBytes - entry.uncompressedSize || entry.encrypted || (!entry.directory && unixType !== 0 && unixType !== 0o100000)) throw new Error("The 1Password archive is unsafe.");
+      if (signal?.aborted || names.has(entry.filename) || entry.filename.includes("\\") || entry.filename.includes("\0") || !safe(entry.compressedSize) || !safe(entry.uncompressedSize) || !safe(entry.offset) || declared > limits.maxFileBytes - entry.uncompressedSize || entry.encrypted || (entry.directory ? unixType !== 0 && unixType !== 0o040000 : unixType !== 0 && unixType !== 0o100000)) throw new Error("The 1Password archive is unsafe.");
       names.add(entry.filename); declared += entry.uncompressedSize;
       await entry.getData(new WritableStream(), { checkOverlappingEntryOnly: true, signal });
       if (entry.filename === "export.attributes" || entry.filename === "export.data") {
