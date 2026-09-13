@@ -156,4 +156,20 @@ describe("saveNote receipt integration", () => {
 
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ version: 9, updated_at: "2026-09-12T02:00:00.000Z" });
   });
+
+  it("joins concurrent callers before the inner save can emit pending", async () => {
+    const existing = query({ data: note(), error: null });
+    let release: ((value: { data: Note; error: null }) => void) | undefined;
+    const updated = query(new Promise((resolve) => { release = resolve; }));
+    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(updated) });
+    const store = storeWithNote();
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "queued" }));
+
+    const first = store.dispatch(saveNote(NOTE_ID));
+    const second = store.dispatch(saveNote(NOTE_ID));
+    expect(second).toBe(first);
+    release?.({ data: note({ content: "queued", version: 8 }), error: null });
+    await first;
+    expect(updated.update).toHaveBeenCalledTimes(1);
+  });
 });
