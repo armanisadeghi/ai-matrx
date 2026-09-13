@@ -588,9 +588,8 @@ const notesSlice = createSlice({
         savedSnapshot?: Partial<
           Record<NoteUndoableField, Note[NoteUndoableField]>
         >;
-        acknowledgedValues?: Partial<
-          Record<NoteUndoableField, Note[NoteUndoableField]>
-        >;
+        /** The service may return a canonical display name for an admitted folder ID. */
+        acknowledgedValues?: { folder_name?: Note["folder_name"] };
       }>,
     ) {
       const record = state.notes[action.payload.id];
@@ -609,11 +608,13 @@ const notesSlice = createSlice({
       }
       if (action.payload.savedSnapshot) {
         const settledSnapshot = { ...action.payload.savedSnapshot };
-        for (const [field, value] of Object.entries(action.payload.acknowledgedValues ?? {}) as Array<[NoteUndoableField, Note[NoteUndoableField]]>) {
-          if (record[field] === action.payload.savedSnapshot[field]) {
-            record[field] = value;
-            settledSnapshot[field] = value;
-          }
+        const acknowledgedFolderName = action.payload.acknowledgedValues?.folder_name;
+        if (
+          acknowledgedFolderName !== undefined &&
+          record.folder_name === action.payload.savedSnapshot.folder_name
+        ) {
+          record.folder_name = acknowledgedFolderName;
+          settledSnapshot.folder_name = acknowledgedFolderName;
         }
         markSavedSnapshotClean(record, settledSnapshot);
       } else {

@@ -477,9 +477,11 @@ export const createNewNote = createAsyncThunk<
     note = await createNote(input);
   } catch (error) {
     if (error instanceof NoteContextPartialSaveError) {
-      if (getUserId(getState) !== expectedUserId) {
-        throw error;
-      }
+      // The database note is durable, but it belongs to the identity that
+      // initiated the request. Do not hydrate or open it after a logout,
+      // account switch, or stale Redux auth state.
+      await assertCurrentNotesUser(expectedUserId);
+      if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
       const failedValues: Partial<Pick<Note, "project_id" | "task_id">> = {};
       for (const field of error.failedFields) failedValues[field] = input[field];
       dispatch(settlePartialNoteCreate({ note: error.actualStoredNote, failedValues, error: error.message }));
@@ -497,6 +499,11 @@ export const createNewNote = createAsyncThunk<
     }
     throw error;
   }
+
+  // `createNote` can have inserted a durable row before this continuation.
+  // Verify both sources of identity immediately before any Redux settlement.
+  await assertCurrentNotesUser(expectedUserId);
+  if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
 
   dispatch(
     upsertNoteFromServer({
