@@ -70,27 +70,42 @@ export type FullScreenEditorHandlers = FullScreenEditorCommandHandler & {
 export function createFullScreenEditorCallbackGroup(
   handlers: FullScreenEditorHandlers,
 ): { callbackGroupId: string; dispose: () => void } {
-  const callbackGroupId = callbackManager.createGroup();
-
   if ((handlers.onSave ? 1 : 0) + (handlers.onAction ? 1 : 0) !== 1) {
     throw new Error("A full-screen editor callback group requires exactly one save owner");
   }
+  const callbackGroupId = callbackManager.createGroup();
 
-  const fanOut = async (event: FullScreenEditorEvent) => {
+  const requireThenable = (value: unknown): Promise<void> => {
+    if (
+      value === null ||
+      (typeof value !== "object" && typeof value !== "function") ||
+      !("then" in value) ||
+      typeof value.then !== "function"
+    ) {
+      throw new Error("A full-screen editor save owner must return a Promise");
+    }
+    return Promise.resolve(value).then(() => undefined);
+  };
+
+  const fanOut = (event: FullScreenEditorEvent): Promise<void> => {
+    let command: Promise<void>;
     if (event.type === "save") {
       if (handlers.onSave) {
-        await handlers.onSave(event.content);
+        command = requireThenable(handlers.onSave(event.content));
       } else if (handlers.onAction) {
-        await handlers.onAction(event.action ?? "save", event.content);
+        command = requireThenable(handlers.onAction(event.action ?? "save", event.content));
+      } else {
+        return Promise.reject(new Error("A full-screen editor save owner is missing"));
       }
     }
-    if (handlers.onEvent) {
+    return command!.then(async () => {
+      if (!handlers.onEvent) return;
       try {
         await handlers.onEvent(event);
       } catch (error) {
         console.error("[fullScreenEditor] save observer failed", error);
       }
-    }
+    });
   };
 
   callbackManager.registerWithContext<FullScreenEditorEvent>(

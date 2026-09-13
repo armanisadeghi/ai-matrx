@@ -2,8 +2,7 @@
 
 import React, { useEffect, useCallback, useRef } from "react";
 import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
-import { callbackManager } from "@/utils/callbackManager";
+import { disposeFullScreenEditorCallbackGroup, emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -155,7 +154,7 @@ export function HtmlPreviewBridge({
 
   // Clear active page when overlay closes
   const handleClose = useCallback(() => {
-    if (callbackGroupId) callbackManager.removeGroup(callbackGroupId);
+    disposeFullScreenEditorCallbackGroup(callbackGroupId);
     dispatch(setActivePageId(null));
     onClose();
   }, [callbackGroupId, dispatch, onClose]);

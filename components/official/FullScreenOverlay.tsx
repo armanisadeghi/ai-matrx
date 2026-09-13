@@ -520,6 +520,8 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
             <>
               {sharedHeader && (
                 <div
+                  aria-busy={isPending}
+                  inert={isPending ? true : undefined}
                   className={cn(
                     "border-b py-2 flex-shrink-0 px-2",
                     sharedHeaderClassName,
@@ -530,6 +532,8 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
               )}
               <div
                 ref={contentRef}
+                aria-busy={undefined}
+                inert={undefined}
                 className="flex flex-1 flex-col overflow-hidden min-h-0"
               >
                 <div

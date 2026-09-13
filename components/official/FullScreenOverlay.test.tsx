@@ -89,4 +89,49 @@ describe("FullScreenOverlay pending settlement boundary", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("freezes the selected mobile editor body during a pending write and restores its controls after failure", async () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    const onSave = jest.fn();
+    const onClose = jest.fn();
+    const onCancel = jest.fn();
+    const render = (isPending: boolean, errorMessage: string | null = null) => {
+      root.render(
+        <FullScreenOverlay
+          isOpen
+          title="Edit draft"
+          tabs={[{ id: "write", label: "Write", content: <textarea aria-label="Mobile draft" defaultValue="draft" /> }]}
+          onClose={onClose}
+          onSave={onSave}
+          onCancel={onCancel}
+          showSaveButton
+          showCancelButton
+          isPending={isPending}
+          errorMessage={errorMessage}
+          onRetry={onSave}
+        />,
+      );
+    };
+    await act(async () => render(false));
+    await act(async () => {
+      Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
+        .find((button) => button.textContent?.includes("Write"))?.click();
+    });
+    await act(async () => render(true));
+    const input = document.querySelector<HTMLTextAreaElement>("[aria-label='Mobile draft']");
+    expect(input?.closest("[aria-busy='true']")?.hasAttribute("inert")).toBe(true);
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("button"));
+    expect(buttons.find((button) => button.getAttribute("aria-label") === "Cancel")?.disabled).toBe(true);
+    expect(buttons.find((button) => button.getAttribute("aria-label") === "Save")?.disabled).toBe(true);
+    act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+
+    await act(async () => render(false, "write failed"));
+    const enabled = Array.from(document.querySelectorAll<HTMLButtonElement>("button"));
+    expect(enabled.find((button) => button.getAttribute("aria-label") === "Save")?.disabled).toBe(false);
+    await act(async () => enabled.find((button) => button.textContent === "Retry")?.click());
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
 });
