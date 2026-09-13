@@ -5,6 +5,7 @@
 // to show both panes usefully; narrow viewports stay on plain edit.
 
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { canonicalNoteEditorMode } from "../redux/notes.types";
 import type { EditorMode } from "../components/NoteEditorCore";
 
 /** Viewport width at which MatrxSplit becomes the default (between md/lg). */
@@ -24,17 +25,5 @@ export function normalizeNoteEditorMode(
   mode: string | null | undefined,
   fallback: EditorMode,
 ): EditorMode {
-  if (!mode) return fallback;
-  if (mode === "matrx-split") return "split";
-  if (mode === "markdown") return "markdown-split";
-  if (
-    mode === "plain" ||
-    mode === "split" ||
-    mode === "preview" ||
-    mode === "wysiwyg" ||
-    mode === "markdown-split"
-  ) {
-    return mode;
-  }
-  return fallback;
+  return canonicalNoteEditorMode(mode) ?? fallback;
 }

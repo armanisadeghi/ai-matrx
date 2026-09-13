@@ -9,8 +9,12 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AdvancedMenu, { MenuItem } from '@/components/official/AdvancedMenu';
 import type { FolderReference, Note } from '../types';
-import { getNoteMetadata, noteFolderReference } from '../types';
+import { noteFolderReference } from '../types';
 import { MoveNoteDialog } from './MoveNoteDialog';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { setNoteEditorMode } from '../redux/slice';
+import { selectNotesMap } from '../redux/selectors';
+import { canonicalNoteEditorMode } from '../redux/notes.types';
 
 type EditorMode = 'plain' | 'wysiwyg' | 'markdown' | 'matrx-split' | 'preview';
 
@@ -40,6 +44,8 @@ export function NoteTabs({
     isSaving
 }: NoteTabsProps) {
     const { notes, openTabs, activeNote, openNoteInTab, closeTab, reorderTabs, closeAllTabs } = useNotesRedux();
+    const dispatch = useAppDispatch();
+    const noteRecords = useAppSelector(selectNotesMap);
     const activeTabRef = useRef<HTMLDivElement>(null);
     const [draggedTab, setDraggedTab] = useState<string | null>(null);
     const [dragOverTab, setDragOverTab] = useState<string | null>(null);
@@ -171,9 +177,10 @@ export function NoteTabs({
         setDragOverTab(null);
     };
 
-    // Get current editor mode from active note
+    // Editor mode is local record state. Persisted metadata is only legacy input
+    // when the record first enters Redux.
     const getCurrentMode = (note: Note): EditorMode => {
-        return (getNoteMetadata(note).lastEditorMode as EditorMode) || 'plain';
+        return (noteRecords[note.id]?._editorMode as EditorMode | null) ?? 'plain';
     };
 
     // Get icon for current mode
@@ -191,9 +198,10 @@ export function NoteTabs({
     // Handle view mode change
     const handleViewModeChange = (mode: EditorMode) => {
         if (activeNote) {
-            onUpdateNote(activeNote.id, {
-                metadata: { ...getNoteMetadata(activeNote), lastEditorMode: mode }
-            });
+            const canonicalMode = canonicalNoteEditorMode(mode);
+            if (canonicalMode) {
+                dispatch(setNoteEditorMode({ id: activeNote.id, mode: canonicalMode }));
+            }
         }
         setViewMenuOpen(false);
     };

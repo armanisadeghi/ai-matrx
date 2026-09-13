@@ -30,12 +30,13 @@ import {
 } from "@/components/ui/select";
 import { TagInput } from "./TagInput";
 import type { Note } from "../types";
-import { getNoteMetadata } from "../types";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { useAllFolders } from "../utils/folderUtils";
 import { useNotesRedux } from "../hooks/useNotesRedux";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectNotesMap } from "../redux/selectors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectNoteEditorMode, selectNotesMap } from "../redux/selectors";
+import { setNoteEditorMode } from "../redux/slice";
+import { canonicalNoteEditorMode } from "../redux/notes.types";
 import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { RichDocument } from "@/features/rich-document/RichDocument";
@@ -130,7 +131,11 @@ export function NoteEditor({
   // what the user is acting on (matches NotesDemoPanel's selection sync).
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
+  const dispatch = useAppDispatch();
   const editingActorId = useAppSelector((state) => state.userAuth.id);
+  const savedEditorMode = useAppSelector(
+    note?.id ? selectNoteEditorMode(note.id) : () => undefined,
+  );
   const tuiEditorRef = useRef<TuiEditorContentRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -162,10 +167,6 @@ export function NoteEditor({
             content: localContent,
             folder_name: localFolder,
             tags: localTags,
-            metadata: {
-              ...getNoteMetadata(note),
-              lastEditorMode: editorMode,
-            },
           });
         }
       },
@@ -295,15 +296,11 @@ export function NoteEditor({
     });
   }, [localContent, contextData, selectionEnd, selectionStart]);
 
-  // Load editor mode from note metadata - update when metadata changes
-  const noteMetadata = getNoteMetadata(note);
+  // `_editorMode` is a local record field. Legacy metadata is read only when
+  // the record first enters the store, so physical metadata remains exact.
   useEffect(() => {
-    if (noteMetadata.lastEditorMode) {
-      setEditorMode(noteMetadata.lastEditorMode as EditorMode);
-    } else {
-      setEditorMode("plain");
-    }
-  }, [note?.id, noteMetadata.lastEditorMode]); // Update when note ID or mode changes
+    setEditorMode((savedEditorMode as EditorMode | undefined) ?? "plain");
+  }, [note?.id, savedEditorMode]);
 
   // Save current content before switching notes
   useEffect(() => {
@@ -324,10 +321,6 @@ export function NoteEditor({
             label: localLabelRef.current,
             content: markdown,
             tags: localTagsRef.current,
-            metadata: {
-              ...getNoteMetadata(currentNote),
-              lastEditorMode: currentMode,
-            },
           });
         }
       }
@@ -383,7 +376,6 @@ export function NoteEditor({
           label: localLabelRef.current,
           content: currentContent,
           tags: localTagsRef.current,
-          metadata: { ...getNoteMetadata(note), lastEditorMode: currentMode },
         });
 
         // Force immediate save
@@ -413,12 +405,13 @@ export function NoteEditor({
       }
     }
 
-    // Simply update the editor mode - that's it!
+    // Editor mode is local state and never participates in a physical save.
     setEditorMode(newMode);
-
-    // Note: The editor mode will be saved automatically when the note is next saved
-    // for other reasons (content, folder, tags). No need to trigger a save just for view mode.
-  }, []); // No dependencies - stable function
+    const canonicalMode = canonicalNoteEditorMode(newMode);
+    if (noteRef.current && canonicalMode) {
+      dispatch(setNoteEditorMode({ id: noteRef.current.id, mode: canonicalMode }));
+    }
+  }, [dispatch]);
 
   const handleContentChange = (value: string) => {
     setLocalContent(value);
@@ -427,7 +420,6 @@ export function NoteEditor({
         label: localLabel,
         content: value,
         tags: localTags,
-        metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode },
       });
       // For phantom notes (id === '__phantom__'), updateWithAutoSave is a no-op.
       // We must call onUpdate so NotesLayout can materialise the real DB note.
@@ -451,10 +443,6 @@ export function NoteEditor({
           label: localLabelRef.current,
           content: value,
           tags: localTagsRef.current,
-          metadata: {
-            ...getNoteMetadata(currentNote),
-            lastEditorMode: editorModeRef.current,
-          },
         });
         // Materialise phantom on TUI editor changes too
         if (currentNote.id === "__phantom__") {
@@ -508,7 +496,6 @@ export function NoteEditor({
         label: localLabel,
         content: localContent,
         tags,
-        metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode }, // Include mode
       });
       // Immediate update to parent
       onUpdate?.(note.id, { tags });
@@ -543,7 +530,6 @@ export function NoteEditor({
           label: newLabel,
           content: localContent,
           tags: localTags,
-          metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode },
         });
       }
       labelSaveTimeoutRef.current = null;
@@ -563,7 +549,6 @@ export function NoteEditor({
         label: localLabel,
         content: localContent,
         tags: localTags,
-        metadata: { ...getNoteMetadata(note), lastEditorMode: editorMode },
       });
       forceSave();
     }

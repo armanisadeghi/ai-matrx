@@ -269,9 +269,7 @@ export const selectNoteEditorMode = (noteId: string) =>
   cached(`noteMode:${noteId}`, () =>
     createSelector(
       selectNotesMap,
-      (notes): string | undefined =>
-        (notes[noteId]?.metadata as Record<string, unknown>)?.lastEditorMode as
-          string | undefined,
+      (notes): string | undefined => notes[noteId]?._editorMode ?? undefined,
     ),
   );
 

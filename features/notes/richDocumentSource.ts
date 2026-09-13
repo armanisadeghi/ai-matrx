@@ -51,7 +51,7 @@ function freezeSerializable<T>(value: T): T {
   return copy;
 }
 
-function displayedPhysicalSnapshot(note: Note): NoteDisplayedPhysicalSnapshot {
+export function displayedPhysicalSnapshot(note: Note): NoteDisplayedPhysicalSnapshot {
   return {
     id: note.id,
     organization_id: note.organization_id,

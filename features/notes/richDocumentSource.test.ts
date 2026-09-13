@@ -98,7 +98,7 @@ describe("prepared Notes rich-document sources", () => {
     const record = createBlankNoteRecord(note());
     const dirty = notesReducer({
       notes: { [NOTE_ID]: record }, fetchedNoteIds: new Set(), contentLoadStatus: {}, listStatus: "idle", listError: null,
-      conflictResolutionReceipts: {}, instances: {}, realtimeConnected: false, noteEditors: {}, noteScopeAssignments: [], noteScopesLoaded: false,
+      conflictResolutionReceipts: {}, currentConflictReviewKeys: {}, retainedConflictReviews: {}, instances: {}, realtimeConnected: false, noteEditors: {}, noteScopeAssignments: [], noteScopesLoaded: false,
       activeNoteId: null, openTabs: [], _savingNoteIds: [],
     }, setNoteField({ id: NOTE_ID, field: "content", value: "later dirty text" }));
     expect(dirty.notes[NOTE_ID]._fieldHistory.content).toBe("acknowledged body");

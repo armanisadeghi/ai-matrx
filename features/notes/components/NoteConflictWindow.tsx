@@ -4,7 +4,8 @@
 // Shows when an external change is detected while the user has local edits.
 // Three tabs: Diff View, Your Version (editable), Remote Version (read-only).
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState } from "react";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertTriangle,
   X,
@@ -16,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { DiffReview } from "@ai-matrx/diff/react";
+import type { ReviewSession, ReviewSessionAction } from "@ai-matrx/diff";
 import type { DiffAnalysis } from "@/features/notes/utils/diffAnalysis";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -29,8 +31,11 @@ export interface NoteConflictWindowProps {
   remoteDetails: Array<{ label: string; yours: string; saved: string; metadata?: { yours: unknown; saved: unknown } }>;
   mergeDraft: string;
   onMergeDraftChange: (content: string) => void;
+  /** Notes owns this session so hunk choices survive window remounts. */
+  reviewSession?: ReviewSession;
+  onReviewTransition?: (action: ReviewSessionAction) => void;
   /** Called with the content from the (possibly edited) "Your Version" tab */
-  onKeepMine: (content: string) => void;
+  onKeepMine: (content: string, choice?: "mine" | "merge") => void;
   /** Adopt the remote/server version */
   onAcceptChanges: () => void;
   /** Dismiss without action — keep local edits as dirty */
@@ -40,6 +45,12 @@ export interface NoteConflictWindowProps {
   /** Re-read the canonical row while preserving the local merge draft. */
   onRefresh: () => Promise<void>;
   decisionError?: string | null;
+  sourceChoiceRequired?: boolean;
+  canUseCompletedSource?: boolean;
+  onChooseSource?: (source: "proposal" | "completed") => void;
+  locked?: boolean;
+  /** Reads the current command lock, including before React has rerendered. */
+  isCommandLocked?: () => boolean;
 }
 
 type Tab = "diff" | "merge" | "local" | "remote";
@@ -54,66 +65,40 @@ export function NoteConflictWindow({
   remoteDetails,
   mergeDraft,
   onMergeDraftChange,
+  reviewSession,
+  onReviewTransition,
   onKeepMine,
   onAcceptChanges,
   onCancel,
   stale,
   onRefresh,
   decisionError,
+  sourceChoiceRequired = false,
+  canUseCompletedSource = false,
+  onChooseSource,
+  locked = false,
+  isCommandLocked,
 }: NoteConflictWindowProps) {
   const [activeTab, setActiveTab] = useState<Tab>("diff");
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [inspectMetadata, setInspectMetadata] = useState(false);
 
-  // Drag state
-  const [pos, setPos] = useState({ x: -1, y: -1 });
-  const dragStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-
-  // Center on first render
-  const containerRef = useRef<HTMLDivElement>(null);
-  const initialized = useRef(false);
-  if (!initialized.current && typeof window !== "undefined") {
-    initialized.current = true;
-    const w = Math.min(800, window.innerWidth - 40);
-    const h = Math.min(600, window.innerHeight - 80);
-    setPos({
-      x: Math.max(20, (window.innerWidth - w) / 2),
-      y: Math.max(40, (window.innerHeight - h) / 2),
-    });
-  }
-
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      dragStart.current = { x: e.clientX, y: e.clientY, ox: pos.x, oy: pos.y };
-      const handleMove = (ev: MouseEvent) => {
-        if (!dragStart.current) return;
-        setPos({
-          x: dragStart.current.ox + (ev.clientX - dragStart.current.x),
-          y: dragStart.current.oy + (ev.clientY - dragStart.current.y),
-        });
-      };
-      const handleUp = () => {
-        dragStart.current = null;
-        document.removeEventListener("mousemove", handleMove);
-        document.removeEventListener("mouseup", handleUp);
-      };
-      document.addEventListener("mousemove", handleMove);
-      document.addEventListener("mouseup", handleUp);
-    },
-    [pos],
-  );
-
-  const handleRefresh = useCallback(async () => {
+  const commandLocked = () => isCommandLocked?.() ?? locked;
+  const requestClose = () => { if (!commandLocked()) onCancel(); };
+  const selectTab = (tab: Tab) => { if (!commandLocked()) setActiveTab(tab); };
+  const handleRefresh = async () => {
+    if (commandLocked() || refreshing) return;
     setRefreshing(true);
     try {
       await onRefresh();
+      setRefreshError(null);
     } catch (error) {
       setRefreshError(error instanceof Error ? error.message : "Could not refresh the saved note. Try again.");
     } finally {
       setRefreshing(false);
     }
-  }, [onRefresh]);
+  };
 
   const tabClass = (tab: Tab) =>
     cn(
@@ -126,37 +111,23 @@ export function NoteConflictWindow({
   const riskLevel = analysis.remoteHasContentLocalDoesNot ? "high" : "low";
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-[200] bg-black/30 backdrop-blur-[2px]" />
-
-      {/* Window */}
-      <div
-        ref={containerRef}
-        className="fixed z-[201] flex flex-col bg-card/95 backdrop-blur-2xl border border-border rounded-xl shadow-2xl overflow-hidden"
-        style={{
-          left: pos.x,
-          top: pos.y,
-          width: Math.min(800, typeof window !== "undefined" ? window.innerWidth - 40 : 800),
-          maxHeight: "80dvh",
-        }}
+    <Dialog open onOpenChange={(open) => { if (!open) requestClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex flex-col gap-0 overflow-hidden p-0 sm:max-w-[800px]"
+        onEscapeKeyDown={(event) => { if (commandLocked()) event.preventDefault(); }}
+        onInteractOutside={(event) => { if (commandLocked()) event.preventDefault(); }}
       >
-        {/* Header — draggable */}
-        <div
-          className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/30 cursor-move select-none shrink-0"
-          onMouseDown={handleMouseDown}
-        >
-          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-          <span className="text-sm font-semibold flex-1 truncate">
-            Note Conflict — {noteTitle}
-          </span>
-          <button
-            onClick={onCancel}
-            className="w-6 h-6 flex items-center justify-center rounded hover:bg-accent cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5 text-muted-foreground hover:text-foreground"
-          >
-            <X />
-          </button>
-        </div>
+        <DialogHeader className="flex-row items-center gap-2 border-b px-4 py-2.5">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+          <DialogTitle className="min-w-0 flex-1 truncate text-sm">Note Conflict — {noteTitle}</DialogTitle>
+          <DialogClose asChild>
+            <button type="button" aria-label="Close conflict review" disabled={locked} aria-disabled={locked}
+              className="flex h-6 w-6 items-center justify-center rounded hover:bg-accent disabled:opacity-50">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </DialogClose>
+        </DialogHeader>
 
         {/* Summary bar */}
         <div
@@ -180,18 +151,23 @@ export function NoteConflictWindow({
         )}
         {decisionError && <div role="alert" className="px-4 py-2 text-xs border-b border-destructive/30 bg-destructive/10 text-destructive">{decisionError}</div>}
 
+        {sourceChoiceRequired && <div className="space-y-2 border-b px-4 py-3 text-sm">
+          <p>The saved note changed. Choose which retained text to compare with it. Your earlier review remains available.</p>
+          <button type="button" disabled={locked} className="rounded border px-3 py-2" onClick={() => { if (!commandLocked()) onChooseSource?.("proposal"); }}>Start latest review from Your Version</button>
+          <button type="button" disabled={locked || !canUseCompletedSource} className="ml-2 rounded border px-3 py-2 disabled:opacity-50" onClick={() => { if (!commandLocked()) onChooseSource?.("completed"); }}>Use completed reviewed result</button>
+        </div>}
         {/* Tab row */}
         <div className="flex items-center gap-1 px-4 py-2 border-b border-border/50 shrink-0">
-          <button className={tabClass("diff")} onClick={() => setActiveTab("diff")}>
+          <button className={tabClass("diff")} disabled={locked} onClick={() => selectTab("diff")}>
             <GitCompare className="w-3.5 h-3.5" /> Diff View
           </button>
-          <button className={tabClass("merge")} onClick={() => setActiveTab("merge")}>
+          <button className={tabClass("merge")} disabled={locked} onClick={() => selectTab("merge")}>
             <GitMerge className="w-3.5 h-3.5" /> Merge
           </button>
-          <button className={tabClass("local")} onClick={() => setActiveTab("local")}>
+          <button className={tabClass("local")} disabled={locked} onClick={() => selectTab("local")}>
             <FileText className="w-3.5 h-3.5" /> Your Version
           </button>
-          <button className={tabClass("remote")} onClick={() => setActiveTab("remote")}>
+          <button className={tabClass("remote")} disabled={locked} onClick={() => selectTab("remote")}>
             <Globe className="w-3.5 h-3.5" /> Remote Version
           </button>
         </div>
@@ -216,20 +192,34 @@ export function NoteConflictWindow({
           )}
 
           {activeTab === "merge" && (
-            <DiffReview
-              original={remoteContent}
-              modified={localContent}
-              originalLabel="Remote"
-              modifiedLabel="Yours"
-              applyLabel="Save merged"
-              onApply={(merged) => onKeepMine(merged)}
-            />
+            reviewSession && onReviewTransition ? (
+              <DiffReview
+                session={reviewSession}
+                onTransition={onReviewTransition}
+                originalLabel="Remote"
+                modifiedLabel="Yours"
+                applyLabel="Save merged"
+                disabled={stale || locked || sourceChoiceRequired}
+                onApply={(merged) => { if (!commandLocked()) onKeepMine(merged, "merge"); }}
+              />
+            ) : (
+              <DiffReview
+                original={remoteContent}
+                modified={localContent}
+                originalLabel="Remote"
+                modifiedLabel="Yours"
+                disabled={stale || locked || sourceChoiceRequired}
+                applyLabel="Save merged"
+                onApply={(merged) => { if (!commandLocked()) onKeepMine(merged, "merge"); }}
+              />
+            )
           )}
 
           {activeTab === "local" && (
             <textarea
               value={mergeDraft}
-              onChange={(e) => onMergeDraftChange(e.target.value)}
+              disabled={locked || sourceChoiceRequired}
+              onChange={(e) => { if (!commandLocked()) onMergeDraftChange(e.target.value); }}
               className="w-full h-full min-h-[300px] resize-none bg-transparent text-sm font-mono leading-relaxed outline-none"
               style={{ fontSize: "16px" }}
             />
@@ -266,24 +256,25 @@ export function NoteConflictWindow({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-muted/20 shrink-0">
+        <DialogFooter className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-border bg-muted/20 shrink-0">
           <button
-            onClick={() => onKeepMine(mergeDraft)}
-            disabled={stale}
+            onClick={() => { if (!commandLocked()) onKeepMine(mergeDraft); }}
+            disabled={stale || locked || sourceChoiceRequired}
             className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90"
           >
             Keep Mine
           </button>
           <button
-            onClick={onAcceptChanges}
-            disabled={stale}
+            onClick={() => { if (!commandLocked()) onAcceptChanges(); }}
+            disabled={stale || locked || sourceChoiceRequired}
             className="px-3 py-1.5 text-xs font-medium rounded-md border border-border text-foreground cursor-pointer hover:bg-accent"
           >
             Accept Changes
           </button>
           {refreshError && <p role="alert" className="text-xs text-destructive">{refreshError}</p>}
           <button
-            onClick={onCancel}
+            onClick={requestClose}
+            disabled={locked}
             className="px-3 py-1.5 text-xs font-medium rounded-md text-muted-foreground cursor-pointer hover:text-foreground"
           >
             Cancel
@@ -291,13 +282,13 @@ export function NoteConflictWindow({
 
           <button
             onClick={handleRefresh}
-            disabled={refreshing}
+            disabled={refreshing || locked}
             className="ml-auto px-3 py-1.5 text-xs rounded-md border border-border text-foreground cursor-pointer hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
             {refreshing ? "Refreshing…" : "Refresh"}
           </button>
-        </div>
-      </div>
-    </>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

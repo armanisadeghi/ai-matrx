@@ -5,7 +5,12 @@ import notesReducer, {
   dismissNoteConflict,
   recordNoteConflict,
   refreshNoteConflictComparison,
+  beginRetainedNoteConflictCommand,
+  settleRetainedNoteConflictCommand,
+  transitionRetainedNoteConflictReview,
+  setRetainedNoteConflictProposal,
   setNoteField,
+  setNoteEditorMode,
   upsertNoteFromServer,
 } from "./slice";
 import type { Note } from "../types";
@@ -40,6 +45,96 @@ function conflicted() {
 }
 
 describe("Notes CAS conflict decision contract", () => {
+  it("seeds legacy editor mode once and keeps physical metadata exact", () => {
+    const legacyMetadata = { source: "legacy", lastEditorMode: "split" };
+    let state = notesReducer(
+      undefined,
+      upsertNoteFromServer({
+        note: row({ metadata: legacyMetadata }),
+        fetchStatus: "full",
+      }),
+    );
+    expect(state.notes[ID]._editorMode).toBe("split");
+    expect(state.notes[ID].metadata).toEqual(legacyMetadata);
+    expect(state.notes[ID]._acknowledgedPhysicalSnapshot?.metadata).toEqual(legacyMetadata);
+
+    state = notesReducer(state, setNoteEditorMode({ id: ID, mode: "plain" }));
+    expect(state.notes[ID]._editorMode).toBe("plain");
+    expect(state.notes[ID].metadata).toEqual(legacyMetadata);
+    expect(state.notes[ID]._acknowledgedPhysicalSnapshot?.metadata).toEqual(legacyMetadata);
+
+    const serverMetadata = { source: "canonical" };
+    state = notesReducer(
+      state,
+      upsertNoteFromServer({
+        note: row({ metadata: serverMetadata, version: 5 }),
+        fetchStatus: "full",
+      }),
+    );
+    expect(state.notes[ID]._editorMode).toBe("plain");
+    expect(state.notes[ID].metadata).toEqual(serverMetadata);
+    expect(state.notes[ID]._acknowledgedPhysicalSnapshot?.metadata).toEqual(serverMetadata);
+  });
+
+  it("does not let a display fallback outrank a later persisted mode", () => {
+    let state = notesReducer(
+      undefined,
+      upsertNoteFromServer({
+        note: { id: ID, organization_id: ORG, version: 4, updated_at: "2026-09-12T00:00:00.000Z" },
+        fetchStatus: "list",
+      }),
+    );
+    expect(state.notes[ID]).toMatchObject({
+      _editorMode: null,
+      _editorModeSource: "uninitialized",
+    });
+
+    state = notesReducer(
+      state,
+      upsertNoteFromServer({
+        note: row({ metadata: { lastEditorMode: "markdown" } }),
+        fetchStatus: "full",
+      }),
+    );
+    expect(state.notes[ID]).toMatchObject({
+      _editorMode: "markdown-split",
+      _editorModeSource: "persisted",
+    });
+  });
+
+  it("keeps a local mode choice when the first full row arrives", () => {
+    let state = notesReducer(
+      undefined,
+      upsertNoteFromServer({
+        note: { id: ID, organization_id: ORG, version: 4, updated_at: "2026-09-12T00:00:00.000Z" },
+        fetchStatus: "list",
+      }),
+    );
+    state = notesReducer(state, setNoteEditorMode({ id: ID, mode: "plain" }));
+    state = notesReducer(
+      state,
+      upsertNoteFromServer({
+        note: row({ metadata: { lastEditorMode: "matrx-split" } }),
+        fetchStatus: "full",
+      }),
+    );
+    expect(state.notes[ID]).toMatchObject({
+      _editorMode: "plain",
+      _editorModeSource: "local",
+    });
+  });
+
+  it("records an absent legacy preference as a fully loaded null", () => {
+    const state = notesReducer(
+      undefined,
+      upsertNoteFromServer({ note: row({ metadata: { source: "canonical" } }), fetchStatus: "full" }),
+    );
+    expect(state.notes[ID]).toMatchObject({
+      _editorMode: null,
+      _editorModeSource: "persisted",
+    });
+  });
+
   it("creates a decision only from a full CAS row and keeps dirty input separate", () => {
     const state = conflicted();
     const record = state.notes[ID];
@@ -228,5 +323,83 @@ describe("Notes CAS conflict decision contract", () => {
     state = notesReducer(state, upsertNoteFromServer({ note: { id: ID, organization_id: ORG, version: 6, updated_at: "2026-09-12T00:02:00.000Z" }, fetchStatus: "list" })); const d = state.notes[ID]._conflictDecision!;
     state = notesReducer(state, applyNoteConflictResolution({ id: ID, decisionId: d.decisionId, reviewId: d.reviewId, requestId: "stale", choice: "mine", proposedContent: "mine", reviewedLiveContent: "mine" }));
     expect(state.conflictResolutionReceipts.stale?.status).toBe("refused"); expect(state.notes[ID]._conflictDecision).not.toBeNull();
+  });
+});
+
+describe("retained controlled conflict review", () => {
+  it("retains an actor-bound shared review session across dismissal and rejects actor replacement", () => {
+    let state = notesReducer(conflicted(), captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const key = state.currentConflictReviewKeys[ID];
+    expect(key).toBeDefined();
+    const review = state.retainedConflictReviews[key!];
+    expect(review).toMatchObject({ actorId: "user-1", noteId: ID, proposal: "mine", readOnly: false });
+    expect(review.session.original).toBe("theirs");
+    expect(review.session.modified).toBe("mine");
+
+    state = notesReducer(state, dismissNoteConflict({ id: ID }));
+    expect(state.retainedConflictReviews[key!].dismissed).toBe(true);
+    state = notesReducer(state, { type: "userAuth/setUserAuth", payload: { id: "another-actor" } });
+    expect(state.retainedConflictReviews).toEqual({});
+    expect(state.currentConflictReviewKeys).toEqual({});
+  });
+
+  it("reduces rapid independent hunk choices and retains a decided session when proposal typing starts", () => {
+    let state = notesReducer(conflicted(), captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const key = state.currentConflictReviewKeys[ID]!;
+    const session = state.retainedConflictReviews[key].session;
+    expect(session.hunkIds.length).toBeGreaterThan(0);
+    const first = { type: "set-hunk" as const, sessionId: session.sessionId, sourceIdentity: session.sourceIdentity, sessionRevision: session.revision, hunkIndex: 0, hunkId: session.hunkIds[0], decision: "applied" as const };
+    state = notesReducer(state, transitionRetainedNoteConflictReview({ reviewKey: key, actorId: "user-1", transition: first }));
+    const afterFirst = state.retainedConflictReviews[key].session;
+    expect(afterFirst.decisions[0]).toBe("applied");
+    state = notesReducer(state, setRetainedNoteConflictProposal({ reviewKey: key, actorId: "user-1", proposal: "edited proposal" }));
+    const nextKey = state.currentConflictReviewKeys[ID]!;
+    expect(nextKey).not.toBe(key);
+    expect(state.retainedConflictReviews[key]).toMatchObject({ readOnly: true });
+    expect(state.retainedConflictReviews[nextKey]).toMatchObject({ proposal: "edited proposal", readOnly: false });
+  });
+  it("locks transitions until only the matching command settles", () => {
+    let state = notesReducer(conflicted(), captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const key = state.currentConflictReviewKeys[ID]!;
+    state = notesReducer(state, beginRetainedNoteConflictCommand({ reviewKey: key, actorId: "user-1", requestId: "lock-a", sessionId: state.retainedConflictReviews[key].session.sessionId, revision: state.retainedConflictReviews[key].session.revision }));
+    expect(state.retainedConflictReviews[key].command).toMatchObject({ status: "pending", requestId: "lock-a" });
+    const session = state.retainedConflictReviews[key].session;
+    state = notesReducer(state, transitionRetainedNoteConflictReview({ reviewKey: key, actorId: "user-1", transition: { type: "set-hunk", sessionId: session.sessionId, sourceIdentity: session.sourceIdentity, sessionRevision: session.revision, hunkIndex: 0, hunkId: session.hunkIds[0], decision: "applied" } }));
+    expect(state.retainedConflictReviews[key].session.decisions[0]).toBe("pending");
+    state = notesReducer(state, settleRetainedNoteConflictCommand({ reviewKey: key, actorId: "user-1", requestId: "wrong" }));
+    expect(state.retainedConflictReviews[key].command.status).toBe("pending");
+    state = notesReducer(state, settleRetainedNoteConflictCommand({ reviewKey: key, actorId: "user-1", requestId: "lock-a" }));
+    expect(state.retainedConflictReviews[key].command.status).toBe("idle");
+  });
+
+});
+
+describe("reviewed rebase dirty reconciliation", () => {
+  it("recomputes supported physical dirt against the reviewed remote and preserves context", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
+    state = notesReducer(state, setNoteField({ id: ID, field: "content", value: "mine" }));
+    state = notesReducer(state, setNoteField({ id: ID, field: "label", value: "local title" }));
+    state = notesReducer(state, setNoteField({ id: ID, field: "project_id", value: "33333333-3333-4333-8333-333333333333" }));
+    state = notesReducer(state, recordNoteConflict({ id: ID, expectedVersion: 4, currentVersion: 5, currentRow: row({ content: "theirs", label: "Remote", version: 5 }), sentSnapshot: { content: "mine", label: "local title" }, actorId: "user-1", organizationId: ORG, decisionId: "reconcile-decision", reviewId: "reconcile-review" }));
+    state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const decision = state.notes[ID]._conflictDecision!;
+    state = notesReducer(state, applyNoteConflictResolution({ id: ID, decisionId: decision.decisionId, reviewId: decision.reviewId, requestId: "reconcile", choice: "mine", proposedContent: "theirs", reviewedLiveContent: "mine" }));
+    expect(state.notes[ID]._dirtyFields).toEqual(new Set(["label", "project_id"]));
+    expect(state.notes[ID]._dirty).toBe(true);
+  });
+});
+
+describe("reviewed context reconciliation", () => {
+  it("clears a context field that matches the reviewed remote while retaining a differing edge", () => {
+    let state = notesReducer(undefined, upsertNoteFromServer({ note: row(), fetchStatus: "full" }));
+    state = notesReducer(state, setNoteField({ id: ID, field: "content", value: "mine" }));
+    state = notesReducer(state, setNoteField({ id: ID, field: "project_id", value: null }));
+    state = notesReducer(state, setNoteField({ id: ID, field: "task_id", value: "33333333-3333-4333-8333-333333333333" }));
+    state = notesReducer(state, recordNoteConflict({ id: ID, expectedVersion: 4, currentVersion: 5, currentRow: row({ content: "theirs", version: 5, project_id: null, task_id: null }), sentSnapshot: { content: "mine", project_id: null, task_id: "33333333-3333-4333-8333-333333333333" }, actorId: "user-1", organizationId: ORG, decisionId: "context-decision", reviewId: "context-review" }));
+    state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const decision = state.notes[ID]._conflictDecision!;
+    state = notesReducer(state, applyNoteConflictResolution({ id: ID, decisionId: decision.decisionId, reviewId: decision.reviewId, requestId: "context-reconcile", choice: "mine", proposedContent: "theirs", reviewedLiveContent: "mine" }));
+    expect(state.notes[ID]._dirtyFields.has("project_id")).toBe(false);
+    expect(state.notes[ID]._dirtyFields.has("task_id")).toBe(true);
   });
 });

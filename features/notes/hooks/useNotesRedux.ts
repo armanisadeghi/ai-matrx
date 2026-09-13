@@ -64,6 +64,8 @@ export function useNotesRedux() {
   if (activeNoteRecord) {
     const {
       _fetchStatus: _a1,
+      _editorMode: _a0,
+      _editorModeSource: _a00,
       _dirty: _a2,
       _dirtyFields: _a3,
       _fieldHistory: _a4,

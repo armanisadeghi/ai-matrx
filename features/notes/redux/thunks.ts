@@ -1,3 +1,4 @@
+import { mayRunNoteConflictCommand } from "./conflictCommandLock";
 /**
  * Notes — Redux Thunks
  *
@@ -434,6 +435,7 @@ const conflictId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
  * returning. UI code must not infer success from dispatch(action).
  */
 export const resolveNoteConflict = (args: {
+  commandRequestId?: string;
   noteId: string;
   decisionId: string;
   reviewId: string;
@@ -441,6 +443,7 @@ export const resolveNoteConflict = (args: {
   proposedContent: string;
   getLiveBuffer: () => string | null;
 }) => async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>, getState: () => RootState): Promise<ConflictResolutionOutcome> => {
+  if (!mayRunNoteConflictCommand(getState().notes.retainedConflictReviews, args.noteId, args.commandRequestId)) return { status: "refused", reason: "Another review command is pending. Wait for it to finish." };
   const first = getState().notes.notes[args.noteId] as NoteRecord | undefined;
   const decision = first?._conflictDecision;
   if (!first || !decision || decision.decisionId !== args.decisionId || decision.reviewId !== args.reviewId) {
@@ -464,6 +467,7 @@ export const resolveNoteConflict = (args: {
     decisionId: args.decisionId,
     reviewId: args.reviewId,
     requestId,
+    commandRequestId: args.commandRequestId,
     choice: args.choice,
     proposedContent: args.proposedContent,
     reviewedLiveContent: liveBuffer,
@@ -477,7 +481,8 @@ export const resolveNoteConflict = (args: {
 };
 
 /** Refresh is bound to the stored decision principal, never current UI state. */
-export const refreshNoteConflictReview = (args: { noteId: string; decisionId: string; reviewId: string; getLiveBuffer: () => string | null }) => async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>, getState: () => RootState): Promise<ConflictResolutionOutcome> => {
+export const refreshNoteConflictReview = (args: { commandRequestId?: string; noteId: string; decisionId: string; reviewId: string; getLiveBuffer: () => string | null }) => async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>, getState: () => RootState): Promise<ConflictResolutionOutcome> => {
+  if (!mayRunNoteConflictCommand(getState().notes.retainedConflictReviews, args.noteId, args.commandRequestId)) return { status: "refused", reason: "Another review command is pending. Wait for it to finish." };
   const before = getState().notes.notes[args.noteId] as NoteRecord | undefined;
   const decision = before?._conflictDecision;
   if (!before || !decision || decision.decisionId !== args.decisionId || decision.reviewId !== args.reviewId) return { status: "refused", reason: "This comparison changed. Refresh the note again." };
@@ -492,7 +497,7 @@ export const refreshNoteConflictReview = (args: { noteId: string; decisionId: st
     const currentLive = args.getLiveBuffer();
     if (currentLive === null) return { status: "refused", reason: "The editor is no longer mounted. Reopen the note before refreshing." };
     const requestId = conflictId();
-    dispatch(refreshNoteConflictComparison({ id: args.noteId, decisionId: args.decisionId, reviewId: args.reviewId, currentRow: remote, nextReviewId: conflictId(), requestId, liveContent: currentLive }));
+    dispatch(refreshNoteConflictComparison({ id: args.noteId, decisionId: args.decisionId, reviewId: args.reviewId, currentRow: remote, nextReviewId: conflictId(), requestId, commandRequestId: args.commandRequestId, liveContent: currentLive }));
     const receipt = getState().notes.conflictResolutionReceipts[requestId];
     dispatch(clearNoteConflictResolutionReceipt(requestId));
     if (!receipt || receipt.status === "refused") return { status: "refused", reason: receipt?.reason ?? "The refresh could not be applied. Refresh again." };

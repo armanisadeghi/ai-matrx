@@ -372,9 +372,9 @@ export function NotesView({
 
   const setMode = useCallback(
     (mode: string) => {
-      if (activeTabId) dispatch(setNoteEditorMode({ id: activeTabId, mode }));
+      if (activeTabId) dispatch(setNoteEditorMode({ id: activeTabId, mode: normalizeNoteEditorMode(mode, preferredDefaultMode) }));
     },
-    [dispatch, activeTabId],
+    [dispatch, activeTabId, preferredDefaultMode],
   );
 
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
