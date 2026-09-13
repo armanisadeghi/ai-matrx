@@ -363,6 +363,14 @@ export type InstanceRef = z.infer<typeof InstanceRefSchema>;
  *  - `payload` → `null`
  *  - `fromInstance` → `{component: "unknown", instanceId: "unknown"}`
  *  - `toInstance` → undefined (treated as broadcast to any instance)
+ *
+ * `toInstance` is `nullish`, never merely `optional`: the Python twin
+ * (`aidream/services/cross_component/envelope.py`) declares it
+ * `PartialInstanceRef | None = None` and `model_dump(mode="json")` puts an
+ * explicit `"toInstance": null` on the wire for every server broadcast.
+ * `.optional()` alone rejected that null and dropped EVERY platform directive
+ * as `not_an_envelope` (found live 2026-09-12; pinned by
+ * `lib/client-directives/directiveEnvelope.test.ts`).
  */
 export const CrossComponentEnvelopeSchema = z.object({
   kind: z.enum(["rpc", "wake", "presence", "directive"]).default("rpc"),
@@ -372,7 +380,7 @@ export const CrossComponentEnvelopeSchema = z.object({
   payload: z.unknown().optional().default(null),
   timestamp: z.number(),
   fromInstance: InstanceRefSchema.default({ component: "unknown", instanceId: "unknown" }),
-  toInstance: InstanceRefSchema.partial({ instanceId: true }).optional(),
+  toInstance: InstanceRefSchema.partial({ instanceId: true }).nullish(),
 });
 
 export type CrossComponentEnvelope = z.infer<typeof CrossComponentEnvelopeSchema>;
