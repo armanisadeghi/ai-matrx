@@ -9,6 +9,7 @@
 
 import {
   indexRunMcpAttachments,
+  mcpChipPresentation,
   readRunMcpAttachments,
 } from "./run-attachments";
 
@@ -118,5 +119,60 @@ describe("readRunMcpAttachments", () => {
     );
     expect(index.github.toolCount).toBe(47);
     expect(index.missing).toBeUndefined();
+  });
+});
+
+describe("mcpChipPresentation — the checkmark means one thing", () => {
+  const healthy = {
+    slug: "github",
+    state: "connected" as const,
+    reason: null,
+    toolCount: 47,
+  };
+
+  it("shows the check only when attached AND connected", () => {
+    expect(mcpChipPresentation("connected", null, true, healthy).kind).toBe(
+      "check",
+    );
+    expect(mcpChipPresentation("connected", null, false, undefined).kind).toBe(
+      "add",
+    );
+  });
+
+  it("never shows a check for a server that needs re-auth", () => {
+    const chip = mcpChipPresentation(
+      "needs_reauth",
+      "Your screenshotone connection is refresh failed — reconnect it.",
+      true,
+      undefined,
+    );
+    expect(chip.kind).toBe("broken");
+    expect(chip.status).toBe("needs re-auth");
+    expect(chip.reason).toContain("reconnect");
+  });
+
+  it("never shows a check for a server that is not connected", () => {
+    expect(
+      mcpChipPresentation("not_connected", "You have not connected github.", true, undefined)
+        .kind,
+    ).toBe("broken");
+  });
+
+  it("turns an attached-and-connected chip red when THIS run failed", () => {
+    const chip = mcpChipPresentation("connected", null, true, {
+      slug: "github",
+      state: "not_connected",
+      reason: "Connect GitHub in AI Matrx first.",
+      toolCount: 0,
+    });
+    expect(chip.kind).toBe("broken");
+    expect(chip.status).toBe("failed this run");
+    expect(chip.reason).toBe("Connect GitHub in AI Matrx first.");
+  });
+
+  it("carries the tool count the run actually delivered", () => {
+    expect(mcpChipPresentation("connected", null, true, healthy).toolCount).toBe(
+      47,
+    );
   });
 });

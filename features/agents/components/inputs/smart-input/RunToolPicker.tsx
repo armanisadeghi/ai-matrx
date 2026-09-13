@@ -73,6 +73,7 @@ import type { McpServerState } from "@/features/agents/hooks/useMcpTools";
 import { MCP_STATE_LABEL } from "@/features/connectors/connection-state";
 import {
   indexRunMcpAttachments,
+  mcpChipPresentation,
   readRunMcpAttachments,
   type RunMcpAttachment,
 } from "@/features/connectors/run-attachments";
@@ -620,24 +621,22 @@ function McpServerChip({
   onToggle: () => void;
   onReconnect: () => void;
 }) {
-  const state = server.truth.state;
-  const failedThisRun =
-    attached && runAttachment !== undefined && runAttachment.state !== "connected";
-  const reason = failedThisRun
-    ? (runAttachment?.reason ?? server.truth.reason)
-    : server.truth.reason;
-  const toolCount =
-    runAttachment?.state === "connected" ? runAttachment.toolCount : null;
+  const chip = mcpChipPresentation(
+    server.truth.state,
+    server.truth.reason,
+    attached,
+    runAttachment,
+  );
 
-  if (state === "connected" && !failedThisRun) {
+  if (chip.kind !== "broken") {
     return (
       <button
         type="button"
         onClick={onToggle}
         aria-pressed={attached}
         title={
-          attached && toolCount !== null
-            ? `${server.entry.name} gave this chat ${toolCount} tool${toolCount === 1 ? "" : "s"}`
+          chip.toolCount !== null
+            ? `${server.entry.name} gave this chat ${chip.toolCount} tool${chip.toolCount === 1 ? "" : "s"}`
             : `${server.entry.name} — connected`
         }
         className={cn(
@@ -647,25 +646,29 @@ function McpServerChip({
             : "border-border text-foreground hover:bg-accent",
         )}
       >
-        {attached ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+        {chip.kind === "check" ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <Plus className="h-3 w-3" />
+        )}
         {server.entry.name}
-        {attached && toolCount !== null && (
-          <span className="text-[10px] opacity-70">{toolCount}</span>
+        {chip.toolCount !== null && (
+          <span className="text-[10px] opacity-70">{chip.toolCount}</span>
         )}
       </button>
     );
   }
 
-  const broken = failedThisRun || state === "not_connected";
+  const severe = chip.status !== "needs re-auth";
   return (
     <button
       type="button"
       onClick={onReconnect}
       disabled={connecting}
-      title={reason ?? undefined}
+      title={chip.reason ?? undefined}
       className={cn(
         "flex h-7 max-w-full items-center gap-1 rounded-md border px-2 text-[11px] transition-colors disabled:opacity-60",
-        broken
+        severe
           ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
           : "border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300",
       )}
@@ -676,11 +679,7 @@ function McpServerChip({
         <AlertTriangle className="h-3 w-3 shrink-0" />
       )}
       <span className="truncate">{server.entry.name}</span>
-      <span className="shrink-0 opacity-80">
-        {failedThisRun && state === "connected"
-          ? "failed this run"
-          : MCP_STATE_LABEL[state]}
-      </span>
+      <span className="shrink-0 opacity-80">{chip.status}</span>
       <span className="shrink-0 underline underline-offset-2">
         {connecting ? "Connecting…" : "Reconnect"}
       </span>

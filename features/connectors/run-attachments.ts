@@ -114,3 +114,69 @@ export function indexRunMcpAttachments(
   for (const attachment of attachments) index[attachment.slug] = attachment;
   return index;
 }
+
+// ---------------------------------------------------------------------------
+// What one chip shows
+// ---------------------------------------------------------------------------
+
+/**
+ * The chip's whole decision, in one pure place.
+ *
+ * `check` is the ONLY presentation that reads as "this chat has it", and it
+ * requires BOTH halves: attached to this chat AND actually connected, with
+ * nothing in this run saying otherwise. Everything else is `add` (offer) or
+ * `broken` (say what is wrong and how to fix it) — never a dead checkmark
+ * and never a disabled-looking control (Arman, 2026-09-13).
+ */
+export type McpChipKind = "check" | "add" | "broken";
+
+export interface McpChipPresentation {
+  kind: McpChipKind;
+  /** Short status word shown on a broken chip. */
+  status: string | null;
+  /** The sentence explaining a broken chip, from the server where possible. */
+  reason: string | null;
+  /** Tools this server gave the run, when it gave any. */
+  toolCount: number | null;
+}
+
+export function mcpChipPresentation(
+  state: McpConnectionState,
+  reason: string | null,
+  attached: boolean,
+  runAttachment: RunMcpAttachment | undefined,
+): McpChipPresentation {
+  const failedThisRun =
+    attached &&
+    runAttachment !== undefined &&
+    runAttachment.state !== "connected";
+
+  if (failedThisRun) {
+    return {
+      kind: "broken",
+      status:
+        runAttachment.state === "needs_reauth"
+          ? "needs re-auth"
+          : "failed this run",
+      reason: runAttachment.reason ?? reason,
+      toolCount: null,
+    };
+  }
+  if (state === "connected") {
+    return {
+      kind: attached ? "check" : "add",
+      status: null,
+      reason: null,
+      toolCount:
+        attached && runAttachment?.state === "connected"
+          ? runAttachment.toolCount
+          : null,
+    };
+  }
+  return {
+    kind: "broken",
+    status: state === "needs_reauth" ? "needs re-auth" : "not connected",
+    reason,
+    toolCount: null,
+  };
+}
