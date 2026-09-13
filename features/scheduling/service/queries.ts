@@ -25,6 +25,10 @@ import type {
   SchTaskRow,
   SchTriggerRow,
 } from "../types";
+import {
+  createScheduleRosterLoadTimeout,
+  SCHEDULE_ROSTER_LOAD_TIMEOUT_MESSAGE,
+} from "./schedule-roster-timeout";
 
 // ── The reusable select string (per spec §8) ───────────────────────────────
 
@@ -241,20 +245,32 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
   // aidream /scheduler/tasks router and the partial index
   // sch_task_user_id_active_idx.
   // VIEW LAW: container-scoped via RLS (sch_task rows are user-scoped by policy)
-  const rows = await readAllRows<JoinedAgentTaskRow>(
-    ({ from, to }) =>
-      schedulerDb(supabase)
-        .schema("scheduler")
-        .from("sch_task")
-        .select(SELECT_AGENT_TASK, { count: "exact" })
-        .eq("kind", "agent")
-        .is("deleted_at", null)
-        .order("updated_at", { ascending: false })
-        .order("id", { ascending: true })
-        .range(from, to)
-        .returns<JoinedAgentTaskRow[]>(),
-    { label: "scheduler.sch_task user schedule roster" },
-  );
+  const { controller, dispose } = createScheduleRosterLoadTimeout();
+  let rows: JoinedAgentTaskRow[];
+  try {
+    rows = await readAllRows<JoinedAgentTaskRow>(
+      ({ from, to }) =>
+        schedulerDb(supabase)
+          .schema("scheduler")
+          .from("sch_task")
+          .select(SELECT_AGENT_TASK, { count: "exact" })
+          .eq("kind", "agent")
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to)
+          .abortSignal(controller.signal)
+          .returns<JoinedAgentTaskRow[]>(),
+      { label: "scheduler.sch_task user schedule roster" },
+    );
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_ROSTER_LOAD_TIMEOUT_MESSAGE, { cause: error });
+    }
+    throw error;
+  } finally {
+    dispose();
+  }
 
   return rows.map(rowToAgendaTask);
 }

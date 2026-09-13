@@ -61,6 +61,9 @@ Execution happens on:
     calls `.from('sch_*')`. The full user schedule roster pages through
     `readAllRows` under a stable `updated_at, id` order; it never trusts
     PostgREST's 1,000-row cap as a complete list.
+    The roster request has a 20-second terminal boundary: a stalled Data API
+    read is aborted and becomes the list's visible, retryable error state
+    instead of leaving the page in an endless skeleton.
   - `lib/services/scheduling-admin-service.ts` — admin cross-user
     reads/writes using `is_super_admin()` RLS escape hatch. Stays on
     Supabase: `/scheduler/*` is RLS-scoped to the caller, so admins
@@ -216,6 +219,12 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-09-13** — The user schedule roster now aborts a stalled complete-list
+  read after 20 seconds and enters the existing visible Retry state. The
+  boundary preserves exact-count paging and stable ordering while preventing a
+  cold or unhealthy Data API request from leaving `/schedules` in an unbounded
+  loading skeleton.
 
 - `2026-09-12` — **Scheduling copy actions use one borderless dropdown trigger.** The
   route header, schedule rows, detail cards, and run history compose `CopyButtons`

@@ -77,7 +77,7 @@ describe("scheduling canonical write path", () => {
       'import { readAllRows } from "@ai-matrx/data/db"',
     );
     expect(queries).toMatch(
-      /function listAgentTasks[\s\S]*?readAllRows<JoinedAgentTaskRow>[\s\S]*?select\(SELECT_AGENT_TASK, \{ count: "exact" \}\)[\s\S]*?order\("updated_at", \{ ascending: false \}\)[\s\S]*?order\("id", \{ ascending: true \}\)[\s\S]*?range\(from, to\)/,
+      /function listAgentTasks[\s\S]*?createScheduleRosterLoadTimeout\(\)[\s\S]*?readAllRows<JoinedAgentTaskRow>[\s\S]*?select\(SELECT_AGENT_TASK, \{ count: "exact" \}\)[\s\S]*?order\("updated_at", \{ ascending: false \}\)[\s\S]*?order\("id", \{ ascending: true \}\)[\s\S]*?range\(from, to\)[\s\S]*?abortSignal\(controller\.signal\)/,
     );
   });
 });
