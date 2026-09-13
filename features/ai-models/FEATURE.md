@@ -67,6 +67,7 @@ must obey.
   ping-pong loop in `AiModelDetailPanel`.
 - **The registry table has one scrollport.** Its `<table>` keeps `table overflow-visible`; the
   `overflow-auto` wrapper owns scrolling so sticky Display Name and Actions cells actually freeze.
+- **Endpoints and APIs use the package table controls.** Stable identities `ai/endpoints` and `ai/apis` scope saved layouts; title, search, sort/filter menus, refresh, Add, column management, export, and bottom spacing are shared. Vendor/translator values are plain text. The tabs, record detail editor, system-record restrictions, and create/delete handlers are feature-owned. Complete source reads feed local pagination; these lists are not server-append demonstrations. Rollout/browser acceptance lives in `common-docs/projects/npm-package-extraction/TABLE-ROLLOUT-REGISTER.md`.
 - `/api/ai-models` is CDN-cached: registry changes need `POST /api/ai-models/revalidate` to reach SSR.
 
 > **Keep-docs-live rule (CLAUDE.md):** a change to this directory's file map or to any rule above

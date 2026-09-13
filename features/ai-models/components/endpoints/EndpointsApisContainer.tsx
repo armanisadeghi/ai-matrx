@@ -6,7 +6,7 @@
 // entity, each with a table and an edit panel. ADMIN-ONLY: vendors and wire
 // formats must never leak to user-facing surfaces.
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -15,6 +15,7 @@ import {
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -35,7 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
-import { AlertTriangle, Lock, Plug, Plus, Save, Trash2, X } from "lucide-react";
+import { AlertTriangle, Lock, Plug, Save, Trash2, X } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -425,19 +426,24 @@ function RowActions<T extends EndpointApiRow>({
   const [pendingDelete, setPendingDelete] = useState(false);
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 sm:h-7 sm:w-7"
-        title={row.is_system ? "System rows cannot be deleted" : "Delete"}
-        disabled={row.is_system}
-        onClick={(event) => {
-          event.stopPropagation();
-          setPendingDelete(true);
-        }}
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={row.is_system ? 0 : undefined} className="inline-flex">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7"
+              aria-label={row.is_system ? "System rows cannot be deleted" : `Delete ${deleteNoun}`}
+              disabled={row.is_system}
+              onClick={(event) => { event.stopPropagation(); setPendingDelete(true); }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{row.is_system ? "System rows cannot be deleted" : `Delete ${deleteNoun}`}</TooltipContent>
+      </Tooltip>
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -496,21 +502,24 @@ function EndpointApiTable<T extends EndpointApiRow>({
   mobileDetails: (row: T) => React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {actionError && (
-        <div className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+    <div className="flex flex-col h-full min-h-0 px-3 pt-2">
+      {(actionError || (loadError && rows.length > 0)) && (
+        <div role="alert" className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{actionError}</span>
+          <span>{actionError || loadError}</span>
+          {loadError ? <Button type="button" variant="outline" size="sm" onClick={onRetry}>Retry refresh</Button> : null}
         </div>
       )}
       <MatrxDataTable<T>
         data={rows}
         columns={columns}
         getRowId={(row) => row.id}
-        isLoading={loading}
+        isLoading={loading && rows.length === 0}
+        isFetching={loading && rows.length > 0}
         pageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
         defaultSort={null}
+        reorderableColumns
         onRowOpen={onSelect}
         detail={{ enabled: false }}
         rowClassName={(row) =>
@@ -535,26 +544,11 @@ function EndpointApiTable<T extends EndpointApiRow>({
                 icon: <Plug className="h-8 w-8" />,
               }
         }
+        tableId={deleteNoun === "endpoint" ? "ai/endpoints" : "ai/apis"}
         toolbar={{
-          search: false,
-          leading: (
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold">{title}</h2>
-              <Badge variant="outline" className="text-xs">
-                {rows.length}
-              </Badge>
-            </div>
-          ),
-          actions: (
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 px-2 text-xs"
-              onClick={onCreate}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New
-            </Button>
-          ),
+          title,
+          refresh: { onRefresh: onRetry },
+          add: { onAdd: onCreate },
         }}
         rowActions={(row) => (
           <RowActions row={row} onDelete={onDelete} deleteNoun={deleteNoun} />
@@ -619,14 +613,21 @@ function DetailPanel({
             </Badge>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0 shrink-0"
-          onClick={onClose}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 shrink-0"
+              aria-label="Close details"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Close details</TooltipContent>
+        </Tooltip>
       </div>
       <div className="flex-1 overflow-auto p-3 min-h-0">{children}</div>
       <div className="border-t bg-card shrink-0">
@@ -686,27 +687,45 @@ export default function EndpointsApisContainer() {
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const loadGeneration = useRef(0);
 
   const loadData = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
+    const generation = ++loadGeneration.current;
     try {
       const [fetchedEndpoints, fetchedApis] = await Promise.all([
         aiModelService.fetchEndpoints(),
         aiModelService.fetchApis(),
       ]);
+      if (generation !== loadGeneration.current) return;
       setEndpoints(fetchedEndpoints);
       setApis(fetchedApis);
+      setLoadError(null);
     } catch (err) {
-      setLoadError(extractErrorMessage(err));
+      if (generation === loadGeneration.current) setLoadError(extractErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) setLoading(false);
     }
   }, []);
 
+  const refreshData = () => {
+    setLoading(true);
+    setLoadError(null);
+    return loadData();
+  };
+
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const generation = ++loadGeneration.current;
+    void Promise.all([aiModelService.fetchEndpoints(), aiModelService.fetchApis()])
+      .then(([fetchedEndpoints, fetchedApis]) => {
+        if (generation !== loadGeneration.current) return;
+        setEndpoints(fetchedEndpoints);
+        setApis(fetchedApis);
+        setLoadError(null);
+      })
+      .catch((err: unknown) => { if (generation === loadGeneration.current) setLoadError(extractErrorMessage(err)); })
+      .finally(() => { if (generation === loadGeneration.current) setLoading(false); });
+    return () => { loadGeneration.current += 1; };
+  }, []);
 
   // ── Endpoint save/delete ──
 
@@ -838,26 +857,18 @@ export default function EndpointsApisContainer() {
     {
       accessorKey: "display_name",
       header: "Display Name",
-      sortable: false,
-      filter: false,
       cell: (e) => <span className="font-medium">{e.display_name}</span>,
     },
     {
       accessorKey: "vendor",
       header: "Vendor",
-      sortable: false,
-      filter: false,
       cell: (e) => (
-        <Badge variant="outline" className="text-xs font-mono">
-          {e.vendor}
-        </Badge>
+        <span className="text-xs font-mono">{e.vendor}</span>
       ),
     },
     {
       accessorKey: "internal_name",
       header: "Internal Name",
-      sortable: false,
-      filter: false,
       cell: (e) => (
         <span className="font-mono text-muted-foreground">
           {e.internal_name}
@@ -867,13 +878,14 @@ export default function EndpointsApisContainer() {
     {
       accessorKey: "base_url",
       header: "Base URL",
-      sortable: false,
-      filter: false,
       cell: (e) =>
         e.base_url ? (
-          <span className="font-mono text-muted-foreground truncate block max-w-[220px]">
-            {e.base_url}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className="font-mono text-muted-foreground truncate block max-w-[220px]">{e.base_url}</span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-sm break-all">{e.base_url}</TooltipContent>
+          </Tooltip>
         ) : (
           <span className="text-muted-foreground">—</span>
         ),
@@ -881,15 +893,11 @@ export default function EndpointsApisContainer() {
     {
       accessorKey: "priority",
       header: "Priority",
-      sortable: false,
-      filter: false,
       cell: (e) => <span className="tabular-nums">{e.priority}</span>,
     },
     {
       accessorKey: "is_active",
       header: "Active",
-      sortable: false,
-      filter: false,
       cell: (e) =>
         e.is_active ? (
           <Badge
@@ -913,15 +921,11 @@ export default function EndpointsApisContainer() {
     {
       accessorKey: "display_name",
       header: "Display Name",
-      sortable: false,
-      filter: false,
       cell: (a) => <span className="font-medium">{a.display_name}</span>,
     },
     {
       accessorKey: "name",
       header: "Name",
-      sortable: false,
-      filter: false,
       cell: (a) => (
         <span className="font-mono text-muted-foreground">{a.name}</span>
       ),
@@ -929,19 +933,13 @@ export default function EndpointsApisContainer() {
     {
       accessorKey: "translator_key",
       header: "Translator Key",
-      sortable: false,
-      filter: false,
       cell: (a) => (
-        <Badge variant="outline" className="text-xs font-mono">
-          {a.translator_key}
-        </Badge>
+        <span className="text-xs font-mono">{a.translator_key}</span>
       ),
     },
     {
       accessorKey: "transport",
       header: "Transport",
-      sortable: false,
-      filter: false,
       cell: (a) => (
         <span className="font-mono text-muted-foreground">{a.transport}</span>
       ),
@@ -1015,7 +1013,7 @@ export default function EndpointsApisContainer() {
                 setSaveError(null);
               }}
               onDelete={deleteEndpoint}
-              onRetry={() => void loadData()}
+              onRetry={refreshData}
               deleteNoun="endpoint"
               mobileTitle={(row) => row.display_name}
               mobileDetails={(row) => (
@@ -1081,7 +1079,7 @@ export default function EndpointsApisContainer() {
                 setSaveError(null);
               }}
               onDelete={deleteApi}
-              onRetry={() => void loadData()}
+              onRetry={refreshData}
               deleteNoun="API"
               mobileTitle={(row) => row.display_name}
               mobileDetails={(row) => (
