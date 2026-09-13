@@ -64,13 +64,13 @@ begin
      'KEEP (b). Narrower than the ledger class: reading the admin email log requires being a platform admin or sitting in admin.admins. Confidential ledger data, no owner column to build an owner lane from, so this hand-written staff read is the whole read surface and must survive regeneration.'),
     ('admin','admin_markdown_samples','admin_markdown_samples_super_admin_all','*',true,null,'(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_super_admin() AS is_super_admin))','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_super_admin() AS is_super_admin))',
      'KEEP (b). Narrower than platform_admin_all beside it: it additionally admits is_super_admin(). The table is a staff-only sample store (class confidential, variant system) and this is the super-admin lane the system variant does not emit. Recorded rather than removed because removing it would take the super-admin door away without anyone deciding to.'),
-    ('billing','capability_limit','capability_limit_read','r',true,'{"authenticated","anon"}','true',null,
+    ('billing','capability_limit','capability_limit_read','r',true,'{"anon","authenticated"}','true',null,
      'KEEP (b). The published price-book read. billing.capability_limit is class public reference data and this signed-out + signed-in read is what the pricing page renders from; the write axis is already walled by the RESTRICTIVE platform_admin_insert/update/delete_only policies, so the door is read-only by construction.'),
-    ('billing','price','price_read','r',true,'{"authenticated","anon"}','true',null,
+    ('billing','price','price_read','r',true,'{"anon","authenticated"}','true',null,
      'KEEP (b). The published price-book read. billing.price is class public reference data and this signed-out + signed-in read is what the pricing page renders from; the write axis is already walled by the RESTRICTIVE platform_admin_insert/update/delete_only policies, so the door is read-only by construction.'),
-    ('billing','product','product_read','r',true,'{"authenticated","anon"}','true',null,
+    ('billing','product','product_read','r',true,'{"anon","authenticated"}','true',null,
      'KEEP (b). The published price-book read. billing.product is class public reference data and this signed-out + signed-in read is what the pricing page renders from; the write axis is already walled by the RESTRICTIVE platform_admin_insert/update/delete_only policies, so the door is read-only by construction.'),
-    ('communication','emails','form_insert','a',true,'{"authenticated","anon"}',null,'true',
+    ('communication','emails','form_insert','a',true,'{"anon","authenticated"}',null,'true',
      'KEEP (d), AND FLAGGED. communication.emails is registered in no class, and this is a deliberate signed-out door of the same family as the anon invitation and share-link lanes: the public contact form posts here with WITH CHECK (true) and no read lane beside it. It is recorded, not removed, because removing it silently breaks the live contact form. The unbounded anonymous INSERT is a real abuse surface and is named as a finding in the B-66 report rather than closed on this lane''s own authority.'),
     ('context','context_access_log','context_access_log_insert','a',true,null,null,'(( SELECT is_platform_admin() AS is_platform_admin) OR (( SELECT auth.uid() AS uid) IS NOT NULL))',
      'KEEP (b). The ledger''s own write lane: any signed-in principal may append their own access record, which is what an access log is for, and the class regime emits no insert lane for a confidential ledger. Without this policy the context access log stops being written at all.'),
@@ -164,19 +164,19 @@ begin
      'KEEP (b). Narrower than the system class: only someone holding EDITOR access on the parent tool may change a binding (iam.has_access(''tool'', tool_id, ''editor'')). The system variant emits no client write lane at all, so this parent-access wall is the entire write door and is deliberately tighter than a bare member lane.'),
     ('tool','executor','ref_admin','*',true,'{"authenticated"}','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))',
      'KEEP (b), AND NAMED. The staff write lane for tool.executor: is_platform_admin() OR is_admin(), where is_admin() means a row in admin.admins. It is marginally wider than platform_admin_all beside it — the admin.admins roster rather than the platform-admin view — over class-public reference data. Recorded rather than removed because removing it would take the tool-catalogue editing door away from the staff who use it; the two-roster question is named as a finding in the B-66 report.'),
-    ('tool','executor','ref_select','r',true,'{"authenticated","anon"}','true',null,
+    ('tool','executor','ref_select','r',true,'{"anon","authenticated"}','true',null,
      'KEEP (b). tool.executor is class public reference data and this is its catalogue read, signed-in and signed-out. Equivalent to the pub_read lane the class regime emits for public reference tables, kept because the table is not generated yet.'),
     ('tool','mcp_config','ref_admin','*',true,'{"authenticated"}','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))',
      'KEEP (b), AND NAMED. The staff write lane for tool.mcp_config: is_platform_admin() OR is_admin(), where is_admin() means a row in admin.admins. It is marginally wider than platform_admin_all beside it — the admin.admins roster rather than the platform-admin view — over class-public reference data. Recorded rather than removed because removing it would take the tool-catalogue editing door away from the staff who use it; the two-roster question is named as a finding in the B-66 report.'),
-    ('tool','mcp_config','ref_select','r',true,'{"authenticated","anon"}','true',null,
+    ('tool','mcp_config','ref_select','r',true,'{"anon","authenticated"}','true',null,
      'KEEP (b). tool.mcp_config is class public reference data and this is its catalogue read, signed-in and signed-out. Equivalent to the pub_read lane the class regime emits for public reference tables, kept because the table is not generated yet.'),
     ('tool','mcp_server','ref_admin','*',true,'{"authenticated"}','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))',
      'KEEP (b), AND NAMED. The staff write lane for tool.mcp_server: is_platform_admin() OR is_admin(), where is_admin() means a row in admin.admins. It is marginally wider than platform_admin_all beside it — the admin.admins roster rather than the platform-admin view — over class-public reference data. Recorded rather than removed because removing it would take the tool-catalogue editing door away from the staff who use it; the two-roster question is named as a finding in the B-66 report.'),
-    ('tool','mcp_server','ref_select','r',true,'{"authenticated","anon"}','true',null,
+    ('tool','mcp_server','ref_select','r',true,'{"anon","authenticated"}','true',null,
      'KEEP (b). tool.mcp_server is class public reference data and this is its catalogue read, signed-in and signed-out. Equivalent to the pub_read lane the class regime emits for public reference tables, kept because the table is not generated yet.'),
     ('tool','surface_defaults','ref_admin','*',true,'{"authenticated"}','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))','(( SELECT is_platform_admin() AS is_platform_admin) OR ( SELECT is_admin() AS is_admin))',
      'KEEP (b), AND NAMED. The staff write lane for tool.surface_defaults: is_platform_admin() OR is_admin(), where is_admin() means a row in admin.admins. It is marginally wider than platform_admin_all beside it — the admin.admins roster rather than the platform-admin view — over class-public reference data. Recorded rather than removed because removing it would take the tool-catalogue editing door away from the staff who use it; the two-roster question is named as a finding in the B-66 report.'),
-    ('tool','surface_defaults','ref_select','r',true,'{"authenticated","anon"}','true',null,
+    ('tool','surface_defaults','ref_select','r',true,'{"anon","authenticated"}','true',null,
      'KEEP (b). tool.surface_defaults is class public reference data and this is its catalogue read, signed-in and signed-out. Equivalent to the pub_read lane the class regime emits for public reference tables, kept because the table is not generated yet.'),
     ('users','feedback_comments','Users can comment on own feedback','a',true,null,null,'(( SELECT is_platform_admin() AS is_platform_admin) OR ((author_type = ''user''::text) AND (feedback_id IN ( SELECT user_feedback.id
    FROM users.user_feedback
@@ -261,10 +261,10 @@ begin
       if v_cmd is null then
         raise exception 'DD-172: recorded command % for %.% policy % is not one of r/a/w/d/*.', r.cmd, r.sch, r.tbl, r.pol;
       end if;
-      if r.roles is null then
+      if r.roles::text[] is null then
         v_roles := 'public';
       else
-        select string_agg(quote_ident(x), ', ' order by x) into v_roles from unnest(r.roles) as x;
+        select string_agg(quote_ident(x), ', ' order by x) into v_roles from unnest(r.roles::text[]) as x;
       end if;
       v_sql := format('create policy %I on %I.%I as %s for %s to %s',
                       r.pol, r.sch, r.tbl,
@@ -279,12 +279,12 @@ begin
       v_live_roles := v_live.roles;
       if v_live.cmd is distinct from r.cmd
          or v_live.perm is distinct from r.perm
-         or v_live_roles is distinct from r.roles
+         or v_live_roles is distinct from r.roles::text[]
          or v_live.using_expr is distinct from r.using_expr
          or v_live.check_expr is distinct from r.check_expr then
         raise exception E'DD-172 DRIFT — the live policy % on %.% is NOT the policy this migration records.\nrecorded: cmd=% permissive=% roles=%\n          USING %\n          CHECK %\nlive:     cmd=% permissive=% roles=%\n          USING %\n          CHECK %\nSomething changed this door after it was recorded, off the migration path again. Update this file to the new bytes WITH a reason, or put the door back.',
           r.pol, r.sch, r.tbl,
-          r.cmd, r.perm, r.roles, coalesce(r.using_expr,'(none)'), coalesce(r.check_expr,'(none)'),
+          r.cmd, r.perm, r.roles::text[], coalesce(r.using_expr,'(none)'), coalesce(r.check_expr,'(none)'),
           v_live.cmd, v_live.perm, v_live_roles, coalesce(v_live.using_expr,'(none)'), coalesce(v_live.check_expr,'(none)');
       end if;
       v_verified := v_verified + 1;

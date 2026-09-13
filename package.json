@@ -304,6 +304,8 @@
     "check:db-guards": "tsx scripts/check-db-guards.ts",
     "check:db-guards:strict": "tsx scripts/check-db-guards.ts --strict",
     "check:rls-on": "tsx scripts/check-rls-on.ts",
+    "check:policy-of-record": "tsx scripts/check-policy-of-record.ts",
+    "check:policy-of-record:self-test": "tsx scripts/check-policy-of-record.ts --self-test",
     "check:rls-on:strict": "tsx scripts/check-rls-on.ts --strict",
     "check:rls-on:self-test": "tsx scripts/check-rls-on.ts --self-test",
     "check:rls-self-reference": "tsx scripts/check-rls-self-reference.ts",
