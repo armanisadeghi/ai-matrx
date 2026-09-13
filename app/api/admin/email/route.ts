@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { sendEmail, isValidFromAddress, getDefaultFromAddress, getAllowedEmailDomains } from "@/lib/email/client";
 
 /**
@@ -173,6 +174,7 @@ export async function POST(request: Request) {
 
     // Log the email send operation
     await adminSupabase.schema("admin").from("admin_email_logs").insert({
+      organization_id: await resolveSystemOrgId(adminSupabase),
       sent_by: authUser.id,
       recipient_count: recipients.length,
       subject,

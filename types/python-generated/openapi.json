@@ -77807,7 +77807,7 @@
           "cloud-browser"
         ],
         "summary": "Take Over",
-        "description": "A person takes the wheel. Available whenever the run is live — the manager\nraises the ``user_requested`` handoff itself when the agent has not paused for a\nperson (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,\nwhich could only be called inside an agent-initiated handoff window.",
+        "description": "A person takes the wheel. Available whenever the run is live — the manager\nraises the ``user_requested`` handoff itself when the agent has not paused for a\nperson (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,\nwhich could only be called inside an agent-initiated handoff window.\n\n``immediate`` (the panel's \"Take over immediately\") moves control without\nwaiting for the agent's in-flight browser step; omitted or false keeps the\nnon-disruptive default.",
         "operationId": "take_over_browser_manager_runs__run_id__takeover_post",
         "parameters": [
           {
@@ -77820,6 +77820,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TakeoverRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -235542,6 +235559,19 @@
         },
         "type": "object",
         "title": "TagUpdate"
+      },
+      "TakeoverRequest": {
+        "properties": {
+          "immediate": {
+            "type": "boolean",
+            "title": "Immediate",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TakeoverRequest",
+        "description": "Optional body. ``immediate`` is the panel's \"Take over immediately\":\ncontrol moves without waiting for the agent's in-flight browser step."
       },
       "TakeoverResponse": {
         "properties": {

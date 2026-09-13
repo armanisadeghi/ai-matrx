@@ -24,6 +24,8 @@ export type Database = {
           before: Json | null
           created_at: string
           id: string
+          metadata: Json
+          organization_id: string
           target_user_id: string
         }
         Insert: {
@@ -33,6 +35,8 @@ export type Database = {
           before?: Json | null
           created_at?: string
           id?: string
+          metadata?: Json
+          organization_id: string
           target_user_id: string
         }
         Update: {
@@ -42,33 +46,41 @@ export type Database = {
           before?: Json | null
           created_at?: string
           id?: string
+          metadata?: Json
+          organization_id?: string
           target_user_id?: string
         }
         Relationships: []
       }
       admin_email_logs: {
         Row: {
-          created_at: string | null
+          created_at: string
           failed_count: number | null
           id: string
+          metadata: Json
+          organization_id: string
           recipient_count: number
           sent_by: string
           subject: string
           successful_count: number | null
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           failed_count?: number | null
           id?: string
+          metadata?: Json
+          organization_id: string
           recipient_count: number
           sent_by: string
           subject: string
           successful_count?: number | null
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           failed_count?: number | null
           id?: string
+          metadata?: Json
+          organization_id?: string
           recipient_count?: number
           sent_by?: string
           subject?: string
@@ -135,9 +147,11 @@ export type Database = {
       }
       dev_login_audit: {
         Row: {
+          created_at: string
           id: string
           jwt_jti: string
           metadata: Json
+          organization_id: string
           requested_at: string
           requester_ip: string | null
           requester_secret_hash: string
@@ -145,9 +159,11 @@ export type Database = {
           ttl_seconds: number
         }
         Insert: {
+          created_at?: string
           id: string
           jwt_jti: string
           metadata?: Json
+          organization_id: string
           requested_at?: string
           requester_ip?: string | null
           requester_secret_hash: string
@@ -155,9 +171,11 @@ export type Database = {
           ttl_seconds?: number
         }
         Update: {
+          created_at?: string
           id?: string
           jwt_jti?: string
           metadata?: Json
+          organization_id?: string
           requested_at?: string
           requester_ip?: string | null
           requester_secret_hash?: string
@@ -4690,48 +4708,99 @@ export type Database = {
       capability: {
         Row: {
           capability: string
+          created_at: string
+          created_by: string | null
           enforced: boolean
+          id: string
+          metadata: Json
           min_tier: Database["billing"]["Enums"]["tier"]
+          organization_id: string
           period: Database["billing"]["Enums"]["meter_period"] | null
           updated_at: string
+          updated_by: string | null
           usage_source: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           capability: string
+          created_at?: string
+          created_by?: string | null
           enforced?: boolean
+          id?: string
+          metadata?: Json
           min_tier?: Database["billing"]["Enums"]["tier"]
+          organization_id: string
           period?: Database["billing"]["Enums"]["meter_period"] | null
           updated_at?: string
+          updated_by?: string | null
           usage_source?: string
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           capability?: string
+          created_at?: string
+          created_by?: string | null
           enforced?: boolean
+          id?: string
+          metadata?: Json
           min_tier?: Database["billing"]["Enums"]["tier"]
+          organization_id?: string
           period?: Database["billing"]["Enums"]["meter_period"] | null
           updated_at?: string
+          updated_by?: string | null
           usage_source?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
       capability_limit: {
         Row: {
           capability: string
+          created_at: string
+          created_by: string | null
+          id: string
           limit_value: number | null
+          metadata: Json
+          organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
           tier: Database["billing"]["Enums"]["tier"]
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           capability: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
           limit_value?: number | null
+          metadata?: Json
+          organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
           tier: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           capability?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
           limit_value?: number | null
+          metadata?: Json
+          organization_id?: string
           period?: Database["billing"]["Enums"]["meter_period"]
           tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -4976,27 +5045,51 @@ export type Database = {
       plan_limit: {
         Row: {
           capability: string
+          created_at: string
+          created_by: string | null
+          id: string
           limit_value: number | null
+          metadata: Json
           note: string | null
+          organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
           plan_id: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           capability: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
           limit_value?: number | null
+          metadata?: Json
           note?: string | null
+          organization_id: string
           period: Database["billing"]["Enums"]["meter_period"]
           plan_id: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           capability?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
           limit_value?: number | null
+          metadata?: Json
           note?: string | null
+          organization_id?: string
           period?: Database["billing"]["Enums"]["meter_period"]
           plan_id?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -5012,41 +5105,59 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          created_by: string | null
           currency: string
           id: string
           interval: string | null
           interval_count: number
           metadata: Json
+          organization_id: string
           product_id: string
           stripe_price_id: string | null
           trial_period_days: number | null
           unit_amount: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           active?: boolean
           created_at?: string
+          created_by?: string | null
           currency?: string
           id?: string
           interval?: string | null
           interval_count?: number
           metadata?: Json
+          organization_id: string
           product_id: string
           stripe_price_id?: string | null
           trial_period_days?: number | null
           unit_amount?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           active?: boolean
           created_at?: string
+          created_by?: string | null
           currency?: string
           id?: string
           interval?: string | null
           interval_count?: number
           metadata?: Json
+          organization_id?: string
           product_id?: string
           stripe_price_id?: string | null
           trial_period_days?: number | null
           unit_amount?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -5062,35 +5173,50 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          created_by: string | null
           description: string | null
           id: string
           metadata: Json
           name: string
+          organization_id: string
           stripe_product_id: string | null
           tier: Database["billing"]["Enums"]["tier"]
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           active?: boolean
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           metadata?: Json
           name: string
+          organization_id: string
           stripe_product_id?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           active?: boolean
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           metadata?: Json
           name?: string
+          organization_id?: string
           stripe_product_id?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -18989,9 +19115,12 @@ export type Database = {
           app_source: string | null
           char_count_served: number | null
           context_item_id: string
+          created_at: string
           fetch_reason: string | null
           id: string
           latency_ms: number | null
+          metadata: Json
+          organization_id: string
           request_id: string | null
           user_id: string | null
           value_id: string | null
@@ -19004,9 +19133,12 @@ export type Database = {
           app_source?: string | null
           char_count_served?: number | null
           context_item_id: string
+          created_at?: string
           fetch_reason?: string | null
           id?: string
           latency_ms?: number | null
+          metadata?: Json
+          organization_id: string
           request_id?: string | null
           user_id?: string | null
           value_id?: string | null
@@ -19019,9 +19151,12 @@ export type Database = {
           app_source?: string | null
           char_count_served?: number | null
           context_item_id?: string
+          created_at?: string
           fetch_reason?: string | null
           id?: string
           latency_ms?: number | null
+          metadata?: Json
+          organization_id?: string
           request_id?: string | null
           user_id?: string | null
           value_id?: string | null
@@ -20930,11 +21065,14 @@ export type Database = {
           country_code: string
           country_name: string
           created_at: string
+          created_by: string | null
           distinguishes_subscriber_kind: boolean
           honor_within_hours: number
+          id: string
           is_active: boolean
           metadata: Json
           notes: string | null
+          organization_id: string
           ratified_at: string | null
           ratified_by: string
           ratified_note: string | null
@@ -20944,6 +21082,9 @@ export type Database = {
           requires_source_disclosure: boolean
           unsubscribe_validity_days: number
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           citation?: string | null
@@ -20953,11 +21094,14 @@ export type Database = {
           country_code: string
           country_name: string
           created_at?: string
+          created_by?: string | null
           distinguishes_subscriber_kind?: boolean
           honor_within_hours?: number
+          id?: string
           is_active?: boolean
           metadata?: Json
           notes?: string | null
+          organization_id: string
           ratified_at?: string | null
           ratified_by?: string
           ratified_note?: string | null
@@ -20967,6 +21111,9 @@ export type Database = {
           requires_source_disclosure?: boolean
           unsubscribe_validity_days?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           citation?: string | null
@@ -20976,11 +21123,14 @@ export type Database = {
           country_code?: string
           country_name?: string
           created_at?: string
+          created_by?: string | null
           distinguishes_subscriber_kind?: boolean
           honor_within_hours?: number
+          id?: string
           is_active?: boolean
           metadata?: Json
           notes?: string | null
+          organization_id?: string
           ratified_at?: string | null
           ratified_by?: string
           ratified_note?: string | null
@@ -20990,6 +21140,9 @@ export type Database = {
           requires_source_disclosure?: boolean
           unsubscribe_validity_days?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -23731,32 +23884,56 @@ export type Database = {
         Row: {
           certified_at: string
           certified_by: string
+          created_at: string
+          created_by: string | null
           human_verified_at: string | null
           human_verified_by: string | null
           id: string
+          metadata: Json
           note: string | null
+          organization_id: string
           resource_id: string
           resource_type: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           certified_at?: string
           certified_by: string
+          created_at?: string
+          created_by?: string | null
           human_verified_at?: string | null
           human_verified_by?: string | null
           id?: string
+          metadata?: Json
           note?: string | null
+          organization_id: string
           resource_id: string
           resource_type: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           certified_at?: string
           certified_by?: string
+          created_at?: string
+          created_by?: string | null
           human_verified_at?: string | null
           human_verified_by?: string | null
           id?: string
+          metadata?: Json
           note?: string | null
+          organization_id?: string
           resource_id?: string
           resource_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -29112,36 +29289,63 @@ export type Database = {
       stage_ref_kind: {
         Row: {
           completion_rules: Json
+          created_at: string
+          created_by: string | null
+          id: string
           id_column: string
           is_active: boolean
           kind: string
           label: string
+          metadata: Json
           notes: string | null
+          organization_id: string
           schema_name: string
           status_column: string | null
           table_name: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           completion_rules?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
           id_column?: string
           is_active?: boolean
           kind: string
           label: string
+          metadata?: Json
           notes?: string | null
+          organization_id: string
           schema_name: string
           status_column?: string | null
           table_name: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           completion_rules?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
           id_column?: string
           is_active?: boolean
           kind?: string
           label?: string
+          metadata?: Json
           notes?: string | null
+          organization_id?: string
           schema_name?: string
           status_column?: string | null
           table_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -51275,6 +51479,7 @@ export type Database = {
       industries: {
         Row: {
           created_at: string
+          created_by: string | null
           default_template_id: string | null
           description: string | null
           facet: string
@@ -51282,13 +51487,18 @@ export type Database = {
           is_active: boolean
           metadata: Json
           name: string
+          organization_id: string
           parent_id: string | null
           slug: string
           sort_order: number
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           default_template_id?: string | null
           description?: string | null
           facet?: string
@@ -51296,13 +51506,18 @@ export type Database = {
           is_active?: boolean
           metadata?: Json
           name: string
+          organization_id: string
           parent_id?: string | null
           slug: string
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           default_template_id?: string | null
           description?: string | null
           facet?: string
@@ -51310,12 +51525,23 @@ export type Database = {
           is_active?: boolean
           metadata?: Json
           name?: string
+          organization_id?: string
           parent_id?: string | null
           slug?: string
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
+          {
+            foreignKeyName: "iam_industries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "industries_parent_id_fkey"
             columns: ["parent_id"]
@@ -52592,6 +52818,7 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_trusted_backend: { Args: never; Returns: boolean }
       membership_row_visible: {
         Args: { p_membership_id: string }
         Returns: boolean
@@ -55467,25 +55694,46 @@ export type Database = {
           check_name: string
           created_at: string
           created_by: string | null
+          id: string
+          metadata: Json
+          organization_id: string
           reason: string
           schema_name: string
           table_name: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           check_name: string
           created_at?: string
           created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
           reason: string
           schema_name: string
           table_name: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           check_name?: string
           created_at?: string
           created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
           reason?: string
           schema_name?: string
           table_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -55629,6 +55877,8 @@ export type Database = {
           detail: string | null
           field_name: string
           id: string
+          metadata: Json
+          organization_id: string
           path: string
           replacement: string | null
           request_id: string | null
@@ -55640,6 +55890,8 @@ export type Database = {
           detail?: string | null
           field_name: string
           id?: string
+          metadata?: Json
+          organization_id: string
           path: string
           replacement?: string | null
           request_id?: string | null
@@ -55651,6 +55903,8 @@ export type Database = {
           detail?: string | null
           field_name?: string
           id?: string
+          metadata?: Json
+          organization_id?: string
           path?: string
           replacement?: string | null
           request_id?: string | null
@@ -55785,21 +56039,39 @@ export type Database = {
           created_by: string | null
           id: string
           label: string | null
+          metadata: Json
+          organization_id: string
           signature: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           id?: string
           label?: string | null
+          metadata?: Json
+          organization_id: string
           signature: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
           created_by?: string | null
           id?: string
           label?: string | null
+          metadata?: Json
+          organization_id?: string
           signature?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -55810,8 +56082,14 @@ export type Database = {
           id: string
           label: string | null
           match: string
+          metadata: Json
+          organization_id: string
           replace_pattern: string
           replacement: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -55819,8 +56097,14 @@ export type Database = {
           id?: string
           label?: string | null
           match: string
+          metadata?: Json
+          organization_id: string
           replace_pattern: string
           replacement?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -55828,8 +56112,14 @@ export type Database = {
           id?: string
           label?: string | null
           match?: string
+          metadata?: Json
+          organization_id?: string
           replace_pattern?: string
           replacement?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -57875,6 +58165,8 @@ export type Database = {
           match_kind: string
           max_pending_per_user: number
           max_presented_per_cycle: number
+          metadata: Json
+          organization_id: string
           presentation_enabled: boolean
           production_enabled: boolean
           rationale: string
@@ -57882,6 +58174,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           working_message: string | null
         }
         Insert: {
@@ -57897,6 +58190,8 @@ export type Database = {
           match_kind?: string
           max_pending_per_user?: number
           max_presented_per_cycle?: number
+          metadata?: Json
+          organization_id: string
           presentation_enabled?: boolean
           production_enabled?: boolean
           rationale: string
@@ -57904,6 +58199,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           working_message?: string | null
         }
         Update: {
@@ -57919,6 +58215,8 @@ export type Database = {
           match_kind?: string
           max_pending_per_user?: number
           max_presented_per_cycle?: number
+          metadata?: Json
+          organization_id?: string
           presentation_enabled?: boolean
           production_enabled?: boolean
           rationale?: string
@@ -57926,6 +58224,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
           working_message?: string | null
         }
         Relationships: [
@@ -58381,34 +58680,81 @@ export type Database = {
         Row: {
           blurb: string
           created_at: string
+          created_by: string | null
+          id: string
           is_active: boolean
           label: string
           metadata: Json
+          organization_id: string
           rank: number
           slug: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           blurb: string
           created_at?: string
+          created_by?: string | null
+          id?: string
           is_active?: boolean
           label: string
           metadata?: Json
+          organization_id: string
           rank: number
           slug: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           blurb?: string
           created_at?: string
+          created_by?: string | null
+          id?: string
           is_active?: boolean
           label?: string
           metadata?: Json
+          organization_id?: string
           rank?: number
           slug?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "platform_assurance_level_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_assurance_level_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_assurance_level_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_assurance_level_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -58516,52 +58862,103 @@ export type Database = {
         Row: {
           change_type_key: string
           created_at: string
+          created_by: string | null
           default_mode: string
           default_timeout_expiry: string
           default_timeout_minutes: number
           description: string
           floor_human_only: boolean
+          id: string
           label: string
+          metadata: Json
           note: string
+          organization_id: string
           row_num: number
           tier: number
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           change_type_key: string
           created_at?: string
+          created_by?: string | null
           default_mode: string
           default_timeout_expiry: string
           default_timeout_minutes?: number
           description?: string
           floor_human_only?: boolean
+          id?: string
           label: string
+          metadata?: Json
           note?: string
+          organization_id: string
           row_num: number
           tier: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           change_type_key?: string
           created_at?: string
+          created_by?: string | null
           default_mode?: string
           default_timeout_expiry?: string
           default_timeout_minutes?: number
           description?: string
           floor_human_only?: boolean
+          id?: string
           label?: string
+          metadata?: Json
           note?: string
+          organization_id?: string
           row_num?: number
           tier?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "platform_change_type_default_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_change_type_default_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_change_type_default_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_change_type_default_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_callable_door: {
         Row: {
           declared_at: string
           declared_by: string | null
           function_name: string
+          gate_predicate: string | null
           id: string
           identity_args: string
           reason: string
@@ -58571,6 +58968,7 @@ export type Database = {
           declared_at?: string
           declared_by?: string | null
           function_name: string
+          gate_predicate?: string | null
           id?: string
           identity_args: string
           reason: string
@@ -58580,6 +58978,7 @@ export type Database = {
           declared_at?: string
           declared_by?: string | null
           function_name?: string
+          gate_predicate?: string | null
           id?: string
           identity_args?: string
           reason?: string
@@ -60406,30 +60805,86 @@ export type Database = {
       }
       knob_scope_kind: {
         Row: {
+          created_at: string
+          created_by: string | null
           description: string
+          id: string
           kind: string
+          metadata: Json
+          organization_id: string
           precedence: number
           scope_row_identity: string
           scope_schema: string | null
           scope_table: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          created_at?: string
+          created_by?: string | null
           description: string
+          id?: string
           kind: string
+          metadata?: Json
+          organization_id: string
           precedence: number
           scope_row_identity?: string
           scope_schema?: string | null
           scope_table?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
           description?: string
+          id?: string
           kind?: string
+          metadata?: Json
+          organization_id?: string
           precedence?: number
           scope_row_identity?: string
           scope_schema?: string | null
           scope_table?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "platform_knob_scope_kind_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_knob_scope_kind_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_knob_scope_kind_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_knob_scope_kind_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lifecycle_archive: {
         Row: {
@@ -62541,13 +62996,17 @@ export type Database = {
         Row: {
           content_role: string | null
           created_at: string
+          created_by: string | null
           display_label: string
+          id: string
           id_column: string
           is_active: boolean
           is_link_shareable: boolean
           is_public_column: string | null
           is_scopeable: boolean
+          metadata: Json
           notes: string | null
+          organization_id: string
           owner_column: string
           public_columns: string[] | null
           resource_type: string
@@ -62555,18 +63014,25 @@ export type Database = {
           schema_name: string
           table_name: string
           updated_at: string
+          updated_by: string | null
           url_path_template: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           content_role?: string | null
           created_at?: string
+          created_by?: string | null
           display_label: string
+          id?: string
           id_column?: string
           is_active?: boolean
           is_link_shareable?: boolean
           is_public_column?: string | null
           is_scopeable?: boolean
+          metadata?: Json
           notes?: string | null
+          organization_id: string
           owner_column?: string
           public_columns?: string[] | null
           resource_type: string
@@ -62574,18 +63040,25 @@ export type Database = {
           schema_name?: string
           table_name: string
           updated_at?: string
+          updated_by?: string | null
           url_path_template: string
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content_role?: string | null
           created_at?: string
+          created_by?: string | null
           display_label?: string
+          id?: string
           id_column?: string
           is_active?: boolean
           is_link_shareable?: boolean
           is_public_column?: string | null
           is_scopeable?: boolean
+          metadata?: Json
           notes?: string | null
+          organization_id?: string
           owner_column?: string
           public_columns?: string[] | null
           resource_type?: string
@@ -62593,9 +63066,41 @@ export type Database = {
           schema_name?: string
           table_name?: string
           updated_at?: string
+          updated_by?: string | null
           url_path_template?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "platform_shareable_resource_registry_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_shareable_resource_registry_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_shareable_resource_registry_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_shareable_resource_registry_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       short_links: {
         Row: {
@@ -62726,82 +63231,175 @@ export type Database = {
         Row: {
           blurb: string
           created_at: string
+          created_by: string | null
+          id: string
           is_active: boolean
           label: string
           metadata: Json
+          organization_id: string
           rank: number
           slug: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           blurb: string
           created_at?: string
+          created_by?: string | null
+          id?: string
           is_active?: boolean
           label: string
           metadata?: Json
+          organization_id: string
           rank: number
           slug: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           blurb?: string
           created_at?: string
+          created_by?: string | null
+          id?: string
           is_active?: boolean
           label?: string
           metadata?: Json
+          organization_id?: string
           rank?: number
           slug?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "platform_source_authority_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_source_authority_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_source_authority_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_source_authority_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       taxonomy_node: {
         Row: {
           anchors: Json
           created_at: string
+          created_by: string | null
           docs_path: string | null
           id: string
           last_reviewed_at: string | null
           level: string
+          metadata: Json
           name: string
           notes: string | null
+          organization_id: string
           parent_id: string | null
           review_notes: string | null
           slug: string
           status: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           anchors?: Json
           created_at?: string
+          created_by?: string | null
           docs_path?: string | null
           id?: string
           last_reviewed_at?: string | null
           level: string
+          metadata?: Json
           name: string
           notes?: string | null
+          organization_id: string
           parent_id?: string | null
           review_notes?: string | null
           slug: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           anchors?: Json
           created_at?: string
+          created_by?: string | null
           docs_path?: string | null
           id?: string
           last_reviewed_at?: string | null
           level?: string
+          metadata?: Json
           name?: string
           notes?: string | null
+          organization_id?: string
           parent_id?: string | null
           review_notes?: string | null
           slug?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
+          {
+            foreignKeyName: "platform_taxonomy_node_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_taxonomy_node_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_taxonomy_node_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_taxonomy_node_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "taxonomy_node_parent_id_fkey"
             columns: ["parent_id"]
@@ -63599,6 +64197,14 @@ export type Database = {
         Returns: Json
       }
       assert_admin_access_contract: { Args: never; Returns: undefined }
+      assert_no_stale_rowtype_triggers: {
+        Args: never
+        Returns: {
+          trigger_count: number
+          trigger_function: string
+          verdict: string
+        }[]
+      }
       assert_outsider_scope: {
         Args: {
           p_action: string
@@ -63766,6 +64372,7 @@ export type Database = {
         Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
         Returns: Json
       }
+      dd166_table_rung_scope_rows_ok: { Args: never; Returns: Json }
       ddl_guard_ack: {
         Args: {
           p_before?: string
@@ -64372,6 +64979,8 @@ export type Database = {
           match_kind: string
           max_pending_per_user: number
           max_presented_per_cycle: number
+          metadata: Json
+          organization_id: string
           presentation_enabled: boolean
           production_enabled: boolean
           rationale: string
@@ -64379,6 +64988,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           working_message: string | null
         }
         SetofOptions: {
@@ -65194,26 +65804,47 @@ export type Database = {
         Row: {
           app: string
           config: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
           min_supported_app_version: string
+          organization_id: string
           schema_version: number
           updated_at: string
           updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           app: string
           config: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
           min_supported_app_version: string
+          organization_id: string
           schema_version?: number
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           app?: string
           config?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
           min_supported_app_version?: string
+          organization_id?: string
           schema_version?: number
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -65470,17 +66101,22 @@ export type Database = {
           artifact_size_bytes: number | null
           artifact_url: string | null
           created_at: string
+          created_by: string | null
           id: string
           is_active: boolean
           key: string
           kind: string
+          metadata: Json
           min_app_version: string | null
           notes: string | null
+          organization_id: string
           payload: Json
           schema_version: number
           sort_order: number
           updated_at: string
           updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           app: string
@@ -65488,17 +66124,22 @@ export type Database = {
           artifact_size_bytes?: number | null
           artifact_url?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           is_active?: boolean
           key: string
           kind: string
+          metadata?: Json
           min_app_version?: string | null
           notes?: string | null
+          organization_id: string
           payload: Json
           schema_version?: number
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           app?: string
@@ -65506,17 +66147,22 @@ export type Database = {
           artifact_size_bytes?: number | null
           artifact_url?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           is_active?: boolean
           key?: string
           kind?: string
+          metadata?: Json
           min_app_version?: string | null
           notes?: string | null
+          organization_id?: string
           payload?: Json
           schema_version?: number
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -66448,17 +67094,22 @@ export type Database = {
           artifact_size_bytes: number | null
           artifact_url: string | null
           created_at: string
+          created_by: string | null
           id: string
           is_active: boolean
           key: string
           kind: string
+          metadata: Json
           min_app_version: string | null
           notes: string | null
+          organization_id: string
           payload: Json
           schema_version: number
           sort_order: number
           updated_at: string
           updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         SetofOptions: {
           from: "*"
@@ -67040,10 +67691,17 @@ export type Database = {
         Returns: {
           app: string
           config: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
           min_supported_app_version: string
+          organization_id: string
           schema_version: number
           updated_at: string
           updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         SetofOptions: {
           from: "*"
@@ -67111,17 +67769,22 @@ export type Database = {
           artifact_size_bytes: number | null
           artifact_url: string | null
           created_at: string
+          created_by: string | null
           id: string
           is_active: boolean
           key: string
           kind: string
+          metadata: Json
           min_app_version: string | null
           notes: string | null
+          organization_id: string
           payload: Json
           schema_version: number
           sort_order: number
           updated_at: string
           updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         SetofOptions: {
           from: "*"
@@ -80352,39 +81015,60 @@ export type Database = {
       ai_capability: {
         Row: {
           created_at: string
+          created_by: string | null
           default_mode: string
           default_timeout_hours: number | null
           description: string
           enforced: boolean
           enforcement_note: string | null
+          id: string
           label: string
+          metadata: Json
+          organization_id: string
           position: number
           slug: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           default_mode: string
           default_timeout_hours?: number | null
           description: string
           enforced?: boolean
           enforcement_note?: string | null
+          id?: string
           label: string
+          metadata?: Json
+          organization_id: string
           position?: number
           slug: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           default_mode?: string
           default_timeout_hours?: number | null
           description?: string
           enforced?: boolean
           enforcement_note?: string | null
+          id?: string
           label?: string
+          metadata?: Json
+          organization_id?: string
           position?: number
           slug?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -90453,35 +91137,53 @@ export type Database = {
         Row: {
           config: Json
           created_at: string
+          created_by: string | null
           description: string
+          id: string
           is_active: boolean
           mcp_server_id: string | null
           metadata: Json
           name: string
+          organization_id: string
           parent_executor_name: string | null
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           config?: Json
           created_at?: string
+          created_by?: string | null
           description?: string
+          id?: string
           is_active?: boolean
           mcp_server_id?: string | null
           metadata?: Json
           name: string
+          organization_id: string
           parent_executor_name?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           config?: Json
           created_at?: string
+          created_by?: string | null
           description?: string
+          id?: string
           is_active?: boolean
           mcp_server_id?: string | null
           metadata?: Json
           name?: string
+          organization_id?: string
           parent_executor_name?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -90506,51 +91208,69 @@ export type Database = {
           command: string
           config_type: string
           created_at: string
+          created_by: string | null
           env_schema: Json
           id: string
           is_default: boolean
           label: string
+          metadata: Json
           min_node_version: string | null
           notes: string | null
           npm_package: string | null
+          organization_id: string
           pip_package: string | null
           requires_docker: boolean
           server_id: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           args?: string[]
           command: string
           config_type?: string
           created_at?: string
+          created_by?: string | null
           env_schema?: Json
           id?: string
           is_default?: boolean
           label: string
+          metadata?: Json
           min_node_version?: string | null
           notes?: string | null
           npm_package?: string | null
+          organization_id: string
           pip_package?: string | null
           requires_docker?: boolean
           server_id: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           args?: string[]
           command?: string
           config_type?: string
           created_at?: string
+          created_by?: string | null
           env_schema?: Json
           id?: string
           is_default?: boolean
           label?: string
+          metadata?: Json
           min_node_version?: string | null
           notes?: string | null
           npm_package?: string | null
+          organization_id?: string
           pip_package?: string | null
           requires_docker?: boolean
           server_id?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -90568,6 +91288,7 @@ export type Database = {
           category: Database["public"]["Enums"]["mcp_server_category"]
           color: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           discovery_ttl_seconds: number
           docs_url: string | null
@@ -90589,13 +91310,17 @@ export type Database = {
           name: string
           oauth_client_id: string | null
           oauth_scopes: string[] | null
+          organization_id: string
           slug: string
           sort_order: number
           status: Database["public"]["Enums"]["mcp_server_status"]
           supports_mcp_apps: boolean
           transport: Database["public"]["Enums"]["mcp_transport"]
           updated_at: string
+          updated_by: string | null
           vendor: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           website_url: string | null
         }
         Insert: {
@@ -90603,6 +91328,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["mcp_server_category"]
           color?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           discovery_ttl_seconds?: number
           docs_url?: string | null
@@ -90624,13 +91350,17 @@ export type Database = {
           name: string
           oauth_client_id?: string | null
           oauth_scopes?: string[] | null
+          organization_id: string
           slug: string
           sort_order?: number
           status?: Database["public"]["Enums"]["mcp_server_status"]
           supports_mcp_apps?: boolean
           transport?: Database["public"]["Enums"]["mcp_transport"]
           updated_at?: string
+          updated_by?: string | null
           vendor: string
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           website_url?: string | null
         }
         Update: {
@@ -90638,6 +91368,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["mcp_server_category"]
           color?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           discovery_ttl_seconds?: number
           docs_url?: string | null
@@ -90659,13 +91390,17 @@ export type Database = {
           name?: string
           oauth_client_id?: string | null
           oauth_scopes?: string[] | null
+          organization_id?: string
           slug?: string
           sort_order?: number
           status?: Database["public"]["Enums"]["mcp_server_status"]
           supports_mcp_apps?: boolean
           transport?: Database["public"]["Enums"]["mcp_transport"]
           updated_at?: string
+          updated_by?: string | null
           vendor?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
           website_url?: string | null
         }
         Relationships: []
@@ -90779,13 +91514,19 @@ export type Database = {
           arg_defaults: Json
           arg_injection: Json
           created_at: string
+          created_by: string | null
+          id: string
           is_active: boolean
           metadata: Json
           never_include_bundles: string[]
           never_include_tools: string[]
           notes: string | null
+          organization_id: string
           surface_name: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           always_include_bundles?: string[]
@@ -90793,13 +91534,19 @@ export type Database = {
           arg_defaults?: Json
           arg_injection?: Json
           created_at?: string
+          created_by?: string | null
+          id?: string
           is_active?: boolean
           metadata?: Json
           never_include_bundles?: string[]
           never_include_tools?: string[]
           notes?: string | null
+          organization_id: string
           surface_name: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           always_include_bundles?: string[]
@@ -90807,13 +91554,19 @@ export type Database = {
           arg_defaults?: Json
           arg_injection?: Json
           created_at?: string
+          created_by?: string | null
+          id?: string
           is_active?: boolean
           metadata?: Json
           never_include_bundles?: string[]
           never_include_tools?: string[]
           notes?: string | null
+          organization_id?: string
           surface_name?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -91180,13 +91933,19 @@ export type Database = {
         Returns: {
           config: Json
           created_at: string
+          created_by: string | null
           description: string
+          id: string
           is_active: boolean
           mcp_server_id: string | null
           metadata: Json
           name: string
+          organization_id: string
           parent_executor_name: string | null
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }[]
         SetofOptions: {
           from: "*"
@@ -91949,27 +92708,48 @@ export type Database = {
       ui_client: {
         Row: {
           created_at: string
+          created_by: string | null
           description: string
+          id: string
           is_active: boolean
+          metadata: Json
           name: string
+          organization_id: string
           sort_order: number
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           description?: string
+          id?: string
           is_active?: boolean
+          metadata?: Json
           name: string
+          organization_id: string
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           description?: string
+          id?: string
           is_active?: boolean
+          metadata?: Json
           name?: string
+          organization_id?: string
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -92154,52 +92934,73 @@ export type Database = {
           allow_custom: boolean
           auto_run: string
           created_at: string
+          created_by: string | null
           default_agent_id: string | null
           description: string
+          id: string
           kind: string
           label: string
           mandate_key: string | null
           max_agents: number
+          metadata: Json
           name: string
+          organization_id: string
           sort_order: number
           surface_name: string
           synced_by: string | null
           synced_from: string | null
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           allow_custom?: boolean
           auto_run?: string
           created_at?: string
+          created_by?: string | null
           default_agent_id?: string | null
           description?: string
+          id?: string
           kind?: string
           label?: string
           mandate_key?: string | null
           max_agents?: number
+          metadata?: Json
           name: string
+          organization_id: string
           sort_order?: number
           surface_name: string
           synced_by?: string | null
           synced_from?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           allow_custom?: boolean
           auto_run?: string
           created_at?: string
+          created_by?: string | null
           default_agent_id?: string | null
           description?: string
+          id?: string
           kind?: string
           label?: string
           mandate_key?: string | null
           max_agents?: number
+          metadata?: Json
           name?: string
+          organization_id?: string
           sort_order?: number
           surface_name?: string
           synced_by?: string | null
           synced_from?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -92214,39 +93015,60 @@ export type Database = {
       ui_surface_client_tool: {
         Row: {
           created_at: string
+          created_by: string | null
           description: string
+          id: string
           input_schema: Json
           label: string
+          metadata: Json
           mode: string
           name: string
+          organization_id: string
           surface_name: string
           synced_by: string | null
           synced_from: string | null
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           description?: string
+          id?: string
           input_schema?: Json
           label?: string
+          metadata?: Json
           mode?: string
           name: string
+          organization_id: string
           surface_name: string
           synced_by?: string | null
           synced_from?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           description?: string
+          id?: string
           input_schema?: Json
           label?: string
+          metadata?: Json
           mode?: string
           name?: string
+          organization_id?: string
           surface_name?: string
           synced_by?: string | null
           synced_from?: string | null
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -92325,49 +93147,70 @@ export type Database = {
           always_available: boolean
           auto_context: boolean
           created_at: string
+          created_by: string | null
           description: string
           group_key: string
+          id: string
           label: string
+          metadata: Json
           name: string
+          organization_id: string
           sort_order: number
           surface_name: string
           synced_by: string | null
           synced_from: string | null
           typical_char_count: number
           updated_at: string
+          updated_by: string | null
           value_type: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           always_available?: boolean
           auto_context?: boolean
           created_at?: string
+          created_by?: string | null
           description?: string
           group_key?: string
+          id?: string
           label?: string
+          metadata?: Json
           name: string
+          organization_id: string
           sort_order?: number
           surface_name: string
           synced_by?: string | null
           synced_from?: string | null
           typical_char_count?: number
           updated_at?: string
+          updated_by?: string | null
           value_type?: string
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           always_available?: boolean
           auto_context?: boolean
           created_at?: string
+          created_by?: string | null
           description?: string
           group_key?: string
+          id?: string
           label?: string
+          metadata?: Json
           name?: string
+          organization_id?: string
           sort_order?: number
           surface_name?: string
           synced_by?: string | null
           synced_from?: string | null
           typical_char_count?: number
           updated_at?: string
+          updated_by?: string | null
           value_type?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -92383,53 +93226,74 @@ export type Database = {
         Row: {
           apply_policy: string
           created_at: string
+          created_by: string | null
           description: string
           group_key: string
+          id: string
           kind_key: string | null
           label: string
+          metadata: Json
           mode: string
           name: string
+          organization_id: string
           sort_order: number
           surface_name: string
           synced_by: string | null
           synced_from: string | null
           updated_at: string
+          updated_by: string | null
           updates_value: string | null
           value_type: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           apply_policy?: string
           created_at?: string
+          created_by?: string | null
           description?: string
           group_key?: string
+          id?: string
           kind_key?: string | null
           label?: string
+          metadata?: Json
           mode?: string
           name: string
+          organization_id: string
           sort_order?: number
           surface_name: string
           synced_by?: string | null
           synced_from?: string | null
           updated_at?: string
+          updated_by?: string | null
           updates_value?: string | null
           value_type?: string
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           apply_policy?: string
           created_at?: string
+          created_by?: string | null
           description?: string
           group_key?: string
+          id?: string
           kind_key?: string | null
           label?: string
+          metadata?: Json
           mode?: string
           name?: string
+          organization_id?: string
           sort_order?: number
           surface_name?: string
           synced_by?: string | null
           synced_from?: string | null
           updated_at?: string
+          updated_by?: string | null
           updates_value?: string | null
           value_type?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -92751,7 +93615,9 @@ export type Database = {
           created_at: string
           fingerprint: string | null
           id: string
+          metadata: Json
           new_user_id: string
+          organization_id: string
           skipped: Json
           total_rows: number
           transferred: Json
@@ -92761,7 +93627,9 @@ export type Database = {
           created_at?: string
           fingerprint?: string | null
           id?: string
+          metadata?: Json
           new_user_id: string
+          organization_id: string
           skipped?: Json
           total_rows?: number
           transferred?: Json
@@ -92771,7 +93639,9 @@ export type Database = {
           created_at?: string
           fingerprint?: string | null
           id?: string
+          metadata?: Json
           new_user_id?: string
+          organization_id?: string
           skipped?: Json
           total_rows?: number
           transferred?: Json
@@ -93280,10 +94150,15 @@ export type Database = {
           id: string
           is_active: boolean
           message: string
+          metadata: Json
           min_display_seconds: number | null
+          organization_id: string
           target_user_id: string | null
           title: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           announcement_type?: string
@@ -93292,10 +94167,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           message: string
+          metadata?: Json
           min_display_seconds?: number | null
+          organization_id: string
           target_user_id?: string | null
           title: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           announcement_type?: string
@@ -93304,10 +94184,15 @@ export type Database = {
           id?: string
           is_active?: boolean
           message?: string
+          metadata?: Json
           min_display_seconds?: number | null
+          organization_id?: string
           target_user_id?: string | null
           title?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -99625,35 +100510,44 @@ export type Database = {
         Row: {
           created_at: string
           definition_watermark: string | null
+          id: string
           last_sweep_at: string | null
           metadata: Json
           next_eligible_at: string | null
+          organization_id: string
           proposals_created_total: number
           sweeps_total: number
           updated_at: string
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
           definition_watermark?: string | null
+          id?: string
           last_sweep_at?: string | null
           metadata?: Json
           next_eligible_at?: string | null
+          organization_id: string
           proposals_created_total?: number
           sweeps_total?: number
           updated_at?: string
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
           definition_watermark?: string | null
+          id?: string
           last_sweep_at?: string | null
           metadata?: Json
           next_eligible_at?: string | null
+          organization_id?: string
           proposals_created_total?: number
           sweeps_total?: number
           updated_at?: string
           user_id?: string
+          version?: number
         }
         Relationships: []
       }

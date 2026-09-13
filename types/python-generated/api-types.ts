@@ -35089,6 +35089,10 @@ export interface paths {
          *     raises the ``user_requested`` handoff itself when the agent has not paused for a
          *     person (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,
          *     which could only be called inside an agent-initiated handoff window.
+         *
+         *     ``immediate`` (the panel's "Take over immediately") moves control without
+         *     waiting for the agent's in-flight browser step; omitted or false keeps the
+         *     non-disruptive default.
          */
         post: operations["take_over_browser_manager_runs__run_id__takeover_post"];
         delete?: never;
@@ -105137,6 +105141,18 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /**
+         * TakeoverRequest
+         * @description Optional body. ``immediate`` is the panel's "Take over immediately":
+         *     control moves without waiting for the agent's in-flight browser step.
+         */
+        TakeoverRequest: {
+            /**
+             * Immediate
+             * @default false
+             */
+            immediate?: boolean;
+        };
         /** TakeoverResponse */
         TakeoverResponse: {
             /** Run Id */
@@ -172891,7 +172907,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TakeoverRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

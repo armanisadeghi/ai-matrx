@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
 import type { Database } from "@/types/database.types";
 import {
@@ -1114,6 +1115,8 @@ export async function createAnnouncement(
       .from("system_announcements")
       .insert({
         ...input,
+        organization_id: await resolveSystemOrgId(supabase),
+        visibility: "internal",
         created_by: user.id,
         announcement_type: input.announcement_type || "info",
         min_display_seconds: input.min_display_seconds || 3,
