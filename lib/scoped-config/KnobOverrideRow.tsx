@@ -279,12 +279,19 @@ export function KnobOverrideRow(props: {
       : null;
   const inputId = `${knob.full_key}-input`;
   const labelId = `${inputId}-label`;
+  const usesLabelledGroup =
+    stateOnly !== null ||
+    lockedForMe ||
+    (fieldLadder !== null &&
+      ["segmented", "slider", "json", "secret"].includes(
+        fieldLadder.control,
+      ));
 
   return (
     <SettingsRow
       id={inputId}
       anchorId={knob.full_key}
-      labelFor={fieldLadder ? null : undefined}
+      labelFor={usesLabelledGroup ? null : inputId}
       label={knob.label}
       description={knob.description}
       helpText={knob.ui.help}

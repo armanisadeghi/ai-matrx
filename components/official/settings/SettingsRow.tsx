@@ -130,6 +130,7 @@ export function SettingsRow({
           </span>
         ) : (
           <label
+            id={labelId}
             htmlFor={labelFor ?? inputId}
             className={cn(
               "min-w-0 break-words text-sm font-medium leading-snug text-foreground",
