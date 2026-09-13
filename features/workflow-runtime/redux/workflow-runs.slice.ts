@@ -257,6 +257,16 @@ export interface WorkflowRunState {
   childRunsByNode: Record<string, string>;
   lastEventSeq: number | null;
   transportMode: "sse" | "polling" | "idle";
+  /**
+   * Why this run could not be READ, said out loud (W39, 2026-09-12).
+   *
+   * Distinct from `error`, which is the run's own failure. A run that finished
+   * perfectly can still be unreadable right now — a refused attach read, a
+   * dead network — and the page used to swallow that into the `pending`
+   * default and narrate "GETTING READY · Starting" over a run that ended hours
+   * ago. A screen is absent or honest, never fake progress (law 4).
+   */
+  readFailure: string | null;
   attachedAt: number | null;
   /** Max step seen across node events. */
   stepsExecuted: number;
@@ -373,6 +383,7 @@ function makeRunState(
     childRunsByNode: {},
     lastEventSeq: null,
     transportMode: "idle",
+    readFailure: null,
     attachedAt: null,
     stepsExecuted: 0,
     sticky: {
@@ -1042,6 +1053,8 @@ const workflowRunsSlice = createSlice({
     seedRunRow(state, action: PayloadAction<{ runId: string; row: RunRow }>) {
       const run = state.byRunId[action.payload.runId];
       if (!run) return;
+      // A row landed: whatever the earlier read failure was, it is over.
+      run.readFailure = null;
       const row = action.payload.row;
       // The row is a PRE-replay snapshot and this reducer runs AFTER replay
       // (the tails need the invocations replay creates). A status event folded
@@ -1242,6 +1255,18 @@ const workflowRunsSlice = createSlice({
       if (invocation) invocation.laneRequestId = null;
     },
 
+    /**
+     * The attach read was refused or failed. Replaces the `pending` narration
+     * with the truth; cleared the moment a real row lands.
+     */
+    noteRunReadFailure(
+      state,
+      action: PayloadAction<{ runId: string; message: string }>,
+    ) {
+      const run = state.byRunId[action.payload.runId];
+      if (run) run.readFailure = action.payload.message;
+    },
+
     setTransportMode(
       state,
       action: PayloadAction<{
@@ -1304,6 +1329,7 @@ const workflowRunsSlice = createSlice({
 export const {
   attachRun,
   detachRun,
+  noteRunReadFailure,
   seedRunRow,
   applyRunEvent,
   applyNodeStreamMeta,

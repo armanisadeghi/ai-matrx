@@ -44,9 +44,9 @@ export function SettingsColorPicker({
 
   return (
     <SettingsRow {...rowProps} id={id} variant="inline" last={last}>
-      <div className="flex items-center gap-1.5">
+      <div className="flex max-w-full flex-wrap items-center gap-1.5">
         {presets && presets.length > 0 && (
-          <div className="flex items-center gap-1 mr-1.5">
+          <div className="flex flex-wrap items-center gap-1 mr-1.5">
             {presets.map((p) => (
               <button
                 key={p}
@@ -82,10 +82,9 @@ export function SettingsColorPicker({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={(e) => commit(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter")
-              (e.currentTarget as HTMLInputElement).blur();
+            if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
           }}
-          className="h-7 w-24 rounded-md border border-border bg-card px-2 text-xs font-mono tabular-nums text-foreground shadow-sm transition-colors hover:bg-accent/50 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-7 w-24 max-w-full rounded-md border border-border bg-card px-2 text-xs font-mono tabular-nums text-foreground shadow-sm transition-colors hover:bg-accent/50 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
     </SettingsRow>

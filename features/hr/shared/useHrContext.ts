@@ -49,7 +49,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 
 import { HR_ORG_PARAM } from "../constants";
@@ -229,7 +229,7 @@ export function useHrContextResolver(
       // Rule 1 wins when it is a uuid; a slug needs the employer list to map it, so
       // it takes the second pass below. Rule 2 is the picker's org.
       const firstAsk =
-        orgParam && isUuid(orgParam) ? orgParam : (activeOrgId ?? null);
+        orgParam && isUuidShape(orgParam) ? orgParam : (activeOrgId ?? null);
 
       let result = await fetchHrContext(firstAsk);
       if (cancelled) return;
@@ -239,7 +239,7 @@ export function useHrContextResolver(
 
         // The slug lane: `hr_my_context` takes a uuid only, so map the slug against
         // the employer list we just got and ask again for the real one.
-        if (orgParam && !isUuid(orgParam)) {
+        if (orgParam && !isUuidShape(orgParam)) {
           const bySlug = resolved.employers.find((e) => e.slug === orgParam);
           if (
             bySlug &&

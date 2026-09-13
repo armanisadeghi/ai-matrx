@@ -58,10 +58,18 @@ import type { EntityTypeToken } from "@ai-matrx/associations";
 import type { paths } from "@/types/python-generated/api-types";
 import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import {
+  entitySourceKey,
+  sourceSectionYields,
+  urlSourceKey,
+  type SourceSectionYield,
+} from "../../sourceSections";
 import { writeDumpUrlSources } from "../../service";
 import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
 import type { PastedSourceMetadata } from "../../record/pastedSource";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 /**
  * The registered source→rulebook pairs (`platform.association_types`,
@@ -452,6 +460,41 @@ export function RulebookSourcesPanel({
     );
   };
 
+  /**
+   * 🚨 WHAT EACH PART OF A SOURCE GAVE (W42). Read off the live rules, so a
+   * source distilled weeks ago is as legible as one distilled a minute ago.
+   */
+  const sectionsFor = useCallback(
+    (sourceKey: string) => sourceSectionYields(rulebook.rules, sourceKey),
+    [rulebook.rules],
+  );
+
+  /**
+   * "Read this part again" — ONE part of ONE source, at half the width the
+   * first pass used, replacing only THAT part's drafts (the server's
+   * `only_section` + the existing replace path). The rest of the source, and
+   * everything the Expert has already approved, is untouched.
+   */
+  const redistillSection = useCallback(
+    async (
+      resource: Record<string, unknown>,
+      section: SourceSectionYield,
+      label: string,
+    ) => {
+      await run.launch(
+        {
+          rulebook_id: rulebook.id,
+          resources: [resource],
+          mode: "instructional",
+          redistill: "replace",
+          only_section: section.index,
+        },
+        `${label} — ${section.label}`,
+      );
+    },
+    [run, rulebook.id],
+  );
+
   const detachAttached = async (token: string, resourceId: string) => {
     const info = tryGetEntityInfo(token);
     if (!info) return;
@@ -541,6 +584,11 @@ export function RulebookSourcesPanel({
                       titleFor({ token, id, label })
                     }
                     detailFor={detailForLink}
+                    sectionsFor={sectionsFor}
+                    onRedistillSection={(resource, section, label) =>
+                      void redistillSection(resource, section, label)
+                    }
+                    running={run.running}
                     status={links.status}
                     error={links.error}
                     busyKey={busyKey}
@@ -677,6 +725,12 @@ export function RulebookSourcesPanel({
                   titleFor={(token, id, label) =>
                     titleFor({ token, id, label })
                   }
+                  detailFor={detailForLink}
+                  sectionsFor={sectionsFor}
+                  onRedistillSection={(resource, section, label) =>
+                    void redistillSection(resource, section, label)
+                  }
+                  running={run.running}
                   status={links.status}
                   error={links.error}
                   busyKey={busyKey}
@@ -693,6 +747,8 @@ export function RulebookSourcesPanel({
                 sourceLinks={sourceLinks}
                 stagedUrls={stagedUrls}
                 titleFor={(token, id, label) => titleFor({ token, id, label })}
+                detailFor={detailForLink}
+                sectionsFor={sectionsFor}
                 status={links.status}
                 error={links.error}
                 busyKey={null}
@@ -720,6 +776,9 @@ export function RulebookSourcesPanel({
                         {run.waitMessage}
                       </p>
                     </div>
+                  ) : null}
+                  {run.running ? (
+                    <DurableRunInterruption interruption={run.interruption} />
                   ) : null}
                 </div>
               ) : null}
@@ -781,6 +840,9 @@ function SourceRows({
   stagedUrls,
   titleFor,
   detailFor,
+  sectionsFor,
+  onRedistillSection,
+  running,
   status,
   error,
   busyKey,
@@ -798,6 +860,16 @@ function SourceRows({
   titleFor: (token: string, id: string, label: string | null) => string;
   /** The second line of a row — what a pasted source says about itself. */
   detailFor?: (metadata: unknown) => string | null;
+  /** What each part of this source produced — empty when it has no parts. */
+  sectionsFor?: (sourceKey: string) => SourceSectionYield[];
+  /** Read ONE part of this source again (canEdit only). */
+  onRedistillSection?: (
+    resource: Record<string, unknown>,
+    section: SourceSectionYield,
+    label: string,
+  ) => void;
+  /** A run is in flight — every re-read button waits for it. */
+  running?: boolean;
   status: string;
   error: string | null;
   busyKey: string | null;
@@ -838,8 +910,9 @@ function SourceRows({
         return (
           <li
             key={key}
-            className="flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/20"
+            className="px-3 py-2.5 transition-colors hover:bg-muted/20"
           >
+            <div className="flex min-h-14 items-center gap-3">
             {info ? (
               <info.Icon className="size-4 shrink-0 text-muted-foreground" />
             ) : (
@@ -888,14 +961,37 @@ function SourceRows({
                 )}
               </button>
             ) : null}
+            </div>
+            <SectionYields
+              sections={
+                sectionsFor?.(
+                  entitySourceKey(link.token, link.resourceId),
+                ) ?? []
+              }
+              canEdit={canEdit}
+              running={running}
+              onRedistill={(section) =>
+                onRedistillSection?.(
+                  {
+                    kind: "entity",
+                    token: link.token,
+                    id: link.resourceId,
+                    title: titleFor(link.token, link.resourceId, link.label),
+                  },
+                  section,
+                  titleFor(link.token, link.resourceId, link.label),
+                )
+              }
+            />
           </li>
         );
       })}
       {stagedUrls.map((staged) => (
         <li
           key={staged.url}
-          className="flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/20"
+          className="px-3 py-2.5 transition-colors hover:bg-muted/20"
         >
+          <div className="flex min-h-14 items-center gap-3">
           <Globe className="size-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <a
@@ -921,9 +1017,126 @@ function SourceRows({
               <X className="size-3.5" />
             </button>
           ) : null}
+          </div>
+          <SectionYields
+            sections={sectionsFor?.(urlSourceKey(staged.url)) ?? []}
+            canEdit={canEdit}
+            running={running}
+            onRedistill={(section) =>
+              onRedistillSection?.(
+                {
+                  kind: "url",
+                  url: staged.url,
+                  ...(staged.title ? { title: staged.title } : {}),
+                },
+                section,
+                staged.title || staged.url,
+              )
+            }
+          />
         </li>
       ))}
     </ul>
+  );
+}
+
+// ── what each part of a source produced ─────────────────────────────────────
+
+/**
+ * 🚨 THE THIN CHAPTER, MADE VISIBLE (W42, 2026-09-12).
+ *
+ * A 31,311-word book was read into a Rulebook as six equal chunks and gave 116
+ * rules — evenly, whatever the chunk held. Its most prescriptive chapter gave
+ * THREE; pasted alone it gave 89. Nothing on any screen could show that, so the
+ * Expert found out when the answers were wrong.
+ *
+ * Numbers, not prose (Arman, 2026-09-12): one row per part of the source, the
+ * rules it produced, and — on a part far below what the rest of this source
+ * gave — the way to fix it. The re-read is an expensive click, so it names what
+ * it spends and what it replaces before it runs.
+ */
+function SectionYields({
+  sections,
+  canEdit,
+  running,
+  onRedistill,
+}: {
+  sections: SourceSectionYield[];
+  canEdit: boolean;
+  running?: boolean;
+  onRedistill: (section: SourceSectionYield) => void;
+}) {
+  if (sections.length < 2) return null;
+  const total = sections.reduce((sum, row) => sum + row.rules, 0);
+  return (
+    <div className="ml-7 mt-1.5 overflow-hidden rounded border border-border/60">
+      <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-2 py-1">
+        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {sections.length} parts · {total} {total === 1 ? "rule" : "rules"}
+        </span>
+      </div>
+      <table className="w-full table-fixed">
+        <tbody>
+          {sections.map((section) => (
+            <tr
+              key={section.index}
+              className="border-b border-border/40 last:border-0"
+            >
+              <td className="truncate px-2 py-1 text-[11px] text-foreground">
+                {section.label}
+              </td>
+              <td className="w-20 px-2 py-1 text-right text-[11px] tabular-nums text-muted-foreground">
+                {section.words.toLocaleString()}w
+              </td>
+              <td
+                className={cn(
+                  "w-16 px-2 py-1 text-right text-[11px] font-medium tabular-nums",
+                  section.thin ? "text-amber-600 dark:text-amber-500" : "text-foreground",
+                )}
+              >
+                {section.rules}
+              </td>
+              <td className="w-40 px-2 py-1 text-right">
+                {section.thin ? (
+                  <span className="mr-1.5 text-[10px] text-amber-600 dark:text-amber-500">
+                    thin
+                  </span>
+                ) : null}
+                {section.secondPass ? (
+                  <span className="mr-1.5 text-[10px] text-muted-foreground">
+                    read twice
+                  </span>
+                ) : null}
+                {canEdit ? (
+                  <button
+                    type="button"
+                    disabled={running}
+                    onClick={() => {
+                      void (async () => {
+                        const ok = await confirm({
+                          title: `Read "${section.label}" again?`,
+                          description:
+                            `This distils just this part of the source again, in smaller pieces — ` +
+                            `an AI run you pay for. Its ${section.rules} suggested ` +
+                            `${section.rules === 1 ? "rule" : "rules"} that you have not approved ` +
+                            `will be replaced by the new pass. Rules you have approved, and every ` +
+                            `other part of this source, are untouched.`,
+                          confirmLabel: "Read it again",
+                        });
+                        if (ok) onRedistill(section);
+                      })();
+                    }}
+                    className="text-[10px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
+                  >
+                    Read again
+                  </button>
+                ) : null}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

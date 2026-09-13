@@ -58,12 +58,12 @@ export function SettingsSlider({
   return (
     <SettingsRow {...rowProps} id={id} variant="stacked" last={last}>
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground tabular-nums">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <span className="min-w-0 break-words text-xs text-muted-foreground tabular-nums">
             {display}
             {unit}
           </span>
-          <span className="text-xs text-muted-foreground tabular-nums">
+          <span className="min-w-0 break-words text-right text-xs text-muted-foreground tabular-nums">
             {min} – {max}
           </span>
         </div>
@@ -74,16 +74,14 @@ export function SettingsSlider({
           step={step}
           value={[value]}
           onValueChange={(v) => onValueChange(v[0])}
-          onValueCommit={
-            onValueCommit ? (v) => onValueCommit(v[0]) : undefined
-          }
+          onValueCommit={onValueCommit ? (v) => onValueCommit(v[0]) : undefined}
           disabled={rowProps.disabled}
         />
         {(minLabel || midLabel || maxLabel) && (
-          <div className="flex justify-between text-[11px] text-muted-foreground">
-            <span>{minLabel}</span>
+          <div className="flex min-w-0 justify-between gap-2 text-[11px] text-muted-foreground">
+            <span className="min-w-0 break-words">{minLabel}</span>
             <span className="hidden sm:inline">{midLabel}</span>
-            <span>{maxLabel}</span>
+            <span className="min-w-0 break-words text-right">{maxLabel}</span>
           </div>
         )}
       </div>

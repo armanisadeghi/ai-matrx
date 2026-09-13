@@ -15,6 +15,15 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="${MATRX_PREVIEW_STATE_DIR:-${TMPDIR:-/tmp}/matrx-frontend-preview-${UID:-$(id -u)}}"
 GUARD="$REPO_ROOT/scripts/agent-harness/matrx-preview-ports.sh"
+# ONE server, ONE hostname per agent session. Cookies are per HOST, never per
+# port, so five agents on localhost:3001 share one cookie jar and one agent's
+# dev-login evicts every other agent's session (W56, 2026-09-12). Each session
+# opens this same server at <label>.localhost instead. Sourcing starts nothing.
+# shellcheck source=scripts/agent-harness/preview-session.sh
+source "$REPO_ROOT/scripts/agent-harness/preview-session.sh"
+SESSION_LABEL="$(preview_session_label "$REPO_ROOT")"
+SESSION_HOST="$(preview_session_host "$REPO_ROOT")"
+SESSION_RAW="$(preview_session_raw "$REPO_ROOT")"
 PORT=3001
 DISTDIR=".next-preview"
 BASE="$STATE_DIR/shared-next-dev"
@@ -153,16 +162,39 @@ report_previous_failure() {
   printf '\n' >&2
 }
 
+# The one banner every entry point prints. It must never say "localhost": an
+# agent that opens the bare host is back in the shared jar, which is the whole
+# defect. Speak the URL, say why it is not localhost, and say when the label was
+# guessed from the checkout rather than from a real session id.
+announce_session_url() {
+  local port="$1"
+  log "YOUR URL: http://$SESSION_HOST:$port  <- open THIS, not localhost:$port"
+  log "cookies are per host, not per port: this hostname gives your session its own"
+  log "cookie jar, so another agent's dev-login can no longer evict your session"
+  if preview_session_is_anonymous; then
+    log "NOTE: no agent session id was found in the environment, so this hostname was"
+    log "derived from the checkout path — two sessions in THIS checkout would share it."
+    log "Set MATRX_PREVIEW_SESSION=<a name> to claim your own hostname."
+  fi
+  log "sign in: pnpm dev-login   (mints a nonce for THIS host and prints the URL)"
+}
+
 # Mint the single-use nonce /api/dev-login accepts. This used to scrape
 # DEV_LOGIN_TOKEN out of .env* and put it in the warm-up URL — a durable
 # credential written into the dev-server's own request log on every start,
 # which is one of the two ways it leaked (2026-08-31, again 2026-09-11). The
 # nonce is generated here, consumed by the first request, and worthless after.
 mint_nonce() {
+  # Per HOST, not per checkout. With one shared .dev-login-nonce, any agent's
+  # failed navigation consumed (the route deletes on ANY presentation) the nonce
+  # another agent had just minted, and that agent's sign-in failed for reasons
+  # nothing on its screen could explain (W56c). The file name is part of the
+  # contract with app/api/dev-login/route.ts; check:preview-session pins that.
   NONCE=""
+  NONCE_PATH="$REPO_ROOT/$(preview_nonce_file "${1:-$SESSION_HOST}")"
   command -v openssl >/dev/null 2>&1 || return 0
   NONCE="$(openssl rand -hex 16)"
-  printf '%s\n' "$NONCE" > "$REPO_ROOT/.dev-login-nonce" || NONCE=""
+  printf '%s\n' "$NONCE" > "$NONCE_PATH" || NONCE=""
 }
 
 killtree() {
@@ -196,10 +228,11 @@ reuse_managed_meta() {
   owner="$(meta_value ROOT)"
   [[ -n "$owner" ]] || owner="$(server_cwd "$pid")"
   if [[ "$owner" != "$REPO_ROOT" ]]; then
-    fail "preview lease is owned by '$owner' (pid $pid); stop it from that checkout or wait for its explicit release"
+    fail "preview lease is owned by the session '$(meta_value OWNER_SESSION)' in checkout '$owner' (pid $pid, port $port); a per-session hostname cannot fix this — that server is compiling ANOTHER checkout's code, so certifying your diff against it would certify code you did not write. Stop it from that checkout or wait for its explicit release."
   fi
-  log "reusing the managed preview: http://localhost:$port (pid $pid)"
-  log "open that URL in the in-app browser; it may still be compiling"
+  log "reusing the managed preview (pid $pid, port $port)"
+  announce_session_url "$port"
+  log "it may still be compiling"
   return 0
 }
 
@@ -220,6 +253,30 @@ acquire_start_lock() {
   return 0
 }
 
+# THE SLOT RULE (W56b). One dev server, machine-wide — that part never moves;
+# a second Next tree on this box is a reliable OOM. What changed is the answer
+# when the slot is taken. A flat "occupied, go away" was wrong twice over: it
+# never said WHOSE server it was, and it refused even when the occupant is
+# THIS checkout's own code, where the only thing the caller actually needed was
+# its own hostname on that same port. So: name the owner always, and when the
+# occupant is serving this very checkout, hand over the session URL instead of
+# refusing. An occupant in a DIFFERENT checkout is still a refusal — a hostname
+# does not change which code that server compiled.
+slot_occupied() {
+  local pid="$1" port="$2" label="$3" cwd owner_session
+  cwd="$(server_cwd "$pid")"
+  owner_session="$(meta_value OWNER_SESSION)"
+  [[ "$(meta_value PID)" == "$pid" && -n "$owner_session" ]] || owner_session="unmanaged (no lease file — started outside pnpm preview:start)"
+  if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" ]]; then
+    log "the machine-wide dev-server slot is held by $label pid $pid on port $port,"
+    log "started by $owner_session from THIS checkout ($cwd)."
+    log "That is your code, so you do not need a second server — you need your own host."
+    announce_session_url "$port"
+    return 0
+  fi
+  fail "machine-wide dev-server slot is held by $label pid $pid on port $port, owned by $owner_session at '${cwd:-unknown cwd}'. That is a DIFFERENT checkout, so its compiled code is not your diff and a per-session hostname would not make it yours. Wait for its explicit release, or stop it from its own checkout. Your hostname once the slot frees: http://$SESSION_HOST:$PORT"
+}
+
 cmd_start() {
   mkdir -p "$STATE_DIR"
   clear_stale_state
@@ -230,7 +287,8 @@ cmd_start() {
   running="$(running_server)"
   if [[ -n "$running" ]]; then
     read -r pid port owner <<<"$running"
-    fail "machine-wide preview slot is occupied by $owner at '$(server_cwd "$pid")' (pid $pid, port $port); never certify this checkout against another checkout's server"
+    slot_occupied "$pid" "$port" "$owner"
+    return 0
   fi
 
   acquire_start_lock || return 0
@@ -240,7 +298,9 @@ cmd_start() {
   running="$(running_server)"
   if [[ -n "$running" ]]; then
     read -r pid port owner <<<"$running"
-    fail "machine-wide preview slot became occupied by $owner at '$(server_cwd "$pid")' (pid $pid, port $port); queue this preview instead"
+    rmdir "$LOCK" 2>/dev/null || true
+    slot_occupied "$pid" "$port" "$owner"
+    return 0
   fi
 
   [[ -x "$REPO_ROOT/node_modules/.bin/next" ]] || fail "dependencies are missing; run pnpm install first"
@@ -316,6 +376,8 @@ PY
     echo "ROOT=$REPO_ROOT"
     echo "MAX_RSS_GB=$MAX_RSS_GB"
     echo "NM_FINGERPRINT=$(nm_fingerprint)"
+    echo "OWNER_SESSION=$SESSION_RAW"
+    echo "OWNER_HOST=$SESSION_HOST"
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
 
@@ -339,7 +401,8 @@ for mode in ("warm", "monitor"):
     )
 PY
 
-  log "started the shared managed preview: http://localhost:$PORT (pid $pid)"
+  log "started the shared managed preview (pid $pid, port $PORT)"
+  announce_session_url "$PORT"
   log "it is tracked, reused by Claude and Codex, and may take 30–90s to compile"
   log "profile=${MATRX_PREVIEW_PROFILE:-core} (demos routes are PARKED — for /demos/* use: MATRX_PREVIEW_PROFILE=user pnpm preview:start)"
   log "logs: $LOG"
@@ -351,14 +414,18 @@ cmd_warm() {
 
   local attempt
   for attempt in $(seq 1 90); do
-    if curl --max-time 5 -fsS -o /dev/null "http://localhost:$PORT/" 2>/dev/null; then
-      mint_nonce
+    if curl --max-time 5 -fsS -o /dev/null "http://$SESSION_HOST:$PORT/" 2>/dev/null; then
+      # Warm on THIS session's host, with THIS session's nonce file. The old
+      # warm-up logged in on bare localhost, which both wrote into the shared
+      # cookie jar and consumed the one shared nonce file out from under any
+      # agent mid-handshake.
+      mint_nonce "$SESSION_HOST"
       if [[ -n "${NONCE:-}" ]]; then
         curl -fsS -L -c "$JAR" -b "$JAR" -o /dev/null \
-          "http://localhost:$PORT/api/dev-login?nonce=$NONCE&next=/dashboard" \
+          "http://$SESSION_HOST:$PORT/api/dev-login?nonce=$NONCE&next=/dashboard" \
           2>/dev/null || true
       fi
-      rm -f "$JAR" "$REPO_ROOT/.dev-login-nonce"
+      rm -f "$JAR" "$NONCE_PATH"
       touch "$READY"
       exit 0
     fi
@@ -457,8 +524,12 @@ cmd_status() {
     local pid port owner rss_kb
     pid="$(meta_value PID)"; port="$(meta_value PORT)"; owner="$(meta_value ROOT)"
     rss_kb="$(group_rss_kb "$pid")"
-    log "RUNNING pid=$pid port=$port rss=$(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }')GB owner=$owner"
-    [[ "$owner" == "$REPO_ROOT" ]] || log "LEASE OCCUPIED — this checkout does not own that preview"
+    log "RUNNING pid=$pid port=$port rss=$(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }')GB owner=$owner session=$(meta_value OWNER_SESSION)"
+    if [[ "$owner" == "$REPO_ROOT" ]]; then
+      announce_session_url "$port"
+    else
+      log "LEASE OCCUPIED — this checkout does not own that preview"
+    fi
     local changed
     changed="$(meta_value NODE_MODULES_CHANGED)"
     [[ -z "$changed" ]] || log "$changed"
@@ -468,7 +539,13 @@ cmd_status() {
   running="$(running_server)"
   if [[ -n "$running" ]]; then
     read -r pid port owner <<<"$running"
-    log "UNMANAGED/BLOCKING pid=$pid port=$port owner=$owner cwd=$(server_cwd "$pid")"
+    local cwd
+    cwd="$(server_cwd "$pid")"
+    log "UNMANAGED/BLOCKING pid=$pid port=$port owner=$owner cwd=${cwd:-unknown}"
+    if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" ]]; then
+      log "it serves THIS checkout, so you can use it — at your own hostname:"
+      announce_session_url "$port"
+    fi
   elif [[ -f "$FAILED" ]]; then
     report_previous_failure
     log "STOPPED — fix the reported cause, then run pnpm preview:start"

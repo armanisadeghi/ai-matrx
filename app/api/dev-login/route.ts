@@ -10,9 +10,10 @@ import { createClient } from "@/utils/supabase/server";
  * login proves identity by WRITING A FILE into this checkout, which anything
  * with shell access can do and no hostile web page can:
  *
- *   1. shell:   openssl rand -hex 16 > .dev-login-nonce   (gitignored)
- *   2. browser: GET /api/dev-login?nonce=<that value>&next=/wherever
- *   3. route:   compares, DELETES the file, signs in.
+ *   1. shell:   pnpm dev-login [/next/path]   (mints .dev-login-nonce.<host>,
+ *                                              gitignored, and prints the URL)
+ *   2. browser: open the printed URL — it is on YOUR session's hostname
+ *   3. route:   compares, DELETES that host's file, signs in.
  *
  * Single-use by construction — the file is consumed on first presentation
  * (match or mismatch), so the nonce that unavoidably appears in the
@@ -36,22 +37,44 @@ import { createClient } from "@/utils/supabase/server";
  */
 // Runtime-only, single-file root. Excluding this dynamic cwd segment prevents
 // Turbopack from conservatively tracing the whole checkout into the route.
-const NONCE_FILE = join(
-  /* turbopackIgnore: true */ process.cwd(),
-  ".dev-login-nonce",
-);
+const REPO_ROOT = /* turbopackIgnore: true */ process.cwd();
 
-function consumeNonce(presented: string): boolean {
+/**
+ * A NONCE BELONGS TO A HOST (W56c, 2026-09-12).
+ *
+ * There used to be ONE `.dev-login-nonce` for the whole checkout. Five agent
+ * sessions drive this machine at once, and the file is consumed on ANY
+ * presentation (see below) — so one agent's mistyped or stale navigation
+ * deleted the nonce another agent had just minted, and that agent's sign-in
+ * then failed for a reason nothing on its screen could explain.
+ *
+ * Each hostname now has its own file, which is the same boundary the cookie
+ * jar uses: a session driving `s3f1eb9c52.localhost` mints and burns
+ * `.dev-login-nonce.s3f1eb9c52.localhost` and cannot reach anyone else's.
+ * `scripts/agent-harness/preview-session.sh` mints the matching name; the
+ * two are pinned together by `pnpm check:preview-session`.
+ */
+function nonceFileFor(hostname: string): string {
+  // `hostname` comes out of `new URL(...)`, so it is already a parsed host —
+  // but this value becomes a PATH, so it is re-validated rather than trusted.
+  const safe = /^[a-z0-9.-]{1,253}$/.test(hostname) && !hostname.includes("..")
+    ? hostname
+    : "invalid-host";
+  return join(REPO_ROOT, `.dev-login-nonce.${safe}`);
+}
+
+function consumeNonce(presented: string, hostname: string): boolean {
+  const file = nonceFileFor(hostname);
   let expected: string;
   try {
-    expected = readFileSync(NONCE_FILE, "utf8").trim();
+    expected = readFileSync(file, "utf8").trim();
   } catch {
-    return false; // no handshake file — nothing to consume
+    return false; // no handshake file for THIS host — nothing to consume
   }
   // Consume on ANY presentation: a wrong guess must burn the nonce too,
   // otherwise it can be brute-forced against a long-lived file.
   try {
-    rmSync(NONCE_FILE);
+    rmSync(file);
   } catch {
     /* already gone */
   }
@@ -62,13 +85,19 @@ function consumeNonce(presented: string): boolean {
  * Dev-only magic login for local AI agents.
  *
  * Usage:
- *   shell:   openssl rand -hex 16 > .dev-login-nonce
- *   browser: GET /api/dev-login?nonce=<that value>&next=/tasks
+ *   shell:   pnpm dev-login /tasks
+ *   browser: open the URL it prints
  *
  * Behavior:
- *   - Hard-refuses unless NODE_ENV !== 'production' AND host is localhost/127.0.0.1.
- *   - Requires ?nonce= to match the single-use .dev-login-nonce file, which is
- *     consumed on any presentation. `?token=` is refused — see the header.
+ *   - Hard-refuses unless NODE_ENV !== 'production' AND the host is a loopback
+ *     host: localhost, ANY `*.localhost` label (each agent session gets its own,
+ *     which is what gives it its own cookie jar), 127.0.0.1, 0.0.0.0 or ::1.
+ *   - Requires ?nonce= to match the single-use .dev-login-nonce.<host> file for
+ *     the host it was called on, consumed on any presentation. `?token=` is
+ *     refused — see the header.
+ *   - Redirects to the SAME host it was called on. It must never rewrite the
+ *     host to `localhost`: that would drop the caller back into the shared
+ *     cookie jar the per-session hostname exists to escape.
  *   - If the AI_ADMIN_USERNAME session already exists, just 302s to `next` (no re-login).
  *   - If SOMEBODY ELSE is signed in, signs them out and signs the admin in — see below.
  *   - Otherwise signs in with AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD and 302s to `next`.
@@ -96,9 +125,23 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url);
-  const hostname = url.hostname;
+  // The nonce file is PER HOST, and under `next dev` the framework rebuilds
+  // `request.url` against its bind address — `s3f1eb9c52.localhost` came out
+  // as `localhost`, so every per-session URL `pnpm dev-login` printed 401'd
+  // against `.dev-login-nonce.localhost` (2026-09-12, in-app browser AND
+  // Playwright). The `Host` header is the caller's own host (the same rule
+  // the redirect below already applies) and decides which nonce file we read.
+  const hostHeader = request.headers.get("host");
+  const hostname = hostHeader
+    ? new URL(`${url.protocol}//${hostHeader}`).hostname
+    : url.hostname;
+  // `*.localhost` is loopback by definition (RFC 6761) and is how each agent
+  // session gets its own cookie jar on the ONE shared dev server. Accepting it
+  // widens nothing: the label still resolves to 127.0.0.1 and the route is
+  // already dead in production.
   const isLocal =
     hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
     hostname === "127.0.0.1" ||
     hostname === "0.0.0.0" ||
     hostname === "::1";
@@ -117,24 +160,26 @@ export async function GET(request: NextRequest) {
           "putting a durable credential in a URL, which leaks it into browser history, " +
           "dev-server logs and agent transcripts — it leaked that way twice. This route " +
           "no longer reads DEV_LOGIN_TOKEN at all. Use the single-use nonce handshake " +
-          "instead, in two steps: (1) in a shell in this checkout, run " +
-          "`openssl rand -hex 16 > .dev-login-nonce`; (2) open " +
-          "`/api/dev-login?nonce=<that value>&next=/wherever`. The file is consumed on " +
-          "first use, so the nonce in that URL is already worthless once it is logged.",
+          "instead: run `pnpm dev-login /wherever` in a shell in this checkout and open " +
+          "the URL it prints. The nonce file is per host and is consumed on first use, " +
+          "so the nonce in that URL is already worthless once it is logged.",
       },
       { status: 401 },
     );
   }
 
   const nonce = url.searchParams.get("nonce");
-  if (!nonce || !consumeNonce(nonce)) {
+  if (!nonce || !consumeNonce(nonce, hostname)) {
     return NextResponse.json(
       {
         error:
-          "Expired, missing, or mismatched nonce. Run " +
-          "`openssl rand -hex 16 > .dev-login-nonce` in this checkout, then open " +
-          "`/api/dev-login?nonce=<that value>&next=/wherever`. Each nonce is good for " +
-          "exactly one request — a wrong guess burns the file too.",
+          `Expired, missing, or mismatched nonce for host '${hostname}'. Nonces are ` +
+          `PER HOST now (the file is .dev-login-nonce.${hostname}), so that one ` +
+          "agent's failed navigation can no longer burn another's. Run `pnpm dev-login` " +
+          "in a shell in this checkout — it mints the nonce for YOUR session's hostname " +
+          "and prints the URL to open. Each nonce is good for exactly one request; a " +
+          "wrong guess burns the file too. If you wrote `.dev-login-nonce` by hand, that " +
+          "is the old shared file and no host reads it any more.",
       },
       { status: 401 },
     );
@@ -145,7 +190,15 @@ export async function GET(request: NextRequest) {
     nextParam.startsWith("/") && !nextParam.startsWith("//")
       ? nextParam
       : "/dashboard";
-  const destination = new URL(safeNext, url.origin);
+  // 🚨 THE REDIRECT STAYS ON THE HOST IT WAS CALLED ON.
+  // The whole point of `<session>.localhost` is a private cookie jar; a redirect
+  // that rewrote the host to `localhost` would land the caller back in the
+  // SHARED jar carrying a session cookie set for a host it is no longer on —
+  // i.e. a sign-in that silently did nothing, plus the eviction of whichever
+  // agent owned localhost. The `Host` header is the caller's own host and wins
+  // over anything the framework reconstructed.
+  const callerHost = request.headers.get("host") ?? url.host;
+  const destination = new URL(safeNext, `${url.protocol}//${callerHost}`);
 
   const supabase = await createClient();
 

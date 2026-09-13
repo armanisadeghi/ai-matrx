@@ -1,4 +1,4 @@
-import { isUuid } from "@/features/scopes/utils/slugify";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type IntakeAssetRouteTarget =
   | { kind: "asset"; assetId: string }
@@ -15,7 +15,7 @@ export function resolveIntakeAssetRouteTarget(
   if (segment === "v2") {
     return { kind: "redirect", href: "/commerce/intake/v2" };
   }
-  if (!isUuid(segment)) {
+  if (!isUuidShape(segment)) {
     return { kind: "not-found" };
   }
   return { kind: "asset", assetId: segment };

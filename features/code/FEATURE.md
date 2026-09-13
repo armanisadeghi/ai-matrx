@@ -130,6 +130,8 @@ container.
 
 The management list exposes stored template/tier, resources, heartbeat, expiry, and storage fields without opening a sandbox. A heartbeat timestamp is not a health verdict; missing resource settings remain explicitly unrecorded. `useSandboxInstances` exhausts source pages for default list reads before local table filtering/paging, rejects incomplete snapshots, and cancels superseded requests. Explicit limit/offset callers retain one-page reads. Refresh preserves the current table controls; polling pauses during loading and confirmation dialogs. History batch selection is intersected with the currently loaded history records.
 
+`SandboxInstancesTable` declares its name column editable through the package cell editor; Save calls the existing owned-row rename operation and failures retain drafts. Its title, search, refresh, Add, views, column controls, and bottom spacing belong to the shared table. Active/history selection, resource summaries, lifecycle actions, and the create dialog remain Sandbox capabilities. Table identities `sandboxes/active` and `sandboxes/history` keep their saved layouts separate. Rollout and browser acceptance are tracked in `common-docs/projects/npm-package-extraction/TABLE-ROLLOUT-REGISTER.md`.
+
 ---
 
 ## Invariants & gotchas

@@ -2,7 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 
-import { isUuid, marketingSeg } from "@/features/marketing/lib/keys";
+import { marketingSeg } from "@/features/marketing/lib/keys";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { createClient } from "@/utils/supabase/server";
 
 /**
@@ -38,7 +39,7 @@ export interface LegacySiteAddress {
  */
 export const resolveLegacySiteAddress = cache(
   async (siteId: string): Promise<LegacySiteAddress | null> => {
-    if (!isUuid(siteId)) return null;
+    if (!isUuidShape(siteId)) return null;
     const supabase = await createClient();
     const siteResponse = await supabase
       .schema("web")

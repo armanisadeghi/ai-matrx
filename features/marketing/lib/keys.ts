@@ -16,9 +16,9 @@
  * slugifier (`features/scopes/utils/slugify.ts`).
  */
 
-import { isUuid, isValidSlug, toSlug } from "@/features/scopes/utils/slugify";
+import { isValidSlug, toSlug } from "@/features/scopes/utils/slugify";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-export { isUuid } from "@/features/scopes/utils/slugify";
 
 /**
  * Static `/marketing/*` segments (current + planned agency plane + legacy
@@ -177,5 +177,5 @@ export function pathWithMarketingSegment(
  * A param that is neither a UUID nor a plausible key is a 404, not a lookup.
  */
 export function isPossibleMarketingKey(value: string): boolean {
-  return !isUuid(value) && isValidSlug(value);
+  return !isUuidShape(value) && isValidSlug(value);
 }

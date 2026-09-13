@@ -45,11 +45,17 @@ export function SettingsReadOnlyValue({
   };
 
   return (
-    <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
-      <div className="flex items-center gap-1.5">
+    <SettingsRow
+      {...rowProps}
+      id={id}
+      variant="inline"
+      controlLayout="wide"
+      last={last}
+    >
+      <div className="flex min-w-0 items-center gap-1.5">
         <span
           className={cn(
-            "text-xs text-muted-foreground max-w-64 truncate",
+            "min-w-0 max-w-full text-xs text-muted-foreground truncate @[40rem]/settings:max-w-64",
             mono && "font-mono tabular-nums",
           )}
           title={value}

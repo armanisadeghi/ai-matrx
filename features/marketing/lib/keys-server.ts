@@ -6,9 +6,9 @@ import { createClient } from "@/utils/supabase/server";
 
 import {
   isPossibleMarketingKey,
-  isUuid,
   marketingSeg,
 } from "@/features/marketing/lib/keys";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * An anonymous (or otherwise ungranted) session cannot SELECT web.brand /
@@ -61,10 +61,10 @@ export const resolveBrandParam = cache(
         .from("brand")
         .select(BRAND_SEGMENT_COLUMNS)
         .is("deleted_at", null);
-    const isKey = !isUuid(slugOrId) && isPossibleMarketingKey(slugOrId);
-    if (!isUuid(slugOrId) && !isKey) return null;
+    const isKey = !isUuidShape(slugOrId) && isPossibleMarketingKey(slugOrId);
+    if (!isUuidShape(slugOrId) && !isKey) return null;
 
-    const { data, error } = await (isUuid(slugOrId)
+    const { data, error } = await (isUuidShape(slugOrId)
       ? base().eq("id", slugOrId)
       : base().eq("slug", slugOrId)
     ).maybeSingle();
@@ -102,10 +102,10 @@ export const resolveSiteParam = cache(
         .select(SITE_SEGMENT_COLUMNS)
         .eq("brand_id", brandId)
         .is("deleted_at", null);
-    const isKey = !isUuid(slugOrId) && isPossibleMarketingKey(slugOrId);
-    if (!isUuid(slugOrId) && !isKey) return null;
+    const isKey = !isUuidShape(slugOrId) && isPossibleMarketingKey(slugOrId);
+    if (!isUuidShape(slugOrId) && !isKey) return null;
 
-    const { data, error } = await (isUuid(slugOrId)
+    const { data, error } = await (isUuidShape(slugOrId)
       ? base().eq("id", slugOrId)
       : base().eq("slug", slugOrId)
     ).maybeSingle();

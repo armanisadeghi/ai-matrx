@@ -29,7 +29,7 @@ import {
 } from "@/features/education/library/artifactVisuals";
 import { StudyProgressBar } from "@/features/education/library/components/StudyProgressBar";
 import type { LibraryRowStats } from "@/features/education/library/types";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { peekHref } from "@/features/organizations/peek/peekHref";
 import {
@@ -174,7 +174,7 @@ function ArtifactCard({
             </p>
             {stats.lastStudiedAt && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Last studied {relativeTime(stats.lastStudiedAt)}
+                Last studied {formatRelativeTime(stats.lastStudiedAt)}
               </p>
             )}
           </>

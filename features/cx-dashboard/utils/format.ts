@@ -4,7 +4,7 @@ import { parseTimestamp } from "@/utils/datetime";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
-import { formatDurationMs as kitFormatDurationMs } from "@ai-matrx/kit/format";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 export { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -26,7 +26,7 @@ export function formatTokens(tokens: number | null | undefined): string {
 /** A zero here means "not measured", so it keeps this dashboard's hyphen. */
 export function formatDuration(ms: number | null | undefined): string {
   if (!ms) return "-";
-  return kitFormatDurationMs(ms, { style: "compact", fallback: "-" });
+  return formatDurationMs(ms, { style: "compact", fallback: "-" });
 }
 
 export function formatDate(dateStr: string | null | undefined): string {

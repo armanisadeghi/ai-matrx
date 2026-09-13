@@ -52620,6 +52620,251 @@ export type Database = {
   }
   interview: {
     Tables: {
+      decision_interview: {
+        Row: {
+          archived_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          opened_at: string | null
+          organization_id: string
+          purpose: string | null
+          respondent_user_id: string
+          settings: Json
+          source: string
+          status: string
+          subtitle: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          archived_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          opened_at?: string | null
+          organization_id: string
+          purpose?: string | null
+          respondent_user_id: string
+          settings?: Json
+          source?: string
+          status?: string
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          archived_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          opened_at?: string | null
+          organization_id?: string
+          purpose?: string | null
+          respondent_user_id?: string
+          settings?: Json
+          source?: string
+          status?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      decision_question: {
+        Row: {
+          also_asked_by: Json
+          answer_audio_file_id: string | null
+          answer_source: string | null
+          answer_text: string | null
+          answered_at: string | null
+          answered_by: string | null
+          asked_at: string | null
+          background: string | null
+          blocks: string | null
+          checked: Json
+          created_at: string
+          created_by: string | null
+          decision: string | null
+          decision_why: string | null
+          default_in_force: string | null
+          deleted_at: string | null
+          delivered_at: string | null
+          delivered_how: string | null
+          door: string
+          door_note: string | null
+          filed_branch: string | null
+          filed_by_user_id: string | null
+          filed_chat_title: string | null
+          filed_conversation_id: string | null
+          filed_repo: string | null
+          filed_session_id: string | null
+          id: string
+          implications: string | null
+          interview_id: string
+          kind: string | null
+          metadata: Json
+          mode: string
+          node: string | null
+          organization_id: string
+          position: number
+          question: string
+          recommendation: string | null
+          recorded_in: string | null
+          review_kind: string | null
+          ruled_before: string | null
+          slug: string
+          status: string
+          status_note: string | null
+          the_best_do: string | null
+          title: string
+          today: string | null
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          version: number
+          weight: string | null
+          why_it_matters: string | null
+          work: string | null
+        }
+        Insert: {
+          also_asked_by?: Json
+          answer_audio_file_id?: string | null
+          answer_source?: string | null
+          answer_text?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          asked_at?: string | null
+          background?: string | null
+          blocks?: string | null
+          checked?: Json
+          created_at?: string
+          created_by?: string | null
+          decision?: string | null
+          decision_why?: string | null
+          default_in_force?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_how?: string | null
+          door?: string
+          door_note?: string | null
+          filed_branch?: string | null
+          filed_by_user_id?: string | null
+          filed_chat_title?: string | null
+          filed_conversation_id?: string | null
+          filed_repo?: string | null
+          filed_session_id?: string | null
+          id?: string
+          implications?: string | null
+          interview_id: string
+          kind?: string | null
+          metadata?: Json
+          mode?: string
+          node?: string | null
+          organization_id: string
+          position?: number
+          question: string
+          recommendation?: string | null
+          recorded_in?: string | null
+          review_kind?: string | null
+          ruled_before?: string | null
+          slug: string
+          status?: string
+          status_note?: string | null
+          the_best_do?: string | null
+          title: string
+          today?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+          weight?: string | null
+          why_it_matters?: string | null
+          work?: string | null
+        }
+        Update: {
+          also_asked_by?: Json
+          answer_audio_file_id?: string | null
+          answer_source?: string | null
+          answer_text?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          asked_at?: string | null
+          background?: string | null
+          blocks?: string | null
+          checked?: Json
+          created_at?: string
+          created_by?: string | null
+          decision?: string | null
+          decision_why?: string | null
+          default_in_force?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_how?: string | null
+          door?: string
+          door_note?: string | null
+          filed_branch?: string | null
+          filed_by_user_id?: string | null
+          filed_chat_title?: string | null
+          filed_conversation_id?: string | null
+          filed_repo?: string | null
+          filed_session_id?: string | null
+          id?: string
+          implications?: string | null
+          interview_id?: string
+          kind?: string | null
+          metadata?: Json
+          mode?: string
+          node?: string | null
+          organization_id?: string
+          position?: number
+          question?: string
+          recommendation?: string | null
+          recorded_in?: string | null
+          review_kind?: string | null
+          ruled_before?: string | null
+          slug?: string
+          status?: string
+          status_note?: string | null
+          the_best_do?: string | null
+          title?: string
+          today?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+          weight?: string | null
+          why_it_matters?: string | null
+          work?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_question_interview_id_fkey"
+            columns: ["interview_id"]
+            isOneToOne: false
+            referencedRelation: "decision_interview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_revision: {
         Row: {
           created_at: string
@@ -63211,6 +63456,7 @@ export type Database = {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
       }
+      client_directive_notice_id: { Args: never; Returns: string }
       client_excluded_column_report: {
         Args: never
         Returns: {

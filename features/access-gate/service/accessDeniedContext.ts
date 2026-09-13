@@ -12,7 +12,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { deriveStatus } from "./deriveStatus";
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
   cmsAccessGateLabel,
   isCmsAccessGateToken,
@@ -201,7 +201,7 @@ export async function fetchAccessDeniedContext(
   // can never match any row, so the honest answer is "missing" (the link is
   // wrong). Asking the RPC would only 22P02 and degrade to a retry-able
   // "error", a retry that can never succeed.
-  if (!isUuid(id)) {
+  if (!isUuidShape(id)) {
     return {
       ...UNKNOWN,
       status: "missing",
@@ -251,7 +251,7 @@ export async function resolveAccessGateSlug(
       p_slug: slug,
     });
     if (error) return null;
-    return typeof data === "string" && isUuid(data) ? data : null;
+    return typeof data === "string" && isUuidShape(data) ? data : null;
   } catch {
     return null;
   }

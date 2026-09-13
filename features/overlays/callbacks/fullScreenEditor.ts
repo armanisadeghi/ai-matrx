@@ -47,43 +47,81 @@ export type FullScreenEditorEvent = FullScreenEditorSaveEvent;
 
 // ─── Caller-facing handler surface ───────────────────────────────────────────
 
-export interface FullScreenEditorHandlers {
+type AsyncSaveHandler = (content: string) => Promise<void>;
+type AsyncActionHandler = (action: string, content: string) => Promise<void>;
+
+type FullScreenEditorCommandHandler =
+  | { onSave: AsyncSaveHandler; onAction?: never }
+  | { onSave?: never; onAction: AsyncActionHandler };
+
+export type FullScreenEditorHandlers = FullScreenEditorCommandHandler & {
   /** Called when the user saves. Receives the edited content. */
-  onSave?: (content: string) => void;
   /**
    * Called when the user clicks one of the editor's `primaryActions`. Receives
    * the chosen action id and the edited content. Preferred over `onSave` for
    * multi-outcome editors (Save vs. Save & Resubmit vs. Create Fork).
    */
-  onAction?: (action: string, content: string) => void;
   /** Catch-all for any emitted event. */
-  onEvent?: (event: FullScreenEditorEvent) => void;
-}
+  onEvent?: (event: FullScreenEditorEvent) => void | Promise<void>;
+};
 
 // ─── Group creation / disposal ───────────────────────────────────────────────
 
 export function createFullScreenEditorCallbackGroup(
   handlers: FullScreenEditorHandlers,
 ): { callbackGroupId: string; dispose: () => void } {
+  if ((handlers.onSave ? 1 : 0) + (handlers.onAction ? 1 : 0) !== 1) {
+    throw new Error("A full-screen editor callback group requires exactly one save owner");
+  }
   const callbackGroupId = callbackManager.createGroup();
 
-  const fanOut = (event: FullScreenEditorEvent) => {
-    if (event.type === "save") {
-      handlers.onSave?.(event.content);
-      handlers.onAction?.(event.action ?? "save", event.content);
+  const requireThenable = (value: unknown): Promise<void> => {
+    if (
+      value === null ||
+      (typeof value !== "object" && typeof value !== "function") ||
+      !("then" in value) ||
+      typeof value.then !== "function"
+    ) {
+      throw new Error("A full-screen editor save owner must return a Promise");
     }
-    handlers.onEvent?.(event);
+    return Promise.resolve(value).then(() => undefined);
+  };
+
+  const fanOut = (event: FullScreenEditorEvent): Promise<void> => {
+    let command: Promise<void>;
+    if (event.type === "save") {
+      if (handlers.onSave) {
+        command = requireThenable(handlers.onSave(event.content));
+      } else if (handlers.onAction) {
+        command = requireThenable(handlers.onAction(event.action ?? "save", event.content));
+      } else {
+        return Promise.reject(new Error("A full-screen editor save owner is missing"));
+      }
+    }
+    return command!.then(async () => {
+      if (!handlers.onEvent) return;
+      try {
+        await handlers.onEvent(event);
+      } catch (error) {
+        console.error("[fullScreenEditor] save observer failed", error);
+      }
+    });
   };
 
   callbackManager.registerWithContext<FullScreenEditorEvent>(
-    (event) => fanOut(event),
+    fanOut,
     { groupId: callbackGroupId },
   );
 
   return {
     callbackGroupId,
-    dispose: () => callbackManager.removeGroup(callbackGroupId),
+    dispose: () => disposeFullScreenEditorCallbackGroup(callbackGroupId),
   };
+}
+
+/** One terminal cleanup primitive for bridges and imperative opener handles. */
+export function disposeFullScreenEditorCallbackGroup(callbackGroupId: string | null | undefined): void {
+  if (callbackGroupId) callbackManager.removeGroup(callbackGroupId);
 }
 
 /**
@@ -99,11 +137,12 @@ export function emitFullScreenEditorSave(
   callbackGroupId: string | undefined | null,
   content: string,
   action?: string,
-): void {
-  if (!callbackGroupId) return;
-  callbackManager.triggerGroup<FullScreenEditorEvent>(
+): Promise<void> {
+  if (!callbackGroupId) {
+    return Promise.reject(new Error("This editor no longer has a save target"));
+  }
+  return callbackManager.triggerGroupCommand<FullScreenEditorEvent>(
     callbackGroupId,
     { type: "save", content, action },
-    { removeAfterTrigger: true },
   );
 }

@@ -150,7 +150,7 @@ export interface ContentSourceAdapter {
     newContent: string;
     source: ContentSource;
     dispatch: AppDispatch;
-  }) => Promise<void> | void;
+  }) => Promise<void>;
 
   /** Delete the source record. */
   delete?: (args: {

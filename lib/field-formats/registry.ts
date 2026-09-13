@@ -8,7 +8,11 @@
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
 // ~35 twins variously took ms, seconds and minutes behind one signature.
-import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
+import {
+  formatDurationSeconds,
+  formatFileSize,
+  formatRelativeTime,
+} from "@ai-matrx/kit/format";
 
 import type {
   FieldChoice,
@@ -116,38 +120,6 @@ function findChoice(
   if (exact) return exact;
   const lowered = value.toLowerCase();
   return choices.find((c) => c.value.toLowerCase() === lowered);
-}
-
-const RELATIVE_STEPS: [number, Intl.RelativeTimeFormatUnit][] = [
-  [60, "second"],
-  [3600, "minute"],
-  [86400, "hour"],
-  [604800, "day"],
-  [2629800, "week"],
-  [31557600, "month"],
-  [Number.POSITIVE_INFINITY, "year"],
-];
-
-const RELATIVE_DIVISORS: Record<string, number> = {
-  second: 1,
-  minute: 60,
-  hour: 3600,
-  day: 86400,
-  week: 604800,
-  month: 2629800,
-  year: 31557600,
-};
-
-function formatRelative(date: Date): string {
-  const deltaSeconds = (date.getTime() - Date.now()) / 1000;
-  const abs = Math.abs(deltaSeconds);
-  const step = RELATIVE_STEPS.find(([limit]) => abs < limit);
-  const unit = step ? step[1] : "year";
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
-  return rtf.format(
-    Math.round(deltaSeconds / RELATIVE_DIVISORS[unit as string]),
-    unit,
-  );
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -502,7 +474,12 @@ const DEFS: FieldFormatDef[] = [
     editor: "datetime",
     format: (v) => {
       const d = toDate(v);
-      return d ? formatRelative(d) : null;
+      // THE one relative stamp (@ai-matrx/kit/format). This registry carried
+      // its own Intl ladder until 2026-09-12 — the last re-implementation of
+      // formatRelativeTime in this repo. It ROUNDED, so a 1h50m-old row read
+      // "2 hours ago" here and "1h ago" on every other surface in the product;
+      // the package truncates, which is what the rest of the fleet shows.
+      return d ? formatRelativeTime(d, { style: "intl" }) : null;
     },
     parse: (raw) => (raw === "" || raw == null ? null : String(raw)),
   },

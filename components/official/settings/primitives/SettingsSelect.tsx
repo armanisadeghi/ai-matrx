@@ -18,10 +18,10 @@ import type {
 type Width = "auto" | "sm" | "md" | "lg" | "full";
 
 const widthClass: Record<Width, string> = {
-  auto: "w-auto min-w-32",
-  sm: "w-32",
-  md: "w-44",
-  lg: "w-64",
+  auto: "w-full max-w-full @[40rem]/settings:w-auto @[40rem]/settings:min-w-32",
+  sm: "w-32 max-w-full min-w-0",
+  md: "w-44 max-w-full min-w-0",
+  lg: "w-64 max-w-full min-w-0",
   full: "w-full",
 };
 
@@ -62,7 +62,13 @@ export function SettingsSelect<T extends string = string>({
   const effectiveWidth: Width = stacked ? "full" : width;
 
   return (
-    <SettingsRow {...rowProps} id={id} variant={variant} controlLayout="wide" last={last}>
+    <SettingsRow
+      {...rowProps}
+      id={id}
+      variant={variant}
+      controlLayout="wide"
+      last={last}
+    >
       <Select
         value={value}
         onValueChange={(v) => onValueChange(v as T)}

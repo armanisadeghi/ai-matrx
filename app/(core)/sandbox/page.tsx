@@ -7,7 +7,6 @@ import {
   Container,
   Plus,
   Trash2,
-  RefreshCw,
   Loader2,
   CheckCircle2,
 } from "lucide-react";
@@ -15,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +46,7 @@ export default function SandboxListPage() {
     fetchInstances,
     createInstance,
     stopInstance,
+    renameInstance,
     deleteInstance,
     deleteInstances,
   } = useSandboxInstances();
@@ -127,10 +126,6 @@ export default function SandboxListPage() {
     const timer = setTimeout(() => setCreateError(null), 8000);
     return () => clearTimeout(timer);
   }, [createError]);
-
-  const handleRefresh = async () => {
-    await fetchInstances();
-  };
 
   const handleCreate = async () => {
     // Hard guard against double-submit: a successful POST that the FE
@@ -322,28 +317,9 @@ export default function SandboxListPage() {
             </span>
           </div>
         }
-        right={
-          <>
-            <TapTargetButton
-              icon={
-                <RefreshCw
-                  className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-                />
-              }
-              ariaLabel="Refresh"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            />
-            <TapTargetButtonSolid
-              icon={<Plus className="w-4 h-4" />}
-              label="New Sandbox"
-              mobileIconOnly
-              onClick={() => setCreateOpen(true)}
-            />
-          </>
-        }
+
       />
-      <div className="h-full min-h-0 flex flex-col overflow-hidden bg-textured px-3 pb-3 pt-[var(--shell-header-h)] sm:px-4">
+      <div className="h-full min-h-0 flex flex-col overflow-hidden bg-textured px-3 pt-[var(--shell-header-h)] sm:px-4">
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 py-2">
           <ToggleGroup
             type="single"
@@ -404,10 +380,15 @@ export default function SandboxListPage() {
             isFetching={refreshing}
             showingHistory={historyOpen}
             error={error}
+            onCreate={() => setCreateOpen(true)}
             onRetry={() => {
               void fetchInstances();
             }}
             onOpen={(instance) => router.push(`/sandbox/${instance.id}`)}
+            onRename={async (id, name) => {
+              const renamed = await renameInstance(id, name);
+              if (!renamed) throw new Error("Could not save the sandbox name. Your edit is preserved; try again.");
+            }}
             onStop={handleStop}
             onDelete={setDeleteTarget}
             stoppingIds={stoppingIds}

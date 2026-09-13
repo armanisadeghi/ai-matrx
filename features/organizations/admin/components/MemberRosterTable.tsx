@@ -28,10 +28,10 @@ import type { OrgAdminMember } from "../types";
 import { getInitials } from "@ai-matrx/kit/format";
 import {
   activityBucket,
-  formatBytes,
   formatMcents,
   formatRelativeTime,
 } from "../utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
@@ -282,7 +282,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
                 >
                   <span className="text-foreground">{m.orgFilesCount}</span>{" "}
                   <span className="text-xs">
-                    ({formatBytes(m.orgBytesUsed)})
+                    ({formatFileSize(m.orgBytesUsed)})
                   </span>
                 </TableCell>
                 <TableCell

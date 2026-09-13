@@ -44,15 +44,16 @@ export function SettingsSegmented<T extends string = string>({
       {...rowProps}
       id={id}
       variant={fullWidth ? "stacked" : "inline"}
+      controlLayout="wide"
       last={last}
     >
       <div
         role="tablist"
         className={cn(
-          "inline-flex p-0.5 bg-muted rounded-md",
+          "flex max-w-full flex-wrap rounded-md bg-muted p-0.5",
           // Labels never shatter mid-word; when the options genuinely don't
           // fit (many options at mobile widths) the control scrolls instead.
-          fullWidth && "w-full overflow-x-auto",
+          fullWidth && "w-full flex-nowrap overflow-x-auto",
         )}
       >
         {options.map((opt) => {
@@ -68,7 +69,7 @@ export function SettingsSegmented<T extends string = string>({
               className={cn(
                 "relative flex items-center justify-center rounded-[0.2rem] px-3 transition-all gap-1.5",
                 sizeClass[size],
-                fullWidth && "flex-1",
+                fullWidth && "min-w-max shrink-0 flex-1",
                 isActive
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50",

@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/features/tool-call-visualization/renderers/search/parseSearch";
 import {
   dateLine,
-  formatDuration,
+  formatDurationSeconds,
   num,
   readSearchKindValue,
   items,
@@ -276,7 +276,7 @@ export function VideoResultBlock({ serverData, className }: SearchKindBlockProps
         </span>
         {duration !== null && duration > 0 && (
           <span className="absolute bottom-1.5 right-1.5 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
-            {formatDuration(duration)}
+            {formatDurationSeconds(duration)}
           </span>
         )}
       </div>

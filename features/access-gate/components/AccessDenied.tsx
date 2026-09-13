@@ -56,7 +56,7 @@ import type {
 // 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
 // second and printed "AM".
-import { getInitials as initials } from "@ai-matrx/kit/format";
+import { getInitials } from "@ai-matrx/kit/format";
 
 /**
  * One concrete way forward, offered by the surface that knows the feature.
@@ -337,7 +337,7 @@ export function AccessDeniedView({
                       />
                     ) : null}
                     <AvatarFallback className="text-[11px]">
-                      {initials(context.owner.displayName)}
+                      {getInitials(context.owner.displayName)}
                     </AvatarFallback>
                   </Avatar>
                 }

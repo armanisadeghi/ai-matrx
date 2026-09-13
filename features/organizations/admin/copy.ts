@@ -10,7 +10,8 @@
 
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import type { OrgAdminAuditEntry, OrgAdminMember } from "./types";
-import { formatBytes, formatMcents, formatRelativeTime } from "./utils";
+import { formatMcents, formatRelativeTime } from "./utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 function lines(
   rows: Array<[string, string | number | boolean | null | undefined]>,
@@ -37,7 +38,7 @@ export function rosterMemberSummary(member: OrgAdminMember): string {
     ["Last active in org", formatRelativeTime(member.lastOrgActivityAt)],
     [
       "Files (org)",
-      `${member.orgFilesCount} (${formatBytes(member.orgBytesUsed)})`,
+      `${member.orgFilesCount} (${formatFileSize(member.orgBytesUsed)})`,
     ],
     ["Spend 24h", formatMcents(member.cost24hMcents)],
     ["Requests 24h", member.requests24h],
@@ -90,7 +91,7 @@ export function rosterKpis(members: OrgAdminMember[]) {
 
 export function rosterListHuman(members: OrgAdminMember[]): string {
   const kpis = rosterKpis(members);
-  const head = `Org member roster — ${kpis.total} member${kpis.total === 1 ? "" : "s"} · ${kpis.suspended} suspended · ${formatBytes(kpis.org_bytes_used)} in org files · ${formatMcents(kpis.cost_24h_mcents)} spend 24h`;
+  const head = `Org member roster — ${kpis.total} member${kpis.total === 1 ? "" : "s"} · ${kpis.suspended} suspended · ${formatFileSize(kpis.org_bytes_used)} in org files · ${formatMcents(kpis.cost_24h_mcents)} spend 24h`;
   return [head, "", ...members.map(rosterMemberSummary)].join("\n\n");
 }
 

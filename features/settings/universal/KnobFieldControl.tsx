@@ -42,7 +42,11 @@ import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelList
 import { useCartesia } from "@/hooks/tts/useCartesia";
 import { VoiceSpeed } from "@/lib/cartesia/cartesia.types";
 import { availableVoices } from "@/lib/cartesia/voices";
-import { formatKnobValue, type KnobControl, type KnobLadder } from "@/lib/scoped-config/ladder";
+import {
+  formatKnobValue,
+  type KnobControl,
+  type KnobLadder,
+} from "@/lib/scoped-config/ladder";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,6 +76,10 @@ export type KnobFieldControlProps = {
   onCommit: (value: unknown) => void | boolean | Promise<void | boolean>;
   /** Changes whenever this control points at a different persistence destination. */
   identityKey?: string;
+  /** DOM id for the row's primary control when it has one. */
+  inputId?: string;
+  /** Row label id for composite or read-only controls. */
+  labelId?: string;
 };
 
 /** "not_set" → "Not set", "auto_apply" → "Auto apply". Never a raw slug. */
@@ -95,7 +103,7 @@ export function KnobFieldControl(props: KnobFieldControlProps) {
     case "voice":
       return <VoiceField {...props} />;
     case "secret":
-      return <SecretField knob={knob} />;
+      return <SecretField {...props} />;
     case "json":
       return <JsonField key={props.identityKey ?? knob.full_key} {...props} />;
     default:
@@ -104,7 +112,14 @@ export function KnobFieldControl(props: KnobFieldControlProps) {
 }
 
 /** Structured values are inspectable by default and editable only on intent. */
-function JsonField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
+function JsonField({
+  knob,
+  ladder,
+  disabled,
+  onCommit,
+  inputId,
+  labelId,
+}: KnobFieldControlProps) {
   const [editing, setEditing] = useState(false);
   const [raw, setRaw] = useState(() => JSON.stringify(ladder.value, null, 2));
   const [error, setError] = useState<string | null>(null);
@@ -115,48 +130,77 @@ function JsonField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) 
   };
   if (!editing) {
     return (
-      <Button size="sm" variant="outline" disabled={disabled} onClick={() => setEditing(true)}>
+      <Button
+        size="sm"
+        variant="outline"
+        aria-label={labelId ? undefined : `Edit structured value for ${knob.label}`}
+        aria-labelledby={labelId}
+        disabled={disabled}
+        onClick={() => setEditing(true)}
+      >
         Edit structured value
       </Button>
     );
   }
   return (
-    <div className="w-full min-w-64 space-y-2">
+    <div className="w-full min-w-0 space-y-2">
       <Textarea
-        aria-label={`Structured value for ${knob.label}`}
+        id={inputId}
+        aria-label={labelId ? undefined : `Structured value for ${knob.label}`}
+        aria-labelledby={labelId}
         className="min-h-28 font-mono text-xs"
         value={raw}
         disabled={disabled}
-        onChange={(event) => { setRaw(event.target.value); setError(null); }}
+        onChange={(event) => {
+          setRaw(event.target.value);
+          setError(null);
+        }}
       />
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button size="sm" disabled={disabled} onClick={() => {
-          try {
-            const parsed: unknown = JSON.parse(raw);
-            if (parsed === null) {
-              setError("Use the reset action to clear this value.");
-              return;
+        <Button
+          size="sm"
+          disabled={disabled}
+          onClick={() => {
+            try {
+              const parsed: unknown = JSON.parse(raw);
+              if (parsed === null) {
+                setError("Use the reset action to clear this value.");
+                return;
+              }
+              setError(null);
+              void Promise.resolve(onCommit(parsed)).then((saved) => {
+                if (saved !== false) setEditing(false);
+              });
+            } catch {
+              setError("Enter valid JSON before saving.");
             }
-            setError(null);
-            void Promise.resolve(onCommit(parsed)).then((saved) => {
-              if (saved !== false) setEditing(false);
-            });
-          } catch {
-            setError("Enter valid JSON before saving.");
-          }
-        }}>Save structured value</Button>
-        <Button size="sm" variant="ghost" disabled={disabled} onClick={reset}>Cancel</Button>
+          }}
+        >
+          Save structured value
+        </Button>
+        <Button size="sm" variant="ghost" disabled={disabled} onClick={reset}>
+          Cancel
+        </Button>
       </div>
     </div>
   );
 }
 
-function SwitchField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
+function SwitchField({
+  knob,
+  ladder,
+  disabled,
+  onCommit,
+  inputId,
+  labelId,
+}: KnobFieldControlProps) {
   return (
     <div className="flex h-9 items-center">
       <Switch
-        aria-label={knob.label}
+        id={inputId}
+        aria-label={labelId ? undefined : knob.label}
+        aria-labelledby={labelId}
         checked={ladder.value === true}
         disabled={disabled}
         onCheckedChange={(next) => void onCommit(next)}
@@ -171,7 +215,13 @@ function SwitchField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
  * committed value keeps the registry's own type (boolean stays boolean),
  * because `knob_override_set` validates the JSON type it is handed.
  */
-function SegmentedField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
+function SegmentedField({
+  knob,
+  ladder,
+  disabled,
+  onCommit,
+  labelId,
+}: KnobFieldControlProps) {
   const choices: { raw: unknown; value: string; label: string }[] =
     knob.value_type === "boolean"
       ? [
@@ -188,12 +238,19 @@ function SegmentedField({ knob, ladder, disabled, onCommit }: KnobFieldControlPr
   const current = String(ladder.value ?? "");
 
   return (
-    <div className={cn("flex h-9 items-center", disabled && "opacity-50")}>
+    <div
+      role="group"
+      aria-label={labelId ? undefined : knob.label}
+      aria-labelledby={labelId}
+      className={cn("flex h-9 items-center", disabled && "opacity-50")}
+    >
       <SegmentedControl
-        aria-label={knob.label}
         size="sm"
         value={current}
-        data={choices.map((choice) => ({ value: choice.value, label: choice.label }))}
+        data={choices.map((choice) => ({
+          value: choice.value,
+          label: choice.label,
+        }))}
         onValueChange={(next) => {
           if (disabled) return;
           const chosen = choices.find((choice) => choice.value === next);
@@ -211,7 +268,14 @@ function SegmentedField({ knob, ladder, disabled, onCommit }: KnobFieldControlPr
  * platform default is marked on the track so a person can see what they are
  * moving away from. The drag is local; the write happens once, on release.
  */
-function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
+function SliderField({
+  knob,
+  ladder,
+  disabled,
+  onCommit,
+  inputId,
+  labelId,
+}: KnobFieldControlProps) {
   const min = knob.min_value ?? 0;
   const max = knob.max_value ?? 100;
   const span = max - min;
@@ -222,7 +286,7 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
   const shown = dragging ?? settled;
 
   return (
-    <div className="w-56 space-y-1.5 py-1">
+    <div className="w-56 max-w-full min-w-0 space-y-1.5 py-1">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-medium tabular-nums">
           {formatKnobValue(shown, knob.unit)}
@@ -232,18 +296,20 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
         </span>
       </div>
       <Slider
-          aria-label={knob.label}
-          size="sm"
-          min={min}
-          max={max}
-          step={step}
-          value={[shown]}
-          disabled={disabled}
-          onValueChange={(next) => setDragging(next[0])}
-          onValueCommit={(next) => {
-            setDragging(null);
-            void onCommit(next[0]);
-          }}
+        id={inputId}
+        aria-label={labelId ? undefined : knob.label}
+        aria-labelledby={labelId}
+        size="sm"
+        min={min}
+        max={max}
+        step={step}
+        value={[shown]}
+        disabled={disabled}
+        onValueChange={(next) => setDragging(next[0])}
+        onValueCommit={(next) => {
+          setDragging(null);
+          void onCommit(next[0]);
+        }}
       />
     </div>
   );
@@ -255,11 +321,23 @@ function SliderField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps
  * (chat, the lab, every settings tab go through it); a second one here would
  * be a second catalogue to drift.
  */
-function ModelField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
-  const value = typeof ladder.value === "string" && ladder.value !== "" ? ladder.value : null;
+function ModelField({
+  knob,
+  ladder,
+  disabled,
+  onCommit,
+  inputId,
+  labelId,
+}: KnobFieldControlProps) {
+  const value =
+    typeof ladder.value === "string" && ladder.value !== ""
+      ? ladder.value
+      : null;
   return (
     <ModelListDropdown
-      aria-label={knob.label}
+      id={inputId}
+      aria-label={labelId ? undefined : knob.label}
+      aria-labelledby={labelId}
       value={value}
       onValueChange={(next) => {
         if (next) void onCommit(next);
@@ -268,7 +346,7 @@ function ModelField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
       outputModalities={["text"]}
       placeholder="Choose a model"
       disabled={disabled}
-      className="w-56 justify-between"
+      className="w-56 max-w-full min-w-0 justify-between"
     />
   );
 }
@@ -283,7 +361,14 @@ const VOICE_SAMPLE_LINE =
  * `useCartesia` — the SAME TTS path `VoiceSelectionModal` uses. A second audio
  * path is how two surfaces start sounding different.
  */
-function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps) {
+function VoiceField({
+  knob,
+  ladder,
+  disabled,
+  onCommit,
+  inputId,
+  labelId,
+}: KnobFieldControlProps) {
   const current = typeof ladder.value === "string" ? ladder.value : "";
   const { sendMessage, stopPlayback, isConnected, error } = useCartesia();
   const [playing, setPlaying] = useState(false);
@@ -302,7 +387,10 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
     setFailure(null);
     setPlaying(true);
     try {
-      await sendMessage(VOICE_SAMPLE_LINE, VoiceSpeed.NORMAL, { mode: "id", id: current });
+      await sendMessage(VOICE_SAMPLE_LINE, VoiceSpeed.NORMAL, {
+        mode: "id",
+        id: current,
+      });
     } catch (err) {
       setFailure(extractErrorMessage(err));
     } finally {
@@ -311,14 +399,19 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
   };
 
   return (
-    <div className="w-64 space-y-1.5">
-      <div className="flex items-center gap-2">
+    <div className="w-64 max-w-full min-w-0 space-y-1.5">
+      <div className="flex flex-wrap items-center gap-2">
         <Select
           value={current || undefined}
           disabled={disabled}
           onValueChange={(next) => void onCommit(next)}
         >
-        <SelectTrigger className="h-9 w-40">
+          <SelectTrigger
+            id={inputId}
+            aria-label={labelId ? undefined : knob.label}
+            aria-labelledby={labelId}
+            className="h-9 min-w-0 flex-1"
+          >
             <SelectValue placeholder="Choose a voice" />
           </SelectTrigger>
           <SelectContent>
@@ -332,7 +425,7 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
         <Button
           size="sm"
           variant="outline"
-          className="h-9 gap-1.5"
+          className="h-9 shrink-0 gap-1.5"
           disabled={disabled || !isConnected}
           onClick={() => void play()}
         >
@@ -349,7 +442,9 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
       {/* Nothing fails silently: a speech service that did not connect says so
           instead of leaving a button that does nothing when pressed. */}
       {!isConnected && !error && (
-        <p className="text-[11px] text-muted-foreground">Connecting to the speech service…</p>
+        <p className="text-[11px] text-muted-foreground">
+          Connecting to the speech service…
+        </p>
       )}
       {(error || failure) && (
         <p className="text-[11px] text-destructive">
@@ -367,28 +462,49 @@ function VoiceField({ knob, ladder, disabled, onCommit }: KnobFieldControlProps)
  * in the clear. The vault is where a secret is set and rotated, so this is a
  * door to the vault, not a pretend editor (a control is absent or honest).
  */
-function SecretField({ knob }: { knob: ScopedKnob }) {
+function SecretField({
+  knob,
+  labelId,
+}: Pick<KnobFieldControlProps, "knob" | "labelId">) {
   const state = knob.secret?.state ?? "unknown";
   const vaultKey = knob.secret?.vault_key ?? null;
   const isSet = state === "set";
   const isUnknown = state === "unknown";
   return (
-    <div className="flex w-56 flex-col items-end gap-1.5">
-      <div className="flex items-center gap-2">
-        <Badge variant={isSet ? "default" : "outline"} className="gap-1 text-xs">
-          {isSet ? <ShieldCheck className="h-3 w-3" /> : <ShieldOff className="h-3 w-3" />}
+    <div
+      role="group"
+      aria-label={labelId ? undefined : knob.label}
+      aria-labelledby={labelId}
+      className="flex w-56 max-w-full min-w-0 flex-col items-stretch gap-1.5 @[40rem]/settings:items-end"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge
+          variant={isSet ? "default" : "outline"}
+          className="gap-1 text-xs"
+        >
+          {isSet ? (
+            <ShieldCheck className="h-3 w-3" />
+          ) : (
+            <ShieldOff className="h-3 w-3" />
+          )}
           {isSet ? "Set" : isUnknown ? "State unavailable" : "Not set"}
         </Badge>
         <Button size="sm" variant="outline" asChild>
-          <Link href="/vault">{isSet ? "Rotate in the vault" : "Check in the vault"}</Link>
+          <Link href="/vault">
+            {isSet ? "Rotate in the vault" : "Check in the vault"}
+          </Link>
         </Button>
       </div>
-      <p className="text-right text-[11px] text-muted-foreground">
+      <p className="break-words text-[11px] text-muted-foreground @[40rem]/settings:text-right">
         {isUnknown ? (
-          <>The platform register does not include vault state. Check Vault before changing this secret.</>
+          <>
+            The platform register does not include vault state. Check Vault
+            before changing this secret.
+          </>
         ) : vaultKey ? (
           <>
-            Held in the vault as <code>{vaultKey}</code>. The value is never shown or stored here.
+            Held in the vault as <code>{vaultKey}</code>. The value is never
+            shown or stored here.
           </>
         ) : (
           <>No vault entry is named for this one yet, so nothing can be set.</>

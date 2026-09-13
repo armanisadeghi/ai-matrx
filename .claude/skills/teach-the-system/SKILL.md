@@ -93,17 +93,6 @@ three answers below. A subject that fails any of them is rejected.
    is the trial's most valuable output, never a "coherence tension" to settle. Trial 3 planned the
    pair and attached both to one Rulebook — 139 drafts, one desk, every disagreement resolved to a
    side: that is the consensus trap, and it is now a wall (§4).
-6. **Is it tacit, intuitive or non-consensus (Arman's mandate, 2026-09-12 —
-   `projects/expert-book-challenge/MANDATE.md`)?** The principal source of value is the "gut feeling",
-   the experiential rubric, the heuristic the field does not agree on, the "magic" that never made
-   it into procedure. A trial on a consensus handbook (trial 8's two WHO guides) exercises the
-   operationalization and validation halves only; say so in the register. Prefer a source that is
-   a PERSON or an opinionated practitioner, captured the way the expertise lives — voice, an
-   interview, a scenario walk-through, a "day in the life", annotated cases — over a text.
-7. **Will the pipeline keep the dissent?** Two schools stay two Rulebooks and two desks; a divergent
-   or "odd" rule is kept and tagged with its provenance, never averaged away or retired as noise.
-   **Consensus collapse is a wall class**: a triage, a distiller, an improver or a judge that pulls a
-   minority approach toward the majority is a platform defect to fix, not a cleaner result.
 
 Prefer subjects that need **no external service**. Fancy APIs make the distillation neither harder
 nor easier — the barrier is never technology, it is whether the system captures the skill. When the
@@ -155,9 +144,21 @@ couple of little books".** Most expertise in a company never made it into a book
   you toward one of these as a wall.
 - **Cheat honestly.** A browser instead of an email tool, a pasted chapter instead of the whole
   PDF — allowed, logged as a cheat in the register with what the honest version would need.
-- **Sign in without typing a password.** Production browser pane signed out? Use the local preview
-  (`pnpm preview:start`, port 3001) with the single-use `.dev-login-nonce` handshake
-  (`matrx-frontend/app/api/dev-login/route.ts` explains it). Never type a credential into a field.
+- **Sign in without typing a password, ON YOUR OWN HOSTNAME.** Production browser pane signed out?
+  Use the local preview (`pnpm preview:start`, port 3001) and then `pnpm dev-login /<route>`, which
+  mints your session's single-use nonce and prints the URL to open. Never type a credential into a
+  field.
+- **🚨 Never open `localhost:3001` — open the hostname the harness prints.** Several trials run on
+  one machine at once, and cookies are scoped to a HOST and ignore the PORT: on 2026-09-12 five
+  sessions shared one cookie jar on `localhost`, so one agent's dev-login signed every other agent
+  in as somebody else mid-form and the page correctly paused itself with "Account Changed…". Each
+  session now gets its own `<label>.localhost` (printed by `pnpm preview:start` and
+  `pnpm preview:status`; set `MATRX_PREVIEW_SESSION=<name>` to claim a readable one), which gives it
+  its own cookie jar, storage and dev-login nonce on the SAME one server. Two more consequences for
+  a trial: the slot being "taken" by a server serving THIS checkout is no longer a refusal — take
+  the hostname it offers you — and your failed navigation can no longer burn another trial's nonce.
+  Mechanics and forcing proof: `matrx-frontend/docs/official/browser-testing.md`,
+  `pnpm check:preview-session`.
 - **Cost is a measured result.** Track model spend from `chat.request`; the comparison bar is a
   fresh vibe-code of the same source on cost, sturdiness, reliability, and reuse on source #2–#5.
 - **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
@@ -306,22 +307,6 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
-- 2026-09-12 — (trial 8) A registry the code owns must never be re-typed by hand in the database: the
-  durable-run table's CHECK constraint listed 10 operations while the code's census listed 13, and 56
-  live calls died at their first INSERT with every code-side guard green (W66). When you add a lane,
-  grep the DB for the enum twin (`pg_get_constraintdef`) and add a guard that diffs the migration
-  against the code.
-- 2026-09-12 — (trial 8) The frontend contract regenerates from PRODUCTION from a cloud container:
-  `node scripts/sync-types.mjs --live --fast --url https://server.app.matrxserver.com` (`--fast` skips
-  the Supabase type step that needs a credential, `--url` replaces the default localhost). Commit only
-  the halves whose new required fields your tests can carry; file the rest for its lane.
-- 2026-09-12 — (trial 8) When the deploy train stops, read `main`'s own CI before blaming the deploy
-  agent: a commit that resolves the runtime stage AT IMPORT turned every stage-less process red
-  (pytest collection, the mandate generator, the scanners) and the train with it. Fix the class on
-  your branch (a stage-free probe for import-time gates), port the other regressions, comment once.
-- 2026-09-12 — (trial 8) Review bots and CI on a PR find `main`'s fresh regressions as often as yours:
-  sort every red check by "does my diff touch it", fix and port what is small, and write ONE
-  standing-down comment for the rest — never a second comment for the same red.
 - 2026-09-12 — (trial 7, the unfolding case) Write the cross-repo CONTRACT before dispatching the build:
   one document with the kind shapes, the rule fields, the node's handles and the Audition's request,
   then five lanes (three aidream, two frontend) landed in about ninety minutes with no merge conflict.
@@ -415,6 +400,28 @@ lines by relocating trial-specific detail into the trial's register.
   real miss: it accepted a false "I already told you" claim without checking the record, leaving a
   genuine gap uncaptured — worth watching across future trials before calling it a pattern. Test the
   hard persona, not just the easy one, before judging an interviewer's real quality.
+- 2026-09-12 — (trial 9, runs 3–6) A fix to a kind's MODEL is not live until its registry row is
+  republished; a CI amnesty list that "warns" on a fatally-enforced kind is a hole (W57). The
+  Conductor wires template paths blind to the upstream shape; nothing checks `$item.x` before money
+  is spent (W58). Four parallel agents deadlock on the secrets battery's per-generation UPDATE;
+  a transient SQLSTATE was never retried anywhere (W59). Each was the NEXT step after the previous
+  fix — run the desk again after every fix; the walls are sequential, not parallel.
+- 2026-09-12 — An empty-but-schema-valid answer passes kind validation and the run says "completed"
+  (W60: the audit, $2.24, three calls, every field blank). Read the deliverable's fields, not the
+  run status, before calling a run a success.
+- 2026-09-12 — Another agent's live migration can take the whole platform down under you (W61: a
+  `current_user = 'service_role'` test inside a SECURITY DEFINER body is never true — current_user
+  is the OWNER there). When the Conductor panel refuses with a mandate message, read the function
+  and `_schema_migrations` since the last time it worked before blaming the product.
+- 2026-09-12 — The exam judgment is the capability finding: the desk held 416 craft rules and the
+  writer obeyed few of the ones that matter, because NO step judges a Masterwork's output against
+  its own Rulebook and the Audition cannot do a gap analysis against a sealed reference. Feed the
+  editor's instructions back to the Conductor as rules and self-checks, not as a rewrite.
+- 2026-09-12 — Exam fairness: the published piece carried reporting the bundle lacked (interviews,
+  later cases). Tell the judge to score only what the record allows, or bundle what the newsroom
+  actually had; otherwise the verdict measures access, not craft.
+
+
 - 2026-09-12 — (trial 8, the unfolding case) A cloud session's environment can carry a STALE credential: the
   Supabase publishable key in the container was not the project's live key (401 on every auth call). Read the
   live publishable key through the Supabase MCP (it is public by design) and log the drift as a wall; never
@@ -463,41 +470,6 @@ lines by relocating trial-specific detail into the trial's register.
   night: retained dissent on the rule atom, the invisible policy rules, the voice-first and YouTube
   doors, the blind pairwise Audition arm; the `school` dimension is under design and attack
   (`DESIGN-schools-on-the-rule-atom.md`).
-- 2026-09-12 — (trial 8) The Conductor does not read the catalog's worked example unless told; eight turns
-  went on invented step types, fields under config, and "platform bug" claims that the `definition_shape`
-  action answers in one call. Open every build conversation with: "call definition_shape and get_node_type
-  for every step type before your first save". Its "read it back" claims were false three times in one
-  night — verify every save with get_workflow yourself, and check the id: it created a NEW workflow twice
-  while reporting a patch.
-- 2026-09-12 — (trial 8) The engine's shape facts an author needs, all learned by dying: fields go under
-  `data.inputs` (Collect and Pause settings under `config`); the Collect step is `io.user_input`; values move
-  ONLY on `kind: data` edges with `mappings` (`$FULL_PAYLOAD` = the whole upstream output); a control edge
-  carries nothing; a reviewer's approval answer lands under `extras.note` / `extras.approved`, not `answer`;
-  a resume needs the interrupt payload's `checkpoint_id`. All are now save-time refusals or notes on the
-  branch — the next Conductor inherits them.
-- 2026-09-12 — (trial 8) An agent step re-entered by a loop edge starts amnesiac: it gets the reviewer's
-  note as its only message and has lost the case. Until the engine continues a step's own conversation
-  across a pause, the Expert's note must restate the identity (the case id) in its first sentence and the
-  step must be told to read its ledger first. Say so in the system instruction the Conductor writes.
-- 2026-09-12 — (trial 8) A silent model swap is a PROVIDER CREDIT REROUTE: read `chat.request` (which model
-  ran) against the step's declared model, and look for `provider_credit_reroute` info events on any stream.
-  Every "Sonnet 5" run of the night ran on gpt-4.1 because the Anthropic account was refusing on billing —
-  an Arman-only item, reported in the morning report, never a mystery to chase in code.
-- 2026-09-12 — (trial 8) A sealed source is sealed at the RESOLUTION, not at the desk's step: the oracle answers
-  "was she intubated?" from the future. Before trusting any outcome score, read the ledger for answers that
-  leak the course; the next primitive is an oracle that answers only up to the desk's current step.
-- 2026-09-12 — (trial 8) Seed knob weights by running the real path once: the path-score weights I chose from
-  arithmetic on eight questions zeroed every real workup (seventeen cheap questions). A starting value is
-  a guess until one live run has been scored with it.
-- 2026-09-12 — Arman's architecture brief (MANDATE.md, verbatim, owner authority) sets the bar for every
-  trial: the tacit, intuitive, non-consensus, controversial layer is the principal value; capture must be
-  multi-modal (voice, video, interviews, scenario Q&A, day-in-the-life observation, annotated cases); experts
-  validate and challenge in their own modalities; dissent and schools of thought stay navigable, never
-  collapsed. Success = "can the system execute and extend the most nuanced, non-obvious forms of expertise,
-  previously inexpressible to either humans or AI, and make them available, editable and testable". Rules 5
-  and 6 in §1 came from it; trial 8 is honestly a consensus-source trial that built the operationalization
-  and validation halves.
-- 2026-09-13 — (trial 8) COST IS A CONTEXT-SIZE PROBLEM BEFORE IT IS A MODEL-TIER PROBLEM: the night's biggest bill was one Conductor conversation at up to 559K tokens of context per call ($95), because tool-call ARGUMENTS (a 50K-char workflow definition on every save) were never trimmed. Read `chat.request` (`input_tokens + cached_tokens` per call, `trim_summary`) before blaming the model; a holder whose context passes ~150K tokens is a platform wall, not a cost of doing business. And the mechanical per-chunk holders (segmenter, distillers) run on Sonnet 5; Opus 5 is for the paths that reason (Conductor, judge); Fable never runs inside the app.
 - 2026-09-13 — (trial 12, found at a PR check-in) 🚨 **Trials run concurrently against ONE platform, and two
   of them built the same primitive on the same night, on the same field names, in the same files.** Trial 8
   landed a flat `precondition`/`next_action` policy shape on `main` while trial 7 was building a structured

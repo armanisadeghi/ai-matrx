@@ -115,15 +115,6 @@ const FORBIDDEN_CALLS: ReadonlyArray<readonly [RegExp, string]> = [
   [/(^|[^.\w$"'`])import\s*\(/, "a dynamic import()"],
 ];
 
-/**
- * THE byte-size voice: @ai-matrx/kit/format owns "512 B" / "1.5 KB" / "12 MB".
- * The local copy printed two decimals at MB; the package's one-decimal-under-
- * ten rule is the fleet-wide decision.
- */
-function formatBytes(n: number): string {
-  return formatFileSize(n);
-}
-
 function shorten(p: string): string {
   return p.replace(/node_modules\/\.pnpm\/[^/]+\/node_modules\//, "~/");
 }
@@ -247,13 +238,20 @@ async function main(): Promise<void> {
   }
 
   const css = await buildCss();
+  // RAW IS MEASURED IN BYTES, NOT CHARACTERS (2026-09-12). `code` and `css` are
+  // STRINGS — `readFile(JS_OUT, "utf8")` and PostCSS's `result.css` — so
+  // `.length` is UTF-16 code units, and this line printed that count beside a
+  // TRUE gzip byte count under the same " MB". The gz figures were always bytes
+  // (`gzipSync(Buffer.from(...)).length`); only raw lied.
+  const jsBytes = Buffer.byteLength(code, "utf8");
+  const cssBytes = Buffer.byteLength(css, "utf8");
   const jsGz = gzipSync(Buffer.from(code)).length;
   const cssGz = gzipSync(Buffer.from(css)).length;
 
   // eslint-disable-next-line no-console
   console.log(
-    `✓ kind-sandbox.js  ${formatBytes(code.length)} raw / ${formatBytes(jsGz)} gz → ${JS_OUT}\n` +
-      `✓ kind-sandbox.css ${formatBytes(css.length)} raw / ${formatBytes(cssGz)} gz → ${CSS_OUT}`,
+    `✓ kind-sandbox.js  ${formatFileSize(jsBytes)} raw / ${formatFileSize(jsGz)} gz → ${JS_OUT}\n` +
+      `✓ kind-sandbox.css ${formatFileSize(cssBytes)} raw / ${formatFileSize(cssGz)} gz → ${CSS_OUT}`,
   );
 }
 

@@ -19,7 +19,7 @@ import type {
   EntityListController,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { CONVERSATION_COLUMNS } from "./columns";
 import {
   fetchConversationFacets,
@@ -174,7 +174,7 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
         row.conversation_type,
       )}${row.workspace_name ? ` in ${row.workspace_name}` : ""}, ${
         row.message_count
-      } messages, last active ${relativeTime(row.last_activity_at)}`,
+      } messages, last active ${formatRelativeTime(row.last_activity_at)}`,
     showRow: false,
     showToolbar: true,
   },

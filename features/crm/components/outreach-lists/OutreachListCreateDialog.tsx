@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { createOutreachList } from "../../outreach-lists/service";
 import type {
   OutreachListKind,
@@ -62,19 +63,26 @@ export function OutreachListCreateDialog({
       toast.error("Give the outreach list a name");
       return;
     }
-    if (!orgId) {
-      toast.error(
-        "No active organization resolved yet — try again in a moment",
-      );
-      return;
-    }
+    // W39 class: WAIT for the workspace, never tell somebody to press the
+    // button again. Bounded; when it settles with nothing the message names
+    // the remedy instead of promising an arrival.
     setSaving(true);
+    let workspaceId = orgId;
+    if (!workspaceId) {
+      const workspace = await awaitEffectiveOrganizationId();
+      if (workspace.status !== "ready") {
+        setSaving(false);
+        toast.error(workspace.reason);
+        return;
+      }
+      workspaceId = workspace.organizationId;
+    }
     try {
       const created = await createOutreachList({
         name,
         kind,
         description: description || undefined,
-        orgId,
+        orgId: workspaceId,
       });
       setName("");
       setDescription("");

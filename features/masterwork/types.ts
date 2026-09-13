@@ -63,6 +63,25 @@ export interface RuleSourceRef {
   source?: string;
   /** Free-form pointer ("Chapter 6", timestamp for audio, etc.). */
   note?: string;
+  /**
+   * WHICH PART of the source this rule came from, when the source divides
+   * itself into parts (aidream `services/distillation/source_structure.py`,
+   * W42). 1-based in reading order, with the source's own heading as the
+   * label and the part's own word count.
+   *
+   * 🚨 Why it exists: a 31,311-word book was cut by a ruler into six equal
+   * chunks, its most prescriptive chapter contributed 3 rules against its
+   * siblings' 15–23, and no screen anywhere could show that. `section_rules`
+   * is how many rules that part produced in the run that wrote this rule, so
+   * the Sources panel can put a thin chapter in front of the Expert with a
+   * button that reads it again.
+   */
+  section_index?: number;
+  section_label?: string;
+  section_words?: number;
+  section_rules?: number;
+  /** This rule came from the automatic re-read of a part that came back thin. */
+  second_pass?: boolean;
   /** True when the source was reverse-engineered exemplar work. */
   exemplar?: boolean;
   /** The quote could not be machine-verified verbatim — needs a human look. */

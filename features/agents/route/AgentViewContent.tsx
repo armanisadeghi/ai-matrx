@@ -26,7 +26,7 @@ import {
   selectModelLabelById,
   fetchModelOptions,
 } from "@/features/ai-models/redux/modelRegistrySlice";
-import { isUuid } from "@/features/scopes/utils/slugify";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { supabase } from "@/utils/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -233,7 +233,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
     selectAgentCategory(state, agentId),
   );
   const categoryRecord = useAppSelector((state) =>
-    category && isUuid(category)
+    category && isUuidShape(category)
       ? selectCategoryById(state, category)
       : undefined,
   );
@@ -285,7 +285,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
       return undefined;
     }
 
-    if (!isUuid(category)) {
+    if (!isUuidShape(category)) {
       setCategoryLabel(category);
       return undefined;
     }

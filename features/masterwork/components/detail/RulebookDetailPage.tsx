@@ -116,6 +116,7 @@ import { RulebookVersionHistory } from "./RulebookVersionHistory";
 import { WhatsWhatDialog } from "./WhatsWhatDialog";
 import { ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
+import { DuplicateRuleError, findIdenticalRule } from "../../duplicateRules";
 import {
   RuleFeedbackDialog,
   type RuleFeedbackMode,
@@ -1304,6 +1305,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const saveRule = useCallback(
     async ({ rule, isNew }: RuleEditorResult) => {
       if (!rulebook) return;
+      // 🚨 THE SAME REFUSAL AS THE CAS APPEND (wall W50). This page saves the
+      // WHOLE rules list rather than going through `upsertRuleWithRetry`, so
+      // the guard has to stand here too — otherwise a re-staged draft that the
+      // Add-rule window would refuse lands silently from the editor dialog.
+      if (isNew) {
+        const identical = findIdenticalRule(rulebook.rules, rule);
+        if (identical) throw new DuplicateRuleError(identical);
+      }
       const prev = isNew
         ? undefined
         : rulebook.rules.find((r) => r.id === rule.id);
@@ -2354,6 +2363,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             onOpenChange={handleEditorOpenChange}
             sections={rulebook.sections}
             existingIds={existingIds}
+            existingRules={rulebook.rules}
             initial={editing}
             defaultSection={editorSection}
             onSave={saveRule}

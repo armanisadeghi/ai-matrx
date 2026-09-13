@@ -8,7 +8,7 @@
 // sort, filter, page and favourite exactly like every other list.
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { MAP_COLUMNS } from "./columns";
 import {
   fetchMapFacets,
@@ -54,7 +54,7 @@ export const mapListConfig: EntityListConfig<MapListRow> = {
     rowKind: "map",
     listKind: "map-list",
     humanRow: (row) =>
-      `${row.title} — ${row.box_count} boxes, ${row.section_count} sections, ${row.arrow_count} arrows, edited ${relativeTime(row.updated_at)}`,
+      `${row.title} — ${row.box_count} boxes, ${row.section_count} sections, ${row.arrow_count} arrows, edited ${formatRelativeTime(row.updated_at)}`,
     showRow: false,
     showToolbar: false,
   },

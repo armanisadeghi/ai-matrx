@@ -28,7 +28,7 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { useBrand, useCreateSite } from "@/features/marketing/data/hooks";
 import { useBrandBySegment } from "@/features/marketing/data/keys-hooks";
-import { isUuid } from "@/features/marketing/lib/keys";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -56,10 +56,10 @@ export function NewSiteForm() {
   // create RPC always receives a real id.
   const brandParam = searchParams.get("brand");
   const brandSegment = useBrandBySegment(
-    brandParam && !isUuid(brandParam) ? brandParam : null,
+    brandParam && !isUuidShape(brandParam) ? brandParam : null,
   );
   const targetBrandId =
-    brandParam && isUuid(brandParam)
+    brandParam && isUuidShape(brandParam)
       ? brandParam
       : (brandSegment.data?.id ?? null);
   const targetBrand = useBrand(targetBrandId ?? "");

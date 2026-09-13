@@ -49143,6 +49143,46 @@
         }
       }
     },
+    "/masterworks/audition-pairwise": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Audition Pairwise Endpoint",
+        "description": "The BLIND PAIRWISE Audition — two candidates, no reference.\n\n``/audition`` ranks one candidate against the Expert's real published work.\nThis ranks two answers written from the same inputs against EACH OTHER, with\na judge that is never told which is which: the A/B assignment is randomised\nand SEALED on the run row before the judge is called, and revealed only with\nthe verdict. ``mode=\"faithfulness\"`` asks the other question the two-schools\nshape needs — is each answer true to its own Rulebook — rather than which is\nbetter.",
+        "operationId": "audition_pairwise_endpoint_masterworks_audition_pairwise_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairwiseCompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/masterworks/clean-corpus": {
       "post": {
         "tags": [
@@ -49420,6 +49460,67 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RestoreWriteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/runs/{run_id}/cancel": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Cancel Masterwork Run",
+        "description": "STOP one Masterwork run — the other half of a Cancel button that means it.\n\nUntil this existed, ``platform.masterwork_run`` had no cancel path at all, so\nevery ingest dialog's Cancel could only ever close the dialog while the work\n— and the spend — carried on. A control that looks like a stop and is not one\nis the lying-screen defect, not a UX nit.\n\nThe stop is the DB write: ``request_cancel`` compare-and-swaps the row to\n``cancelled`` with the reason, which makes the ledger honest immediately and\nfences every later terminal write from the doomed worker. The worker itself\nnotices at its next chunk boundary — instantly when it is executing in this\nprocess, within ``CANCEL_POLL_SECONDS`` when it is on another one.\n\nAccess is the rulebook's access, exactly as ``rejoin`` has it (a run is a\nCOMPONENT of its rulebook), and an unreachable run is a 404 — never a leak\nthat it exists.",
+        "operationId": "cancel_masterwork_run_masterworks_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CancelRunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__api__routers__masterworks__CancelRunResponse"
                 }
               }
             }
@@ -68177,7 +68278,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CancelRunResponse"
+                  "$ref": "#/components/schemas/aidream__api__routers__workflow__CancelRunResponse"
                 }
               }
             }
@@ -106846,42 +106947,23 @@
         ],
         "title": "CancelResponse"
       },
-      "CancelRunResponse": {
+      "CancelRunRequest": {
         "properties": {
-          "run_id": {
-            "type": "string",
-            "title": "Run Id"
-          },
-          "cancelling": {
-            "type": "boolean",
-            "title": "Cancelling"
-          },
-          "previous_status": {
-            "type": "string",
-            "title": "Previous Status"
-          },
-          "mode": {
-            "type": "string",
-            "enum": [
-              "graceful",
-              "immediate"
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Mode"
-          },
-          "task_cancelled": {
-            "type": "boolean",
-            "title": "Task Cancelled"
+            "title": "Reason"
           }
         },
         "type": "object",
-        "required": [
-          "run_id",
-          "cancelling",
-          "previous_status",
-          "mode",
-          "task_cancelled"
-        ],
-        "title": "CancelRunResponse"
+        "title": "CancelRunRequest",
+        "description": "Why it was stopped. Optional — the person clicking Stop owes nobody an\nexplanation — but when a surface HAS one (a wizard abandoned, a wrong file\npicked) it belongs on the row, where the next reader of that ledger can see\nit."
       },
       "CanvasCourse": {
         "properties": {
@@ -135928,6 +136010,17 @@
               }
             ],
             "title": "Slot Used"
+          },
+          "predicate_preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredicatePreview"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a conditional connection: its `condition` TRIED against the payload the source's sample would deliver (W57)."
           }
         },
         "type": "object",
@@ -135979,6 +136072,17 @@
             },
             "type": "array",
             "title": "Diagnostics"
+          },
+          "predicate_preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredicatePreview"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a predicate step (data.filter / data.assert / control.branch): the author's expression TRIED against the upstream sample, item by item. None when the step has no predicate or no sample to try it on (W57)."
           }
         },
         "type": "object",
@@ -158204,6 +158308,19 @@
             "title": "Redistill",
             "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
             "default": "refuse"
+          },
+          "only_section": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Only Section",
+            "description": "Read ONE part of the resource again — the 1-based `source_ref.section_index` a Sources panel shows beside a chapter that produced few rules. Only meaningful with exactly one resource and redistill='replace'; the rest of the source keeps its rules."
           }
         },
         "additionalProperties": false,
@@ -158322,16 +158439,6 @@
             ],
             "title": "Source Ref Extra",
             "description": "Extra provenance keys merged into every rule's source_ref — how a delegating lane anchors rules to the piece they came from. Never overrides the lane's own keys."
-          },
-          "standing": {
-            "type": "string",
-            "enum": [
-              "evidence",
-              "rule"
-            ],
-            "title": "Standing",
-            "description": "The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.",
-            "default": "rule"
           },
           "redistill": {
             "type": "string",
@@ -158684,16 +158791,6 @@
             "title": "Source Ref Extra",
             "description": "Extra provenance keys merged into every rule's source_ref — how a delegating lane (the corpus lane) anchors rules to the piece they came from ({url, corpus_item_id}). Never overrides the lane's own keys."
           },
-          "standing": {
-            "type": "string",
-            "enum": [
-              "evidence",
-              "rule"
-            ],
-            "title": "Standing",
-            "description": "The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.",
-            "default": "rule"
-          },
           "redistill": {
             "type": "string",
             "enum": [
@@ -158703,6 +158800,19 @@
             "title": "Redistill",
             "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
             "default": "refuse"
+          },
+          "only_section": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Only Section",
+            "description": "Read ONE part of the source again and leave the rest alone — the 1-based `source_ref.section_index` the Sources panel shows beside a thin chapter. With redistill='replace' only THAT part's earlier drafts are removed; every other part's rules are untouched."
           }
         },
         "additionalProperties": false,
@@ -189407,6 +189517,173 @@
         "type": "object",
         "title": "PagespeedSyncBody"
       },
+      "PairwiseCandidate": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Label",
+            "description": "The operator's name for this arm."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "Pasted output text."
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id",
+            "description": "platform.masterwork_run id."
+          },
+          "case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Id",
+            "description": "platform.masterwork_corpus_item id (sealed_case)."
+          },
+          "run_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Scope",
+            "description": "With case_id: the run whose committed answer is the arm."
+          },
+          "rulebook_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rulebook Id",
+            "description": "faithfulness mode: this arm's OWN school. Defaults to the request's rulebook_id when both arms come from the same Rulebook."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "PairwiseCandidate",
+        "description": "ONE arm of a blind pairwise Audition, and where its text comes from.\n\n``label`` is the OPERATOR's name for this arm (\"the Masterwork\", \"the simple\npath\", \"Watson\"). It is how the unsealed verdict is read back and it NEVER\nreaches the judge — a label is a tell, and the whole point of this mode is a\njudge that cannot know which desk it is reading.\n\nExactly one source: pasted ``text``, a finished ``run_id``\n(``platform.masterwork_run`` — its stored output), or a sealed case worked by\na run (``case_id`` + ``run_scope`` — the answer that run committed to)."
+      },
+      "PairwiseCompareRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id",
+            "description": "The Rulebook this Audition belongs to — the run's home, the ownership check, and (unless an arm names its own) the school both arms are judged against."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "faithfulness",
+              "preference"
+            ],
+            "title": "Mode",
+            "description": "preference: which answer would a practitioner rather have received. faithfulness: is each answer true to ITS OWN school (each arm scored against its own Rulebook) — the mandate's two-schools shape.",
+            "default": "preference"
+          },
+          "candidate_one": {
+            "$ref": "#/components/schemas/PairwiseCandidate"
+          },
+          "candidate_two": {
+            "$ref": "#/components/schemas/PairwiseCandidate"
+          },
+          "case_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Note",
+            "description": "The shared inputs both arms answered ('the shoes/kitchen-counter case')."
+          },
+          "judge_by_rules": {
+            "type": "boolean",
+            "title": "Judge By Rules",
+            "description": "preference mode: also give the judge the Rulebook's approved rules and ask for a rule-by-rule reading. Ignored in faithfulness mode, where the rules ARE the question.",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "candidate_one",
+          "candidate_two"
+        ],
+        "title": "PairwiseCompareRequest",
+        "description": "Judge TWO candidate outputs BLIND against each other — no reference.\n\nThe Audition's other two modes both have a reference (the Expert's published\nwork; the case's held-out resolution). This one does not: both texts are\ncandidates, written from the same inputs, and the question is either which a\npractitioner would rather have received (``preference``) or whether each is\ntrue to its own school (``faithfulness``).\n\nThe service randomises which arm the judge sees as A and seals that key on\nthe run row BEFORE the judge is called. The key is never in the prompt, and\nit is revealed to the caller only alongside the verdict."
+      },
       "PandaDocServiceStatus": {
         "properties": {
           "__kind": {
@@ -196115,6 +196392,145 @@
         ],
         "title": "PreFetchedUrl",
         "description": "A webpage entry that has already been scraped by the client.\n\nWhen the frontend has already fetched a page (e.g. via /scraper/quick-scrape)\nit can embed the content here instead of a plain URL string. The server will\nuse this content directly and skip re-scraping."
+      },
+      "PredicatePreview": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "assert",
+              "branch",
+              "edge",
+              "filter"
+            ],
+            "title": "Kind"
+          },
+          "expression": {
+            "type": "string",
+            "title": "Expression"
+          },
+          "binding": {
+            "type": "string",
+            "title": "Binding",
+            "description": "Plain language for what `inputs` was bound to, per item."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Sample items the predicate was tried against."
+          },
+          "kept": {
+            "type": "integer",
+            "title": "Kept",
+            "default": 0
+          },
+          "dropped": {
+            "type": "integer",
+            "title": "Dropped",
+            "default": 0
+          },
+          "errors": {
+            "type": "integer",
+            "title": "Errors",
+            "default": 0
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PredicateRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "description": "True when `rows` shows fewer than `total`.",
+            "default": false
+          },
+          "row_limit": {
+            "type": "integer",
+            "title": "Row Limit",
+            "default": 25
+          },
+          "constant": {
+            "type": "boolean",
+            "title": "Constant",
+            "description": "The predicate answered the same for every distinct sample item.",
+            "default": false
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "The findings derived from THIS evaluation — never a second pass."
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "One readable line about the trial.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "expression",
+          "binding",
+          "total"
+        ],
+        "title": "PredicatePreview",
+        "description": "An author-written predicate, TRIED against the sample, per item.\n\nW57 (2026-09-12): a hand-authored gate had no way to be run against a\nsample before a paid run, so a sign error and an inert expression both\nreached production and refused a correct run. A warning that something\n\"looks constant\" is not the affordance — SEEING the predicate's answer\nbeside each item is. This is that table, carried on the report so every\nsurface (the Conductor's check, the Studio inspector) renders the same\none evaluation rather than each re-deriving its own truth."
+      },
+      "PredicateRow": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "Position in the sample (0-based)."
+          },
+          "item": {
+            "type": "string",
+            "title": "Item",
+            "description": "The payload the predicate saw, rendered for reading (truncated)."
+          },
+          "result": {
+            "title": "Result",
+            "description": "The value the expression returned; null when it raised."
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "dropped",
+              "error",
+              "failed",
+              "kept",
+              "passed"
+            ],
+            "title": "Verdict"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "The sandbox's own reason when this item raised."
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "item",
+          "verdict"
+        ],
+        "title": "PredicateRow",
+        "description": "One sample item, and what the author's predicate actually answered."
       },
       "PrefectServiceStatus": {
         "properties": {
@@ -256640,6 +257056,34 @@
         ],
         "title": "MandateCatalogResponse"
       },
+      "aidream__api__routers__masterworks__CancelRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "title": "Cancelled"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status",
+          "cancelled",
+          "message"
+        ],
+        "title": "CancelRunResponse"
+      },
       "aidream__api__routers__proof_runs__MandateCatalogResponse": {
         "properties": {
           "mandates": {
@@ -257034,6 +257478,43 @@
           "count"
         ],
         "title": "ToolListResponse"
+      },
+      "aidream__api__routers__workflow__CancelRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "cancelling": {
+            "type": "boolean",
+            "title": "Cancelling"
+          },
+          "previous_status": {
+            "type": "string",
+            "title": "Previous Status"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "graceful",
+              "immediate"
+            ],
+            "title": "Mode"
+          },
+          "task_cancelled": {
+            "type": "boolean",
+            "title": "Task Cancelled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "cancelling",
+          "previous_status",
+          "mode",
+          "task_cancelled"
+        ],
+        "title": "CancelRunResponse"
       },
       "aidream__api__routers__workflow__PublishRequest": {
         "properties": {

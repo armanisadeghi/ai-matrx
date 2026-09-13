@@ -67,13 +67,9 @@ export function defaultHiddenColumns<TRow>(
   return specs.filter((c) => c.defaultHidden).map((c) => c.id);
 }
 
-/**
- * "5m ago", "3h ago", "2d ago" — the fleet's one `short` relative voice from
- * `@ai-matrx/kit/format`, which every entity list speaks.
- */
-export function relativeTime(iso: string): string {
-  return formatRelativeTime(iso);
-}
+// `relativeTime` is gone (2026-09-12): "5m ago" is `formatRelativeTime` from
+// `@ai-matrx/kit/format`, and this wrapper passed its argument straight through
+// under a second name. Every entity list imports the export's own name now.
 
 export function Muted({ children }: { children: React.ReactNode }) {
   return <span className="text-muted-foreground">{children}</span>;
@@ -86,7 +82,7 @@ export function timeCell(iso: string | null) {
       className="tabular-nums text-muted-foreground"
       title={new Date(iso).toLocaleString()}
     >
-      {relativeTime(iso)}
+      {formatRelativeTime(iso)}
     </span>
   );
 }

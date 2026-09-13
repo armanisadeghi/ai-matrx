@@ -41,7 +41,7 @@ import {
   useContainerLinksAdapter,
   type ContainerResourcesAdapter,
 } from "@ai-matrx/associations/react";
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { RESEARCH_LINEAGE_TOKENS } from "@/features/cms/hooks/useCmsResearchLineage";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
 import {
@@ -436,7 +436,7 @@ export function SetupView() {
           if (Object.keys(draft.topicsByArchetype).length > 0) {
             setTopicsByArchetype(draft.topicsByArchetype);
           }
-          if (draft.researchTopicId && !isUuid(researchTopicReturnId)) {
+          if (draft.researchTopicId && !isUuidShape(researchTopicReturnId)) {
             setResearchTopicId(draft.researchTopicId);
           }
           // The three expensive WHOLE-PLAN runs come back exactly as they
@@ -483,7 +483,7 @@ export function SetupView() {
         }
         // No in-progress draft topic → the site's recorded research link
         // (the same one aidream's generator/deepen read) is the default.
-        if (isUuid(researchTopicReturnId)) {
+        if (isUuidShape(researchTopicReturnId)) {
           setResearchTopicId(researchTopicReturnId);
         } else if (!draft?.researchTopicId) {
           const linked = readSiteResearchTopicId(fresh.settings);
@@ -528,7 +528,7 @@ export function SetupView() {
     if (!siteId || !researchTopicReturnId || seed?.siteId !== siteId) {
       return;
     }
-    if (!isUuid(researchTopicReturnId)) {
+    if (!isUuidShape(researchTopicReturnId)) {
       toast.error("Research returned an invalid topic id; nothing was linked.");
       clearResearchTopicReturn();
       return;

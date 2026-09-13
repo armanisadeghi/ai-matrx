@@ -20,7 +20,7 @@
 // saveRules) — never a second write path.
 
 import { useCallback, useEffect, useState } from "react";
-import { Keyboard, Plus, BrainCircuit, Zap } from "lucide-react";
+import { Check, Keyboard, Plus, BrainCircuit, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { nextRuleId } from "../../ruleIds";
 import { getRulebook, upsertRuleWithRetry } from "../../service";
+import { findIdenticalRule } from "../../duplicateRules";
 import type { Rulebook, RulebookRule } from "../../types";
 import { POLICY_FIELD_DEFAULTS, ruleFieldValues, SEVERITY_LABELS } from "../../types";
 import {
@@ -73,6 +74,17 @@ export function AddRulePanel({
     EMPTY_FIELDS(defaultSection ?? "G"),
   );
   const [saving, setSaving] = useState(false);
+  /**
+   * THE LAST RULE THIS PANEL LANDED (wall W50). The panel stays open on
+   * purpose — an Expert adds rules in runs — but a panel that resets its
+   * fields and says nothing reads exactly like a press that did nothing. This
+   * is the standing "Saved — add another?" line, on the panel, naming the rule
+   * that landed; it clears the moment the next draft is started.
+   */
+  const [justAdded, setJustAdded] = useState<{
+    name: string;
+    draft: boolean;
+  } | null>(null);
   // The IMPROVE verb on the AI draft: the Expert says what should change and
   // the SAME Mandate rewrites it — never a second improve path.
   const [refining, setRefining] = useState(false);
@@ -128,6 +140,18 @@ export function AddRulePanel({
         toast.error("A rule needs at least a short name and the rule itself.");
         return;
       }
+      // Refused HERE as well as on the write path, so the person reads a
+      // sentence instead of a thrown error (W50).
+      const identical = findIdenticalRule(rulebook.rules, {
+        name: values.name.trim(),
+        statement: values.statement.trim(),
+      });
+      if (identical) {
+        toast.error(
+          `"${identical.name}" is already in this Rulebook, word for word — nothing was added.`,
+        );
+        return;
+      }
       setSaving(true);
       try {
         // Fresh ids against the freshest rules we have; the CAS retry inside
@@ -154,6 +178,7 @@ export function AddRulePanel({
             : `"${rule.name}" added`,
         );
         onAdded(rule, saved);
+        setJustAdded({ name: rule.name, draft: opts.draft });
         // Stay open for the next rule — reset both lanes.
         setDescribe("");
         setAiDraft(null);
@@ -181,6 +206,7 @@ export function AddRulePanel({
 
   const draftWithAi = async () => {
     if (!rulebook || !describe.trim()) return;
+    setJustAdded(null);
     const fallbackSection =
       defaultSection && Object.hasOwn(rulebook.sections, defaultSection)
         ? defaultSection
@@ -294,6 +320,25 @@ export function AddRulePanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {justAdded ? (
+          <div
+            role="status"
+            className="mb-4 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm"
+          >
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p className="min-w-0 text-foreground">
+              <span className="font-medium">
+                &ldquo;{justAdded.name}&rdquo;
+              </span>{" "}
+              {justAdded.draft
+                ? "was added as a draft — approve it in review."
+                : "was added to your Rulebook."}{" "}
+              <span className="text-muted-foreground">
+                Add another below, or close this window.
+              </span>
+            </p>
+          </div>
+        ) : null}
         {mode === "ai" ? (
           <div className="space-y-4">
             {!aiDraft ? (

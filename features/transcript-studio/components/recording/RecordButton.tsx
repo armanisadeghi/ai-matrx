@@ -6,7 +6,7 @@ import { useStudioSession } from "../../hooks/useStudioSession";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
 // ~35 twins variously took ms, seconds and minutes behind one signature.
-import { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 interface RecordButtonProps {
   sessionId: string;
@@ -56,7 +56,7 @@ export function RecordButton({ sessionId, className }: RecordButtonProps) {
       {isRecording && (
         <div className="flex items-center gap-1.5 rounded-full bg-red-500/10 px-2 py-0.5 text-[11px]">
           <span className="font-mono tabular-nums text-red-600 dark:text-red-400">
-            {formatDuration(session.durationSec)}
+            {formatDurationSeconds(session.durationSec)}
           </span>
           <span
             aria-hidden="true"

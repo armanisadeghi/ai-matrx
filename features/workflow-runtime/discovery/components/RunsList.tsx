@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ListX } from "lucide-react";
 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -125,7 +125,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
       cell: (row) =>
         row.startedAt ? (
           <span className="tabular-nums" title={new Date(row.startedAt).toLocaleString()}>
-            {relativeTime(row.startedAt)}
+            {formatRelativeTime(row.startedAt)}
           </span>
         ) : (
           <Muted>—</Muted>

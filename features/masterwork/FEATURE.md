@@ -116,6 +116,13 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Files
 
+- `sourceSections.ts` — WHAT EACH PART OF A SOURCE PRODUCED, read off the live rules
+  (`source_ref.section_index` / `section_label` / `section_words`, stamped by aidream's
+  `services/distillation/source_structure.py`). Mirrors the server's source identities
+  (`urlSourceKey` / `entitySourceKey`) and its thin verdict — a part far below the SOURCE'S OWN
+  median, never below a number somebody picked. `RulebookSourcesPanel` renders the rows and the
+  per-part "Read again", which posts `only_section` + `redistill: "replace"` to the dump lane so
+  only that part's drafts are replaced. Guard: `__tests__/source-section-yields.test.ts`.
 - `service.ts` — detail reads/writes (getRulebook, saveRules, createDraftRulebook,
   updateRulebookMeta, softDeleteRulebook, listMasterworksForRulebook). Direct supabase-js,
   RLS live, THE VIEW LAW respected.
@@ -221,6 +228,16 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - `2026-09-12` — 🚨 **A rule can now BE a decision, and the Expert can edit it as one (W58, part 2).** The `timeline` lane distils judgment under uncertainty, but the only rule shape the UI knew was a static statement — so a policy rule reached the Expert as prose she could not correct field by field, and any manual edit of one silently dropped its shape. `RulebookRule` gains the optional `kind: "policy"` + `precondition` / `next_action` / `action_kind` / `cost` / `risk` (vocabularies exported once as `POLICY_ACTION_KINDS` / `POLICY_LEVELS`; the server refuses anything outside them by name), and they are in `RULE_CONTENT_FIELDS` because changing the next action IS changing the rule. THE ONE rule form (`RuleFields`) gained a "This is a decision rule" switch revealing five plain-English controls ("What do you know at this point?" / "What do you do next?" / what kind of move / cost / risk) and ONE mapping to the stored fields (`policyRulePatch`), consumed by both the editor dialog and the Add-rule window; the Final Checkup omits the block through the existing `omitFields` contract rather than showing controls whose values it would drop. The existing rule row — never a second renderer — shows a policy rule as "When you know … → do …" with move/cost/risk chips and a "Decision rule" badge. `ruleSave.ts` needed no change (it merges through `applyManualRuleEdit`), which the new content-field list is what keeps true.
 
 - `2026-09-12` — 🚨 **A case that unfolds in time is no longer one chunk (W58).** A real clinical case report (three emergency visits, then an admission) pasted into "Add rules from a source" became ONE size-based chunk and came back as 11 static rules all citing `chunk: 1` — the entire skill (what was known at each step, what was still unknown when each choice was made, and what each choice cost and risked) was gone. New lane: the `timeline` Approach, `IngestTimelineDialog` on `?ingest=timeline` and through the Approach picker (`intake_query {"ingest":"timeline"}`), posting `/masterworks/ingest-timeline` on its OWN durable-run surface (`timeline`) so a case never rejoins the single-source dialog. The dialog carries one switch — "Hide the ending while the rules are written", default ON — because a distiller that can see how the case turned out writes hindsight, not judgment; the ending is still saved with the case for the Audition. Server half (segment → chunk BY STEP → distil each step with the future withheld → policy-shaped rules anchored by `source_ref.step`): `aidream/services/distillation/timeline_ingest.py` + its FEATURE.md rule 21.
+- `2026-09-12` — **A thin chapter of a source is visible, and repairable, on the Sources panel.**
+  A 31,311-word book read into a Rulebook as six equal chunks gave 116 rules — flat, whatever the
+  chunk held — and its most prescriptive chapter contributed 3; pasted alone that chapter gave 89.
+  aidream now chunks a source by its own chapters and stamps every rule with the part it came
+  from, so the panel shows one row per part (words, rules, a "thin" mark) under each source, read
+  from the live rules rather than from the run that happened to be watched. "Read again" on a thin
+  part re-distils THAT part at half the width and replaces only its own unapproved drafts —
+  an expensive click, so it names what it spends and what it replaces first. New:
+  `sourceSections.ts`, `SectionYields` in `components/detail/RulebookSourcesPanel.tsx`, the section
+  fields on `RuleSourceRef`. Guard: `__tests__/source-section-yields.test.ts`.
 - `2026-09-12` — **A signed-out Masterwork tab no longer mounts any private reader as `anon`.**
   The Rulebook `[id]` layout protected only one dynamic branch: sibling
   `/masterwork/encore/[id]` was client-only and could mount its direct Supabase readers, including

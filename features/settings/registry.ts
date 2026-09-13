@@ -260,7 +260,7 @@ export const settingsRegistry: SettingsTabDef[] = [
     persistence: "session",
   },
   {
-    id: "appearance.site-workbench",
+    id: "appearance.siteWorkbench",
     label: "Site Workbench",
     icon: Globe,
     parentId: "appearance",

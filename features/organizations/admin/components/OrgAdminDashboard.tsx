@@ -22,7 +22,8 @@ import { InvitationManager } from "../../components/InvitationManager";
 import type { Organization, OrgRole } from "../../types";
 import { useOrgRoster } from "../hooks";
 import type { OrgAdminOverview } from "../types";
-import { formatBytes, formatMcents } from "../utils";
+import { formatMcents } from "../utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberRosterTable } from "./MemberRosterTable";
 import { OrgAdminAuditTable } from "./OrgAdminAuditTable";
 
@@ -74,7 +75,7 @@ function OverviewTiles({ overview }: { overview: OrgAdminOverview }) {
       <StatTile
         icon={HardDrive}
         label="Org storage"
-        value={formatBytes(overview.orgBytesUsed)}
+        value={formatFileSize(overview.orgBytesUsed)}
         hint={`${overview.orgFilesCount} files`}
       />
       <StatTile

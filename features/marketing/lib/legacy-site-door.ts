@@ -2,7 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 
-import { isUuid, marketingSeg } from "@/features/marketing/lib/keys";
+import { marketingSeg } from "@/features/marketing/lib/keys";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { createClient } from "@/utils/supabase/server";
 
 /**
@@ -25,7 +26,7 @@ export interface LegacySiteDoor {
 export const resolveLegacySiteDoor = cache(
   async (siteId: string): Promise<LegacySiteDoor | null> => {
     // The flat door was only ever built from `site.id` rows.
-    if (!isUuid(siteId)) return null;
+    if (!isUuidShape(siteId)) return null;
     const supabase = await createClient();
     const siteResponse = await supabase
       .schema("web")

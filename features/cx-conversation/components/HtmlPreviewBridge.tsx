@@ -2,7 +2,7 @@
 
 import React, { useEffect, useCallback, useRef } from "react";
 import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
+import { disposeFullScreenEditorCallbackGroup, emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -154,9 +154,10 @@ export function HtmlPreviewBridge({
 
   // Clear active page when overlay closes
   const handleClose = useCallback(() => {
+    disposeFullScreenEditorCallbackGroup(callbackGroupId);
     dispatch(setActivePageId(null));
     onClose();
-  }, [dispatch, onClose]);
+  }, [callbackGroupId, dispatch, onClose]);
 
   // Save the edited markdown back to the source. A function can't travel
   // through Redux, so callers that own the save (rich-document source
@@ -167,7 +168,7 @@ export function HtmlPreviewBridge({
   const handleMarkdownSave = useCallback(
     async (markdownContent: string) => {
       if (callbackGroupId) {
-        emitFullScreenEditorSave(callbackGroupId, markdownContent);
+        await emitFullScreenEditorSave(callbackGroupId, markdownContent);
         return;
       }
       if (!conversationId || !messageId) {
@@ -178,12 +179,9 @@ export function HtmlPreviewBridge({
           "[HtmlPreviewBridge] Save invoked with no save target: no callbackGroupId and no conversationId+messageId. " +
             "The opening call site must pass `onSave` via useOpenHtmlPreviewBridge (callback registry) or a chat target.",
         );
-        const { toast } = await import("@/lib/toast");
-        toast.error("Save is not wired for this content — nothing was saved. This is a bug; please report it.");
-        return;
+        throw new Error("Save is not wired for this content — nothing was saved.");
       }
-      try {
-        const { editMessage } = await import(
+      const { editMessage } = await import(
           "@/features/agents/redux/execution-system/message-crud/edit-message.thunk"
         );
         const { mergeEditedText } = await import(
@@ -200,15 +198,8 @@ export function HtmlPreviewBridge({
             newContent: mergeEditedText(existing, markdownContent),
           }),
         ).unwrap();
-        const { toast } = await import("@/lib/toast");
-        toast.success("Saved");
-      } catch (err) {
-        console.error("[HtmlPreviewBridge] markdown save failed", err);
-        const { toast } = await import("@/lib/toast");
-        toast.error(
-          err instanceof Error ? err.message : "Failed to save changes",
-        );
-      }
+      const { toast } = await import("@/lib/toast");
+      toast.success("Saved");
     },
     [callbackGroupId, conversationId, messageId, dispatch, store],
   );

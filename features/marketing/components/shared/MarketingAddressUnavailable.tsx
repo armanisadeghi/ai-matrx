@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { isUuid } from "@/features/marketing/lib/keys";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** An empty UUID read is ambiguous; only the access service may classify it. */
 export function MarketingAddressUnavailable({
@@ -12,7 +12,7 @@ export function MarketingAddressUnavailable({
   address: string;
 }) {
   // An opaque key has no record identity for an authorized access probe.
-  if (!isUuid(address)) notFound();
+  if (!isUuidShape(address)) notFound();
   return (
     <AccessGate
       token={token}

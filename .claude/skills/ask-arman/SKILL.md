@@ -80,6 +80,10 @@ company, a contract bound. That branch waits; everything around it proceeds. Mar
 
 ## The row — file it, deduplicated
 
+The ledger row below stays the filing contract — file here first, always. The desk later mirrors
+a researched row into the in-app Question Desk (the `question_desk` MCP tool), which is where
+Arman actually reads and answers it; you never file directly into that tool yourself.
+
 1. `grep -i` [the ledger](/operations/questions.md) for the subject's nouns. A row on the same
    subject already exists → add one `Also asked by:` line with your chat title and session id,
    adopt its default, and stop here.
@@ -133,3 +137,10 @@ re-record a paraphrase.
 Ending a turn on an unfiled question · a row with an empty homework line · "blocked on Arman"
 with a reversible default available · a fork with no recommendation · any code, id, path, or
 section number in his sentence · re-asking anything dated in a `DECISIONS.md` · asking a fact.
+
+## Changelog
+
+- **2026-09-12 (in-app Question Desk)** — noted under § The row that the desk mirrors researched
+  rows into the in-app Question Desk (the `question_desk` MCP tool): the ledger row stays the
+  filing contract, the tool is where Arman answers. See
+  [`/systems/platform/question-desk/STATE.md`](/systems/platform/question-desk/STATE.md).

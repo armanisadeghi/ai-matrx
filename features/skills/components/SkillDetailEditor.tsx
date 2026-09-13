@@ -23,7 +23,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { ConnectionsSkillsDraftSnapshot } from "@/features/surfaces/manifests/connections-skills.manifest";
@@ -394,7 +394,7 @@ export function SkillDetailEditor({
     return (
       <div className="flex flex-col h-full min-h-0">
         <Header onBack={onBack} title="Skill" subtitle={skillId} />
-        {isUuid(skillId) ? (
+        {isUuidShape(skillId) ? (
           <AccessGate token="skill" id={skillId} />
         ) : (
           <div className="px-4 py-10 text-center text-sm text-muted-foreground">

@@ -1231,15 +1231,14 @@ function editAndResubmitUserItem(ctx: MessageActionContext): MenuItem {
       const { USER_EDIT_ACTIONS, routeUserEditAction } =
         await import("./userEditActions");
       const { callbackGroupId } = createFullScreenEditorCallbackGroup({
-        onAction: (actionId, newContent) => {
-          void routeUserEditAction(dispatch, {
+        onAction: (actionId, newContent) =>
+          routeUserEditAction(dispatch, {
             actionId,
             conversationId,
             messageId,
             newContent,
             surfaceKey,
-          });
-        },
+          }),
       });
       dispatch(
         openOverlay({
@@ -1964,7 +1963,7 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
             const trimmed = newContent.trim();
             if (!trimmed) {
               toast.error("Summary text required");
-              return;
+              throw new Error("Summary text required");
             }
             try {
               const { replaceMessages } =
@@ -1982,6 +1981,7 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
               toast.success("Replaced with summary (server)");
             } catch (err) {
               toast.error(getErrorMessage(err, "Replace-with-summary failed"));
+              throw err;
             }
           },
         });
