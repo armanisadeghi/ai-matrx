@@ -310,6 +310,40 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
   },
 );
 
+/**
+ * Conflict refresh is deliberately separate from the normal content cache.
+ * It reads the captured record organization under the initiating actor, then
+ * rechecks the session after transport before the editor may review the row.
+ */
+export const refreshNoteConflict = createAsyncThunk<Note, { noteId: string; organizationId: string; actorId: string }>(
+  "notes/refreshNoteConflict",
+  async ({ noteId, organizationId, actorId }, { getState }) => {
+    const current = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+    if (!current || current.organization_id !== organizationId) {
+      throw recordUnavailable({ entity: "note", reason: "unknown", recordId: noteId, token: "note", relation: "workbench.notes" });
+    }
+    requireOrganizationContext(organizationId);
+    await assertCurrentNotesUser(actorId);
+    if (getUserId(getState) !== actorId) throw new SessionUnavailableError();
+    const { data, error } = await supabase
+      .schema("workbench")
+      .from("notes")
+      .select("*")
+      .eq("id", noteId)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      throw recordUnavailable({ entity: "note", reason: "unknown", recordId: noteId, token: "note", relation: "workbench.notes" });
+    }
+    await assertCurrentNotesUser(actorId);
+    if (getUserId(getState) !== actorId) throw new SessionUnavailableError();
+    const [note] = await hydrateNoteContextLinks([data]);
+    return note;
+  },
+);
+
 // ---------------------------------------------------------------------------
 // 3. saveNote
 // ---------------------------------------------------------------------------

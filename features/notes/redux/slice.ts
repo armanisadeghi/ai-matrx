@@ -11,6 +11,7 @@ import {
   type NoteFetchStatus,
   type NoteFieldSnapshot,
   type NoteConflictDecision,
+  type NoteConflictPhysicalSnapshot,
   type NotesSliceState,
   type NoteScopeAssignment,
   type FindReplaceState,
@@ -236,6 +237,27 @@ function applyFetchStatus(record: NoteRecord, status: NoteFetchStatus): void {
   }
 }
 
+function conflictPhysicalSnapshot(note: Note): NoteConflictPhysicalSnapshot {
+  return {
+    content: note.content,
+    label: note.label,
+    folder_name: note.folder_name,
+    folder_id: note.folder_id,
+    tags: note.tags,
+    metadata: note.metadata,
+    visibility: note.visibility,
+    position: note.position,
+    organization_id: note.organization_id,
+  };
+}
+
+function sameConflictSnapshot(
+  left: NoteConflictPhysicalSnapshot,
+  right: NoteConflictPhysicalSnapshot,
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 // ── Server upsert (shared by single + batch reducers) ───────────────────────
 
 export interface ServerNoteUpsert {
@@ -296,6 +318,12 @@ function applyServerNoteUpsert(
     Number.isFinite(incomingTimestamp) &&
     Number.isFinite(heldTimestamp) &&
     incomingTimestamp > heldTimestamp;
+
+  // Version is authoritative when available. A newer timestamp on a lower
+  // revision is an out-of-order event and cannot regress a clean record.
+  if (incomingVersion !== null && heldVersion !== null && incomingVersion < heldVersion) {
+    return;
+  }
 
   // ── Monotonic updated_at guard ─────────────────────────────────────
   // Realtime echoes and list-fetch races can deliver payloads OLDER than
@@ -609,6 +637,8 @@ const notesSlice = createSlice({
         currentVersion: action.payload.currentVersion,
         currentRow: action.payload.currentRow,
         sentSnapshot: action.payload.sentSnapshot,
+        reviewedLocal: conflictPhysicalSnapshot(record),
+        reviewedLiveContent: null,
         comparedVersion: action.payload.currentVersion,
         stale:
           record._remoteObservation?.version !== null &&
@@ -620,6 +650,16 @@ const notesSlice = createSlice({
       record._error = "conflict";
       record._saving = false;
       state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
+    },
+
+    captureNoteConflictLiveBuffer(
+      state,
+      action: PayloadAction<{ id: string; content: string }>,
+    ) {
+      const decision = state.notes[action.payload.id]?._conflictDecision;
+      if (decision && decision.reviewedLiveContent === null) {
+        decision.reviewedLiveContent = action.payload.content;
+      }
     },
 
     /** A refresh replaces only the reviewed server comparison. It intentionally
@@ -640,6 +680,9 @@ const notesSlice = createSlice({
       decision.comparedVersion = action.payload.currentRow.version;
       decision.stale = false;
       decision.dismissed = false;
+      decision.reviewedLocal = conflictPhysicalSnapshot(record);
+      // The editor buffer is captured again at the explicit review boundary.
+      decision.reviewedLiveContent = null;
     },
 
     dismissNoteConflict(state, action: PayloadAction<{ id: string }>) {
@@ -652,11 +695,41 @@ const notesSlice = createSlice({
       if (decision) decision.dismissed = false;
     },
 
-    acceptRemoteNoteConflict(state, action: PayloadAction<{ id: string }>) {
+    applyNoteConflictResolution(
+      state,
+      action: PayloadAction<{
+        id: string;
+        choice: "mine" | "theirs";
+        proposedContent: string;
+        reviewedLocal: NoteConflictPhysicalSnapshot;
+        reviewedLiveContent: string;
+        reviewedVersion: number;
+        reviewedObservedVersion: number | null;
+      }>,
+    ) {
       const record = state.notes[action.payload.id];
       const decision = record?._conflictDecision;
-      if (!record || !decision || decision.stale) return;
+      const currentObserved = record?._remoteObservation?.version ?? null;
+      if (
+        !record || !decision || decision.stale ||
+        decision.currentVersion !== action.payload.reviewedVersion ||
+        decision.comparedVersion !== action.payload.reviewedVersion ||
+        currentObserved !== action.payload.reviewedObservedVersion ||
+        decision.reviewedLiveContent !== action.payload.reviewedLiveContent ||
+        !sameConflictSnapshot(decision.reviewedLocal, action.payload.reviewedLocal) ||
+        !sameConflictSnapshot(conflictPhysicalSnapshot(record), decision.reviewedLocal)
+      ) return;
       const remote = decision.currentRow;
+      if (action.payload.choice === "mine") {
+        writeNoteField(record, "content", action.payload.proposedContent);
+        record._dirtyFields.add("content");
+        record._dirty = true;
+        record.updated_at = remote.updated_at;
+        record.version = remote.version;
+        record._error = null;
+        record._conflictDecision = null;
+        return;
+      }
       // Physical row fields are replaced from the reviewed CAS row. Context
       // links are separate association writes and intentionally survive.
       for (const field of [
@@ -1418,7 +1491,8 @@ export const {
   refreshNoteConflictComparison,
   dismissNoteConflict,
   reopenNoteConflict,
-  acceptRemoteNoteConflict,
+  applyNoteConflictResolution,
+  captureNoteConflictLiveBuffer,
   removeNote,
   recordNoteWriteAttempt,
   markNoteSaving,

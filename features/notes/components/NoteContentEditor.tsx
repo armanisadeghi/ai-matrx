@@ -24,9 +24,10 @@ import {
   markTabInteraction,
   setNoteEditorMode,
   setInstanceOutlineOpen,
-  resolveNoteConflict,
-  acceptRemoteNoteConflict,
+  applyNoteConflictResolution,
+  captureNoteConflictLiveBuffer,
   dismissNoteConflict,
+  reopenNoteConflict,
   refreshNoteConflictComparison,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";
@@ -47,6 +48,7 @@ import { editorDisplayName } from "../utils/editorDisplayName";
 import {
   saveNote,
   fetchNoteContent,
+  refreshNoteConflict,
   copyNote,
   deleteNote,
   moveNoteToFolder,
@@ -60,7 +62,7 @@ import {
 } from "../hooks/usePreferredDefaultEditorMode";
 import { analyzeDiff } from "../utils/diffAnalysis";
 import { NoteEditorCore } from "./NoteEditorCore";
-import { setNoteLiveContent } from "../utils/noteLiveContent";
+import { getNoteLiveContent, setNoteLiveContent } from "../utils/noteLiveContent";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
@@ -188,6 +190,9 @@ export function NoteContentEditor({
   // A conflict is created only by a full service CAS rejection. Realtime may
   // record newer evidence, but it cannot open a modal or replace this base.
   const conflictDecision = noteExists?._conflictDecision ?? null;
+  const conflictActorId = useAppSelector((state) => state.userAuth.id);
+  const [mergeDraft, setMergeDraft] = useState<string | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
 
   // ── Local content state — initialized from Redux, synced back on debounce
   const [localContent, setLocalContent] = useState(reduxContent);
@@ -201,6 +206,20 @@ export function NoteContentEditor({
   useEffect(() => {
     localContentRef.current = localContent;
   }, [localContent]);
+
+  useEffect(() => {
+    if (!conflictDecision || conflictDecision.reviewedLiveContent !== null) return;
+    dispatch(captureNoteConflictLiveBuffer({
+      id: noteId,
+      content: getNoteLiveContent(noteId) ?? localContentRef.current,
+    }));
+  }, [dispatch, noteId, conflictDecision]);
+
+  useEffect(() => {
+    if (conflictDecision) return;
+    setMergeDraft(null);
+    setConflictError(null);
+  }, [conflictDecision]);
 
   // ── Reset generation — bumps ONLY on note switch, so the rich editor
   // subtree remounts only when we navigate between different notes.
@@ -233,6 +252,8 @@ export function NoteContentEditor({
     noteIdRef.current = noteId;
     lastReduxRef.current = reduxContent;
     setLocalContent(reduxContent);
+    setMergeDraft(null);
+    setConflictError(null);
     setNoteLiveContent(noteId, reduxContent);
     setResetGen((n) => n + 1);
     // The recent-change flash is per-note — its range is meaningless once
@@ -680,33 +701,54 @@ export function NoteContentEditor({
   // forever (2026-07 freeze class).
   const handleKeepMine = useCallback(
     (editedContent: string) => {
-      if (!conflictDecision || conflictDecision.stale) return;
+      if (!conflictDecision || conflictDecision.stale || !noteExists) return;
+      const liveContent = getNoteLiveContent(noteId) ?? localContentRef.current;
+      if (conflictDecision.reviewedLiveContent !== liveContent) {
+        setConflictError("Your note changed after this comparison. Refresh before applying a choice.");
+        return;
+      }
       // User chose their version (possibly edited in the conflict window).
-      setLocalContent(editedContent);
-      lastReduxRef.current = editedContent;
       // Adopt the server's updated_at + clear the conflict error, WITHOUT
       // touching dirty state — then let the normal autosave pipeline persist
       // the (still-dirty) local content. Its optimistic lock now passes, so
       // this consciously overwrites the remote version.
       dispatch(
-        resolveNoteConflict({
+        applyNoteConflictResolution({
           id: noteId,
-          updatedAt: conflictDecision.currentRow.updated_at ?? undefined,
-          version: conflictDecision.currentRow.version,
+          choice: "mine",
+          proposedContent: editedContent,
+          reviewedLocal: conflictDecision.reviewedLocal,
+          reviewedLiveContent: liveContent,
+          reviewedVersion: conflictDecision.currentVersion,
+          reviewedObservedVersion: noteExists._remoteObservation?.version ?? null,
         }),
       );
-      dispatch(updateNoteContent({ id: noteId, content: editedContent }));
+      setLocalContent(editedContent);
+      lastReduxRef.current = editedContent;
       dispatch(saveNote(noteId));
     },
-    [dispatch, noteId, conflictDecision],
+    [dispatch, noteId, conflictDecision, noteExists],
   );
 
   const handleAcceptRemote = useCallback(() => {
-    if (!conflictDecision || conflictDecision.stale) return;
+    if (!conflictDecision || conflictDecision.stale || !noteExists) return;
+    const liveContent = getNoteLiveContent(noteId) ?? localContentRef.current;
+    if (conflictDecision.reviewedLiveContent !== liveContent) {
+      setConflictError("Your note changed after this comparison. Refresh before applying a choice.");
+      return;
+    }
+    dispatch(applyNoteConflictResolution({
+      id: noteId,
+      choice: "theirs",
+      proposedContent: conflictDecision.currentRow.content ?? "",
+      reviewedLocal: conflictDecision.reviewedLocal,
+      reviewedLiveContent: liveContent,
+      reviewedVersion: conflictDecision.currentVersion,
+      reviewedObservedVersion: noteExists._remoteObservation?.version ?? null,
+    }));
     setLocalContent(conflictDecision.currentRow.content ?? "");
     lastReduxRef.current = conflictDecision.currentRow.content ?? "";
-    dispatch(acceptRemoteNoteConflict({ id: noteId }));
-  }, [dispatch, noteId, conflictDecision]);
+  }, [dispatch, noteId, conflictDecision, noteExists]);
 
   const handleCancelConflict = useCallback(() => {
     // Dismissal keeps the unresolved decision and draft available to reopen.
@@ -714,11 +756,15 @@ export function NoteContentEditor({
   }, [dispatch, noteId]);
 
   const handleRefreshConflict = useCallback(async () => {
-    if (!conflictDecision) return;
-    const remote = await dispatch(fetchNoteContent(noteId)).unwrap();
-    if (!remote) return;
+    if (!conflictDecision || !noteExists || !conflictActorId) return;
+    setConflictError(null);
+    const remote = await dispatch(refreshNoteConflict({
+      noteId,
+      organizationId: noteExists.organization_id,
+      actorId: conflictActorId,
+    })).unwrap();
     dispatch(refreshNoteConflictComparison({ id: noteId, currentRow: remote }));
-  }, [dispatch, noteId, conflictDecision]);
+  }, [dispatch, noteId, conflictDecision, noteExists, conflictActorId]);
 
   // Memoized — analyzeDiff builds an O(lines²) LCS matrix. Computing it
   // inline in JSX re-ran it on EVERY render (i.e. every keystroke while a
@@ -797,27 +843,44 @@ export function NoteContentEditor({
       getWriteHandlers={getSurfaceWriteHandlers}
     >
       {/* Conflict resolution window */}
+      {conflictDecision?.dismissed && (
+        <button
+          type="button"
+          onClick={() => dispatch(reopenNoteConflict({ id: noteId }))}
+          className="absolute right-3 top-3 z-10 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-800 dark:text-amber-200"
+        >
+          Reopen conflict review
+        </button>
+      )}
       {conflictDecision != null && !conflictDecision.dismissed && conflictAnalysis != null && (
         <NoteConflictWindow
           noteTitle={noteLabel}
           localContent={localContent}
           remoteContent={conflictDecision.currentRow.content ?? ""}
           analysis={conflictAnalysis}
+          mergeDraft={mergeDraft ?? localContent}
+          onMergeDraftChange={setMergeDraft}
           remoteDetails={[
-            { label: "Title", value: conflictDecision.currentRow.label ?? "Untitled" },
-            { label: "Folder", value: conflictDecision.currentRow.folder_name ?? "Uncategorized" },
-            { label: "Tags", value: conflictDecision.currentRow.tags?.join(", ") || "None" },
-            { label: "Visibility", value: conflictDecision.currentRow.visibility },
-            { label: "Position", value: String(conflictDecision.currentRow.position ?? "Unset") },
+            { label: "Title", yours: noteExists?.label ?? "Untitled", saved: conflictDecision.currentRow.label ?? "Untitled" },
+            { label: "Folder", yours: noteExists?.folder_name ?? "Uncategorized", saved: conflictDecision.currentRow.folder_name ?? "Uncategorized" },
+            { label: "Tags", yours: noteExists?.tags?.join(", ") || "None", saved: conflictDecision.currentRow.tags?.join(", ") || "None" },
+            { label: "Visibility", yours: noteExists?.visibility ?? "", saved: conflictDecision.currentRow.visibility },
+            { label: "Position", yours: String(noteExists?.position ?? "Unset"), saved: String(conflictDecision.currentRow.position ?? "Unset") },
             {
               label: "Metadata",
-              value:
+              yours:
+                noteExists?.metadata && typeof noteExists.metadata === "object"
+                  ? `${Object.keys(noteExists.metadata).length} fields`
+                  : "None",
+              saved:
                 conflictDecision.currentRow.metadata && typeof conflictDecision.currentRow.metadata === "object"
                   ? `${Object.keys(conflictDecision.currentRow.metadata).length} fields`
                   : "None",
+              metadata: conflictDecision.currentRow.metadata,
             },
           ]}
           stale={conflictDecision.stale}
+          decisionError={conflictError}
           onKeepMine={handleKeepMine}
           onAcceptChanges={handleAcceptRemote}
           onCancel={handleCancelConflict}

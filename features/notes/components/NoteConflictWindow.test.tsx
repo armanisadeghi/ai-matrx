@@ -27,7 +27,9 @@ describe("NoteConflictWindow stale comparison controls", () => {
         localContent="mine"
         remoteContent="theirs"
         analysis={analyzeDiff("mine", "theirs")}
-        remoteDetails={[{ label: "Title", value: "Conflict" }]}
+        remoteDetails={[{ label: "Title", yours: "Mine", saved: "Conflict" }]}
+        mergeDraft="mine"
+        onMergeDraftChange={jest.fn()}
         stale
         onKeepMine={keepMine}
         onAcceptChanges={accept}

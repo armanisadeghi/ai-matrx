@@ -26,7 +26,9 @@ export interface NoteConflictWindowProps {
   remoteContent: string;
   analysis: DiffAnalysis;
   /** Reviewed physical-row details beyond the document body. */
-  remoteDetails: Array<{ label: string; value: string }>;
+  remoteDetails: Array<{ label: string; yours: string; saved: string; metadata?: unknown }>;
+  mergeDraft: string;
+  onMergeDraftChange: (content: string) => void;
   /** Called with the content from the (possibly edited) "Your Version" tab */
   onKeepMine: (content: string) => void;
   /** Adopt the remote/server version */
@@ -37,6 +39,7 @@ export interface NoteConflictWindowProps {
   stale: boolean;
   /** Re-read the canonical row while preserving the local merge draft. */
   onRefresh: () => Promise<void>;
+  decisionError?: string | null;
 }
 
 type Tab = "diff" | "merge" | "local" | "remote";
@@ -49,15 +52,19 @@ export function NoteConflictWindow({
   remoteContent,
   analysis,
   remoteDetails,
+  mergeDraft,
+  onMergeDraftChange,
   onKeepMine,
   onAcceptChanges,
   onCancel,
   stale,
   onRefresh,
+  decisionError,
 }: NoteConflictWindowProps) {
   const [activeTab, setActiveTab] = useState<Tab>("diff");
-  const [editableContent, setEditableContent] = useState(localContent);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [inspectMetadata, setInspectMetadata] = useState(false);
 
   // Drag state
   const [pos, setPos] = useState({ x: -1, y: -1 });
@@ -101,9 +108,8 @@ export function NoteConflictWindow({
     setRefreshing(true);
     try {
       await onRefresh();
-    } catch {
-      // The current comparison remains available; the normal note-unavailable
-      // boundary owns visible transport errors.
+    } catch (error) {
+      setRefreshError(error instanceof Error ? error.message : "Could not refresh the saved note. Try again.");
     } finally {
       setRefreshing(false);
     }
@@ -172,6 +178,7 @@ export function NoteConflictWindow({
             A newer remote change arrived. Refresh this comparison before choosing a version.
           </div>
         )}
+        {decisionError && <div role="alert" className="px-4 py-2 text-xs border-b border-destructive/30 bg-destructive/10 text-destructive">{decisionError}</div>}
 
         {/* Tab row */}
         <div className="flex items-center gap-1 px-4 py-2 border-b border-border/50 shrink-0">
@@ -221,8 +228,8 @@ export function NoteConflictWindow({
 
           {activeTab === "local" && (
             <textarea
-              value={editableContent}
-              onChange={(e) => setEditableContent(e.target.value)}
+              value={mergeDraft}
+              onChange={(e) => onMergeDraftChange(e.target.value)}
               className="w-full h-full min-h-[300px] resize-none bg-transparent text-sm font-mono leading-relaxed outline-none"
               style={{ fontSize: "16px" }}
             />
@@ -233,14 +240,24 @@ export function NoteConflictWindow({
               <pre className="text-xs font-mono leading-relaxed whitespace-pre-wrap text-foreground/80">
                 {remoteContent}
               </pre>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 border-t border-border/50 pt-3 text-xs">
+              <dl className="grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-1 border-t border-border/50 pt-3 text-xs">
+                <dt className="font-medium text-muted-foreground">Field</dt><dt className="font-medium text-muted-foreground">Yours</dt><dt className="font-medium text-muted-foreground">Saved</dt>
                 {remoteDetails.map((detail) => (
                   <React.Fragment key={detail.label}>
                     <dt className="font-medium text-muted-foreground">{detail.label}</dt>
-                    <dd className="break-words text-foreground/80">{detail.value}</dd>
+                    <dd className="break-words text-foreground/80">{detail.yours}</dd>
+                    <dd className="break-words text-foreground/80">{detail.saved}</dd>
+                    {detail.metadata !== undefined && (
+                      <button type="button" className="col-span-3 text-left text-primary underline" onClick={() => setInspectMetadata((open) => !open)}>
+                        Inspect metadata details
+                      </button>
+                    )}
                   </React.Fragment>
                 ))}
               </dl>
+              {inspectMetadata && remoteDetails.filter((detail) => detail.metadata !== undefined).map((detail) => (
+                <pre key={`${detail.label}-metadata`} className="overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(detail.metadata, null, 2)}</pre>
+              ))}
             </div>
           )}
         </div>
@@ -248,7 +265,7 @@ export function NoteConflictWindow({
         {/* Footer */}
         <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-muted/20 shrink-0">
           <button
-            onClick={() => onKeepMine(editableContent)}
+            onClick={() => onKeepMine(mergeDraft)}
             disabled={stale}
             className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90"
           >
@@ -261,6 +278,7 @@ export function NoteConflictWindow({
           >
             Accept Changes
           </button>
+          {refreshError && <p role="alert" className="text-xs text-destructive">{refreshError}</p>}
           <button
             onClick={onCancel}
             className="px-3 py-1.5 text-xs font-medium rounded-md text-muted-foreground cursor-pointer hover:text-foreground"

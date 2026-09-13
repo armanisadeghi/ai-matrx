@@ -77,12 +77,29 @@ export interface NoteRemoteObservation {
   note: Partial<Note> & { id: string };
 }
 
+export type NoteConflictPhysicalField =
+  | "content"
+  | "label"
+  | "folder_name"
+  | "folder_id"
+  | "tags"
+  | "metadata"
+  | "visibility"
+  | "position"
+  | "organization_id";
+
+export type NoteConflictPhysicalSnapshot = Pick<Note, NoteConflictPhysicalField>;
+
 /** A serializable CAS decision package. It exists only after a real CAS miss. */
 export interface NoteConflictDecision {
   expectedVersion: number;
   currentVersion: number;
   currentRow: Note;
   sentSnapshot: NoteFieldSnapshot;
+  /** Exact local physical values shown with this comparison. */
+  reviewedLocal: NoteConflictPhysicalSnapshot;
+  /** Pre-debounce editor body captured when the comparison opened. */
+  reviewedLiveContent: string | null;
   /** The remote observation bound to the comparison shown to the user. */
   comparedVersion: number | null;
   /** A later remote observation arrived after this comparison was created. */

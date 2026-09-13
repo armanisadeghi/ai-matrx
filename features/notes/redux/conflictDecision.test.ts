@@ -1,6 +1,7 @@
 import { enableMapSet } from "immer";
 import notesReducer, {
-  acceptRemoteNoteConflict,
+  applyNoteConflictResolution,
+  captureNoteConflictLiveBuffer,
   dismissNoteConflict,
   recordNoteConflict,
   refreshNoteConflictComparison,
@@ -78,9 +79,38 @@ describe("Notes CAS conflict decision contract", () => {
     state = notesReducer(state, dismissNoteConflict({ id: ID }));
     expect(state.notes[ID]._conflictDecision?.dismissed).toBe(true);
 
-    state = notesReducer(state, acceptRemoteNoteConflict({ id: ID }));
+    state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const decision = state.notes[ID]._conflictDecision;
+    if (!decision) throw new Error("Expected conflict decision");
+    state = notesReducer(state, applyNoteConflictResolution({
+      id: ID,
+      choice: "theirs",
+      proposedContent: "theirs",
+      reviewedLocal: decision.reviewedLocal,
+      reviewedLiveContent: "mine",
+      reviewedVersion: decision.currentVersion,
+      reviewedObservedVersion: null,
+    }));
     expect(state.notes[ID]).toMatchObject({ content: "theirs", label: "Remote", version: 5, project_id: "33333333-3333-4333-8333-333333333333" });
     expect(state.notes[ID]._dirtyFields).toEqual(new Set(["project_id"]));
     expect(state.notes[ID]._conflictDecision).toBeNull();
+  });
+
+  it("refuses a reviewed choice after the buffered snapshot changes and ignores lower versions with newer timestamps", () => {
+    let state = conflicted();
+    state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const decision = state.notes[ID]._conflictDecision;
+    if (!decision) throw new Error("Expected conflict decision");
+    state = notesReducer(state, setNoteField({ id: ID, field: "label", value: "edited after review" }));
+    state = notesReducer(state, applyNoteConflictResolution({
+      id: ID, choice: "theirs", proposedContent: "theirs", reviewedLocal: decision.reviewedLocal,
+      reviewedLiveContent: "mine", reviewedVersion: 5, reviewedObservedVersion: null,
+    }));
+    expect(state.notes[ID]).toMatchObject({ content: "mine", label: "edited after review", version: 4 });
+    expect(state.notes[ID]._conflictDecision).not.toBeNull();
+
+    let clean = notesReducer(undefined, upsertNoteFromServer({ note: row({ version: 9, content: "v9", updated_at: "2026-09-12T00:09:00.000Z" }), fetchStatus: "full" }));
+    clean = notesReducer(clean, upsertNoteFromServer({ note: row({ version: 8, content: "stale", updated_at: "2026-09-12T01:00:00.000Z" }), fetchStatus: "full" }));
+    expect(clean.notes[ID]).toMatchObject({ version: 9, content: "v9" });
   });
 });
