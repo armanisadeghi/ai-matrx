@@ -483,8 +483,19 @@ export function ruleMoveFieldsFromRule(
  * it is genuinely there: a precondition needs its summary, a next action needs
  * both a kind and a target. Half-filled is the same as absent — never a rule
  * that prints "Next: —".
+ *
+ * 🚨 THE FORM OWNS TWO FIELDS, AND MAY DESTROY NOTHING ELSE. `move` also
+ * carries the elicitation half the distillers write (`ask`, `rules_in`,
+ * `rules_out`, `information_value`, `frame`, `order`) and no form field holds:
+ * pass the rule's CURRENT `move` as `prior` and those six ride through
+ * untouched. The key is always returned, so clearing both halves genuinely
+ * deletes them rather than leaving the stale policy the Expert thinks they
+ * cleared.
  */
-export function ruleMoveFromFields(values: RuleMoveFieldValues): {
+export function ruleMoveFromFields(
+  values: RuleMoveFieldValues,
+  prior?: RuleMove,
+): {
   move?: RuleMove;
 } {
   const lines = (raw: string): string[] =>
@@ -505,11 +516,13 @@ export function ruleMoveFromFields(values: RuleMoveFieldValues): {
     risk: values.nextActionRisk ? Number(values.nextActionRisk) : undefined,
     urgency: values.nextActionUrgency || undefined,
   });
+  const { when: _priorWhen, next: _priorNext, ...carried } = prior ?? {};
   const move: RuleMove = {
+    ...carried,
     ...(precondition ? { when: precondition } : {}),
     ...(next_action ? { next: next_action } : {}),
   };
-  return Object.keys(move).length ? { move } : {};
+  return { move: Object.keys(move).length ? move : undefined };
 }
 
 /** One rule of the Rulebook. `id` is the citable handle every audit verdict points at. */

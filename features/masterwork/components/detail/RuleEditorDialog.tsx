@@ -330,7 +330,7 @@ function RuleEditorForm({
           // Expert thinks they cleared.
           precondition: undefined,
           next_action: undefined,
-          ...ruleMoveFromFields(policy),
+          ...ruleMoveFromFields(policy, initial?.move),
         },
       });
       dispatch(clearWizardDraft(wizardId));

@@ -141,3 +141,65 @@ describe("the rule form's move fields", () => {
     expect(out.move?.next).toEqual({ kind: "ask", target: "the client" });
   });
 });
+
+/**
+ * THE ELICITATION HALF SURVIVES AN EDIT.
+ *
+ * `move` carries more than the two fields this form owns: the distillers write
+ * `ask`, `rules_in`, `rules_out`, `information_value`, `frame` and `order`
+ * (`distill.py::Move`), and the Rulebook document prints `move.ask`. The
+ * converter used to REBUILD `move` from the two halves it knows, so every save
+ * — including one that only touched prose — destroyed the other six fields
+ * silently. Found by review on PR #222 before it could eat a real Rulebook.
+ */
+describe("a save never destroys the move fields the form does not own", () => {
+  const ELICITING: RulebookRule = {
+    ...STATIC_RULE,
+    id: "R3",
+    move: {
+      when: { summary: "the client has not named the loss yet" },
+      next: { kind: "ask", target: "what changed first" },
+      ask: "What was the first thing you noticed changing?",
+      rules_in: [{ answer_class: "a date", settles: "acute onset" }],
+      rules_out: [{ answer_class: "'always been this way'", settles: "acute onset" }],
+      information_value: "separates acute from chronic before anything else",
+      frame: "open, no diagnosis words",
+      order: 1,
+    },
+  };
+
+  it("carries ask/rules_in/rules_out/information_value/frame/order through an untouched round-trip", () => {
+    const values = ruleMoveFieldsFromRule(ELICITING);
+    expect(ruleMoveFromFields(values, ELICITING.move)).toEqual({
+      move: ELICITING.move,
+    });
+  });
+
+  it("keeps them when the Expert edits the When/Next halves", () => {
+    const out = ruleMoveFromFields(
+      {
+        ...ruleMoveFieldsFromRule(ELICITING),
+        preconditionSummary: "the client has not named the loss yet, session 2",
+      },
+      ELICITING.move,
+    );
+    expect(out.move?.when?.summary).toContain("session 2");
+    expect(out.move?.ask).toBe(ELICITING.move?.ask);
+    expect(out.move?.rules_in).toEqual(ELICITING.move?.rules_in);
+    expect(out.move?.information_value).toBe(ELICITING.move?.information_value);
+    expect(out.move?.order).toBe(1);
+  });
+
+  it("keeps them even when the Expert CLEARS both halves — and deletes the halves", () => {
+    const out = ruleMoveFromFields(EMPTY_RULE_MOVE_FIELDS, ELICITING.move);
+    expect(out.move?.when).toBeUndefined();
+    expect(out.move?.next).toBeUndefined();
+    expect(out.move?.ask).toBe(ELICITING.move?.ask);
+  });
+
+  it("still deletes the whole move when there was nothing else to keep", () => {
+    const out = ruleMoveFromFields(EMPTY_RULE_MOVE_FIELDS, POLICY_RULE.move);
+    expect("move" in out).toBe(true);
+    expect(out.move).toBeUndefined();
+  });
+});
