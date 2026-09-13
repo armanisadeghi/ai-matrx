@@ -9,8 +9,9 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useUser } from "@/lib/hooks/useUser";
 import * as service from "../service";
+import { BackendApiError } from "@/lib/api/errors";
 import { useWrittenProgress } from "./useWrittenProgress";
-import type { CloudBrowserConsent } from "../types";
+import type { CloudBrowserConsent, CloudBrowserLoadError } from "../types";
 import {
   hydrateSnapshot,
   setActiveProfile,
@@ -37,6 +38,29 @@ import {
   selectRun,
   selectTelemetry,
 } from "../redux/selectors";
+
+/** Keep what the server told us. `e.message` alone loses whether trying again
+ *  can work and the id to quote — see `CloudBrowserLoadError`. */
+function toLoadError(e: unknown): CloudBrowserLoadError {
+  if (e instanceof BackendApiError) {
+    const details = e.details as { retryable?: unknown } | null;
+    return {
+      message: e.userMessage,
+      // No verdict from the server: an unknown failure is worth one more try.
+      retryable:
+        typeof details?.retryable === "boolean" ? details.retryable : true,
+      requestId: e.requestId || null,
+    };
+  }
+  return {
+    message:
+      e instanceof Error && e.message
+        ? e.message
+        : "The Cloud Browser could not load.",
+    retryable: true,
+    requestId: null,
+  };
+}
 
 export function useCloudBrowser(
   initialProfileId?: string,
@@ -74,11 +98,7 @@ export function useCloudBrowser(
         const snap = await service.loadSnapshot(profileId, runId);
         dispatch(hydrateSnapshot(snap));
       } catch (e) {
-        dispatch(
-          setError(
-            e instanceof Error ? e.message : "Failed to load Cloud Browser.",
-          ),
-        );
+        dispatch(setError(toLoadError(e)));
       }
     },
     [dispatch],
@@ -186,6 +206,14 @@ export function useCloudBrowser(
       activeProfileId
         ? load(activeProfileId, initialRunId)
         : Promise.resolve(),
+    /**
+     * Try again after a failed load or start. NOT `reload`: that one needs an
+     * `activeProfileId`, which a first load that failed never set — so a retry
+     * button wired to it would silently do nothing, a dead end in a nicer coat.
+     * Starts over from what the panel was opened with.
+     */
+    retry: () =>
+      load(activeProfileId ?? initialProfileId ?? "", initialRunId),
     takeControl,
     requestControl,
     returnControl,

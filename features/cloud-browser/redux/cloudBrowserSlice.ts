@@ -11,6 +11,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   AccountBinding,
   CloudBrowserConsent,
+  CloudBrowserLoadError,
   CloudBrowserHandoff,
   CloudBrowserProfile,
   CloudBrowserRun,
@@ -56,7 +57,8 @@ export interface CloudBrowserState {
    * screenshot trigger); null until the first action streams. */
   browserActivityAt: number | null;
   loading: boolean;
-  error: string | null;
+  /** Structured on purpose — see `CloudBrowserLoadError`. */
+  error: CloudBrowserLoadError | null;
   /** True once the front-and-centre notification prompt has been answered. */
   notificationPromptSeen: boolean;
 }
@@ -93,8 +95,11 @@ const slice = createSlice({
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
     },
-    setError(state, action: PayloadAction<string | null>) {
+    setError(state, action: PayloadAction<CloudBrowserLoadError | null>) {
       state.error = action.payload;
+      // A failed load is FINISHED. Leaving `loading` true after an error is how a
+      // panel keeps claiming to start a browser that is never coming.
+      if (action.payload) state.loading = false;
     },
     hydrateSnapshot(state, action: PayloadAction<CloudBrowserSnapshot>) {
       const s = action.payload;

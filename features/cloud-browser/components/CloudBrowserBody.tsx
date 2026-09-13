@@ -34,6 +34,10 @@ import type { StreamTicketEnvelope } from "../types";
 import { WrittenProgressFace } from "./WrittenProgressFace";
 import { ScreenshotFace } from "./ScreenshotFace";
 import { TakeoverCanvas } from "./TakeoverCanvas";
+import {
+  CloudBrowserStartFailed,
+  CloudBrowserStarting,
+} from "./CloudBrowserStartState";
 import { ControllerBanner } from "./ControllerBanner";
 import { ProfileSelector } from "./ProfileSelector";
 import { TelemetrySurface } from "./TelemetrySurface";
@@ -85,6 +89,12 @@ export function CloudBrowserBody({
 
   const controller = cb.controller;
   const isMeDriving = controller?.kind === "human" && controller.isMe;
+
+  // Before there is a browser, the Live area says what is happening instead
+  // of showing empty faces. `startFailed` wins over `starting` because a failed
+  // load is finished (the slice clears `loading` when it records an error).
+  const startFailed = !cb.run && !!cb.error;
+  const starting = !cb.run && !cb.error;
 
   // The media face the primary pane shows.
   const face: FaceTab = isMeDriving
@@ -223,6 +233,28 @@ export function CloudBrowserBody({
         />
       ) : null}
 
+      {/* A refresh that failed while a browser is running. Shown at the TOP,
+          where the person is looking — it used to sit under the tab area. A
+          failure with no browser renders inside the Live area instead. */}
+      {cb.run && cb.error ? (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400"
+        >
+          <span>{cb.error.message}</span>
+          {cb.error.retryable ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void cb.retry()}
+              disabled={cb.loading}
+            >
+              Try again
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       {controller ? (
         <ControllerBanner
           controller={controller}
@@ -256,7 +288,7 @@ export function CloudBrowserBody({
         <TabsContent value="live" className="min-h-0 flex-1">
           <div className="flex h-full min-h-0 flex-col gap-2">
             {/* Face switcher — written vs screenshots (takeover is auto). */}
-            {face !== "takeover" ? (
+            {face !== "takeover" && cb.run ? (
               <div className="flex items-center gap-1.5 text-xs">
                 <Button
                   size="sm"
@@ -286,7 +318,15 @@ export function CloudBrowserBody({
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
-              {face === "takeover" && controller ? (
+              {startFailed && cb.error ? (
+                <CloudBrowserStartFailed
+                  error={cb.error}
+                  retrying={cb.loading}
+                  onRetry={() => void cb.retry()}
+                />
+              ) : starting ? (
+                <CloudBrowserStarting />
+              ) : face === "takeover" && controller ? (
                 <div className="h-full p-2">
                   <TakeoverCanvas
                     controller={controller}
@@ -451,15 +491,6 @@ export function CloudBrowserBody({
         </TabsContent>
       </Tabs>
 
-      {cb.error ? (
-        <p
-          className={cn(
-            "rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400",
-          )}
-        >
-          {cb.error}
-        </p>
-      ) : null}
     </div>
   );
 }
