@@ -29,14 +29,14 @@ import { AlertCircle, Archive, BadgeCheck, CircleDashed, RotateCw } from "lucide
 import {
   ArchiveFilter,
   DEFAULT_ARCHIVE_FILTER,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   ToggleGroup,
   ToggleGroupItem,
   type ArchiveFilterValue,
 } from "@ai-matrx/design-system";
+// Tabs come through the host wrapper, never straight from the package: the
+// wrapper is where "a tab activates on a plain click" lives (see
+// `components/ui/tabs.tsx`).
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataRowInspector } from "@ai-matrx/design-system/data-table";
 import { Button } from "@/components/ui/button";
 import { ConfirmationBadge } from "@/features/content-ir/records/ConfirmationBadge";

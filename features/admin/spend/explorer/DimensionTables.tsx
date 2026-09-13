@@ -17,12 +17,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@ai-matrx/design-system";
+// Tabs come through the host wrapper, never straight from the package: the
+// wrapper is where "a tab activates on a plain click" lives (see
+// `components/ui/tabs.tsx`).
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
