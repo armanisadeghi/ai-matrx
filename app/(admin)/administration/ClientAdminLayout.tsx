@@ -81,6 +81,13 @@ export function ClientAdminLayout({
 }) {
   const pathname = usePathname() ?? "";
   const fullscreen = isFullscreenRoute(pathname);
+  // DatabaseAdminLayoutClient owns the bounded vertical body below its
+  // two-row database navigation. Letting this enclosing admin main scroll as
+  // well creates competing terminal scroll regions: at the bottom of a long
+  // database page, the final meaningful result can stop under the inner
+  // boundary instead of reaching it. Other admin routes retain the shared
+  // natural-height fallback below.
+  const databaseRoute = pathname.startsWith("/administration/database");
 
   return (
     <div className="flex flex-col h-page">
@@ -94,7 +101,9 @@ export function ClientAdminLayout({
         />
       )}
       <main
-        className="w-full flex-1 min-h-0 bg-textured overflow-y-auto"
+        className={`w-full flex-1 min-h-0 bg-textured ${
+          databaseRoute ? "overflow-hidden" : "overflow-y-auto"
+        }`}
         onWheelCapture={forwardUnboundedTableWheel}
       >
         {children}
