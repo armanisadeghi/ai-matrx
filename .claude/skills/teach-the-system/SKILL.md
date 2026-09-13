@@ -420,6 +420,8 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — Exam fairness: the published piece carried reporting the bundle lacked (interviews,
   later cases). Tell the judge to score only what the record allows, or bundle what the newsroom
   actually had; otherwise the verdict measures access, not craft.
+
+
 - 2026-09-12 — (trial 8, the unfolding case) A cloud session's environment can carry a STALE credential: the
   Supabase publishable key in the container was not the project's live key (401 on every auth call). Read the
   live publishable key through the Supabase MCP (it is public by design) and log the drift as a wall; never
@@ -454,6 +456,7 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 8) Review bots are free verifiers: Cursor Bugbot found five real defects in tonight's
   frontend (state dropped on reopen, an effect loop, a hidden rejoined run) that no builder's tests caught.
   Treat every bot finding as a bug report and fix the class before the morning report.
+
 - **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.
 
 - **2026-09-12 — Arman's architecture brief (`OVERVIEW.md`) and the gap census.** The mandate is tacit,

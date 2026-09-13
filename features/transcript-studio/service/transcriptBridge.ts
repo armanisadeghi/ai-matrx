@@ -234,7 +234,7 @@ export async function saveStudioAsTranscript(
     const cleaned = findCleanedFor(raw, cleanedSegments);
     return {
       id: raw.id,
-      timecode: secondsToTimecode(raw.tStart),
+      timecode: formatDurationSeconds(raw.tStart, { style: "clock" }),
       seconds: raw.tStart,
       text: cleaned ?? raw.text,
       ...(raw.speaker ? { speaker: raw.speaker } : {}),

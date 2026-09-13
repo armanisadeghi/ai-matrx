@@ -35,6 +35,7 @@ import {
   hasFieldControl,
 } from "@/features/settings/universal/KnobFieldControl";
 import { formatKnobValue, type KnobLadder } from "./ladder";
+import { availableVoices } from "@/lib/cartesia/voices";
 import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
@@ -51,6 +52,22 @@ function valueText(value: unknown): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "string") return value;
   return JSON.stringify(value);
+}
+
+function formatRowValue(
+  value: unknown,
+  unit: string | null,
+  control: KnobLadder["control"] | undefined,
+): string {
+  if (control !== "voice") return formatKnobValue(value, unit);
+  if (value === null || value === undefined || value === "") {
+    return "Default for each use";
+  }
+  if (typeof value !== "string") return formatKnobValue(value, unit);
+  return (
+    availableVoices.find((voice) => voice.id === value)?.name ??
+    `Unknown voice: ${value}`
+  );
 }
 
 function parseDraft(
@@ -152,6 +169,8 @@ export function KnobOverrideRow(props: {
       ? "your organization"
       : "the platform";
   const overrideText = isSetHere ? valueText(overrideValue) : "";
+  const displayValue = (value: unknown) =>
+    formatRowValue(value, knob.unit, ladder?.control);
   const draftIdentity = `${knob.full_key}:${organizationId}:${scopeId}:${overrideText}`;
   const [draft, setDraft] = useState<string>(overrideText);
   const [syncedDraftIdentity, setSyncedDraftIdentity] = useState(draftIdentity);
@@ -232,7 +251,7 @@ export function KnobOverrideRow(props: {
     if (system) {
       const confirmed = await confirm({
         title: `Restore ${knob.label} to its registered default?`,
-        description: `The platform value becomes ${formatKnobValue(system.registeredDefault, knob.unit)}.`,
+        description: `The platform value becomes ${displayValue(system.registeredDefault)}.`,
         confirmLabel: "Restore registered default",
       });
       if (confirmed) await write(null);
@@ -240,10 +259,7 @@ export function KnobOverrideRow(props: {
     }
     const confirmed = await confirm({
       title: `Inherit ${knob.label} from ${inheritedFrom}?`,
-      description: `The override is removed and this setting falls back to ${formatKnobValue(
-        inheritedValue,
-        knob.unit,
-      )}.`,
+      description: `The override is removed and this setting falls back to ${displayValue(inheritedValue)}.`,
       confirmLabel: "Inherit it",
     });
     if (confirmed) await write(null);
@@ -416,20 +432,20 @@ export function KnobOverrideRow(props: {
               {!hideKey && <p>Key: {knob.full_key}</p>}
               <p>
                 {system
-                  ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}`
-                  : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}`}
+                  ? `Registered default: ${displayValue(system.registeredDefault)}`
+                  : `Platform default: ${displayValue(knob.platform_default)}`}
               </p>
               {knob.bound_value !== null && knob.bound_value !== undefined && (
-                <p>Bound: {formatKnobValue(knob.bound_value, knob.unit)}</p>
+                <p>Bound: {displayValue(knob.bound_value)}</p>
               )}
-              {knob.basis && <p>Basis: {knob.basis}</p>}
+              {!hideKey && knob.basis && <p>Basis: {knob.basis}</p>}
               {system && (
                 <p className={reviewOverdue ? "font-medium text-amber-600" : undefined}>
                   {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}
                   {knob.review_due ? ` · review ${knob.review_due}` : ""}
                 </p>
               )}
-              {stateOnly && <p>Audit: {stateOnly.consumerEvidence}</p>}
+              {!hideKey && stateOnly && <p>Audit: {stateOnly.consumerEvidence}</p>}
             </div>
             {(system
               ? JSON.stringify(knob.platform_default) !==

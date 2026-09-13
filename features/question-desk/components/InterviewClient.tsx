@@ -531,6 +531,7 @@ export function InterviewClient({
                   and it comes back to you as a real question.
                 </p>
                 <ReviewTable
+                  interviewId={interviewId}
                   questions={reviewQuestions}
                   lines={rowLines}
                   busyId={busyId}
@@ -539,8 +540,10 @@ export function InterviewClient({
                       fromTable: true,
                     })
                   }
-                  onOverturn={(q, w) =>
-                    void record(q, "overturn", w, "typed", { fromTable: true })
+                  onOverturn={(q, w, spoken) =>
+                    void record(q, "overturn", w, spoken ? "voice" : "typed", {
+                      fromTable: true,
+                    })
                   }
                 />
               </section>
@@ -551,6 +554,7 @@ export function InterviewClient({
                   Every question at once
                 </h2>
                 <AskTable
+                  interviewId={interviewId}
                   questions={askQuestions}
                   lines={rowLines}
                   busyId={busyId}
@@ -575,8 +579,8 @@ export function InterviewClient({
                       fromTable: true,
                     })
                   }
-                  onWrite={(q, w) =>
-                    void record(q, "own_words", w, "typed", {
+                  onWrite={(q, w, spoken) =>
+                    void record(q, "own_words", w, spoken ? "voice" : "typed", {
                       fromTable: true,
                     })
                   }

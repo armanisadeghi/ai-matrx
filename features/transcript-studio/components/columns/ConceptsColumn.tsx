@@ -11,6 +11,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { COLUMN_IDS } from "../../constants";
@@ -59,13 +60,7 @@ const KIND_COLOR: Record<ConceptKind, string> = {
 
 function formatTimecode(sec: number | null): string | null {
   if (sec === null || !Number.isFinite(sec) || sec < 0) return null;
-  const total = Math.floor(sec);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  if (m < 60) return `${m}:${s.toString().padStart(2, "0")}`;
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
-  return `${h}:${mm.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return formatDurationSeconds(sec, { style: "clock" });
 }
 
 export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
