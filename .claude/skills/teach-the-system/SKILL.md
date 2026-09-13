@@ -402,3 +402,13 @@ lines by relocating trial-specific detail into the trial's register.
   night: retained dissent on the rule atom, the invisible policy rules, the voice-first and YouTube
   doors, the blind pairwise Audition arm; the `school` dimension is under design and attack
   (`DESIGN-schools-on-the-rule-atom.md`).
+- 2026-09-13 — (trial 12, found at a PR check-in) 🚨 **Trials run concurrently against ONE platform, and two
+  of them built the same primitive on the same night, on the same field names, in the same files.** Trial 8
+  landed a flat `precondition`/`next_action` policy shape on `main` while trial 7 was building a structured
+  one on the same keys; the collision surfaced only as 22 conflicted files at merge time, after both nights
+  of work were done. **Before you build a shared-layer primitive, read the other live trials' registers for
+  what they are building right now — not just their walls tables** — and name your new fields in your own
+  namespace when the concept is one another trial could plausibly reach for. When the collision has already
+  happened, the LIVE DATA decides who keeps the key names (here: 592 rules already carried the string form,
+  zero carried the object), which makes it a correction you resolve, not a question for Arman. Abort a blind
+  merge rather than resolve 22 semantic conflicts at speed.
