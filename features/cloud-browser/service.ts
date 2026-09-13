@@ -990,10 +990,13 @@ export async function renewStreamTicket(
 export async function takeControl(
   runId: string,
   me: { userId: string; displayName: string },
+  /** "Take over immediately": the server does not wait for the agent's
+   *  in-flight browser step (it used to take as long as that step). */
+  opts: { immediate?: boolean } = {},
 ): Promise<ControllerState> {
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/takeover`,
-    {},
+    opts.immediate ? { immediate: true } : {},
   );
   const value = record(data);
   return {

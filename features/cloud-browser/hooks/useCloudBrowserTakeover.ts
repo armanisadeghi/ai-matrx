@@ -62,7 +62,7 @@ export interface UseCloudBrowserTakeoverArgs {
   agentAwaitingHuman?: boolean;
   /** Actually claim the browser. Owned by the caller (claim + open the control
    *  stream); this hook owns only WHEN it runs. */
-  claim: () => Promise<void>;
+  claim: (opts?: { immediate?: boolean }) => Promise<void>;
 }
 
 export interface UseCloudBrowserTakeover {
@@ -97,12 +97,12 @@ export function useCloudBrowserTakeover({
   // One claim per takeover, whichever trigger gets there first.
   const claimedRef = useRef(false);
 
-  const runClaim = useCallback(async () => {
+  const runClaim = useCallback(async (opts?: { immediate?: boolean }) => {
     if (claimedRef.current) return;
     claimedRef.current = true;
     setPhase("claiming");
     try {
-      await claim();
+      await claim(opts);
     } finally {
       setPendingInjectionId(null);
       setPhase("idle");
@@ -181,7 +181,8 @@ export function useCloudBrowserTakeover({
           kind: "system_message",
         }),
       );
-      await runClaim();
+      // Immediate on the server too — never as slow as the agent's current step.
+      await runClaim({ immediate: true });
     })();
   }, [conversationId, dispatch, pendingInjectionId, phase, runClaim]);
 

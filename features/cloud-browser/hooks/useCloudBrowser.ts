@@ -139,11 +139,14 @@ export function useCloudBrowser(
     [dispatch, load],
   );
 
-  const takeControl = useCallback(async () => {
-    if (!run) return;
-    const next = await service.takeControl(run.id, me);
-    dispatch(setController(next));
-  }, [dispatch, me, run]);
+  const takeControl = useCallback(
+    async (opts: { immediate?: boolean } = {}) => {
+      if (!run) return;
+      const next = await service.takeControl(run.id, me, opts);
+      dispatch(setController(next));
+    },
+    [dispatch, me, run],
+  );
 
   /** Ask the CURRENT human controller for the wheel — a real durable queue row,
    *  never a disguised claim (the claim fails closed against another human). */

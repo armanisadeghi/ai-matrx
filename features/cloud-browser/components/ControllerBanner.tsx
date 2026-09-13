@@ -18,12 +18,13 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
-  Cpu,
-  User,
   Cog,
+  Cpu,
   Hand,
+  Loader2,
   LogOut,
   MousePointerClick,
+  User,
   Zap,
 } from "lucide-react";
 import type { ControllerState } from "../types";
@@ -60,6 +61,7 @@ export function ControllerBanner({
   /** A takeover is in motion: the agent is being told, control has not moved. */
   waitingForAgent = false,
   onTakeImmediately,
+  claiming = false,
   busy,
   className,
 }: {
@@ -70,6 +72,12 @@ export function ControllerBanner({
   canTake?: boolean;
   waitingForAgent?: boolean;
   onTakeImmediately?: () => void;
+  /**
+   * The takeover request is in flight. Without this the banner kept saying
+   * "The agent is driving." over a dimmed button for as long as the server took
+   * (9.3 s measured on 2026-09-13) — a state that reads as broken.
+   */
+  claiming?: boolean;
   busy?: boolean;
   className?: string;
 }) {
@@ -100,6 +108,24 @@ export function ControllerBanner({
   } else if (kind === "system") {
     icon = <Cog className="h-4 w-4 text-muted-foreground" aria-hidden />;
     label = "The system is running a maintenance step.";
+  }
+
+  // A takeover is being granted right now — say so, instead of leaving "The
+  // agent is driving." over a dimmed button. Not shown once control is ours.
+  if (claiming && !(kind === "human" && isMe)) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className={cn(
+          "flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-foreground",
+          className,
+        )}
+      >
+        <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />
+        Taking control of the browser…
+      </div>
+    );
   }
 
   // While the agent is being told, the wait IS the banner — one message, one

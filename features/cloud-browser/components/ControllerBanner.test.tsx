@@ -200,3 +200,27 @@ describe("ControllerBanner — a button that changes meaning under the cursor", 
     container.remove();
   });
 });
+
+describe("ControllerBanner — while control is being granted", () => {
+  it("says it is taking control, not that the agent is driving", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <ControllerBanner
+          controller={AGENT_DRIVING}
+          onTake={noop}
+          onReturn={noop}
+          canTake
+          claiming
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Taking control of the browser");
+    expect(container.textContent).not.toContain("The agent is driving");
+    expect(container.querySelector("button")).toBeNull(); // nothing dead to click
+    await act(async () => root.unmount());
+    container.remove();
+  });
+});
