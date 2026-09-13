@@ -54279,6 +54279,84 @@ export type Database = {
   }
   mandate: {
     Tables: {
+      advance_batch_row: {
+        Row: {
+          action: string
+          applied_at: string | null
+          batch_id: string
+          batch_label: string | null
+          created_at: string
+          created_by: string | null
+          expected_pinned_version_id: string | null
+          holder_kind: string
+          id: string
+          mandate_key: string
+          metadata: Json
+          new_pinned_version_id: string | null
+          organization_id: string
+          prior_pinned_version_id: string | null
+          reason: string | null
+          reverts_batch_id: string | null
+          reverts_row_id: string | null
+          row_id: string
+          status: string
+          target_version_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          action: string
+          applied_at?: string | null
+          batch_id: string
+          batch_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_pinned_version_id?: string | null
+          holder_kind: string
+          id?: string
+          mandate_key: string
+          metadata?: Json
+          new_pinned_version_id?: string | null
+          organization_id: string
+          prior_pinned_version_id?: string | null
+          reason?: string | null
+          reverts_batch_id?: string | null
+          reverts_row_id?: string | null
+          row_id: string
+          status: string
+          target_version_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          action?: string
+          applied_at?: string | null
+          batch_id?: string
+          batch_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_pinned_version_id?: string | null
+          holder_kind?: string
+          id?: string
+          mandate_key?: string
+          metadata?: Json
+          new_pinned_version_id?: string | null
+          organization_id?: string
+          prior_pinned_version_id?: string | null
+          reason?: string | null
+          reverts_batch_id?: string | null
+          reverts_row_id?: string | null
+          row_id?: string
+          status?: string
+          target_version_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       binding: {
         Row: {
           auto_run: boolean | null

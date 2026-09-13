@@ -5802,6 +5802,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Availability
+         * @description Availability for every server the caller has a relationship with
+         *     (no-auth servers, GitHub, and every server they hold a connection for),
+         *     plus any extra comma-separated `slugs`.
+         */
+        get: operations["availability_mcp_connections_availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/availability/{server_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Availability For Slug */
+        get: operations["availability_for_slug_mcp_connections_availability__server_slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/tools": {
         parameters: {
             query?: never;
@@ -77541,6 +77580,41 @@ export interface components {
             status_page?: "https://status.maze.co/";
         };
         /**
+         * McpAvailability
+         * @description The ONE truthful answer to "can this user use this MCP right now?".
+         *
+         *     Emitted to the browser (``GET /api/mcp-connections/availability``) and to
+         *     the run timeline (``mcp_attachments`` info event) so no surface has to
+         *     guess a connection's health from ``tool.mcp_user_conn.status`` alone — a
+         *     row that says ``connected`` while its access token expired days ago is
+         *     exactly the lie a user saw as a green checkmark next to an MCP the model
+         *     could not reach (Arman, 2026-09-13).
+         *
+         *     ``state`` is one of:
+         *
+         *     * ``connected``    — usable on the next run (token valid, refreshable, or
+         *       the server needs no auth at all).
+         *     * ``needs_reauth`` — a connection exists but the user must re-authorize
+         *       (expired with no stored refresh token, ``refresh_failed``, ``error``).
+         *     * ``not_connected``— no usable connection on file, or the server itself is
+         *       not active. ``reason`` always names why.
+         */
+        McpAvailability: {
+            /** Slug */
+            slug: string;
+            /** Server Id */
+            server_id?: string | null;
+            /** State */
+            state: string;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Tool Count
+             * @default 0
+             */
+            tool_count?: number;
+        };
+        /**
          * McpCatalogRefreshResult
          * @description Admin-triggered server catalog reconciliation without user credentials.
          */
@@ -127429,6 +127503,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectionSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    availability_mcp_connections_availability_get: {
+        parameters: {
+            query?: {
+                slugs?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpAvailability"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    availability_for_slug_mcp_connections_availability__server_slug__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpAvailability"];
                 };
             };
             /** @description Validation Error */
