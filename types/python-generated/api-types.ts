@@ -22824,6 +22824,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/system-errors/open-outages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open Outages
+         * @description List unresolved provider-outage records.
+         *
+         *     This literal route must remain before ``/{error_id}``: Starlette resolves
+         *     routes in declaration order, and the detail route is intentionally UUID-only.
+         */
+        get: operations["open_outages_admin_system_errors_open_outages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/system-errors/{error_id}": {
         parameters: {
             query?: never;
@@ -82018,6 +82041,35 @@ export interface components {
             upload_date: string;
             /** License */
             license: string;
+        };
+        /** OpenOutageListResponse */
+        OpenOutageListResponse: {
+            /** Outages */
+            outages: components["schemas"]["OpenOutageRecord"][];
+        };
+        /**
+         * OpenOutageRecord
+         * @description One provider currently refusing every call.
+         */
+        OpenOutageRecord: {
+            /** Id */
+            id: string;
+            /** Provider */
+            provider?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Text */
+            error_text?: string | null;
+            /** First Seen At */
+            first_seen_at?: string | null;
+            /** Consecutive Failures */
+            consecutive_failures?: number | null;
+            /** Models Affected */
+            models_affected?: string[];
+            /** Rerouted To */
+            rerouted_to?: string[];
+            /** Occurred At */
+            occurred_at?: string | null;
         };
         /**
          * OpenProjectRootResult
@@ -151299,6 +151351,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_outages_admin_system_errors_open_outages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenOutageListResponse"];
                 };
             };
         };

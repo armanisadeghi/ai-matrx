@@ -48493,6 +48493,20 @@ export type Database = {
         Args: { p_key: string; p_organization_id?: string }
         Returns: number[]
       }
+      _leave_ledger_sentence: {
+        Args: {
+          p_ends_on: string
+          p_entry_kind: string
+          p_hours_delta: number
+          p_leave_request_id: string
+          p_note: string
+          p_occurred_on: string
+          p_request_state: string
+          p_source_workweek_id: string
+          p_starts_on: string
+        }
+        Returns: string
+      }
       _leave_manages: {
         Args: { p_employment_id: string; p_manager_employment_id: string }
         Returns: boolean
