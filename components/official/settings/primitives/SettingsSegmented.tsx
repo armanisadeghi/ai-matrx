@@ -68,7 +68,7 @@ export function SettingsSegmented<T extends string = string>({
               className={cn(
                 "relative flex items-center justify-center rounded-[0.2rem] px-3 transition-all gap-1.5",
                 sizeClass[size],
-                fullWidth && "flex-1",
+                fullWidth && "min-w-max shrink-0 flex-1",
                 isActive
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50",

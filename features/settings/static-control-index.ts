@@ -254,12 +254,12 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-actions-restore-all-windows"
   },
   {
-    "tabId": "appearance.site-workbench",
+    "tabId": "appearance.siteWorkbench",
     "label": "Saved bookmarks",
     "controlId": "settings-control-your-bookmarks-saved-bookmarks"
   },
   {
-    "tabId": "appearance.site-workbench",
+    "tabId": "appearance.siteWorkbench",
     "label": "Limit",
     "controlId": "settings-control-your-bookmarks-limit"
   },
