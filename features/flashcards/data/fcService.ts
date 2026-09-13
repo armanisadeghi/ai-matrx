@@ -272,13 +272,16 @@ export const fcService = {
    * into explicit Mine/Org/Shared tabs is a UX change, not a bug fix; when
    * that lands, wire `applyListScope` here instead of this comment.
    */
-  async listSets(): Promise<FcResult<FcSetRow[]>> {
+  async listSets(options: { signal?: AbortSignal } = {}): Promise<FcResult<FcSetRow[]>> {
     try {
-      const { data, error } = await EDU()
+      const query = EDU()
         .from("fc_set")
         .select("*")
         .is("deleted_at", null)
         .order("updated_at", { ascending: false });
+      const { data, error } = options.signal
+        ? await query.abortSignal(options.signal)
+        : await query;
       if (error) return fail("listSets", error);
       return { data: (data ?? []) as FcSetRow[], error: null };
     } catch (e) {

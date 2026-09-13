@@ -60,6 +60,7 @@ import {
 } from "../helper-audio/generateHelperAudio.thunk";
 import { FastFireSetPicker } from "./FastFireSetPicker";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
+import { loadFastFireSets } from "./fastfire-initial-load";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
@@ -205,10 +206,26 @@ export function FastFireSetup() {
     };
   }, [config.setId, config.spokenFronts]);
 
+  const retrySets = (): void => {
+    setLoadError(null);
+    setSets(null);
+    void loadSets();
+  };
+
+  const loadSets = async (): Promise<void> => {
+    const res = await loadFastFireSets((signal) => fcService.listSets({ signal }));
+    if (res.error) {
+      setLoadError(res.error);
+      setSets([]);
+      return;
+    }
+    setSets(res.data ?? []);
+  };
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const res = await fcService.listSets();
+      const res = await loadFastFireSets((signal) => fcService.listSets({ signal }));
       if (cancelled) return;
       if (res.error) {
         setLoadError(res.error);
@@ -240,9 +257,14 @@ export function FastFireSetup() {
               />
             </div>
           ) : loadError ? (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground">
-              <AlertCircle className="h-4 w-4" />
-              {loadError}
+            <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {loadError}
+              </span>
+              <Button type="button" variant="outline" size="sm" onClick={retrySets}>
+                Retry
+              </Button>
             </div>
           ) : sets.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border bg-background px-3 py-8 text-center text-xs text-muted-foreground">
