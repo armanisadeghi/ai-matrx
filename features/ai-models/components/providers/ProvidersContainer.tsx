@@ -36,7 +36,11 @@ import ProviderForm, {
   type ProviderFormData,
 } from "./ProviderForm";
 import { aiModelService } from "../../service";
-import type { AiProvider, AiProviderInsert, AiProviderUpdate } from "../../types";
+import type {
+  AiProvider,
+  AiProviderInsert,
+  AiProviderUpdate,
+} from "../../types";
 import { AI_PROVIDER_DEEP_LINK_PARAM } from "../../doors";
 
 function rowToFormData(row: AiProvider): ProviderFormData {
@@ -71,7 +75,11 @@ function ProviderDetailPanel({
   onSaved,
 }: ProviderDetailPanelProps) {
   const [formData, setFormData] = useState<ProviderFormData>(
-    isNew ? EMPTY_PROVIDER_FORM : provider ? rowToFormData(provider) : EMPTY_PROVIDER_FORM,
+    isNew
+      ? EMPTY_PROVIDER_FORM
+      : provider
+        ? rowToFormData(provider)
+        : EMPTY_PROVIDER_FORM,
   );
   const [baseline, setBaseline] = useState<ProviderFormData>(formData);
   const [saving, setSaving] = useState(false);
@@ -190,7 +198,9 @@ function ProviderDetailPanel({
               Detail
             </span>
             <div className="w-px h-3 bg-border shrink-0" />
-            <span className="text-sm font-semibold truncate">{displayName}</span>
+            <span className="text-sm font-semibold truncate">
+              {displayName}
+            </span>
             {isNew && (
               <Badge
                 variant="outline"
@@ -241,7 +251,11 @@ function ProviderDetailPanel({
 
         {/* Form */}
         <div className="flex-1 overflow-auto p-3 min-h-0">
-          <ProviderForm data={formData} isSystem={isSystem} onChange={setFormData} />
+          <ProviderForm
+            data={formData}
+            isSystem={isSystem}
+            onChange={setFormData}
+          />
         </div>
 
         {/* Footer */}
@@ -342,27 +356,40 @@ export default function ProvidersContainer() {
   const deepLinkedProviderId = searchParams.get(AI_PROVIDER_DEEP_LINK_PARAM);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AiProvider | null>(
     null,
   );
   const [isNewProvider, setIsNewProvider] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
 
+  const loadGeneration = useRef(0);
+
   const loadData = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setIsLoading(true);
+    setLoadError(null);
     try {
       const fetched = await aiModelService.fetchAllProviders();
+      if (generation !== loadGeneration.current) return;
       setProviders(fetched);
+      setLoadError(null);
     } catch (err) {
-      console.error("Failed to load providers", extractErrorMessage(err));
+      if (generation === loadGeneration.current) {
+        setLoadError(extractErrorMessage(err));
+      }
     } finally {
-      setIsLoading(false);
+      if (generation === loadGeneration.current) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => void loadData(), 0);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      loadGeneration.current += 1;
+    };
   }, [loadData]);
 
   useEffect(() => {
@@ -430,13 +457,20 @@ export default function ProvidersContainer() {
 
   const handleDelete = async (provider: AiProvider) => {
     if (provider.is_system) return;
+    setActionError(null);
     try {
       await aiModelService.deleteProvider(provider.id);
       setProviders((prev) => prev.filter((p) => p.id !== provider.id));
       if (selectedProvider?.id === provider.id) closePanel();
     } catch (err) {
-      console.error("Failed to delete provider", extractErrorMessage(err));
+      setActionError(extractErrorMessage(err));
     }
+  };
+
+  const retainedError = actionError ?? loadError;
+  const refreshData = () => {
+    setActionError(null);
+    void loadData();
   };
 
   return (
@@ -444,22 +478,24 @@ export default function ProvidersContainer() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Table panel */}
         <div
-          className={`${panelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}
+          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}
         >
           <ProviderTable
             providers={providers}
             isLoading={isLoading}
+            error={retainedError}
             selectedId={selectedProvider?.id ?? null}
             onSelect={openProvider}
             onEdit={openProvider}
             onDelete={handleDelete}
             onCreate={openNew}
+            onRetry={refreshData}
           />
         </div>
 
         {/* Detail panel */}
         {panelOpen && (
-          <div className="w-1/2 border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
+          <div className="w-full md:w-1/2 border-l-0 md:border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
             <ProviderDetailPanel
               provider={selectedProvider}
               isNew={isNewProvider}
