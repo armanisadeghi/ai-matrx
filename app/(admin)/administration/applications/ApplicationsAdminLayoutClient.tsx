@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LibraryBig,
   MonitorCog,
+  PackageSearch,
 } from "lucide-react";
 import {
   AdminSectionShell,
@@ -44,6 +45,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     icon: HardDrive,
   },
   {
+    label: "Packages",
+    href: "/administration/applications/packages",
+    icon: PackageSearch,
+  },
+  {
     label: "History",
     href: "/administration/applications/history",
     icon: History,
@@ -51,7 +57,12 @@ const NAV_ITEMS: AdminSectionTab[] = [
 ];
 
 type ApplicationsTab =
-  "overview" | "configuration" | "catalogs" | "installations" | "history";
+  | "overview"
+  | "configuration"
+  | "catalogs"
+  | "installations"
+  | "packages"
+  | "history";
 
 /** Derives the active tab from the pathname — route-tabbed, so reliable. */
 function tabFromPathname(pathname: string): ApplicationsTab {
@@ -61,6 +72,8 @@ function tabFromPathname(pathname: string): ApplicationsTab {
     return "catalogs";
   if (pathname.startsWith("/administration/applications/installations"))
     return "installations";
+  if (pathname.startsWith("/administration/applications/packages"))
+    return "packages";
   if (pathname.startsWith("/administration/applications/history"))
     return "history";
   return "overview";

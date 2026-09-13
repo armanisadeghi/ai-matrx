@@ -3,7 +3,8 @@
 // Applications hub — route-tabbed shell governing OUR shipped client
 // applications (desktop, extension, mobile): remote configuration
 // (public.app_config), remote catalogs (public.catalog_entries), the installed
-// fleet (public.app_instances), and one unified audit history. Each tab is its
+// fleet (public.app_instances), the public @ai-matrx npm inventory, and one
+// unified audit history. Each tab is its
 // own route; this layout owns the viewport height and the tab bar (the
 // users / relationships admin hub pattern). Super-admin gating is inherited
 // from app/(admin)/layout.tsx — not re-done here.
@@ -18,7 +19,7 @@ import { ApplicationsAdminLayoutClient } from "./ApplicationsAdminLayoutClient";
 export const metadata = createRouteMetadata("/administration", {
   title: "Applications",
   description:
-    "Shipped client applications — remote configuration, catalogs, installed fleet, and audit history",
+    "Shipped client applications — remote configuration, catalogs, installed fleet, npm packages, and audit history",
   letter: "AP",
 });
 
