@@ -125,7 +125,7 @@ export function LabelsSection() {
                         )}
                         Print sheet
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => printCalibrationSheet(template)}>
+                    <Button size="sm" variant="outline" onClick={() => announcePrintOutcome(printCalibrationSheet(template), "Calibration page")}>
                         <Crosshair className="mr-1 h-3.5 w-3.5" />
                         Calibration page
                     </Button>
