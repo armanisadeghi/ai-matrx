@@ -85,8 +85,20 @@ function ProviderDetailPanel({
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [incomingRevision, setIncomingRevision] = useState<number | null>(null);
   const [showDirtyDialog, setShowDirtyDialog] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appliedRecordRef = useRef<{
+    id: string | null;
+    version: number | null;
+  }>({
+    id: null,
+    version: null,
+  });
+
+  const isDirty = (
+    Object.keys({ ...formData, ...baseline }) as Array<keyof ProviderFormData>
+  ).some((k) => JSON.stringify(formData[k]) !== JSON.stringify(baseline[k]));
 
   useEffect(() => {
     const base = isNew
@@ -94,14 +106,29 @@ function ProviderDetailPanel({
       : provider
         ? rowToFormData(provider)
         : EMPTY_PROVIDER_FORM;
-    const timer = setTimeout(() => {
-      setFormData(base);
-      setBaseline(base);
-      setSaveError(null);
-      setSavedFlash(false);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [provider, isNew]);
+    const recordId = isNew ? "__new__" : (provider?.id ?? null);
+    const recordVersion = provider?.version ?? null;
+    const sameRecord =
+      appliedRecordRef.current.id === recordId &&
+      (isNew || appliedRecordRef.current.version !== null);
+
+    if (
+      sameRecord &&
+      (isNew || appliedRecordRef.current.version === recordVersion)
+    )
+      return;
+    if (sameRecord && isDirty) {
+      setIncomingRevision(recordVersion);
+      return;
+    }
+
+    appliedRecordRef.current = { id: recordId, version: recordVersion };
+    setFormData(base);
+    setBaseline(base);
+    setIncomingRevision(null);
+    setSaveError(null);
+    setSavedFlash(false);
+  }, [isDirty, isNew, provider?.id, provider?.version]);
 
   useEffect(
     () => () => {
@@ -109,10 +136,6 @@ function ProviderDetailPanel({
     },
     [],
   );
-
-  const isDirty = (
-    Object.keys({ ...formData, ...baseline }) as Array<keyof ProviderFormData>
-  ).some((k) => JSON.stringify(formData[k]) !== JSON.stringify(baseline[k]));
 
   const displayName = isNew ? "New Provider" : provider?.name || "Provider";
   const isSystem = !isNew && !!provider?.is_system;
@@ -153,6 +176,13 @@ function ProviderDetailPanel({
           organization_id,
         } as unknown as AiProviderInsert);
       } else if (provider) {
+        const expectedVersion = appliedRecordRef.current.version;
+        if (expectedVersion !== provider.version) {
+          setSaveError(
+            "This provider changed while you were editing. Refresh or reopen it before saving.",
+          );
+          return null;
+        }
         saved = await aiModelService.updateProvider(
           provider.id,
           buildPayload() as unknown as AiProviderUpdate,
@@ -162,8 +192,10 @@ function ProviderDetailPanel({
       }
 
       const newBase = rowToFormData(saved);
+      appliedRecordRef.current = { id: saved.id, version: saved.version };
       setBaseline(newBase);
       setFormData(newBase);
+      setIncomingRevision(null);
       setSaveError(null);
       setSavedFlash(true);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
@@ -185,7 +217,10 @@ function ProviderDetailPanel({
     if (saved) onClose();
   };
 
-  const canSave = formData.name.trim().length > 0 && (isNew || isDirty);
+  const canSave =
+    incomingRevision === null &&
+    formData.name.trim().length > 0 &&
+    (isNew || isDirty);
 
   return (
     <>
@@ -252,6 +287,15 @@ function ProviderDetailPanel({
 
         {/* Form */}
         <div className="flex-1 overflow-auto p-3 min-h-0">
+          {incomingRevision !== null ? (
+            <div
+              role="alert"
+              className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+            >
+              This provider changed elsewhere. Your unsaved edits are preserved;
+              review the newer record before saving.
+            </div>
+          ) : null}
           <ProviderForm
             data={formData}
             isSystem={isSystem}
@@ -367,6 +411,12 @@ export default function ProvidersContainer() {
 
   const loadGeneration = useRef(0);
 
+  const invalidatePendingLoads = () => {
+    loadGeneration.current += 1;
+    setIsLoading(false);
+    setLoadError(null);
+  };
+
   const loadData = useCallback(async () => {
     const generation = ++loadGeneration.current;
     setIsLoading(true);
@@ -406,9 +456,15 @@ export default function ProvidersContainer() {
         (item) => item.id === deepLinkedProviderId,
       );
       if (!provider) return;
-      setSelectedProvider(provider);
-      setIsNewProvider(false);
-      setPanelOpen(true);
+      if (
+        selectedProvider?.id !== provider.id ||
+        selectedProvider.version !== provider.version ||
+        isNewProvider
+      ) {
+        setSelectedProvider(provider);
+        setIsNewProvider(false);
+        setPanelOpen(true);
+      }
     }, 0);
     return () => clearTimeout(timer);
   }, [deepLinkedProviderId, isLoading, providers]);
@@ -443,6 +499,7 @@ export default function ProvidersContainer() {
   };
 
   const handleSaved = (saved: AiProvider) => {
+    invalidatePendingLoads();
     setProviders((prev) => {
       const idx = prev.findIndex((p) => p.id === saved.id);
       if (idx >= 0) {
@@ -461,6 +518,7 @@ export default function ProvidersContainer() {
     setActionError(null);
     try {
       await aiModelService.deleteProvider(provider.id);
+      invalidatePendingLoads();
       setProviders((prev) => prev.filter((p) => p.id !== provider.id));
       if (selectedProvider?.id === provider.id) closePanel();
     } catch (err) {

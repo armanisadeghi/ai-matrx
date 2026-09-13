@@ -396,6 +396,12 @@ export default function SettingsContainer() {
 
   const loadGeneration = useRef(0);
 
+  const invalidatePendingLoads = () => {
+    loadGeneration.current += 1;
+    setIsLoading(false);
+    setLoadError(null);
+  };
+
   const loadData = useCallback(async () => {
     const generation = ++loadGeneration.current;
     setIsLoading(true);
@@ -438,6 +444,7 @@ export default function SettingsContainer() {
   };
 
   const handleSaved = (saved: AiSetting) => {
+    invalidatePendingLoads();
     setSettings((prev) => {
       const idx = prev.findIndex((s) => s.id === saved.id);
       if (idx >= 0) {
@@ -452,6 +459,7 @@ export default function SettingsContainer() {
   };
 
   const handleDeleted = (id: string) => {
+    invalidatePendingLoads();
     setSettings((prev) => prev.filter((s) => s.id !== id));
     if (selectedSetting?.id === id) closePanel();
   };
