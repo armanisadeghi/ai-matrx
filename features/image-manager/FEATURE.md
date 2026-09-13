@@ -211,6 +211,10 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-09-13` — codex: **The Images hub now clears global fixed controls at its
+  terminal scroll position.** The landing surface's single scroll owner reserves
+  bottom space so its final Library card can move fully above alarms and page
+  assistants on desktop and mobile.
 - `2026-09-13` — codex: **My Cloud now exits a stalled initial load honestly.** The shared cloud-tree producer aborts a transport that exceeds its explicit terminal boundary, surfaces the existing recoverable library error, and clears its dedupe promise so Try again starts a new request. Focused timeout regressions cover both abort and successful cleanup.
 - `2026-08-31` — codex: **Zero-byte cloud-image rows now terminate honestly without media errors.** A real `0 B` PNG in `/images/my-cloud` exposed that loading metadata-only rows through `MediaThumbnail` creates an unrecoverable object URL and a red Error Inspector event. The shared grid/list boundary now renders an accessible unavailable state, disables preview, and has a regression proving the media renderer is never invoked for empty bytes.
 - `2026-08-31` — codex: **Cloud upload folder resolution has one terminal lifecycle.** Pre-resolved destinations initialize directly; path resolution transitions asynchronously to resolved or error once, so React effects do not cascade state or retry a failed folder lookup forever.
