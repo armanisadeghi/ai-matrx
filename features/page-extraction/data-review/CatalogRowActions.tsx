@@ -106,12 +106,14 @@ export function CatalogRowActions({
   };
 
   const push = async (target: "workbook" | "dataset") => {
-    const organizationId =
-      target === "workbook" ? await ensureOrganizationContext() : undefined;
-    const view = await ensureView();
-    if (!view) return;
     setBusy(true);
     try {
+      const organizationId =
+        target === "workbook"
+          ? await ensureOrganizationContext()
+          : undefined;
+      const view = await ensureView();
+      if (!view) return;
       const res =
         target === "workbook"
           ? await pushToWorkbook(

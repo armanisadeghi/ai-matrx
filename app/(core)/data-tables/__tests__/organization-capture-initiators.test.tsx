@@ -223,10 +223,23 @@ test("Workbook import cancellation retains the selected file and performs no cre
   const file = new File(["sheet"], "budget.xlsx", {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+  const inputValue = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  );
+  const clearInput = jest
+    .spyOn(HTMLInputElement.prototype, "value", "set")
+    .mockImplementation(function setValue(
+      this: HTMLInputElement,
+      value: string,
+    ) {
+      inputValue?.set?.call(this, value);
+    });
   chooseFile(input, file);
   await flush();
   expect(ensureOrganizationContext).toHaveBeenCalled();
   expect(createWorkbook).not.toHaveBeenCalled();
-  expect(input.files?.[0]).toBe(file);
+  expect(clearInput).not.toHaveBeenCalledWith("");
   expect(toast).not.toHaveBeenCalled();
+  clearInput.mockRestore();
 });
