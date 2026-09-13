@@ -37,15 +37,11 @@ const windowPanelsImportRestriction = {
     // Import directly from the owning module. Internal subdirs below
     // stay banned. See features/files/FEATURE.md.
     // `features/files/api/<module>` ARE the owning modules (direct.ts, assets.ts,
-    // files.ts, pdf-pages.ts, ...). Only the bare directory path is banned — a
-    // directory import would need an index barrel, and invariant 17 forbids one.
-    // (Until 2026-09-10 this banned api/* too, with a message written when api/
-    // held HTTP shims; 24 legitimate consumers were red with no sanctioned door.)
-    {
-      group: ["@/features/files/api"],
-      message:
-        "Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). Raw HTTP helpers live in @/lib/python-client.",
-    },
+    // files.ts, pdf-pages.ts, ...). The bare `@/features/files/api` directory
+    // ban lives in deletedFileHooksRestriction.paths below: a gitignore-style
+    // `patterns` group for a directory also matches every module under it and
+    // children of an excluded directory can never be re-included, so until
+    // 2026-09-12 the 24 legitimate `api/<module>` consumers were red.
     {
       group: ["@/features/files/cache", "@/features/files/cache/*"],
       message:
@@ -106,6 +102,14 @@ const deletedFileHooksRestriction = {
       name: "@/features/files",
       message:
         "The features/files barrel (index.ts) was deleted. Import directly from the owning module — e.g. @/features/files/handler/handler, @ai-matrx/media/react (InlineMediaRef), @/features/files/types. See features/files/FEATURE.md.",
+    },
+    {
+      // Exact-match only: `@/features/files/api/<module>` are the owning
+      // modules and stay importable; a directory import would need an index
+      // barrel, and invariant 17 forbids one.
+      name: "@/features/files/api",
+      message:
+        "Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). Raw HTTP helpers live in @/lib/python-client.",
     },
     {
       // Exact-match twin of the features/files/upload internal-module
