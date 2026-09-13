@@ -37,7 +37,7 @@ export interface PlaybackRequest {
   /**
    * Cartesia voice params — EXPLICIT overrides only. Anything absent is
    * resolved by the adapter AT START TIME from the tiered listening config
-   * (`getListeningSettings`), so queued items and history replays honor the
+   * (`resolveListeningSettings`), so queued items and history replays honor the
    * settings current when audio actually plays, not when it was enqueued.
    * `purpose` picks the default-voice slot when no voice is set anywhere.
    */

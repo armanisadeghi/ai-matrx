@@ -22,11 +22,12 @@
  *     self-handles via `editMessage` (plain "Edit content").
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   createFullScreenEditorCallbackGroup,
+  disposeFullScreenEditorCallbackGroup,
   type FullScreenEditorHandlers,
 } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
@@ -76,18 +77,8 @@ export interface FullScreenMarkdownEditorBridgeHandle {
   close: () => void;
 }
 
-type HandleRef = { dispose: () => void };
-
 export function useOpenFullScreenMarkdownEditorBridge() {
   const dispatch = useAppDispatch();
-  const handlesRef = useRef<Set<HandleRef>>(new Set());
-
-  // The rendered bridge owns terminal disposal. An opener can unmount while
-  // the overlay remains visible (including StrictMode effect replay), so it
-  // must never sever that visible editor's callback target.
-  useEffect(() => {
-    return undefined;
-  }, []);
 
   return useCallback(
     (
@@ -101,21 +92,18 @@ export function useOpenFullScreenMarkdownEditorBridge() {
       // the save. Plain "edit content" callers pass conversationId+messageId
       // and let the bridge self-handle — no group needed.
       let callbackGroupId: string | null = null;
-      let dispose = () => {};
       if (opts.onSave) {
         const group = createFullScreenEditorCallbackGroup({
           onSave: opts.onSave,
           onEvent: opts.onEvent,
         });
         callbackGroupId = group.callbackGroupId;
-        dispose = group.dispose;
       } else if (opts.onAction) {
         const group = createFullScreenEditorCallbackGroup({
           onAction: opts.onAction,
           onEvent: opts.onEvent,
         });
         callbackGroupId = group.callbackGroupId;
-        dispose = group.dispose;
       }
 
       try {
@@ -141,20 +129,16 @@ export function useOpenFullScreenMarkdownEditorBridge() {
           }),
         );
       } catch (error) {
-        dispose();
+        disposeFullScreenEditorCallbackGroup(callbackGroupId);
         throw error;
       }
-
-      const handleRef: HandleRef = { dispose };
-      handlesRef.current.add(handleRef);
 
       return {
         instanceId,
         callbackGroupId,
         close: () => {
           dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId }));
-          dispose();
-          handlesRef.current.delete(handleRef);
+          disposeFullScreenEditorCallbackGroup(callbackGroupId);
         },
       };
     },

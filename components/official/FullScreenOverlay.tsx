@@ -580,6 +580,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
       <DialogContent
         className="flex flex-col p-0 gap-0 bg-background border-solid rounded-3xl border-2 border-border"
         style={{ width, maxWidth: width, height, maxHeight: height }}
+        showCloseButton={!isPending}
       >
         <DialogHeader className="w-full pl-2 pr-10">
           {headerInner}

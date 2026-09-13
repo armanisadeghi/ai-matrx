@@ -76,6 +76,10 @@ export type KnobFieldControlProps = {
   onCommit: (value: unknown) => void | boolean | Promise<void | boolean>;
   /** Changes whenever this control points at a different persistence destination. */
   identityKey?: string;
+  /** DOM id for the row's primary control when it has one. */
+  inputId?: string;
+  /** Row label id for composite or read-only controls. */
+  labelId?: string;
 };
 
 /** "not_set" → "Not set", "auto_apply" → "Auto apply". Never a raw slug. */
@@ -99,7 +103,7 @@ export function KnobFieldControl(props: KnobFieldControlProps) {
     case "voice":
       return <VoiceField {...props} />;
     case "secret":
-      return <SecretField knob={knob} />;
+      return <SecretField {...props} />;
     case "json":
       return <JsonField key={props.identityKey ?? knob.full_key} {...props} />;
     default:
@@ -113,6 +117,8 @@ function JsonField({
   ladder,
   disabled,
   onCommit,
+  inputId,
+  labelId,
 }: KnobFieldControlProps) {
   const [editing, setEditing] = useState(false);
   const [raw, setRaw] = useState(() => JSON.stringify(ladder.value, null, 2));
@@ -127,6 +133,8 @@ function JsonField({
       <Button
         size="sm"
         variant="outline"
+        aria-label={labelId ? undefined : `Edit structured value for ${knob.label}`}
+        aria-labelledby={labelId}
         disabled={disabled}
         onClick={() => setEditing(true)}
       >
@@ -137,7 +145,9 @@ function JsonField({
   return (
     <div className="w-full min-w-0 space-y-2">
       <Textarea
-        aria-label={`Structured value for ${knob.label}`}
+        id={inputId}
+        aria-label={labelId ? undefined : `Structured value for ${knob.label}`}
+        aria-labelledby={labelId}
         className="min-h-28 font-mono text-xs"
         value={raw}
         disabled={disabled}
@@ -182,11 +192,15 @@ function SwitchField({
   ladder,
   disabled,
   onCommit,
+  inputId,
+  labelId,
 }: KnobFieldControlProps) {
   return (
     <div className="flex h-9 items-center">
       <Switch
-        aria-label={knob.label}
+        id={inputId}
+        aria-label={labelId ? undefined : knob.label}
+        aria-labelledby={labelId}
         checked={ladder.value === true}
         disabled={disabled}
         onCheckedChange={(next) => void onCommit(next)}
@@ -206,6 +220,7 @@ function SegmentedField({
   ladder,
   disabled,
   onCommit,
+  labelId,
 }: KnobFieldControlProps) {
   const choices: { raw: unknown; value: string; label: string }[] =
     knob.value_type === "boolean"
@@ -223,9 +238,13 @@ function SegmentedField({
   const current = String(ladder.value ?? "");
 
   return (
-    <div className={cn("flex h-9 items-center", disabled && "opacity-50")}>
+    <div
+      role="group"
+      aria-label={labelId ? undefined : knob.label}
+      aria-labelledby={labelId}
+      className={cn("flex h-9 items-center", disabled && "opacity-50")}
+    >
       <SegmentedControl
-        aria-label={knob.label}
         size="sm"
         value={current}
         data={choices.map((choice) => ({
@@ -254,6 +273,8 @@ function SliderField({
   ladder,
   disabled,
   onCommit,
+  inputId,
+  labelId,
 }: KnobFieldControlProps) {
   const min = knob.min_value ?? 0;
   const max = knob.max_value ?? 100;
@@ -275,7 +296,9 @@ function SliderField({
         </span>
       </div>
       <Slider
-        aria-label={knob.label}
+        id={inputId}
+        aria-label={labelId ? undefined : knob.label}
+        aria-labelledby={labelId}
         size="sm"
         min={min}
         max={max}
@@ -303,6 +326,8 @@ function ModelField({
   ladder,
   disabled,
   onCommit,
+  inputId,
+  labelId,
 }: KnobFieldControlProps) {
   const value =
     typeof ladder.value === "string" && ladder.value !== ""
@@ -310,7 +335,9 @@ function ModelField({
       : null;
   return (
     <ModelListDropdown
-      aria-label={knob.label}
+      id={inputId}
+      aria-label={labelId ? undefined : knob.label}
+      aria-labelledby={labelId}
       value={value}
       onValueChange={(next) => {
         if (next) void onCommit(next);
@@ -339,6 +366,8 @@ function VoiceField({
   ladder,
   disabled,
   onCommit,
+  inputId,
+  labelId,
 }: KnobFieldControlProps) {
   const current = typeof ladder.value === "string" ? ladder.value : "";
   const { sendMessage, stopPlayback, isConnected, error } = useCartesia();
@@ -377,7 +406,12 @@ function VoiceField({
           disabled={disabled}
           onValueChange={(next) => void onCommit(next)}
         >
-          <SelectTrigger className="h-9 min-w-0 flex-1">
+          <SelectTrigger
+            id={inputId}
+            aria-label={labelId ? undefined : knob.label}
+            aria-labelledby={labelId}
+            className="h-9 min-w-0 flex-1"
+          >
             <SelectValue placeholder="Choose a voice" />
           </SelectTrigger>
           <SelectContent>
@@ -428,13 +462,21 @@ function VoiceField({
  * in the clear. The vault is where a secret is set and rotated, so this is a
  * door to the vault, not a pretend editor (a control is absent or honest).
  */
-function SecretField({ knob }: { knob: ScopedKnob }) {
+function SecretField({
+  knob,
+  labelId,
+}: Pick<KnobFieldControlProps, "knob" | "labelId">) {
   const state = knob.secret?.state ?? "unknown";
   const vaultKey = knob.secret?.vault_key ?? null;
   const isSet = state === "set";
   const isUnknown = state === "unknown";
   return (
-    <div className="flex w-56 max-w-full min-w-0 flex-col items-stretch gap-1.5 @[40rem]/settings:items-end">
+    <div
+      role="group"
+      aria-label={labelId ? undefined : knob.label}
+      aria-labelledby={labelId}
+      className="flex w-56 max-w-full min-w-0 flex-col items-stretch gap-1.5 @[40rem]/settings:items-end"
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant={isSet ? "default" : "outline"}

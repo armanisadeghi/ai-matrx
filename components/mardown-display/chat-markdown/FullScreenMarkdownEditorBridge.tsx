@@ -37,8 +37,10 @@ import {
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
 import { updateOverlayData } from "@/lib/redux/slices/overlayDataSlice";
-import { emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
-import { callbackManager } from "@/utils/callbackManager";
+import {
+  disposeFullScreenEditorCallbackGroup,
+  emitFullScreenEditorSave,
+} from "@/features/overlays/callbacks/fullScreenEditor";
 import { mergeEditedText } from "@/features/agents/redux/execution-system/message-crud/content-blocks.util";
 import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 
@@ -72,7 +74,7 @@ interface FullScreenMarkdownEditorBridgeProps {
    * directly (not via the overlay controller, which can't serialise a fn).
    * Retained for any direct mount; the overlay path uses `callbackGroupId`.
    */
-  onSave?: (newContent: string) => void | Promise<void>;
+  onSave?: (newContent: string) => Promise<void>;
   tabs?: TabId[];
   initialTab?: TabId;
   analysisData?: Record<string, unknown>;
@@ -218,7 +220,7 @@ export function FullScreenMarkdownEditorBridge({
   );
 
   const handleCancel = useCallback(() => {
-    if (callbackGroupId) callbackManager.removeGroup(callbackGroupId);
+    disposeFullScreenEditorCallbackGroup(callbackGroupId);
     onClose();
   }, [callbackGroupId, onClose]);
 

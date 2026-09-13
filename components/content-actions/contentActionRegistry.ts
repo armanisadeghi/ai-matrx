@@ -38,6 +38,10 @@ import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
+import {
+  requireSettledContentSave,
+  type SettledContentSave,
+} from "./saveSettlement";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action_content";
 
@@ -61,7 +65,7 @@ export interface ContentActionContext {
    * opens with a Save button that calls back with the new content. When
    * omitted, the editor opens in view mode (no save button).
    */
-  onSave?: (newContent: string) => void | Promise<void>;
+  onSave?: SettledContentSave;
   /**
    * Stable id used to scope overlay instances (full-screen editor, html
    * preview). Same input → same instance, so reopening from the same
@@ -188,14 +192,21 @@ function viewItem(ctx: ContentActionContext): MenuItem {
       // pass no onSave → no group, no Save button.
       const callbackGroupId = onSave
         ? createFullScreenEditorCallbackGroup({
-            onSave: async (newContent: string) => {
+            onSave: (newContent: string) => {
               try {
-                await onSave(newContent);
+                return requireSettledContentSave(onSave, newContent).catch(
+                  (err) => {
+                    // eslint-disable-next-line no-console
+                    console.error("[ContentActionBar] onSave failed", err);
+                    toast.error(getErrorMessage(err, "Save failed"));
+                    throw err;
+                  },
+                );
               } catch (err) {
                 // eslint-disable-next-line no-console
                 console.error("[ContentActionBar] onSave failed", err);
                 toast.error(getErrorMessage(err, "Save failed"));
-                throw err;
+                return Promise.reject(err);
               }
             },
           }).callbackGroupId
@@ -379,9 +390,19 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
         // (no onSave) get publish/preview mode with no Save button.
         const callbackGroupId = onSave
           ? createFullScreenEditorCallbackGroup({
-              onSave: async (newContent: string) => {
+              onSave: (newContent: string) => {
                 try {
-                  await onSave(newContent);
+                  return requireSettledContentSave(onSave, newContent).catch(
+                    (err) => {
+                      // eslint-disable-next-line no-console
+                      console.error(
+                        "[ContentActionBar] html-preview save failed",
+                        err,
+                      );
+                      toast.error(getErrorMessage(err, "Failed to save changes"));
+                      throw err;
+                    },
+                  );
                 } catch (err) {
                   // eslint-disable-next-line no-console
                   console.error(
@@ -389,7 +410,7 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
                     err,
                   );
                   toast.error(getErrorMessage(err, "Failed to save changes"));
-                  throw err;
+                  return Promise.reject(err);
                 }
               },
             }).callbackGroupId

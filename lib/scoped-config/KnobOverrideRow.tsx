@@ -277,11 +277,21 @@ export function KnobOverrideRow(props: {
         ? ["true", "false"]
         : (knob.allowed_values ?? []).map(String)
       : null;
+  const inputId = `${knob.full_key}-input`;
+  const labelId = `${inputId}-label`;
+  const usesLabelledGroup =
+    stateOnly !== null ||
+    lockedForMe ||
+    (fieldLadder !== null &&
+      ["segmented", "slider", "json", "secret"].includes(
+        fieldLadder.control,
+      ));
 
   return (
     <SettingsRow
-      id={`${knob.full_key}-input`}
+      id={inputId}
       anchorId={knob.full_key}
+      labelFor={usesLabelledGroup ? null : inputId}
       label={knob.label}
       description={knob.description}
       helpText={knob.ui.help}
@@ -319,6 +329,8 @@ export function KnobOverrideRow(props: {
             <KnobFieldControl
               knob={knob}
               ladder={fieldLadder}
+              inputId={inputId}
+              labelId={labelId}
               identityKey={`${knob.full_key}:${organizationId}:${scopeKind}:${scopeId}`}
               disabled={busy || !canWrite}
               onCommit={(value) => write(value)}
@@ -359,7 +371,7 @@ export function KnobOverrideRow(props: {
                 onValueChange={setDraft}
               >
                 <SelectTrigger
-                  id={`${knob.full_key}-input`}
+                  id={inputId}
                   aria-label={knob.label}
                   size="default"
                   className="w-full max-w-40"
@@ -382,7 +394,7 @@ export function KnobOverrideRow(props: {
             ) : (
               <Input
                 className="w-full max-w-40"
-                id={`${knob.full_key}-input`}
+                id={inputId}
                 aria-label={knob.label}
                 placeholder={formatKnobValue(knob.effective_value, knob.unit)}
                 value={draft}

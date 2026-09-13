@@ -78,6 +78,7 @@ export function SettingsModelPicker({
   return (
     <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
       <ModelListDropdown
+        id={id}
         value={value}
         onValueChange={onValueChange}
         inputModalities={[]}

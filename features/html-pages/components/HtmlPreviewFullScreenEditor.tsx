@@ -29,7 +29,7 @@ interface HtmlPreviewFullScreenEditorProps {
   description?: string;
   analysisData?: any;
   messageId?: string;
-  onSave?: (markdownContent: string) => void | Promise<void>;
+  onSave?: (markdownContent: string) => Promise<void>;
   showSaveButton?: boolean;
   isAgentSystem?: boolean;
 }
@@ -69,7 +69,7 @@ export default function HtmlPreviewFullScreenEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const tuiEditorRef = useRef<TuiEditorContentRef>(null);
   const saveLockRef = useRef(false);
-  const retrySaveRef = useRef<(() => void | Promise<void>) | null>(null);
+  const retrySaveRef = useRef<(() => Promise<void>) | null>(null);
 
   // Handle tab change - sync content from TUI editor
   const handleTabChange = (newTab: string) => {
@@ -84,7 +84,7 @@ export default function HtmlPreviewFullScreenEditor({
   };
 
   // Handle save callback
-  const settleSave = async (operation: () => void | Promise<void>) => {
+  const settleSave = async (operation: () => Promise<void>) => {
     if (saveLockRef.current) return;
     saveLockRef.current = true;
     retrySaveRef.current = operation;
