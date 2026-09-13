@@ -68,7 +68,9 @@ describe("useSandboxInstances list pagination", () => {
   });
 
   it("keeps explicit limit and offset calls as one requested page", async () => {
-    const fetchMock = jest.fn(async () => listResponse(["page-2"], 101, true));
+    const fetchMock = jest.fn(async (_input: RequestInfo | URL) =>
+      listResponse(["page-2"], 101, true),
+    );
     installFetch(fetchMock);
 
     const hook = await renderHook(() => useSandboxInstances());
