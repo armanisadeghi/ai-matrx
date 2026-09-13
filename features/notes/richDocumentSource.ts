@@ -35,6 +35,45 @@ export function noteIdentityContentSource(noteId: string, sourceId = `note:${not
 }
 
 /** Creates an editable source only when the displayed row and CAS base agree. */
+export function captureNoteEditSource(args: {
+  /** The exact acknowledged row/revision; never replace this with dirty text. */
+  acknowledgedNote: Note;
+  /** The complete physical fields currently displayed by this editor. */
+  displayedNote: Note;
+  actorId: string;
+  sourceId: string;
+  snapshotId: string;
+  actingSelection?: string;
+}): NoteEditableContentSource {
+  const { acknowledgedNote, displayedNote, actorId, sourceId, snapshotId, actingSelection } = args;
+  if (
+    !acknowledgedNote.id ||
+    !acknowledgedNote.organization_id ||
+    acknowledgedNote.id !== displayedNote.id ||
+    acknowledgedNote.organization_id !== displayedNote.organization_id ||
+    !actorId || !sourceId || !snapshotId || !validVersion(acknowledgedNote.version)
+  ) {
+    throw new Error("A Notes editable source requires an acknowledged note, actor, source, and revision.");
+  }
+  return {
+    type: "note",
+    mode: "editable",
+    noteId: acknowledgedNote.id,
+    sourceId,
+    snapshotId,
+    editBase: {
+      noteId: acknowledgedNote.id,
+      organizationId: acknowledgedNote.organization_id,
+      version: acknowledgedNote.version,
+      actorId,
+    },
+    acknowledgedPhysicalSnapshot: displayedPhysicalSnapshot(acknowledgedNote),
+    displayedPhysicalSnapshot: displayedPhysicalSnapshot(displayedNote),
+    ...(actingSelection === undefined ? {} : { actingSelection }),
+  };
+}
+
+/** Compatibility name for callers that currently display their acknowledged row. */
 export function noteEditableContentSource(args: {
   note: Note;
   actorId: string;
@@ -42,20 +81,14 @@ export function noteEditableContentSource(args: {
   snapshotId: string;
   actingSelection?: string;
 }): NoteEditableContentSource {
-  const { note, actorId, sourceId, snapshotId, actingSelection } = args;
-  if (!note.id || !note.organization_id || !actorId || !sourceId || !snapshotId || !validVersion(note.version)) {
-    throw new Error("A Notes editable source requires an acknowledged note, actor, source, and revision.");
-  }
-  return {
-    type: "note",
-    mode: "editable",
-    noteId: note.id,
-    sourceId,
-    snapshotId,
-    editBase: { noteId: note.id, organizationId: note.organization_id, version: note.version, actorId },
-    displayedPhysicalSnapshot: displayedPhysicalSnapshot(note),
-    ...(actingSelection === undefined ? {} : { actingSelection }),
-  };
+  return captureNoteEditSource({
+    acknowledgedNote: args.note,
+    displayedNote: args.note,
+    actorId: args.actorId,
+    sourceId: args.sourceId,
+    snapshotId: args.snapshotId,
+    ...(args.actingSelection === undefined ? {} : { actingSelection: args.actingSelection }),
+  });
 }
 
 export function isPreparedEditableNoteSource(source: ContentSource): source is NoteEditableContentSource {
@@ -65,6 +98,9 @@ export function isPreparedEditableNoteSource(source: ContentSource): source is N
     editBase.noteId === source.noteId &&
     editBase.noteId === displayedPhysicalSnapshot.id &&
     editBase.organizationId === displayedPhysicalSnapshot.organization_id &&
+    editBase.noteId === source.acknowledgedPhysicalSnapshot.id &&
+    editBase.organizationId === source.acknowledgedPhysicalSnapshot.organization_id &&
+    editBase.version === source.acknowledgedPhysicalSnapshot.version &&
     editBase.version === displayedPhysicalSnapshot.version &&
     Boolean(editBase.actorId) &&
     validVersion(editBase.version)
@@ -84,8 +120,9 @@ export function advancePreparedNoteSource(
   ) {
     throw new Error("The acknowledged note receipt does not match this editor source.");
   }
-  return noteEditableContentSource({
-    note,
+  return captureNoteEditSource({
+    acknowledgedNote: note,
+    displayedNote: note,
     actorId: source.editBase.actorId,
     sourceId: source.sourceId,
     snapshotId: `${source.snapshotId}:${note.version}`,
