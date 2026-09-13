@@ -1,9 +1,15 @@
 import type { Note } from "./types";
+import { enableMapSet } from "immer";
 import {
   advancePreparedNoteSource,
   captureNoteEditSource,
   isPreparedEditableNoteSource,
 } from "./richDocumentSource";
+import { createBlankNoteRecord } from "./redux/notes.types";
+import { setNoteField } from "./redux/slice";
+import notesReducer from "./redux/slice";
+
+enableMapSet();
 
 const NOTE_ID = "33333333-3333-4333-8333-333333333333";
 const ORG_ID = "11111111-1111-4111-8111-111111111111";
@@ -85,5 +91,17 @@ describe("prepared Notes rich-document sources", () => {
         safeCauses: {},
       }),
     ).toThrow(/does not match/i);
+  });
+
+  it("keeps the complete acknowledged snapshot apart from dirty fields and field history", () => {
+    const record = createBlankNoteRecord(note());
+    const dirty = notesReducer({
+      notes: { [NOTE_ID]: record }, fetchedNoteIds: new Set(), contentLoadStatus: {}, listStatus: "idle", listError: null,
+      conflictResolutionReceipts: {}, instances: {}, realtimeConnected: false, noteEditors: {}, noteScopeAssignments: [], noteScopesLoaded: false,
+      activeNoteId: null, openTabs: [], _savingNoteIds: [],
+    }, setNoteField({ id: NOTE_ID, field: "content", value: "later dirty text" }));
+    expect(dirty.notes[NOTE_ID]._fieldHistory.content).toBe("acknowledged body");
+    expect(dirty.notes[NOTE_ID]._acknowledgedPhysicalSnapshot?.content).toBe("acknowledged body");
+    expect(dirty.notes[NOTE_ID]._acknowledgedPhysicalSnapshot).not.toBe(dirty.notes[NOTE_ID]);
   });
 });

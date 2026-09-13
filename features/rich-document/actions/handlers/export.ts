@@ -43,7 +43,7 @@ registerAction({
                 newContent,
               });
             } catch (err) {
-              preparedSource = acknowledgedPreparedSource(preparedSource, err) ?? preparedSource;
+              preparedSource = acknowledgedPreparedSource(preparedSource, err, newContent) ?? preparedSource;
               console.error(
                 "[html-preview] save failed",
                 serializeError(err),

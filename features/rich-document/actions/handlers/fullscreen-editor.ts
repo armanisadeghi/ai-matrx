@@ -41,7 +41,7 @@ registerAction({
               });
               toast.success("Saved");
             } catch (err) {
-              preparedSource = acknowledgedPreparedSource(preparedSource, err) ?? preparedSource;
+              preparedSource = acknowledgedPreparedSource(preparedSource, err, newContent) ?? preparedSource;
               console.error(
                 "[open-fullscreen-editor] save failed",
                 JSON.stringify(serializeError(err), null, 2),
