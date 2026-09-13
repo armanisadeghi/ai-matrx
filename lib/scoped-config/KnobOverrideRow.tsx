@@ -17,7 +17,7 @@
 //     the model picker and a voice key gets the voice picker at every rung —
 //     this row never decides what a control looks like, only what it says.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Lock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -152,16 +152,19 @@ export function KnobOverrideRow(props: {
       ? "your organization"
       : "the platform";
   const overrideText = isSetHere ? valueText(overrideValue) : "";
+  const draftIdentity = `${knob.full_key}:${organizationId}:${scopeId}:${overrideText}`;
   const [draft, setDraft] = useState<string>(overrideText);
+  const [syncedDraftIdentity, setSyncedDraftIdentity] = useState(draftIdentity);
   const [busy, setBusy] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
 
   // Re-sync the draft whenever the row starts representing different state —
   // a clear, a refresh, or (on the personal tab) an organization switch. A
   // stale draft would otherwise be one Save away from landing in the wrong org.
-  useEffect(() => {
+  if (syncedDraftIdentity !== draftIdentity) {
+    setSyncedDraftIdentity(draftIdentity);
     setDraft(overrideText);
-  }, [knob.full_key, organizationId, scopeId, overrideText]);
+  }
 
   const write = async (value: unknown) => {
     setBusy(true);
