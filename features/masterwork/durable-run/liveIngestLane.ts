@@ -44,6 +44,13 @@ const LANE_BY_SURFACE: Record<"ingest" | "timeline", IngestLane> = {
   timeline: "timeline",
 };
 
+/**
+ * The lane an explicit "add rules from a source" door opens on. Every door that
+ * is not the rejoin path names a lane — that is what keeps a stale probe from
+ * ever choosing the pipeline a person's click starts.
+ */
+export const DEFAULT_INGEST_LANE: IngestLane = "source";
+
 /** The surface a lane of this dialog launches on — the dialog's own rule. */
 export function surfaceForIngestLane(
   lane: IngestLane | null,
@@ -75,16 +82,51 @@ export function findLiveIngestLane(
 }
 
 /**
- * The same answer for a component. Read in an effect, never during render:
- * `localStorage` does not exist on the server and reading it while rendering
- * would differ between SSR and hydration.
+ * How often the held answer is re-checked. A run settling is not an event this
+ * module can hear — `useDurableRun` marks the pointer `settled` in the tab that
+ * owns the run — so the probe re-reads instead. Two cheap `localStorage` reads
+ * on a five-second beat, only while the tab is visible.
+ */
+const PROBE_INTERVAL_MS = 5_000;
+
+/**
+ * The same answer for a component, kept CURRENT.
+ *
+ * 🚨 A LIVE FACT, NEVER A MOUNT-TIME SNAPSHOT (Bugbot, 2026-09-13). The first
+ * version read the pointers once, so a lane that was in flight at mount stayed
+ * selected forever: after a refresh that rejoined a case distillation, the
+ * Rulebook page went on treating `timeline` as the dialog's lane long after
+ * that run had finished, and anything that opened the dialog without naming a
+ * lane got the case pipeline. The answer now clears within one beat of the run
+ * settling — and the page's explicit doors ("From a source", the assist
+ * `open: "ingest"` chip, the Approach picker) name their own lane and outrank
+ * this entirely, so the probe only ever answers "nobody asked, and something is
+ * still running".
+ *
+ * Read in an effect, never during render: `localStorage` does not exist on the
+ * server and reading it while rendering would differ between SSR and hydration.
  */
 export function useLiveIngestLane(
   rulebookId: string | null,
 ): IngestLane | null {
   const [lane, setLane] = useState<IngestLane | null>(null);
   useEffect(() => {
-    setLane(findLiveIngestLane(rulebookId));
+    if (typeof window === "undefined") return;
+    const probe = () => setLane(findLiveIngestLane(rulebookId));
+    probe();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      probe();
+    }, PROBE_INTERVAL_MS);
+    // Another tab launching or finishing a run for this Rulebook writes the
+    // same pointer; `storage` is that news arriving for free.
+    window.addEventListener("storage", probe);
+    window.addEventListener("focus", probe);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("storage", probe);
+      window.removeEventListener("focus", probe);
+    };
   }, [rulebookId]);
   return lane;
 }

@@ -99,7 +99,10 @@ import {
   toIngestLane,
   type IngestLane,
 } from "@/features/masterwork/browse/approachLane";
-import { useLiveIngestLane } from "@/features/masterwork/durable-run/liveIngestLane";
+import {
+  DEFAULT_INGEST_LANE,
+  useLiveIngestLane,
+} from "@/features/masterwork/durable-run/liveIngestLane";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { RulebookVersionHistory } from "./RulebookVersionHistory";
@@ -627,6 +630,20 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
    * the in-page picker) always outranks it.
    */
   const liveIngestLane = useLiveIngestLane(rulebook?.id ?? null);
+  /**
+   * 🚨 EVERY EXPLICIT DOOR NAMES ITS LANE. The probe above is the answer to
+   * "nobody asked, and something is still running" — it must never decide which
+   * pipeline a person's click starts. So "From a source", the assist
+   * `open: "ingest"` chip and the Approach picker all come through here with a
+   * lane, which outranks the probe in the resolution below. A door that opened
+   * the dialog with a bare `setIngestOpen(true)` inherited whatever the probe
+   * was holding, and could launch a case distillation from a menu item that
+   * says "From a source" (Bugbot, 2026-09-13).
+   */
+  const openIngestLane = useCallback((lane: IngestLane) => {
+    setRequestedIngestLane(lane);
+    setIngestOpen(true);
+  }, []);
   const [dumpRequested, setDumpRequested] = useState(false);
   const [chatImportTab, setChatImportTab] = useState<"upload" | "matrx">(
     searchParams.get("tab") === "matrx" ? "matrx" : "upload",
@@ -683,8 +700,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           setInterviewOpen(true);
           return;
         case "ingest":
-          setRequestedIngestLane(lane.lane);
-          setIngestOpen(true);
+          openIngestLane(lane.lane);
           return;
         case "body_of_work":
           setCorpusOpen(true);
@@ -701,7 +717,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           return;
       }
     },
-    [router],
+    [router, openIngestLane],
   );
 
   // Composer seed for the Scout panel — set when a recording distillation
@@ -747,7 +763,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     void fetchAssistLaunch(assistKey).then((launch) => {
       if (cancelled || !launch) return;
       if (launch.open === "ingest") {
-        setIngestOpen(true);
+        // The chip says "add rules from a source" — it opens THAT lane, never
+        // whatever lane a still-held rejoin probe happens to be naming.
+        openIngestLane(DEFAULT_INGEST_LANE);
         return;
       }
       if (launch.open === "approaches") {
@@ -801,7 +819,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [assistKey, launchApproach, openCheckup, rulebookId]);
+  }, [assistKey, launchApproach, openCheckup, openIngestLane, rulebookId]);
   const userId = useAppSelector(selectUserId);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const openAddRule = useOpenAddRuleWindow();
@@ -1134,7 +1152,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   id: "ingest-source",
                   label: "From a source",
                   icon: FileUp,
-                  onSelect: () => setIngestOpen(true),
+                  onSelect: () => openIngestLane(DEFAULT_INGEST_LANE),
                 },
               ] satisfies ContextMenuExtraSection["items"])
             : []),
