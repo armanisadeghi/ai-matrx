@@ -31,4 +31,12 @@ describe("1PUX archive reader", () => {
   test("refuses entries outside the exact member grammar", async () => {
     await expect(read(await archive([["export.attributes", "a"], ["export.data", "d"], ["../escape", "x"]]))).rejects.toThrow();
   });
+  test("refuses a real writer Unix symlink entry", async () => {
+    const { BlobWriter, TextReader, ZipWriter } = await import("@zip.js/zip.js");
+    const writer = new ZipWriter(new BlobWriter("application/zip"));
+    await writer.add("export.attributes", new TextReader("a"));
+    await writer.add("export.data", new TextReader("d"));
+    await writer.add("files/link", new TextReader("target"), { externalFileAttributes: 0o120000 << 16, versionMadeBy: 3 << 8 });
+    await expect(read(await writer.close())).rejects.toThrow();
+  });
 });

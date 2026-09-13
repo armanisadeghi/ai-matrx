@@ -20,7 +20,7 @@ export async function readOnePuxArchive(file: Blob, limits: CsvImportLimits, sig
     if (reader.warnings?.length || entries.length > limits.maxRecords) throw new Error("The 1Password archive is unsafe.");
     let declared = 0; let attributesText: string | undefined; let dataText: string | undefined; let binaryMemberCount = 0; const names = new Set<string>();
     for (const entry of entries) {
-      if (signal?.aborted || names.has(entry.filename) || entry.filename.includes("\\") || entry.filename.includes("\0") || !safe(entry.compressedSize) || !safe(entry.uncompressedSize) || declared > limits.maxFileBytes - entry.uncompressedSize || entry.encrypted) throw new Error("The 1Password archive is unsafe.");
+      if (signal?.aborted || names.has(entry.filename) || entry.filename.includes("\\") || entry.filename.includes("\0") || !safe(entry.compressedSize) || !safe(entry.uncompressedSize) || declared > limits.maxFileBytes - entry.uncompressedSize || entry.encrypted || entry.externalFileAttributes >>> 16 === 0o120000) throw new Error("The 1Password archive is unsafe.");
       names.add(entry.filename); declared += entry.uncompressedSize;
       await entry.getData(new WritableStream(), { checkOverlappingEntryOnly: true, signal });
       if (entry.filename === "export.attributes" || entry.filename === "export.data") {
