@@ -516,3 +516,4 @@ lines by relocating trial-specific detail into the trial's register.
   same way. Fix these as the CLASS — carry every key the surface does not own — never by naming the key that
   was reported; and expect a merge that reconciles two data shapes to be exactly where a field falls out,
   because every test the merging lane runs will pass.
+- 2026-09-13 — (trial 7) **Read the CI LOG, never the check's NAME.** Three guards named "(UNMEASURED without the secret)" were red WITH the secret present and returning real verdicts — one of them a live security finding. Triaging by title, I told the pull request they carried no information. A guard named for its failure mode is a trap for whoever triages it. Also: when a failure COUNT moves, find out which item changed — assuming the set is still the known one is how a real regression walks through behind familiar noise.
