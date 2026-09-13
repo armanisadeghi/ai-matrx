@@ -22,8 +22,19 @@ CURRENT_GUARD_SHA=%r
 DRAFT_SHA=%r
 echo "PASS current source proof: live guard sha256=$CURRENT_GUARD_SHA; DD154 draft sha256=$DRAFT_SHA" | tee -a "$RESULTS"
 "${PSQL[@]}" -f "$CURRENT_GUARD" >/dev/null
+if [[ -n ${DD154_CURRENT_BEFORE_DRAFT_SQL:-} ]]; then
+  [[ -f $DD154_CURRENT_BEFORE_DRAFT_SQL ]] || fail "DD154_CURRENT_BEFORE_DRAFT_SQL is not a file: $DD154_CURRENT_BEFORE_DRAFT_SQL"
+  "${PSQL[@]}" -f "$DD154_CURRENT_BEFORE_DRAFT_SQL" >/dev/null
+fi
 if [[ ${DD154_CURRENT_SKIP_DRAFT:-0} != 1 ]]; then
   { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | "${PSQL[@]}" >/dev/null
+  if [[ ${DD154_CURRENT_REPEAT_DRAFT:-0} == 1 ]]; then
+    before_repeat=$("${PSQL[@]}" -Atc "SELECT md5((to_jsonb(p) - 'prosrc')::text || coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid)::text FROM pg_event_trigger e), '[]')) FROM pg_proc p WHERE p.oid='platform._ddl_guard()'::regprocedure")
+    { printf "SET statement_timeout TO 20000;\n"; cat "$DRAFT"; } | "${PSQL[@]}" >/dev/null
+    after_repeat=$("${PSQL[@]}" -Atc "SELECT md5((to_jsonb(p) - 'prosrc')::text || coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.oid)::text FROM pg_event_trigger e), '[]')) FROM pg_proc p WHERE p.oid='platform._ddl_guard()'::regprocedure")
+    [[ $before_repeat == "$after_repeat" ]] || fail "repeated optimized draft changed _ddl_guard or event-trigger metadata"
+    echo "PASS current idempotence: repeated optimized draft preserved function/event metadata md5=$after_repeat" | tee -a "$RESULTS"
+  fi
   EXPECTED_POSTIMAGE_PROSRC_SHA=5a7457cbdc7aae16cbc720aeeaecfa038c999b67e4a5f5c0e09ad0d1c8a60e4d
   POSTIMAGE_MODE=optimized
 else
@@ -82,6 +93,10 @@ console.log(`PASS current fixture mapping: 9 unique captured OID/relation/hash t
 NODE
 "${PSQL[@]}" -f "$RUN_DIR/current-guard-mapped.sql" >/dev/null
 echo "PASS current fixture: $POSTIMAGE_MODE exact postimage mapped only for local OIDs before immutable 44 controls" | tee -a "$RESULTS"
+if [[ -n ${DD154_CURRENT_BEFORE_CONTROLS_SQL:-} ]]; then
+  [[ -f $DD154_CURRENT_BEFORE_CONTROLS_SQL ]] || fail "DD154_CURRENT_BEFORE_CONTROLS_SQL is not a file: $DD154_CURRENT_BEFORE_CONTROLS_SQL"
+  "${PSQL[@]}" -f "$DD154_CURRENT_BEFORE_CONTROLS_SQL" | tee -a "$RESULTS"
+fi
 
 "${PSQL[@]}" <<'SQL' | tee -a "$RESULTS"
 CREATE TEMP TABLE review_results''' % (sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6])
