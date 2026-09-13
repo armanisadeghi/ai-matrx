@@ -92,7 +92,15 @@ export function InterviewClient({
     Record<string, { tone: "ok" | "warn"; text: string } | undefined>
   >({});
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [undoRow, setUndoRow] = useState<DecisionQuestionRow | null>(null);
+  /**
+   * The answer the Undo would reverse: the row as it came BACK from the save,
+   * plus the status it held BEFORE it — the ladder rung the undo must restore
+   * (verifier finding 5).
+   */
+  const [undoTarget, setUndoTarget] = useState<{
+    row: DecisionQuestionRow;
+    previousStatus: string;
+  } | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -171,12 +179,19 @@ export function InterviewClient({
   const readAloudParts = knobs.state === "ready" ? knobs.readAloudParts : [];
   const readAloud = useReadAloud(readAloudParts);
 
+  // A refusal must reach the person WHERE THEY ARE LOOKING. The sentence also
+  // renders inside the sticky action bar; the toast is the second half, for a
+  // reader whose eyes are at the top of a long question (verifier finding 1).
+  useEffect(() => {
+    if (readAloud.error) toast.error(readAloud.error);
+  }, [readAloud.error]);
+
   // ---- saving ------------------------------------------------------------
   const finishSave = useCallback(
     (outcome: SaveOutcome, question: DecisionQuestionRow, forRow: boolean) => {
       if (outcome.status === "saved") {
         applyRow(outcome.row);
-        setUndoRow(outcome.row);
+        setUndoTarget({ row: outcome.row, previousStatus: question.status });
         const line: SaveLine = { tone: "ok", text: "Saved." };
         if (forRow) setRowLines((c) => ({ ...c, [question.id]: line }));
         else setSaveLine(line);
@@ -242,14 +257,15 @@ export function InterviewClient({
   );
 
   const undo = useCallback(async () => {
-    const row = undoRow;
-    if (!row) return;
+    const target = undoTarget;
+    if (!target) return;
+    const row = target.row;
     setBusyId(row.id);
     try {
-      const outcome = await reopenAnswer(row);
+      const outcome = await reopenAnswer(row, target.previousStatus);
       if (outcome.status === "saved") {
         applyRow(outcome.row);
-        setUndoRow(null);
+        setUndoTarget(null);
         setCurrentId(outcome.row.mode === "ask" ? outcome.row.id : currentId);
         setSaveLine({ tone: "ok", text: "Re-opened — answer it again." });
         setRowLines((c) => ({
@@ -264,17 +280,17 @@ export function InterviewClient({
     } finally {
       setBusyId(null);
     }
-  }, [undoRow, applyRow, currentId]);
+  }, [undoTarget, applyRow, currentId]);
 
   // The Undo expires with the sentence that offered it.
   // How long it lasts is `question_desk.undo_window_ms`, not taste — and with
   // no code fallback: an answer only exists once the knobs are ready, so an
   // unresolved knob simply has no undo to expire.
   useEffect(() => {
-    if (!undoRow || knobs.state !== "ready") return undefined;
-    const timer = setTimeout(() => setUndoRow(null), knobs.undoWindowMs);
+    if (!undoTarget || knobs.state !== "ready") return undefined;
+    const timer = setTimeout(() => setUndoTarget(null), knobs.undoWindowMs);
     return () => clearTimeout(timer);
-  }, [undoRow, knobs]);
+  }, [undoTarget, knobs]);
 
   // ---- the write box -----------------------------------------------------
   const openWrite = useCallback(() => {
@@ -363,7 +379,7 @@ export function InterviewClient({
       }
 
       if (meta && (event.key === "z" || event.key === "Z")) {
-        if (!undoRow) return;
+        if (!undoTarget) return;
         event.preventDefault();
         void undo();
         return;
@@ -442,7 +458,7 @@ export function InterviewClient({
     readAloud,
     writing,
     undo,
-    undoRow,
+    undoTarget,
   ]);
 
   // ---- render ------------------------------------------------------------
@@ -472,7 +488,6 @@ export function InterviewClient({
     return <Loading />;
   }
 
-  const answeredCount = questions.filter(isAnswered).length;
   const allAnswered = queue.length > 0 && queue.every(isAnswered);
 
   return (
@@ -486,8 +501,10 @@ export function InterviewClient({
           setView("one");
           window.scrollTo(0, 0);
         }}
-        answeredCount={answeredCount}
-        totalCount={questions.length}
+        answeredCount={queue.filter(isAnswered).length}
+        totalCount={queue.length}
+        reviewTotal={reviewQuestions.length}
+        reviewReviewed={reviewQuestions.filter(isAnswered).length}
         footer={
           <div className="space-y-1 font-mono text-[10px] text-muted-foreground">
             {queue.length === 0 && reviewQuestions.length > 0 ? (
@@ -649,16 +666,12 @@ export function InterviewClient({
               onReadAloud={() => readAloud.read(current)}
               onStopReading={readAloud.stop}
               onToggleView={() => setView("table")}
+              actionError={readAloud.error}
               saveLine={saveLine}
-              undoAvailable={undoRow !== null}
+              undoAvailable={undoTarget !== null}
               onUndo={() => void undo()}
               busy={busyId !== null}
             />
-            {readAloud.error ? (
-              <p className="mt-3 max-w-[820px] text-[13px] text-destructive">
-                {readAloud.error}
-              </p>
-            ) : null}
           </>
         ) : allAnswered ? (
           <div className="py-16 text-center">

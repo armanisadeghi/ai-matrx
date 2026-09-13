@@ -186,7 +186,7 @@ export function AskTable({
                           autoGrow
                           minHeight={70}
                           maxHeight={220}
-                          wrapperClassName="min-w-[240px]"
+                          wrapperClassName="w-[320px] max-w-[70vw]"
                         />
                       </RecordingOriginProvider>
                       <div className="mt-1.5 flex gap-1.5">

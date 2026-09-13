@@ -108,6 +108,8 @@ export interface InterviewListRow extends DecisionInterviewRow {
   answeredCount: number;
   deliveredCount: number;
   totalCount: number;
+  /** Who is being asked. Null only when the accessor RPC could not answer. */
+  respondentEmail: string | null;
 }
 
 export function isAnswered(q: DecisionQuestionRow): boolean {
