@@ -29,7 +29,7 @@ The `(admin)` group admits any admin level. That is deliberate and it is not a h
 - `components/QuestionDeskRail.tsx` · `QuestionScreen.tsx` · `AnswerBar.tsx` · `ReviewTable.tsx` · `AskTable.tsx`.
 
 **Hooks**
-- `useQuestionDeskKnobs()` — the three `question_desk` knobs, ladder-resolved, with an honest `failed` state.
+- `useQuestionDeskKnobs()` — the four `question_desk` knobs, ladder-resolved, with an honest `failed` state.
 - `useInterviewQuestions(interviewId)` — the rows plus realtime.
 - `useAnswerDraft(questionId)` — the own-words draft in `localStorage`.
 - `useVoiceAnswer({...})` — mic → transcript → the `cld_files` id of the recording.
@@ -53,7 +53,7 @@ The `(admin)` group admits any admin level. That is deliberate and it is not a h
 - `interview.decision_question` — one question: the five research parts, the recommendation, the ledger classification (`kind` / `door` / `weight` / `node`), the filing provenance, and the answer (`verdict`, `answer_text`, `answer_source`, `answer_audio_file_id`, `answered_at`, `answered_by`). `mode` is `ask` or `review`.
 
 **Knobs** (`platform.feature_knob`, feature `question_desk`, `overridable_by {organization,user}`)
-- `default_view` `"one" | "table"` · `skip_ships_recommendation` bool · `read_aloud_parts` string[].
+- `default_view` `"one" | "table"` · `skip_ships_recommendation` bool · `read_aloud_parts` string[] · `undo_window_ms` integer.
 Voice, speed and language are NOT here — they come from the existing tiered `listening` config.
 
 **Key types** — `features/question-desk/types.ts`, every row type derived from `Database["interview"]["Tables"]`.
@@ -62,7 +62,7 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 
 ## Key flows
 
-**1. Answering with one key.** `1` / `2` / `3` on the interview screen → `record(question, verdict, null, "keystroke")` → `saveAnswer` writes `verdict`, `answered_at`, `answered_by`, `status='answered'` in ONE guarded update → the row comes back, `applyRow` merges it, the saved line offers an Undo for 30 s, and the screen advances to the next OPEN question.
+**1. Answering with one key.** `1` / `2` / `3` on the interview screen → `record(question, verdict, null, "keystroke")` → `saveAnswer` writes `verdict`, `answered_at`, `answered_by`, `status='answered'` in ONE guarded update → the row comes back, `applyRow` merges it, the saved line offers an Undo for as long as the `question_desk.undo_window_ms` knob says (30 s by default), and the screen advances to the next OPEN question.
 
 **2. Answering in his own words.** `W` opens the box (an effect focuses it after the commit — see gotchas), every keystroke persists the draft under `qd.draft.<questionId>`, `⌘/Ctrl+Enter` saves. The text goes to the row **exactly as typed**. An empty save is refused on screen with *"Write something first, or use one of the buttons."* and never reaches the database.
 
@@ -119,7 +119,7 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 | QD-L2-1 | The list is `MatrxDataTable` + `ArchiveFilter` driven directly, not `<EntityListPage>` | the shell needs a `qd_list_scoped` / `qd_list_scope_counts` RPC pair, which only a migration can create — outside this lane | one RPC migration plus a `listConfig`; the columns and row actions move across unchanged |
 | QD-L2-2 | Counts come from ONE grouped read of the questions' status columns, capped at 2,000 rows, and the screen SAYS when the cap was hit | three `count(*)` head requests per interview is an N+1 that grows with the list | a counts RPC later |
 | QD-L2-3 | Own-words drafts live in `localStorage` under `qd.draft.<questionId>` | it survives a refresh and a closed tab with no write to the row | a server-side draft column later; nothing to migrate |
-| QD-L2-4 | The Undo window is 30 seconds, matching the life of the "Saved." line | an undo offered after its sentence is gone is a control nobody can find | one constant |
+| QD-L2-4 | The Undo window is the `question_desk.undo_window_ms` knob (30 s default), read with no code fallback | an undo offered after its sentence is gone is a control nobody can find, and how long is a preference, not taste | change the knob row |
 
 ---
 
@@ -131,4 +131,5 @@ Built 2026-09-12 as lane L2 of the Question Desk campaign. Verified in the brows
 
 ## Change log
 
+- `2026-09-12` — L2 (Claude Opus 5): the Undo window became the `question_desk.undo_window_ms` knob (a peer lane registered the row and mirrored the literal here; reading the row is the honest version of that mirror).
 - `2026-09-12` — L2 (Claude Opus 5): built the feature — interview list with the archive axis, the one-question-per-screen interview with the full keyboard contract, the dense review and ask tables, read-aloud, voice answers, per-question drafts, the undo, realtime, and the three knobs.

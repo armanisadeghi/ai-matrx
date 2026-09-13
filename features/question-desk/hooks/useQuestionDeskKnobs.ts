@@ -2,7 +2,7 @@
 
 // features/question-desk/hooks/useQuestionDeskKnobs.ts
 //
-// The three `question_desk` knobs, ladder-resolved for the signed-in person
+// The four `question_desk` knobs, ladder-resolved for the signed-in person
 // (system → organization → user), through the ONE runtime read
 // `platform.knob_resolve`.
 //
@@ -28,6 +28,7 @@ import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 export const KNOB_DEFAULT_VIEW = "question_desk.default_view";
 export const KNOB_SKIP_SHIPS = "question_desk.skip_ships_recommendation";
 export const KNOB_READ_ALOUD_PARTS = "question_desk.read_aloud_parts";
+export const KNOB_UNDO_WINDOW_MS = "question_desk.undo_window_ms";
 
 /** Parts the read-aloud knob may name, in the order it names them. */
 export type ReadAloudPart =
@@ -48,6 +49,8 @@ export type QuestionDeskKnobs =
       defaultView: "one" | "table";
       skipShipsRecommendation: boolean;
       readAloudParts: ReadAloudPart[];
+      /** How long the just-saved line keeps its Undo, in milliseconds. */
+      undoWindowMs: number;
     };
 
 const READ_ALOUD_PARTS: readonly string[] = [
@@ -77,10 +80,11 @@ export function useQuestionDeskKnobs(): QuestionDeskKnobs {
     setKnobs({ state: "loading" });
     void (async () => {
       try {
-        const [view, skip, parts] = await Promise.all([
+        const [view, skip, parts, undo] = await Promise.all([
           ensureEffectiveKnob(organizationId, userId, KNOB_DEFAULT_VIEW),
           ensureEffectiveKnob(organizationId, userId, KNOB_SKIP_SHIPS),
           ensureEffectiveKnob(organizationId, userId, KNOB_READ_ALOUD_PARTS),
+          ensureEffectiveKnob(organizationId, userId, KNOB_UNDO_WINDOW_MS),
         ]);
         if (!live) return;
         setKnobs({
@@ -88,6 +92,7 @@ export function useQuestionDeskKnobs(): QuestionDeskKnobs {
           defaultView: view === "table" ? "table" : "one",
           skipShipsRecommendation: skip === true,
           readAloudParts: readParts(parts),
+          undoWindowMs: readUndoWindow(undo),
         });
       } catch (error) {
         if (!live) return;
@@ -103,6 +108,15 @@ export function useQuestionDeskKnobs(): QuestionDeskKnobs {
   }, [organizationId, userId]);
 
   return knobs;
+}
+
+function readUndoWindow(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new Error(
+      `question_desk.undo_window_ms resolved to ${JSON.stringify(value)} — it must be a positive number of milliseconds.`,
+    );
+  }
+  return value;
 }
 
 function readParts(value: unknown): ReadAloudPart[] {
