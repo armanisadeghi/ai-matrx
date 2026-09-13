@@ -80,7 +80,7 @@ import {
   selectMcpCatalog,
   selectMcpCatalogStatus,
   selectMcpCatalogError,
-  selectMcpAvailabilityStatus,
+  selectMcpAvailabilityStatusForOrganization,
   fetchAvailability,
   selectMcpConnectingServerId,
   fetchCatalog,
@@ -2426,9 +2426,11 @@ function McpToolsTab({
   const catalog = useAppSelector(selectMcpCatalog);
   const catalogStatus = useAppSelector(selectMcpCatalogStatus);
   const catalogError = useAppSelector(selectMcpCatalogError);
-  const availabilityStatus = useAppSelector(selectMcpAvailabilityStatus);
   const connectingServerId = useAppSelector(selectMcpConnectingServerId);
   const organizationId = useAppSelector(selectOrganizationId);
+  const availabilityStatus = useAppSelector((state) =>
+    selectMcpAvailabilityStatusForOrganization(state, organizationId),
+  );
   const agentMcpServersRaw = useAppSelector((state) =>
     selectAgentMcpServers(state, agentId),
   );
@@ -2460,10 +2462,10 @@ function McpToolsTab({
   // The catalog row alone cannot tell Connected from Needs re-auth; aidream's
   // per-user availability is what every badge here prefers.
   useEffect(() => {
-    if (availabilityStatus === "idle") {
-      dispatch(fetchAvailability(undefined));
+    if (organizationId && availabilityStatus === "idle") {
+      dispatch(fetchAvailability({ organizationId }));
     }
-  }, [availabilityStatus, dispatch]);
+  }, [availabilityStatus, dispatch, organizationId]);
 
   // The OAuth popup flow lives in ONE place — `startMcpOAuthPopup` — which
   // owns the window, the origin-checked listener, and its cleanup. This
@@ -2473,7 +2475,9 @@ function McpToolsTab({
       const outcome = await startMcpOAuthPopup(serverId, window.location.href);
       if (outcome.ok) {
         dispatch(fetchCatalog());
-        dispatch(fetchAvailability(undefined));
+        if (organizationId) {
+          dispatch(fetchAvailability({ organizationId }));
+        }
         setOauthFeedback({
           type: "success",
           message: "Connected successfully!",
@@ -2484,7 +2488,7 @@ function McpToolsTab({
         setTimeout(() => setOauthFeedback(null), 10000);
       }
     },
-    [dispatch],
+    [dispatch, organizationId],
   );
 
   const connectServer = useCallback(

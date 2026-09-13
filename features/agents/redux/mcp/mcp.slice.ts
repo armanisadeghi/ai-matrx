@@ -49,6 +49,8 @@ interface McpSliceState {
    * all), so this is what every indicator prefers once it arrives.
    */
   availability: Record<string, McpAvailability>;
+  /** The explicit organization that owns the availability currently in state. */
+  availabilityOrganizationId: string | null;
   availabilityStatus: "idle" | "loading" | "succeeded" | "failed";
   availabilityError: string | null;
 }
@@ -60,9 +62,12 @@ const initialState: McpSliceState = {
   connectingServerId: null,
   discoveries: {},
   availability: {},
+  availabilityOrganizationId: null,
   availabilityStatus: "idle",
   availabilityError: null,
 };
+
+const EMPTY_MCP_AVAILABILITY: Record<string, McpAvailability> = {};
 
 // ---------------------------------------------------------------------------
 // Thunks
@@ -72,9 +77,15 @@ export const fetchCatalog = createAsyncThunk("mcp/fetchCatalog", async () => {
   return fetchMcpCatalog();
 });
 
+export interface FetchMcpAvailabilityArgs {
+  organizationId: string;
+  slugs?: string[];
+}
+
 export const fetchAvailability = createAsyncThunk(
   "mcp/fetchAvailability",
-  async (slugs: string[] | undefined) => fetchMcpAvailability(slugs),
+  async ({ organizationId, slugs }: FetchMcpAvailabilityArgs) =>
+    fetchMcpAvailability(organizationId, slugs),
 );
 
 export const connectServer = createAsyncThunk(
@@ -201,17 +212,26 @@ const mcpSlice = createSlice({
         state.status = "failed";
         state.error = action.error.message ?? "Failed to fetch MCP catalog";
       })
-      .addCase(fetchAvailability.pending, (state) => {
+      .addCase(fetchAvailability.pending, (state, action) => {
+        // Availability is organization-scoped. Clearing on a switch prevents
+        // the old workspace's connection truth from rendering during the new
+        // request, and the reducer guards below reject its late completion.
+        state.availabilityOrganizationId = action.meta.arg.organizationId;
+        state.availability = {};
         state.availabilityStatus = "loading";
         state.availabilityError = null;
       })
       .addCase(fetchAvailability.fulfilled, (state, action) => {
+        if (state.availabilityOrganizationId !== action.meta.arg.organizationId)
+          return;
         state.availabilityStatus = "succeeded";
         for (const row of action.payload) {
           state.availability[row.slug] = row;
         }
       })
       .addCase(fetchAvailability.rejected, (state, action) => {
+        if (state.availabilityOrganizationId !== action.meta.arg.organizationId)
+          return;
         state.availabilityStatus = "failed";
         // A screen that cannot reach the server says so; it must never fall
         // back to painting the optimistic connection row as the truth.
@@ -365,8 +385,26 @@ export const selectAllDiscoveredMcpTools = (state: WithMcp) => {
 export const selectMcpAvailability = (state: WithMcp) =>
   selectMcpState(state).availability;
 
+export const selectMcpAvailabilityForOrganization = (
+  state: WithMcp,
+  organizationId: string | null,
+) =>
+  organizationId &&
+  selectMcpState(state).availabilityOrganizationId === organizationId
+    ? selectMcpState(state).availability
+    : EMPTY_MCP_AVAILABILITY;
+
 export const selectMcpAvailabilityStatus = (state: WithMcp) =>
   selectMcpState(state).availabilityStatus;
+
+export const selectMcpAvailabilityStatusForOrganization = (
+  state: WithMcp,
+  organizationId: string | null,
+) =>
+  organizationId &&
+  selectMcpState(state).availabilityOrganizationId === organizationId
+    ? selectMcpState(state).availabilityStatus
+    : "idle";
 
 export const selectMcpAvailabilityError = (state: WithMcp) =>
   selectMcpState(state).availabilityError;
