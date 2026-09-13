@@ -5,7 +5,6 @@
 
 import type { Middleware } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { supabase } from "@/utils/supabase/client";
 import type { NotesSliceState, NoteUndoableField } from "./notes.types";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 
@@ -20,25 +19,6 @@ import type { NoteRecord } from "./notes.types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { isNoteLabelEditing } from "../utils/labelEditing";
 import { saveNote } from "./thunks";
-
-export async function resolveMaterializedFolderId(
-  userId: string,
-  folderName: string,
-  organizationId: string,
-): Promise<string | null> {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("note_folders")
-    .select("id")
-    .eq("created_by", userId)
-    .eq("name", folderName)
-    .eq("organization_id", organizationId)
-    .is("deleted_at", null)
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.id ?? null;
-}
 
 // Timer map — one debounce timer per note
 // Timers are scoped to this middleware instance. A second configured store
@@ -55,8 +35,8 @@ export async function resolveMaterializedFolderId(
  * Schedules a debounced save to Supabase.
  * For auto-generated notes, performs INSERT instead of UPDATE on first save.
  *
- * Concurrency: UPDATE is gated with `.eq("updated_at", local)` so a concurrent
- * collaborator write yields 0 rows → conflict (atomic; no TOCTOU window).
+ * Concurrency: UPDATE is gated by the persisted revision so a concurrent
+ * collaborator write yields a conflict without a TOCTOU window.
  * Mid-save keystrokes: `markNoteSaved` receives a savedSnapshot and only
  * clears dirty fields that still match what was written.
  */
@@ -96,12 +76,14 @@ export const autoSaveMiddleware: Middleware<{}, RootState, AppDispatch> =
 
     // Calculate debounce based on content size
     const delay = getAutoSaveDelay(record.content?.length ?? 0);
+    const scheduledUserId = state.userAuth.id;
 
     // Schedule save
     const timer = setTimeout(async () => {
       saveTimers.delete(noteId);
 
       const currentState = storeApi.getState() as StateWithNotes;
+      if (currentState.userAuth.id !== scheduledUserId) return;
       const currentRecord = currentState.notes?.notes?.[noteId] as
         NoteRecord | undefined;
       if (!currentRecord || !currentRecord._dirty) return;

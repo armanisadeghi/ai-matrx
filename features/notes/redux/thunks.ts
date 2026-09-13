@@ -327,11 +327,13 @@ function receiptBaseSettlement(
     : receipt.note;
 }
 
-const saveNotePayload = createAsyncThunk<void, string>(
+const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUserId: string }>(
   "notes/saveNote",
-  async (noteId, { dispatch, getState }) => {
+  async ({ noteId, expectedQueueUserId }, { dispatch, getState }) => {
     const state = getState() as RootState;
     const record = state.notes.notes[noteId] as NoteRecord | undefined;
+    const expectedUserId = getUserId(getState);
+    if (expectedUserId !== expectedQueueUserId) throw new SessionUnavailableError();
 
     if (!record || !record._dirty || record._dirtyFields.size === 0) {
       return;
@@ -421,6 +423,8 @@ const saveNotePayload = createAsyncThunk<void, string>(
         expectedVersion: record.version,
         expectedOrganizationId: record.organization_id,
       });
+      await assertCurrentNotesUser(expectedUserId);
+      if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
       if (receipt.postSaveRecoveryError) {
         console.error("Saved note context links need a cache recovery", receipt.postSaveRecoveryError);
       }
@@ -484,14 +488,33 @@ const saveNotePayload = createAsyncThunk<void, string>(
 
 type SaveResultAction = Awaited<ReturnType<ReturnType<typeof saveNotePayload>>>;
 type QueuedSaveResult = Promise<SaveResultAction> & { unwrap: () => Promise<void> };
-type QueuedSaveThunk = ThunkAction<QueuedSaveResult, RootState, unknown, UnknownAction>;
+
+type QueuedSaveThunk = ThunkAction<QueuedSaveResult, unknown, unknown, UnknownAction>;
 
 interface SaveQueueEntry {
   result: QueuedSaveResult;
   resolve: (action: SaveResultAction) => void;
+  expectedUserId: string;
 }
 
-const saveQueues = new WeakMap<() => RootState, Map<string, SaveQueueEntry>>();
+const saveQueues = new WeakMap<() => unknown, Map<string, SaveQueueEntry>>();
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function hasQueuedDirtyNote(getState: () => unknown, noteId: string): boolean {
+  const state = getState();
+  if (!isUnknownRecord(state) || !("notes" in state)) return false;
+  const notesState = state.notes;
+  if (!isUnknownRecord(notesState) || !("notes" in notesState)) return false;
+  const records = notesState.notes;
+  if (!isUnknownRecord(records) || !(noteId in records)) return false;
+  const record = records[noteId];
+  if (!isUnknownRecord(record) || record._dirty !== true) return false;
+  const dirtyFields = record._dirtyFields;
+  return dirtyFields instanceof Set && dirtyFields.size > 0;
+}
 
 function createQueuedSaveResult(): SaveQueueEntry {
   let resolver: ((action: SaveResultAction) => void) | undefined;
@@ -504,6 +527,7 @@ function createQueuedSaveResult(): SaveQueueEntry {
       unwrap: () => promise.then(unwrapResult),
     }),
     resolve: resolver,
+    expectedUserId: "",
   };
 }
 
@@ -514,7 +538,7 @@ function createQueuedSaveResult(): SaveQueueEntry {
  */
 export const saveNote = Object.assign(
   (noteId: string): QueuedSaveThunk =>
-    (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>, getState): QueuedSaveResult => {
+    (dispatch: ThunkDispatch<unknown, unknown, UnknownAction>, getState): QueuedSaveResult => {
       let queue = saveQueues.get(getState);
       if (!queue) {
         queue = new Map();
@@ -524,19 +548,34 @@ export const saveNote = Object.assign(
       if (existing) return existing.result;
 
       const entry = createQueuedSaveResult();
+      entry.expectedUserId = getUserId(getState);
       queue.set(noteId, entry);
       void (async () => {
-        let finalAction: SaveResultAction;
-        do {
-          finalAction = await dispatch(saveNotePayload(noteId));
-          if (saveNotePayload.rejected.match(finalAction)) break;
-        } while (Boolean(getState().notes.notes[noteId]?._dirty));
-        // Keep the entry through inner fulfilled/rejected subscribers. A
-        // subscriber's immediate save joins this promise; its dirty edit is
-        // observed by the loop above before the queue is released.
-        queue.delete(noteId);
-        if (queue.size === 0) saveQueues.delete(getState);
-        entry.resolve(finalAction);
+        let finalAction: SaveResultAction | undefined;
+        try {
+          do {
+            finalAction = await dispatch(saveNotePayload({ noteId, expectedQueueUserId: entry.expectedUserId }));
+            if (saveNotePayload.rejected.match(finalAction)) break;
+          } while (hasQueuedDirtyNote(getState, noteId));
+        } catch (error) {
+          // Thunk middleware normally converts payload exceptions into a
+          // rejected action. This preserves that public result contract even
+          // if another middleware throws while the inner action is observed.
+          const rejection = saveNotePayload.rejected(
+            error instanceof Error ? error : new Error("Notes save queue failed."),
+            "notes-save-queue",
+            { noteId, expectedQueueUserId: entry.expectedUserId },
+          );
+          dispatch(rejection);
+          finalAction = rejection;
+        } finally {
+          // Keep the entry through inner fulfilled/rejected subscribers. A
+          // subscriber's immediate save joins this promise; its dirty edit is
+          // observed by the loop above before the queue is released.
+          queue.delete(noteId);
+          if (queue.size === 0) saveQueues.delete(getState);
+          if (finalAction) entry.resolve(finalAction);
+        }
       })();
       return entry.result;
     },

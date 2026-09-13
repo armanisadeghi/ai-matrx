@@ -185,6 +185,7 @@ export async function materializeNote(input: Note): Promise<Note> {
     if (folderError || !folder) {
       throw folderError ?? new Error("The selected folder is unavailable in this organization. Choose another folder and try again.");
     }
+    input = { ...input, folder_name: folder.name };
   }
   const { data, error } = await supabase
     .schema("workbench")
