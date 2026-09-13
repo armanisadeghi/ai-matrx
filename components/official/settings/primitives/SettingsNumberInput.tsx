@@ -25,9 +25,9 @@ export type SettingsNumberInputProps = SettingsCommonProps & {
 };
 
 const widthClass = {
-  sm: "w-20",
-  md: "w-24",
-  lg: "w-32",
+  sm: "w-full max-w-20",
+  md: "w-full max-w-24",
+  lg: "w-full max-w-32",
 };
 
 export function SettingsNumberInput({
@@ -66,8 +66,14 @@ export function SettingsNumberInput({
   };
 
   return (
-    <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
-      <div className="flex items-center gap-1.5">
+    <SettingsRow
+      {...rowProps}
+      id={id}
+      variant="inline"
+      controlLayout="wide"
+      last={last}
+    >
+      <div className="flex max-w-full flex-wrap items-center gap-1.5">
         <input
           id={id}
           type="number"

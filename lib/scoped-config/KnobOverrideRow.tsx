@@ -20,7 +20,12 @@
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import {
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -32,7 +37,6 @@ import {
 import { formatKnobValue, type KnobLadder } from "./ladder";
 import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
-import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import {
   Select,
@@ -49,14 +53,18 @@ function valueText(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function parseDraft(knob: ScopedKnob, raw: string): { value?: unknown; error?: string } {
+function parseDraft(
+  knob: ScopedKnob,
+  raw: string,
+): { value?: unknown; error?: string } {
   const trimmed = raw.trim();
   if (trimmed === "") return { error: `${knob.label} needs a value` };
   switch (knob.value_type) {
     case "number":
     case "integer": {
       const parsed = Number(trimmed);
-      if (Number.isNaN(parsed)) return { error: `${knob.label} needs a number` };
+      if (Number.isNaN(parsed))
+        return { error: `${knob.label} needs a number` };
       return { value: parsed };
     }
     case "boolean":
@@ -116,7 +124,8 @@ export function KnobOverrideRow(props: {
     stateOnly,
     onChanged,
   } = props;
-  const flatOverride = scopeKind === "user" ? knob.user_override : knob.org_override;
+  const flatOverride =
+    scopeKind === "user" ? knob.user_override : knob.org_override;
   const overrideValue = ladder
     ? ladder.setHere
       ? ladder.here?.value
@@ -161,12 +170,17 @@ export function KnobOverrideRow(props: {
       if (system) {
         const result = await setFeatureKnob(knob.feature, knob.key, value);
         if (!result.ok) {
-          const detail = result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
+          const detail =
+            result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
           setInlineError(detail);
           toast.error(detail);
           return false;
         }
-        toast.success(value === null ? `${knob.label} restored to its registered default.` : `${knob.label} saved for the platform.`);
+        toast.success(
+          value === null
+            ? `${knob.label} restored to its registered default.`
+            : `${knob.label} saved for the platform.`,
+        );
         onChanged();
         return true;
       }
@@ -179,7 +193,8 @@ export function KnobOverrideRow(props: {
         value,
       });
       if (!result.ok) {
-        const detail = result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
+        const detail =
+          result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
         setInlineError(detail);
         toast.error(detail);
         return false;
@@ -237,13 +252,24 @@ export function KnobOverrideRow(props: {
 
   // The ladder is what names the control. Without one (the flat HR callers)
   // there is no `control` to honour, so the by-type editor below still runs.
-  const fieldLadder = ladder && hasFieldControl(ladder.control)
-    ? system
-      ? { ...ladder, value: knob.platform_default, canWrite: system.canWrite, cannotWriteBecause: null }
-      : ladder
-    : null;
-  const canWrite = system ? system.canWrite : ladder?.canWrite ?? !lockedForMe;
-  const reviewOverdue = knob.set_by === "agent" && knob.review_due !== null && new Date(knob.review_due) < new Date();
+  const fieldLadder =
+    ladder && hasFieldControl(ladder.control)
+      ? system
+        ? {
+            ...ladder,
+            value: knob.platform_default,
+            canWrite: system.canWrite,
+            cannotWriteBecause: null,
+          }
+        : ladder
+      : null;
+  const canWrite = system
+    ? system.canWrite
+    : (ladder?.canWrite ?? !lockedForMe);
+  const reviewOverdue =
+    knob.set_by === "agent" &&
+    knob.review_due !== null &&
+    new Date(knob.review_due) < new Date();
 
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"
@@ -253,122 +279,203 @@ export function KnobOverrideRow(props: {
       : null;
 
   return (
-    <SettingAnchor id={knob.full_key}>
-      <SettingsRow
-        id={knob.full_key}
-        label={knob.label}
-        description={knob.description}
-        helpText={knob.ui.help}
-        error={inlineError ?? (!canWrite ? ladder?.cannotWriteBecause ?? "This setting cannot be changed here." : undefined)}
-        modified={system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere}
-        controlLayout="wide"
-        variant="inline"
-      >
-      <div className="flex w-full max-w-60 flex-col items-end gap-1">
-      {stateOnly ? (
-        <div className="text-sm text-muted-foreground">This preference is not available yet.</div>
-      ) : lockedForMe ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Lock className="h-4 w-4" />
-          Your organization manages this setting.
-        </div>
-      ) : fieldLadder ? (
-        // A picker IS the choice: it writes the moment a person chooses, so
-        // there is no Save beside it. "Inherit" stays — clearing is a
-        // different action from choosing, at every rung (rule 4).
-        <div className="flex items-start gap-2">
-          <KnobFieldControl
-            knob={knob}
-            ladder={fieldLadder}
-            identityKey={`${knob.full_key}:${organizationId}:${scopeKind}:${scopeId}`}
-            disabled={busy || !canWrite}
-            onCommit={(value) => write(value)}
-          />
-          {(system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere) && (
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={busy || !canWrite || (system ? JSON.stringify(knob.platform_default) === JSON.stringify(system.registeredDefault) : !isSetHere)}
-            title={system ? "Restore the registered default" : `Remove the override and inherit from ${inheritedFrom}`}
-            onClick={() => void clear()}
-          >
-            {system ? "Restore registered default" : "Inherit"}
-          </Button>
-          )}
-        </div>
-      ) : (
-      <div className="flex items-start gap-2">
-        {enumOptions ? (
-          <Select
-            value={draft || undefined}
-            disabled={busy || !canWrite}
-            onValueChange={setDraft}
-          >
-            <SelectTrigger
-              id={knob.full_key}
-              aria-label={knob.label}
-              size="default"
-              className="w-40"
-            >
-              <SelectValue placeholder={formatKnobValue(knob.effective_value, knob.unit)} />
-            </SelectTrigger>
-            <SelectContent>
-            {enumOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            className="w-40"
-            id={knob.full_key}
-            aria-label={knob.label}
-            placeholder={formatKnobValue(knob.effective_value, knob.unit)}
-            value={draft}
-            disabled={busy || !canWrite}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-        )}
-        <Button size="sm" disabled={busy || draft.trim() === "" || !canWrite} onClick={() => void save()}>
-          Save
-        </Button>
-        {(system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere) && (
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={busy || !canWrite || (system ? JSON.stringify(knob.platform_default) === JSON.stringify(system.registeredDefault) : !isSetHere)}
-          title={system ? "Restore the registered default" : `Remove the override and inherit from ${inheritedFrom}`}
-          onClick={() => void clear()}
-        >
-          {system ? "Restore registered default" : "Inherit"}
-        </Button>
-        )}
-      </div>
-      )}
-      <div className="flex w-full items-center justify-end gap-2 text-[11px] text-muted-foreground">
-        <span>{stateOnly
-          ? "Not connected yet"
-          : system
-            ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault)
-              ? "Set for the platform"
-              : "Registered default"
-            : isSetHere
-              ? "Set here"
-              : `Inherited from ${inheritedFrom}`}</span>
-        {system && <span className={reviewOverdue ? "font-medium text-amber-600" : undefined}>
-          {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}{knob.review_due ? ` · review ${knob.review_due}` : ""}
-        </span>}
-        <details className="relative">
-          <summary aria-label={`Details for ${knob.label}`} className="cursor-pointer">Details</summary>
-          <div className="absolute right-0 z-20 mt-1 w-72 rounded-md border border-border bg-popover p-3 text-left text-xs leading-snug text-popover-foreground shadow-md">
-            {!hideKey ? `Key: ${knob.full_key}. ` : ""}{system ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ${knob.set_by === "agent" ? "Agent-set." : "Reviewed."} ${knob.review_due ? `Review due: ${knob.review_due}. ` : ""}` : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}{knob.bound_value !== null && knob.bound_value !== undefined ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. ` : ""}{knob.basis ? `Basis: ${knob.basis}. ` : ""}{stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
+    <SettingsRow
+      id={knob.full_key}
+      label={knob.label}
+      description={knob.description}
+      helpText={knob.ui.help}
+      error={
+        inlineError ??
+        (!canWrite
+          ? (ladder?.cannotWriteBecause ??
+            "This setting cannot be changed here.")
+          : undefined)
+      }
+      modified={
+        system
+          ? JSON.stringify(knob.platform_default) !==
+            JSON.stringify(system.registeredDefault)
+          : isSetHere
+      }
+      controlLayout="wide"
+      variant="inline"
+    >
+      <div className="flex w-full min-w-0 max-w-80 flex-col items-stretch gap-1 @[40rem]/settings:items-end">
+        {stateOnly ? (
+          <div className="text-sm text-muted-foreground">
+            This preference is not available yet.
           </div>
-        </details>
+        ) : lockedForMe ? (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="h-4 w-4" />
+            Your organization manages this setting.
+          </div>
+        ) : fieldLadder ? (
+          // A picker IS the choice: it writes the moment a person chooses, so
+          // there is no Save beside it. "Inherit" stays — clearing is a
+          // different action from choosing, at every rung (rule 4).
+          <div className="flex max-w-full flex-wrap items-start gap-2">
+            <KnobFieldControl
+              knob={knob}
+              ladder={fieldLadder}
+              identityKey={`${knob.full_key}:${organizationId}:${scopeKind}:${scopeId}`}
+              disabled={busy || !canWrite}
+              onCommit={(value) => write(value)}
+            />
+            {(system
+              ? JSON.stringify(knob.platform_default) !==
+                JSON.stringify(system.registeredDefault)
+              : isSetHere) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-auto min-w-0 max-w-full whitespace-normal break-words text-left"
+                disabled={
+                  busy ||
+                  !canWrite ||
+                  (system
+                    ? JSON.stringify(knob.platform_default) ===
+                      JSON.stringify(system.registeredDefault)
+                    : !isSetHere)
+                }
+                title={
+                  system
+                    ? "Restore the registered default"
+                    : `Remove the override and inherit from ${inheritedFrom}`
+                }
+                onClick={() => void clear()}
+              >
+                {system ? "Restore registered default" : "Inherit"}
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="flex max-w-full flex-wrap items-start gap-2">
+            {enumOptions ? (
+              <Select
+                value={draft || undefined}
+                disabled={busy || !canWrite}
+                onValueChange={setDraft}
+              >
+                <SelectTrigger
+                  id={knob.full_key}
+                  aria-label={knob.label}
+                  size="default"
+                  className="w-full max-w-40"
+                >
+                  <SelectValue
+                    placeholder={formatKnobValue(
+                      knob.effective_value,
+                      knob.unit,
+                    )}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {enumOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                className="w-full max-w-40"
+                id={knob.full_key}
+                aria-label={knob.label}
+                placeholder={formatKnobValue(knob.effective_value, knob.unit)}
+                value={draft}
+                disabled={busy || !canWrite}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+            )}
+            <Button
+              size="sm"
+              disabled={busy || draft.trim() === "" || !canWrite}
+              onClick={() => void save()}
+            >
+              Save
+            </Button>
+            {(system
+              ? JSON.stringify(knob.platform_default) !==
+                JSON.stringify(system.registeredDefault)
+              : isSetHere) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-auto min-w-0 max-w-full whitespace-normal break-words text-left"
+                disabled={
+                  busy ||
+                  !canWrite ||
+                  (system
+                    ? JSON.stringify(knob.platform_default) ===
+                      JSON.stringify(system.registeredDefault)
+                    : !isSetHere)
+                }
+                title={
+                  system
+                    ? "Restore the registered default"
+                    : `Remove the override and inherit from ${inheritedFrom}`
+                }
+                onClick={() => void clear()}
+              >
+                {system ? "Restore registered default" : "Inherit"}
+              </Button>
+            )}
+          </div>
+        )}
+        <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground @[40rem]/settings:justify-end">
+          <span className="min-w-0 break-words">
+            {stateOnly
+              ? "Not connected yet"
+              : system
+                ? JSON.stringify(knob.platform_default) !==
+                  JSON.stringify(system.registeredDefault)
+                  ? "Set for the platform"
+                  : "Registered default"
+                : isSetHere
+                  ? "Set here"
+                  : `Inherited from ${inheritedFrom}`}
+          </span>
+          {system && (
+            <span
+              className={
+                reviewOverdue
+                  ? "break-words font-medium text-amber-600"
+                  : "break-words"
+              }
+            >
+              {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}
+              {knob.review_due ? ` · review ${knob.review_due}` : ""}
+            </span>
+          )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-auto px-1.5 py-0.5 text-[11px]"
+              >
+                Details
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="w-72 max-w-[calc(100vw-2rem)] break-words p-3 text-left text-xs leading-snug [overflow-wrap:anywhere]"
+            >
+              {!hideKey ? `Key: ${knob.full_key}. ` : ""}
+              {system
+                ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ${knob.set_by === "agent" ? "Agent-set." : "Reviewed."} ${knob.review_due ? `Review due: ${knob.review_due}. ` : ""}`
+                : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}
+              {knob.bound_value !== null && knob.bound_value !== undefined
+                ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. `
+                : ""}
+              {knob.basis ? `Basis: ${knob.basis}. ` : ""}
+              {stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
-    </div>
     </SettingsRow>
-    </SettingAnchor>
   );
 }

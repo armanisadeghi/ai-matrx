@@ -11,9 +11,9 @@ const sizeClass: Record<SettingsControlSize, string> = {
 };
 
 const widthClass = {
-  sm: "w-32",
-  md: "w-48",
-  lg: "w-72",
+  sm: "w-full max-w-32",
+  md: "w-full max-w-48",
+  lg: "w-full max-w-72",
   full: "w-full",
 };
 

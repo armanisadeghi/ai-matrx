@@ -67,10 +67,10 @@ export function SettingsMultiSelect<T extends string = string>({
             {selectedOptions.map((opt) => (
               <span
                 key={opt.value}
-                className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs text-foreground border border-border"
+                className="inline-flex max-w-full items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-foreground"
               >
                 {opt.icon && <opt.icon className="h-3 w-3" />}
-                {opt.label}
+                <span className="min-w-0 truncate">{opt.label}</span>
                 {!rowProps.disabled && (
                   <button
                     type="button"
@@ -95,6 +95,7 @@ export function SettingsMultiSelect<T extends string = string>({
             >
               <span
                 className={cn(
+                  "min-w-0 flex-1 truncate",
                   value.length === 0 && "text-muted-foreground",
                 )}
               >
@@ -104,12 +105,12 @@ export function SettingsMultiSelect<T extends string = string>({
                     ? placeholder
                     : `${value.length} selected`}
               </span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
             </button>
           </PopoverTrigger>
           <PopoverContent
             align="start"
-            className="w-[var(--radix-popover-trigger-width)] p-1"
+            className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-1"
           >
             <div className="max-h-64 overflow-y-auto">
               {options.map((opt) => {
@@ -145,7 +146,7 @@ export function SettingsMultiSelect<T extends string = string>({
                       )}
                     </span>
                     {opt.icon && <opt.icon className="h-3.5 w-3.5" />}
-                    <span className="flex-1">{opt.label}</span>
+                    <span className="min-w-0 flex-1 truncate">{opt.label}</span>
                   </button>
                 );
               })}

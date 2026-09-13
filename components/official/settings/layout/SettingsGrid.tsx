@@ -17,8 +17,8 @@ const gapClass = {
 };
 
 const columnsClass = {
-  2: "sm:grid-cols-2",
-  3: "sm:grid-cols-2 lg:grid-cols-3",
+  2: "@[40rem]/settings-grid:grid-cols-2",
+  3: "@[40rem]/settings-grid:grid-cols-2 @[56rem]/settings-grid:grid-cols-3",
 };
 
 /**
@@ -33,7 +33,7 @@ export function SettingsGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-1 px-4 mb-4",
+        "@container/settings-grid grid grid-cols-1 px-4 mb-4 [&>*]:min-w-0",
         columnsClass[columns],
         gapClass[gap],
       )}

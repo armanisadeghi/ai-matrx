@@ -8,11 +8,7 @@ import {
   Settings as SettingsIcon,
   X,
 } from "lucide-react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import {
   type SettingsTreeNode,
@@ -130,10 +126,10 @@ export function SettingsDrawerNav({
             <button
               type="button"
               onClick={popOne}
-              className="flex items-center gap-1 h-8 px-2 -ml-2 rounded-md text-sm text-primary hover:bg-accent/50 transition-colors"
+              className="flex min-w-0 items-center gap-1 h-8 max-w-[calc(100%-5rem)] px-2 -ml-2 rounded-md text-sm text-primary hover:bg-accent/50 transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span className="truncate max-w-[9rem]">{backLabel}</span>
+              <span className="truncate">{backLabel}</span>
             </button>
           )}
           <div className="flex-1 flex items-center justify-center min-w-0 px-2">
