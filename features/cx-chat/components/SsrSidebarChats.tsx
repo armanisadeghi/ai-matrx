@@ -8,11 +8,14 @@
 // Own section: conversations fetched with fetchConversationList on mount,
 //   paginated with fetchConversationListMore on scroll.
 // Shared section: still fetched locally via API (not in Redux slice).
-// Mutations: renameConversationMutation + deleteConversationMutation from thunks.
 // Live updates: prependConversation + touchConversation dispatched from
 //   ChatConversationClient via DOM CustomEvents → Redux (no more local state).
+// DD-157: rename/delete menu items were removed from the per-conversation
+// dropdown — the mutations behind them were permanent no-ops (see the legacy
+// stub note below), so they were dead controls (Law 4). Real rename/delete
+// live in the conversation-list rebuild (features/agents/redux/conversation-list/).
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   MoreHorizontal,
   Search,
@@ -127,158 +130,18 @@ function groupByTime(
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function InlineRename({
-  value,
-  onChange,
-  onConfirm,
-  onCancel,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
-  }, []);
-
-  return (
-    <div className="flex items-center gap-1 w-full px-2 py-1">
-      <input
-        ref={ref}
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            onConfirm();
-          }
-          if (e.key === "Escape") {
-            e.preventDefault();
-            onCancel();
-          }
-        }}
-        onBlur={onConfirm}
-        className="flex-1 min-w-0 px-1.5 py-0.5 text-xs rounded bg-background border border-primary/40 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-        style={{ fontSize: "16px" }}
-      />
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onConfirm();
-        }}
-        className="p-0.5 rounded text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
-      >
-        <Check className="h-3 w-3" />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onCancel();
-        }}
-        className="p-0.5 rounded text-muted-foreground hover:bg-muted"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </div>
-  );
-}
-
-function DeleteConfirm({
-  label,
-  onConfirm,
-  onCancel,
-}: {
-  label: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="px-2 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 mx-1">
-      <p className="text-[10px] text-destructive mb-1.5 leading-tight">
-        Delete &ldquo;{label?.slice(0, 25) || "Untitled"}
-        {(label?.length || 0) > 25 ? "..." : ""}&rdquo;?
-      </p>
-      <div className="flex items-center gap-1.5">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onConfirm();
-          }}
-          className="flex-1 px-2 py-0.5 text-[10px] font-medium rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-        >
-          Delete
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onCancel();
-          }}
-          className="flex-1 px-2 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground hover:bg-accent transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function ConversationItem({
   item,
   isActive,
   isPending,
-  isRenaming,
-  isDeleting,
-  renameValue,
   onSelect,
-  onStartRename,
-  onRequestDelete,
-  onRenameChange,
-  onConfirmRename,
-  onCancelRename,
-  onConfirmDelete,
-  onCancelDelete,
 }: {
   item: CxConversationListItem;
   isActive: boolean;
   isPending: boolean;
-  isRenaming: boolean;
-  isDeleting: boolean;
-  renameValue: string;
   onSelect: () => void;
-  onStartRename: () => void;
-  onRequestDelete: () => void;
-  onRenameChange: (v: string) => void;
-  onConfirmRename: () => void;
-  onCancelRename: () => void;
-  onConfirmDelete: () => void;
-  onCancelDelete: () => void;
 }) {
   const [isShareOpen, setIsShareOpen] = useState(false);
-
-  if (isDeleting) {
-    return (
-      <DeleteConfirm
-        label={item.title || "Untitled Chat"}
-        onConfirm={onConfirmDelete}
-        onCancel={onCancelDelete}
-      />
-    );
-  }
-
-  if (isRenaming) {
-    return (
-      <InlineRename
-        value={renameValue}
-        onChange={onRenameChange}
-        onConfirm={onConfirmRename}
-        onCancel={onCancelRename}
-      />
-    );
-  }
 
   const handleSelect = (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey) {
@@ -334,27 +197,6 @@ function ConversationItem({
                 >
                   <Share2 className="h-3 w-3 mr-2" />
                   Share
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStartRename();
-                  }}
-                  className="text-[11px] py-1.5"
-                >
-                  <Pencil className="h-3 w-3 mr-2" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRequestDelete();
-                  }}
-                  className="text-destructive focus:text-destructive text-[11px] py-1.5"
-                >
-                  <Trash2 className="h-3 w-3 mr-2" />
-                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -564,11 +406,6 @@ export function SsrSidebarChats({
   const hasMore = useAppSelector(selectCxConversationHasMore);
   const isLoading = listStatus === "loading";
 
-  // ── Local UI state ──────────────────────────────────────────────────────────
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
   // ── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -637,44 +474,6 @@ export function SsrSidebarChats({
     return () => observer.disconnect();
   }, [dispatch, hasMore, isLoading, items.length, searchQuery]);
 
-  // ── Mutations ───────────────────────────────────────────────────────────────
-  const handleStartRename = useCallback((id: string, currentLabel: string) => {
-    setRenamingId(id);
-    setRenameValue(currentLabel || "");
-  }, []);
-
-  const handleConfirmRename = useCallback(() => {
-    if (!renamingId || !renameValue.trim()) {
-      setRenamingId(null);
-      return;
-    }
-    dispatch(
-      renameConversationMutation({ id: renamingId, title: renameValue.trim() }),
-    );
-    setRenamingId(null);
-    setRenameValue("");
-  }, [dispatch, renamingId, renameValue]);
-
-  const handleCancelRename = useCallback(() => {
-    setRenamingId(null);
-    setRenameValue("");
-  }, []);
-
-  const handleRequestDelete = useCallback((id: string) => {
-    setDeletingId(id);
-  }, []);
-
-  const handleConfirmDelete = useCallback(() => {
-    if (!deletingId) return;
-    dispatch(deleteConversationMutation(deletingId));
-    if (activeRequestId === deletingId) onNewChat();
-    setDeletingId(null);
-  }, [dispatch, deletingId, activeRequestId, onNewChat]);
-
-  const handleCancelDelete = useCallback(() => {
-    setDeletingId(null);
-  }, []);
-
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (!isAuthenticated) {
@@ -728,22 +527,10 @@ export function SsrSidebarChats({
                 key={item.id}
                 item={item}
                 isActive={activeRequestId === item.id}
-                isRenaming={renamingId === item.id}
-                isDeleting={deletingId === item.id}
-                renameValue={renameValue}
                 onSelect={() => {
                   onSelectChat(item.id);
                   onCloseSidebar?.();
                 }}
-                onStartRename={() =>
-                  handleStartRename(item.id, item.title || "")
-                }
-                onRequestDelete={() => handleRequestDelete(item.id)}
-                onRenameChange={setRenameValue}
-                onConfirmRename={handleConfirmRename}
-                onCancelRename={handleCancelRename}
-                onConfirmDelete={handleConfirmDelete}
-                onCancelDelete={handleCancelDelete}
               />
             ))}
           </div>
