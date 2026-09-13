@@ -110,6 +110,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import type { ContentSource } from "@/features/rich-document/types";
 import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
 import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
+import { noteIdentityContentSource } from "../richDocumentSource";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -873,7 +874,7 @@ export function NoteContentEditor({
           contentSource={
             access.loading || readOnly
               ? undefined
-              : ({ type: "note", noteId } satisfies ContentSource)
+              : noteIdentityContentSource(noteId, `content-editor:${noteId}`)
           }
           contextData={surfaceContextData}
           onTextReplace={handleChangeFlush}

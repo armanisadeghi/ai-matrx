@@ -13,6 +13,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
+import { noteIdentityContentSource } from "../../richDocumentSource";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
@@ -304,7 +305,7 @@ export default function MobileNoteEditor({
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
-            contentSource={{ type: "note", noteId: note.id } satisfies ContentSource}
+            contentSource={noteIdentityContentSource(note.id, `mobile-readonly:${note.id}`)}
             entity={{
               type: "note",
               id: note.id,
@@ -328,7 +329,7 @@ export default function MobileNoteEditor({
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
             contentSource={
-              { type: "note", noteId: note.id } satisfies ContentSource
+              noteIdentityContentSource(note.id, `mobile-edit:${note.id}`)
             }
             entity={{
               type: "note",
@@ -376,7 +377,7 @@ export default function MobileNoteEditor({
             {localContent.trim() ? (
               <RichDocument
                 content={localContent}
-                source={{ type: "note", noteId: note.id } as ContentSource}
+                source={noteIdentityContentSource(note.id, `mobile-preview:${note.id}`)}
                 actionsVariant="mini-bar"
                 actionsClassName="mb-2"
               />

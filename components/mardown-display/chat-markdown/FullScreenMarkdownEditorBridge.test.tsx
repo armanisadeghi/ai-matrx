@@ -4,7 +4,6 @@ import {
   createFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
 } from "@/features/overlays/callbacks/fullScreenEditor";
-import { noteAdapter } from "@/features/rich-document/actions/sources/note";
 import { FullScreenMarkdownEditorBridge } from "./FullScreenMarkdownEditorBridge";
 import { FullScreenMarkdownEditorBridgeController } from "@/features/overlays/openers/fullScreenEditor";
 
@@ -24,9 +23,6 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppStore: () => ({
     getState: () => ({ messages: { byConversationId: {} } }),
   }),
-}));
-jest.mock("@/features/notes/service/notesApi", () => ({
-  NotesAPI: { update: jest.fn() },
 }));
 
 (
@@ -50,22 +46,14 @@ describe("FullScreenMarkdownEditorBridge settlement", () => {
     container.remove();
   });
 
-  it("keeps the real Notes adapter command available after failure and only closes after acknowledgement", async () => {
-    const { NotesAPI } = jest.requireMock(
-      "@/features/notes/service/notesApi",
-    ) as {
-      NotesAPI: { update: jest.Mock };
-    };
-    NotesAPI.update
+  it("keeps an asynchronous save command available after failure and only closes after acknowledgement", async () => {
+    const save = jest.fn()
       .mockRejectedValueOnce(new Error("conflict"))
       .mockResolvedValueOnce(undefined);
     const { callbackGroupId } = createFullScreenEditorCallbackGroup({
-      onSave: (newContent) =>
-        noteAdapter.edit!({
-          newContent,
-          source: { type: "note", noteId: "note-1" },
-          dispatch: dispatch as never,
-        }),
+      onSave: async (newContent) => {
+        await save(newContent);
+      },
     });
     const onClose = jest.fn();
     await act(async () => {
@@ -83,7 +71,7 @@ describe("FullScreenMarkdownEditorBridge settlement", () => {
     await expect(editorProps.onSave("draft")).rejects.toThrow("conflict");
     expect(onClose).not.toHaveBeenCalled();
     await editorProps.onSave("draft");
-    expect(NotesAPI.update).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenCalledTimes(2);
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: expect.stringContaining("closeOverlay"),

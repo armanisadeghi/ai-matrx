@@ -17,8 +17,8 @@
 //     the model picker and a voice key gets the voice picker at every rung —
 //     this row never decides what a control looks like, only what it says.
 
-import { useEffect, useState } from "react";
-import { Lock } from "lucide-react";
+import { useState } from "react";
+import { Lock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Input,
@@ -35,6 +35,7 @@ import {
   hasFieldControl,
 } from "@/features/settings/universal/KnobFieldControl";
 import { formatKnobValue, type KnobLadder } from "./ladder";
+import { availableVoices } from "@/lib/cartesia/voices";
 import { setKnobOverride } from "./service";
 import { setFeatureKnob } from "@/features/admin/limits/service";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
@@ -51,6 +52,22 @@ function valueText(value: unknown): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "string") return value;
   return JSON.stringify(value);
+}
+
+function formatRowValue(
+  value: unknown,
+  unit: string | null,
+  control: KnobLadder["control"] | undefined,
+): string {
+  if (control !== "voice") return formatKnobValue(value, unit);
+  if (value === null || value === undefined || value === "") {
+    return "Default for each use";
+  }
+  if (typeof value !== "string") return formatKnobValue(value, unit);
+  return (
+    availableVoices.find((voice) => voice.id === value)?.name ??
+    `Unknown voice: ${value}`
+  );
 }
 
 function parseDraft(
@@ -152,16 +169,21 @@ export function KnobOverrideRow(props: {
       ? "your organization"
       : "the platform";
   const overrideText = isSetHere ? valueText(overrideValue) : "";
+  const displayValue = (value: unknown) =>
+    formatRowValue(value, knob.unit, ladder?.control);
+  const draftIdentity = `${knob.full_key}:${organizationId}:${scopeId}:${overrideText}`;
   const [draft, setDraft] = useState<string>(overrideText);
+  const [syncedDraftIdentity, setSyncedDraftIdentity] = useState(draftIdentity);
   const [busy, setBusy] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
 
   // Re-sync the draft whenever the row starts representing different state —
   // a clear, a refresh, or (on the personal tab) an organization switch. A
   // stale draft would otherwise be one Save away from landing in the wrong org.
-  useEffect(() => {
+  if (syncedDraftIdentity !== draftIdentity) {
+    setSyncedDraftIdentity(draftIdentity);
     setDraft(overrideText);
-  }, [knob.full_key, organizationId, scopeId, overrideText]);
+  }
 
   const write = async (value: unknown) => {
     setBusy(true);
@@ -229,7 +251,7 @@ export function KnobOverrideRow(props: {
     if (system) {
       const confirmed = await confirm({
         title: `Restore ${knob.label} to its registered default?`,
-        description: `The platform value becomes ${formatKnobValue(system.registeredDefault, knob.unit)}.`,
+        description: `The platform value becomes ${displayValue(system.registeredDefault)}.`,
         confirmLabel: "Restore registered default",
       });
       if (confirmed) await write(null);
@@ -237,10 +259,7 @@ export function KnobOverrideRow(props: {
     }
     const confirmed = await confirm({
       title: `Inherit ${knob.label} from ${inheritedFrom}?`,
-      description: `The override is removed and this setting falls back to ${formatKnobValue(
-        inheritedValue,
-        knob.unit,
-      )}.`,
+      description: `The override is removed and this setting falls back to ${displayValue(inheritedValue)}.`,
       confirmLabel: "Inherit it",
     });
     if (confirmed) await write(null);
@@ -280,7 +299,7 @@ export function KnobOverrideRow(props: {
   const inputId = `${knob.full_key}-input`;
   const labelId = `${inputId}-label`;
   const usesLabelledGroup =
-    stateOnly !== null ||
+    Boolean(stateOnly) ||
     lockedForMe ||
     (fieldLadder !== null &&
       ["segmented", "slider", "json", "secret"].includes(
@@ -311,21 +330,18 @@ export function KnobOverrideRow(props: {
       controlLayout="wide"
       variant="inline"
     >
-      <div className="flex w-80 min-w-0 max-w-full flex-col items-stretch gap-1 @[40rem]/settings:items-end">
-        {stateOnly ? (
-          <div className="text-sm text-muted-foreground">
+      <div className="flex w-full min-w-0 max-w-[calc(20rem+2.5rem)] items-start gap-1">
+        <div className="w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]">
+          {stateOnly ? (
+            <div className="text-sm text-muted-foreground">
             This preference is not available yet.
-          </div>
-        ) : lockedForMe ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="h-4 w-4" />
-            Your organization manages this setting.
-          </div>
-        ) : fieldLadder ? (
-          // A picker IS the choice: it writes the moment a person chooses, so
-          // there is no Save beside it. "Inherit" stays — clearing is a
-          // different action from choosing, at every rung (rule 4).
-          <div className="flex max-w-full flex-wrap items-start gap-2">
+            </div>
+          ) : lockedForMe ? (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <Lock className="h-4 w-4" />
+              Your organization manages this setting.
+            </div>
+          ) : fieldLadder ? (
             <KnobFieldControl
               knob={knob}
               ladder={fieldLadder}
@@ -335,35 +351,8 @@ export function KnobOverrideRow(props: {
               disabled={busy || !canWrite}
               onCommit={(value) => write(value)}
             />
-            {(system
-              ? JSON.stringify(knob.platform_default) !==
-                JSON.stringify(system.registeredDefault)
-              : isSetHere) && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-auto min-w-0 max-w-full whitespace-normal break-words text-left"
-                disabled={
-                  busy ||
-                  !canWrite ||
-                  (system
-                    ? JSON.stringify(knob.platform_default) ===
-                      JSON.stringify(system.registeredDefault)
-                    : !isSetHere)
-                }
-                title={
-                  system
-                    ? "Restore the registered default"
-                    : `Remove the override and inherit from ${inheritedFrom}`
-                }
-                onClick={() => void clear()}
-              >
-                {system ? "Restore registered default" : "Inherit"}
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="flex max-w-full flex-wrap items-start gap-2">
+          ) : (
+            <div className="flex w-full min-w-0 flex-wrap items-start gap-2">
             {enumOptions ? (
               <Select
                 value={draft || undefined}
@@ -374,7 +363,7 @@ export function KnobOverrideRow(props: {
                   id={inputId}
                   aria-label={knob.label}
                   size="default"
-                  className="w-full max-w-40"
+                  className="w-full min-w-0"
                 >
                   <SelectValue
                     placeholder={formatKnobValue(
@@ -393,7 +382,7 @@ export function KnobOverrideRow(props: {
               </Select>
             ) : (
               <Input
-                className="w-full max-w-40"
+                className="w-full min-w-0"
                 id={inputId}
                 aria-label={knob.label}
                 placeholder={formatKnobValue(knob.effective_value, knob.unit)}
@@ -409,86 +398,71 @@ export function KnobOverrideRow(props: {
             >
               Save
             </Button>
+            </div>
+          )}
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label={`Options for ${knob.label}`}
+              className="h-9 w-9 shrink-0"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            className="w-72 max-w-[calc(100vw-2rem)] space-y-3 break-words p-3 text-left text-xs leading-snug [overflow-wrap:anywhere]"
+          >
+            <div className="space-y-1 text-muted-foreground">
+              <p>
+                {stateOnly
+                  ? "Not connected yet."
+                  : system
+                    ? JSON.stringify(knob.platform_default) !==
+                      JSON.stringify(system.registeredDefault)
+                      ? "Set for the platform."
+                      : "Registered default."
+                    : isSetHere
+                      ? "Set here."
+                      : `Inherited from ${inheritedFrom}.`}
+              </p>
+              {!hideKey && <p>Key: {knob.full_key}</p>}
+              <p>
+                {system
+                  ? `Registered default: ${displayValue(system.registeredDefault)}`
+                  : `Platform default: ${displayValue(knob.platform_default)}`}
+              </p>
+              {knob.bound_value !== null && knob.bound_value !== undefined && (
+                <p>Bound: {displayValue(knob.bound_value)}</p>
+              )}
+              {!hideKey && knob.basis && <p>Basis: {knob.basis}</p>}
+              {system && (
+                <p className={reviewOverdue ? "font-medium text-amber-600" : undefined}>
+                  {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}
+                  {knob.review_due ? ` · review ${knob.review_due}` : ""}
+                </p>
+              )}
+              {!hideKey && stateOnly && <p>Audit: {stateOnly.consumerEvidence}</p>}
+            </div>
             {(system
               ? JSON.stringify(knob.platform_default) !==
                 JSON.stringify(system.registeredDefault)
               : isSetHere) && (
               <Button
                 size="sm"
-                variant="ghost"
-                className="h-auto min-w-0 max-w-full whitespace-normal break-words text-left"
-                disabled={
-                  busy ||
-                  !canWrite ||
-                  (system
-                    ? JSON.stringify(knob.platform_default) ===
-                      JSON.stringify(system.registeredDefault)
-                    : !isSetHere)
-                }
-                title={
-                  system
-                    ? "Restore the registered default"
-                    : `Remove the override and inherit from ${inheritedFrom}`
-                }
+                variant="outline"
+                className="w-full justify-start whitespace-normal text-left"
+                disabled={busy || !canWrite}
                 onClick={() => void clear()}
               >
-                {system ? "Restore registered default" : "Inherit"}
+                {system ? "Restore registered default" : "Inherit this value"}
               </Button>
             )}
-          </div>
-        )}
-        <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground @[40rem]/settings:justify-end">
-          <span className="min-w-0 break-words">
-            {stateOnly
-              ? "Not connected yet"
-              : system
-                ? JSON.stringify(knob.platform_default) !==
-                  JSON.stringify(system.registeredDefault)
-                  ? "Set for the platform"
-                  : "Registered default"
-                : isSetHere
-                  ? "Set here"
-                  : `Inherited from ${inheritedFrom}`}
-          </span>
-          {system && (
-            <span
-              className={
-                reviewOverdue
-                  ? "break-words font-medium text-amber-600"
-                  : "break-words"
-              }
-            >
-              {knob.set_by === "agent" ? "Agent-set" : "Reviewed"}
-              {knob.review_due ? ` · review ${knob.review_due}` : ""}
-            </span>
-          )}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="ghost"
-                aria-label={`Details for ${knob.label}`}
-                className="h-auto px-1.5 py-0.5 text-[11px]"
-              >
-                Details
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              className="w-72 max-w-[calc(100vw-2rem)] break-words p-3 text-left text-xs leading-snug [overflow-wrap:anywhere]"
-            >
-              {!hideKey ? `Key: ${knob.full_key}. ` : ""}
-              {system
-                ? `Registered default: ${formatKnobValue(system.registeredDefault, knob.unit)}. ${knob.set_by === "agent" ? "Agent-set." : "Reviewed."} ${knob.review_due ? `Review due: ${knob.review_due}. ` : ""}`
-                : `Platform default: ${formatKnobValue(knob.platform_default, knob.unit)}. `}
-              {knob.bound_value !== null && knob.bound_value !== undefined
-                ? `Bound: ${formatKnobValue(knob.bound_value, knob.unit)}. `
-                : ""}
-              {knob.basis ? `Basis: ${knob.basis}. ` : ""}
-              {stateOnly ? `Audit: ${stateOnly.consumerEvidence}` : ""}
-            </PopoverContent>
-          </Popover>
-        </div>
+          </PopoverContent>
+        </Popover>
       </div>
     </SettingsRow>
   );

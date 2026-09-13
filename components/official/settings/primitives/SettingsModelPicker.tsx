@@ -92,7 +92,8 @@ export function SettingsModelPicker({
         }
         placeholder={placeholder ?? "Choose a model"}
         disabled={rowProps.disabled}
-        className="w-56 justify-between"
+        triggerVariant="settings"
+        className="w-80 max-w-full justify-between"
       />
     </SettingsRow>
   );

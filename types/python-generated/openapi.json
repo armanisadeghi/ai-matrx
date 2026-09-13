@@ -45195,6 +45195,28 @@
         }
       }
     },
+    "/admin/system-errors/open-outages": {
+      "get": {
+        "tags": [
+          "Admin / System Errors"
+        ],
+        "summary": "Open Outages",
+        "description": "List unresolved provider-outage records.\n\nThis literal route must remain before ``/{error_id}``: Starlette resolves\nroutes in declaration order, and the detail route is intentionally UUID-only.",
+        "operationId": "open_outages_admin_system_errors_open_outages_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenOutageListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/system-errors/{error_id}": {
       "get": {
         "tags": [
@@ -45210,6 +45232,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "title": "Error Id"
             }
           }
@@ -184260,6 +184283,117 @@
         ],
         "title": "OpenMLPublicDataset",
         "description": "Safe factual projection of one public OpenML dataset."
+      },
+      "OpenOutageListResponse": {
+        "properties": {
+          "outages": {
+            "items": {
+              "$ref": "#/components/schemas/OpenOutageRecord"
+            },
+            "type": "array",
+            "title": "Outages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outages"
+        ],
+        "title": "OpenOutageListResponse"
+      },
+      "OpenOutageRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "consecutive_failures": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consecutive Failures"
+          },
+          "models_affected": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Models Affected"
+          },
+          "rerouted_to": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rerouted To"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "OpenOutageRecord",
+        "description": "One provider currently refusing every call."
       },
       "OpenProjectRootResult": {
         "properties": {

@@ -85,6 +85,7 @@ import {
 import { NoteContextStatusIcon } from "./NoteContextSection";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
+import { noteIdentityContentSource } from "../richDocumentSource";
 
 interface NoteTabItemProps {
   noteId: string;
@@ -526,7 +527,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         sourceFeature={NOTES_EDITOR_CONTEXT_MENU_PROPS.sourceFeature}
         surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
         getApplicationScope={getApplicationScope}
-        contentSource={{ type: "note", noteId } satisfies ContentSource}
+        contentSource={noteIdentityContentSource(noteId, `tab:${instanceId}:${noteId}`)}
         entity={{
           type: "note",
           id: noteId,

@@ -71,6 +71,17 @@ highest-remote-observation comparison. A Refresh row may equal or advance the
 reviewed revision, never regress it; the CAS decision records a full row only
 when its declared current revision exactly equals that row's revision.
 
+**RichDocument direct-edit boundary:** A Notes content source is either an
+identity trigger or an editable snapshot. An identity trigger is prepared by
+one authorized full-row read before an Edit, full-screen, or HTML callback is
+allocated; selection text never becomes the persisted body. The resulting
+editable snapshot captures note ID, organization, nonnegative CAS revision,
+actor, and every displayed physical field. The adapter sends that captured
+organization/revision/actor to `persistNoteUpdate` and consumes its actual
+receipt privately. Partial context acknowledgement and post-acknowledgement
+auth/cache degradation advance only that callback's prepared base while the
+editor stays open; they never overwrite another Notes Redux buffer.
+
 ### Flow 1 — Create / edit a note
 
 1. User opens editor → `notes` slice hydrates the target row via `service/`

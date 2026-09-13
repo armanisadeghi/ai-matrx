@@ -29,6 +29,7 @@ import {
 } from "./note-actions/noteMenuRegistry";
 import type { NoteRecord } from "../redux/notes.types";
 import { noteFolderReference, type FolderReference } from "../types";
+import { noteIdentityContentSource } from "../richDocumentSource";
 
 interface NoteSidebarRowProps {
   note: NoteRecord;
@@ -222,7 +223,7 @@ export function NoteSidebarRow({
     <NonEditableContextMenu
       sourceFeature="notes"
       contextData={{ content: note.content ?? "" }}
-      contentSource={{ type: "note", noteId: note.id } satisfies ContentSource}
+      contentSource={noteIdentityContentSource(note.id, `sidebar:${instanceId}:${note.id}`)}
       entity={{
         type: "note",
         id: note.id,

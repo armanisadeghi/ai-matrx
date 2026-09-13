@@ -10,6 +10,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";
 import { getErrorMessage, serializeError } from "../utils";
+import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 
 registerAction({
   id: "open-fullscreen-editor",
@@ -20,8 +21,10 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 10,
-  run: (ctx) => {
+  run: async (ctx) => {
     const canSave = Boolean(ctx.sourceAdapter.edit);
+    const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
+    let preparedSource = prepared.source;
 
     // Source-agnostic save → route through the callback registry, never an
     // onSave function in Redux data (the controller drops it). Only register a
@@ -31,15 +34,14 @@ registerAction({
       ? createFullScreenEditorCallbackGroup({
           onSave: async (newContent: string) => {
             try {
-              const edit = ctx.sourceAdapter.edit;
-              if (!edit) throw new Error("This content no longer has a save target");
-              await edit({
+              preparedSource = await savePreparedContentEdit({
+                ctx,
+                source: preparedSource,
                 newContent,
-                source: ctx.source,
-                dispatch: ctx.dispatch,
               });
               toast.success("Saved");
             } catch (err) {
+              preparedSource = acknowledgedPreparedSource(preparedSource, err) ?? preparedSource;
               console.error(
                 "[open-fullscreen-editor] save failed",
                 JSON.stringify(serializeError(err), null, 2),
@@ -56,15 +58,15 @@ registerAction({
         overlayId: "fullScreenEditor",
         instanceId: ctx.instanceKey("fullscreen-editor"),
         data: {
-          content: ctx.content,
+          content: prepared.content,
           mode: "free",
           callbackGroupId,
           messageId:
-            ctx.source.type === "chat-message"
-              ? ctx.source.messageId
+            preparedSource.type === "chat-message"
+              ? preparedSource.messageId
               : undefined,
           noteId:
-            ctx.source.type === "note" ? ctx.source.noteId : undefined,
+            preparedSource.type === "note" ? preparedSource.noteId : undefined,
           tabs: [
             "write",
             "matrx_split",

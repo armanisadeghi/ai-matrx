@@ -14,6 +14,8 @@ The single user-facing surface for every preference in the app — a flat, Notio
 
 The registry-backed editor (`universal/`) receives a fixed user, route organization, or administration System destination from its host; it never asks the person to choose an editing role. Personal values remain organization-qualified; account and session controls remain visibly outside that ladder. System defaults read the complete `platform.feature_knob` register, write only through `feature_knob_set`, and render a structured refusal inline rather than claiming success. `useSettingsControlSearch(query, isAdmin)` is the public search seam: it returns stable static-control and registry full-key anchors with the visible destination path for the route shell.
 
+Registry rows compose one primary control with a labelled options popover for source, default and confirmed reset. Curated rows show human-readable defaults and omit implementation keys/basis/audit identifiers; administrative rows retain their review facts. The voice chooser uses the existing catalog, searchable choices and separate preview buttons. Only the open chooser mounts the preview connection, and it closes after a successful save. Model choices reuse `ModelListDropdown` with its settings trigger variant.
+
 ---
 
 ## Entry points
@@ -265,6 +267,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- **2026-09-12 — First-screen composition repair after rejected acceptance.** Replaced floating inheritance/status/details fragments with a single options menu; widened and wrapped selected values; moved voice preview into the searchable chooser; retained confirmed reset and readable purpose-specific voice defaults. The earlier containment checks missed clipped text and did not establish visual acceptance. Current browser and independent review evidence belongs to the reopened UI redesign record.
 
 - **2026-09-12 — Feedback summaries retain readable subjects in narrow settings panes.** The card measures its own container: subject and edit action occupy the first line, with status and progress beneath until the card has room for a single row. Expanded stage layout follows the same container width, and long description/message tokens wrap. This corrects the zero-width subject found in the 320-pixel browser audit; independent visual recheck is required.
 

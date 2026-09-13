@@ -26,7 +26,7 @@ import { activityLine } from "../../components/run/activity-copy";
 import { selectRunActivity } from "../../redux/workflow-runs.selectors";
 
 const TONE_ICON = {
-  work: <Loader2 className="h-3 w-3 text-muted-foreground" />,
+  work: <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />,
   tool: <Wrench className="h-3 w-3 text-primary" />,
   done: <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />,
   warn: <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" />,

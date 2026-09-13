@@ -31,6 +31,12 @@ const triggerSize: Record<SettingsControlSize, "sm" | "default" | "lg"> = {
   lg: "lg",
 };
 
+const triggerMinHeight: Record<SettingsControlSize, string> = {
+  sm: "min-h-7",
+  md: "min-h-9",
+  lg: "min-h-10",
+};
+
 export type SettingsSelectProps<T extends string = string> =
   SettingsCommonProps & {
     value: T;
@@ -77,7 +83,7 @@ export function SettingsSelect<T extends string = string>({
         <SelectTrigger
           id={id}
           size={triggerSize[size]}
-          className={widthClass[effectiveWidth]}
+          className={`${widthClass[effectiveWidth]} h-auto ${triggerMinHeight[size]} whitespace-normal text-left [&>span]:line-clamp-none [&>span]:whitespace-normal`}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

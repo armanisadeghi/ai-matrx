@@ -18,12 +18,22 @@
 // THE KEYBOARD CONTRACT
 //   1 / 2 / 3   take the recommendation / skip / not mine
 //   W           write an answer      ⌘↵ (Ctrl+↵) saves it
-//   V           answer by voice      ↵ saves the transcript, Esc discards it
+//   V           open the box and dictate — the mic is ProTextarea's own
 //   J / K       next / previous      R read aloud     T table view
-//   Esc         stop audio, cancel voice, close the write box
+//   Esc         stop audio, close the write box (words are kept)
 //   ⌘Z / Ctrl+Z undo the answer just saved (30 seconds)
 // While a textarea or input has focus, ONLY Esc and ⌘/Ctrl+Enter are ours —
 // every other key belongs to what he is typing.
+//
+// 🚨 THE BOX IS `ProTextarea` (Arman, 2026-09-12), so recording, live
+// transcription, the device menu, the don't-close-while-recording protection
+// and the cleanup actions all come with it and this feature wires none of them.
+// ProTextarea exposes no PROGRAMMATIC way to start its mic — its `useMicField`
+// handle is internal, the forwarded ref is the raw textarea, and there is no
+// `instanceId` prop to address the shared recorder from outside — so **V** does
+// what the platform allows today: it opens the box and puts the cursor in it,
+// beside the mic. Reported as a finding, not worked around by reaching into
+// ProTextarea's DOM.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
@@ -37,8 +47,8 @@ import { reopenAnswer, saveAnswer, type SaveOutcome } from "../data/questions";
 import { useAnswerDraft } from "../hooks/useAnswerDraft";
 import { useInterviewQuestions } from "../hooks/useInterviewQuestions";
 import { useQuestionDeskKnobs } from "../hooks/useQuestionDeskKnobs";
+import { useDictationAudio } from "../hooks/useDictationAudio";
 import { useReadAloud } from "../hooks/useReadAloud";
-import { useVoiceAnswer } from "../hooks/useVoiceAnswer";
 import {
   isAnswered,
   type DecisionInterviewRow,
@@ -150,11 +160,14 @@ export function InterviewClient({
   );
 
   const draft = useAnswerDraft(current?.id ?? null);
-  const voice = useVoiceAnswer({
-    questionId: current?.id ?? null,
-    questionTitle: current?.title ?? "",
-    interviewId,
-  });
+  const audio = useDictationAudio(current?.id ?? null);
+  // Whether the words in the box came from the mic. It rides the ANSWER, not
+  // the screen: `answer_source` is part of the record, so a spoken ruling is
+  // findable as one later.
+  const [draftFromVoice, setDraftFromVoice] = useState(false);
+  useEffect(() => {
+    setDraftFromVoice(false);
+  }, [current?.id]);
   const readAloudParts = knobs.state === "ready" ? knobs.readAloudParts : [];
   const readAloud = useReadAloud(readAloudParts);
 
@@ -216,7 +229,8 @@ export function InterviewClient({
           if (question.id === current?.id) {
             draft.clear();
             setWriting(false);
-            voice.reset();
+            setDraftFromVoice(false);
+            audio.reset();
             advance();
           }
         }
@@ -224,7 +238,7 @@ export function InterviewClient({
         setBusyId(null);
       }
     },
-    [userId, finishSave, current?.id, draft, voice, advance],
+    [userId, finishSave, current?.id, draft, audio, advance],
   );
 
   const undo = useCallback(async () => {
@@ -286,16 +300,27 @@ export function InterviewClient({
       });
       return;
     }
-    // VERBATIM. `draft.text` goes to the row exactly as typed.
-    void record(current, "own_words", draft.text, "typed");
-  }, [current, draft.text, record]);
+    // VERBATIM, whether it was typed or spoken. `draft.text` goes to the row
+    // exactly as it stands, and `answer_source` records which it was — a
+    // spoken ruling stays findable as one, with its recording attached.
+    void record(
+      current,
+      "own_words",
+      draft.text,
+      draftFromVoice ? "voice" : "typed",
+      { audioFileId: draftFromVoice ? audio.fileId : null },
+    );
+  }, [current, draft.text, draftFromVoice, audio.fileId, record]);
 
-  const saveVoice = useCallback(() => {
-    if (!current || voice.transcript.length === 0) return;
-    void record(current, "own_words", voice.transcript, "voice", {
-      audioFileId: voice.audioFileId,
-    });
-  }, [current, voice.transcript, voice.audioFileId, record]);
+  const discardDraft = useCallback(() => {
+    // Only a DESTRUCTIVE discard asks. Closing the box with Esc keeps every
+    // word (the draft is persisted), so it has nothing to confirm.
+    if (draft.text.length === 0) {
+      setWriting(false);
+      return;
+    }
+    setConfirmDiscard(true);
+  }, [draft.text.length]);
 
   // ---- keys --------------------------------------------------------------
   useEffect(() => {
@@ -309,16 +334,6 @@ export function InterviewClient({
       const meta = event.metaKey || event.ctrlKey;
 
       if (event.key === "Escape") {
-        if (voice.phase === "listening") {
-          event.preventDefault();
-          voice.reset();
-          return;
-        }
-        if (voice.phase === "transcript") {
-          event.preventDefault();
-          setConfirmDiscard(true);
-          return;
-        }
         if (readAloud.speaking) {
           event.preventDefault();
           readAloud.stop();
@@ -326,34 +341,23 @@ export function InterviewClient({
         }
         if (writing) {
           event.preventDefault();
+          // Esc CLOSES the box; it never destroys words. The draft is
+          // persisted per question and restored on return, so there is nothing
+          // to confirm — Discard is the destructive control, and that one asks.
+          // ProTextarea's own protection modal stops a close mid-recording.
           setWriting(false);
           return;
         }
         return;
       }
 
-      // A transcript being READ (not edited) is not a text box: Enter saves it
-      // verbatim, which is the whole point of answering out loud.
-      if (
-        voice.phase === "transcript" &&
-        !voice.editing &&
-        !typing &&
-        event.key === "Enter"
-      ) {
-        event.preventDefault();
-        saveVoice();
-        return;
-      }
-
-      // While a box is OPEN, every printable key belongs to it — even in the
+      // While the box is OPEN, every printable key belongs to it — even in the
       // instant before focus lands, and even if a click moved focus to the
       // page. Only Esc (above) and ⌘/Ctrl+Enter are ours.
-      const boxOpen = writing || voice.phase === "transcript";
-      if (typing || boxOpen) {
+      if (typing || writing) {
         if (meta && event.key === "Enter") {
           event.preventDefault();
-          if (voice.phase === "transcript") saveVoice();
-          else saveOwnWords();
+          saveOwnWords();
         }
         return;
       }
@@ -390,13 +394,11 @@ export function InterviewClient({
           openWrite();
           return;
         case "v":
-          if (voice.available && voice.phase === "idle") {
-            event.preventDefault();
-            voice.start();
-          } else if (voice.phase === "listening") {
-            event.preventDefault();
-            voice.stop();
-          }
+          // ProTextarea owns the mic and exposes no programmatic start, so V
+          // does the honest half: open the box and land the cursor beside the
+          // microphone. See the header note.
+          event.preventDefault();
+          openWrite();
           return;
         case "r":
           if (current && !readAloud.nothingToRead(current)) {
@@ -437,8 +439,6 @@ export function InterviewClient({
     record,
     openWrite,
     saveOwnWords,
-    saveVoice,
-    voice,
     readAloud,
     writing,
     undo,
@@ -531,6 +531,7 @@ export function InterviewClient({
                   and it comes back to you as a real question.
                 </p>
                 <ReviewTable
+                  interviewId={interviewId}
                   questions={reviewQuestions}
                   lines={rowLines}
                   busyId={busyId}
@@ -539,8 +540,10 @@ export function InterviewClient({
                       fromTable: true,
                     })
                   }
-                  onOverturn={(q, w) =>
-                    void record(q, "overturn", w, "typed", { fromTable: true })
+                  onOverturn={(q, w, spoken) =>
+                    void record(q, "overturn", w, spoken ? "voice" : "typed", {
+                      fromTable: true,
+                    })
                   }
                 />
               </section>
@@ -551,6 +554,7 @@ export function InterviewClient({
                   Every question at once
                 </h2>
                 <AskTable
+                  interviewId={interviewId}
                   questions={askQuestions}
                   lines={rowLines}
                   busyId={busyId}
@@ -575,8 +579,8 @@ export function InterviewClient({
                       fromTable: true,
                     })
                   }
-                  onWrite={(q, w) =>
-                    void record(q, "own_words", w, "typed", {
+                  onWrite={(q, w, spoken) =>
+                    void record(q, "own_words", w, spoken ? "voice" : "typed", {
                       fromTable: true,
                     })
                   }
@@ -617,13 +621,19 @@ export function InterviewClient({
               }}
             />
             <AnswerBar
+              interviewId={interviewId}
+              questionId={current.id}
+              questionTitle={current.title}
               hasRecommendation={!!current.recommendation}
               skipShipsRecommendation={knobs.skipShipsRecommendation}
               writing={writing}
               draftText={draft.text}
               onDraftChange={draft.setText}
               draftStorageError={draft.storageError}
+              draftFromVoice={draftFromVoice}
               textareaRef={textareaRef}
+              onTranscriptionComplete={() => setDraftFromVoice(true)}
+              audio={audio}
               onOpenWrite={openWrite}
               onTakeRecommendation={() =>
                 void record(current, "recommendation", null, "keystroke")
@@ -633,11 +643,7 @@ export function InterviewClient({
                 void record(current, "hand_back", null, "keystroke")
               }
               onSaveOwnWords={saveOwnWords}
-              voice={voice}
-              onStartVoice={voice.start}
-              onStopVoice={voice.stop}
-              onSaveVoice={saveVoice}
-              onDiscardVoice={() => setConfirmDiscard(true)}
+              onDiscardDraft={discardDraft}
               speaking={readAloud.speaking}
               canReadAloud={!readAloud.nothingToRead(current)}
               onReadAloud={() => readAloud.read(current)}
@@ -648,11 +654,6 @@ export function InterviewClient({
               onUndo={() => void undo()}
               busy={busyId !== null}
             />
-            {voice.error ? (
-              <p className="mt-3 max-w-[820px] text-[13px] text-destructive">
-                {voice.error}
-              </p>
-            ) : null}
             {readAloud.error ? (
               <p className="mt-3 max-w-[820px] text-[13px] text-destructive">
                 {readAloud.error}
@@ -684,13 +685,22 @@ export function InterviewClient({
       <ConfirmDialog
         open={confirmDiscard}
         onOpenChange={setConfirmDiscard}
-        title="Discard this recording?"
-        description="What you said will be thrown away and cannot be recovered. The recording itself is kept until this answer is saved or discarded."
+        title={
+          draftFromVoice ? "Discard this recording?" : "Discard what you wrote?"
+        }
+        description={
+          draftFromVoice
+            ? "What you said is thrown away and cannot be recovered. Closing the box with Esc keeps it instead."
+            : "What you wrote is thrown away and cannot be recovered. Closing the box with Esc keeps it instead."
+        }
         confirmLabel="Discard it"
         cancelLabel="Keep it"
         variant="destructive"
         onConfirm={() => {
-          voice.reset();
+          draft.clear();
+          setDraftFromVoice(false);
+          audio.reset();
+          setWriting(false);
           setConfirmDiscard(false);
         }}
       />

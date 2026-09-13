@@ -26,7 +26,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { KeyRound, Loader2 } from "lucide-react";
+import { Clock, KeyRound } from "lucide-react";
 
 import { supabase } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ export function EmergencyDoorAffordance({
   if (eligibility.reason === "already_pending") {
     return (
       <p className="mt-4 flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-        <Loader2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
           You have already asked for emergency access to this record. An owner
           of the organization has to approve it, and the person whose data it is

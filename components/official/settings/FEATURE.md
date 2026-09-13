@@ -49,9 +49,21 @@ need; do not add a barrel or a page-local substitute.
 - Fixed-width controls are bounded by their row. Control/action groups wrap or
   stack; labels, errors, status text and long values wrap rather than escape.
   Action targets are at least 44px tall on touch layouts.
+- Selected control values must remain readable, not merely contained by clipping.
+  `SettingsSelect` retains its 128/176/256px width vocabulary and wraps values.
+  `SettingsModelPicker` uses the canonical model picker's `settings` trigger
+  variant; model and voice triggers share the design-system select styling.
+- Registry rows have one primary control and one labelled options button.
+  Source, default and confirmed reset belong in that popover, not a second
+  inline footer. Curated user rows omit implementation keys and audit notes.
+  Voice choice and preview share one searchable chooser with separate buttons;
+  previewing never selects or saves a voice.
 
 ## Change Log
 
+- 2026-09-12: Repaired clipped selected values and disjoint registry rows;
+  unified model/voice trigger styling and moved voice preview into its chooser.
+  Prior containment-only browser acceptance did not prove readable controls.
 - 2026-09-12: Made settings rows container-responsive, constrained typed
   controls to their actual pane, and hardened navigation, grids and details
   against long text in resizable windows.
