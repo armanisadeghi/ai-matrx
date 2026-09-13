@@ -44,6 +44,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/session/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exchange Session Handoff
+         * @description Trade the one-time handoff code from ``/auth/callback`` for the token.
+         *
+         *     THE reason this endpoint exists: the access token must never ride a query
+         *     string (feedback 08b3fdc0). ``/auth/callback`` redirects the SPA with an
+         *     unguessable, single-use, 120-second code; the token itself comes back here,
+         *     in a response body. Unauthenticated by design — the code IS the credential,
+         *     and it is burned on first use.
+         */
+        post: operations["exchange_session_handoff_auth_session_exchange_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/session/oauth-incident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Oauth Incident
+         * @description A client refused a URL carrying a token; file the ``oauth_token_in_query``.
+         *
+         *     Nothing we ship emits that shape any more, so a report here means a stale
+         *     build or a forged link is live somewhere and someone must delete it. The
+         *     client has already refused the token — this is the scream, not the defence.
+         */
+        post: operations["report_oauth_incident_auth_session_oauth_incident_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/whoami": {
         parameters: {
             query?: never;
@@ -81062,6 +81112,13 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** OAuthIncidentRequest */
+        OAuthIncidentRequest: {
+            /** Params */
+            params: string[];
+            /** Where */
+            where: string;
+        };
         /**
          * OAuthTokenPersistRequest
          * @description The FE OAuth callback's hand-off: the raw token-endpoint response plus
@@ -98469,6 +98526,18 @@ export interface components {
              */
             why?: string;
         };
+        /** SessionExchangeRequest */
+        SessionExchangeRequest: {
+            /** Handoff */
+            handoff: string;
+        };
+        /** SessionExchangeResponse */
+        SessionExchangeResponse: {
+            /** Access Token */
+            access_token: string;
+            /** Token Type */
+            token_type: string;
+        };
         /** SessionPayload */
         SessionPayload: {
             /** Id */
@@ -107259,11 +107328,8 @@ export interface components {
              * Format: date-time
              */
             ts: string;
-            /**
-             * Event
-             * @enum {string}
-             */
-            event: "FAIL" | "LOOP_BLOCK" | "NO_EXECUTOR" | "OK" | "SURFACE_REJECT";
+            /** Event */
+            event: string;
             /** Tool Name */
             tool_name: string;
             /** Kind */
@@ -113489,7 +113555,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "access_revoked" | "already_bootstrapped" | "audience_mismatch" | "browser_controlled_by_human" | "browser_crashed" | "capture_target_missing" | "capture_upload_failed" | "checkpoint_failed" | "checkpoint_in_progress" | "chromium_unclean_exit" | "command_deadline_exceeded" | "command_not_supported" | "controller_transition_conflict" | "credential_expired" | "credential_replayed" | "eval_js_not_permitted" | "illegal_controller_transition" | "invalid_command_arguments" | "lease_expired" | "not_bootstrapped" | "parameter_not_available_on_persistent_run" | "profile_locked_locally" | "profile_mismatch" | "queue_draining" | "reopen_required" | "run_mismatch" | "sequence_conflict" | "sequence_not_permitted" | "sequence_out_of_order" | "sequence_required" | "sequence_too_old" | "stale_fencing_token" | "unauthorized_worker_call" | "unknown_dialog" | "unknown_fencing_revision" | "unknown_page" | "worker_degraded" | "worker_shutting_down";
+            code: "access_revoked" | "already_bootstrapped" | "audience_mismatch" | "bootstrap_in_progress" | "browser_controlled_by_human" | "browser_crashed" | "capture_target_missing" | "capture_upload_failed" | "checkpoint_failed" | "checkpoint_in_progress" | "chromium_unclean_exit" | "command_deadline_exceeded" | "command_not_supported" | "controller_transition_conflict" | "credential_expired" | "credential_replayed" | "eval_js_not_permitted" | "illegal_controller_transition" | "invalid_command_arguments" | "lease_expired" | "not_bootstrapped" | "parameter_not_available_on_persistent_run" | "profile_locked_locally" | "profile_mismatch" | "queue_draining" | "reopen_required" | "run_mismatch" | "sequence_conflict" | "sequence_not_permitted" | "sequence_out_of_order" | "sequence_required" | "sequence_too_old" | "stale_fencing_token" | "unauthorized_worker_call" | "unknown_dialog" | "unknown_fencing_revision" | "unknown_page" | "worker_degraded" | "worker_shutting_down";
             /** Message */
             message: string;
             /** Retryable */
@@ -115290,6 +115356,7 @@ export interface components {
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
             user?: components["schemas"]["UserOverrides"] | null;
+            sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
              * Context
              * @default {}
@@ -117545,6 +117612,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_session_handoff_auth_session_exchange_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionExchangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionExchangeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_oauth_incident_auth_session_oauth_incident_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OAuthIncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -151180,7 +151315,7 @@ export interface operations {
                 /** @description ISO-8601 lower bound on ts. Defaults to 1 hour ago. */
                 since?: string | null;
                 limit?: number;
-                /** @description Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK). */
+                /** @description Optional event filter (OK|FAIL|DELEGATED|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK|VARIANT_RECOVERED|ALIAS_RECOVERED|INFERRED|COERCED). */
                 event?: string | null;
                 /** @description Optional tool name filter. */
                 tool_name?: string | null;

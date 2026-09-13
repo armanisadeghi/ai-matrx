@@ -59543,6 +59543,7 @@ export type Database = {
           base_tier: number
           category: string | null
           client_excluded_columns: string[] | null
+          client_read_only: boolean
           component_anon_read_via_public_parent: boolean
           confirmation_enabled: boolean
           content_role: string | null
@@ -59593,6 +59594,7 @@ export type Database = {
           base_tier?: number
           category?: string | null
           client_excluded_columns?: string[] | null
+          client_read_only?: boolean
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
@@ -59647,6 +59649,7 @@ export type Database = {
           base_tier?: number
           category?: string | null
           client_excluded_columns?: string[] | null
+          client_read_only?: boolean
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
