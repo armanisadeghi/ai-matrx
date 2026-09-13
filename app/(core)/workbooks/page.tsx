@@ -177,6 +177,7 @@ export default function WorkbooksLandingPage() {
         return;
       }
       setImporting(true);
+      let selectionCancelled = false;
       try {
         const capturedOrganizationId = await ensureOrganizationContext({
           organizationId,
@@ -241,15 +242,21 @@ export default function WorkbooksLandingPage() {
         });
         router.push(`/workbooks/${created.data.id}`);
       } catch (err) {
-        toast({
-          title: "Could not import workbook",
-          description: err instanceof Error ? err.message : String(err),
-          variant: "destructive",
-        });
+        selectionCancelled = isOrganizationSelectionCancelled(err);
+        if (!selectionCancelled) {
+          toast({
+            title: "Could not import workbook",
+            description: err instanceof Error ? err.message : String(err),
+            variant: "destructive",
+          });
+        }
       } finally {
         setImporting(false);
-        // Reset the file input so the same file can be selected again later.
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        // Cancelling the organization picker leaves the chosen file intact so
+        // the user can resume this exact import after selecting an org.
+        if (!selectionCancelled && fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       }
     },
     [organizationId, router],

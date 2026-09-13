@@ -318,7 +318,9 @@ registerAction({
         },
       });
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to create document"));
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast.error(getErrorMessage(error, "Failed to create document"));
+      }
     }
   },
 });

@@ -8,7 +8,10 @@
 import { useState } from "react";
 import { Download, Loader2, MoreHorizontal, Send } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -138,6 +141,12 @@ export function CatalogRowActions({
             : undefined,
         note: res.error,
       });
+    } catch (error) {
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast.error("Could not create workbook", {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      }
     } finally {
       setBusy(false);
     }

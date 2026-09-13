@@ -18,7 +18,10 @@
 import { useState } from "react";
 import { FileSpreadsheet, Loader2, Send, Table2 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -96,6 +99,12 @@ export function SendToMenu({
             : undefined,
         note: res.error,
       });
+    } catch (error) {
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast.error("Could not create workbook", {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      }
     } finally {
       setPushing(null);
     }

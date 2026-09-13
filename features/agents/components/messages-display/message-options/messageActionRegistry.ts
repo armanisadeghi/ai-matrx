@@ -85,9 +85,15 @@ import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
 import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 import { hasConvertibleContent } from "./convertibleContent";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
-import { selectEffectiveOrganizationId, selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectEffectiveOrganizationId,
+  selectOrganizationId,
+} from "@/lib/redux/slices/appContextSlice";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 import type { OpenQuickMessageTemplateSaveWindowOptions } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
 
@@ -811,9 +817,15 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
           )
         )
           return;
-        const organizationId = await ensureOrganizationContext({
-          organizationId: selectOrganizationId(ctx.getState()),
-        });
+        let organizationId: string;
+        try {
+          organizationId = await ensureOrganizationContext({
+            organizationId: selectOrganizationId(ctx.getState()),
+          });
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) return;
+          throw error;
+        }
         // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
         const { pushMarkdownToDocument } =
           await import("@/features/data-tables/export-targets");
@@ -996,8 +1008,16 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
         // Identical to Save as Note, minus the questions: folder is Scratch,
         // title auto-derived, saved immediately.
         try {
-          const organizationId = await ensureOrganizationContext({ organizationId: selectOrganizationId(ctx.getState()) });
-          await NotesAPI.create({ label: deriveMessageTitle(ctx) ?? "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
+          const organizationId = await ensureOrganizationContext({
+            organizationId: selectOrganizationId(ctx.getState()),
+          });
+          await NotesAPI.create({
+            label: deriveMessageTitle(ctx) ?? "New Note",
+            content,
+            folder_name: "Scratch",
+            tags: [],
+            organization_id: organizationId,
+          });
         } catch (error) {
           if (isOrganizationSelectionCancelled(error)) throw error;
           throw error;
@@ -2275,7 +2295,9 @@ export function resumePendingAuthAction(
     };
     if (savedContent !== content) return;
     if (action === "save-scratch") {
-      const organizationId = requireOrganizationContext(selectOrganizationId(getState()));
+      const organizationId = requireOrganizationContext(
+        selectOrganizationId(getState()),
+      );
       NotesAPI.create({
         label: "New Note",
         content: savedContent,
@@ -2330,7 +2352,11 @@ export function resumePendingAuthAction(
             },
           ),
         )
-        .catch(() => toast.error("Failed to create document"));
+        .catch((error) => {
+          if (!isOrganizationSelectionCancelled(error)) {
+            toast.error("Failed to create document");
+          }
+        });
     } else if (action === "share-webpage") {
       import("./shareMessageAsWebpage")
         .then(({ shareMessageAsWebpage }) =>
@@ -2358,27 +2384,29 @@ export function resumePendingAuthAction(
         import("@ai-matrx/print/pdf"),
         import("@ai-matrx/print/markdown"),
       ])
-        .then(async ([
-          { markdownToPdfBlob },
-          { markdownToHtml, getMarkdownStylesheet },
-        ]) => {
-          const blob = await markdownToPdfBlob(savedContent, {
-            convertToHtml: markdownToHtml,
-            loadCss: getMarkdownStylesheet,
-          });
-          const ts = new Date()
-            .toISOString()
-            .replace(/[:.]/g, "-")
-            .slice(0, 19);
-          const file = new File([blob], `message-${ts}.pdf`, {
-            type: "application/pdf",
-          });
-          await fileHandler.upload(
-            { kind: "file", file },
-            { folderPath: "Chat Saves" },
-          );
-          toast.success("PDF saved to Files");
-        })
+        .then(
+          async ([
+            { markdownToPdfBlob },
+            { markdownToHtml, getMarkdownStylesheet },
+          ]) => {
+            const blob = await markdownToPdfBlob(savedContent, {
+              convertToHtml: markdownToHtml,
+              loadCss: getMarkdownStylesheet,
+            });
+            const ts = new Date()
+              .toISOString()
+              .replace(/[:.]/g, "-")
+              .slice(0, 19);
+            const file = new File([blob], `message-${ts}.pdf`, {
+              type: "application/pdf",
+            });
+            await fileHandler.upload(
+              { kind: "file", file },
+              { folderPath: "Chat Saves" },
+            );
+            toast.success("PDF saved to Files");
+          },
+        )
         .catch(() => toast.error("Failed to create PDF"));
     } else if (action === "save-as-file") {
       const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
