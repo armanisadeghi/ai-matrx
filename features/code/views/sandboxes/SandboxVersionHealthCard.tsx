@@ -15,17 +15,19 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type {
-  SandboxMigrateResponse,
-  SandboxVersionHealth,
-} from "@/types/sandbox";
+import type { SandboxVersionHealth } from "@/types/sandbox";
 import {
   sandboxRuntimeReplaced,
   selectSandboxRuntimeRevision,
 } from "../../redux/codeWorkspaceSlice";
 import {
   classifySandboxMigrationFailure,
+  canStartSandboxMigration,
+  isLiveMigrationOutcome,
+  newMigrationOperationId,
+  parseSandboxMigrationStatus,
   sandboxMigrationMessage,
+  type SandboxMigrationStatus,
 } from "./migrationResponse";
 
 interface SandboxVersionHealthCardProps {
@@ -54,15 +56,25 @@ function isVersionHealth(value: unknown): value is SandboxVersionHealth {
   );
 }
 
-function isMigrateResponse(value: unknown): value is SandboxMigrateResponse {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as Record<string, unknown>).sandbox_id === "string" &&
-    ["migrated", "already_current"].includes(
-      String((value as Record<string, unknown>).status),
-    )
-  );
+const MIGRATION_STORAGE_PREFIX = "matrx.sandbox.migration.";
+const POLL_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 15_000] as const;
+
+function migrationStorageKey(sandboxId: string): string {
+  return `${MIGRATION_STORAGE_PREFIX}${sandboxId}`;
+}
+
+function savedOperationId(sandboxId: string): string | null {
+  if (typeof window === "undefined") return null;
+  const value = window.sessionStorage.getItem(migrationStorageKey(sandboxId));
+  return value && /^[0-9a-f]{32}$/.test(value) ? value : null;
+}
+
+function saveOperationId(sandboxId: string, operationId: string): void {
+  window.sessionStorage.setItem(migrationStorageKey(sandboxId), operationId);
+}
+
+function clearOperationId(sandboxId: string): void {
+  window.sessionStorage.removeItem(migrationStorageKey(sandboxId));
 }
 
 function captureMigrationFailure(
@@ -128,8 +140,23 @@ export function SandboxVersionHealthCard({
     selectSandboxRuntimeRevision(state, sandboxId),
   );
   const [loadState, setLoadState] = useState<LoadState>({ state: "loading" });
-  const [updating, setUpdating] = useState(false);
+  const [activeOperationId, setActiveOperationId] = useState<string | null>(
+    () => savedOperationId(sandboxId),
+  );
+  const [migrationNotice, setMigrationNotice] = useState<string | null>(null);
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
+  const pollRef = useRef<{
+    timer: ReturnType<typeof setTimeout> | null;
+    controller: AbortController | null;
+    attempts: number;
+  }>({
+    timer: null,
+    controller: null,
+    attempts: 0,
+  });
+  const capturedOperationRef = useRef(new Set<string>());
+  const migratedOperationRef = useRef<string | null>(null);
+  const operationStartRef = useRef<string | null>(activeOperationId);
   const requestRef = useRef<{ revision: number; controller: AbortController }>({
     revision: 0,
     controller: new AbortController(),
@@ -171,11 +198,210 @@ export function SandboxVersionHealthCard({
     }
   }
 
-  async function migrate() {
-    setUpdating(true);
+  function captureOperationFailure(
+    operationId: string,
+    payload: unknown,
+    message: string,
+    code: string,
+  ) {
+    if (capturedOperationRef.current.has(operationId)) return;
+    capturedOperationRef.current.add(operationId);
+    captureMigrationFailure(payload, message, undefined, code);
+  }
+
+  function stopPolling() {
+    if (pollRef.current.timer) clearTimeout(pollRef.current.timer);
+    pollRef.current.timer = null;
+    pollRef.current.controller?.abort();
+    pollRef.current.controller = null;
+    pollRef.current.attempts = 0;
+  }
+
+  function finishOperation(operationId: string) {
+    stopPolling();
+    clearOperationId(sandboxId);
+    if (operationStartRef.current === operationId) {
+      operationStartRef.current = null;
+    }
+    setActiveOperationId((current) =>
+      current === operationId ? null : current,
+    );
+  }
+
+  async function receiveMigrationStatus(
+    operationId: string,
+    status: SandboxMigrationStatus,
+  ) {
+    if (status.operation_id !== operationId) {
+      captureOperationFailure(
+        operationId,
+        status,
+        "Sandbox update outcome is unknown because the manager returned another operation.",
+        "operation_mismatch",
+      );
+      setMigrationNotice(
+        "Update outcome unknown; reconnecting status is required.",
+      );
+      return false;
+    }
+    if (isLiveMigrationOutcome(status.outcome)) {
+      setMigrationNotice(
+        status.outcome === "recovering"
+          ? "Sandbox update is recovering. Keep this page open while it finishes."
+          : "Sandbox update is in progress. Keep this page open while it finishes.",
+      );
+      return true;
+    }
+    if (status.outcome === "migrated") {
+      finishOperation(operationId);
+      setMigrationNotice(null);
+      if (migratedOperationRef.current !== operationId) {
+        migratedOperationRef.current = operationId;
+        toast.success("Sandbox image updated. Your workspace was kept.");
+        dispatch(sandboxRuntimeReplaced(sandboxId));
+        onMigrated?.();
+        await refresh();
+      }
+      return false;
+    }
+    if (status.outcome === "rolled_back") {
+      finishOperation(operationId);
+      const message =
+        status.reason ??
+        "The image update was rolled back. Your previous sandbox is still usable.";
+      setMigrationNotice(`${message} Your previous sandbox is still usable.`);
+      captureOperationFailure(operationId, status, message, "rolled_back");
+      toastErrorAlreadyCaptured(message);
+      return false;
+    }
+    if (status.outcome === "recovery_required") {
+      finishOperation(operationId);
+      const message =
+        status.reason ??
+        "Sandbox update needs recovery. Its outcome is not safe to assume.";
+      setMigrationNotice(message);
+      captureOperationFailure(
+        operationId,
+        status,
+        message,
+        "recovery_required",
+      );
+      toastErrorAlreadyCaptured(message);
+      return false;
+    }
+    captureOperationFailure(
+      operationId,
+      status,
+      "Sandbox update outcome is unknown; the manager has no matching active operation.",
+      "outcome_unknown",
+    );
+    setMigrationNotice(
+      "Update outcome unknown; reconnecting status is required.",
+    );
+    return false;
+  }
+
+  function schedulePoll(operationId: string) {
+    const delay =
+      POLL_DELAYS_MS[
+        Math.min(pollRef.current.attempts, POLL_DELAYS_MS.length - 1)
+      ];
+    pollRef.current.attempts += 1;
+    pollRef.current.timer = setTimeout(() => {
+      void pollMigration(operationId);
+    }, delay);
+  }
+
+  async function pollMigration(operationId: string) {
+    pollRef.current.controller?.abort();
+    const controller = new AbortController();
+    pollRef.current.controller = controller;
     try {
       const response = await fetch(
-        `/api/sandbox/${sandboxId}/migrate?interrupt_attached_sessions=true`,
+        `/api/sandbox/${sandboxId}/migration?operation_id=${operationId}`,
+        { cache: "no-store", signal: controller.signal },
+      );
+      const payload: unknown = await response.json();
+      const status = parseSandboxMigrationStatus(payload, {
+        sandboxId,
+        operationId,
+      });
+      if (!response.ok || !status) {
+        throw new Error(
+          sandboxMigrationMessage(
+            payload,
+            "Sandbox update outcome is unknown because its status could not be verified.",
+          ),
+        );
+      }
+      const shouldContinue = await receiveMigrationStatus(operationId, status);
+      if (shouldContinue) schedulePoll(operationId);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Sandbox update outcome is unknown because its status could not be verified.";
+      captureOperationFailure(
+        operationId,
+        error,
+        message,
+        "status_unavailable",
+      );
+      setMigrationNotice(
+        "Update outcome unknown; reconnecting status will continue.",
+      );
+      schedulePoll(operationId);
+    }
+  }
+
+  async function discoverOrResumeMigration() {
+    const saved = savedOperationId(sandboxId);
+    if (saved) {
+      operationStartRef.current = saved;
+      setActiveOperationId(saved);
+      void pollMigration(saved);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/sandbox/${sandboxId}/migration`, {
+        cache: "no-store",
+      });
+      const payload: unknown = await response.json();
+      const status = parseSandboxMigrationStatus(payload, { sandboxId });
+      if (
+        !response.ok ||
+        !status ||
+        !status.operation_id ||
+        !isLiveMigrationOutcome(status.outcome)
+      ) {
+        return;
+      }
+      saveOperationId(sandboxId, status.operation_id);
+      operationStartRef.current = status.operation_id;
+      setActiveOperationId(status.operation_id);
+      setMigrationNotice(
+        "A sandbox update is already in progress. Reconnecting status…",
+      );
+      void pollMigration(status.operation_id);
+    } catch {
+      // No saved operation means there is no current action to label failed.
+    }
+  }
+
+  async function migrate() {
+    if (!canStartSandboxMigration(activeOperationId, operationStartRef.current))
+      return;
+    const operationId = newMigrationOperationId();
+    operationStartRef.current = operationId;
+    saveOperationId(sandboxId, operationId);
+    setActiveOperationId(operationId);
+    setMigrationNotice(
+      "Sandbox update is starting. Reconnecting status if this request is interrupted…",
+    );
+    try {
+      const response = await fetch(
+        `/api/sandbox/${sandboxId}/migrate?interrupt_attached_sessions=true&operation_id=${operationId}`,
         { method: "POST" },
       );
       const payload: unknown = await response.json();
@@ -185,48 +411,88 @@ export function SandboxVersionHealthCard({
           response.status,
         );
         if (failure.kind === "busy_deferred") {
+          finishOperation(operationId);
+          setMigrationNotice(null);
           toast.info(failure.message);
           return;
         }
-        captureMigrationFailure(
+        const status = parseSandboxMigrationStatus(payload, {
+          sandboxId,
+          operationId,
+        });
+        if (status) {
+          const shouldContinue = await receiveMigrationStatus(
+            operationId,
+            status,
+          );
+          if (shouldContinue) schedulePoll(operationId);
+          return;
+        }
+        captureOperationFailure(
+          operationId,
           payload,
           failure.message,
-          response.status,
           failure.code,
         );
+        setMigrationNotice(
+          "Update outcome unknown; reconnecting status will continue.",
+        );
+        void pollMigration(operationId);
         toastErrorAlreadyCaptured(failure.message);
         return;
       }
-      if (!isMigrateResponse(payload)) {
+      const status = parseSandboxMigrationStatus(payload, {
+        sandboxId,
+        operationId,
+      });
+      if (!status) {
         const message =
-          "Sandbox manager returned an invalid image update response.";
-        captureMigrationFailure(payload, message, response.status);
+          "Sandbox manager returned an invalid image update response; the outcome is unknown.";
+        captureOperationFailure(
+          operationId,
+          payload,
+          message,
+          "invalid_response",
+        );
+        setMigrationNotice(
+          "Update outcome unknown; reconnecting status will continue.",
+        );
+        void pollMigration(operationId);
         toastErrorAlreadyCaptured(message);
         return;
       }
-      const result = payload;
-      toast.success(
-        result.status === "already_current"
-          ? "Sandbox already uses the current image."
-          : "Sandbox image updated. Your workspace was kept.",
-      );
-      dispatch(sandboxRuntimeReplaced(sandboxId));
-      onMigrated?.();
-      await refresh();
+      const shouldContinue = await receiveMigrationStatus(operationId, status);
+      if (shouldContinue) schedulePoll(operationId);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Sandbox image update failed.";
-      captureMigrationFailure(error, message);
+        error instanceof Error
+          ? error.message
+          : "Sandbox update outcome is unknown; reconnecting status will continue.";
+      captureOperationFailure(operationId, error, message, "post_unavailable");
+      setMigrationNotice(
+        "Update outcome unknown; reconnecting status will continue.",
+      );
+      void pollMigration(operationId);
       toastErrorAlreadyCaptured(message);
-    } finally {
-      setUpdating(false);
     }
   }
 
   useEffect(() => {
-    void refresh();
-    return () => requestRef.current.controller.abort();
+    let disposed = false;
+    operationStartRef.current = savedOperationId(sandboxId);
+    queueMicrotask(() => {
+      if (disposed) return;
+      void refresh();
+      void discoverOrResumeMigration();
+    });
+    return () => {
+      disposed = true;
+      requestRef.current.controller.abort();
+      stopPolling();
+    };
   }, [sandboxId, runtimeRevision]);
+
+  const updating = activeOperationId !== null;
 
   if (loadState.state === "loading") {
     return (
@@ -264,7 +530,7 @@ export function SandboxVersionHealthCard({
   const { Icon } = presentation;
   if (compact) {
     return (
-      <div className="flex items-center justify-between gap-2 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <details className="min-w-0 flex-1 text-muted-foreground">
           <summary className="flex cursor-pointer list-none items-center gap-1.5">
             <Badge
@@ -326,6 +592,11 @@ export function SandboxVersionHealthCard({
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
         </div>
+        {migrationNotice && (
+          <p className="basis-full text-[11px] text-muted-foreground">
+            {migrationNotice}
+          </p>
+        )}
         <ConfirmDialog
           open={confirmUpdateOpen}
           onOpenChange={setConfirmUpdateOpen}
@@ -379,6 +650,9 @@ export function SandboxVersionHealthCard({
           </Button>
         </div>
       </div>
+      {migrationNotice && (
+        <p className="mt-1 text-xs text-muted-foreground">{migrationNotice}</p>
+      )}
       <p className="mt-1 text-xs text-muted-foreground">{health.reason}</p>
       <details className="mt-1 text-xs text-muted-foreground">
         <summary className="cursor-pointer">Image details</summary>
