@@ -1802,14 +1802,15 @@ export function ModelListDropdown({
           ? selectTriggerVariants({
               size: "default",
               className:
-                "h-auto min-h-9 w-full min-w-0 max-w-full whitespace-normal text-left font-medium text-foreground [&>span]:line-clamp-none",
+                "h-auto min-h-9 w-full min-w-0 max-w-full whitespace-normal text-left font-medium text-foreground",
             })
           : "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
         disabled && "cursor-not-allowed opacity-50 hover:text-foreground/80",
         className,
       )}
     >
-      <span className="flex min-w-0 flex-1 items-center gap-1.5">
+      {triggerVariant === "settings" ? (
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
         {selected ? (
           <>
             <MakerBrandGlyph
@@ -1817,12 +1818,12 @@ export function ModelListDropdown({
               colored
               className="h-3.5 w-3.5 shrink-0"
             />
-            <span className={cn("min-w-0", triggerVariant === "settings" ? "whitespace-normal text-left leading-tight" : "truncate")}>
+            <span className="min-w-0 whitespace-normal text-left leading-tight">
               {selected.name}
             </span>
           </>
         ) : (
-          <span className={cn("min-w-0 text-muted-foreground", triggerVariant === "settings" ? "whitespace-normal text-left leading-tight" : "truncate")}>
+          <span className="min-w-0 whitespace-normal text-left leading-tight text-muted-foreground">
             {isLoading
               ? "Loading models…"
               : emptyOptionLabel && !value
@@ -1830,8 +1831,30 @@ export function ModelListDropdown({
                 : placeholder}
           </span>
         )}
-      </span>
-      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+      </div>
+      ) : (
+        <span className="flex min-w-0 flex-1 items-center gap-1.5">
+          {selected ? (
+            <>
+              <MakerBrandGlyph
+                maker={selected.maker}
+                colored
+                className="h-3.5 w-3.5 shrink-0"
+              />
+              <span className="min-w-0 truncate">{selected.name}</span>
+            </>
+          ) : (
+            <span className="min-w-0 truncate text-muted-foreground">
+              {isLoading
+                ? "Loading models…"
+                : emptyOptionLabel && !value
+                  ? emptyOptionLabel
+                  : placeholder}
+            </span>
+          )}
+        </span>
+      )}
+      <ChevronDown className={cn("shrink-0 text-muted-foreground/60", triggerVariant === "settings" ? "h-4 w-4" : "h-3 w-3")} />
     </button>
   );
 

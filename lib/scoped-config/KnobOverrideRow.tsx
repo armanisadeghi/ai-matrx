@@ -283,7 +283,7 @@ export function KnobOverrideRow(props: {
   const inputId = `${knob.full_key}-input`;
   const labelId = `${inputId}-label`;
   const usesLabelledGroup =
-    stateOnly !== null ||
+    Boolean(stateOnly) ||
     lockedForMe ||
     (fieldLadder !== null &&
       ["segmented", "slider", "json", "secret"].includes(

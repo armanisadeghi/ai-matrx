@@ -25,7 +25,7 @@
 //   secret    → state only, from `knob.secret`; the value never comes here
 //               and is never asked for here (see the note on the case below).
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, ChevronDown, Loader2, Play, ShieldCheck, ShieldOff, Square } from "lucide-react";
 import Link from "next/link";
 import {
@@ -34,6 +34,7 @@ import {
   PopoverContent,
   PopoverTrigger,
   SegmentedControl,
+  selectTriggerVariants,
   Slider,
   Switch,
 } from "@ai-matrx/design-system";
@@ -379,6 +380,13 @@ function VoiceField({
     : current
       ? `Unknown voice: ${current}`
       : "Choose a voice";
+  const handleSelect = (voiceId: string) => {
+    void Promise.resolve(onCommit(voiceId))
+      .then((result) => {
+        if (result !== false) setOpen(false);
+      })
+      .catch(() => undefined);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -390,23 +398,27 @@ function VoiceField({
           disabled={disabled}
           aria-label={labelId ? undefined : knob.label}
           aria-labelledby={labelId}
-          className="h-auto min-h-9 w-full min-w-0 justify-between gap-2 px-3 py-2 text-left text-sm"
+          className={selectTriggerVariants({
+            size: "default",
+            className:
+              "h-auto min-h-9 w-full min-w-0 max-w-full whitespace-normal text-left [&>span]:line-clamp-none",
+          })}
         >
-          <span className="min-w-0 whitespace-normal break-words leading-tight">
+          <div className="min-w-0 flex-1 whitespace-normal break-words leading-tight">
             {selectedLabel}
-          </span>
+          </div>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
       {open && (
         <PopoverContent
           align="start"
-          className="w-[20rem] max-w-[calc(100vw-2rem)] p-1"
+          className="h-[min(32rem,var(--radix-popover-content-available-height))] w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
         >
           <VoiceChooser
             current={current}
             disabled={disabled}
-            onSelect={(voiceId) => void onCommit(voiceId)}
+            onSelect={handleSelect}
           />
         </PopoverContent>
       )}
@@ -426,8 +438,9 @@ function VoiceChooser({
 }) {
   const { sendMessage, stopPlayback, isConnected, error } = useCartesia();
   const [query, setQuery] = useState("");
-  const [playing, setPlaying] = useState(false);
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const playRequestId = useRef(0);
   const matchingVoices = availableVoices.filter((voice) => {
     const search = query.trim().toLocaleLowerCase();
     return (
@@ -438,13 +451,16 @@ function VoiceChooser({
   });
 
   const play = async (voiceId: string) => {
-    if (playing) {
-      void stopPlayback();
-      setPlaying(false);
+    const requestId = ++playRequestId.current;
+    if (playingVoiceId === voiceId) {
+      await stopPlayback();
+      if (requestId === playRequestId.current) setPlayingVoiceId(null);
       return;
     }
+    if (playingVoiceId) await stopPlayback();
+    if (requestId !== playRequestId.current) return;
     setFailure(null);
-    setPlaying(true);
+    setPlayingVoiceId(voiceId);
     try {
       await sendMessage(VOICE_SAMPLE_LINE, VoiceSpeed.NORMAL, {
         mode: "id",
@@ -453,13 +469,13 @@ function VoiceChooser({
     } catch (err) {
       setFailure(extractErrorMessage(err));
     } finally {
-      setPlaying(false);
+      if (requestId === playRequestId.current) setPlayingVoiceId(null);
     }
   };
 
   return (
-    <div className="space-y-1">
-      <div className="border-b p-2">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 border-b p-2">
         <Input
           autoFocus
           value={query}
@@ -469,7 +485,7 @@ function VoiceChooser({
           className="h-8"
         />
       </div>
-      <div className="max-h-72 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {matchingVoices.length === 0 ? (
           <p className="px-3 py-4 text-sm text-muted-foreground">
             No voices match “{query}”.
@@ -494,14 +510,12 @@ function VoiceChooser({
               size="icon"
               variant="ghost"
               className="h-8 w-8 shrink-0"
-              aria-label={playing ? "Stop voice sample" : `Play sample for ${voice.name}`}
+              aria-label={playingVoiceId === voice.id ? "Stop voice sample" : `Play sample for ${voice.name}`}
               disabled={disabled || !isConnected}
               onClick={() => void play(voice.id)}
             >
-              {playing ? (
+              {playingVoiceId === voice.id ? (
                 <Square className="h-3.5 w-3.5" />
-              ) : !isConnected ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Play className="h-3.5 w-3.5" />
               )}
@@ -510,12 +524,13 @@ function VoiceChooser({
         ))}
       </div>
       {!isConnected && !error && (
-        <p className="px-2 pb-1 text-[11px] text-muted-foreground">
+        <p className="flex shrink-0 items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Connecting to the speech service…
         </p>
       )}
       {(error || failure) && (
-        <p className="px-2 pb-1 text-[11px] text-destructive">
+        <p className="shrink-0 px-2 py-1 text-[11px] text-destructive">
           {failure ?? `The sample could not play: ${error?.message}`}
         </p>
       )}
