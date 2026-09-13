@@ -6,6 +6,7 @@ import {
 } from "@/features/overlays/callbacks/fullScreenEditor";
 import { noteAdapter } from "@/features/rich-document/actions/sources/note";
 import { FullScreenMarkdownEditorBridge } from "./FullScreenMarkdownEditorBridge";
+import { FullScreenMarkdownEditorBridgeController } from "@/features/overlays/openers/fullScreenEditor";
 
 let editorProps: {
   onSave: (content: string) => Promise<void>;
@@ -131,5 +132,28 @@ describe("FullScreenMarkdownEditorBridge settlement", () => {
     await expect(
       emitFullScreenEditorSave(callbackGroupId, "draft"),
     ).rejects.toThrow("Expected exactly one");
+  });
+
+  it("keeps the final StrictMode opener target usable", async () => {
+    const save = jest.fn(async () => undefined);
+    await act(async () => {
+      root.render(
+        <React.StrictMode>
+          <FullScreenMarkdownEditorBridgeController
+            instanceId="strict-editor"
+            content="draft"
+            onSave={save}
+          />
+        </React.StrictMode>,
+      );
+    });
+    const open = dispatch.mock.calls
+      .map(([action]) => action as { type?: string; payload?: { data?: { callbackGroupId?: string | null } } })
+      .filter((action) => action.type?.includes("openOverlay"))
+      .at(-1);
+    const callbackGroupId = open?.payload?.data?.callbackGroupId;
+    expect(callbackGroupId).toEqual(expect.any(String));
+    await expect(emitFullScreenEditorSave(callbackGroupId, "draft")).resolves.toBeUndefined();
+    expect(save).toHaveBeenCalledWith("draft");
   });
 });
