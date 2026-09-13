@@ -222,6 +222,28 @@ lines by relocating trial-specific detail into the trial's register.
 
 ## 8. Lessons (append, dated)
 
+- 2026-09-13 — **A commit that claims changes is not a commit that contains them.** `git add`
+  fails the WHOLE add on one unmatched pathspec and stages nothing; with `2>/dev/null` on the
+  command, that failure is invisible. A `git mv` had already moved one of the listed paths, so a
+  "fix" commit landed as `1 file changed, 0 insertions, 0 deletions` — the rename without its
+  importer, leaving the branch un-compilable while the real work sat uncommitted. Never silence
+  stderr on `git add`; read `git show --stat` before believing a commit's own message.
+- 2026-09-13 — **A guard can test the wrong thing and feel like proof.** A test written for "a
+  successful heal clears an older failure" drove the ledger directly and PASSED on the broken
+  code, because the ledger was never the broken part — the caller reaching past it was. Putting
+  the original defect back and watching the test stay green is the only thing that catches this.
+  Prove every guard RED, on the real defect, not on a nearby one.
+- 2026-09-13 — **When a rule recurs a third time, the fix is where the primitive LIVES.** Two
+  dialogs had already been fixed for per-Rulebook state; a third reproduced it because the shared
+  hook sat under `triage/` and read as that feature's property. Moving it to a neutral home and
+  writing the call-site half into its docstring is the fix; a fourth comment saying "remember to
+  do this" is not.
+- 2026-09-13 — **Watch for the reviewer moving from the feature to the INSTRUMENT.** Two findings
+  landed in the surfaces that decide whether a desk passed: the Audition's safety column showed
+  the SAFEST verdict in the same red as the worst one, and the stand-in card showed a failure over
+  a rebuild that had just succeeded. A broken feature wastes a run; a broken exam sends the Expert
+  to fix something that was never broken. Audit the instrument before trusting any trial verdict.
+
 - 2026-09-10 — Rules-only sources (style guides, ad checklists) are rejected: "idiotic", almost
   digital. Pick judgment.
 - 2026-09-11 — The book's method needed four external primitives (reverse image, metadata, weather,
@@ -421,6 +443,7 @@ lines by relocating trial-specific detail into the trial's register.
   later cases). Tell the judge to score only what the record allows, or bundle what the newsroom
   actually had; otherwise the verdict measures access, not craft.
 
+
 - 2026-09-12 — (trial 8, the unfolding case) A cloud session's environment can carry a STALE credential: the
   Supabase publishable key in the container was not the project's live key (401 on every auth call). Read the
   live publishable key through the Supabase MCP (it is public by design) and log the drift as a wall; never
@@ -455,6 +478,7 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 8) Review bots are free verifiers: Cursor Bugbot found five real defects in tonight's
   frontend (state dropped on reopen, an effect loop, a hidden rejoined run) that no builder's tests caught.
   Treat every bot finding as a bug report and fix the class before the morning report.
+
 - **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.
 
 - **2026-09-12 — Arman's architecture brief (`OVERVIEW.md`) and the gap census.** The mandate is tacit,
@@ -492,3 +516,6 @@ lines by relocating trial-specific detail into the trial's register.
   same way. Fix these as the CLASS — carry every key the surface does not own — never by naming the key that
   was reported; and expect a merge that reconciles two data shapes to be exactly where a field falls out,
   because every test the merging lane runs will pass.
+- 2026-09-13 — (trial 7) **Read the CI LOG, never the check's NAME.** Three guards named "(UNMEASURED without the secret)" were red WITH the secret present and returning real verdicts — one of them a live security finding. Triaging by title, I told the pull request they carried no information. A guard named for its failure mode is a trap for whoever triages it. Also: when a failure COUNT moves, find out which item changed — assuming the set is still the known one is how a real regression walks through behind familiar noise.
+- 2026-09-13 — (trial 8) **A merged PR is not a working feature: check the ROWS, not the code.** THE PROVIDER-OUTAGE ALARM shipped whole — detector, endpoint, tests, all green — and could not fire, because the migration seeding its three knob rows wrote a `propagation` word the table's CHECK constraint has never allowed. The INSERT was refused with a bare 23514 naming the constraint but not the word, and the file sat unapplied for a day. Any feature configured by knob rows is OFF until you have read those rows back from the live table; "the PR merged" proves nothing about them.
+- 2026-09-13 — (trial 8) **A cloud session with no Postgres pooler still has the Supabase MCP.** I had been reporting three items as "only Arman can do this" on the belief that this container could not write to the database. The pooler port genuinely does not open and the service key in the environment is rejected, but the Supabase MCP works for reads AND data writes — which is aidream's declared migration mechanism anyway (`.sql` files are records, not mechanisms). Before handing anything to Arman as a database step, try that door: a whole class of "blocked" turned out to be one tool call.
