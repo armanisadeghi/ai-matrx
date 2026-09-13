@@ -34,6 +34,15 @@ export interface NpmPackageCatalogRow {
   sourceUrl: string | null;
 }
 
+const NPM_PUBLISH_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeZone: "UTC",
+});
+
+export function formatNpmPublishDate(value: string): string {
+  return NPM_PUBLISH_DATE_FORMATTER.format(new Date(value));
+}
+
 type FetchLike = typeof fetch;
 
 function requireOk(response: Response, label: string): Response {

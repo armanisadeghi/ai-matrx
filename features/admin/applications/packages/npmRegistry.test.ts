@@ -1,5 +1,6 @@
 import {
   buildRepositorySourceUrl,
+  formatNpmPublishDate,
   loadNpmPackageCatalog,
   normalizeRepositoryUrl,
 } from "./npmRegistry";
@@ -13,6 +14,10 @@ function jsonResponse(body: unknown): Response {
 }
 
 describe("npm package catalog", () => {
+  it("formats publish dates deterministically across server and browser timezones", () => {
+    expect(formatNpmPublishDate("2026-09-13T00:30:00.000Z")).toBe("Sep 13, 2026");
+  });
+
   it("exhausts search pages, filters fuzzy matches, and deduplicates exact scope names", async () => {
     const fetcher = jest.fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>(async (input) => {
       const url = String(input);

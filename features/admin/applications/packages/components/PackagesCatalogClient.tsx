@@ -10,7 +10,10 @@ import {
   ADMIN_APPLICATIONS_SURFACE_NAME,
   createAdminApplicationsScope,
 } from "@/features/surfaces/manifests/admin-applications.manifest";
-import type { NpmPackageCatalogRow } from "../npmRegistry";
+import {
+  formatNpmPublishDate,
+  type NpmPackageCatalogRow,
+} from "../npmRegistry";
 
 interface PackagesCatalogClientProps {
   rows: NpmPackageCatalogRow[];
@@ -84,9 +87,7 @@ const columns: MatrxColumnDef<NpmPackageCatalogRow>[] = [
     cell: (row) =>
       row.publishedAt ? (
         <time dateTime={row.publishedAt} className="text-xs">
-          {new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(
-            new Date(row.publishedAt),
-          )}
+          {formatNpmPublishDate(row.publishedAt)}
         </time>
       ) : (
         <span className="text-xs text-muted-foreground">Not reported</span>
