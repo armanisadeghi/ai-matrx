@@ -64,18 +64,24 @@ a4b4431f06136209b, a865a446e47d543c3, a0f86d1b8f60568a7; grader: a6f0924c2888c45
 **GREEN gap.** All three GREEN reps substituted "N consecutive clean runs" (the §5 automation
 gate) for §1 step 6 (rerun on a *different* unit); the step existed as prose and was not binding.
 
-### Round 2 — REFACTOR (form change, skill v2)
+### Rounds 2–4 — REFACTOR (form changes on §1 step 6)
 
-Change: step 6 renamed to name the failure ("the one step every plan skips"), requires naming the
-next unit before shipping the fix, and says explicitly that the automation gate is not a
-substitute; the round's completion criterion became four checkable bullets, the first of which
-is "a new row for a unit different from the one that exposed the fixes"; a red flag added.
+| Round | Change | green-1 | green-2 | green-3 |
+|---|---|---|---|---|
+| 2 | Step 6 renamed to name the failure; four-bullet completion criterion; red flag | FAIL | FAIL | FAIL |
+| 3 | **Round card** (`expose on: unit A → fixes → prove on: unit B`) required before the first run; no unit B = no round | PARTIAL | PASS | FAIL |
+| 4 | **The first six actions of every plan are fixed** as a numbered recipe; action 6 = run unit B, "a separate action from 4, never folded into it" | PASS | PARTIAL | PARTIAL |
 
-| Criterion | green2-1 | green2-2 | green2-3 |
-|---|---|---|---|
-| C6 Rerun on different unit | _pending_ | _pending_ | _pending_ |
+Agent ids — round 2: a4fe468453172f236, a25358356ee403449, a7bd146a41ba5fb98; round 3:
+a6c773ab40f1dbc41, aceb8651ed012e26c, a022e8a8506bb38c6; round 4: a4e6b815845a16ab8,
+afa52ceacc29b7061, aff71dc191ae738f8; grader for all rounds: a6f0924c2888c456f.
 
-Agent ids — green2: a4fe468453172f236, a25358356ee403449, a7bd146a41ba5fb98.
+**Reading of round 4.** All three reps now open with the round card and name unit B (0/3 did in
+round 1). The two PARTIALs name unit B and never sequence running it — the scenario asks for the
+"first five actions" and unit B is action six, so the deliverable's own cap absorbs the step. The
+form is binding on naming; sequencing is proven 1/3. **Next editor:** rerun with a scenario that
+asks "what happens after the fixes ship" before changing §1 again; if sequencing still slips,
+move the round card into the status template so unit B's row is a required cell.
 
 **Trigger check.** Description unchanged since creation; should-fire / near-miss prompts not yet
 run — do this before the first description edit.
