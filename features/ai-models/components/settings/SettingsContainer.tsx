@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,7 +26,6 @@ import {
   LogOut,
   PanelRight,
   AlertTriangle,
-  SlidersHorizontal,
 } from "lucide-react";
 import SettingTable from "./SettingTable";
 import SettingForm from "./SettingForm";
@@ -392,27 +386,36 @@ export default function SettingsContainer() {
   const [settings, setSettings] = useState<AiSetting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedSetting, setSelectedSetting] = useState<AiSetting | null>(
     null,
   );
   const [isNewSetting, setIsNewSetting] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
 
+  const loadGeneration = useRef(0);
+
   const loadData = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setIsLoading(true);
     setLoadError(null);
     try {
       const fetched = await aiModelService.fetchSettings();
+      if (generation !== loadGeneration.current) return;
       setSettings(fetched);
     } catch (err) {
-      setLoadError(extractErrorMessage(err));
+      if (generation === loadGeneration.current)
+        setLoadError(extractErrorMessage(err));
     } finally {
-      setIsLoading(false);
+      if (generation === loadGeneration.current) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData();
+    void loadData();
+    return () => {
+      loadGeneration.current += 1;
+    };
   }, [loadData]);
 
   const openSetting = (setting: AiSetting) => {
@@ -456,50 +459,43 @@ export default function SettingsContainer() {
    *  detail panel's own delete flow already calls the service itself
    *  before invoking `onDeleted`, so this is only for table rows. */
   const handleRowDelete = async (setting: AiSetting) => {
+    setActionError(null);
     try {
       await aiModelService.deleteSetting(setting.id);
       handleDeleted(setting.id);
     } catch (err) {
-      console.error("Failed to delete setting", err);
+      setActionError(extractErrorMessage(err));
     }
+  };
+
+  const retainedError = actionError ?? loadError;
+  const refreshData = () => {
+    setActionError(null);
+    void loadData();
   };
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Page header */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b bg-card">
-        <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-        <div className="min-w-0">
-          <span className="text-sm font-semibold">Settings Vocabulary</span>
-          <span className="ml-2 text-xs text-muted-foreground">
-            Canonical control settings (temperature, reasoning_effort, top_p,
-            …) that models and offerings reference.
-          </span>
-        </div>
-      </div>
-
       {/* Table + optional detail panel */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <div
-          className={`${panelOpen ? "w-1/2" : "w-full"} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}
+          className={`${panelOpen ? "hidden md:flex md:w-1/2" : "w-full"} min-w-0 flex flex-col transition-all duration-200 overflow-hidden`}
         >
           <SettingTable
             settings={settings}
             isLoading={isLoading}
-            error={loadError}
+            error={retainedError}
             selectedId={selectedSetting?.id ?? null}
             onSelect={openSetting}
             onEdit={openSetting}
             onDelete={handleRowDelete}
             onCreate={openNew}
-            onRetry={() => {
-              void loadData();
-            }}
+            onRetry={refreshData}
           />
         </div>
 
         {panelOpen && (
-          <div className="w-1/2 border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
+          <div className="w-full md:w-1/2 border-l-0 md:border-l-2 border-l-primary/20 shrink-0 flex flex-col overflow-hidden">
             <SettingDetailPanel
               setting={selectedSetting}
               isNew={isNewSetting}
