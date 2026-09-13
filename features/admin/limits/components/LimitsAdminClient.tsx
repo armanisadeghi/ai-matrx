@@ -54,10 +54,10 @@ export function LimitsAdminClient() {
         </p>
       </header>
       <Tabs defaultValue="allowances">
-        <TabsList>
-          <TabsTrigger value="allowances">Plan allowances</TabsTrigger>
-          <TabsTrigger value="addons">Account add-ons</TabsTrigger>
-          <TabsTrigger value="knobs">Feature knobs</TabsTrigger>
+        <TabsList className="h-auto max-w-full flex-wrap justify-start">
+          <TabsTrigger className="shrink-0" value="allowances">Plan allowances</TabsTrigger>
+          <TabsTrigger className="shrink-0" value="addons">Account add-ons</TabsTrigger>
+          <TabsTrigger className="shrink-0" value="knobs">Feature knobs</TabsTrigger>
         </TabsList>
         <TabsContent value="allowances" className="mt-6">
           <PlanAllowancesPanel />
