@@ -43,6 +43,7 @@ let firstBodyHash;
 let firstKey;
 let firstResponseDropped = false;
 let activeIntercepts = 0;
+let stage = 'artifact_preflight';
 const attemptKeys = new Set();
 const ownedIds = new Set();
 const proof = {
@@ -91,6 +92,12 @@ function persistProof() {
 
 function persistAttemptLedger() {
   atomicJson(LEDGER, { attemptKeys: [...attemptKeys] });
+}
+
+function setStage(next) {
+  stage = next;
+  proof.stage = next;
+  persistProof();
 }
 
 async function assertNoPriorPendingLedger() {
@@ -268,6 +275,7 @@ function ownedCreate(body, key) {
     await fs.mkdir(ARTIFACT_ROOT, { recursive: true, mode: 0o700 });
     await assertNoPriorPendingLedger();
     await fs.mkdir(ROOT, { recursive: true, mode: 0o700 });
+    setStage('fixture_prepare');
     const input = fixture();
     assertFixture(input);
     await fs.writeFile(INPUT, JSON.stringify(input), { mode: 0o600 });
@@ -277,10 +285,12 @@ function ownedCreate(body, key) {
     });
     assert(process.env.AI_ADMIN_USERNAME === 'admin@admin.com' && process.env.AI_ADMIN_PASSWORD, 'admin_configuration');
 
+    setStage('browser_launch');
     context = await chromium.launchPersistentContext(PROFILE, {
       executablePath: EXE,
       headless: true,
     });
+    setStage('login_navigation');
     page = await context.newPage();
     context.on('request', (request) => {
       const url = new URL(request.url());
@@ -302,14 +312,19 @@ function ownedCreate(body, key) {
     await page.goto(`${FRONTEND}/login`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await page.locator('#email').fill(process.env.AI_ADMIN_USERNAME);
     await page.locator('#password').fill(process.env.AI_ADMIN_PASSWORD);
+    setStage('login_submit');
     await Promise.all([
       page.waitForURL((url) => url.pathname !== '/login', { timeout: 30_000 }),
       page.getByRole('button', { name: 'Sign in', exact: true }).click(),
     ]);
+    setStage('workspace_select');
     await selectAdminWorkspace();
+    setStage('vault_navigation');
     await page.goto(`${FRONTEND}/vault`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    setStage('canonical_auth_capture');
     await waitForCanonicalAuth();
 
+    setStage('production_preflight');
     const preflight = await fetch(`${API}/api/vault/items`, {
       method: 'OPTIONS',
       headers: {
@@ -322,20 +337,24 @@ function ownedCreate(body, key) {
     assert(preflight.status === 200 && ['authorization', 'content-type', 'x-organization-id', 'idempotency-key'].every((header) => allowed.includes(header)), 'production_preflight');
     proof.checks.productionPreflight200 = true;
 
+    setStage('fresh_identity');
     const identity = await api(`${DB}/auth/v1/user`, { label: 'fresh_identity' });
     assert(identity?.email === 'admin@admin.com' && typeof identity?.id === 'string', 'fresh_admin_identity');
     userId = identity.id;
     proof.checks.freshAdminIdentity = true;
 
+    setStage('dialog_open');
     await page.getByRole('button', { name: 'Import passwords', exact: true }).click();
     await page.getByRole('dialog').getByText('Import passwords', { exact: true }).waitFor({ state: 'visible' });
     await chooseProtonFile(INPUT);
     const dialog = page.getByRole('dialog');
+    setStage('fixture_normalization');
     const browserFill = dialog.getByText(/Enable browser fill only for eligible logins/i).locator('xpath=..').getByRole('switch');
     assert((await browserFill.getAttribute('data-state')) === 'unchecked', 'browser_fill_off');
     const approval = dialog.getByText(/I approve disclosure of the listed destination and public-key metadata/i).locator('xpath=..').getByRole('switch');
     await approval.click();
 
+    setStage('create_intercept_arm');
     await context.route(`${API}/api/vault/items`, async (route) => {
       const request = route.request();
       if (request.method() !== 'POST') return route.continue();
@@ -381,13 +400,16 @@ function ownedCreate(body, key) {
       await route.continue();
     });
 
+    setStage('first_import');
     await dialog.getByRole('button', { name: 'Import selected records', exact: true }).click();
     await dialog.getByRole('button', { name: 'Retry current row', exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
     assert(firstResponseDropped && firstKey && attemptKeys.size === 1, 'first_response_loss_not_observed');
+    setStage('ui_retry');
     await dialog.getByRole('button', { name: 'Retry current row', exact: true }).click();
     await dialog.getByText(/Imported 1; skipped 0; failed 0/i).waitFor({ state: 'visible', timeout: 20_000 });
     assert(proof.attempts.length === 2 && proof.attempts.every((attempt) => attempt.keySha256 === sha256(firstKey) && attempt.bodySha256 === firstBodyHash), 'same_key_same_body');
 
+    setStage('receipt_reconciliation');
     assert(await resolveReceipts(), 'receipt_reconciliation');
     assert(ownedIds.size === 1, 'receipt_exact_one_id');
     const metadata = await itemMetadata([...ownedIds]);
@@ -397,13 +419,15 @@ function ownedCreate(body, key) {
 
     // The current dialog refreshes existingItems after onCommitted. Reopen only
     // after the successful retry and require the real duplicate preflight.
+    setStage('duplicate_reupload');
     await page.getByRole('button', { name: 'Import passwords', exact: true }).click();
     await chooseProtonFile(INPUT);
     await page.getByRole('dialog').getByText(/0 selected; 1 skipped; 0 invalid; 0 unsupported; 0 deleted/i).waitFor({ state: 'visible', timeout: 20_000 });
     proof.checks.reuploadDuplicateSkipped = true;
   } catch (error) {
     mainError = error;
-    proof.failureCode = /^[a-z0-9_]{1,80}$/.test(String(error?.message || '')) ? error.message : 'canary_step_refused';
+    proof.failureStage = stage;
+    proof.failureCode = /^[a-z0-9_]{1,80}$/.test(String(error?.message || '')) ? error.message : `canary_${stage}_refused`;
   } finally {
     for (let i = 0; i < 30 && activeIntercepts; i += 1) await wait(500);
     proof.cleanup.activeInterceptsAtClose = activeIntercepts;

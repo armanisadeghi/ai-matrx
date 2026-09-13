@@ -21,6 +21,9 @@ for (const required of [
   "scope=local",
   "reconciliationRequired",
   "idempotency-key",
+  "failureStage",
+  "setStage('login_submit')",
+  "setStage('first_import')",
 ]) if (!runnerSource.includes(required)) throw new Error(`missing_canary_guard:${required}`);
 for (const required of [
   "r.operation = 'create_item'",
