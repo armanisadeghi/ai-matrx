@@ -1,6 +1,6 @@
 "use client";
 
-import { resolveScrollPaginationPolicy, suspendScrollPaginationPolicy } from "@ai-matrx/data/react";
+import { resolveScrollPaginationPolicy } from "@ai-matrx/data/react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
@@ -14,19 +14,15 @@ export function useTablePaginationPolicy() {
     organizationId, featurePrefix: "tables.pagination", userId: userId || undefined,
   });
   const value = (key: string) => knobs.find((knob) => knob.feature === "tables.pagination" && knob.key === key)?.effective_value;
-  const scroll = !organizationId
-    ? suspendScrollPaginationPolicy("Automatic loading is paused until an organization is selected.")
-    : isLoading
-      ? suspendScrollPaginationPolicy("Automatic loading is paused while scrolling preferences load.")
-      : error
-        ? suspendScrollPaginationPolicy(`Automatic loading is paused because scrolling preferences could not load: ${error}.`)
-        : resolveScrollPaginationPolicy({
-          mode: value("mode"),
-          thresholdPx: value("threshold_px"),
-          intentTimeoutMs: value("intent_timeout_ms"),
-          reason: value("reason"),
-          approvedBy: value("approved_by"),
-        });
-  const notice = scroll.mode === "suspended" ? scroll.reason : null;
+  const scroll = resolveScrollPaginationPolicy({
+    mode: value("mode"), thresholdPx: value("threshold_px"), intentTimeoutMs: value("intent_timeout_ms"),
+  });
+  const notice = !organizationId
+    ? "Choose an organization to use its scrolling preference. Load more is available."
+    : isLoading ? null
+    : error ? `Scrolling preferences could not load: ${error}. Use Load more or retry.`
+    : !scroll.valid ? "Scrolling preferences are missing or invalid. Use Load more and review table pagination in configuration."
+    : null;
+  // Manual is the explicitly announced recovery state, never a frozen config default.
   return { scroll, notice, isLoading, refresh, organizationId, userId };
 }
