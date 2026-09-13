@@ -136,6 +136,25 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-13` — **Three honest MCP states, one derivation.** Every connection
+  indicator in the chat hierarchy decided from `tool.mcp_user_conn.status`
+  alone, so eight of admin@admin.com's servers whose access token expired days
+  earlier — and GitHub, whose bearer comes from the first-party GitHub App
+  connection rather than any MCP grant — all rendered as Connected (Arman:
+  "the ui lies as well since I see a checkmark for git but don't actually have
+  the mcp connected according to the agent"). `connection-state.ts` now
+  derives exactly three states (`connected` / `needs_reauth` /
+  `not_connected`) with a plain-English reason, preferring aidream's
+  `GET /api/mcp-connections/availability` (only the server can see whether a
+  stored refresh token makes an expired token renewable) and falling back to
+  the catalog row — pessimistically, never with a false checkmark. Consumed by
+  the chat Tools tab (`RunToolPicker`), the agent tools manager, and this
+  feature's strip/list; `useConnectMcpServer` gives every one of them the same
+  one-click reconnect door. `run-attachments.ts` reads the per-run truth from
+  the run's `mcp_attachments` info event and `mcp_server_unavailable`
+  warnings, so an attached server that failed THIS run wears its own error
+  text in red instead of a checkmark. Guards (each proven failing-then-passing):
+  `connection-state.test.ts`, `run-attachments.test.ts`.
 - `2026-09-12` — Replaced the Google inventory's forbidden vault-reference
   projection with database-generated boolean health facts, and stopped the
   shared query policy from replaying deterministic PostgreSQL `42501` denials.

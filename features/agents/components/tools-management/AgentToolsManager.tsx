@@ -80,6 +80,8 @@ import {
   selectMcpCatalog,
   selectMcpCatalogStatus,
   selectMcpCatalogError,
+  selectMcpAvailabilityStatus,
+  fetchAvailability,
   selectMcpConnectingServerId,
   fetchCatalog,
   connectServerWithCredentials,
@@ -93,6 +95,14 @@ import type {
 import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
+import {
+  MCP_STATE_LABEL,
+  type McpConnectionTruth,
+} from "@/features/connectors/connection-state";
+import {
+  useMcpServerToolCount,
+  useMcpServerTruth,
+} from "@/features/agents/hooks/useMcpTools";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
 import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
@@ -2371,37 +2381,31 @@ function authStrategyLabel(strategy: string): string {
   }
 }
 
-function connectionBadge(status: string | null) {
-  switch (status) {
+/**
+ * The badge for ONE derived connection state — never for the raw
+ * `tool.mcp_user_conn.status`, which said "connected" for every token that
+ * expired days ago and for GitHub, whose bearer is not an MCP grant at all
+ * (Arman, 2026-09-13). `useMcpServerTruth` is the single derivation.
+ */
+function connectionBadge(truth: McpConnectionTruth) {
+  switch (truth.state) {
     case "connected":
       return {
-        label: "Connected",
+        label: MCP_STATE_LABEL.connected,
         cls: "bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30",
+        title: undefined as string | undefined,
       };
-    case "expired":
+    case "needs_reauth":
       return {
-        label: "Expired",
-        cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-      };
-    case "refresh_failed":
-      return {
-        label: "Refresh Failed",
+        label: MCP_STATE_LABEL.needs_reauth,
         cls: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30",
-      };
-    case "error":
-      return {
-        label: "Error",
-        cls: "bg-destructive/15 text-destructive border-destructive/30",
-      };
-    case "disconnected":
-      return {
-        label: "Disconnected",
-        cls: "bg-muted text-muted-foreground border-border",
+        title: truth.reason ?? undefined,
       };
     default:
       return {
-        label: "Not Connected",
+        label: MCP_STATE_LABEL.not_connected,
         cls: "bg-muted text-muted-foreground border-border",
+        title: truth.reason ?? undefined,
       };
   }
 }
@@ -2422,6 +2426,7 @@ function McpToolsTab({
   const catalog = useAppSelector(selectMcpCatalog);
   const catalogStatus = useAppSelector(selectMcpCatalogStatus);
   const catalogError = useAppSelector(selectMcpCatalogError);
+  const availabilityStatus = useAppSelector(selectMcpAvailabilityStatus);
   const connectingServerId = useAppSelector(selectMcpConnectingServerId);
   const organizationId = useAppSelector(selectOrganizationId);
   const agentMcpServersRaw = useAppSelector((state) =>
@@ -2452,6 +2457,14 @@ function McpToolsTab({
     }
   }, [catalogStatus, dispatch]);
 
+  // The catalog row alone cannot tell Connected from Needs re-auth; aidream's
+  // per-user availability is what every badge here prefers.
+  useEffect(() => {
+    if (availabilityStatus === "idle") {
+      dispatch(fetchAvailability(undefined));
+    }
+  }, [availabilityStatus, dispatch]);
+
   // The OAuth popup flow lives in ONE place — `startMcpOAuthPopup` — which
   // owns the window, the origin-checked listener, and its cleanup. This
   // component only reacts to the outcome. (D128)
@@ -2460,6 +2473,7 @@ function McpToolsTab({
       const outcome = await startMcpOAuthPopup(serverId, window.location.href);
       if (outcome.ok) {
         dispatch(fetchCatalog());
+        dispatch(fetchAvailability(undefined));
         setOauthFeedback({
           type: "success",
           message: "Connected successfully!",
@@ -2734,11 +2748,13 @@ function McpAgentServerCard({
   onConnect: (entry: McpCatalogEntry) => void;
   onDisconnect: (serverId: string) => void;
 }) {
-  const badge = connectionBadge(entry.connectionStatus);
+  const truth = useMcpServerTruth(entry);
+  const badge = connectionBadge(truth);
+  const toolCount = useMcpServerToolCount(entry.slug);
   const isConnecting = connectingServerId === entry.serverId;
   const transportMeta = TRANSPORT_META[entry.transport] ?? TRANSPORT_META.http;
   const needsCredentialForm =
-    entry.connectionStatus !== "connected" &&
+    truth.state !== "connected" &&
     entry.authStrategy !== "none" &&
     entry.authStrategy !== "oauth_discovery";
 
@@ -2777,10 +2793,16 @@ function McpAgentServerCard({
             </Badge>
             <Badge
               variant="outline"
+              title={badge.title}
               className={`text-[9px] h-4 px-1.5 border ${badge.cls}`}
             >
               {badge.label}
             </Badge>
+            {truth.state === "connected" && toolCount !== null && (
+              <span className="text-[10px] text-muted-foreground">
+                {toolCount} tool{toolCount === 1 ? "" : "s"}
+              </span>
+            )}
           </div>
           {entry.description && (
             <p className="text-[11px] text-muted-foreground truncate">
@@ -2790,7 +2812,7 @@ function McpAgentServerCard({
         </button>
 
         <div className="flex items-center gap-0.5 shrink-0">
-          {entry.connectionStatus !== "connected" &&
+          {truth.state !== "connected" &&
             entry.authStrategy !== "none" && (
               <Button
                 variant="outline"
@@ -3566,14 +3588,15 @@ function McpCatalogCard({
   onConnect: () => void;
   onDisconnect: () => void;
 }) {
-  const badge = connectionBadge(entry.connectionStatus);
+  const truth = useMcpServerTruth(entry);
+  const badge = connectionBadge(truth);
   const isConnecting = connectingServerId === entry.serverId;
   const isComingSoon = entry.serverStatus === "coming_soon";
   const noEndpoint = !entry.endpointUrl;
   const isUnavailable = isComingSoon || noEndpoint;
   const needsAuth =
     entry.authStrategy !== "none" &&
-    entry.connectionStatus !== "connected" &&
+    truth.state !== "connected" &&
     !isUnavailable;
 
   return (
@@ -3657,6 +3680,7 @@ function McpCatalogCard({
             {isComingSoon ? null : isUnavailable ? null : (
               <Badge
                 variant="outline"
+                title={badge.title}
                 className={`text-[9px] h-5 px-1.5 border whitespace-nowrap ${badge.cls}`}
               >
                 {badge.label}

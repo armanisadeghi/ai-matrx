@@ -37,8 +37,15 @@ export function useLiveConnectors() {
   const connectedIds: ConnectorId[] = googleConnectedIds(
     inventory.data?.connections ?? [],
   );
-  for (const server of mcp.catalog) {
-    if (server.connectionStatus === "connected") connectedIds.push(server.slug);
+  // NOT `connectionStatus === "connected"`: that row said connected for every
+  // access token that expired days ago, and for GitHub, whose bearer comes
+  // from the first-party GitHub App connection rather than an MCP grant
+  // (Arman, 2026-09-13). One derivation, shared with the chat picker.
+  const reauthIds = new Set<ConnectorId>();
+  for (const server of mcp.serverStates) {
+    if (server.truth.state === "connected") connectedIds.push(server.entry.slug);
+    else if (server.truth.state === "needs_reauth")
+      reauthIds.add(server.entry.slug);
   }
   const connectedSet = new Set(connectedIds);
   const connectors = buildLiveConnectorDefinitions(mcp.catalog);
@@ -50,11 +57,16 @@ export function useLiveConnectors() {
     const connected = connectedSet.has(connector.id);
     return {
       connector,
-      status: (connected ? "connected" : "not_connected") as ConnectorStatus,
+      status: (connected
+        ? "connected"
+        : reauthIds.has(connector.id)
+          ? "needs_reauth"
+          : "not_connected") as ConnectorStatus,
       actionLabel: connectorActionLabel(
         connector.id,
         entriesBySlug.get(connector.id),
         connected,
+        reauthIds.has(connector.id),
       ),
     };
   });

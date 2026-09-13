@@ -20,6 +20,7 @@ import {
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
 import type { components } from "@/types/python-generated/api-types";
+import type { McpAvailability } from "@/features/connectors/connection-state";
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
@@ -105,6 +106,27 @@ export type ManualAuthMethod =
   "api_key" | "bearer" | "basic" | "headers" | "stdio_env";
 
 // ── Operations ────────────────────────────────────────────────────────────
+
+/**
+ * The server's truthful per-user availability for every MCP server the caller
+ * has a relationship with: `connected` / `needs_reauth` / `not_connected`,
+ * each with a plain-English reason and the server's active tool count.
+ *
+ * Only aidream can answer this — whether an expired access token can be
+ * renewed without the user depends on a refresh token that lives in the
+ * vault, and GitHub's bearer comes from the first-party GitHub App
+ * connection rather than any MCP OAuth grant. A surface renders the
+ * catalog-derived state until this answers, then this wins.
+ */
+export function fetchMcpAvailability(
+  slugs?: string[],
+): Promise<McpAvailability[]> {
+  const query =
+    slugs && slugs.length > 0
+      ? `?slugs=${encodeURIComponent(slugs.join(","))}`
+      : "";
+  return mcpFetch<McpAvailability[]>(`/availability${query}`);
+}
 
 /** Discover tools on a server using the caller's vault-backed connection. */
 export async function discoverMcpServerTools(serverId: string): Promise<{

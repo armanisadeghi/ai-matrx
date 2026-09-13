@@ -28,6 +28,13 @@ export type ConnectorSurface = "strip" | "directory";
 export type ConnectorStatus =
   /** Attached and usable. */
   | "connected"
+  /**
+   * Attached but only the user can restore it — an expired authorization
+   * that cannot be renewed automatically, or a failed refresh. Never shown
+   * as connected: that is exactly the lie a green checkmark told over an MCP
+   * the agent could not reach (Arman, 2026-09-13).
+   */
+  | "needs_reauth"
   /** Not attached — the one-click offer. */
   | "not_connected"
   /** We do not support it yet; the config names the coming-soon promise. */

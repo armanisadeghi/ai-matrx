@@ -92,6 +92,9 @@ export function ConnectorStrip({
         {rows.map(({ connector, status }) => {
           const connected = status === "connected";
           const unavailable = status === "unavailable";
+          // An attached-but-broken connection is never silently identical to
+          // one that was never set up: it says so, and clicking reconnects.
+          const needsReauth = status === "needs_reauth";
 
           const mark = (
             <ConnectorMark
@@ -112,6 +115,11 @@ export function ConnectorStrip({
               {connected && (
                 <Check className="h-2 w-2 text-success/80" aria-hidden />
               )}
+              {needsReauth && (
+                <span className="text-[9px] font-normal text-amber-600 dark:text-amber-400">
+                  reconnect
+                </span>
+              )}
               {unavailable && (
                 <span className="text-[9px] font-normal text-muted-foreground/60">
                   soon
@@ -126,6 +134,8 @@ export function ConnectorStrip({
             connected
               ? "border-border/50 bg-card/50 text-foreground/80 hover:border-border hover:bg-accent"
               : "border-border/60 bg-card/60 text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground",
+            needsReauth &&
+              "border-amber-500/40 text-amber-700 dark:text-amber-300",
             unavailable && "border-dashed opacity-70 hover:opacity-100",
           );
 

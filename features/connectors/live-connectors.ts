@@ -128,8 +128,12 @@ export function connectorActionLabel(
   connectorId: string,
   entry: McpCatalogEntry | undefined,
   connected: boolean,
-): "Connect" | "Configure" | "Manage" {
+  needsReauth = false,
+): "Connect" | "Configure" | "Manage" | "Reconnect" {
   if (connected) return "Manage";
+  // A connection the user must restore says so; "Connect" would read as if
+  // nothing had ever been set up.
+  if (needsReauth) return "Reconnect";
   if (connectorId === "google-workspace" || connectorId === "gmail") {
     return "Connect";
   }
