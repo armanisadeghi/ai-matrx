@@ -25,6 +25,9 @@ import { fetchFeatureKnobs } from "@/features/admin/limits/service";
 import type { FeatureKnob } from "@/features/admin/limits/types";
 import { fetchKnobIndex, type KnobScopeRef } from "@/lib/scoped-config/service";
 import { getWebDeviceId } from "@/lib/scoped-config/deviceId";
+import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { invalidateFeatureKnobs } from "@/lib/knobs/featureKnobs";
+import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import type { KnobUiHints, ScopedKnob } from "@/lib/scoped-config/types";
 import { isJsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
@@ -300,6 +303,22 @@ export function UniversalSettingsProvider({
 
   const [generation, setGeneration] = useState(0);
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
+
+  // THE PLATFORM DIRECTIVE CHANNEL (Lane E): an `instant` key changed in
+  // another tab, by another admin, or on the server. The platform subscriber
+  // is mounted once at the app root; this only registers a handler on it —
+  // drop every cached read (platform register + ladder-resolved values) and
+  // re-read, so the pane re-renders without a reload. Same handler the admin
+  // limits page (`features/admin/limits/components/FeatureKnobsPanel.tsx`) uses.
+  useEffect(
+    () =>
+      registerDirectiveHandler("settings_changed", (payload) => {
+        invalidateFeatureKnobs();
+        invalidateEffectiveKnob(`${payload.feature}.${payload.key}`);
+        refresh();
+      }),
+    [refresh],
+  );
 
   // A host may supply inherited scope/device read context. This surface never
   // fabricates scope choices or probes picker rows: its destination is fixed.
