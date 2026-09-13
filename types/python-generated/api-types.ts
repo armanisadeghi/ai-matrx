@@ -24576,6 +24576,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/runs/{run_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Masterwork Run
+         * @description STOP one Masterwork run — the other half of a Cancel button that means it.
+         *
+         *     Until this existed, ``platform.masterwork_run`` had no cancel path at all, so
+         *     every ingest dialog's Cancel could only ever close the dialog while the work
+         *     — and the spend — carried on. A control that looks like a stop and is not one
+         *     is the lying-screen defect, not a UX nit.
+         *
+         *     The stop is the DB write: ``request_cancel`` compare-and-swaps the row to
+         *     ``cancelled`` with the reason, which makes the ledger honest immediately and
+         *     fences every later terminal write from the doomed worker. The worker itself
+         *     notices at its next chunk boundary — instantly when it is executing in this
+         *     process, within ``CANCEL_POLL_SECONDS`` when it is on another one.
+         *
+         *     Access is the rulebook's access, exactly as ``rejoin`` has it (a run is a
+         *     COMPONENT of its rulebook), and an unreachable run is a 404 — never a leak
+         *     that it exists.
+         */
+        post: operations["cancel_masterwork_run_masterworks_runs__run_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/runs/{run_id}/rejoin": {
         parameters: {
             query?: never;
@@ -47637,21 +47672,16 @@ export interface components {
             /** Spine Executions Signalled */
             spine_executions_signalled?: string[];
         };
-        /** CancelRunResponse */
-        CancelRunResponse: {
-            /** Run Id */
-            run_id: string;
-            /** Cancelling */
-            cancelling: boolean;
-            /** Previous Status */
-            previous_status: string;
-            /**
-             * Mode
-             * @enum {string}
-             */
-            mode: "graceful" | "immediate";
-            /** Task Cancelled */
-            task_cancelled: boolean;
+        /**
+         * CancelRunRequest
+         * @description Why it was stopped. Optional — the person clicking Stop owes nobody an
+         *     explanation — but when a surface HAS one (a wizard abandoned, a wrong file
+         *     picked) it belongs on the row, where the next reader of that ledger can see
+         *     it.
+         */
+        CancelRunRequest: {
+            /** Reason */
+            reason?: string | null;
         };
         /**
          * CanvasCourse
@@ -59644,6 +59674,8 @@ export interface components {
             state: "pruned" | "satisfied" | "unknowable" | "unsatisfied";
             /** Slot Used */
             slot_used?: string | null;
+            /** @description For a conditional connection: its `condition` TRIED against the payload the source's sample would deliver (W57). */
+            predicate_preview?: components["schemas"]["PredicatePreview"] | null;
         };
         /** DryRunNodeReport */
         DryRunNodeReport: {
@@ -59662,6 +59694,8 @@ export interface components {
             } | null;
             /** Diagnostics */
             diagnostics?: string[];
+            /** @description For a predicate step (data.filter / data.assert / control.branch): the author's expression TRIED against the upstream sample, item by item. None when the step has no predicate or no sample to try it on (W57). */
+            predicate_preview?: components["schemas"]["PredicatePreview"] | null;
         };
         /** DryRunReport */
         DryRunReport: {
@@ -70191,6 +70225,11 @@ export interface components {
              * @enum {string}
              */
             redistill?: "refuse" | "replace";
+            /**
+             * Only Section
+             * @description Read ONE part of the resource again — the 1-based `source_ref.section_index` a Sources panel shows beside a chapter that produced few rules. Only meaningful with exactly one resource and redistill='replace'; the rest of the source keeps its rules.
+             */
+            only_section?: number | null;
         };
         /**
          * IngestFileRequest
@@ -70262,13 +70301,6 @@ export interface components {
             source_ref_extra?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
-            /**
-             * Standing
-             * @description The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.
-             * @default rule
-             * @enum {string}
-             */
-            standing?: "evidence" | "rule";
             /**
              * Redistill
              * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
@@ -70405,19 +70437,17 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
-             * Standing
-             * @description The STANDING the rules from this pass land with. 'rule' is a draft the Expert is asked about. 'evidence' is a per-piece observation a DELEGATING lane (the body-of-work lane) will cite from a synthesized rule: still a draft, but excluded from the review queue, the counters and every built Masterwork until the Expert promotes it or it recurs across enough pieces. Only a delegating lane sets this.
-             * @default rule
-             * @enum {string}
-             */
-            standing?: "evidence" | "rule";
-            /**
              * Redistill
              * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
              * @default refuse
              * @enum {string}
              */
             redistill?: "refuse" | "replace";
+            /**
+             * Only Section
+             * @description Read ONE part of the source again and leave the rest alone — the 1-based `source_ref.section_index` the Sources panel shows beside a thin chapter. With redistill='replace' only THAT part's earlier drafts are removed; every other part's rules are untouched.
+             */
+            only_section?: number | null;
         };
         /**
          * IngestTimelineRequest
@@ -84193,6 +84223,107 @@ export interface components {
             request_id?: string | null;
         };
         /**
+         * PairwiseCandidate
+         * @description ONE arm of a blind pairwise Audition, and where its text comes from.
+         *
+         *     ``label`` is the OPERATOR's name for this arm ("the Masterwork", "the simple
+         *     path", "Watson"). It is how the unsealed verdict is read back and it NEVER
+         *     reaches the judge — a label is a tell, and the whole point of this mode is a
+         *     judge that cannot know which desk it is reading.
+         *
+         *     Exactly one source: pasted ``text``, a finished ``run_id``
+         *     (``platform.masterwork_run`` — its stored output), or a sealed case worked by
+         *     a run (``case_id`` + ``run_scope`` — the answer that run committed to).
+         */
+        PairwiseCandidate: {
+            /**
+             * Label
+             * @description The operator's name for this arm.
+             */
+            label: string;
+            /**
+             * Text
+             * @description Pasted output text.
+             */
+            text?: string | null;
+            /**
+             * Run Id
+             * @description platform.masterwork_run id.
+             */
+            run_id?: string | null;
+            /**
+             * Case Id
+             * @description platform.masterwork_corpus_item id (sealed_case).
+             */
+            case_id?: string | null;
+            /**
+             * Run Scope
+             * @description With case_id: the run whose committed answer is the arm.
+             */
+            run_scope?: string | null;
+            /**
+             * Rulebook Id
+             * @description faithfulness mode: this arm's OWN school. Defaults to the request's rulebook_id when both arms come from the same Rulebook.
+             */
+            rulebook_id?: string | null;
+        };
+        /**
+         * PairwiseCompareRequest
+         * @description Judge TWO candidate outputs BLIND against each other — no reference.
+         *
+         *     The Audition's other two modes both have a reference (the Expert's published
+         *     work; the case's held-out resolution). This one does not: both texts are
+         *     candidates, written from the same inputs, and the question is either which a
+         *     practitioner would rather have received (``preference``) or whether each is
+         *     true to its own school (``faithfulness``).
+         *
+         *     The service randomises which arm the judge sees as A and seals that key on
+         *     the run row BEFORE the judge is called. The key is never in the prompt, and
+         *     it is revealed to the caller only alongside the verdict.
+         */
+        PairwiseCompareRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rulebook Id
+             * @description The Rulebook this Audition belongs to — the run's home, the ownership check, and (unless an arm names its own) the school both arms are judged against.
+             */
+            rulebook_id: string;
+            /**
+             * Mode
+             * @description preference: which answer would a practitioner rather have received. faithfulness: is each answer true to ITS OWN school (each arm scored against its own Rulebook) — the mandate's two-schools shape.
+             * @default preference
+             * @enum {string}
+             */
+            mode?: "faithfulness" | "preference";
+            candidate_one: components["schemas"]["PairwiseCandidate"];
+            candidate_two: components["schemas"]["PairwiseCandidate"];
+            /**
+             * Case Note
+             * @description The shared inputs both arms answered ('the shoes/kitchen-counter case').
+             */
+            case_note?: string | null;
+            /**
+             * Judge By Rules
+             * @description preference mode: also give the judge the Rulebook's approved rules and ask for a rule-by-rule reading. Ignored in faithfulness mode, where the rules ARE the question.
+             * @default true
+             */
+            judge_by_rules?: boolean;
+        };
+        /**
          * PandaDocServiceStatus
          * @description Safe aggregate status projection for PandaDoc's fixed status page.
          */
@@ -84362,107 +84493,6 @@ export interface components {
             run_count?: number;
         };
         /** PantheonServiceStatus */
-        /**
-         * PairwiseCandidate
-         * @description ONE arm of a blind pairwise Audition, and where its text comes from.
-         *
-         *     ``label`` is the OPERATOR's name for this arm ("the Masterwork", "the simple
-         *     path", "Watson"). It is how the unsealed verdict is read back and it NEVER
-         *     reaches the judge — a label is a tell, and the whole point of this mode is a
-         *     judge that cannot know which desk it is reading.
-         *
-         *     Exactly one source: pasted ``text``, a finished ``run_id``
-         *     (``platform.masterwork_run`` — its stored output), or a sealed case worked by
-         *     a run (``case_id`` + ``run_scope`` — the answer that run committed to).
-         */
-        PairwiseCandidate: {
-            /**
-             * Label
-             * @description The operator's name for this arm.
-             */
-            label: string;
-            /**
-             * Text
-             * @description Pasted output text.
-             */
-            text?: string | null;
-            /**
-             * Run Id
-             * @description platform.masterwork_run id.
-             */
-            run_id?: string | null;
-            /**
-             * Case Id
-             * @description platform.masterwork_corpus_item id (sealed_case).
-             */
-            case_id?: string | null;
-            /**
-             * Run Scope
-             * @description With case_id: the run whose committed answer is the arm.
-             */
-            run_scope?: string | null;
-            /**
-             * Rulebook Id
-             * @description faithfulness mode: this arm's OWN school. Defaults to the request's rulebook_id when both arms come from the same Rulebook.
-             */
-            rulebook_id?: string | null;
-        };
-        /**
-         * PairwiseCompareRequest
-         * @description Judge TWO candidate outputs BLIND against each other — no reference.
-         *
-         *     The Audition's other two modes both have a reference (the Expert's published
-         *     work; the case's held-out resolution). This one does not: both texts are
-         *     candidates, written from the same inputs, and the question is either which a
-         *     practitioner would rather have received (``preference``) or whether each is
-         *     true to its own school (``faithfulness``).
-         *
-         *     The service randomises which arm the judge sees as A and seals that key on
-         *     the run row BEFORE the judge is called. The key is never in the prompt, and
-         *     it is revealed to the caller only alongside the verdict.
-         */
-        PairwiseCompareRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /**
-             * Rulebook Id
-             * @description The Rulebook this Audition belongs to — the run's home, the ownership check, and (unless an arm names its own) the school both arms are judged against.
-             */
-            rulebook_id: string;
-            /**
-             * Mode
-             * @description preference: which answer would a practitioner rather have received. faithfulness: is each answer true to ITS OWN school (each arm scored against its own Rulebook) — the mandate's two-schools shape.
-             * @default preference
-             * @enum {string}
-             */
-            mode?: "preference" | "faithfulness";
-            candidate_one: components["schemas"]["PairwiseCandidate"];
-            candidate_two: components["schemas"]["PairwiseCandidate"];
-            /**
-             * Case Note
-             * @description The shared inputs both arms answered ('the shoes/kitchen-counter case').
-             */
-            case_note?: string | null;
-            /**
-             * Judge By Rules
-             * @description preference mode: also give the judge the Rulebook's approved rules and ask for a rule-by-rule reading. Ignored in faithfulness mode, where the rules ARE the question.
-             * @default true
-             */
-            judge_by_rules?: boolean;
-        };
         PantheonServiceStatus: {
             /**
              * Kind
@@ -87686,6 +87716,113 @@ export interface components {
             charCount?: number | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * PredicatePreview
+         * @description An author-written predicate, TRIED against the sample, per item.
+         *
+         *     W57 (2026-09-12): a hand-authored gate had no way to be run against a
+         *     sample before a paid run, so a sign error and an inert expression both
+         *     reached production and refused a correct run. A warning that something
+         *     "looks constant" is not the affordance — SEEING the predicate's answer
+         *     beside each item is. This is that table, carried on the report so every
+         *     surface (the Conductor's check, the Studio inspector) renders the same
+         *     one evaluation rather than each re-deriving its own truth.
+         */
+        PredicatePreview: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "assert" | "branch" | "edge" | "filter";
+            /** Expression */
+            expression: string;
+            /**
+             * Binding
+             * @description Plain language for what `inputs` was bound to, per item.
+             */
+            binding: string;
+            /**
+             * Total
+             * @description Sample items the predicate was tried against.
+             */
+            total: number;
+            /**
+             * Kept
+             * @default 0
+             */
+            kept?: number;
+            /**
+             * Dropped
+             * @default 0
+             */
+            dropped?: number;
+            /**
+             * Errors
+             * @default 0
+             */
+            errors?: number;
+            /** Rows */
+            rows?: components["schemas"]["PredicateRow"][];
+            /**
+             * Truncated
+             * @description True when `rows` shows fewer than `total`.
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Row Limit
+             * @default 25
+             */
+            row_limit?: number;
+            /**
+             * Constant
+             * @description The predicate answered the same for every distinct sample item.
+             * @default false
+             */
+            constant?: boolean;
+            /**
+             * Warnings
+             * @description The findings derived from THIS evaluation — never a second pass.
+             */
+            warnings?: string[];
+            /**
+             * Summary
+             * @description One readable line about the trial.
+             * @default
+             */
+            summary?: string;
+        };
+        /**
+         * PredicateRow
+         * @description One sample item, and what the author's predicate actually answered.
+         */
+        PredicateRow: {
+            /**
+             * Index
+             * @description Position in the sample (0-based).
+             */
+            index: number;
+            /**
+             * Item
+             * @description The payload the predicate saw, rendered for reading (truncated).
+             */
+            item: string;
+            /**
+             * Result
+             * @description The value the expression returned; null when it raised.
+             */
+            result?: unknown;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "dropped" | "error" | "failed" | "kept" | "passed";
+            /**
+             * Error
+             * @description The sandbox's own reason when this item raised.
+             */
+            error?: string | null;
         };
         /** PrefectServiceStatus */
         PrefectServiceStatus: {
@@ -114689,6 +114826,17 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** CancelRunResponse */
+        aidream__api__routers__masterworks__CancelRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Status */
+            status: string;
+            /** Cancelled */
+            cancelled: boolean;
+            /** Message */
+            message: string;
+        };
         /** MandateCatalogResponse */
         aidream__api__routers__proof_runs__MandateCatalogResponse: {
             /** Mandates */
@@ -114866,6 +115014,22 @@ export interface components {
             }[];
             /** Count */
             count: number;
+        };
+        /** CancelRunResponse */
+        aidream__api__routers__workflow__CancelRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Cancelling */
+            cancelling: boolean;
+            /** Previous Status */
+            previous_status: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "graceful" | "immediate";
+            /** Task Cancelled */
+            task_cancelled: boolean;
         };
         /** PublishRequest */
         aidream__api__routers__workflow__PublishRequest: {
@@ -153629,7 +153793,7 @@ export interface operations {
             };
         };
     };
-    audition_pairwise_endpoint_masterworks_audition_pairwise_post: {
+    audition_outcome_endpoint_masterworks_audition_outcome_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -153638,7 +153802,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PairwiseCompareRequest"];
+                "application/json": components["schemas"]["AuditionOutcomeRequest"];
             };
         };
         responses: {
@@ -153662,7 +153826,7 @@ export interface operations {
             };
         };
     };
-    audition_outcome_endpoint_masterworks_audition_outcome_post: {
+    audition_pairwise_endpoint_masterworks_audition_pairwise_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -153671,7 +153835,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AuditionOutcomeRequest"];
+                "application/json": components["schemas"]["PairwiseCompareRequest"];
             };
         };
         responses: {
@@ -153909,6 +154073,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RestoreWriteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_masterwork_run_masterworks_runs__run_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelRunRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__api__routers__masterworks__CancelRunResponse"];
                 };
             };
             /** @description Validation Error */
@@ -166275,7 +166474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelRunResponse"];
+                    "application/json": components["schemas"]["aidream__api__routers__workflow__CancelRunResponse"];
                 };
             };
             /** @description Validation Error */

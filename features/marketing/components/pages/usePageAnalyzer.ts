@@ -56,7 +56,10 @@ export interface PageAnalysisResult {
 }
 
 export interface PageAnalyzerState {
-  status: "idle" | "running" | "done" | "error";
+  // "stopped" is the shared primitive's terminal state for a run a person
+  // stopped. This surface has no Stop control of its own, but a `cancelled`
+  // row reaching it from anywhere else must read as stopped, never as failed.
+  status: "idle" | "running" | "done" | "stopped" | "error";
   stage?: string;
   result?: PageAnalysisResult;
   error?: string;

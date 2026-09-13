@@ -26,6 +26,11 @@ import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
+import {
+  DurableRunStopButton,
+  DurableRunStopped,
+} from "@/lib/durable-run/DurableRunStop";
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
 import {
   MonologueRecorder,
@@ -484,6 +489,9 @@ export function IngestSourceDialog({
           running={run.running}
         />
 
+        {/* A stop is not a failure: its own quiet notice, saying what survived. */}
+        <DurableRunStopped message={run.stoppedMessage} retry={run.retry} />
+
         {summary ? (
           <div className="space-y-3">
             <p className="text-sm text-foreground">{summary}</p>
@@ -535,6 +543,9 @@ export function IngestSourceDialog({
                   {run.waitMessage ?? "Uploading your file…"}
                 </p>
               </div>
+            ) : null}
+            {run.running ? (
+              <DurableRunInterruption interruption={run.interruption} />
             ) : null}
           </div>
         ) : (
@@ -783,16 +794,17 @@ export function IngestSourceDialog({
 
         {!summary ? (
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
+            <DurableRunStopButton
+              cancel={run.cancel}
+              cancelling={run.cancelling}
+              running={running}
+              leaveLabel="Cancel"
+              reason="stopped from the Add a source dialog"
+              onLeave={() => {
                 reset();
                 onOpenChange(false);
               }}
-              disabled={running}
-            >
-              Cancel
-            </Button>
+            />
             <Button
               onClick={() => void ingest()}
               disabled={
