@@ -203,12 +203,20 @@ export default function MatrxDataTableDisplay({
           <ScrollFade orientation="horizontal" className="flex h-40 items-center justify-center text-sm text-muted-foreground">
             Page content before the table
           </ScrollFade>
-          <div className={boundedScroll ? "h-44" : undefined}>
+          <div className={boundedScroll ? "h-72 sm:h-44" : undefined}>
             <MatrxDataTable
               data={rows}
               columns={COLUMNS}
               getRowId={(row) => row.id}
               pageSize={10}
+              mobileCards={(row) => (
+                <div className="rounded-md border border-border p-3">
+                  <div className="font-medium">{row.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {row.owner} · {row.status} · {row.count} records
+                  </div>
+                </div>
+              )}
             />
           </div>
           <div className="flex h-80 items-center justify-center text-sm text-muted-foreground">
