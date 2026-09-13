@@ -53,12 +53,13 @@ export async function readOnePuxArchive(
     let attributesText: string | undefined;
     let dataText: string | undefined;
     for (const entry of archive.entries) {
-      await archive.readRange(entry);
       if (
         entry.filename !== "export.attributes" &&
         entry.filename !== "export.data"
-      )
+      ) {
+        await archive.readRange(entry);
         continue;
+      }
       const text = await archive.readText(entry);
       if (entry.filename === "export.attributes") attributesText = text;
       else dataText = text;

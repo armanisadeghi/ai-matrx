@@ -3,7 +3,7 @@ import { BlobReader, ZipReader, type Entry } from "@zip.js/zip.js";
 import type { CsvImportLimits } from "./csv-import";
 
 export type BoundedZip = {
-  entries: Entry[];
+  entries: readonly Entry[];
   readRange: (entry: Entry) => Promise<void>;
   readText: (entry: Entry) => Promise<string>;
   assertActive: () => void;
@@ -101,25 +101,31 @@ export async function openBoundedZip(
       declared += entry.uncompressedSize;
     }
     const used = { value: declared };
-    const ensureSafe = (entry: Entry) => {
-      if (hasWarnings(reader, entry)) throw new Error("The archive is unsafe.");
+    const ownedEntries = new Set(entries);
+    const ensureOwnedAndSafe = (entry: Entry) => {
+      if (!ownedEntries.has(entry) || hasWarnings(reader, entry))
+        throw new Error("The archive is unsafe.");
+    };
+    const readRange = async (entry: Entry) => {
+      ensureOwnedAndSafe(entry);
+      stopIfCancelled(signal);
+      if (entry.directory) await directoryRange(entry, signal);
+      else
+        await entry.getData(new WritableStream<Uint8Array>(), {
+          checkOverlappingEntryOnly: true,
+          signal,
+        });
+      stopIfCancelled(signal);
+      ensureOwnedAndSafe(entry);
     };
     return {
-      entries,
+      entries: Object.freeze([...entries]),
       assertActive: () => stopIfCancelled(signal),
-      readRange: async (entry) => {
-        stopIfCancelled(signal);
-        if (entry.directory) await directoryRange(entry, signal);
-        else
-          await entry.getData(new WritableStream<Uint8Array>(), {
-            checkOverlappingEntryOnly: true,
-            signal,
-          });
-        stopIfCancelled(signal);
-        ensureSafe(entry);
-      },
+      readRange,
       readText: async (entry) => {
+        ensureOwnedAndSafe(entry);
         if (entry.directory) throw new Error("The archive is unsafe.");
+        await readRange(entry);
         const output = boundedText(limits.maxFileBytes, used);
         try {
           await entry.getData(output.writable, { checkCrc32: true, signal });
@@ -129,7 +135,7 @@ export async function openBoundedZip(
           throw error;
         }
         stopIfCancelled(signal);
-        ensureSafe(entry);
+        ensureOwnedAndSafe(entry);
         return output.text();
       },
       close: () => reader.close(),
