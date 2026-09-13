@@ -30,13 +30,15 @@ jest.mock("@/features/masterwork/understudy/refresh", () => {
   );
   return {
     ...actual,
-    refreshUnderstudy: (rulebookId: string) => {
+    // The card heals through the TRACKED door (the untracked one is
+    // module-internal now, precisely so a successful heal cannot leave an
+    // older failure standing in the ledger).
+    refreshUnderstudyTracked: (rulebookId: string) => {
       healCalls.push(rulebookId);
       return healRejects
         ? Promise.reject(new Error("refresh refused"))
         : Promise.resolve({});
     },
-    refreshUnderstudyTracked: () => Promise.resolve({}),
     // `getUnderstudyRefreshState` and `subscribeToUnderstudyRefresh` are the
     // REAL ones: the ledger they read is pure in-memory state, and stubbing it
     // would be stubbing the thing the card renders from.
