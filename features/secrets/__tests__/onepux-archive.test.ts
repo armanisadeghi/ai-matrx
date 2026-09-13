@@ -23,4 +23,12 @@ describe("1PUX archive reader", () => {
     const controller = new AbortController(); controller.abort();
     await expect(read(await archive([["export.attributes", "a"], ["export.data", "d"]]), controller.signal)).rejects.toThrow("cancelled");
   });
+  test("rejects a byte-corrupted selected JSON member", async () => {
+    const file = await archive([["export.attributes", "attrs"], ["export.data", "data"]]);
+    const bytes = new Uint8Array(await file.arrayBuffer()); bytes[40] = bytes[40]! ^ 1;
+    await expect(read(new Blob([bytes], { type: "application/zip" }))).rejects.toThrow();
+  });
+  test("refuses entries outside the exact member grammar", async () => {
+    await expect(read(await archive([["export.attributes", "a"], ["export.data", "d"], ["../escape", "x"]]))).rejects.toThrow();
+  });
 });
