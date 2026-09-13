@@ -29,7 +29,7 @@ interface HtmlPreviewFullScreenEditorProps {
   description?: string;
   analysisData?: any;
   messageId?: string;
-  onSave?: (markdownContent: string) => void;
+  onSave?: (markdownContent: string) => void | Promise<void>;
   showSaveButton?: boolean;
   isAgentSystem?: boolean;
 }
@@ -65,7 +65,11 @@ export default function HtmlPreviewFullScreenEditor({
 }: HtmlPreviewFullScreenEditorProps) {
   const user = useAppSelector(selectUser);
   const [activeTab, setActiveTab] = useState<string>("markdown");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const tuiEditorRef = useRef<TuiEditorContentRef>(null);
+  const saveLockRef = useRef(false);
+  const retrySaveRef = useRef<(() => void | Promise<void>) | null>(null);
 
   // Handle tab change - sync content from TUI editor
   const handleTabChange = (newTab: string) => {
@@ -80,6 +84,24 @@ export default function HtmlPreviewFullScreenEditor({
   };
 
   // Handle save callback
+  const settleSave = async (operation: () => void | Promise<void>) => {
+    if (saveLockRef.current) return;
+    saveLockRef.current = true;
+    retrySaveRef.current = operation;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await operation();
+      onClose();
+    } catch (error) {
+      console.error("[HtmlPreviewFullScreenEditor] save failed", error);
+      setSaveError(error instanceof Error ? error.message : "Save failed");
+    } finally {
+      saveLockRef.current = false;
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = () => {
     if (onSave) {
       // Get final markdown from TUI editor if on wysiwyg tab
@@ -90,7 +112,7 @@ export default function HtmlPreviewFullScreenEditor({
       ) {
         finalMarkdown = tuiEditorRef.current.getCurrentMarkdown();
       }
-      onSave(finalMarkdown);
+      void settleSave(() => onSave(finalMarkdown));
     }
   };
 
@@ -248,6 +270,13 @@ export default function HtmlPreviewFullScreenEditor({
       showCancelButton={true}
       onCancel={onClose}
       hideTitle={true}
+      isPending={isSaving}
+      pendingMessage="Saving changes…"
+      errorMessage={saveError}
+      onRetry={saveError ? () => {
+        const retry = retrySaveRef.current;
+        if (retry) void settleSave(retry);
+      } : undefined}
     />
   );
 }

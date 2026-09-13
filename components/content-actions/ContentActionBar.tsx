@@ -35,7 +35,7 @@ import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButto
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -150,14 +150,8 @@ export function ContentActionBar({
               toast.error(
                 err instanceof Error ? err.message : "Failed to save changes",
               );
-              return;
+              throw err;
             }
-            dispatch(
-              closeOverlay({
-                overlayId: "fullScreenEditor",
-                instanceId: editorInstanceId,
-              }),
-            );
           },
         }).callbackGroupId
       : null;

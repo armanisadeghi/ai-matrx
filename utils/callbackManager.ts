@@ -9,7 +9,7 @@ export interface ProgressInfo {
 export type Callback<T = any, C extends CallbackContext = CallbackContext> = (
   data: T,
   context?: C,
-) => void;
+) => void | Promise<void>;
 interface CallbackEntry<T = any, C extends CallbackContext = CallbackContext> {
   callback: Callback<T, C>;
   context?: C;
@@ -164,6 +164,48 @@ class CallbackManager {
         this.groups.delete(groupId);
       }
     }
+  }
+
+  /**
+   * Run the one durable command registered for a group. This is deliberately
+   * separate from the legacy notification API above: a command is retained on
+   * rejection so its caller can retry, and is removed only after its promise
+   * settles successfully.
+   */
+  async triggerGroupCommand<T, C extends CallbackContext = CallbackContext>(
+    groupId: string,
+    data: T,
+    options?: { context?: C },
+  ): Promise<void> {
+    const group = this.groups.get(groupId);
+    const callbackIds = group ? [...group] : [];
+    if (callbackIds.length !== 1) {
+      throw new Error(
+        `Expected exactly one command callback for group "${groupId}", found ${callbackIds.length}`,
+      );
+    }
+
+    const callbackId = callbackIds[0];
+    const entry = this.callbacks.get(callbackId);
+    if (!entry) {
+      throw new Error(`Command callback "${callbackId}" is no longer available`);
+    }
+
+    const mergedContext = { ...entry.context, ...options?.context } as C;
+    await entry.callback(data, mergedContext);
+
+    // Observers never control command settlement. A durable save has already
+    // acknowledged by this point, so an observer failure is diagnostic only.
+    for (const listener of entry.listeners ?? []) {
+      try {
+        await listener(data, mergedContext);
+      } catch (error) {
+        console.error("[CallbackManager] command observer failed", error);
+      }
+    }
+
+    this.callbacks.delete(callbackId);
+    this.groups.delete(groupId);
   }
   /**
    * Update progress for a callback or group

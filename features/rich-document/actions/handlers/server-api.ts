@@ -310,7 +310,7 @@ registerAction({
         const trimmed = newContent.trim();
         if (!trimmed) {
           toast.error("Summary text required");
-          return;
+          throw new Error("Summary text required");
         }
         try {
           const { replaceMessages } = await import(
@@ -331,6 +331,7 @@ registerAction({
           toast.success("Replaced with summary (server)");
         } catch (err) {
           toast.error(getErrorMessage(err, "Replace-with-summary failed"));
+          throw err;
         }
       },
     });

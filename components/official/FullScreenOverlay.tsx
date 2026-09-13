@@ -63,6 +63,11 @@ export interface FullScreenOverlayProps {
   // When set, the tab bar hides this tab from the button row and shows a left
   // chevron that navigates back to it (used for a "Tab Index" landing tab).
   homeTabId?: string;
+  /** Controlled mutation boundary for editors that must not be dismissed mid-save. */
+  isPending?: boolean;
+  pendingMessage?: string;
+  errorMessage?: string | null;
+  onRetry?: () => void;
 }
 
 const ScrollableTabBar = ({
@@ -71,12 +76,14 @@ const ScrollableTabBar = ({
   onTabChange,
   compact,
   homeTabId,
+  isPending,
 }: {
   tabs: TabDefinition<ReactNode>[];
   activeTab: string;
   onTabChange: (id: string) => void;
   compact: boolean;
   homeTabId?: string;
+  isPending: boolean;
 }) => {
   const showChevron = homeTabId && activeTab !== homeTabId;
   const visibleTabs = homeTabId ? tabs.filter((t) => t.id !== homeTabId) : tabs;
@@ -87,6 +94,7 @@ const ScrollableTabBar = ({
         <button
           type="button"
           onClick={() => onTabChange(homeTabId)}
+          disabled={isPending}
           className="shrink-0 h-6 w-6 flex items-center justify-center rounded-md mr-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           title="Back to Tab Index"
         >
@@ -102,6 +110,7 @@ const ScrollableTabBar = ({
               key={tab.id}
               type="button"
               onClick={() => onTabChange(tab.id)}
+              disabled={isPending}
               className={cn(
                 "shrink-0 whitespace-nowrap text-xs px-2 py-0.5 h-6 cursor-pointer transition-colors",
                 isNotLast && "border-r border-border",
@@ -149,6 +158,10 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
   hideTitle = false,
   compactTabs = true,
   homeTabId,
+  isPending = false,
+  pendingMessage = "Saving…",
+  errorMessage,
+  onRetry,
 }) => {
   const [activeTab, setActiveTab] = React.useState<string>(
     initialTab || (tabs.length > 0 ? tabs[0].id : ""),
@@ -242,6 +255,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
   }, [isMobile, isOpen]);
 
   const handleTabChange = (newTab: string) => {
+    if (isPending) return;
     setActiveTab(newTab);
     if (onTabChange) {
       onTabChange(newTab);
@@ -249,12 +263,14 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
   };
 
   const handleSave = () => {
+    if (isPending) return;
     if (onSave) {
       onSave();
     }
   };
 
   const handleCancel = () => {
+    if (isPending) return;
     if (onCancel) {
       onCancel();
     } else {
@@ -308,6 +324,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
             onTabChange={handleTabChange}
             compact={compactTabs}
             homeTabId={homeTabId}
+            isPending={isPending}
           />
         </div>
       </div>
@@ -318,6 +335,8 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
   const bodyInner = (
     <div
       ref={contentRef}
+      aria-busy={isPending}
+      inert={isPending ? true : undefined}
       className={cn(
         "flex flex-1 overflow-hidden min-h-0",
         isMobile ? "flex-col" : "flex-row",
@@ -397,12 +416,20 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
           isMobile ? "gap-1 shrink-0" : "gap-2",
         )}
       >
+        {errorMessage ? (
+          <div role="alert" className="mr-auto px-2 text-sm text-destructive">
+            {errorMessage}
+            {onRetry ? <Button variant="link" size="sm" onClick={onRetry}>Retry</Button> : null}
+          </div>
+        ) : null}
+        {isPending ? <span className="mr-auto px-2 text-sm text-muted-foreground">{pendingMessage}</span> : null}
         {showCancelButton &&
           (isMobile ? (
             <Button
               variant="outline"
               size="icon"
               onClick={handleCancel}
+              disabled={isPending}
               aria-label={cancelButtonLabel}
               title={cancelButtonLabel}
               className="h-9 w-9"
@@ -410,7 +437,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
               <X className="h-4 w-4" />
             </Button>
           ) : (
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={isPending}>
               {cancelButtonLabel}
             </Button>
           ))}
@@ -419,7 +446,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
             <Button
               size="icon"
               onClick={handleSave}
-              disabled={saveButtonDisabled}
+              disabled={saveButtonDisabled || isPending}
               aria-label={saveButtonLabel}
               title={saveButtonLabel}
               className="h-9 w-9"
@@ -427,7 +454,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
               <Save className="h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleSave} disabled={saveButtonDisabled}>
+            <Button onClick={handleSave} disabled={saveButtonDisabled || isPending}>
               <Save className="h-4 w-4 mr-2" />
               {saveButtonLabel}
             </Button>
@@ -445,7 +472,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
       : null;
 
     return (
-      <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Drawer open={isOpen} onOpenChange={(open) => !open && !isPending && onClose()}>
         <DrawerContent
           className={cn(
             "flex flex-col p-0 gap-0 bg-background border-t-2 border-border rounded-t-2xl",
@@ -463,6 +490,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
                 <button
                   type="button"
                   onClick={() => setMobileSelectedTab(null)}
+                  disabled={isPending}
                   className="shrink-0 h-8 w-8 -ml-1 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   aria-label="Back"
                   title="Back"
@@ -522,9 +550,11 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
                     <button
                       type="button"
                       onClick={() => {
+                        if (isPending) return;
                         setMobileSelectedTab(tab.id);
                         handleTabChange(tab.id);
                       }}
+                      disabled={isPending}
                       className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/60 active:bg-muted transition-colors"
                     >
                       <span className="text-base text-foreground">
@@ -546,7 +576,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
 
   // ── Desktop: Dialog ─────────────────────────────────────────────────────
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isPending && onClose()}>
       <DialogContent
         className="flex flex-col p-0 gap-0 bg-background border-solid rounded-3xl border-2 border-border"
         style={{ width, maxWidth: width, height, maxHeight: height }}

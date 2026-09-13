@@ -47,18 +47,23 @@ export type FullScreenEditorEvent = FullScreenEditorSaveEvent;
 
 // ─── Caller-facing handler surface ───────────────────────────────────────────
 
-export interface FullScreenEditorHandlers {
+type AsyncSaveHandler = (content: string) => Promise<void>;
+type AsyncActionHandler = (action: string, content: string) => Promise<void>;
+
+type FullScreenEditorCommandHandler =
+  | { onSave: AsyncSaveHandler; onAction?: never }
+  | { onSave?: never; onAction: AsyncActionHandler };
+
+export type FullScreenEditorHandlers = FullScreenEditorCommandHandler & {
   /** Called when the user saves. Receives the edited content. */
-  onSave?: (content: string) => void;
   /**
    * Called when the user clicks one of the editor's `primaryActions`. Receives
    * the chosen action id and the edited content. Preferred over `onSave` for
    * multi-outcome editors (Save vs. Save & Resubmit vs. Create Fork).
    */
-  onAction?: (action: string, content: string) => void;
   /** Catch-all for any emitted event. */
-  onEvent?: (event: FullScreenEditorEvent) => void;
-}
+  onEvent?: (event: FullScreenEditorEvent) => void | Promise<void>;
+};
 
 // ─── Group creation / disposal ───────────────────────────────────────────────
 
@@ -67,16 +72,29 @@ export function createFullScreenEditorCallbackGroup(
 ): { callbackGroupId: string; dispose: () => void } {
   const callbackGroupId = callbackManager.createGroup();
 
-  const fanOut = (event: FullScreenEditorEvent) => {
+  if ((handlers.onSave ? 1 : 0) + (handlers.onAction ? 1 : 0) !== 1) {
+    throw new Error("A full-screen editor callback group requires exactly one save owner");
+  }
+
+  const fanOut = async (event: FullScreenEditorEvent) => {
     if (event.type === "save") {
-      handlers.onSave?.(event.content);
-      handlers.onAction?.(event.action ?? "save", event.content);
+      if (handlers.onSave) {
+        await handlers.onSave(event.content);
+      } else if (handlers.onAction) {
+        await handlers.onAction(event.action ?? "save", event.content);
+      }
     }
-    handlers.onEvent?.(event);
+    if (handlers.onEvent) {
+      try {
+        await handlers.onEvent(event);
+      } catch (error) {
+        console.error("[fullScreenEditor] save observer failed", error);
+      }
+    }
   };
 
   callbackManager.registerWithContext<FullScreenEditorEvent>(
-    (event) => fanOut(event),
+    fanOut,
     { groupId: callbackGroupId },
   );
 
@@ -99,11 +117,12 @@ export function emitFullScreenEditorSave(
   callbackGroupId: string | undefined | null,
   content: string,
   action?: string,
-): void {
-  if (!callbackGroupId) return;
-  callbackManager.triggerGroup<FullScreenEditorEvent>(
+): Promise<void> {
+  if (!callbackGroupId) {
+    return Promise.reject(new Error("This editor no longer has a save target"));
+  }
+  return callbackManager.triggerGroupCommand<FullScreenEditorEvent>(
     callbackGroupId,
     { type: "save", content, action },
-    { removeAfterTrigger: true },
   );
 }

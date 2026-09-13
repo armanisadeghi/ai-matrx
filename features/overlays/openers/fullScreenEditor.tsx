@@ -33,8 +33,7 @@ import type { EditorPrimaryAction } from "@/components/mardown-display/chat-mark
 
 const OVERLAY_ID = "fullScreenEditor" as const;
 
-export interface OpenFullScreenMarkdownEditorBridgeOptions
-  extends FullScreenEditorHandlers {
+interface OpenFullScreenMarkdownEditorBridgeOptionsBase {
   /** Optional stable instance id. Omit to spawn a fresh instance. */
   instanceId?: string;
   content?: string;
@@ -63,6 +62,14 @@ export interface OpenFullScreenMarkdownEditorBridgeOptions
   primaryActions?: EditorPrimaryAction[];
 }
 
+export type OpenFullScreenMarkdownEditorBridgeOptions =
+  | (OpenFullScreenMarkdownEditorBridgeOptionsBase & FullScreenEditorHandlers)
+  | (OpenFullScreenMarkdownEditorBridgeOptionsBase & {
+      onSave?: undefined;
+      onAction?: undefined;
+      onEvent?: undefined;
+    });
+
 export interface FullScreenMarkdownEditorBridgeHandle {
   instanceId: string;
   callbackGroupId: string | null;
@@ -75,14 +82,11 @@ export function useOpenFullScreenMarkdownEditorBridge() {
   const dispatch = useAppDispatch();
   const handlesRef = useRef<Set<HandleRef>>(new Set());
 
-  // Dispose any still-open callback groups when the opener's owner unmounts,
-  // so we never leak a group whose handlers close over a dead component.
+  // The rendered bridge owns terminal disposal. An opener can unmount while
+  // the overlay remains visible (including StrictMode effect replay), so it
+  // must never sever that visible editor's callback target.
   useEffect(() => {
-    const handles = handlesRef.current;
-    return () => {
-      for (const h of handles) h.dispose();
-      handles.clear();
-    };
+    return undefined;
   }, []);
 
   return useCallback(
@@ -98,12 +102,12 @@ export function useOpenFullScreenMarkdownEditorBridge() {
       // and let the bridge self-handle — no group needed.
       let callbackGroupId: string | null = null;
       let dispose = () => {};
-      if (opts.onSave || opts.onEvent || opts.onAction) {
-        const group = createFullScreenEditorCallbackGroup({
-          onSave: opts.onSave,
-          onAction: opts.onAction,
-          onEvent: opts.onEvent,
-        });
+      if (opts.onSave) {
+        const group = createFullScreenEditorCallbackGroup({ onSave: opts.onSave, onEvent: opts.onEvent });
+        callbackGroupId = group.callbackGroupId;
+        dispose = group.dispose;
+      } else if (opts.onAction) {
+        const group = createFullScreenEditorCallbackGroup({ onAction: opts.onAction, onEvent: opts.onEvent });
         callbackGroupId = group.callbackGroupId;
         dispose = group.dispose;
       }

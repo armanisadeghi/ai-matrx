@@ -32,7 +32,7 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "@/lib/toast";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -195,11 +195,8 @@ function viewItem(ctx: ContentActionContext): MenuItem {
                 // eslint-disable-next-line no-console
                 console.error("[ContentActionBar] onSave failed", err);
                 toast.error(getErrorMessage(err, "Save failed"));
-                return;
+                throw err;
               }
-              dispatch(
-                closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-              );
             },
           }).callbackGroupId
         : null;
@@ -392,11 +389,8 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
                     err,
                   );
                   toast.error(getErrorMessage(err, "Failed to save changes"));
-                  return;
+                  throw err;
                 }
-                dispatch(
-                  closeOverlay({ overlayId: "htmlPreview", instanceId }),
-                );
               },
             }).callbackGroupId
           : null;

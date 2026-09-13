@@ -38,7 +38,7 @@ export interface OpenHtmlPreviewBridgeOptions {
    * (unless `showSaveButton` explicitly overrides) and the caller owns the
    * save outcome, taking precedence over the chat-message self-handle path.
    */
-  onSave?: (markdownContent: string) => void | Promise<void>;
+  onSave?: (markdownContent: string) => Promise<void>;
   showSaveButton?: boolean;
   isAgentSystem?: boolean;
 }
@@ -50,16 +50,11 @@ export interface HtmlPreviewBridgeHandle {
 
 export function useOpenHtmlPreviewBridge() {
   const dispatch = useAppDispatch();
-  // Track live callback groups so a caller unmount can't leak them
-  // (the save path self-disposes via `removeAfterTrigger`; this covers
-  // close-without-save).
+  // The rendered bridge owns terminal disposal. Do not remove a callback on
+  // opener unmount: the overlay may still be visible after StrictMode replay.
   const disposersRef = useRef<Set<() => void>>(new Set());
   useEffect(() => {
-    const disposers = disposersRef.current;
-    return () => {
-      for (const dispose of disposers) dispose();
-      disposers.clear();
-    };
+    return undefined;
   }, []);
 
   return useCallback(
@@ -71,7 +66,7 @@ export function useOpenHtmlPreviewBridge() {
       if (opts.onSave) {
         const onSave = opts.onSave;
         const group = createFullScreenEditorCallbackGroup({
-          onSave: (content) => void onSave(content),
+          onSave,
         });
         callbackGroupId = group.callbackGroupId;
         dispose = () => {

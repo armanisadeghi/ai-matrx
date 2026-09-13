@@ -1231,15 +1231,14 @@ function editAndResubmitUserItem(ctx: MessageActionContext): MenuItem {
       const { USER_EDIT_ACTIONS, routeUserEditAction } =
         await import("./userEditActions");
       const { callbackGroupId } = createFullScreenEditorCallbackGroup({
-        onAction: (actionId, newContent) => {
-          void routeUserEditAction(dispatch, {
+        onAction: (actionId, newContent) =>
+          routeUserEditAction(dispatch, {
             actionId,
             conversationId,
             messageId,
             newContent,
             surfaceKey,
-          });
-        },
+          }),
       });
       dispatch(
         openOverlay({

@@ -137,14 +137,14 @@ export interface EditorPrimaryAction {
 interface FullScreenMarkdownEditorProps {
   isOpen: boolean;
   initialContent: string;
-  onSave?: (newContent: string) => void;
+  onSave?: (newContent: string) => void | Promise<void>;
   onCancel?: () => void;
   /**
    * Footer action buttons. When non-empty they replace the default Save button;
    * clicking one calls `onPrimaryAction(action.id, currentContent)`.
    */
   primaryActions?: EditorPrimaryAction[];
-  onPrimaryAction?: (actionId: string, content: string) => void;
+  onPrimaryAction?: (actionId: string, content: string) => void | Promise<void>;
   /** Called on every content change. Use this to sync edits to an external
    *  store (e.g. Redux overlayDataSlice) so content survives close/reopen. */
   onChange?: (newContent: string) => void;
@@ -1033,6 +1033,10 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   initialTab = "write",
 }) => {
   const [editedContent, setEditedContent] = useState(initialContent ?? "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const saveLockRef = useRef(false);
+  const retrySaveRef = useRef<(() => void | Promise<void>) | null>(null);
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [forcedTabs, setForcedTabs] = useState<TabId[]>([]);
   const [capturedAt] = useState(() => new Date().toISOString());
@@ -1078,10 +1082,25 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
     }
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave(editedContent);
+  const settleSave = async (operation: () => void | Promise<void>) => {
+    if (saveLockRef.current) return;
+    saveLockRef.current = true;
+    retrySaveRef.current = operation;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await operation();
+    } catch (error) {
+      console.error("[FullScreenMarkdownEditor] save failed", error);
+      setSaveError(error instanceof Error ? error.message : "Save failed");
+    } finally {
+      saveLockRef.current = false;
+      setIsSaving(false);
     }
+  };
+
+  const handleSave = () => {
+    if (onSave) void settleSave(() => onSave(editedContent));
   };
 
   const handleForceOpenTab = useCallback((tabId: TabId) => {
@@ -1522,7 +1541,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   const primaryActionFooter = hasPrimaryActions ? (
     <div className="flex flex-wrap items-center justify-end gap-2">
       {showCancelButton && (
-        <Button variant="outline" onClick={() => onCancel?.()}>
+        <Button variant="outline" onClick={() => onCancel?.()} disabled={isSaving}>
           Cancel
         </Button>
       )}
@@ -1530,7 +1549,8 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
         <Button
           key={action.id}
           variant={action.variant ?? "default"}
-          onClick={() => onPrimaryAction?.(action.id, editedContent)}
+          onClick={() => onPrimaryAction && void settleSave(() => onPrimaryAction(action.id, editedContent))}
+          disabled={isSaving}
         >
           {action.label}
         </Button>
@@ -1551,6 +1571,13 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       onSave={handleSave}
       showCancelButton={hasPrimaryActions ? false : showCancelButton}
       onCancel={onCancel}
+      isPending={isSaving}
+      pendingMessage="Saving changes…"
+      errorMessage={saveError}
+      onRetry={saveError ? () => {
+        const retry = retrySaveRef.current;
+        if (retry) void settleSave(retry);
+      } : undefined}
       additionalButtons={additionalButtons}
       footerContent={primaryActionFooter}
     />

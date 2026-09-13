@@ -42,7 +42,9 @@ registerAction({
     const { callbackGroupId } = createFullScreenEditorCallbackGroup({
       onSave: async (newContent: string) => {
         try {
-          await ctx.sourceAdapter.edit?.({
+          const edit = ctx.sourceAdapter.edit;
+          if (!edit) throw new Error("This content no longer has a save target");
+          await edit({
             newContent,
             source: ctx.source,
             dispatch: ctx.dispatch,
@@ -54,6 +56,7 @@ registerAction({
             JSON.stringify(serializeError(err), null, 2),
           );
           toast.error(getErrorMessage(err, "Failed to save changes"));
+          throw err;
         }
       },
     });
