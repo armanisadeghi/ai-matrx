@@ -142,8 +142,6 @@ export function VaultCsvImportDialog({
   const [jsonRecords, setJsonRecords] = useState<StructuredImportRecord[]>([]);
   const [jsonLoaded, setJsonLoaded] = useState(false);
   const [includeTrash, setIncludeTrash] = useState(false);
-  const [includeArchived, setIncludeArchived] = useState(false);
-  const [binaryMembers, setBinaryMembers] = useState(0);
   const [metadataApproved, setMetadataApproved] = useState(false);
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
   const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
@@ -176,8 +174,6 @@ export function VaultCsvImportDialog({
     setJsonRecords([]);
     setJsonLoaded(false);
     setIncludeTrash(false);
-    setIncludeArchived(false);
-    setBinaryMembers(0);
     setMetadataApproved(false);
     setMapping([]);
     setUnavailable(null);
@@ -281,7 +277,7 @@ export function VaultCsvImportDialog({
     try {
       const actor = await getVaultImportActor();
       if (generation !== parseGeneration.current) return;
-      const limits = await (source === "bitwarden_json" || source === "1password_1pux" ? fetchBitwardenJsonImportLimits : fetchCsvImportLimits)(
+      const limits = await (source === "bitwarden_json" ? fetchBitwardenJsonImportLimits : fetchCsvImportLimits)(
         actor.organizationId,
         actor.userId,
       );
@@ -327,21 +323,6 @@ export function VaultCsvImportDialog({
         parser.postMessage({ text, limits: { maxFileBytes: limits.maxFileBytes, maxRecords: limits.maxRecords, maxCellBytes: limits.maxCellBytes, maxJsonDepth: limits.maxJsonDepth ?? 64 } });
         return;
       }
-      if (source === "1password_1pux") {
-        if (file.size > limits.maxFileBytes) throw new Error("The 1Password export exceeds this organization’s import size limit.");
-        const { createOnePuxWorker } = await import("../onepux-worker-client");
-        if (generation !== parseGeneration.current || cancelled.current) return;
-        const parser = createOnePuxWorker(); jsonWorker.current = parser;
-        parser.onerror = () => { if (generation === parseGeneration.current) setUnavailable("The 1Password archive could not be read."); };
-        parser.onmessage = (event: MessageEvent<{ ok: boolean; records?: StructuredImportRecord[]; error?: string; binaryMembers?: number }>) => {
-          parser.terminate(); if (jsonWorker.current === parser) jsonWorker.current = null;
-          if (generation !== parseGeneration.current || cancelled.current) return;
-          if (!event.data.ok) { setUnavailable(jsonImportErrorMessage(event.data.error)); return; }
-          setJsonRecords(event.data.records ?? []); setBinaryMembers(event.data.binaryMembers ?? 0); setJsonLoaded(true);
-        };
-        parser.postMessage({ file, limits: { maxFileBytes: limits.maxFileBytes, maxRecords: limits.maxRecords } });
-        return;
-      }
       const parsed = await parseCsvFile(file, limits);
       if (generation !== parseGeneration.current || cancelled.current) return;
       setPreview(parsed);
@@ -382,13 +363,13 @@ export function VaultCsvImportDialog({
     source,
   ]);
   const preparedJsonRows = useMemo(() => {
-    if ((source !== "bitwarden_json" && source !== "1password_1pux") || !limitsRef.current || !previewActor.current) return [];
+    if (source !== "bitwarden_json" || !limitsRef.current || !previewActor.current) return [];
     return jsonRecords.map((record) => prepareStructuredImportCommand({
       record, principal, expectedActor: previewActor.current!, rowId: `preview-json-${record.ordinal}`,
-      browserFillEnabled: enableBrowserFill, includeDeleted: includeTrash, includeArchived, limits: limitsRef.current!, existingItems,
+      browserFillEnabled: enableBrowserFill, includeDeleted: includeTrash, includeArchived: false, limits: limitsRef.current!, existingItems,
       skipPossibleDuplicate: !createDuplicateRows.has(record.ordinal),
     }));
-  }, [createDuplicateRows, enableBrowserFill, existingItems, includeArchived, includeTrash, jsonRecords, principal, source]);
+  }, [createDuplicateRows, enableBrowserFill, existingItems, includeTrash, jsonRecords, principal, source]);
   const selectedInvalidRows = preparedRows.filter(
     (prepared, index) =>
       prepared.status === "invalid" &&
@@ -419,7 +400,7 @@ export function VaultCsvImportDialog({
   const importRows = async (retry = false) => {
     const limits = limitsRef.current;
     if ((!preview && !jsonLoaded) || !limits) return;
-    if ((source === "bitwarden_json" || source === "1password_1pux") && !metadataApproved) {
+    if (source === "bitwarden_json" && !metadataApproved) {
       setError("Confirm the visible destination and public-key metadata before importing.");
       return;
     }
@@ -455,7 +436,7 @@ export function VaultCsvImportDialog({
       }
       const commands = retry
         ? frozenCommands.current
-        : source === "bitwarden_json" || source === "1password_1pux"
+        : source === "bitwarden_json"
           ? preparedJsonRows.map((prepared) => prepared.status === "ready" ? { ...prepared.command, rowId: crypto.randomUUID(), expectedActor: actor } : null)
           : preview!.rows.map((row) => {
             const prepared = prepareCsvImportRow({
@@ -598,7 +579,6 @@ export function VaultCsvImportDialog({
                 </SelectItem>
               ))}
                     <SelectItem value="bitwarden_json">Bitwarden JSON</SelectItem>
-                    <SelectItem value="1password_1pux">1Password 1PUX</SelectItem>
                 </SelectContent>
               </Select>
               {SOURCE_URLS[source] && (
@@ -623,7 +603,7 @@ export function VaultCsvImportDialog({
                 ref={fileInput}
                 className="hidden"
                 type="file"
-                accept={source === "bitwarden_json" ? "application/json,.json" : source === "1password_1pux" ? ".1pux,application/zip" : ".csv,text/csv"}
+                accept={source === "bitwarden_json" ? "application/json,.json" : ".csv,text/csv"}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) void load(file);
@@ -772,10 +752,8 @@ export function VaultCsvImportDialog({
             <div className="space-y-3">
               <p className="text-sm">{jsonPreflightCounts.selected} selected; {jsonPreflightCounts.skipped} skipped; {jsonPreflightCounts.invalid} invalid; {jsonPreflightCounts.unsupported} unsupported; {jsonPreflightCounts.deleted} deleted. Unsupported records stay local and are never sent.</p>
               {jsonRecords.length === 0 && <p className="text-sm text-muted-foreground">This valid export has no items to import.</p>}
-              <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">{jsonRecords.map((record, index) => { const prepared = preparedJsonRows[index]; const duplicate = isPossibleStructuredImportDuplicate(record, existingItems); const kind = record.status === "supported" ? record.kind : "unavailable"; const destination = record.status === "supported" && record.kind === "website_login" ? record.urls[0] : undefined; const reason = record.status === "supported" ? undefined : record.reason; return <div key={record.ordinal} className="flex items-center justify-between gap-2"><span>#{record.ordinal + 1}: {record.title} · {kind === "custom" ? "encrypted-only custom record" : kind.replace("_", " ")}{destination ? ` · destination ${destination}` : ""} · {prepared?.status ?? record.status}{reason ? ` — ${reason}` : ""}{duplicate ? " · possible duplicate" : ""}</span>{duplicate && <label className="flex shrink-0 items-center gap-1"><Switch checked={createDuplicateRows.has(record.ordinal)} onCheckedChange={(checked) => setCreateDuplicateRows((current) => { const next = new Set(current); if (checked) next.add(record.ordinal); else next.delete(record.ordinal); return next; })}/><span>Create</span></label>}{prepared?.status === "invalid" && <Button type="button" variant="outline" size="sm" onClick={() => setSkipInvalidRows((current) => { const next = new Set(current); if (next.has(record.ordinal)) next.delete(record.ordinal); else next.add(record.ordinal); return next; })}>{skipInvalidRows.has(record.ordinal) ? "Review" : "Skip"}</Button>}</div>; })}</div>
+              <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">{jsonRecords.map((record, index) => { const prepared = preparedJsonRows[index]; const duplicate = isPossibleStructuredImportDuplicate(record, existingItems); const kind = record.status === "supported" ? record.kind : "unavailable"; const destination = record.status === "supported" && record.kind === "website_login" ? record.urls[0] : undefined; return <div key={record.ordinal} className="flex items-center justify-between gap-2"><span>#{record.ordinal + 1}: {record.title} · {kind === "custom" ? "encrypted-only custom record" : kind.replace("_", " ")}{destination ? ` · destination ${destination}` : ""} · {prepared?.status ?? record.status}{record.reason ? ` — ${record.reason}` : ""}{duplicate ? " · possible duplicate" : ""}</span>{duplicate && <label className="flex shrink-0 items-center gap-1"><Switch checked={createDuplicateRows.has(record.ordinal)} onCheckedChange={(checked) => setCreateDuplicateRows((current) => { const next = new Set(current); if (checked) next.add(record.ordinal); else next.delete(record.ordinal); return next; })}/><span>Create</span></label>}{prepared?.status === "invalid" && <Button type="button" variant="outline" size="sm" onClick={() => setSkipInvalidRows((current) => { const next = new Set(current); if (next.has(record.ordinal)) next.delete(record.ordinal); else next.add(record.ordinal); return next; })}>{skipInvalidRows.has(record.ordinal) ? "Review" : "Skip"}</Button>}</div>; })}</div>
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={includeTrash} onCheckedChange={setIncludeTrash}/><span>Include deleted source items. They are skipped by default.</span></label>
-              {jsonRecords.some((record) => record.status === "supported" && record.sourceState === "archived") && <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={includeArchived} onCheckedChange={setIncludeArchived}/><span>Include archived source items. They are skipped by default.</span></label>}
-              {source === "1password_1pux" && binaryMembers > 0 && <p className="text-xs text-muted-foreground">{binaryMembers} binary archive member{binaryMembers === 1 ? "" : "s"} and icon data are not imported.</p>}
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={enableBrowserFill} onCheckedChange={setEnableBrowserFill}/><span>Enable browser fill only for eligible logins with a username, password, and HTTPS or loopback destination. Matching destinations become visible credential metadata.</span></label>
               {jsonRecords.some(hasVisiblePublicKey) && <p className="text-xs text-muted-foreground">SSH public keys are visible metadata. Private keys and source records are revealable only, and none are injected into a sandbox.</p>}
               <label className="flex items-start gap-2 text-xs text-muted-foreground"><Switch checked={metadataApproved} onCheckedChange={setMetadataApproved}/><span>I approve disclosure of the listed destination and public-key metadata.</span></label>

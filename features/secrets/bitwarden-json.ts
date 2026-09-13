@@ -55,8 +55,7 @@ function invalid(title: string, ordinal: number, reason: string): StructuredImpo
 function unsupported(title: string, ordinal: number, reason: string): StructuredImportRecord { return { ordinal, title, status: "unsupported", reason }; }
 
 function itemRecord(item: JsonObject, ordinal: number, maxCellBytes: number, maxJsonDepth: number, folders: JsonObject[]): StructuredImportRecord {
-  const candidateTitle = typeof item.name === "string" ? item.name : `Item ${ordinal + 1}`;
-  const title = bytes(candidateTitle) <= maxCellBytes ? candidateTitle : `Item ${ordinal + 1}`;
+  const title = typeof item.name === "string" ? item.name : `Item ${ordinal + 1}`;
   if (!only(item, itemKeys)) return unsupported(title, ordinal, "The item has an unsupported field.");
   if (!uuid(item.id) || typeof item.name !== "string" || !exactInt(item.type, 1, 5)) return exactInt(item.type, 0, Number.MAX_SAFE_INTEGER) ? unsupported(title, ordinal, "The item type is unsupported.") : invalid(title, ordinal, "The item shape is not supported.");
   if (!["folderId", "organizationId", "notes"].every((key) => item[key] === undefined || stringOrNull(item[key])) || ["revisionDate", "creationDate", "deletedDate"].some((key) => item[key] !== undefined && item[key] !== null && !timestamp(item[key])) || (item.folderId != null && !uuid(item.folderId)) || (item.organizationId != null && !uuid(item.organizationId)) || (item.collectionIds != null && (!Array.isArray(item.collectionIds) || !item.collectionIds.every(uuid))) || (item.favorite != null && typeof item.favorite !== "boolean") || (item.reprompt != null && !exactInt(item.reprompt, 0, 1))) return invalid(title, ordinal, "The item metadata is invalid.");
