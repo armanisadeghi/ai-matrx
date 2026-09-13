@@ -51,7 +51,7 @@ test.each([
     status: "busy_deferred",
     details: {
       status: "busy_deferred",
-      sandbox_id: "sbx-1",
+      sandbox_id: "row-1",
       reason,
     },
   });
@@ -103,6 +103,7 @@ test("forwards a confirmed attached-session interruption explicitly", async () =
   );
 
   expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ sandbox_id: "row-1" });
   expect(upstream).toHaveBeenCalledWith(
     expect.stringMatching(
       /^https:\/\/hosted\.example\.test\/sandboxes\/sbx-1\/migrate\?interrupt_attached_sessions=true&operation_id=[0-9a-f]{32}$/,
@@ -137,7 +138,10 @@ test("on a POST timeout reconnects to the exact live operation instead of report
   );
 
   expect(response.status).toBe(202);
-  expect(await response.json()).toMatchObject({ outcome: "in_progress" });
+  expect(await response.json()).toMatchObject({
+    sandbox_id: "row-1",
+    outcome: "in_progress",
+  });
   expect(fetch).toHaveBeenLastCalledWith(
     "https://hosted.example.test/sandboxes/sbx-1/migration?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     expect.objectContaining({ method: "GET" }),
@@ -170,7 +174,10 @@ test("on a POST timeout returns exact committed status as success", async () => 
   );
 
   expect(response.status).toBe(200);
-  expect(await response.json()).toMatchObject({ outcome: "migrated" });
+  expect(await response.json()).toMatchObject({
+    sandbox_id: "row-1",
+    outcome: "migrated",
+  });
 });
 
 test("on a POST timeout preserves a rolled-back result as actionable non-success", async () => {
@@ -201,6 +208,7 @@ test("on a POST timeout preserves a rolled-back result as actionable non-success
 
   expect(response.status).toBe(409);
   expect(await response.json()).toMatchObject({
+    sandbox_id: "row-1",
     outcome: "rolled_back",
     reason: "retained runtime restored",
   });
@@ -233,4 +241,32 @@ test("refuses a timeout status response for a different operation", async () => 
 
   expect(response.status).toBe(502);
   expect(await response.json()).toMatchObject({ status: "outcome_unknown" });
+});
+
+test("rejects an upstream success for another internal sandbox before projection", async () => {
+  jest.spyOn(global, "fetch").mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        sandbox_id: "sbx-other",
+        operation_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        outcome: "migrated",
+        execution_state: "done",
+        phase: "cleanup_complete",
+      }),
+      { status: 200 },
+    ),
+  );
+
+  const response = await POST(
+    new NextRequest(
+      "https://app.example.test/api/sandbox/row-1/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      { method: "POST" },
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toMatchObject({
+    error: "Sandbox manager returned an update result for a different sandbox.",
+  });
 });

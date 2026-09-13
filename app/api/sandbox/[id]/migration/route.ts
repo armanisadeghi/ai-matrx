@@ -115,5 +115,8 @@ export async function GET(
       { status: 502 },
     );
   }
-  return NextResponse.json(payload);
+  return NextResponse.json({
+    ...(payload as Record<string, unknown>),
+    sandbox_id: id,
+  });
 }
