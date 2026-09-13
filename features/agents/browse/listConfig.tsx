@@ -145,6 +145,8 @@ function useAgentListRowActions(
 
 export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   surfaceKey: "agents-browse",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "agent",
   entityLabel: { singular: "agent", plural: "agents" },
   // "agents-other", NOT "agent". Both type-check — `SourceFeature` is generated
   // from the backend's union — but only registered keys exist in `FEATURE_META`

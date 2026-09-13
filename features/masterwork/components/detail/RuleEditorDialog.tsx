@@ -31,12 +31,12 @@ import {
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { RuleFields } from "./RuleFields";
 import {
-  EMPTY_RULE_POLICY_FIELDS,
-  rulePolicyFieldsFromRule,
-  rulePolicyFromFields,
+  EMPTY_RULE_MOVE_FIELDS,
+  ruleMoveFieldsFromRule,
+  ruleMoveFromFields,
   type RulebookRule,
   type RulebookSections,
-  type RulePolicyFieldValues,
+  type RuleMoveFieldValues,
   type RuleSeverity,
 } from "../../types";
 
@@ -170,7 +170,7 @@ function RuleEditorForm({
   );
   /**
    * The policy half (contract §2) — held as plain form strings and converted
-   * once, at save, through `rulePolicyFromFields`. Not part of the staged
+   * once, at save, through `ruleMoveFromFields`. Not part of the staged
    * agent draft (`RulebookDraftSnapshot` is the prose the Conductor writes);
    * an edit that touches only these fields still saves, because
    * `applyManualRuleEdit` merges the whole edited rule either way.
@@ -181,10 +181,10 @@ function RuleEditorForm({
    * silently threw away everything typed into "When:" and "Next:" and put the
    * live rule's values back.
    */
-  const [policy, setPolicy] = useState<RulePolicyFieldValues>(
+  const [policy, setPolicy] = useState<RuleMoveFieldValues>(
     () =>
       persistedDraft?.policy ??
-      (initial ? rulePolicyFieldsFromRule(initial) : EMPTY_RULE_POLICY_FIELDS),
+      (initial ? ruleMoveFieldsFromRule(initial) : EMPTY_RULE_MOVE_FIELDS),
   );
   const [saving, setSaving] = useState(false);
   const [beforeTidy, setBeforeTidy] =
@@ -264,8 +264,8 @@ function RuleEditorForm({
       setPolicy(
         persistedDraft?.policy ??
           (initial
-            ? rulePolicyFieldsFromRule(initial)
-            : EMPTY_RULE_POLICY_FIELDS),
+            ? ruleMoveFieldsFromRule(initial)
+            : EMPTY_RULE_MOVE_FIELDS),
       );
     }
     wasOpen.current = open;
@@ -330,7 +330,7 @@ function RuleEditorForm({
           // Expert thinks they cleared.
           precondition: undefined,
           next_action: undefined,
-          ...rulePolicyFromFields(policy),
+          ...ruleMoveFromFields(policy),
         },
       });
       dispatch(clearWizardDraft(wizardId));

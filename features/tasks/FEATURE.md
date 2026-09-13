@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-09-11`
+**Last updated:** `2026-09-12`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -150,6 +150,23 @@ Three channels, all frontend-side because ALL delivery infra (Resend email in `l
 Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
 
 ## Change log
+
+- `2026-09-12` — **Task list and table copy actions stay on the current shared
+  menu contract.** Their redundant legacy `primarySource` hint is removed: the
+  unified `CopyButtons` API already selects the shared menu behavior, keeping
+  both task surfaces type-compatible without a task-local copy fork.
+
+- `2026-09-12` — **Terminal task content has one scroll owner.** The desktop
+  editor body and mobile task-detail body scroll above their bottom action bars,
+  which remain in normal flex flow rather than fixed overlays. The responsive
+  contract test now rejects outer-shell clearance or a second terminal scroll
+  region before the S8 live geometry matrix runs.
+
+- `2026-09-12` — **Task copy actions use one borderless dropdown trigger.** List, table,
+  row, and schedule-style task surfaces now compose the shared `CopyButtons` unified
+  mode so human copy, Copy for AI, JSON/graded variants, and downloads live behind one
+  icon instead of competing top-level controls. The eventual task copy project can
+  replace this one seam without another route-by-route migration.
 
 - `2026-09-12` — claude: **deleting a task was a HARD delete, and now it is the platform's soft delete (DD-119).** Measured live: after the K-2 walk the deleted task and its subtask were absent from `workspace.tasks` — not `deleted_at`-stamped, gone — under a dialog reading "Delete this task? This cannot be undone", while deleting a chat that same afternoon was a soft delete that promised recovery. `workspace.tasks` is a registered entity (`token = 'task'`) with `has_soft_delete = true` and a live `deleted_at` column the whole time; three client paths went around it (`services/taskService.ts`, `agent-context/service/hierarchyService.ts`, `agent-context/redux/tasksSlice.ts`) and all three now stamp `deleted_at`. Subtasks follow through a DECLARED containment edge (`platform.soft_delete_edge`, `workspace.tasks.parent_task_id` = `cascade`, db-rules §8a) instead of the FK's `ON DELETE CASCADE`, so restoring the task restores exactly the subtasks that removal took; the seven soft-deletable rows that merely REFERENCE a task (conversation, transcript, agent, dataset, to-do, app/sandbox instance) are declared `keep` with reasons. The database now REFUSES a client `DELETE` on the table (`platform._refuse_client_hard_delete`, attached by `platform.protect_from_client_hard_delete`, migration `migrations/task_hard_delete_door_closed.sql`) — the server lane is untouched. **The confirmation moved into `deleteTaskThunk`**, the one door all six delete controls pass through (list row, its context menu, details panel, editor, and both mobile surfaces — only the editor asked anything before, and what it asked was false); it now names the consequence: *"This moves \"<title>\" and its 2 subtasks to the trash. Nothing is destroyed — a task in the trash can be restored."* The editor's bespoke `ConfirmDialog` and its `deleteConfirmOpen`/`confirmDelete` plumbing are deleted. Forcing tests, live on `brsgrqvjdzwihsvnfqkf` in a rolled-back transaction as `authenticated` with the test user's JWT: hard DELETE refused `42501` with the remedy in the hint; the soft delete stamped parent and subtask with the SAME timestamp; both vanished from the live list; `entity_undelete('task', id)` restored both. Guard: `pnpm check:client-hard-delete:strict` (CI), proven RED (restoring the `.delete()` → `new client hard delete … workspace.tasks`, exit 1) then GREEN. Its allow-list is the census of **44** other client paths in this repo that still destroy a soft-deletable row — each somebody's fix, and a stale entry fails the gate too.
 - `2026-09-08` — claude: **the `/tasks` route had NO realtime channel at all, and now has one.** Its list comes from `get_user_full_context` into the agent-context `tasks` slice and nothing subscribed to anything: probed live with 248 tasks on screen, a second writer's `workspace.tasks` INSERT was invisible for 13s and appeared only after a full page reload. `useTaskManager`'s channels could not serve it (they are the pickers', with their own `useState` lists and `getUserTasks()` scope), so the subscription owner is a new middleware, `redux/tasksRealtimeMiddleware.ts`, registered in `lib/redux/store.ts`; the row description the two consumers must agree on moved to `realtime/rowContract.ts`. Live-verified against a second writer on the real DB: a remote INSERT appeared with no reload; a remote UPDATE applied in place with **zero** network calls; a DELETE removed the row; the app's own write was suppressed by the ledger (`received 1 / delivered 0 / suppressedEcho 1`, zero `get_user_full_context` calls). **Two defects found and fixed in the doing:** the catch-up read fired once per recovery event, so one offline→30s→online cycle cost FIVE whole-context RPCs — now debounced and floored to two, and the same un-debounced backfill was fixed in all three `useTaskManager` hooks. Guard: `redux/__tests__/tasksRealtimeMiddleware.test.ts`, proven failing-then-passing (dropping the scope predicate fails 3; dropping the floor fails the flap test). `pnpm type-check` zero errors for these files; `jest features/tasks` 5 suites / 48 tests green.

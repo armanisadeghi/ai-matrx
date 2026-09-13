@@ -37,9 +37,11 @@ import { resolveAssistantEditTarget } from "../message-options/resolveAssistantE
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
 import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
+import { precedingQuestion } from "@/features/masterwork/oracle/service";
 import { toast } from "@/lib/toast";
 import {
   selectMessageById,
+  selectOrderedMessageIds,
   selectMessagePosition,
   selectIsLatestAssistantMessage,
   extractFlatText,
@@ -289,6 +291,24 @@ export function AssistantActionBar({
   // aggregated `turnContent` (consumption actions — copy/save/export/task —
   // match what the user reads on screen).
   const copySpeakContent = aggregatedContent ?? content;
+
+  // THE ORACLE TAP's question half — the user turn this answer replied to. The
+  // thumbs follow-up saves it alongside the answer so the draft rule reads as
+  // the question a colleague actually asked, not as the reply's first line.
+  const orderedIds = useAppSelector(selectOrderedMessageIds(conversationId));
+  const answeredQuestion = useMemo(() => {
+    if (!byId) return null;
+    const thread = orderedIds.map((id) => {
+      const rec = byId[id];
+      const text = rec?.content;
+      return {
+        id,
+        role: String(rec?.role ?? ""),
+        content: typeof text === "string" ? text : extractFlatText(rec),
+      };
+    });
+    return precedingQuestion(thread, messageId);
+  }, [orderedIds, byId, messageId]);
   const editTarget = useMemo(
     () =>
       resolveAssistantEditTarget(
@@ -527,6 +547,8 @@ export function AssistantActionBar({
           verdictClickCount={verdictClickCount}
           content={copySpeakContent}
           conversationId={conversationId}
+          messageId={messageId}
+          question={answeredQuestion}
           className="mt-1"
         />
       </div>

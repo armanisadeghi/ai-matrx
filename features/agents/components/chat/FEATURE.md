@@ -6,7 +6,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-10`
+**Last updated:** `2026-09-12`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -129,7 +129,7 @@ A failed turn is **kept in history** (never deleted) and recovered with a non-de
 3. **Retry** (one click, no confirm — it's non-destructive) appears ONLY on the conversation's last, failed turn (`canRetry`, computed in `AgentConversationDisplay`). It dispatches `retryConversationTurn` (`message-crud/retry-turn.thunk.ts`):
    - last user message **persisted** → `executeInstance({ retry: true })` → `POST /ai/conversations/{id}` `{retry:true}` with **no** `user_input`. The failed turn (hidden from the model) stays; the model re-attempts from the user message. Failed attempt + successful retry **share a `position`**, so the transcript orders by `(position, created_at)` (see `messages.slice.ts` `byPositionThenCreatedAt`).
    - last user message **optimistic** (immediate "Failed to fetch", never persisted) → re-send: drop the optimistic bubble, re-seed input, `executeInstance()` (routes turn-1/turn-2+ correctly).
-4. **Edit a previous message + resubmit** is a separate, existing path (`UserActionBar` "Edit & resubmit" → fork or `overwriteAndResend`); it re-runs with `user_input`, so it is unaffected by the retry contract.
+4. **Edit a previous message + resubmit** is a separate path (`UserActionBar` "Edit & resubmit" → fork or `overwriteAndResend`); it edits the pending user row and then re-runs it with `retry: true`, never appending a duplicate user message.
 
 High-severity non-fatal stream warnings are also user-visible, alongside any
 warning code explicitly promoted regardless of severity (today: the
@@ -231,7 +231,10 @@ Wire types are hand-mirrored in `runtime-reconnect/types.ts` (the generated Open
   shared message selectors prefer `chat.message.user_content` and fall back to
   `content` only for historical NULL rows. `content` may include an authored
   agent template and resolved machine context required for replay; it is never
-  proof of what the person typed. `ChatRoomClient.variablesPanelStyle` forwards
+  proof of what the person typed. Any user-message edit therefore updates
+  `content` and `user_content` atomically through `cx_message_edit`; updating
+  only `content` makes the model answer the edit while the transcript keeps
+  rendering the old prompt. `ChatRoomClient.variablesPanelStyle` forwards
   a surface's variable-collection treatment into the canonical Smart Input.
 - **A submit or queued follow-up targeting a removed conversation is stale UI intent.** `smartExecute` drops a removed browser-local instance both before preflight and at the final child-execution admission boundary; an inbox 404 keeps the failed card and uses an informational corrective toast. Neither path emits a console error or error-severity toast. Navigation/fresh-chat cleanup can legitimately remove an instance while a click or keypress waits on an asynchronous gate.
 - **A conversation's `organization_id` is decided at creation and NEVER moves — every later turn re-sends the CONVERSATION's org, not the sidebar's.** The shared `requireExecutionOrganizationId` guard uses `cacheOnly` to distinguish them: the first unconfirmed request uses a launcher-supplied entity org when present, otherwise ONLY the explicitly selected `selectOrganizationId`; before networking, the execution thunk freezes that exact value onto the local conversation. After persistence it trusts ONLY `instance.organizationId`, hydrated from the request or from `chat.conversation.organization_id` by load/fork. It NEVER calls `selectEffectiveOrganizationId`: a personal organization is not an implicit substitute for an empty picker. `smartExecute` refuses before draft/optimistic state changes and every execution thunk independently refuses before networking. The server independently requires org on start and restores the saved org on continuation, so neither side depends on the other.
@@ -287,6 +290,10 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-09-12` — codex: **edited user messages can no longer answer one prompt while displaying another.** A live resubmit left `chat.message.content` holding the edited prompt and `user_content` holding the original; the model rebuilt from `content`, while every shared human-text selector correctly preferred the stale `user_content`. The canonical `cx_message_edit` RPC now updates both fields atomically for user rows (assistant edits keep `user_content` untouched), archives exactly one prior version, runs under `chat.message` RLS as invoker, and is executable only by `authenticated`. `editMessage` mirrors the same dual-field transition optimistically, authoritatively, and on rollback so the mounted UI cannot remain stale before reload. The affected conversation was repaired from its preserved row/history. Guard: `message-crud/__tests__/edit-message-live-render.test.ts`, proven failing on the split projection before the fix; live transactional RPC proof covered user and assistant edits.
+
+- `2026-09-12` — claude: **the conversation now answers "what did this chat produce?" (DD-131 slice 1, item 8).** `ConversationRecordsChip` sits in `ChatRunHeader`'s right cluster on an existing conversation only, and opens the list of every `content_ir.kind_instance` this chat produced — by either route, because neither is guaranteed: a record HOMED in the conversation (`metadata.home->>'conversation_id'`) or the target of a `produced_by` `platform.associations` edge from one of its messages. Each row shows its title, its Shape, its confirmation badge (the shared `RecordConfirmationBadge`) and links to the record's permalink. THE ARCHIVED-ITEMS LAW is honoured with the canonical `ArchivedDisclosure` — archived rows hidden by default, one click away, the printed count the true one. The panel READS NOTHING until it is opened (the zero-prefetch rule), the empty state says what would fill it rather than "none", and a failed read prints the reason with a Try again rather than an empty list. The header is the home rather than the transcript: a by-product list glued above the composer would push the conversation off screen and grow without bound, and the question is asked precisely when the early blocks have scrolled out of reach. Service: `features/content-ir/records/kind-record-service.ts`.
 
 - `2026-09-12` — Pending-call recovery now uses the active authenticated
   organization, never a historical organization stored on the conversation.

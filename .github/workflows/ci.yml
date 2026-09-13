@@ -784,6 +784,21 @@ jobs:
       - name: Refuse org-less or mismatched API transport
         run: pnpm check:organization-context
 
+  # DD154 changes live DDL protection. This self-contained fixture replays the
+  # immutable applied migration against PostgreSQL 17 without production
+  # credentials, a sibling checkout, host networking, or published ports.
+  dd154-ddl-guard:
+    name: DD154 explicit organization DDL guard (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+      - name: Exercise the 44-case PostgreSQL 17 DD154 regression matrix
+        run: pnpm test:dd154-ddl-guard
+
   # ---------------------------------------------------------------------------
   # suites — the two feature suites that pin cross-repo contracts, so a change
   # here can break a producer in aidream (and vice versa):
@@ -837,6 +852,16 @@ jobs:
         # picks this file up only in an unscoped `pnpm test`, which nothing runs.
         if: always() && steps.content_ir.outcome != 'cancelled'
         run: pnpm test:admin-nav
+
+      - name: Every live Distillation Approach leads somewhere
+        # Census defect (masterwork-methods-census, rows 3 and D3): the
+        # `timeline` Approach shipped enabled and `available` with no lane
+        # behind it in the frontend, and `?approach=` did not overrule a stale
+        # in-page selection, so Start began the wrong lane. Both are now
+        # guarded. The lane guard's LIVE half needs SUPABASE_SECRET_KEY and
+        # announces itself when it cannot run; the snapshot half always runs.
+        if: always() && steps.content_ir.outcome != 'cancelled'
+        run: pnpm test:masterwork-approaches
 
       - name: Administration route registry matches the filesystem
         if: always() && steps.content_ir.outcome != 'cancelled'

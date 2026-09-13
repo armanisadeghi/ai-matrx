@@ -52,6 +52,15 @@ export interface RuleSourceRef {
   approach?: string;
   /** Ingestion run id (docproc / extraction run) for full traceability. */
   run_id?: string;
+  /**
+   * THE SOURCE IDENTITY every lane stamps (aidream
+   * `services/distillation/source_identity.py`, W40) — `text:<hash>` for a
+   * paste, `file:<id>`, `entity:<token>:<id>`, `conversation:<key>`, a URL.
+   * It is the join between a rule and the source row it came from: the
+   * Rulebook's Resources list counts the rules a pasted source produced by
+   * matching this against the edge's `source_key`.
+   */
+  source?: string;
   /** Free-form pointer ("Chapter 6", timestamp for audio, etc.). */
   note?: string;
   /** True when the source was reverse-engineered exemplar work. */
@@ -61,6 +70,18 @@ export interface RuleSourceRef {
   /** Set by the Scout interview Approach. */
   interview?: boolean;
   conversation_id?: string;
+  /**
+   * THE ORACLE TAP's provenance: the exact chat message this draft was saved
+   * from. A draft sitting in "Waiting on you" must be able to point back at the
+   * turn it came from, not just the conversation.
+   */
+  message_id?: string;
+  /**
+   * The question the saved answer answered, when the message was a reply to a
+   * user turn — the Oracle tap's whole point is that the QUESTION maps which
+   * judgment is scarce.
+   */
+  question?: string;
   /**
    * The dump Approach's provenance for a rule distilled from an ATTACHED
    * entity (`platform.associations` role `distillation_source`): the canonical
@@ -81,17 +102,37 @@ export interface RuleSourceRef {
   /** The pieces a synthesized rule cites as proof — `corpus_piece` keys. */
   pieces?: string[];
   /**
-   * The distinct pieces that have produced this evidence rule. Its length is
-   * the rule's support; the promotion knob
-   * (`masterwork_distillation.evidence_promotion_pieces`) is the threshold.
+   * The distinct pieces of this rule's own source that produced the same
+   * judgment. Its length is the rule's RECURRENCE, rendered as a
+   * "seen in N pieces" badge once it reaches
+   * `masterwork_distillation.recurrence_badge_pieces`. A badge, never a gate:
+   * a judgment stated once is a rule (`distill.py` § FREQUENCY IS NOT
+   * EXISTENCE).
    */
   evidence_pieces?: string[];
-  /** Support at the moment the server promoted this rule out of evidence. */
-  promoted_from_evidence?: number;
+  /**
+   * 🚨 NEITHER EXPRESSION WINS. The OTHER ways this rule's own source stated
+   * the same judgment, kept when a second piece of that source repeated it.
+   * Before this, the first expression won on append order and every other one
+   * was counted as a duplicate and thrown away.
+   */
+  quotes?: RuleKeptExpression[];
+}
+
+/** One kept second expression of a rule — see `RuleSourceRef.quotes`. */
+export interface RuleKeptExpression {
+  statement: string;
+  quote?: string;
+  detection?: string;
+  /** Which piece of the source said it this way. */
+  piece?: string;
+  chunk?: number;
+  source_pages?: number[];
+  step?: number;
 }
 
 /**
- * THE RELATIONSHIP VOCABULARY — four kinds, and only four. Mirrors
+ * THE RELATIONSHIP VOCABULARY — six kinds, and only six. Mirrors
  * `aidream/services/distillation/distill.py::RELATION_KINDS`; keep them
  * byte-identical.
  */
@@ -100,6 +141,8 @@ export const RULE_RELATION_KINDS = [
   "depends_on",
   "exception_to",
   "contrast_with",
+  "disagrees_with",
+  "agrees_with",
 ] as const;
 
 export type RuleRelationKind = (typeof RULE_RELATION_KINDS)[number];
@@ -110,6 +153,8 @@ export const RULE_RELATION_LABELS: Record<RuleRelationKind, string> = {
   depends_on: "Only applies after",
   exception_to: "Is the exception to",
   contrast_with: "Easy to confuse with",
+  disagrees_with: "Disagrees with",
+  agrees_with: "Agrees with",
 };
 
 /**
@@ -133,14 +178,66 @@ export interface RuleRelation {
   kind: RuleRelationKind;
   /** One short clause naming WHAT connects them — the link's label. */
   note?: string;
+  /**
+   * 🚨 `disagrees_with` only — THE RETAINED DISAGREEMENT (2026-09-12, Arman's
+   * expertise mandate: "Surface, retain, and make navigable divergent
+   * approaches, dissent, and controversy… without collapsing them into
+   * consensus").
+   *
+   * The Expert's own plain words for what separates the two positions ("on a
+   * client site the first one; on our own site the second"). ABSENT is a real
+   * and final answer, never a gap to fill in: it means they said both simply
+   * hold. Neither position is a defect and neither is waiting to be resolved.
+   */
+  condition?: string;
 }
 
 /**
- * THE POLICY VOCABULARY — what a practitioner DOES next, and what had to be
- * true first. Mirrors §1 `action.kind` of the unfolding-case contract
- * (`common-docs/systems/masterwork/unfolding-case-contract.md`) and
- * `aidream/services/distillation/distill.py::ACTION_KINDS`; keep them
- * byte-identical.
+ * One position this rule USED to state, kept when a machine or a tool rewrote
+ * its `statement` (`rulebook_writes.push_rule_history` on the server). The
+ * Expert's own edits are not history entries — the Rulebook row's version
+ * history already holds those.
+ *
+ * Why it exists (interview lane, trial 2, 2026-09-12): the Scout caught a real
+ * cross-turn contradiction and resolved it by rewriting the rule in place to
+ * carry "the real line". Nothing recorded that the Expert had ever held the
+ * earlier one.
+ */
+export interface RuleHistoryEntry {
+  /** The words that were replaced — verbatim. */
+  statement: string;
+  rationale?: string;
+  changed_at: string;
+  /** The tool or lane that rewrote it, with the acting user. */
+  changed_by: string;
+  /** Why, in one clause. */
+  reason?: string;
+}
+
+/**
+ * 🚨 THE POLICY RULE SHAPE (W58, 2026-09-12) — the DECISION half of a rule.
+ *
+ * A case that unfolds in time does not teach a static commandment; it teaches a
+ * judgment: *given what is known at this moment, do X, and here is what it
+ * costs and risks.* The distillers write this half onto rules
+ * (`aidream/services/distillation/distill.py`), and until 2026-09-12 no
+ * frontend surface declared it or rendered it — 592 live rules carried an
+ * if → then that every screen hid. Law 4: a screen never lies by omission.
+ *
+ * Both vocabularies MIRROR the server byte-for-byte
+ * (`distill.py::ACTION_KINDS` / `POLICY_LEVELS`); the guard in
+ * `features/masterwork/__tests__/policy-rule-surface.test.tsx` parses that file
+ * and fails the moment either list drifts. An unknown value is a value the
+ * server would have dropped: render nothing for it rather than invent a label.
+ */
+export const RULE_POLICY_KIND = "policy" as const;
+
+/**
+ * What the Expert DID at this step — and what a practitioner's NEXT move is.
+ * ONE closed vocabulary for both halves (2026-09-13): this list used to be
+ * declared twice in this file, six values for the flat decision half and nine
+ * for the structured move half. The nine are a superset, so one list serves
+ * both and no rule can be readable through one half and not the other.
  */
 export const RULE_ACTION_KINDS = [
   "ask",
@@ -156,8 +253,13 @@ export const RULE_ACTION_KINDS = [
 
 export type RuleActionKind = (typeof RULE_ACTION_KINDS)[number];
 
-/** How the action reads to the Expert, in their language — never jargon. */
-export const RULE_ACTION_LABELS: Record<RuleActionKind, string> = {
+/** Cost and risk both speak this three-value ladder. */
+export const RULE_POLICY_LEVELS = ["low", "medium", "high"] as const;
+
+export type RulePolicyLevel = (typeof RULE_POLICY_LEVELS)[number];
+
+/** How the chosen move reads to the Expert, in their language — never jargon. */
+export const RULE_ACTION_KIND_LABELS: Record<RuleActionKind, string> = {
   ask: "Ask",
   examine: "Examine",
   test: "Test",
@@ -168,6 +270,31 @@ export const RULE_ACTION_LABELS: Record<RuleActionKind, string> = {
   wait: "Wait",
   commit: "Commit to an answer",
 };
+
+export const RULE_POLICY_LEVEL_LABELS: Record<RulePolicyLevel, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/** A rule that teaches a decision rather than a standing commandment. */
+export function isPolicyRule(rule: RulebookRule): boolean {
+  return rule.kind === RULE_POLICY_KIND;
+}
+
+/** The value only when the server's own vocabulary contains it. */
+export function ruleActionKind(rule: RulebookRule): RuleActionKind | null {
+  const value = rule.action_kind;
+  return value && (RULE_ACTION_KINDS as readonly string[]).includes(value)
+    ? (value as RuleActionKind)
+    : null;
+}
+
+export function rulePolicyLevel(value: string | undefined): RulePolicyLevel | null {
+  return value && (RULE_POLICY_LEVELS as readonly string[]).includes(value)
+    ? (value as RulePolicyLevel)
+    : null;
+}
 
 /** How soon the next action has to happen. */
 export const RULE_ACTION_URGENCIES = ["now", "hours", "days", "weeks"] as const;
@@ -182,25 +309,36 @@ export const RULE_ACTION_URGENCY_LABELS: Record<RuleActionUrgency, string> = {
 };
 
 /**
- * WHAT HAD TO BE TRUE for this rule to fire — the known set at the moment of
- * decision, and what was still unknown. Optional: a static rule (every lane
- * before the timeline lane) carries none, and absence means exactly that.
+ * WHAT HAD TO BE TRUE for this step to fire — the known set at the moment of
+ * decision, what was still unknown, and (for an elicitation move) the state
+ * the counterparty is in. Optional: a static rule carries none, and absence
+ * means exactly that.
+ *
+ * 🚨 Lives at `rule.move.when`, never at `rule.precondition` — that key is the
+ * flat string 592 live rules carry. Mirrors `distill.py::MoveWhen`.
  */
-export interface RulePrecondition {
+export interface RuleMoveWhen {
   /** The situation in one plain sentence — what the card prints after "When:". */
   summary: string;
   /** Facts that must already be known. */
   known?: string[];
   /** Facts that are still open at this moment — the reason the next step exists. */
   unknown?: string[];
+  /** The counterparty's state this move is for ("guarded", "ambivalent"). */
+  counterparty_state?: string[];
 }
 
 /**
  * WHAT TO DO NEXT — the step the rule prescribes, with what it buys and what
  * it costs. `cost` and `risk` are 1–5; anything outside that is not rendered
  * as a number rather than silently clamped to a lie.
+ *
+ * 🚨 Lives at `rule.move.next`, never at `rule.next_action` — that key is the
+ * flat string. The flat `cost` / `risk` beside it speak `RULE_POLICY_LEVELS`
+ * (low/medium/high); these two speak the 1–5 ladder. Mirrors
+ * `distill.py::MoveNext`.
  */
-export interface RuleNextAction {
+export interface RuleMoveNext {
   kind: RuleActionKind;
   /** The thing to do — "lumbar puncture (CT first if focal signs)". */
   target: string;
@@ -214,7 +352,7 @@ export interface RuleNextAction {
 }
 
 /** Tolerant reads — a malformed half never renders as a confident half. */
-export function parseRulePrecondition(value: unknown): RulePrecondition | null {
+export function parseRuleMoveWhen(value: unknown): RuleMoveWhen | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const rec = value as Record<string, unknown>;
   const summary =
@@ -230,14 +368,16 @@ export function parseRulePrecondition(value: unknown): RulePrecondition | null {
       : [];
   const known = list(rec.known);
   const unknown = list(rec.unknown);
+  const counterparty_state = list(rec.counterparty_state);
   return {
     summary,
     ...(known.length ? { known } : {}),
     ...(unknown.length ? { unknown } : {}),
+    ...(counterparty_state.length ? { counterparty_state } : {}),
   };
 }
 
-export function parseRuleNextAction(value: unknown): RuleNextAction | null {
+export function parseRuleMoveNext(value: unknown): RuleMoveNext | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const rec = value as Record<string, unknown>;
   const kind = RULE_ACTION_KINDS.find((k) => k === rec.kind);
@@ -268,12 +408,32 @@ export function parseRuleNextAction(value: unknown): RuleNextAction | null {
 }
 
 /**
- * The policy fields as the rule FORM holds them: plain strings, one list item
+ * THE MOVE — a rule body that is a STEP rather than a standing statement.
+ *
+ * `when` and `next` are what the frontend renders today (`RuleMove`); `ask`,
+ * `rules_in`, `rules_out`, `information_value`, `frame` and `order` are the
+ * elicitation half the distillers write (`distill.py::Move`) and no surface
+ * reads yet — they are declared so a reader of this file sees the whole shape
+ * and the next surface does not have to rediscover it.
+ */
+export interface RuleMove {
+  when?: RuleMoveWhen;
+  next?: RuleMoveNext;
+  ask?: string;
+  rules_in?: { answer_class?: string; settles?: string }[];
+  rules_out?: { answer_class?: string; settles?: string }[];
+  information_value?: string;
+  frame?: string;
+  order?: number;
+}
+
+/**
+ * The MOVE fields as the rule FORM holds them: plain strings, one list item
  * per line. A form that held the structured objects directly would throw away
  * a half-typed line on every keystroke; these convert at the edges through the
  * two functions below, which are the ONE conversion — never re-derive it.
  */
-export interface RulePolicyFieldValues {
+export interface RuleMoveFieldValues {
   preconditionSummary: string;
   /** One fact per line. */
   preconditionKnown: string;
@@ -288,7 +448,7 @@ export interface RulePolicyFieldValues {
   nextActionUrgency: RuleActionUrgency | "";
 }
 
-export const EMPTY_RULE_POLICY_FIELDS: RulePolicyFieldValues = {
+export const EMPTY_RULE_MOVE_FIELDS: RuleMoveFieldValues = {
   preconditionSummary: "",
   preconditionKnown: "",
   preconditionUnknown: "",
@@ -300,11 +460,11 @@ export const EMPTY_RULE_POLICY_FIELDS: RulePolicyFieldValues = {
   nextActionUrgency: "",
 };
 
-export function rulePolicyFieldsFromRule(
-  rule: Pick<RulebookRule, "precondition" | "next_action"> | undefined,
-): RulePolicyFieldValues {
-  const pre = rule?.precondition;
-  const next = rule?.next_action;
+export function ruleMoveFieldsFromRule(
+  rule: Pick<RulebookRule, "move"> | undefined,
+): RuleMoveFieldValues {
+  const pre = rule?.move?.when;
+  const next = rule?.move?.next;
   return {
     preconditionSummary: pre?.summary ?? "",
     preconditionKnown: (pre?.known ?? []).join("\n"),
@@ -319,26 +479,25 @@ export function rulePolicyFieldsFromRule(
 }
 
 /**
- * Form values → the two optional rule fields. Each half is emitted only when
+ * Form values → `rule.move`. Each half is emitted only when
  * it is genuinely there: a precondition needs its summary, a next action needs
  * both a kind and a target. Half-filled is the same as absent — never a rule
  * that prints "Next: —".
  */
-export function rulePolicyFromFields(values: RulePolicyFieldValues): {
-  precondition?: RulePrecondition;
-  next_action?: RuleNextAction;
+export function ruleMoveFromFields(values: RuleMoveFieldValues): {
+  move?: RuleMove;
 } {
   const lines = (raw: string): string[] =>
     raw
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-  const precondition = parseRulePrecondition({
+  const precondition = parseRuleMoveWhen({
     summary: values.preconditionSummary,
     known: lines(values.preconditionKnown),
     unknown: lines(values.preconditionUnknown),
   });
-  const next_action = parseRuleNextAction({
+  const next_action = parseRuleMoveNext({
     kind: values.nextActionKind,
     target: values.nextActionTarget,
     buys: values.nextActionBuys,
@@ -346,10 +505,11 @@ export function rulePolicyFromFields(values: RulePolicyFieldValues): {
     risk: values.nextActionRisk ? Number(values.nextActionRisk) : undefined,
     urgency: values.nextActionUrgency || undefined,
   });
-  return {
-    ...(precondition ? { precondition } : {}),
-    ...(next_action ? { next_action } : {}),
+  const move: RuleMove = {
+    ...(precondition ? { when: precondition } : {}),
+    ...(next_action ? { next: next_action } : {}),
   };
+  return Object.keys(move).length ? { move } : {};
 }
 
 /** One rule of the Rulebook. `id` is the citable handle every audit verdict points at. */
@@ -386,22 +546,25 @@ export interface RulebookRule {
    */
   feedback?: string;
   /**
-   * 🚨 THE EVIDENCE STANDING (2026-09-12). `"evidence"` means this rule is what
-   * ONE piece of a body of work showed — the proof behind a cross-piece rule,
-   * not a question the Expert owes an answer on.
+   * 🚨 HOW THIS RULE WAS REVIEWED — the honest record of what a person
+   * actually read before it was approved (Google Docs suggestion mode's
+   * record of who accepted, applied to a review queue).
    *
-   * The incident: 20 published pieces produced 416 per-piece drafts plus 4
-   * synthesized rules, all of them "Waiting on you", and the only controls were
-   * Approve-all or one-by-one — so the Expert pressed Approve-all, which is the
-   * failure this lane exists to prevent. Evidence rules are still drafts (a
-   * machine never activates anything), are excluded from the counters, the
-   * review queue and every built Masterwork, and are reached behind the
-   * synthesized rule that cites them. They become ordinary drafts when the
-   * Expert promotes one, or when the server sees the same judgment recur across
-   * enough distinct pieces. Absent on every rule written before 2026-09-12 and
-   * on every other lane — absence means "an ordinary rule".
+   * The incident it closes (2026-09-12, live): Newsroom Desk, 416 rules, zero
+   * drafts — Approve-all had fired on the whole pile, and the result was
+   * indistinguishable on screen from 416 real decisions. `mode: "read"` is one
+   * rule the Expert opened and approved; `mode: "sampled"` is a bulk approve,
+   * and it carries how many of the selection were actually read so the rule
+   * can say "approved in bulk, 12 of 416 read" on its own face. Absent means
+   * nobody has approved it through this surface yet.
    */
-  standing?: "evidence";
+  reviewed?: RuleReview;
+  /**
+   * Who last ruled on this rule and when — stamped by the ONE write path on
+   * every approve, reject and edit, never by a caller.
+   */
+  ruled_by?: string;
+  ruled_at?: string;
   /** Back-reference to the source location this rule was distilled from. */
   source_ref?: RuleSourceRef;
   /**
@@ -412,78 +575,146 @@ export interface RulebookRule {
    */
   relates_to?: RuleRelation[];
   /**
-   * THE POLICY FIELDS (the unfolding-case contract §2). Both OPTIONAL and both
-   * additive: absent = a static rule, which is every rule every other lane has
-   * ever written. `statement` still says the WHOLE rule in prose — these make
-   * the same thing machine-readable, they never carry meaning the statement
-   * lacks (THE ANTI-MISLEADING LAW). Like `relates_to` they are deliberately
-   * NOT in `RULE_CONTENT_FIELDS`: that list is the string fields a manual edit
-   * compares.
+   * 🚨 THE MOVE (trial 7 + W70) — the machine-readable body of a rule that is
+   * a STEP rather than a standing statement: when it fires (`when`, including
+   * what is still unknown and the counterparty's state) and what to do next
+   * (`next`). Trial 7 built these as top-level `precondition` / `next_action`
+   * OBJECTS; 592 live rules already carried those two keys as STRINGS, so the
+   * structured halves moved in here on 2026-09-13 and the flat strings below
+   * stayed. Mirrors `distill.py::Move`. Rendered by `RuleMove`, never by
+   * `RuleDecision`.
    */
-  precondition?: RulePrecondition;
-  next_action?: RuleNextAction;
+  move?: RuleMove;
+  /**
+   * 🚨 THE DECISION HALF (W58, 2026-09-12) — see `RULE_POLICY_KIND` above.
+   * `"policy"` means this rule is a judgment made under uncertainty; the five
+   * fields below carry it. Absent on an ordinary rule, and absent on every rule
+   * written before 2026-09-12 — absence means "a standing commandment".
+   * Deliberately NOT in `RULE_CONTENT_FIELDS`: that list is the prose fields a
+   * manual edit compares, and these are set through the `rulebook` tool's
+   * `update_rule`, one field at a time.
+   */
+  kind?: string;
+  /** What is known at the point this judgment applies — the "if". */
+  precondition?: string;
+  /** The ONE next move chosen at that point — the "then". */
+  next_action?: string;
+  /** One of `RULE_ACTION_KINDS`. */
+  action_kind?: string;
+  /** Cost OF THE ACTION — one of `RULE_POLICY_LEVELS`. */
+  cost?: string;
+  /** Risk OF THE ACTION — one of `RULE_POLICY_LEVELS`. */
+  risk?: string;
+  /**
+   * The positions this rule used to state, oldest first — see
+   * `RuleHistoryEntry`. Absent on every rule no machine has ever rewritten.
+   */
+  history?: RuleHistoryEntry[];
+  /**
+   * Who settled the coherence question this rule was part of, and when —
+   * stamped on BOTH rules when the Expert rules on a tension, so a reader of
+   * either rule alone can see that a human decided this. Absent means nobody
+   * has.
+   */
+  settled_by?: string;
+  settled_at?: string;
+}
+
+/**
+ * How a rule was reviewed before it was approved. `sample_size` and `of` are
+ * present only on `"sampled"`.
+ */
+export interface RuleReview {
+  mode: "read" | "sampled";
+  sample_size?: number;
+  of?: number;
+  by?: string;
+  at?: string;
 }
 
 /**
  * The one review state of a rule — precedence
- * retired > rejected > evidence > draft > approved.
+ * retired > rejected > draft > approved.
  *
- * `evidence` sits above `draft` deliberately: an evidence rule IS a draft in
- * the database (nothing a machine writes is ever active), and every surface
- * that asks "is this waiting on the Expert?" must get NO for it.
+ * 🚨 There is no `evidence` state any more. For a few hours a rule read from
+ * ONE piece of a body of work sat here as `"evidence"`, below `draft`, hidden
+ * from the queue and the counters until it recurred. Frequency is not
+ * existence: a judgment stated once is a rule, and volume is answered by the
+ * default view, sections, and a bulk approve that records what was read.
  */
-export type RuleState =
-  | "approved"
-  | "draft"
-  | "evidence"
-  | "rejected"
-  | "retired";
+export type RuleState = "approved" | "draft" | "rejected" | "retired";
 
 export function ruleState(rule: RulebookRule): RuleState {
   if (rule.retired === true) return "retired";
   if (rule.rejected === true) return "rejected";
-  if (rule.standing === "evidence") return "evidence";
   if (rule.draft === true) return "draft";
   return "approved";
 }
 
-/** THE ONE predicate — mirrors `distill.is_evidence_rule` on the server. */
-export function isEvidenceRule(rule: RulebookRule): boolean {
-  return rule.standing === "evidence";
-}
-
-/** How many distinct pieces have produced this evidence rule. */
-export function evidenceSupport(rule: RulebookRule): number {
+/**
+ * How many distinct pieces of this rule's own source produced it. The
+ * recurrence BADGE's number — it gates nothing.
+ */
+export function recurrencePieces(rule: RulebookRule): number {
   return new Set(rule.source_ref?.evidence_pieces ?? []).size;
 }
 
+/** The ids this rule is documented as disagreeing with. */
+export function disagreesWith(rule: RulebookRule): string[] {
+  return (rule.relates_to ?? [])
+    .filter((r) => r.kind === "disagrees_with")
+    .map((r) => r.rule_id);
+}
+
+/** The source identity this rule was read from — "" when it carries none. */
+export function ruleSource(rule: RulebookRule): string {
+  return rule.source_ref?.source ?? "";
+}
+
 /**
- * The evidence rules a synthesized rule is built on: every evidence rule whose
- * piece the synthesized rule cites. A rule with no citations has no evidence to
- * show — never a guess.
+ * The rules only ONE source holds: every rule whose statement no other source
+ * in this Rulebook also states. These plus the disagreements are what a large
+ * Rulebook opens on — the judgments nobody else corroborated are exactly the
+ * ones a bulk approve must not swallow.
  */
-export function evidenceFor(
-  synthesized: RulebookRule,
+export function heldByOneSourceOnly(
   rules: readonly RulebookRule[],
-): RulebookRule[] {
-  const cited = new Set(synthesized.source_ref?.pieces ?? []);
-  if (cited.size === 0) return [];
-  return rules.filter(
-    (rule) =>
-      isEvidenceRule(rule) &&
-      Boolean(rule.source_ref?.corpus_piece) &&
-      cited.has(rule.source_ref!.corpus_piece!),
+): Set<string> {
+  const sourcesByStatement = new Map<string, Set<string>>();
+  for (const rule of rules) {
+    const key = rule.statement.trim().toLowerCase();
+    const set = sourcesByStatement.get(key) ?? new Set<string>();
+    set.add(ruleSource(rule));
+    sourcesByStatement.set(key, set);
+  }
+  return new Set(
+    rules
+      .filter(
+        (rule) =>
+          (sourcesByStatement.get(rule.statement.trim().toLowerCase())?.size ??
+            1) <= 1,
+      )
+      .map((rule) => rule.id),
   );
 }
 
 /**
- * Promoting an evidence rule to an ordinary draft — the Expert's one click.
- * It raises standing only: the rule stays a draft awaiting their Approve, and
- * not one word of it changes.
+ * 🚨 THE ONE STAMP. Every approve, reject and edit that goes through the write
+ * path carries who ruled and when — and, on an approval, what they actually
+ * read. A caller never writes these fields itself.
  */
-export function promoteEvidenceRule(rule: RulebookRule): RulebookRule {
-  const { standing: _standing, ...rest } = rule;
-  return { ...rest, draft: true };
+export function stampRuled(
+  rule: RulebookRule,
+  by: string | null,
+  reviewed?: RuleReview,
+): RulebookRule {
+  const at = new Date().toISOString();
+  return {
+    ...rule,
+    ...(by ? { ruled_by: by } : {}),
+    ruled_at: at,
+    ...(reviewed ? { reviewed: { ...reviewed, ...(by ? { by } : {}), at } } : {}),
+  };
 }
 
 /** The fields an edit can change — the content of a rule, as opposed to its review state. */

@@ -68,6 +68,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SiteIdentityMark } from "@/features/marketing/components/shared/SiteConnectionChips";
+import { SiteRecordsSection } from "@/features/marketing/components/site/SiteRecordsSection";
 import { CrawlScheduleSummary } from "@/features/marketing/components/crawls/CrawlScheduleSummary";
 import {
   initializeSite,
@@ -593,6 +594,12 @@ export function SiteOverview() {
               brandId={brandId}
               siteId={site.id}
             />
+
+            {/* THE REVERSE VIEW (DD-131 slice 2): everything produced ABOUT
+                this site, through the `content_ir_kind_instance → web_site`
+                association. Same component as the chat header's Records
+                popover — one mechanism, one badge, one archive control. */}
+            <SiteRecordsSection siteId={site.id} siteName={site.name} />
 
             <ConnectionsStrip
               statuses={statuses}

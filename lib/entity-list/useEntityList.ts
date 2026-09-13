@@ -33,6 +33,7 @@ import {
   readQueryFromParams,
 } from "./urlQuery";
 import type { ListScope } from "@/lib/list-scope/types";
+import { defaultListScopeFor } from "@/lib/list-scope";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -86,6 +87,24 @@ export interface UseEntityListArgs<TRow> {
    * away from it, and `resetFilters` returns here.
    */
   defaultScope?: ListScope;
+  /**
+   * THE REGISTRY TOKEN whose `default_list_scope` decides where this list OPENS
+   * (DD-137c / VISIBILITY-BY-CLASS §3.3, the second axis).
+   *
+   * 🚨 THIS IS WHY THE COMPLAINT HAPPENED. Four people in one organization each
+   * researched SEO keywords and each of them saw only their own — every one of
+   * those rows readable by every one of those people. Nobody decided that; the
+   * literal `{ kind: "mine" }` in `DEFAULT_LIST_SCOPE` did, for every list on
+   * the platform at once. A surface that names its token here opens where the
+   * registry says it should, and `platform.entity_types.default_list_scope` is
+   * one row to change when an organization decides otherwise.
+   *
+   * `defaultScope` still wins: a shell that is ALREADY about one scope (the
+   * admin System Agents route) is making a statement the registry cannot know.
+   * And the tabs still switch away from whatever this lands on — §3.3's "one
+   * click away and never blocked" is unchanged.
+   */
+  registryToken?: string;
   /**
    * Put the query in the URL (scope / search / filters / archived / deep /
    * page). Off by default so existing surfaces are untouched; on, the URL is
@@ -149,9 +168,26 @@ export function useEntityList<TRow>({
   view,
   defaultFilters,
   defaultScope,
+  registryToken,
   urlState = false,
   supportsArchived = true,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
+  // Where the registry says this list lands. It arrives ASYNCHRONOUSLY (one
+  // read of platform.entity_types, cached for the whole session), so it is
+  // seeded null and applied by the same late-value rule the archive knob uses
+  // below — see THE LATE-KNOB PROBLEM. On any failure `resolveListScope` has
+  // already announced itself and answered `mine`, the narrower screen.
+  const [registryScope, setRegistryScope] = useState<ListScope | null>(null);
+  useEffect(() => {
+    if (!registryToken) return;
+    let live = true;
+    void defaultListScopeFor(registryToken).then((s) => {
+      if (live) setRegistryScope(s);
+    });
+    return () => {
+      live = false;
+    };
+  }, [registryToken]);
   // THE ARCHIVED-ITEMS LAW's knob (../common-docs/policies/archived-items.md
   // §6): the platform default hides archived rows, and a user may flip their
   // own starting point in Settings → Lists. It seeds the DEFAULT only — the
@@ -165,6 +201,11 @@ export function useEntityList<TRow>({
     ...DEFAULT_ENTITY_LIST_QUERY,
     archived: archivedDefault,
     ...(defaultFilters ? { filters: defaultFilters } : {}),
+    // Precedence, narrowest statement first: the HOST's explicit scope (a shell
+    // that is already about one scope), then the REGISTRY, then the platform
+    // literal. A host that says nothing and a token that says nothing both land
+    // on `mine`, which is never wrong — only sometimes emptier than it should be.
+    ...(registryScope ? { scope: registryScope } : {}),
     ...(defaultScope ? { scope: defaultScope } : {}),
   };
   const [rawQuery, setQuery] = useQueryState(urlState, defaultQuery);
@@ -180,10 +221,18 @@ export function useEntityList<TRow>({
   // URL-backed surfaces need none of this — they re-parse against live
   // defaults on every render.
   const archivedTouched = useRef(false);
-  const query: EntityListQuery =
-    urlState || archivedTouched.current
-      ? rawQuery
-      : { ...rawQuery, archived: defaultQuery.archived };
+  // The registry's answer lands after the first render for exactly the same
+  // reason the archive knob does, so it follows exactly the same rule: an
+  // UNTOUCHED scope axis takes the default whenever it arrives; the moment the
+  // user clicks a scope tab, their choice owns the axis for the session.
+  const scopeTouched = useRef(false);
+  const query: EntityListQuery = urlState
+    ? rawQuery
+    : {
+        ...rawQuery,
+        ...(archivedTouched.current ? {} : { archived: defaultQuery.archived }),
+        ...(scopeTouched.current ? {} : { scope: defaultQuery.scope }),
+      };
   // Seeded from the query, not from "" — a URL-backed surface opened at
   // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce
   // catches up.
@@ -485,6 +534,7 @@ export function useEntityList<TRow>({
     // The surface's archive control patches this axis (EntityFilterPanel's
     // Archived radio). Once the user has chosen, the knob stops seeding it.
     if (patch.archived !== undefined) archivedTouched.current = true;
+    if (patch.scope !== undefined) scopeTouched.current = true;
     setQuery((prev) => ({
       ...prev,
       ...patch,
@@ -507,6 +557,9 @@ export function useEntityList<TRow>({
   // hardcoded "active" — the knob IS their default.
   const resetFilters = () => {
     archivedTouched.current = false;
+    // "Clear filters" hands the scope axis back to the registry too — returning
+    // it to a literal would put the complaint back one click at a time.
+    scopeTouched.current = false;
     setQuery((prev) => ({
       ...prev,
       archived: defaultQuery.archived,

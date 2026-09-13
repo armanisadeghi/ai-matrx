@@ -1,12 +1,23 @@
 "use client";
 
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import type { NoteContextLinks } from "../types";
+import {
+  type NoteContextField,
+} from "./noteSaveErrors";
 
 type IdentifiedRow = { id: string };
 
 function emptyLinks(): NoteContextLinks {
   return { project_id: null, task_id: null };
+}
+
+export interface NoteContextSettlement {
+  succeededFields: NoteContextField[];
+  failedFields: NoteContextField[];
+  safeCauses: Partial<Record<NoteContextField, string>>;
+  postSaveRecoveryError?: Error;
 }
 
 /**
@@ -69,48 +80,75 @@ export async function syncNoteContextLinks(args: {
   organizationId: string;
   projectId?: string | null;
   taskId?: string | null;
-}): Promise<void> {
-  const writes: Promise<unknown>[] = [];
+}): Promise<NoteContextSettlement> {
+  let postSaveRecoveryError: Error | undefined;
+  const writes: Array<{ field: NoteContextField; write: Promise<unknown> }> = [];
 
   if (args.projectId !== undefined) {
-    writes.push(
-      associationsService.setTargets({
+    writes.push({
+      field: "project_id",
+      write: associationsService.setTargets({
         sourceType: "note",
         sourceId: args.noteId,
         targetType: "project",
         targetIds: args.projectId ? [args.projectId] : [],
         orgId: args.organizationId,
       }),
-    );
+    });
   }
   if (args.taskId !== undefined) {
-    writes.push(
-      associationsService.setTargets({
+    writes.push({
+      field: "task_id",
+      write: associationsService.setTargets({
         sourceType: "note",
         sourceId: args.noteId,
         targetType: "task",
         targetIds: args.taskId ? [args.taskId] : [],
         orgId: args.organizationId,
       }),
-    );
+    });
   }
 
-  const results = await Promise.all(writes);
-  const failed = results.find(
-    (
-      result,
-    ): result is {
-      ok: false;
-      error: { message: string };
-    } =>
-      typeof result === "object" &&
-      result !== null &&
-      "ok" in result &&
-      result.ok === false,
-  );
-  if (failed) {
-    throw new Error(
-      `Note was saved, but its context association failed: ${failed.error.message}`,
-    );
+  const results = await Promise.allSettled(writes.map(({ write }) => write));
+  const succeededFields: NoteContextField[] = [];
+  const failedFields: NoteContextField[] = [];
+  const safeCauses: Partial<Record<NoteContextField, string>> = {};
+
+  for (const [index, result] of results.entries()) {
+    const field = writes[index].field;
+    if (
+      result.status === "fulfilled" &&
+      !(typeof result.value === "object" && result.value !== null && "ok" in result.value && result.value.ok === false)
+    ) {
+      succeededFields.push(field);
+      continue;
+    }
+    failedFields.push(field);
+    const cause = result.status === "rejected" ? result.reason : result.value;
+    safeCauses[field] = cause instanceof Error
+      ? cause.message
+      : typeof cause === "object" && cause !== null && "error" in cause &&
+          typeof cause.error === "object" && cause.error !== null &&
+          "message" in cause.error && typeof cause.error.message === "string"
+        ? cause.error.message
+        : "The context association request failed.";
   }
+
+  if (succeededFields.length > 0) {
+    try {
+      getAssociationsStore().invalidate("note", args.noteId);
+    } catch (error) {
+      // The durable RPC already settled. A cache refresh failure is recovery
+      // evidence, never evidence that a successful edge was not saved.
+      postSaveRecoveryError = error instanceof Error
+        ? error
+        : new Error("Could not invalidate the note association cache.");
+    }
+  }
+  return {
+    succeededFields,
+    failedFields,
+    safeCauses,
+    postSaveRecoveryError,
+  };
 }

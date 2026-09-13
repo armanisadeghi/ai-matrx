@@ -6,6 +6,7 @@ import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { applyListScope } from "@/lib/list-scope/applyListScope";
+import { defaultListScopeFor } from "@/lib/list-scope";
 import type { ListScope } from "@/lib/list-scope/types";
 import type { Database, Json } from "@/types/database.types";
 import type {
@@ -68,18 +69,23 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
 
 /**
  * Fetch all transcripts for the caller's declared scope (excluding deleted).
- * VIEW LAW: defaults to "mine" — RLS is the ceiling, never the filter.
+ *
+ * THE VIEW LAW is unchanged — RLS is the ceiling, never the filter, and this list declares its
+ * scope. What DD-137c / §3.3 changes is the DEFAULT: it comes from the registry
+ * (`transcript` -> `organization`) instead of the literal `{ kind: "mine" }` that used to hide
+ * every colleague's recording on a screen that never said it was hiding anything.
  */
 export async function fetchTranscripts(
-  scope: ListScope = { kind: "mine" },
+  scope?: ListScope,
 ): Promise<Transcript[]> {
   const userId = requireUserId();
+  const resolved = scope ?? (await defaultListScopeFor("transcript"));
   let query = supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
     .is("deleted_at", null);
-  query = applyListScope(query, scope, { userId, ownerColumn: "created_by" });
+  query = applyListScope(query, resolved, { userId, ownerColumn: "created_by" });
   const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
@@ -97,15 +103,16 @@ export async function fetchTranscripts(
 export async function fetchTranscriptsPaginated(
   limit: number = 20,
   offset: number = 0,
-  scope: ListScope = { kind: "mine" },
+  scope?: ListScope,
 ): Promise<Transcript[]> {
   const userId = requireUserId();
+  const resolved = scope ?? (await defaultListScopeFor("transcript"));
   let query = supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
     .is("deleted_at", null);
-  query = applyListScope(query, scope, { userId, ownerColumn: "created_by" });
+  query = applyListScope(query, resolved, { userId, ownerColumn: "created_by" });
   const { data, error } = await query
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -489,14 +496,23 @@ export async function copyTranscript(id: string): Promise<Transcript> {
 /**
  * Search transcripts by text (searches title and description)
  */
-export async function searchTranscripts(query: string): Promise<Transcript[]> {
+export async function searchTranscripts(
+  query: string,
+  scope?: ListScope,
+): Promise<Transcript[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  // THE VIEW LAW still holds: this list declares its scope. DD-137c / §3.3 changes only where the
+  // declaration comes from — `transcript` is registered `organization`, so search covers the
+  // organization's transcripts and a search that finds nothing no longer means somebody else
+  // recorded it.
+  const resolved = scope ?? (await defaultListScopeFor("transcript"));
+  let searchQuery = supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .is("deleted_at", null)
-    .eq("created_by", userId) // VIEW LAW: mine-scoped
+    .is("deleted_at", null);
+  searchQuery = applyListScope(searchQuery, resolved, { userId, ownerColumn: "created_by" });
+  const { data, error } = await searchQuery
     .or(buildSearchOr(query, ["title", "description"]))
     .order("updated_at", { ascending: false });
 
@@ -513,14 +529,17 @@ export async function searchTranscripts(query: string): Promise<Transcript[]> {
  */
 export async function getTranscriptsByFolder(
   folderName: string,
+  scope?: ListScope,
 ): Promise<Transcript[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const resolved = scope ?? (await defaultListScopeFor("transcript"));
+  let folderQuery = supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .is("deleted_at", null)
-    .eq("created_by", userId) // VIEW LAW: mine-scoped
+    .is("deleted_at", null);
+  folderQuery = applyListScope(folderQuery, resolved, { userId, ownerColumn: "created_by" });
+  const { data, error } = await folderQuery
     .eq("folder_name", folderName)
     .order("updated_at", { ascending: false });
 
@@ -535,14 +554,19 @@ export async function getTranscriptsByFolder(
 /**
  * Get transcripts by tag
  */
-export async function getTranscriptsByTag(tag: string): Promise<Transcript[]> {
+export async function getTranscriptsByTag(
+  tag: string,
+  scope?: ListScope,
+): Promise<Transcript[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const resolved = scope ?? (await defaultListScopeFor("transcript"));
+  let tagQuery = supabase
     .schema("transcripts")
     .from("transcripts")
     .select("*")
-    .is("deleted_at", null)
-    .eq("created_by", userId) // VIEW LAW: mine-scoped
+    .is("deleted_at", null);
+  tagQuery = applyListScope(tagQuery, resolved, { userId, ownerColumn: "created_by" });
+  const { data, error } = await tagQuery
     .contains("tags", [tag])
     .order("updated_at", { ascending: false });
 

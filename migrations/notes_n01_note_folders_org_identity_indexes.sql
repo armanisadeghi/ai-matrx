@@ -1,0 +1,65 @@
+-- N01: additive organization-qualified Notes folder identity indexes.
+-- Independently accepted preparation e508a0e637; canonical runner acceptance
+-- d0a3aacf2973703889a50d8c5b24bb872883d8ff + cd4cfb9f590464a2f985ba0b6a02d18089c109e8.
+-- Apply only with aidream/db/apply_migrations.py --source matrx-frontend --only
+-- notes_n01_note_folders_org_identity_indexes.sql. The file-scoped session
+-- preserves the timeouts below and verifies a positive bounded lock timeout.
+-- Changes no rows, FK, trigger, policy, ACL, old unique index, or table shape.
+-- Partial execution is not success: rerun accepts only exact valid-ready indexes.
+SET lock_timeout = '2s';
+SET statement_timeout = '10min';
+
+DO $n01_preflight$
+DECLARE
+  v_relation_oid constant oid := 1711434;
+  v_acl constant text := '0aeef0cb1a270e08c63e9cd8456a2463';
+  v_columns constant text := '6cd92dd38240133f953bb2c661fec513';
+  v_triggers constant text := 'dcb6c082765a0c9ec2c7fe395c15a022';
+  v_policies constant text := 'd9e12a49ae193c694ded6ffc3a60f157';
+  v_fks constant text := '6fec6c3bd5369ebeb9b705a6716df044';
+  v_old constant text := 'CREATE UNIQUE INDEX note_folders_created_by_name_unique ON workbench.note_folders USING btree (created_by, name)';
+  v_scoped constant text := 'CREATE UNIQUE INDEX note_folders_organization_created_by_name_unique ON workbench.note_folders USING btree (organization_id, created_by, name)';
+  v_parent constant text := 'CREATE UNIQUE INDEX note_folders_id_organization_unique ON workbench.note_folders USING btree (id, organization_id)';
+  v_stage text := 'precondition';
+BEGIN
+  PERFORM set_config('search_path', '', true);
+  IF 'workbench.note_folders'::regclass::oid <> v_relation_oid THEN RAISE EXCEPTION 'N01 % failed: note_folders OID changed',v_stage; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_class c WHERE c.oid=v_relation_oid AND c.relowner='postgres'::regrole AND c.relrowsecurity AND NOT c.relforcerowsecurity) THEN RAISE EXCEPTION 'N01 % failed: owner or RLS changed',v_stage; END IF;
+  IF (SELECT md5(jsonb_build_object('acl_is_null',c.relacl IS NULL,'grants',coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',coalesce(g.rolname,'PUBLIC'),'grantee',coalesce(r.rolname,'PUBLIC'),'privilege',(x).privilege_type,'grantable',(x).is_grantable) ORDER BY coalesce(g.rolname,'PUBLIC'),coalesce(r.rolname,'PUBLIC'),(x).privilege_type,(x).is_grantable) FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x LEFT JOIN pg_roles g ON g.oid=(x).grantor LEFT JOIN pg_roles r ON r.oid=(x).grantee),'[]'::jsonb))::text) FROM pg_class c WHERE c.oid=v_relation_oid) IS DISTINCT FROM v_acl THEN RAISE EXCEPTION 'N01 % failed: ACL changed',v_stage; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'not_null',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid,false)) ORDER BY a.attname),'[]'::jsonb)::text) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=v_relation_oid AND a.attname IN ('id','organization_id','created_by','name','parent_id') AND NOT a.attisdropped) IS DISTINCT FROM v_columns THEN RAISE EXCEPTION 'N01 % failed: identity columns changed',v_stage; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',t.tgname,'enabled',t.tgenabled,'definition',pg_get_triggerdef(t.oid,false),'function',jsonb_build_object('schema',n.nspname,'name',p.proname,'identity_arguments',pg_get_function_identity_arguments(p.oid),'owner',o.rolname,'config',coalesce((SELECT jsonb_agg(v ORDER BY v) FROM unnest(p.proconfig) v),'[]'::jsonb),'acl',jsonb_build_object('acl_is_null',p.proacl IS NULL,'grants',coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',coalesce(g.rolname,'PUBLIC'),'grantee',coalesce(r.rolname,'PUBLIC'),'privilege',(x).privilege_type,'grantable',(x).is_grantable) ORDER BY coalesce(g.rolname,'PUBLIC'),coalesce(r.rolname,'PUBLIC'),(x).privilege_type,(x).is_grantable) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) x LEFT JOIN pg_roles g ON g.oid=(x).grantor LEFT JOIN pg_roles r ON r.oid=(x).grantee),'[]'::jsonb)),'definition',pg_get_functiondef(p.oid))) ORDER BY t.tgname),'[]'::jsonb)::text) FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_roles o ON o.oid=p.proowner WHERE t.tgrelid=v_relation_oid AND NOT t.tgisinternal) IS DISTINCT FROM v_triggers THEN RAISE EXCEPTION 'N01 % failed: trigger/helper state changed',v_stage; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',p.polname,'command',p.polcmd,'permissive',p.polpermissive,'roles',coalesce((SELECT jsonb_agg(coalesce(r.rolname,'PUBLIC') ORDER BY coalesce(r.rolname,'PUBLIC')) FROM unnest(p.polroles) role_oid LEFT JOIN pg_roles r ON r.oid=role_oid),'[]'::jsonb),'using',pg_get_expr(p.polqual,p.polrelid,false),'with_check',pg_get_expr(p.polwithcheck,p.polrelid,false)) ORDER BY p.polname,p.polcmd),'[]'::jsonb)::text) FROM pg_policy p WHERE p.polrelid=v_relation_oid) IS DISTINCT FROM v_policies THEN RAISE EXCEPTION 'N01 % failed: policy state changed',v_stage; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',c.conname,'definition',pg_get_constraintdef(c.oid,false),'validated',c.convalidated,'deferrable',c.condeferrable,'initially_deferred',c.condeferred,'child',c.conrelid::regclass::text,'parent',c.confrelid::regclass::text) ORDER BY c.conname),'[]'::jsonb)::text) FROM pg_constraint c WHERE c.contype='f' AND (c.conrelid='workbench.notes'::regclass OR c.confrelid='workbench.note_folders'::regclass)) IS DISTINCT FROM v_fks THEN RAISE EXCEPTION 'N01 % failed: Notes/folder FK state changed',v_stage; END IF;
+  IF (SELECT count(*) FROM pg_index i JOIN pg_class x ON x.oid=i.indexrelid WHERE i.indrelid=v_relation_oid AND x.relname='note_folders_created_by_name_unique' AND i.indisunique AND i.indisvalid AND i.indisready AND pg_get_indexdef(i.indexrelid)=v_old) <> 1 THEN RAISE EXCEPTION 'N01 % failed: old unique index is not exact-valid-ready',v_stage; END IF;
+  IF EXISTS (SELECT 1 FROM pg_class x JOIN pg_namespace n ON n.oid=x.relnamespace WHERE n.nspname='workbench' AND x.relname IN ('note_folders_organization_created_by_name_unique','note_folders_id_organization_unique') AND NOT EXISTS (SELECT 1 FROM pg_index i WHERE i.indexrelid=x.oid AND i.indisunique AND i.indisvalid AND i.indisready AND pg_get_indexdef(i.indexrelid)=CASE x.relname WHEN 'note_folders_organization_created_by_name_unique' THEN v_scoped ELSE v_parent END)) THEN RAISE EXCEPTION 'N01 % failed: named support index is invalid, partial, or non-exact',v_stage; END IF;
+  IF EXISTS (SELECT 1 FROM (SELECT organization_id,created_by,name FROM workbench.note_folders GROUP BY organization_id,created_by,name HAVING count(*)>1) d) THEN RAISE EXCEPTION 'N01 % failed: proposed scoped identity has duplicates',v_stage; END IF;
+END
+$n01_preflight$;
+
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS note_folders_organization_created_by_name_unique ON workbench.note_folders (organization_id, created_by, name);
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS note_folders_id_organization_unique ON workbench.note_folders (id, organization_id);
+
+DO $n01_postflight$
+DECLARE
+  v_relation_oid constant oid := 1711434;
+  v_acl constant text := '0aeef0cb1a270e08c63e9cd8456a2463';
+  v_columns constant text := '6cd92dd38240133f953bb2c661fec513';
+  v_triggers constant text := 'dcb6c082765a0c9ec2c7fe395c15a022';
+  v_policies constant text := 'd9e12a49ae193c694ded6ffc3a60f157';
+  v_fks constant text := '6fec6c3bd5369ebeb9b705a6716df044';
+  v_old constant text := 'CREATE UNIQUE INDEX note_folders_created_by_name_unique ON workbench.note_folders USING btree (created_by, name)';
+  v_scoped constant text := 'CREATE UNIQUE INDEX note_folders_organization_created_by_name_unique ON workbench.note_folders USING btree (organization_id, created_by, name)';
+  v_parent constant text := 'CREATE UNIQUE INDEX note_folders_id_organization_unique ON workbench.note_folders USING btree (id, organization_id)';
+BEGIN
+  PERFORM set_config('search_path', '', true);
+  IF 'workbench.note_folders'::regclass::oid <> v_relation_oid THEN RAISE EXCEPTION 'N01 postflight failed: note_folders OID changed'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_class c WHERE c.oid=v_relation_oid AND c.relowner='postgres'::regrole AND c.relrowsecurity AND NOT c.relforcerowsecurity) THEN RAISE EXCEPTION 'N01 postflight failed: owner or RLS changed'; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'not_null',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid,false)) ORDER BY a.attname),'[]'::jsonb)::text) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=v_relation_oid AND a.attname IN ('id','organization_id','created_by','name','parent_id') AND NOT a.attisdropped) IS DISTINCT FROM v_columns THEN RAISE EXCEPTION 'N01 postflight failed: identity columns changed'; END IF;
+  IF (SELECT md5(jsonb_build_object('acl_is_null',c.relacl IS NULL,'grants',coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',coalesce(g.rolname,'PUBLIC'),'grantee',coalesce(r.rolname,'PUBLIC'),'privilege',(x).privilege_type,'grantable',(x).is_grantable) ORDER BY coalesce(g.rolname,'PUBLIC'),coalesce(r.rolname,'PUBLIC'),(x).privilege_type,(x).is_grantable) FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x LEFT JOIN pg_roles g ON g.oid=(x).grantor LEFT JOIN pg_roles r ON r.oid=(x).grantee),'[]'::jsonb))::text) FROM pg_class c WHERE c.oid=v_relation_oid) IS DISTINCT FROM v_acl THEN RAISE EXCEPTION 'N01 postflight failed: ACL changed'; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',t.tgname,'enabled',t.tgenabled,'definition',pg_get_triggerdef(t.oid,false),'function',jsonb_build_object('schema',n.nspname,'name',p.proname,'identity_arguments',pg_get_function_identity_arguments(p.oid),'owner',o.rolname,'config',coalesce((SELECT jsonb_agg(v ORDER BY v) FROM unnest(p.proconfig) v),'[]'::jsonb),'acl',jsonb_build_object('acl_is_null',p.proacl IS NULL,'grants',coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',coalesce(g.rolname,'PUBLIC'),'grantee',coalesce(r.rolname,'PUBLIC'),'privilege',(x).privilege_type,'grantable',(x).is_grantable) ORDER BY coalesce(g.rolname,'PUBLIC'),coalesce(r.rolname,'PUBLIC'),(x).privilege_type,(x).is_grantable) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) x LEFT JOIN pg_roles g ON g.oid=(x).grantor LEFT JOIN pg_roles r ON r.oid=(x).grantee),'[]'::jsonb)),'definition',pg_get_functiondef(p.oid))) ORDER BY t.tgname),'[]'::jsonb)::text) FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_roles o ON o.oid=p.proowner WHERE t.tgrelid=v_relation_oid AND NOT t.tgisinternal) IS DISTINCT FROM v_triggers THEN RAISE EXCEPTION 'N01 postflight failed: trigger/helper state changed'; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',p.polname,'command',p.polcmd,'permissive',p.polpermissive,'roles',coalesce((SELECT jsonb_agg(coalesce(r.rolname,'PUBLIC') ORDER BY coalesce(r.rolname,'PUBLIC')) FROM unnest(p.polroles) role_oid LEFT JOIN pg_roles r ON r.oid=role_oid),'[]'::jsonb),'using',pg_get_expr(p.polqual,p.polrelid,false),'with_check',pg_get_expr(p.polwithcheck,p.polrelid,false)) ORDER BY p.polname,p.polcmd),'[]'::jsonb)::text) FROM pg_policy p WHERE p.polrelid=v_relation_oid) IS DISTINCT FROM v_policies THEN RAISE EXCEPTION 'N01 postflight failed: policy state changed'; END IF;
+  IF (SELECT md5(coalesce(jsonb_agg(jsonb_build_object('name',c.conname,'definition',pg_get_constraintdef(c.oid,false),'validated',c.convalidated,'deferrable',c.condeferrable,'initially_deferred',c.condeferred,'child',c.conrelid::regclass::text,'parent',c.confrelid::regclass::text) ORDER BY c.conname),'[]'::jsonb)::text) FROM pg_constraint c WHERE c.contype='f' AND (c.conrelid='workbench.notes'::regclass OR c.confrelid='workbench.note_folders'::regclass)) IS DISTINCT FROM v_fks THEN RAISE EXCEPTION 'N01 postflight failed: Notes/folder FK state changed'; END IF;
+  IF (SELECT count(*) FROM pg_index i JOIN pg_class x ON x.oid=i.indexrelid WHERE i.indrelid=v_relation_oid AND x.relname='note_folders_created_by_name_unique' AND i.indisunique AND i.indisvalid AND i.indisready AND pg_get_indexdef(i.indexrelid)=v_old) <> 1 OR (SELECT count(*) FROM pg_index i JOIN pg_class x ON x.oid=i.indexrelid WHERE i.indrelid=v_relation_oid AND x.relname='note_folders_organization_created_by_name_unique' AND i.indisunique AND i.indisvalid AND i.indisready AND pg_get_indexdef(i.indexrelid)=v_scoped) <> 1 OR (SELECT count(*) FROM pg_index i JOIN pg_class x ON x.oid=i.indexrelid WHERE i.indrelid=v_relation_oid AND x.relname='note_folders_id_organization_unique' AND i.indisunique AND i.indisvalid AND i.indisready AND pg_get_indexdef(i.indexrelid)=v_parent) <> 1 THEN RAISE EXCEPTION 'N01 postflight failed: exact valid-ready index is absent'; END IF;
+  -- Counts are capture diagnostics, never concurrent-build equality gates.
+END
+$n01_postflight$;

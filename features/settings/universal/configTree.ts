@@ -27,7 +27,7 @@ export function isConfigTabId(tabId: string | null | undefined): boolean {
   return Boolean(tabId && (tabId === CONFIG_TAB_ROOT || tabId.startsWith(`${CONFIG_TAB_ROOT}.`)));
 }
 
-/** Tree nodes for the nav — only domains and features that actually have keys. */
+/** Tree nodes for the nav — every canonical domain and feature is visible. */
 export function buildConfigTreeNodes(domains: SettingsDomain[]): SettingsTreeNode[] {
   if (domains.length === 0) return [];
   return [
@@ -41,15 +41,17 @@ export function buildConfigTreeNodes(domains: SettingsDomain[]): SettingsTreeNod
       children: domains.map((domain) => ({
         id: domain.id,
         label: domain.name,
-        description: `${countKeys(domain)} setting${countKeys(domain) === 1 ? "" : "s"}`,
+        description: sectionCountDescription(countKeys(domain)),
         searchKeywords: domain.features.flatMap((f) => f.knobs.map((k) => k.label)),
         children: [
           ...(domain.domainLeafId
             ? [
                 {
                   id: domain.domainLeafId,
-                  label: domain.name,
-                  description: `Settings that apply across ${domain.name}.`,
+                  label: "Overview",
+                  description: domain.knobs.length > 0
+                    ? `Settings that apply across ${domain.name}.`
+                    : `Browse ${domain.name} settings and coverage.`,
                   searchKeywords: domain.knobs.map((k) => k.label),
                 },
               ]
@@ -57,7 +59,7 @@ export function buildConfigTreeNodes(domains: SettingsDomain[]): SettingsTreeNod
           ...domain.features.map((feature) => ({
             id: feature.id,
             label: feature.name,
-            description: `${feature.knobs.length} setting${feature.knobs.length === 1 ? "" : "s"}`,
+            description: sectionCountDescription(feature.knobs.length),
             searchKeywords: feature.knobs.flatMap((k) => [k.label, k.full_key]),
           })),
         ],
@@ -68,6 +70,12 @@ export function buildConfigTreeNodes(domains: SettingsDomain[]): SettingsTreeNod
 
 function countKeys(domain: SettingsDomain): number {
   return domain.knobs.length + domain.features.reduce((n, f) => n + f.knobs.length, 0);
+}
+
+function sectionCountDescription(count: number): string {
+  return count === 0
+    ? "No controls registered yet"
+    : `${count} setting${count === 1 ? "" : "s"}`;
 }
 
 export type ResolvedConfigSection = {

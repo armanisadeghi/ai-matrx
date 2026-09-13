@@ -42,6 +42,7 @@ import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surface
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { getIconComponent } from "@ai-matrx/icons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   selectIsDebugMode,
   toggleDebugMode,
@@ -109,7 +110,6 @@ import type {
   SurfaceBoundAgentEntry,
   SurfaceBoundAgentSection,
 } from "@/features/surfaces/services/surface-bound-agents.service";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectActiveScopeIds } from "@/features/scopes/redux/selectors/active-context";
 import {
   resolveApplicationScope,
@@ -453,6 +453,7 @@ export function useContextMenuActions(
   const hasCompareBase = useAppSelector(selectHasCompareBase);
   const currentUserId = useAppSelector(selectUserId);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const organizationId = useAppSelector(selectOrganizationId);
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const isAdminIndicatorOpen = useAppSelector((state) =>
     selectIsOverlayOpen(state, "adminIndicator"),
@@ -487,6 +488,7 @@ export function useContextMenuActions(
     source: richDocSource,
     metadata: null,
     dispatch,
+    organizationId,
     isAuthenticated: Boolean(currentUserId),
     isAdmin,
     isCreator: false,

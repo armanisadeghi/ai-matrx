@@ -4,16 +4,18 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import {
-  resolvePersonalOrgId,
-  ensureOrgId,
-} from "@/lib/organizations/personalOrg";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import type {
   Note,
   NoteRow,
+  NoteUpdate,
   CreateNoteInput,
   UpdateNoteInput,
   NoteListItem,
+  FolderReference,
+  NoteContextLinks,
+  UpdateNoteOptions,
 } from "../types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { findEmptyNewNote } from "../utils/noteUtils";
@@ -21,21 +23,33 @@ import {
   hydrateNoteContextLinks,
   syncNoteContextLinks,
 } from "./noteContextAssociations";
+import {
+  NoteContextPartialSaveError,
+  type NoteSaveReceipt,
+  NoteUpdateConflictError,
+} from "./noteSaveErrors";
+import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
- * Fetch all notes owned by the current user (excluding deleted).
- * Explicitly scoped to created_by — RLS now also grants access to shared notes
- * via hierarchy, so without this filter "my notes" would include all accessible ones.
+ * Fetch the notes this screen should open on (excluding deleted).
+ *
+ * WHERE THIS LANDS IS A REGISTRY WORD, NOT A LITERAL (DD-137c, VISIBILITY-BY-CLASS §3.3). The
+ * `note` token is registered `default_list_scope = 'organization'`, so the list opens on the
+ * organization's notes — the viewer's own included — and a caller that genuinely means "only mine"
+ * passes `"mine"` and gets exactly that. The old comment here said the filter existed so that "my
+ * notes" would not include shared ones; that is still available, it is just no longer assumed for
+ * every caller. RLS remains the ceiling either way: this only decides where the screen starts.
  */
-export async function fetchNotes(): Promise<Note[]> {
+export async function fetchNotes(scope?: ListScopeWord): Promise<Note[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let query = supabase
     .schema("workbench")
     .from("notes")
     .select("*")
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .is("deleted_at", null);
+  if (ownerOnly) query = query.eq("created_by", userId);
+  const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching notes:", error);
@@ -48,17 +62,18 @@ export async function fetchNotes(): Promise<Note[]> {
 /**
  * Fetch lightweight note list items (no content) for pickers and sidebars.
  */
-export async function fetchNoteListItems(): Promise<NoteListItem[]> {
+export async function fetchNoteListItems(scope?: ListScopeWord): Promise<NoteListItem[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let query = supabase
     .schema("workbench")
     .from("notes")
     .select(
       "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
     )
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .is("deleted_at", null);
+  if (ownerOnly) query = query.eq("created_by", userId);
+  const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching note list items:", error);
@@ -114,38 +129,6 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
 }
 
 /**
- * Assign the caller's personal organization to all of their notes that have no
- * organization ("homeless" notes). Resolves the personal org via the canonical
- * session-cached `resolvePersonalOrgId`, so it works regardless of Redux
- * hydration and without a per-call RPC.
- *
- * Returns the personal org id and the ids of the notes that were re-homed.
- */
-export async function assignHomelessNotesToPersonalOrg(): Promise<{
-  organizationId: string;
-  noteIds: string[];
-}> {
-  const userId = requireUserId();
-
-  const organizationId = await resolvePersonalOrgId();
-
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("notes")
-    .update({ organization_id: organizationId })
-    .eq("created_by", userId)
-    .is("organization_id", null)
-    .is("deleted_at", null)
-    .select("id");
-  if (error) throw error;
-
-  return {
-    organizationId,
-    noteIds: (data ?? []).map((r) => r.id as string),
-  };
-}
-
-/**
  * Create a new note
  * Automatically generates label from content if label is missing or is "New Note"
  * IMPORTANT: Checks for existing empty notes and reuses them to prevent duplicates
@@ -153,6 +136,7 @@ export async function assignHomelessNotesToPersonalOrg(): Promise<{
 export function emptyNoteReuseUpdates(
   existingNote: Note,
   input: CreateNoteInput,
+  targetFolder: { id: string; name: string },
 ): UpdateNoteInput {
   const updates: UpdateNoteInput = {};
   const requestedLabel = input.label?.trim();
@@ -163,25 +147,118 @@ export function emptyNoteReuseUpdates(
   ) {
     updates.label = requestedLabel;
   }
-  const targetFolder = input.folder_name || "Draft";
-  if (existingNote.folder_name !== targetFolder) {
-    updates.folder_name = targetFolder;
+  if (
+    existingNote.folder_id !== targetFolder.id ||
+    existingNote.folder_name !== targetFolder.name
+  ) {
+    updates.folder_id = targetFolder.id;
   }
+  if (input.metadata !== undefined) updates.metadata = input.metadata;
+  if (input.position !== undefined) updates.position = input.position;
+  if (input.visibility !== undefined) updates.visibility = input.visibility;
+  if (input.project_id !== undefined) updates.project_id = input.project_id;
+  if (input.task_id !== undefined) updates.task_id = input.task_id;
   return updates;
 }
 
-export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
+/**
+ * Materialize a client-generated note under its already captured identity.
+ * This deliberately never calls `createNote`: an autogenerated record's
+ * stable client id is its only reconciliation key, and empty-note reuse would
+ * silently redirect its buffered edits into another record.
+ */
+export async function materializeNote(input: Note): Promise<Note> {
+  const organizationId = requireOrganizationContext(input.organization_id);
+  const userId = requireUserId();
+  if (input.created_by !== userId) {
+    throw new Error("The signed-in user changed before this note could be saved.");
+  }
+  if (input.folder_name?.trim() && !input.folder_id) {
+    throw new Error("This draft still names a folder that has not been admitted in this organization. Keep the draft open, choose the folder again, and retry.");
+  }
+  if (input.folder_id) {
+    const { data: folder, error: folderError } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id, name")
+      .eq("id", input.folder_id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (folderError || !folder) {
+      throw folderError ?? new Error("The selected folder is unavailable in this organization. Choose another folder and try again.");
+    }
+    input = { ...input, folder_name: folder.name };
+  }
+  const { data, error } = await supabase
+    .schema("workbench")
+    .from("notes")
+    .insert({
+      id: input.id,
+      created_by: userId,
+      label: input.label,
+      content: input.content,
+      folder_name: input.folder_name,
+      folder_id: input.folder_id,
+      organization_id: organizationId,
+      tags: input.tags,
+      metadata: input.metadata,
+      position: input.position,
+      visibility: input.visibility,
+    })
+    .select()
+    .single();
+  if (error) {
+    throw new Error(`This new note was not confirmed as saved. Keep the draft open and retry from the existing note: ${error.message}`);
+  }
+  const [note] = await hydrateNoteContextLinks([data]);
+  return note;
+}
+
+export async function createNote(input: CreateNoteInput): Promise<Note> {
+  // This must be the first tenant operation: even an empty-note reuse is a
+  // cross-organization read unless the captured destination is admitted first.
+  const organizationId = requireOrganizationContext(input.organization_id);
   const userId = requireUserId();
 
   const content = input.content || "";
-  const targetFolder = input.folder_name || "Draft";
+  const requestedFolderName = input.folder_name?.trim() || "Draft";
+  let targetFolder: { id: string; name: string };
+  if (input.folder_id) {
+    const { data: folder, error: folderError } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id, name")
+      .eq("id", input.folder_id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (folderError || !folder) {
+      throw folderError ?? new Error("The selected folder is unavailable in this organization. Choose another folder and try again.");
+    }
+    targetFolder = folder;
+  } else {
+    targetFolder = {
+      id: await createFolder(requestedFolderName, organizationId),
+      name: requestedFolderName,
+    };
+  }
 
   // CRITICAL: If creating an empty note (no content or whitespace only), check for existing empty notes
   const isCreatingEmptyNote = !content || content.trim() === "";
 
   if (isCreatingEmptyNote) {
-    // Fetch all user's notes to check for existing empty ones
-    const existingNotes = await fetchNotes();
+    const { data: existingRows, error: reuseError } = await supabase
+      .schema("workbench")
+      .from("notes")
+      .select("*")
+      .eq("created_by", userId)
+      .eq("organization_id", organizationId)
+      .eq("folder_id", targetFolder.id)
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false });
+    if (reuseError) throw reuseError;
+    const existingNotes = await hydrateNoteContextLinks(existingRows ?? []);
     const existingEmptyNote = findEmptyNewNote(existingNotes);
 
     if (existingEmptyNote) {
@@ -192,7 +269,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
 
       // Reuse must preserve the caller's explicit name. Returning the generic
       // empty row unchanged made the war-room "+ New" dialog ignore its input.
-      const reuseUpdates = emptyNoteReuseUpdates(existingEmptyNote, input);
+      const reuseUpdates = emptyNoteReuseUpdates(existingEmptyNote, input, targetFolder);
       if (Object.keys(reuseUpdates).length > 0) {
         return updateNote(existingEmptyNote.id, reuseUpdates);
       }
@@ -218,29 +295,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
     }
   }
 
-  // Resolve a home org so notes are never created homeless. If the caller
-  // didn't pass one, ride the user's ACTIVE org (header selection, else their
-  // personal org) via the canonical resolver — every write follows the org the
-  // user is currently working in.
-  let organizationId = input.organization_id ?? null;
-  if (!organizationId) {
-    try {
-      organizationId = await ensureOrgId(undefined);
-    } catch (orgError) {
-      // Don't block note creation on org resolution — log loudly and fall back
-      // to homeless (the sidebar's "add to my organization" action recovers it).
-      console.error("Could not resolve organization for note:", orgError);
-    }
-  }
-
-  if (!organizationId) {
-    throw new Error(
-      "Cannot create note: no organization could be resolved for the current user.",
-    );
-  }
-
   // No existing empty note found, create a new one
-  const folderId = input.folder_id ?? (await createFolder(targetFolder));
   const { data, error } = await supabase
     .schema("workbench")
     .from("notes")
@@ -251,8 +306,8 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
       created_by: userId,
       label: finalLabel,
       content: content,
-      folder_name: targetFolder,
-      folder_id: folderId,
+      folder_name: targetFolder.name,
+      folder_id: targetFolder.id,
       tags: input.tags || [],
       metadata: input.metadata || {},
       position: input.position || 0,
@@ -277,41 +332,103 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
     "Content length:",
     content.length,
   );
-  await syncNoteContextLinks({
+  const contextSettlement = await syncNoteContextLinks({
     noteId: data.id,
     organizationId,
     projectId: input.project_id,
     taskId: input.task_id,
   });
-  const [note] = await hydrateNoteContextLinks([data]);
-  return note;
+  const note: Note = {
+    ...data,
+    project_id: contextSettlement.succeededFields.includes("project_id")
+      ? input.project_id ?? null
+      : null,
+    task_id: contextSettlement.succeededFields.includes("task_id")
+      ? input.task_id ?? null
+      : null,
+  };
+  const receipt: NoteSaveReceipt = {
+    note,
+    databaseWrite: "saved",
+    ...contextSettlement,
+  };
+  if (receipt.failedFields.length > 0) {
+    throw new NoteContextPartialSaveError(receipt);
+  }
+  if (receipt.postSaveRecoveryError) {
+    console.error("Created note context links need a cache recovery", receipt.postSaveRecoveryError);
+  }
+  return receipt.note;
 }
 
 /**
  * Update an existing note.
  *
- * Optional `expectedUpdatedAt` enables atomic optimistic locking
- * (`.eq("updated_at", expected)`). The BEFORE UPDATE `_touch_row` trigger
- * only mutates NEW — the WHERE still matches the OLD row. Prefer the Redux
- * autosave / `saveNote` path for the live `/notes` UI; this helper remains
- * for legacy surfaces (NotesLayout, useAutoSave, mobile dock).
+ * An expected version uses the platform CAS primitive. The organization is
+ * always derived from the authorized persisted row, never from active UI
+ * context. Legacy callers without an edit-base version retain LWW behavior.
  */
-export async function updateNote(
+export async function persistNoteUpdate(
   id: string,
   updates: UpdateNoteInput,
-  options?: { expectedUpdatedAt?: string | null },
-): Promise<Note> {
-  const normalizedUpdates: UpdateNoteInput = { ...updates };
-  // `folder_name` is denormalized display data; `folder_id` is the canonical
-  // relationship used for org inheritance and folder-aware queries. Legacy
-  // editors still call this service directly, so resolve both fields here
-  // instead of allowing a visually-moved note to keep its old folder_id.
-  if (updates.folder_name !== undefined && updates.folder_id === undefined) {
-    const folderName = updates.folder_name?.trim();
-    normalizedUpdates.folder_name = folderName || null;
-    normalizedUpdates.folder_id = folderName
-      ? await createFolder(folderName)
-      : null;
+  options?: UpdateNoteOptions,
+): Promise<NoteSaveReceipt> {
+  const untypedUpdates = updates as Record<string, unknown>;
+  if (untypedUpdates.organization_id !== undefined) {
+    throw new Error("Moving a note to another organization is not available yet. Keep this note in its current organization.");
+  }
+  if (untypedUpdates.folder_name !== undefined) {
+    throw new Error("A persisted note can only move to an admitted folder ID. Create a new folder separately before moving this note.");
+  }
+  if (
+    options?.expectedVersion !== undefined &&
+    (!Number.isSafeInteger(options.expectedVersion) || options.expectedVersion < 1)
+  ) {
+    throw new Error("The note revision must be a positive integer.");
+  }
+  if (options?.expectedOrganizationId !== undefined) {
+    requireOrganizationContext(options.expectedOrganizationId);
+  }
+
+  // Existing-resource mutations bind to the resource's organization, never the
+  // mutable organization picker. Read it before resolving a requested folder.
+  const { data: existing, error: existingError } = await supabase
+    .schema("workbench")
+    .from("notes")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (existingError || !existing) throw existingError ?? operationFailed("save this note — it may already be gone");
+  const organizationId = requireOrganizationContext(existing.organization_id);
+  if (
+    options?.expectedOrganizationId !== undefined &&
+    options.expectedOrganizationId !== organizationId
+  ) {
+    throw new Error("This note belongs to a different organization than the editor snapshot. Reload the note before saving.");
+  }
+  // Retain the canonical association projection before any write. It lets a
+  // partial context settlement return the acknowledged row without pretending
+  // the note write rolled back when a later association read cannot hydrate.
+  const [priorStoredNote] = await hydrateNoteContextLinks([existing]);
+  const normalizedUpdates: NoteUpdate & Partial<NoteContextLinks> = { ...updates };
+  if (updates.folder_id !== undefined && updates.folder_id !== null) {
+    const { data: folder, error: folderError } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id, name")
+      .eq("id", updates.folder_id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (folderError || !folder) {
+      throw folderError ?? new Error("The selected folder is unavailable in this note's organization.");
+    }
+    normalizedUpdates.folder_id = folder.id;
+    normalizedUpdates.folder_name = folder.name;
+  } else if (updates.folder_id === null) {
+    normalizedUpdates.folder_id = null;
+    normalizedUpdates.folder_name = null;
   }
 
   const {
@@ -321,64 +438,112 @@ export async function updateNote(
   } = normalizedUpdates;
 
   let data: NoteRow | null = null;
-  let error: { message: string } | null = null;
+  const databaseWrite = Object.keys(databaseUpdates).length > 0 ? "saved" : "unchanged";
   if (Object.keys(databaseUpdates).length > 0) {
-    let query = supabase
-      .schema("workbench")
-      .from("notes")
-      .update(databaseUpdates)
-      .eq("id", id);
-
-    if (options?.expectedUpdatedAt) {
-      query = query.eq("updated_at", options.expectedUpdatedAt);
+    if (options?.expectedVersion !== undefined) {
+      const result = await guardedUpdate<NoteRow>({
+        expectedVersion: options.expectedVersion,
+        applyUpdate: ({ expectedVersion, nextVersion }) =>
+          supabase
+            .schema("workbench")
+            .from("notes")
+            .update({ ...databaseUpdates, version: nextVersion })
+            .eq("id", id)
+            .eq("organization_id", organizationId)
+            .eq("version", expectedVersion)
+            .is("deleted_at", null)
+            .select("*")
+            .maybeSingle(),
+        fetchCurrent: () =>
+          supabase
+            .schema("workbench")
+            .from("notes")
+            .select("*")
+            .eq("id", id)
+            .eq("organization_id", organizationId)
+            .is("deleted_at", null)
+            .maybeSingle(),
+      });
+      if (result.status === "conflict") {
+        throw new NoteUpdateConflictError({
+          expectedVersion: options.expectedVersion,
+          actualStoredNote: result.currentRow,
+        });
+      }
+      if (result.status === "not_found") {
+        throw operationFailed("save this note — it may already be gone or you no longer have access");
+      }
+      data = result.row;
+    } else {
+      const { data: updated, error } = await supabase
+        .schema("workbench")
+        .from("notes")
+        .update(databaseUpdates)
+        .eq("id", id)
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle();
+      if (error) {
+        console.error("Error updating note:", error);
+        throw error;
+      }
+      data = updated;
     }
-
-    const result = await query.select().maybeSingle();
-    data = result.data;
-    error = result.error;
   } else {
     const result = await supabase
       .schema("workbench")
       .from("notes")
       .select("*")
       .eq("id", id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
       .maybeSingle();
     data = result.data;
-    error = result.error;
-  }
-
-  if (error) {
-    console.error("Error updating note:", error);
-    throw error;
+    if (result.error) {
+      console.error("Error reading note after context update:", result.error);
+      throw result.error;
+    }
   }
 
   if (!data) {
-    if (options?.expectedUpdatedAt) {
-      const { data: stillThere } = await supabase
-        .schema("workbench")
-        .from("notes")
-        .select("id")
-        .eq("id", id)
-        .maybeSingle();
-      if (stillThere) {
-        throw new Error(
-          "Conflict: note was modified on another device or tab. Please refresh.",
-        );
-      }
-    }
     throw operationFailed(
       "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
     );
   }
 
-  await syncNoteContextLinks({
+  const contextSettlement = await syncNoteContextLinks({
     noteId: id,
-    organizationId: data.organization_id,
+    organizationId,
     projectId,
     taskId,
   });
-  const [note] = await hydrateNoteContextLinks([data]);
-  return note;
+  const receipt: NoteSaveReceipt = {
+    note: {
+      ...data,
+      project_id: contextSettlement.succeededFields.includes("project_id")
+        ? projectId ?? null
+        : priorStoredNote.project_id,
+      task_id: contextSettlement.succeededFields.includes("task_id")
+        ? taskId ?? null
+        : priorStoredNote.task_id,
+    },
+    databaseWrite,
+    ...contextSettlement,
+  };
+  if (receipt.failedFields.length > 0) {
+    throw new NoteContextPartialSaveError(receipt);
+  }
+  return receipt;
+}
+
+/** Temporary compatibility adapter while direct editors migrate to receipts. */
+export async function updateNote(
+  id: string,
+  updates: UpdateNoteInput,
+  options?: UpdateNoteOptions,
+): Promise<Note> {
+  return (await persistNoteUpdate(id, updates, options)).note;
 }
 
 /**
@@ -489,24 +654,33 @@ export async function copyNote(id: string): Promise<Note> {
     label: copyLabel,
     content: original.content,
     folder_name: original.folder_name,
+    folder_id: original.folder_id,
     tags: original.tags || [],
     metadata: original.metadata || {},
+    organization_id: requireOrganizationContext(original.organization_id),
   };
+
+  if (!copy.folder_id) {
+    throw new Error("This note has no valid persisted folder. Choose a destination folder before copying it.");
+  }
 
   return await createNote(copy);
 }
 
 /**
- * Get all unique folder names for the current user
+ * Every folder name on the notes this list opens on — the same scope as the list itself, because a
+ * filter offering folders the list will never show is a lie the user discovers by clicking.
  */
-export async function fetchFolderNames(): Promise<string[]> {
+export async function fetchFolderNames(scope?: ListScopeWord): Promise<string[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let folderQuery = supabase
     .schema("workbench")
     .from("notes")
     .select("folder_name")
-    .eq("created_by", userId)
     .is("deleted_at", null);
+  if (ownerOnly) folderQuery = folderQuery.eq("created_by", userId);
+  const { data, error } = await folderQuery;
 
   if (error) {
     console.error("Error fetching folder names:", error);
@@ -524,16 +698,18 @@ export async function fetchFolderNames(): Promise<string[]> {
 }
 
 /**
- * Get all unique tags for the current user
+ * Every tag on the notes this list opens on — same scope as the list, same reason as the folders.
  */
-export async function fetchTags(): Promise<string[]> {
+export async function fetchTags(scope?: ListScopeWord): Promise<string[]> {
   const userId = requireUserId();
-  const { data, error } = await supabase
+  const ownerOnly = await scopeToOwner("note", scope);
+  let tagQuery = supabase
     .schema("workbench")
     .from("notes")
     .select("tags")
-    .eq("created_by", userId)
     .is("deleted_at", null);
+  if (ownerOnly) tagQuery = tagQuery.eq("created_by", userId);
+  const { data, error } = await tagQuery;
 
   if (error) {
     console.error("Error fetching tags:", error);
@@ -549,7 +725,8 @@ export async function fetchTags(): Promise<string[]> {
  * Create a folder record in note_folders.
  * Returns the new folder ID.
  */
-export async function createFolder(name: string): Promise<string> {
+export async function createFolder(name: string, capturedOrganizationId: string): Promise<string> {
+  const organizationId = requireOrganizationContext(capturedOrganizationId);
   const userId = requireUserId();
 
   // Atomic get-or-create on the (created_by, name) natural key, backed by the
@@ -566,15 +743,14 @@ export async function createFolder(name: string): Promise<string> {
         name,
         path: name,
         position: 0,
-        // Root entity (no org-inherit trigger) — org is NOT NULL; ride active org.
-        organization_id: await ensureOrgId(undefined),
+        organization_id: organizationId,
       },
       { onConflict: "created_by,name", ignoreDuplicates: true },
     )
     .select("id, deleted_at")
     .maybeSingle();
 
-  if (insertError) {
+  if (insertError && insertError.code !== "23505") {
     console.error("Error creating folder:", insertError);
     throw insertError;
   }
@@ -591,6 +767,7 @@ export async function createFolder(name: string): Promise<string> {
     .select("id")
     .eq("created_by", userId)
     .eq("name", name)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -599,6 +776,22 @@ export async function createFolder(name: string): Promise<string> {
     throw selError;
   }
   if (existing?.id) return existing.id;
+
+  // The legacy unique key still overlaps organizations. Never return a folder
+  // from another org while it exists; the owner must activate the composite key.
+  const { data: conflicting } = await supabase
+    .schema("workbench")
+    .from("note_folders")
+    .select("id, organization_id")
+    .eq("created_by", userId)
+    .eq("name", name)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (conflicting && conflicting.organization_id !== organizationId) {
+    throw new Error("notes_folder_cross_org_legacy_key: this folder name is reserved in another organization until the folder-key cutover is activated.");
+  }
+
+  if (insertError) throw insertError;
 
   // Vanishingly rare: the conflicting row was hard-deleted between the upsert
   // and this re-read (concurrent create + delete of the same name). Create fresh.
@@ -610,7 +803,7 @@ export async function createFolder(name: string): Promise<string> {
       name,
       path: name,
       position: 0,
-      organization_id: await ensureOrgId(undefined),
+      organization_id: organizationId,
     })
     .select("id")
     .single();
@@ -626,9 +819,10 @@ export async function createFolder(name: string): Promise<string> {
  * AND the denormalized folder_name on all notes in that folder.
  */
 export async function renameFolder(
-  oldName: string,
+  folder: FolderReference,
   newName: string,
 ): Promise<void> {
+  const organizationId = requireOrganizationContext(folder.organizationId);
   const userId = requireUserId();
 
   // Update the note_folders record
@@ -637,7 +831,8 @@ export async function renameFolder(
     .from("note_folders")
     .update({ name: newName, path: newName })
     .eq("created_by", userId)
-    .eq("name", oldName)
+    .eq("id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   // Update the denormalized folder_name on all notes
@@ -646,7 +841,8 @@ export async function renameFolder(
     .from("notes")
     .update({ folder_name: newName })
     .eq("created_by", userId)
-    .eq("folder_name", oldName)
+    .eq("folder_id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   if (error) {
@@ -659,7 +855,8 @@ export async function renameFolder(
  * Bulk soft-delete all notes in a folder (current user only).
  * Also soft-deletes the note_folders record.
  */
-export async function deleteFolderNotes(folderName: string): Promise<number> {
+export async function deleteFolderNotes(folder: FolderReference): Promise<number> {
+  const organizationId = requireOrganizationContext(folder.organizationId);
   const userId = requireUserId();
 
   const { data: notesToDelete } = await supabase
@@ -667,7 +864,8 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
     .from("notes")
     .select("id")
     .eq("created_by", userId)
-    .eq("folder_name", folderName)
+    .eq("folder_id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   const count = notesToDelete?.length || 0;
@@ -679,7 +877,8 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
     .from("notes")
     .update({ deleted_at: deletedAt })
     .eq("created_by", userId)
-    .eq("folder_name", folderName)
+    .eq("folder_id", folder.id)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null);
 
   if (error) {
@@ -701,7 +900,8 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
     .from("note_folders")
     .delete()
     .eq("created_by", userId)
-    .eq("name", folderName);
+    .eq("id", folder.id)
+    .eq("organization_id", organizationId);
 
   return count;
 }
@@ -713,10 +913,11 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
  */
 export async function ensureFolderMaterialized(
   folderName: string,
+  organizationId: string,
 ): Promise<void> {
   const trimmed = folderName.trim();
   if (!trimmed) return;
 
   // createFolder already handles "exists? return id : insert" logic
-  await createFolder(trimmed);
+  await createFolder(trimmed, organizationId);
 }

@@ -176,10 +176,22 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   let variantNode: React.ReactNode = null;
   switch (actionsVariant) {
     case "bar":
-      variantNode = <ActionBar actions={resolvedActions} getCtx={getCtx} />;
+      variantNode = (
+        <ActionBar
+          actions={resolvedActions}
+          getCtx={getCtx}
+          sourceId={ctx.instanceKey("alchemy")}
+        />
+      );
       break;
     case "mini-bar":
-      variantNode = <MiniActionBar actions={resolvedActions} getCtx={getCtx} />;
+      variantNode = (
+        <MiniActionBar
+          actions={resolvedActions}
+          getCtx={getCtx}
+          sourceId={ctx.instanceKey("alchemy")}
+        />
+      );
       break;
     case "menu":
     case "icon-only":

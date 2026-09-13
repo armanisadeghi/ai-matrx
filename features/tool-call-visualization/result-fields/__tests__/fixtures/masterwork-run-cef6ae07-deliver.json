@@ -1,0 +1,72 @@
+{
+  "the_regimen": {
+    "headline_finding": "The morning shoe battle and the kitchen chase are not stubbornness but rage called out by daily restraint.",
+    "stop_doing": [
+      {
+        "rule_id": "no-petting-the-raging-child",
+        "rule_name": "No Petting the Raging Child",
+        "instruction": "Stop finishing the shoes for him once he screams and throws them. Withdraw attention entirely and let the rage burn itself out unattended."
+      },
+      {
+        "rule_id": "love-is-built-by-stroking",
+        "rule_name": "Love is Built by Stroking",
+        "instruction": "Stop picking him up and cuddling him each time he cries in the morning."
+      },
+      {
+        "rule_id": "no-eating-at-all-hours",
+        "rule_name": "No Eating at All Hours",
+        "instruction": "Stop offering the biscuit as a bribe during the shoe struggle."
+      }
+    ],
+    "instructions": [
+      {
+        "order": 1,
+        "timing": "every morning, from to-morrow",
+        "rule_id": "let-child-conquer-difficulties",
+        "rule_name": "Let the Child Conquer Difficulties",
+        "instruction": "Set out his shoes ten minutes before he need leave and let him work at putting them on unaided, wrong feet or no."
+      },
+      {
+        "order": 2,
+        "timing": "the moment a hand is laid on the shoes or on him",
+        "rule_id": "rage-stimulus-is-hampering",
+        "rule_name": "Rage Stimulus is Hampering",
+        "instruction": "Recognise that any hand laid on the shoes while he is working is what triggers the scream and the throw."
+      },
+      {
+        "order": 8,
+        "timing": "5.30 p.m., daily",
+        "rule_id": "bedtime-and-bath-schedule",
+        "rule_name": "Bedtime and Bath Schedule",
+        "instruction": "Move the tepid bath from 7.15 back to 5.30 p.m. sharp, held to every evening."
+      },
+      {
+        "order": 9,
+        "timing": "7 p.m., daily",
+        "rule_id": "bedtime-and-bath-schedule",
+        "rule_name": "Bedtime and Bath Schedule",
+        "instruction": "Move bedtime from about 8 p.m. back to 7 p.m. sharp, held firmly regardless of resistance."
+      }
+    ],
+    "methods_that_will_not_work": [
+      {
+        "method": "Explaining to him that you are late and reasoning with him about the shoes",
+        "rule_id": "reasoning-does-not-cure-fear",
+        "rule_name": "Reasoning Does Not Cure Fear"
+      }
+    ],
+    "not_covered": [
+      "Whether there is any fixed toilet routine at all"
+    ],
+    "all_cited_rule_ids": [
+      "let-child-conquer-difficulties",
+      "rage-stimulus-is-hampering",
+      "bedtime-and-bath-schedule",
+      "no-eating-at-all-hours"
+    ],
+    "physician_first": false,
+    "physician_note": null,
+    "expected_course": "Expect the shoe-and-counter rages to worsen for two or three mornings once the household stops giving in."
+  },
+  "watsons_words": "Your boy of two and a half is not stubborn, nor was he born with a vicious temper."
+}

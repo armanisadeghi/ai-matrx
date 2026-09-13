@@ -15,8 +15,7 @@
  *   saveNoteField            — quick single-field save + optimistic update
  */
 
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { TablesUpdate } from "@/types/database.types";
+import { createAsyncThunk, unwrapResult, type ThunkAction, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import {
   isMissingSessionError,
@@ -25,15 +24,20 @@ import {
 } from "@/lib/supabase/authRetry";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
-import { createFolder } from "../service/notesService";
+import { createFolder, createNote, materializeNote as materializePersistedNote, persistNoteUpdate } from "../service/notesService";
 import {
   hydrateNoteContextLinks,
-  syncNoteContextLinks,
 } from "../service/noteContextAssociations";
+import {
+  NoteContextPartialSaveError,
+  NoteUpdateConflictError,
+  type NoteSaveReceipt,
+} from "../service/noteSaveErrors";
 import {
   noteSaveErrorMessage,
   toastNoteWriteBlocked,
@@ -41,7 +45,7 @@ import {
   reportNoteSaveFailure,
   NOTE_READONLY_DELETE_MESSAGE,
 } from "../utils/writeErrors";
-import type { Note, CreateNoteInput } from "../types";
+import type { FolderReference, Note, CreateNoteInput, UpdateNoteInput } from "../types";
 import type {
   NoteRecord,
   NoteScopeAssignment,
@@ -56,6 +60,9 @@ import {
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
+  clearSavingNoteId,
+  materializeNote,
+  settlePartialNoteCreate,
   setListStatus,
   setListError,
   setActiveNote,
@@ -65,7 +72,7 @@ import {
   markTabInteraction,
   setNoteField,
 } from "./slice";
-import { serverMatchesAttempt } from "../utils/saveVerification";
+import { scopeToOwner } from "@/lib/list-scope";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,17 +116,19 @@ export const fetchNotesList = createAsyncThunk<void, void>(
 
     try {
       await assertCurrentNotesUser(userId);
-      const { data, error } = await runWithSessionRetry(() =>
-        supabase
+      // DD-137c / §3.3: where this list lands is the `note` token's registry word, not a literal.
+      const ownerOnly = await scopeToOwner("note");
+      const { data, error } = await runWithSessionRetry(() => {
+        let q = supabase
           .schema("workbench")
           .from("notes")
           .select(
             "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
           )
-          .eq("created_by", userId)
-          .is("deleted_at", null)
-          .order("updated_at", { ascending: false }),
-      );
+          .is("deleted_at", null);
+        if (ownerOnly) q = q.eq("created_by", userId);
+        return q.order("updated_at", { ascending: false });
+      });
 
       if (error) {
         if (isMissingSessionError(error)) throw new SessionUnavailableError();
@@ -270,7 +279,7 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
 /**
  * Save dirty fields with atomic concurrency check.
  * - Reads note from state, checks _dirty and _dirtyFields
- * - UPDATE … WHERE updated_at = local (0 rows ⇒ conflict / RLS deny)
+ * - Delegates revision CAS and association settlement to the Notes service
  * - markNoteSaved gets a savedSnapshot so mid-save keystrokes stay dirty
  * - Label change: dispatch custom event "notes:labelChange"
  */
@@ -296,24 +305,82 @@ function failNoteSave(
   });
 }
 
-export const saveNote = createAsyncThunk<void, string>(
+function hasDirtyPhysicalField(record: NoteRecord): boolean {
+  return Array.from(record._dirtyFields).some(
+    (field) => field !== "project_id" && field !== "task_id",
+  );
+}
+
+function receiptBaseSettlement(
+  getState: () => unknown,
+  noteId: string,
+  receipt: { databaseWrite: "saved" | "unchanged"; note: Pick<Note, "updated_at" | "version"> },
+): Pick<Note, "updated_at" | "version"> {
+  if (receipt.databaseWrite === "saved") {
+    return receipt.note;
+  }
+  const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+  // A context-only write does not create a new physical revision. If the user
+  // typed a physical field while its edges were settling, retain the base that
+  // edit was built on rather than adopting the service's earlier readback.
+  return currentRecord && (hasDirtyPhysicalField(currentRecord) || currentRecord.version > receipt.note.version)
+    ? { updated_at: currentRecord.updated_at, version: currentRecord.version }
+    : receipt.note;
+}
+
+const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUserId: string }>(
   "notes/saveNote",
-  async (noteId, { dispatch, getState }) => {
+  async ({ noteId, expectedQueueUserId }, { dispatch, getState }) => {
     const state = getState() as RootState;
     const record = state.notes.notes[noteId] as NoteRecord | undefined;
+    const expectedUserId = getUserId(getState);
+    if (expectedUserId !== expectedQueueUserId) throw new SessionUnavailableError();
+    await assertCurrentNotesUser(expectedQueueUserId);
+    if (getUserId(getState) !== expectedQueueUserId) throw new SessionUnavailableError();
 
     if (!record || !record._dirty || record._dirtyFields.size === 0) {
       return;
     }
 
+    if (record._isAutogenerated) {
+      const expectedUserId = getUserId(getState);
+      const savedSnapshot: Partial<Record<NoteUndoableField, Note[NoteUndoableField]>> = {};
+      for (const field of record._dirtyFields) savedSnapshot[field] = record[field];
+      dispatch(recordNoteWriteAttempt({ id: noteId, values: savedSnapshot }));
+      dispatch(markNoteSaving(noteId));
+      try {
+        const note = await materializePersistedNote(record);
+        await assertCurrentNotesUser(expectedUserId);
+        if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
+        dispatch(materializeNote(noteId));
+        dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
+        dispatch(markNoteSaved({
+          id: noteId,
+          updatedAt: note.updated_at ?? undefined,
+          version: note.version,
+          savedSnapshot,
+        }));
+      } catch (error) {
+        const friendly = error instanceof Error ? error.message : "Could not save this new note.";
+        failNoteSave(dispatch, getState, noteId, friendly);
+        throw error;
+      } finally {
+        // An acknowledgement can arrive after auth changed. Never use receipt
+        // settlement to clear that state: only clear this payload's busy flag.
+        dispatch(clearSavingNoteId(noteId));
+      }
+      return;
+    }
+
     // Build update object from only dirty fields (snapshot for mid-save safety)
-    const updates: Record<string, unknown> = {};
+    const updates: UpdateNoteInput = {};
     let projectId: string | null | undefined;
     let taskId: string | null | undefined;
     const savedSnapshot: Partial<
       Record<NoteUndoableField, Note[NoteUndoableField]>
     > = {};
     const dirtyFields = Array.from(record._dirtyFields);
+    const hasPairedFolderId = dirtyFields.includes("folder_id");
     const hasLabelChange = dirtyFields.includes("label");
 
     for (const field of dirtyFields) {
@@ -321,8 +388,29 @@ export const saveNote = createAsyncThunk<void, string>(
         projectId = record.project_id;
       } else if (field === "task_id") {
         taskId = record.task_id;
-      } else {
-        updates[field] = record[field];
+      } else if (field === "content") {
+        updates.content = record.content;
+      } else if (field === "label") {
+        updates.label = record.label;
+      } else if (field === "folder_id") {
+        updates.folder_id = record.folder_id;
+      } else if (field === "tags") {
+        updates.tags = record.tags;
+      } else if (field === "visibility") {
+        updates.visibility = record.visibility;
+      } else if (field === "folder_name") {
+        if (hasPairedFolderId) {
+          // folder_name is display projection. The admitted folder ID is the
+          // only persisted move input, but both local dirty values settle.
+        } else {
+          const error = new Error("A persisted note can only move through an admitted folder ID and cannot change organization.");
+          failNoteSave(dispatch, getState, noteId, error.message);
+          throw error;
+        }
+      } else if (field === "organization_id") {
+        const error = new Error("A persisted note can only move through an admitted folder ID and cannot change organization.");
+        failNoteSave(dispatch, getState, noteId, error.message);
+        throw error;
       }
       savedSnapshot[field] = record[field];
     }
@@ -333,86 +421,74 @@ export const saveNote = createAsyncThunk<void, string>(
     dispatch(recordNoteWriteAttempt({ id: noteId, values: savedSnapshot }));
     dispatch(markNoteSaving(noteId));
 
-    // Atomic optimistic lock via updated_at predicate (OLD row; trigger only
-    // mutates NEW). 0 rows ⇒ conflict or RLS deny.
-    let updatedAt = record.updated_at;
-    if (Object.keys(updates).length > 0) {
-      let query = supabase
-        .schema("workbench")
-        .from("notes")
-        .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
-        .eq("id", noteId);
-
-      if (record.updated_at) {
-        query = query.eq("updated_at", record.updated_at);
+    try {
+      const receipt = await persistNoteUpdate(noteId, {
+        ...updates,
+        ...(projectId === undefined ? {} : { project_id: projectId }),
+        ...(taskId === undefined ? {} : { task_id: taskId }),
+      }, {
+        expectedVersion: record.version,
+        expectedOrganizationId: record.organization_id,
+      });
+      await assertCurrentNotesUser(expectedUserId);
+      if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
+      if (receipt.postSaveRecoveryError) {
+        console.error("Saved note context links need a cache recovery", receipt.postSaveRecoveryError);
       }
 
-      const { data, error } = await query.select("updated_at").maybeSingle();
-
-      if (error) {
-        failNoteSave(dispatch, getState, noteId, noteSaveErrorMessage(error));
+      clearNoteWriteBlockedToast(noteId);
+      const settledBase = receiptBaseSettlement(getState, noteId, receipt);
+      const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+      const acknowledgedValues = receipt.databaseWrite === "saved" && currentRecord?.folder_id === savedSnapshot.folder_id && currentRecord?.folder_name === savedSnapshot.folder_name
+        ? { ...(savedSnapshot.folder_id !== undefined && savedSnapshot.folder_name !== undefined ? { folder_name: receipt.note.folder_name } : {}) }
+        : {};
+      dispatch(
+        markNoteSaved({
+          id: noteId,
+          updatedAt: settledBase.updated_at ?? undefined,
+          version: settledBase.version,
+          savedSnapshot,
+          acknowledgedValues,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof NoteContextPartialSaveError) {
+        await assertCurrentNotesUser(expectedUserId);
+        if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
+        const acknowledgedSnapshot = { ...savedSnapshot };
+        for (const field of error.failedFields) {
+          delete acknowledgedSnapshot[field];
+        }
+        const settledBase = receiptBaseSettlement(getState, noteId, error.receipt);
+        const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+        const acknowledgedValues = error.databaseWrite === "saved" && currentRecord?.folder_id === acknowledgedSnapshot.folder_id && currentRecord?.folder_name === acknowledgedSnapshot.folder_name
+          ? { ...(acknowledgedSnapshot.folder_id !== undefined && acknowledgedSnapshot.folder_name !== undefined ? { folder_name: error.actualStoredNote.folder_name } : {}) }
+          : {};
+        dispatch(markNoteSaved({
+          id: noteId,
+          updatedAt: settledBase.updated_at ?? undefined,
+          version: settledBase.version,
+          savedSnapshot: acknowledgedSnapshot,
+          acknowledgedValues,
+        }));
+        if (error.receipt.postSaveRecoveryError) {
+          console.error("Partial note context save needs a cache recovery", error.receipt.postSaveRecoveryError);
+        }
+      }
+      if (error instanceof NoteUpdateConflictError) {
+        dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
         throw error;
       }
-
-      if (!data) {
-        const { data: stillThere } = await supabase
-          .schema("workbench")
-          .from("notes")
-          .select("updated_at, content, label")
-          .eq("id", noteId)
-          .maybeSingle();
-
-        if (!stillThere) {
-          const failed = operationFailed(
-            "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
-          );
-          failNoteSave(dispatch, getState, noteId, failed.message);
-          throw failed;
-        }
-
-        // Check the ACTUAL server row before crying conflict: if it already
-        // holds exactly what we tried to write, only our cached `updated_at`
-        // was stale. Nobody overwrote the user — adopt the timestamp and move
-        // on rather than raising a conflict prompt.
-        if (serverMatchesAttempt(stillThere, savedSnapshot)) {
-          console.warn(
-            "[saveNote] stale updated_at recovered — server row already matches this write for",
-            noteId,
-          );
-          updatedAt = stillThere.updated_at;
-        } else {
-          const conflictMsg =
-            "Conflict: note was modified on another device or tab. Please refresh.";
-          dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
-          throw new Error(conflictMsg);
-        }
-      } else {
-        updatedAt = data.updated_at;
-      }
-    }
-
-    try {
-      await syncNoteContextLinks({
-        noteId,
-        organizationId: record.organization_id,
-        projectId,
-        taskId,
-      });
-    } catch (error) {
       const friendly =
         error instanceof Error ? error.message : "Could not save note context.";
       failNoteSave(dispatch, getState, noteId, friendly);
       throw error;
+    } finally {
+      // This is deliberately independent of receipt/error settlement. An auth
+      // boundary can throw while handling a partial receipt, and stale receipt
+      // data must never be used merely to release the local save indicator.
+      dispatch(clearSavingNoteId(noteId));
     }
-
-    clearNoteWriteBlockedToast(noteId);
-    dispatch(
-      markNoteSaved({
-        id: noteId,
-        updatedAt: updatedAt ?? undefined,
-        savedSnapshot,
-      }),
-    );
 
     // Dispatch label change event if label was dirty
     if (hasLabelChange) {
@@ -424,28 +500,112 @@ export const saveNote = createAsyncThunk<void, string>(
   },
 );
 
+type SaveResultAction = Awaited<ReturnType<ReturnType<typeof saveNotePayload>>>;
+type QueuedSaveResult = Promise<SaveResultAction> & { unwrap: () => Promise<void> };
+
+type QueuedSaveThunk = ThunkAction<QueuedSaveResult, unknown, unknown, UnknownAction>;
+
+interface SaveQueueEntry {
+  result: QueuedSaveResult;
+  resolve: (action: SaveResultAction) => void;
+  expectedUserId: string;
+}
+
+const saveQueues = new WeakMap<() => unknown, Map<string, SaveQueueEntry>>();
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function hasQueuedDirtyNote(getState: () => unknown, noteId: string): boolean {
+  const state = getState();
+  if (!isUnknownRecord(state) || !("notes" in state)) return false;
+  const notesState = state.notes;
+  if (!isUnknownRecord(notesState) || !("notes" in notesState)) return false;
+  const records = notesState.notes;
+  if (!isUnknownRecord(records) || !(noteId in records)) return false;
+  const record = records[noteId];
+  if (!isUnknownRecord(record) || record._dirty !== true) return false;
+  const dirtyFields = record._dirtyFields;
+  return dirtyFields instanceof Set && dirtyFields.size > 0;
+}
+
+function createQueuedSaveResult(): SaveQueueEntry {
+  let resolver: ((action: SaveResultAction) => void) | undefined;
+  const promise = new Promise<SaveResultAction>((resolve) => {
+    resolver = resolve;
+  });
+  if (!resolver) throw new Error("Could not initialize the Notes save queue.");
+  return {
+    result: Object.assign(promise, {
+      unwrap: () => promise.then(unwrapResult),
+    }),
+    resolve: resolver,
+    expectedUserId: "",
+  };
+}
+
+/**
+ * One serialized write turn per actual Redux store and note. The queue entry
+ * exists before the inner RTK thunk emits `pending`, so synchronous
+ * subscribers cannot issue a second CAS against the same revision.
+ */
+export const saveNote = Object.assign(
+  (noteId: string): QueuedSaveThunk =>
+    (dispatch: ThunkDispatch<unknown, unknown, UnknownAction>, getState): QueuedSaveResult => {
+      let queue = saveQueues.get(getState);
+      if (!queue) {
+        queue = new Map();
+        saveQueues.set(getState, queue);
+      }
+      const existing = queue.get(noteId);
+      if (existing) return existing.result;
+
+      const entry = createQueuedSaveResult();
+      entry.expectedUserId = getUserId(getState);
+      queue.set(noteId, entry);
+      void (async () => {
+        let finalAction: SaveResultAction | undefined;
+        try {
+          do {
+            finalAction = await dispatch(saveNotePayload({ noteId, expectedQueueUserId: entry.expectedUserId }));
+            if (saveNotePayload.rejected.match(finalAction)) break;
+          } while (hasQueuedDirtyNote(getState, noteId));
+        } catch (error) {
+          // Thunk middleware normally converts payload exceptions into a
+          // rejected action. This preserves that public result contract even
+          // if another middleware throws while the inner action is observed.
+          const rejection = saveNotePayload.rejected(
+            error instanceof Error ? error : new Error("Notes save queue failed."),
+            "notes-save-queue",
+            { noteId, expectedQueueUserId: entry.expectedUserId },
+          );
+          finalAction = rejection;
+          try {
+            dispatch(rejection);
+          } catch {
+            // The deferred result still resolves as the rejected RTK action.
+          }
+        } finally {
+          // Keep the entry through inner fulfilled/rejected subscribers. A
+          // subscriber's immediate save joins this promise; its dirty edit is
+          // observed by the loop above before the queue is released.
+          queue.delete(noteId);
+          if (queue.size === 0) saveQueues.delete(getState);
+          if (finalAction) entry.resolve(finalAction);
+        }
+      })();
+      return entry.result;
+    },
+  {
+    fulfilled: saveNotePayload.fulfilled,
+    rejected: saveNotePayload.rejected,
+  },
+);
+
 // ---------------------------------------------------------------------------
 // 4. createNewNote
 // ---------------------------------------------------------------------------
-
-/**
- * Resolve a folder_name to a folder_id by looking up (or creating) a note_folders
- * record. Returns the folder_id UUID, or null if resolution fails.
- *
- * Delegates to the ONE canonical folder get-or-create — `notesService.createFolder`
- * — which is atomic (ON CONFLICT DO NOTHING against the (created_by, name) unique
- * index, never a 23505/409). The folder is always the current user's
- * (createFolder uses requireUserId(); RLS forbids creating one for anyone else),
- * so no user id is threaded here.
- */
-async function resolveFolderId(folderName: string): Promise<string | null> {
-  try {
-    return await createFolder(folderName);
-  } catch (err) {
-    console.error("Error resolving folder id:", err);
-    return null;
-  }
-}
 
 /**
  * Create a new note in the database.
@@ -454,48 +614,44 @@ async function resolveFolderId(folderName: string): Promise<string | null> {
  */
 export const createNewNote = createAsyncThunk<
   Note,
-  CreateNoteInput | undefined
->("notes/createNewNote", async (input = {}, { dispatch, getState }) => {
-  const userId = getUserId(getState);
-  const folderName = input.folder_name ?? "Draft";
+  CreateNoteInput,
+  { rejectValue: { code: "context_partial"; message: string; receipt: Omit<NoteSaveReceipt, "postSaveRecoveryError"> & { postSaveRecoveryError?: string } } }
+>("notes/createNewNote", async (input, { dispatch, getState, rejectWithValue }) => {
+  // NotesService owns organization admission, parent validation, empty-note
+  // reuse, metadata/position, and context links. Keep Redux as hydration only.
+  const expectedUserId = getUserId(getState);
+  let note: Note;
+  try {
+    note = await createNote(input);
+  } catch (error) {
+    if (error instanceof NoteContextPartialSaveError) {
+      // The database note is durable, but it belongs to the identity that
+      // initiated the request. Do not hydrate or open it after a logout,
+      // account switch, or stale Redux auth state.
+      await assertCurrentNotesUser(expectedUserId);
+      if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
+      const failedValues: Partial<Pick<Note, "project_id" | "task_id">> = {};
+      for (const field of error.failedFields) failedValues[field] = input[field];
+      dispatch(settlePartialNoteCreate({ note: error.actualStoredNote, failedValues, error: error.message }));
+      dispatch(addTab(error.actualStoredNote.id));
+      dispatch(setActiveNote(error.actualStoredNote.id));
+      const { postSaveRecoveryError, ...serializableReceipt } = error.receipt;
+      return rejectWithValue({
+        code: "context_partial",
+        message: error.message,
+        receipt: {
+          ...serializableReceipt,
+          ...(postSaveRecoveryError ? { postSaveRecoveryError: postSaveRecoveryError.message } : {}),
+        },
+      });
+    }
+    throw error;
+  }
 
-  // Resolve folder_id from note_folders table
-  const folderId = input.folder_id ?? (await resolveFolderId(folderName));
-  const organizationId = await ensureOrgId(input.organization_id);
-
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("notes")
-    .insert({
-      // Canonical RLS std_insert requires created_by = auth.uid().
-      created_by: userId,
-      label: input.label ?? "New Note",
-      content: input.content ?? "",
-      folder_name: folderName,
-      folder_id: folderId,
-      tags: input.tags ?? [],
-      metadata: {},
-      position: 0,
-      // Private by default — the `notes.visibility` enum DB default is
-      // 'internal' (org-visible), so set it explicitly on create.
-      visibility: input.visibility ?? "personal",
-      // folder_id can be null here, so the org-inherit trigger may have no
-      // parent to read — resolve the org explicitly (never insert a null org).
-      organization_id: organizationId,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  if (!data) throw new Error("Failed to create note");
-
-  await syncNoteContextLinks({
-    noteId: data.id,
-    organizationId,
-    projectId: input.project_id,
-    taskId: input.task_id,
-  });
-  const [note] = await hydrateNoteContextLinks([data]);
+  // `createNote` can have inserted a durable row before this continuation.
+  // Verify both sources of identity immediately before any Redux settlement.
+  await assertCurrentNotesUser(expectedUserId);
+  if (getUserId(getState) !== expectedUserId) throw new SessionUnavailableError();
 
   dispatch(
     upsertNoteFromServer({
@@ -615,9 +771,9 @@ export const copyNote = createAsyncThunk<
       // note someone shared with us: the sharee may not be a member of the
       // owner's org and std_insert would 42501. Home their copy in their
       // own active/personal org instead.
-      organization_id: await ensureOrgId(
-        record._sharedWithMe ? undefined : record.organization_id,
-      ),
+      organization_id: record._sharedWithMe
+        ? requireOrganizationContext(selectOrganizationId(state))
+        : requireOrganizationContext(record.organization_id),
     })
     .select()
     .single();
@@ -657,6 +813,7 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
   "notes/findOrCreateEmptyNote",
   async (folder = "Draft", { dispatch, getState }) => {
     const state = getState() as RootState;
+    const organizationId = requireOrganizationContext(selectOrganizationId(state));
     const allNotes = state.notes.notes;
 
     // Check state for existing "New Note" with empty content in the folder
@@ -666,6 +823,7 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
         record.label === "New Note" &&
         (!record.content || record.content.trim() === "") &&
         record.folder_name === folder &&
+        record.organization_id === organizationId &&
         !record.deleted_at
       ) {
         dispatch(addTab(record.id));
@@ -676,7 +834,7 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
 
     // No existing empty note found — create one
     const result = await dispatch(
-      createNewNote({ folder_name: folder }),
+      createNewNote({ folder_name: folder, organization_id: organizationId }),
     ).unwrap();
 
     return result;
@@ -693,34 +851,75 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
  */
 export const moveNoteToFolder = createAsyncThunk<
   void,
-  { noteId: string; folder: string }
+  { noteId: string; folder: FolderReference }
 >(
   "notes/moveNoteToFolder",
   async ({ noteId, folder }, { dispatch, getState }) => {
-    const userId = getUserId(getState);
+    const state = getState() as RootState;
+    getUserId(getState);
+    const note = state.notes.notes[noteId] as NoteRecord | undefined;
+    if (!note) throw new Error("Note not found in state");
+    const organizationId = requireOrganizationContext(note.organization_id);
+    if (folder.organizationId !== organizationId) {
+      throw new Error("A note can only move to a folder in its own organization.");
+    }
 
-    // Resolve folder_id for the target folder
-    const folderId = await resolveFolderId(folder);
+    // Treat caller input as a request, not admission. RLS must admit this
+    // exact ID in the note's captured organization before optimistic state or
+    // any note write can happen.
+    const { data: admittedFolder, error } = await supabase
+      .schema("workbench")
+      .from("note_folders")
+      .select("id, organization_id, name")
+      .eq("id", folder.id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw error;
+    if (!admittedFolder || admittedFolder.organization_id !== organizationId) {
+      throw new Error("That folder is unavailable in this note's organization.");
+    }
 
     dispatch(
       setNoteField({
         id: noteId,
         field: "folder_name",
-        value: folder,
+        value: admittedFolder.name,
       }),
     );
 
-    if (folderId) {
-      dispatch(
-        setNoteField({
-          id: noteId,
-          field: "folder_id",
-          value: folderId,
-        }),
-      );
-    }
+    dispatch(
+      setNoteField({
+        id: noteId,
+        field: "folder_id",
+        value: admittedFolder.id,
+      }),
+    );
 
     await dispatch(saveNote(noteId)).unwrap();
+  },
+);
+
+/** A folder name is accepted only while materializing a new folder. */
+export const moveNoteToNewFolder = createAsyncThunk<
+  void,
+  { noteId: string; folderName: string }
+>(
+  "notes/moveNoteToNewFolder",
+  async ({ noteId, folderName }, { dispatch, getState }) => {
+    const state = getState() as RootState;
+    getUserId(getState);
+    const note = state.notes.notes[noteId] as NoteRecord | undefined;
+    if (!note) throw new Error("Note not found in state");
+    // Capture the note organization before awaiting folder creation. The
+    // active organization picker can change while a dialog is open.
+    const organizationId = requireOrganizationContext(note.organization_id);
+    const name = folderName.trim();
+    if (!name) throw new Error("Folder name is required.");
+    const id = await createFolder(name, organizationId);
+    await dispatch(
+      moveNoteToFolder({ noteId, folder: { id, organizationId, name } }),
+    ).unwrap();
   },
 );
 
@@ -818,15 +1017,18 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
   async (_, { dispatch, getState }) => {
     const userId = getUserId(getState);
 
-    const { data, error } = await supabase
+    // The trash list lands where the notes list lands — a bin that hides the organization's
+    // deleted notes while the list shows its live ones is two different screens wearing one name.
+    const ownerOnly = await scopeToOwner("note");
+    let trashQuery = supabase
       .schema("workbench")
       .from("notes")
       .select(
         "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, visibility, deleted_at, version",
       )
-      .eq("created_by", userId)
-      .not("deleted_at", "is", null)
-      .order("updated_at", { ascending: false });
+      .not("deleted_at", "is", null);
+    if (ownerOnly) trashQuery = trashQuery.eq("created_by", userId);
+    const { data, error } = await trashQuery.order("updated_at", { ascending: false });
 
     if (error) throw error;
 

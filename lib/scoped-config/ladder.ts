@@ -107,6 +107,8 @@ const RUNG_NAMES: Record<string, string> = {
   pay_group: "the pay group",
   site: "the site",
   location: "the location",
+  table: "the table",
+  agent: "the agent",
   user: "you",
   device: "this device",
 };

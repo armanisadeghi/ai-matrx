@@ -59,7 +59,6 @@ import {
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { appBrief, humanAgentApp } from "@/features/agent-apps/format";
 import {
@@ -512,19 +511,18 @@ export default function AgentAppsAdminListPage() {
                         },
                       }),
                     }}
-                  />
-                  <ExportMenu
-                    label="agent-apps-admin"
-                    items={[
-                      jsonExportItem(() => filteredAndSortedApps, "JSON (this view)"),
-                      csvExportItem(
-                        () =>
-                          filteredAndSortedApps as unknown as Array<
-                            Record<string, unknown>
-                          >,
-                        "CSV (this view)",
-                      ),
-                    ]}
+                    export={{
+                      items: [
+                        jsonExportItem(() => filteredAndSortedApps, "JSON (this view)"),
+                        csvExportItem(
+                          () =>
+                            filteredAndSortedApps as unknown as Array<
+                              Record<string, unknown>
+                            >,
+                          "CSV (this view)",
+                        ),
+                      ],
+                    }}
                   />
                 </>
               )}

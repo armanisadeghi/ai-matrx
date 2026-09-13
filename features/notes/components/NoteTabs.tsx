@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AdvancedMenu, { MenuItem } from '@/components/official/AdvancedMenu';
-import type { Note } from '../types';
-import { getNoteMetadata } from '../types';
+import type { FolderReference, Note } from '../types';
+import { getNoteMetadata, noteFolderReference } from '../types';
 import { MoveNoteDialog } from './MoveNoteDialog';
 
 type EditorMode = 'plain' | 'wysiwyg' | 'markdown' | 'matrx-split' | 'preview';
@@ -19,7 +19,8 @@ interface NoteTabsProps {
     onDeleteNote: (noteId: string) => void;
     onCopyNote: (noteId: string) => void;
     onShareNote: (noteId: string) => void;
-    onMoveNote: (noteId: string, folderName: string) => void | Promise<void>;
+    onMoveNote: (noteId: string, folder: FolderReference) => void | Promise<void>;
+    onMoveNoteToNewFolder: (noteId: string, folderName: string) => void | Promise<void>;
     onUpdateNote: (noteId: string, updates: Partial<Note>) => void;
     onSaveNote: () => void;
     isDirty: boolean;
@@ -32,6 +33,7 @@ export function NoteTabs({
     onCopyNote, 
     onShareNote,
     onMoveNote,
+    onMoveNoteToNewFolder,
     onUpdateNote,
     onSaveNote,
     isDirty,
@@ -47,9 +49,14 @@ export function NoteTabs({
     const [moveNoteId, setMoveNoteId] = useState<string | null>(null);
     const [localLabels, setLocalLabels] = useState<Record<string, string>>({});
     const labelSaveTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
-    const allFolders = Array.from(
-        new Set(notes.map((note) => note.folder_name || 'Draft')),
-    ).sort();
+    const folderReferences = Array.from(
+        new Map(
+            notes.flatMap((note) => {
+                const folder = noteFolderReference(note);
+                return folder ? [[`${folder.organizationId}:${folder.id}`, folder] as const] : [];
+            }),
+        ).values(),
+    );
 
     // Auto-scroll to active tab when it changes
     useEffect(() => {
@@ -589,11 +596,14 @@ export function NoteTabs({
                         onOpenChange={(open) => {
                             if (!open) setMoveNoteId(null);
                         }}
-                        onConfirm={(folderName) => onMoveNote(note.id, folderName)}
+                        onConfirm={(folder) => onMoveNote(note.id, folder)}
+                        onCreateFolder={(folder) => onMoveNoteToNewFolder(note.id, folder)}
                         noteId={note.id}
                         noteName={note.label}
-                        currentFolder={note.folder_name || 'Draft'}
-                        availableFolders={allFolders}
+                        currentFolder={noteFolderReference(note)}
+                        availableFolders={folderReferences.filter(
+                            (folder) => folder.organizationId === note.organization_id,
+                        )}
                     />
                 );
             })()}

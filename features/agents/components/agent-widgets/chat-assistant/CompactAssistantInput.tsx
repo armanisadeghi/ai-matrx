@@ -47,6 +47,10 @@ import { SmartInputFileDropTarget } from "../../inputs/smart-input/SmartInputFil
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 
 import { toast } from "@/lib/toast";
+import {
+  composerKeyIntent,
+  intentTakesTheKey,
+} from "@/components/official/composer/composerSubmit";
 
 interface CompactAssistantInputProps {
   conversationId: string;
@@ -129,11 +133,21 @@ export function CompactAssistantInput({
     dispatch(smartExecute({ conversationId }));
   };
 
+  // THE ONE COMPOSER RULE — `components/official/composer/composerSubmit.ts`.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && submitOnEnter) {
-      e.preventDefault();
-      if (!isSendDisabled) handleSend();
-    }
+    const intent = composerKeyIntent(
+      {
+        key: e.key,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        isComposing: e.nativeEvent.isComposing,
+      },
+      { submitOnEnter },
+    );
+    if (!intentTakesTheKey(intent)) return;
+    e.preventDefault();
+    if (!isSendDisabled) handleSend();
   };
 
   const handleMicClick = () => {

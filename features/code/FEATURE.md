@@ -18,6 +18,7 @@ A first-class in-app coding environment that runs against either a remote sandbo
 
 ## Entry points
 
+- **Sandbox management:** [`/sandbox`](<../../app/(core)/sandbox/page.tsx>) uses [`SandboxInstancesTable`](./views/sandboxes/SandboxInstancesTable.tsx), an adapter over `@ai-matrx/design-system/data-table`. Active/history share its query controls and responsive rendering; lifecycle mutations remain owned by the route.
 - **Route:** [`app/(core)/code/page.tsx`](<../../app/(core)/code/page.tsx>) → [`CodeWorkspaceRoute`](./host/CodeWorkspaceRoute.tsx) → [`CodeWorkspace`](./CodeWorkspace.tsx) → [`WorkspaceLayout`](./layout/WorkspaceLayout.tsx).
 - **Shell sidebar:** [`shell/CodeSidebarMenu.tsx`](./shell/CodeSidebarMenu.tsx) registered in [`route-menu-registry`](../shell/constants/route-menu-registry.ts) — activity-view icons inject into the main sidebar (same pattern as `/chat`). File trees stay in the workspace side panel. Lazy-loaded only on `/code`.
 - **Layout:** [`app/(core)/code/layout.tsx`](<../../app/(core)/code/layout.tsx>). **Loading skeleton:** [`app/(core)/code/loading.tsx`](<../../app/(core)/code/loading.tsx>).
@@ -104,6 +105,8 @@ Two paths:
 
 ## Sandbox runtime contract (summary)
 
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/infrastructure/sandboxes/STATE.md — read it before touching this feature in ANY repo.
+
 `/code` runs against three orchestrator tiers via the same adapter interface:
 
 - **Mock** — in-memory; demos.
@@ -125,6 +128,8 @@ and the unified compute-target picker all use the stored name first. Renaming
 updates only the owned database row; it never renames or replaces the running
 container.
 
+The management list exposes stored template/tier, resources, heartbeat, expiry, and storage fields without opening a sandbox. A heartbeat timestamp is not a health verdict; missing resource settings remain explicitly unrecorded. `useSandboxInstances` exhausts source pages for default list reads before local table filtering/paging, rejects incomplete snapshots, and cancels superseded requests. Explicit limit/offset callers retain one-page reads. Refresh preserves the current table controls; polling pauses during loading and confirmation dialogs. History batch selection is intersected with the currently loaded history records.
+
 ---
 
 ## Invariants & gotchas
@@ -142,6 +147,7 @@ container.
 - **Persisted file creation has one path.** The Code panel header, empty state, and `My Files` / folder context menus all dispatch `createCodeFileThunk`, derive Monaco language from the complete filename map, and immediately open the created file. Unknown extensions remain valid and open as plaintext.
 - **Sandbox routes have a 300s `maxDuration` ceiling on Vercel Pro** — see the 2026-04-26 maxDuration correction in [`SYSTEM_STATE.md`](./SYSTEM_STATE.md). Long-running operations must talk to the orchestrator directly, bypassing the Vercel proxy.
 - **Sandbox creation requires one explicit organization at every boundary.** `useSandboxCreate`, `useSandboxInstances`, `SandboxesPanel`, `POST /api/sandbox`, and the orchestrator all refuse absence; a stale request whose organization differs from live app context is refused before HTTP.
+- **Image update confirmation is an explicit interruption grant.** The Code client sends `interrupt_attached_sessions=true` only after the owner confirms. The Next proxy forwards that flag without weakening the orchestrator's idle-only default. A `busy_deferred` 409 is expected, non-red control flow; every other failure is captured once at the migration API boundary with its HTTP status, machine status, and structured payload before the derived toast is shown.
 - **PTY terminates at the sandbox orchestrator, never Next.js.** `SandboxProcessAdapter.openPty()` mints an existing sandbox-scoped `pty` token through `/api/sandbox/[id]/access-tokens`, then dials the returned `ws_base` directly. The daemon wire is raw text input/raw binary output; JSON is client-only resize/signal control. Plain Ctrl-C is captured explicitly and sends the PTY's `SIGINT` control frame so browser/app shortcuts and terminal line-discipline differences cannot swallow process interruption; the buffered fallback still consumes ETX, and Ctrl-Shift-C remains copy. `TerminalTab` stays on a visible buffered fallback when mint/connect fails; a 200 SSE response with zero events is an error, never success.
 
 ---
@@ -149,13 +155,16 @@ container.
 ## Related features
 
 - **Depends on:** [`features/agents/`](../agents/) (runtime + AgentRunnerPage), [`features/agent-shortcuts/`](../agent-shortcuts/) (UI-context contract consumer), the orchestrator services described in [`SANDBOX_DIRECT_ENDPOINTS.md`](./SANDBOX_DIRECT_ENDPOINTS.md).
-- **Depended on by:** the `/code` route exclusively. Other surfaces use [`features/code-editor/`](../code-editor/FEATURE.md).
+- **Depended on by:** the `/code` workspace and `/sandbox` management route. Embedded editors use [`features/code-editor/`](../code-editor/FEATURE.md).
 - **Cross-links:** [`SYSTEM_STATE.md`](./SYSTEM_STATE.md), [`QA_CHECKLIST.md`](./QA_CHECKLIST.md), [`features/code-editor/FEATURE.md`](../code-editor/FEATURE.md), [`features/agents/migration/phases/phase-21-code-workspace-resource-pills.md`](../agents/migration/phases/phase-21-code-workspace-resource-pills.md), [`features/agents/migration/phases/phase-15-native-code-editor.md`](../agents/migration/phases/phase-15-native-code-editor.md).
 
 ---
 
 ## Change log
 
+- `2026-09-12` — Replaced both bespoke `/sandbox` tables with the shared package table, exposing runtime configuration, timestamps and storage inline, with searchable columns, lifecycle selection and responsive cards. Complete-list reads exhaust pagination, refuse incomplete snapshots and isolate project changes before rendering. Desktop and phone checks passed with eight real active records, including search, refresh retention, empty history, navigation, sticky headers, column dragging and row JSON clipboard bytes. Six hook tests, scoped lint and the full frontend type check pass. Final acceptance remains open until the shared draggable-header hydration repair is installed and browser-verified; multi-page live data and lifecycle mutations have not been verified.
+
+- `2026-09-12` — Fixed the Code page's impossible image-update gate: a confirmed owner update now explicitly permits idle PTY/watch attachments while the orchestrator still fences new calls and refuses executing work. Expected `busy_deferred` responses are informational; actionable failures retain structured status/reason evidence in the Error Inspector and do not create a second context-free toast record.
 - `2026-09-12` — Monaco now forwards the canonical context-menu trigger handlers and positioning ref to its editor shell, including while Monaco initializes. The disabled native Monaco menu therefore opens the existing `CodeWorkspaceContextMenu` rather than leaving right-click inert; a component regression test dispatches the slotted event and proves it reaches the shell.
 - `2026-09-12` — Added Source Control repository attachments through canonical conversation context. Editor context now carries Library/source identity and read-only state, honors exclusions across recent files and selections, removes stale automatic entries after remount, and keeps explicit file attachments separate from active-tab synchronization. Chat continuation links preserve sandbox, repository, file and panel URL state. Context controls show file locations and explain active-buffer versus metadata-only inclusion.
 - `2026-09-11` — Follow-up UI audit added a mobile Code-pane selector, removed the phone minimap, exposed Search/Run scope, corrected Run folder rescanning, and made Ports failures truthful and captured. Remaining findings: [`audits/2026-09-11-ui-audit.md`](./audits/2026-09-11-ui-audit.md).

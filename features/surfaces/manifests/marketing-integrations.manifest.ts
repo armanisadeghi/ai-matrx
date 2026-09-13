@@ -262,7 +262,7 @@ export const marketingIntegrationsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-integrations",
   readiness: "verified",
   label: "Marketing Site Integrations",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/integrations",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/settings/integrations",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the integrations workspace of a managed website: where the user binds Google Search Console, GA4, PageSpeed, a CMS, and custom providers to this site so evidence can start flowing. The user comes here to complete setup, fix a broken binding, or trigger a sync.

@@ -1,5 +1,6 @@
 "use client";
 
+import type { WheelEvent as ReactWheelEvent } from "react";
 import { usePathname } from "next/navigation";
 import { AdminModuleHeader } from "./_nav/AdminModuleHeader";
 import { filteredPages, MODULE_HOME, MODULE_NAME } from "./config";
@@ -31,6 +32,46 @@ function isFullscreenRoute(pathname: string): boolean {
   return false;
 }
 
+function forwardUnboundedTableWheel(event: ReactWheelEvent<HTMLElement>) {
+  if (
+    event.defaultPrevented ||
+    event.shiftKey ||
+    Math.abs(event.deltaY) <= Math.abs(event.deltaX)
+  ) {
+    return;
+  }
+
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  const tableScroller = target.closest<HTMLElement>(
+    "[data-matrx-table-scroll]",
+  );
+  if (
+    !tableScroller ||
+    tableScroller.scrollHeight > tableScroller.clientHeight + 1
+  ) {
+    return;
+  }
+
+  const pageScroller = event.currentTarget;
+  const maximum = pageScroller.scrollHeight - pageScroller.clientHeight;
+  if (maximum <= 0) return;
+
+  const pixels =
+    event.deltaMode === 1
+      ? event.deltaY * 16
+      : event.deltaMode === 2
+        ? event.deltaY * pageScroller.clientHeight
+        : event.deltaY;
+  const next = Math.min(maximum, Math.max(0, pageScroller.scrollTop + pixels));
+  if (next === pageScroller.scrollTop) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  pageScroller.scrollTop = next;
+}
+
 export function ClientAdminLayout({
   children,
   routes = [],
@@ -40,6 +81,13 @@ export function ClientAdminLayout({
 }) {
   const pathname = usePathname() ?? "";
   const fullscreen = isFullscreenRoute(pathname);
+  // DatabaseAdminLayoutClient owns the bounded vertical body below its
+  // two-row database navigation. Letting this enclosing admin main scroll as
+  // well creates competing terminal scroll regions: at the bottom of a long
+  // database page, the final meaningful result can stop under the inner
+  // boundary instead of reaching it. Other admin routes retain the shared
+  // natural-height fallback below.
+  const databaseRoute = pathname.startsWith("/administration/database");
 
   return (
     <div className="flex flex-col h-page">
@@ -52,7 +100,12 @@ export function ClientAdminLayout({
           routes={routes}
         />
       )}
-      <main className="w-full flex-1 min-h-0 bg-textured overflow-y-auto">
+      <main
+        className={`w-full flex-1 min-h-0 bg-textured ${
+          databaseRoute ? "overflow-hidden" : "overflow-y-auto"
+        }`}
+        onWheelCapture={forwardUnboundedTableWheel}
+      >
         {children}
       </main>
     </div>

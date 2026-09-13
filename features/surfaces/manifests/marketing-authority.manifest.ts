@@ -151,7 +151,7 @@ export const marketingAuthorityManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-authority",
   readiness: "verified",
   label: "Internal Authority Router",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/authority",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/authority",
   inheritsFrom: "matrx-user/marketing-site",
   groups,
   intro: `<surface_intro>

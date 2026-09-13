@@ -166,6 +166,19 @@ type BlockSubState =
 // Known XML tag sets (mirrored from content-prefilter for closing-tag matching)
 // ============================================================================
 
+/**
+ * A closing reasoning tag met with NO open region — the provider's wrapper
+ * arrived unbalanced. Kept narrow (the exact tag shape, nothing else) so prose
+ * that merely mentions the words can never trip it.
+ */
+const ORPHAN_REASONING_CLOSE = /<\/(thinking|think|reasoning)\s*>/i;
+const ORPHAN_REASONING_CLOSE_GLOBAL = /<\/(thinking|think|reasoning)\s*>/gi;
+/** The matching opener, used only to tell a self-contained line from an orphan. */
+const REASONING_OPEN_TAG = /<(thinking|think|reasoning)(\s[^>]*)?>/i;
+
+/** Block types whose content is chain-of-thought, never the answer. */
+const REASONING_BLOCK_TYPES = new Set(["thinking", "reasoning"]);
+
 const SIMPLE_XML_TAGS = new Set([
   "thinking",
   "think",
@@ -571,6 +584,21 @@ export class StreamBlockAccumulator {
       this.processLine(this.pendingLineFragment, dispatch);
       this.pendingLineFragment = "";
     }
+    // 🚨 STREAM ENDED INSIDE A REASONING REGION. Its closing tag never came, so
+    // everything after the model stopped thinking — the ANSWER — is sitting in
+    // a thinking block and renders as a collapsed "Thought process" with an
+    // empty message beside it. Live on 2026-09-12 in three turns; the cause was
+    // a shared-state race in the provider parser (aidream
+    // `providers/reasoning_stream_state.py`), and the client saw it silently.
+    // Never silent again: the block still commits (nothing is thrown away), and
+    // the defect is captured with the remedy.
+    if (
+      this.subState.kind === "xml_tag" &&
+      !this.subState.isAttrXml &&
+      REASONING_BLOCK_TYPES.has(mapXmlTagToBlockType(this.subState.tagName))
+    ) {
+      this.reportUnclosedReasoningRegion(this.subState.tagName);
+    }
     // A truncated generic XML container remains XML code rather than falling
     // back to text, because downstream text expansion may otherwise promote
     // directive/kind-looking JSON from an incomplete container. Its bytes stay
@@ -716,6 +744,52 @@ export class StreamBlockAccumulator {
     }
   }
 
+  // ── Reasoning-boundary honesty ──────────────────────────────────────────
+  //
+  // Both halves of an unbalanced provider wrapper are REPORTED, once per
+  // stream each, with the remedy. They are not recoverable here — only the
+  // provider knows where its thinking ended — so the one thing the client owes
+  // the reader is that the failure is never silent.
+
+  private orphanReasoningCloseReported = false;
+  private unclosedReasoningReported = false;
+
+  private reportOrphanReasoningClose(tag: string, rawLine: string): void {
+    if (this.orphanReasoningCloseReported) return;
+    this.orphanReasoningCloseReported = true;
+    captureError({
+      source: "reasoning-leak",
+      message:
+        `A closing reasoning tag (${tag}) arrived with NO open reasoning ` +
+        `region: the provider's <reasoning> wrapper is unbalanced, so this ` +
+        `turn's chain-of-thought streamed to the reader as the answer. The ` +
+        `tag itself was stripped from the visible content. Remedy: the ` +
+        `wrapper is per-stream state in aidream ` +
+        `providers/reasoning_stream_state.py — an unbalanced wrapper means a ` +
+        `provider parser is sharing it across concurrent turns again.`,
+      requestId: this.requestId,
+      raw: { sample: rawLine.slice(0, 500) },
+    });
+  }
+
+  private reportUnclosedReasoningRegion(tag: string): void {
+    if (this.unclosedReasoningReported) return;
+    this.unclosedReasoningReported = true;
+    captureError({
+      source: "reasoning-leak",
+      message:
+        `The stream ended INSIDE a <${tag}> region — its closing tag never ` +
+        `arrived, so every token after the model stopped thinking (the whole ` +
+        `visible ANSWER) is inside a thinking block and the assistant message ` +
+        `renders empty behind a collapsed "Thought process". Remedy: the ` +
+        `wrapper is per-stream state in aidream ` +
+        `providers/reasoning_stream_state.py — a stranded open means a ` +
+        `provider parser is sharing it across concurrent turns again.`,
+      requestId: this.requestId,
+      raw: { sample: this.currentBlockContent.slice(0, 500) },
+    });
+  }
+
   // ── Internal ────────────────────────────────────────────────────────────
 
   private get currentBlockId(): string {
@@ -766,6 +840,30 @@ export class StreamBlockAccumulator {
         if (remainder) this.processLine(remainder, dispatch);
         else this.suppressEmptyGenericXmlTrailingSlot = true;
       }
+      return;
+    }
+
+    // 🚨 ORPHAN REASONING CLOSE — scaffolding is NEVER prose.
+    // With no region open, a `</thinking>` / `</reasoning>` on the wire means
+    // the provider's wrapper came through unbalanced (its opener was lost), so
+    // this turn's chain-of-thought already streamed as visible text and the
+    // bare tag is about to render as message content. That happened live on
+    // 2026-09-12 — a shared-state race in the provider stream parser (fixed in
+    // aidream `providers/reasoning_stream_state.py`). Strip the tag so the
+    // scaffolding never reaches the reader, and SCREAM: the surrounding prose
+    // is model thinking shown as an answer, which no silent strip may hide.
+    // A line that OPENS its own reasoning region before closing it
+    // (`<reasoning>Working.</reasoning>{…}` — one newline-less fragment) is
+    // balanced: the opening-tag path below owns it, tag text and all.
+    const orphanClose = rawLine.match(ORPHAN_REASONING_CLOSE);
+    const selfOpened =
+      orphanClose?.index !== undefined &&
+      REASONING_OPEN_TAG.test(rawLine.slice(0, orphanClose.index));
+    if (orphanClose && !selfOpened) {
+      this.reportOrphanReasoningClose(orphanClose[0], rawLine);
+      const stripped = rawLine.replace(ORPHAN_REASONING_CLOSE_GLOBAL, "");
+      if (stripped.trim().length === 0) return;
+      this.processLine(stripped, dispatch);
       return;
     }
 

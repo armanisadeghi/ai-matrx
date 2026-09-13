@@ -2,7 +2,7 @@
 
 import { useContext, useSyncExternalStore } from "react";
 import { ReactReduxContext } from "react-redux";
-import type { ThemeMode } from "@/styles/themes/themeSlice";
+import type { ResolvedThemeMode, ThemeMode } from "@/styles/themes/themeSlice";
 
 /**
  * Read the painted color mode from `<html class="dark">`.
@@ -14,7 +14,7 @@ import type { ThemeMode } from "@/styles/themes/themeSlice";
  * have already painted light). Components that apply their own colors — Prism,
  * Monaco, canvas — must follow what is painted, not a stale Redux snapshot.
  */
-export function readThemeModeFromDOM(): ThemeMode {
+export function readThemeModeFromDOM(): ResolvedThemeMode {
   if (typeof document === "undefined") return "dark";
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
@@ -28,10 +28,10 @@ interface ThemeRootSlice {
  * pre-paint, applyPrePaint middleware) and Redux store updates when inside
  * `StoreProvider` so toggles re-render immediately.
  */
-export function useThemeMode(): ThemeMode {
+export function useThemeMode(): ResolvedThemeMode {
   const ctx = useContext(ReactReduxContext);
 
-  return useSyncExternalStore<ThemeMode>(
+  return useSyncExternalStore<ResolvedThemeMode>(
     (onStoreChange) => {
       if (typeof document === "undefined") return () => {};
 

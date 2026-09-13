@@ -87,7 +87,6 @@ import {
 } from "@/features/tool-registry/doors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import {
   csvExportItem,
   jsonExportItem,
@@ -368,19 +367,18 @@ export function McpServersAdminPage() {
                   }),
                 },
               ]}
-            />
-            <ExportMenu
-              label="mcp-servers"
-              items={[
-                jsonExportItem(() => servers.map(serverMeta)),
-                csvExportItem(
-                  () =>
-                    servers.map(serverBrief) as unknown as Array<
-                      Record<string, unknown>
-                    >,
-                  "CSV (server summary)",
-                ),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(() => servers.map(serverMeta)),
+                  csvExportItem(
+                    () =>
+                      servers.map(serverBrief) as unknown as Array<
+                        Record<string, unknown>
+                      >,
+                    "CSV (server summary)",
+                  ),
+                ],
+              }}
             />
           </div>
         )}
@@ -874,16 +872,15 @@ function ToolsTab({
             data: tools,
             attributes: { server: slug, count: tools.length },
           })}
-        />
-        <ExportMenu
-          label={`${slug}-tools`}
-          items={[
-            jsonExportItem(() => tools),
-            csvExportItem(
-              () => tools as unknown as Array<Record<string, unknown>>,
-              "CSV",
-            ),
-          ]}
+          export={{
+            items: [
+              jsonExportItem(() => tools),
+              csvExportItem(
+                () => tools as unknown as Array<Record<string, unknown>>,
+                "CSV",
+              ),
+            ],
+          }}
         />
       </div>
       <div
@@ -1044,10 +1041,7 @@ function ConfigsTab({
                   data: configs,
                   attributes: { count: configs.length },
                 })}
-              />
-              <ExportMenu
-                label="mcp-server-configs"
-                items={[jsonExportItem(() => configs)]}
+                export={{ items: [jsonExportItem(() => configs)] }}
               />
             </>
           )}

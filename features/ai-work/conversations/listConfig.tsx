@@ -52,6 +52,8 @@ function useRowActions(
 
 export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
   surfaceKey: "ai-work-conversations",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "conversation",
   entityLabel: { singular: "conversation", plural: "conversations" },
   scopes: CONVERSATION_LIST_SCOPES,
   service: {

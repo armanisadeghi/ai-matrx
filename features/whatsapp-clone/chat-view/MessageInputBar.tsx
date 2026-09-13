@@ -25,6 +25,10 @@ import type { WhatsAppAttachment } from "../hooks/useWhatsAppChat";
 import { cn } from "@/styles/themes/utils";
 import { MessageInputAttachMenu } from "./MessageInputAttachMenu";
 import { formatDuration } from "../shared/relative-time";
+import {
+  composerKeyIntent,
+  intentTakesTheKey,
+} from "@/components/official/composer/composerSubmit";
 
 // emoji-picker-react ships as default-export; load client-side only
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
@@ -118,11 +122,21 @@ export function MessageInputBar({
     }
   };
 
+  // THE ONE COMPOSER RULE — `components/official/composer/composerSubmit.ts`.
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void submit();
-    }
+    const intent = composerKeyIntent(
+      {
+        key: e.key,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        isComposing: e.nativeEvent.isComposing,
+      },
+      { submitOnEnter: true },
+    );
+    if (!intentTakesTheKey(intent)) return;
+    e.preventDefault();
+    void submit();
   };
 
   const insertEmoji = (emoji: string) => {

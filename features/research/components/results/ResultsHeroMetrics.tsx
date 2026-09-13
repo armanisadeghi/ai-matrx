@@ -12,11 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
-import {
-  csvExportItem,
-  jsonExportItem,
-} from "@/components/agent-copy/export";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import {
   researchKpiAttributes,
@@ -25,11 +21,7 @@ import {
   type ResearchKpis,
 } from "@/features/research/copy";
 import { formatUsd } from "@ai-matrx/kit/format";
-import {
-  useCountUp,
-  formatInt,
-  formatCompact,
-} from "./resultsShared";
+import { useCountUp, formatInt, formatCompact } from "./resultsShared";
 
 export interface HeroMetric {
   key: string;
@@ -300,22 +292,21 @@ export function ResultsHeroMetrics({
               },
             })}
             json={metricRows}
-          />
-          <ExportMenu
-            label="Research stat rail"
-            items={[
-              jsonExportItem(() => ({
-                tiles: metricRows(),
-                page_kpis: copyContext.kpis,
-              })),
-              csvExportItem(metricRows, "CSV (all tiles)", [
-                { key: "key", header: "Key" },
-                { key: "label", header: "Label" },
-                { key: "value", header: "Value" },
-                { key: "rendered", header: "Rendered" },
-                { key: "hint", header: "Hint" },
-              ]),
-            ]}
+            export={{
+              items: [
+                jsonExportItem(() => ({
+                  tiles: metricRows(),
+                  page_kpis: copyContext.kpis,
+                })),
+                csvExportItem(metricRows, "CSV (all tiles)", [
+                  { key: "key", header: "Key" },
+                  { key: "label", header: "Label" },
+                  { key: "value", header: "Value" },
+                  { key: "rendered", header: "Rendered" },
+                  { key: "hint", header: "Hint" },
+                ]),
+              ],
+            }}
           />
         </div>
       )}

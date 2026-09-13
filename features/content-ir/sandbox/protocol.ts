@@ -48,14 +48,56 @@
  * true content height and whether the host's cap is holding it back. A frame
  * still speaking 1 cannot be themed, so it is refused with a sentence rather
  * than rendered in the wrong colours.
+ *
+ * 3 (S5b, 2026-09-12): the host sends THE READER'S VIEWPORT WIDTH and the
+ * width the component is actually allotted, with `init` and on every change
+ * (`matrx:sandbox:layout`). See THE READER'S VIEWPORT below. A frame still
+ * speaking 2 lays every viewport media query out against its own box instead
+ * of the reader's screen, which is a visibly different component — so it is
+ * refused with a sentence rather than rendered wrong.
  */
-export const SANDBOX_PROTOCOL_VERSION = 2;
+export const SANDBOX_PROTOCOL_VERSION = 3;
+
+/**
+ * 🚨 THE READER'S VIEWPORT IS NOT THE FRAME'S BOX (S5b, DD-123).
+ *
+ * An iframe is its own viewport: inside it, `@media (max-width: 768px)`,
+ * `100vw` and `100dvh` answer about the IFRAME ELEMENT, not about the screen
+ * the reader is looking at. The same component mounted straight into the page
+ * answers about the reader's screen. So a component sitting in a 674 px column
+ * on a 1400 px desktop renders DESKTOP unframed and MOBILE framed — and the
+ * app's own `app/globals.css` carries a large `@media (max-width: 768px)`
+ * block (`* { max-width: 100% }`, `word-break: break-word` on p/div/span/li/
+ * td/th, `[class*="flex"] > * { min-width: 0 }`, `img,video,iframe { height:
+ * auto }`, `table { display: block }`, and the unlayered `main { overflow-x:
+ * hidden; max-width: 100vw }` that lands squarely on the frame's own
+ * `<main id="root">`). Measured 2026-09-12 over 139 live bodies: this is the
+ * single cause of the whole "the framed render is taller" column — 70 of them.
+ * Proof: with the host page's own viewport ALSO under 768 px, five bodies
+ * across the whole diff range went to ZERO divergences over 580 compared
+ * elements and identical heights to two decimals.
+ *
+ * THE FIX, AND WHY IT IS SHAPED THIS WAY. There is no way to tell a browser
+ * "evaluate media queries against some other viewport", so the host makes the
+ * frame's viewport BE the reader's: the iframe element is given the reader's
+ * viewport width and clipped by a wrapper to the width the component is
+ * actually allotted, and the frame lays the component out inside a `#root` of
+ * exactly that allotted width. Media queries and viewport units then answer
+ * the same question on both sides of the boundary, for every rule in every
+ * stylesheet, without rewriting any CSS.
+ *
+ * Container queries are unaffected and stay the right tool for a component
+ * that must respond to ITS OWN width (chair ruling 8): `#root` has the allotted
+ * width, so a `@container` on the component root resolves exactly as it does
+ * in the page.
+ */
 
 /** Host → frame. */
 export const HOST_MESSAGE_TYPES = [
     "matrx:sandbox:init",
     "matrx:sandbox:props",
     "matrx:sandbox:theme",
+    "matrx:sandbox:layout",
     "matrx:sandbox:action-result",
     "matrx:sandbox:dispose",
 ] as const;
@@ -116,7 +158,7 @@ export const EXPANDED_FRAME_HEIGHT_CEILING_PX = 20000;
  */
 
 /**
- * Reserved action keys the frame's two host-only copy-bar items relay on
+ * Reserved action keys the frame's host-only copy-bar item relays on
  * (chair ruling 7). They go through the SAME `matrx:sandbox:action` →
  * `runAction` bridge as every other action — there is no second door. If the
  * host has no handler registered for one, `runAction` answers
@@ -124,7 +166,6 @@ export const EXPANDED_FRAME_HEIGHT_CEILING_PX = 20000;
  * outcome, not a fallback.
  */
 export const HOST_RELAY_ACTION_KEYS = {
-    groomWithAgent: "agent_copy_groom",
     sendToGoogle: "send_to_google",
 } as const;
 
@@ -145,6 +186,26 @@ export interface SandboxInitMessage {
     props: Record<string, unknown>;
     themeTokens?: Record<string, string>;
     colorScheme?: "light" | "dark";
+    /**
+     * The READER'S viewport width in CSS pixels — `documentElement.clientWidth`
+     * of the host page, the same number the host's own media queries answer
+     * against. See THE READER'S VIEWPORT above.
+     */
+    readerViewportWidth?: number;
+    /** The width the component is allotted in the page, in CSS pixels. */
+    contentWidth?: number;
+}
+
+/**
+ * Sent whenever the reader's viewport or the component's allotted width
+ * changes — a window resize, an orientation flip, a panel opening beside the
+ * component. Same two numbers as `init`, same meaning.
+ */
+export interface SandboxLayoutMessage {
+    type: "matrx:sandbox:layout";
+    instanceId: string;
+    readerViewportWidth: number;
+    contentWidth: number;
 }
 
 export interface SandboxPropsMessage {
@@ -178,6 +239,7 @@ export type HostMessage =
     | SandboxInitMessage
     | SandboxPropsMessage
     | SandboxThemeMessage
+    | SandboxLayoutMessage
     | SandboxActionResultMessage
     | SandboxDisposeMessage;
 
@@ -393,5 +455,20 @@ export function checkHostMessage(
         MAX_OUTBOUND_PROPS_BYTES,
     );
     if (!envelope.ok) return envelope;
+    const msg = raw as Record<string, unknown>;
+    if (msg.type === "matrx:sandbox:layout") {
+        const bad = (["readerViewportWidth", "contentWidth"] as const).find(
+            (name) =>
+                typeof msg[name] !== "number" ||
+                !Number.isFinite(msg[name]) ||
+                (msg[name] as number) <= 0,
+        );
+        if (bad) {
+            return {
+                ok: false,
+                refusal: `Dropped a layout message whose ${bad} is not a positive number — the component stays at the width it already had, which may not be the reader's.`,
+            };
+        }
+    }
     return { ok: true, message: raw as HostMessage };
 }

@@ -175,7 +175,7 @@ async function drainStream(
 async function drainClonedResponse(clone: Response, id: string): Promise<void> {
   try {
     const text = await clone.text();
-    recordBytes(id, text.length);
+    recordBytes(id, new TextEncoder().encode(text).length);
     recordResponseBody(id, text);
     endExchange(id, "closed");
   } catch (err) {

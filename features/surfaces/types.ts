@@ -97,6 +97,13 @@ export interface SurfaceValue {
    */
   autoContext?: boolean;
 
+  /** Alchemy export policy; independent from automatic agent context inclusion. */
+  exportable?: boolean;
+  /** Secret and credential values are excluded from every Alchemy format. */
+  classification?: "ordinary" | "secret" | "credential";
+  /** Initial preparation section selection, not an authorization boundary. */
+  includedByDefault?: boolean;
+
   /** Optional sort order within the surface; defaults to 1000 in DB. */
   sortOrder?: number;
 

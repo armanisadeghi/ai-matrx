@@ -3,8 +3,15 @@
 Module audit per the `agent-copy` skill's **module-audit protocol** (steps 1–5).
 This table is emitted BEFORE any wiring; batches below are wired against it.
 
-**Baseline coverage on `main` (verified by grep for `CopyButtons` /
-`AgentCopyGroomerLauncher` / `ExportMenu` / `buildAgentPayload`):**
+**Baseline coverage on `main` (verified before the Matrx Alchemy migration by
+grep for `CopyButtons` / `ExportMenu` / `buildAgentPayload`):**
+
+**Migration note (2026-09-12):** use the package-owned Alchemy Menu through
+`CopyButtons`; all four package artifacts are public and the full registry
+consumer canary passed. Trusted-publishing receipt, final host-identity
+publication, and deployed frontend/dashboard proof remain pending.
+Existing `ExportMenu` labels below identify standalone compatibility calls;
+same-target controls converge into `CopyButtons export`.
 
 | Feature | Files with any agent-copy primitive | Real state |
 |---|---|---|
@@ -15,7 +22,7 @@ This table is emitted BEFORE any wiring; batches below are wired against it.
 
 **Cluster does NOT use `MatrxDataTable`** — every list here is hand-rolled, so
 the table's built-in `copy` config is unavailable and each list needs explicit
-row pair + view copy + `ExportMenu`.
+row pair + view copy + `CopyButtons export`.
 
 ---
 
@@ -27,7 +34,7 @@ Routes under `app/(core)/research/`; ~30 sub-routes on `topics/[topicId]`.
 |---|---|---|---|---|
 | `topics/[topicId]` overview | `LastRunSummary` receipt lines (keywords / sources / pages / analyses / syntheses / report / cost) | **field group** | none | `xs` hover pairs + these KPIs become the cluster-wide envelope |
 | `topics/[topicId]` overview | `ResultsHeroMetrics` **stat-square rail** (6 tiles, `buildHeroMetrics`) | **field group / metric cards** | none | `xs` hover pair per tile + rail-level pair |
-| `topics/[topicId]` overview | **whole page** | **whole page** | none | quick pair + **`AgentCopyGroomerLauncher`** (Backlinks-style, sections = receipt · hero metrics · top sources · media · keywords · sources · analyses · syntheses) + `groomerPresetVariants` |
+| `topics/[topicId]` overview | **whole page** | **whole page** | none | quick pair + Alchemy Menu `groomer` (Backlinks-style, sections = receipt · hero metrics · top sources · media · keywords · sources · analyses · syntheses) + `groomerPresetVariants` |
 | `topics/[topicId]` overview | `TopSourcesGrid`, `ResultsMediaBand` | list | none | row pair + view copy + `ExportMenu` |
 | `.../sources` | `SourceList` `pagedSources.map` (1819 LOC; filters, bulk bar) | **list/table** | bespoke authority export only | row pair + view copy + `ExportMenu` + `aiVariants` |
 | `.../sources/[sourceId]` | `SourceDetail` | **record/detail** | none | header pair + per-field |

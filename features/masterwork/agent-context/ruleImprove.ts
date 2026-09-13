@@ -2,11 +2,11 @@ import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
 import type {
   RulebookRule,
   RulebookSections,
-  RulePolicyFieldValues,
+  RuleMoveFieldValues,
   RuleSeverity,
 } from "../types";
 import {
-  EMPTY_RULE_POLICY_FIELDS,
+  EMPTY_RULE_MOVE_FIELDS,
   RULE_ACTION_KINDS,
   RULE_ACTION_URGENCIES,
 } from "../types";
@@ -167,7 +167,7 @@ export function readRuleEditorDraft(
 ): {
   fields: RulebookDraftSnapshot;
   beforeTidy: RulebookDraftSnapshot | null;
-  policy: RulePolicyFieldValues | null;
+  policy: RuleMoveFieldValues | null;
 } | null {
   if (!isRecord(value) || value.baseVersion !== expected.rulebookVersion) {
     return null;
@@ -223,7 +223,7 @@ export function readRuleEditorDraft(
  */
 export function readPolicyFields(
   value: unknown,
-): RulePolicyFieldValues | null {
+): RuleMoveFieldValues | null {
   if (!isRecord(value)) return null;
   const free = (raw: unknown): string | null => {
     if (raw === undefined) return "";
@@ -260,7 +260,7 @@ export function readPolicyFields(
     return null;
   }
   return {
-    ...EMPTY_RULE_POLICY_FIELDS,
+    ...EMPTY_RULE_MOVE_FIELDS,
     preconditionSummary: summary,
     preconditionKnown: known,
     preconditionUnknown: unknown,

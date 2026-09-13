@@ -32,12 +32,12 @@ function describePayload(data: unknown): {
     const max = CAPTURE_LIMITS[getCaptureMode()].maxBodyChars;
     const clamped = data.slice(0, max);
     try {
-      return { parsed: JSON.parse(data), bytes: data.length };
+      return { parsed: JSON.parse(data), bytes: new TextEncoder().encode(data).length };
     } catch {
       return {
         parsed: null,
         unparsed: clamped.slice(0, MAX_UNPARSED_CHARS),
-        bytes: data.length,
+        bytes: new TextEncoder().encode(data).length,
       };
     }
   }

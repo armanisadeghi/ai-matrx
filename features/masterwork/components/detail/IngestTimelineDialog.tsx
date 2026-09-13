@@ -56,12 +56,21 @@ import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 
 /**
- * Being built in parallel in aidream
- * (`aidream/services/distillation/timeline_ingest.py`). Cast pending the
- * OpenAPI type sync (precedent: the dump lane); until the server deploys it the
- * run fails loudly with the real HTTP error and everything typed survives.
+ * Served by `aidream/services/distillation/unfolding_ingest.py`.
+ *
+ * 🚨 NOT `/masterworks/ingest-timeline` (2026-09-13). Two trials built a
+ * timeline lane the same night; trial 8's is merged and keeps that path and the
+ * `timeline` lane of `IngestSourceDialog`. THIS dialog is the only door that
+ * can SEAL a case as a held-out exam (`role: "heldout"`), so it kept its own
+ * lane on its own path rather than losing that half.
+ *
+ * Cast pending the OpenAPI type sync (precedent: the dump lane): the generated
+ * contract still carries only the incumbent path, because `pnpm sync-types`
+ * needs a machine with database access and could not run in the session that
+ * split the lanes. Until it does, the run fails loudly with the real HTTP error
+ * and everything else stays typed. Remedy: `pnpm sync-types`.
  */
-const INGEST_TIMELINE_PATH = "/masterworks/ingest-timeline" as keyof paths;
+const INGEST_TIMELINE_PATH = "/masterworks/ingest-unfolding" as keyof paths;
 
 /** The shortest narrative worth unfolding — below this there is no order. */
 const MIN_NARRATIVE_CHARS = 400;

@@ -59,7 +59,7 @@ export default function MobileNoteEditor({
   editorMode,
   onBack,
 }: MobileNoteEditorProps) {
-  const { updateNote, deleteNote, copyNote, setActiveNoteDirty } =
+  const { updateNote, deleteNote, copyNote, moveNote, moveNoteToNewFolder, setActiveNoteDirty } =
     useNotesRedux();
   const toast = useToastManager("notes");
 
@@ -165,20 +165,18 @@ export default function MobileNoteEditor({
       setIsSaving(true);
       const label = localLabel.trim() || "Untitled Note";
       const content = localContent;
-      const folder = localFolder;
       const tags = localTags;
       try {
         await updateNote(note.id, {
           label,
           content,
-          folder_name: folder,
           tags,
         });
         // Update baseline so dirty check doesn't flip back to true on next compare
         savedBaselineRef.current = {
           label,
           content,
-          folder_name: folder,
+          folder_name: localFolder,
           tags: JSON.stringify(tags),
         };
         setIsDirty(false);
@@ -197,7 +195,6 @@ export default function MobileNoteEditor({
     note.id,
     localLabel,
     localContent,
-    localFolder,
     localTags,
     updateNote,
   ]);
@@ -224,7 +221,6 @@ export default function MobileNoteEditor({
       await updateNote(note.id, {
         label,
         content,
-        folder_name: localFolder,
         tags: localTags,
       });
       // Update the baseline so dirty tracking reflects the just-saved values.
@@ -399,9 +395,25 @@ export default function MobileNoteEditor({
         noteLabel={note.label}
         readOnly={readOnly}
         folder={localFolder}
+        organizationId={note.organization_id}
         tags={localTags}
         content={localContent}
-        onFolderChange={setLocalFolder}
+        onFolderChange={async (folder) => {
+          await moveNote(note.id, folder);
+          setLocalFolder(folder.name);
+          savedBaselineRef.current = {
+            ...savedBaselineRef.current,
+            folder_name: folder.name,
+          };
+        }}
+        onCreateFolder={async (folderName) => {
+          await moveNoteToNewFolder(note.id, folderName);
+          setLocalFolder(folderName);
+          savedBaselineRef.current = {
+            ...savedBaselineRef.current,
+            folder_name: folderName,
+          };
+        }}
         onTagsChange={setLocalTags}
         onDuplicate={handleCopy}
         onExport={handleExport}

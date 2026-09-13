@@ -22,6 +22,7 @@
 import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NoteInfoPanel } from "@/features/notes/components/NoteInfoPanel";
+import { noteFolderReference } from "@/features/notes/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContentSource } from "@/features/rich-document/types";
 import {
@@ -33,7 +34,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectNoteById,
   selectNoteContent,
-  selectAllFolders,
+  selectFolderReferences,
 } from "@/features/notes/redux/selectors";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
@@ -72,12 +73,12 @@ function NoteInfoWindowInner({
   const dispatch = useAppDispatch();
   const note = useAppSelector(selectNoteById(noteId));
   const content = useAppSelector(selectNoteContent(noteId));
-  const allFolders = useAppSelector(selectAllFolders);
+  const folderReferences = useAppSelector(selectFolderReferences);
   const openKnowledge = useOpenNoteKnowledgePanel();
   const openNotesWindow = useOpenNotesWindow();
 
   const label = title || note?.label || "Untitled";
-  const folder = note?.folder_name ?? "Draft";
+  const folder = note ? noteFolderReference(note) : null;
 
   // This window has no notes-tab instance of its own (it's an info-only
   // shell opened from wherever the note already lives), so "Open" spawns
@@ -91,7 +92,7 @@ function NoteInfoWindowInner({
       label,
       content,
       folder,
-      allFolders,
+      allFolders: folderReferences,
       openKnowledge,
       onCreateFolder: () => {},
       dispatch,

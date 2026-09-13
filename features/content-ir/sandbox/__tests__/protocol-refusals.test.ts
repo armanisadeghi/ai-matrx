@@ -128,6 +128,13 @@ describe("host → frame messages", () => {
             { type: "matrx:sandbox:props", instanceId: INSTANCE, props: {} },
             { type: "matrx:sandbox:theme", instanceId: INSTANCE, colorScheme: "dark" },
             {
+                // S5b: the reader's window and the component's own column.
+                type: "matrx:sandbox:layout",
+                instanceId: INSTANCE,
+                readerViewportWidth: 1400,
+                contentWidth: 674,
+            },
+            {
                 type: "matrx:sandbox:action-result",
                 instanceId: INSTANCE,
                 callId: "c1",

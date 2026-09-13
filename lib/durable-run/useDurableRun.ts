@@ -47,6 +47,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
@@ -104,6 +105,51 @@ const RECONNECT_MAX_DELAY_MS = 15_000;
 const RECONNECT_GIVE_UP_MS = 15 * 60 * 1000;
 /** Consecutive rejoins that could not even reach the run before we give up. */
 const RECONNECT_MAX_UNREACHABLE = 5;
+
+/**
+ * 🚨 A WORKING SCREEN MAY NEVER KEEP A PROMISE IT HAS ALREADY BROKEN.
+ *
+ * Every long ingest dialog printed one static sentence — "Working — this takes
+ * a minute." — for as long as the run took, with no clock behind it. On
+ * 2026-09-12 19:54Z a body-of-work ingest of ONE live URL
+ * (`paulgraham.com/simply.html`, corpus item 1a5fd47d) ran for **2m57s** and
+ * SUCCEEDED with 13 rules at 19:57:06. The person watching gave up at ~90s and
+ * filed it as a hang, because after the first minute the screen said exactly
+ * what it had said at second one. Nothing was broken; the copy was.
+ *
+ * So past `expectedMs * OVERDUE_FACTOR` the sentence stops promising and starts
+ * REPORTING — and what it reports is the state we actually hold: a live stream
+ * means the job is running on the server, a reconnect loop means we are still
+ * asking. The hook never guesses, and it never invents a failure: that remains
+ * the row's job alone (see STREAM_LOST_MESSAGE).
+ */
+const OVERDUE_FACTOR = 3;
+/** How often the elapsed clock moves while a run is in flight. */
+const ELAPSED_TICK_MS = 1_000;
+/**
+ * A caller that states no expectation still may not promise forever. One minute
+ * is what every one of these dialogs already told the user out loud.
+ */
+export const DEFAULT_EXPECTED_MS = 60_000;
+
+/**
+ * "about 3 minutes" — what the screen is allowed to promise, derived from what
+ * the runs of this kind ACTUALLY take. No surface writes this sentence itself
+ * any more: "Working — this takes a minute." was hardcoded into six dialogs
+ * while the live medians (`platform.masterwork_run`, 2026-09-12) were 157s for
+ * a source ingest, 156s for a body-of-work ingest and 83s for a dump. The copy
+ * was the defect, not the runtime.
+ */
+export function describeExpected(ms: number): string {
+  if (ms < 45_000) return "under a minute";
+  if (ms < 90_000) return "about a minute";
+  return `about ${formatDurationMs(ms, { style: "coarse" })}`;
+}
+
+/** "2m 57s" / "48s" — the honest clock a stuck-looking screen owes the reader. */
+export function formatElapsed(ms: number): string {
+  return formatDurationMs(ms, { style: "compact", round: "down" });
+}
 
 /** Durable-row statuses that mean the work is still in flight. */
 const IN_FLIGHT_STATUSES = new Set([
@@ -353,6 +399,17 @@ export interface UseDurableRunOptions<TResult> {
   /** Extra body fields every launch and rejoin needs (e.g. `scopeOverrides`). */
   scopeOverrides?: Record<string, string>;
   /**
+   * How long a run of THIS kind normally takes. It is not a timeout and it
+   * never ends anything — it is the promise the screen is ALLOWED to make.
+   * Past `expectedMs * OVERDUE_FACTOR` the hook's `waitMessage` stops promising
+   * and reports the state we actually hold. Defaults to `DEFAULT_EXPECTED_MS`.
+   */
+  expectedMs?: number;
+  /** The sentence shown while the run works and is still inside expectation. */
+  workingMessage?: string;
+  /** The sentence shown while a rejoined run is being picked back up. */
+  rejoiningMessage?: string;
+  /**
    * Adopt the stream and float it. Pass this when the run's OUTPUT is the point
    * — it then renders token by token in `LiveRunWindow` through the canonical
    * pipeline instead of showing a stage line over an invisible model. Omit it
@@ -400,6 +457,23 @@ export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
   reset: () => void;
   /** Set an error the surface detected itself (a bad URL, a rejected result). */
   fail: (message: string) => void;
+  /**
+   * Run the LAST launch again, exactly as it was sent. Every surface that can
+   * show a failure owes the reader a way out of it; before this, a failed
+   * ingest left the person to rebuild their input by hand. Null until this tab
+   * has launched something — a rejoined run's body is not ours to repeat.
+   */
+  retry: (() => Promise<void>) | null;
+  /** Milliseconds since this run began. 0 when nothing is in flight. */
+  elapsedMs: number;
+  /** The run has been working longer than `expectedMs * OVERDUE_FACTOR`. */
+  overdue: boolean;
+  /**
+   * THE ONE SENTENCE a surface shows while a run works — honest at every
+   * moment, including the moments AFTER the promise it opened with expired.
+   * Null when nothing is in flight. A surface must never hardcode its own.
+   */
+  waitMessage: string | null;
 }
 
 export interface DurableRunLaunchOptions {
@@ -441,6 +515,24 @@ export function useDurableRun<TResult>(
   const pendingScopeOverridesRef = useRef<Record<string, string> | undefined>(
     undefined,
   );
+
+  /**
+   * When the run in flight began — the launch instant, or, for a run this tab
+   * is only rejoining, the instant recorded on its receipt. The elapsed clock
+   * that keeps `waitMessage` honest reads this, so a reload does not reset the
+   * promise along with the page.
+   */
+  const startedAtRef = useRef<number | null>(null);
+  /** The last launch's exact arguments, so `retry` repeats it and nothing else. */
+  const lastLaunchRef = useRef<
+    | {
+        body: Record<string, unknown>;
+        target: string | undefined;
+        options: DurableRunLaunchOptions | undefined;
+      }
+    | null
+  >(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   // ── Reconnect plumbing (see STREAM_LOST_MESSAGE) ─────────────────────────
   // `statusRef` / `runIdRef` are the SYNCHRONOUS truth the reconnect loop
@@ -819,6 +911,9 @@ export function useDurableRun<TResult>(
         launchOptions?.scopeOverrides ?? defaultScopeOverrides;
       pendingTargetRef.current = target ?? null;
       pendingScopeOverridesRef.current = scopeOverrides;
+      lastLaunchRef.current = { body, target, options: launchOptions };
+      startedAtRef.current = Date.now();
+      setElapsedMs(0);
       // A new launch retires the previous receipt; the new one lands with the
       // new run's id.
       stopReconnect();
@@ -903,6 +998,8 @@ export function useDurableRun<TResult>(
     // rejoined: the form stays usable while its result comes back, and the
     // user never sees a spinner for work that is already done.
     runIdRef.current = pointer.runId;
+    startedAtRef.current = pointer.settled ? null : pointer.startedAt;
+    setElapsedMs(pointer.settled ? 0 : Math.max(0, Date.now() - pointer.startedAt));
     statusRef.current = pointer.settled ? "idle" : "rejoining";
     setState({
       ...initialState<TResult>(),
@@ -945,9 +1042,21 @@ export function useDurableRun<TResult>(
   const reset = useCallback(() => {
     stopReconnect();
     runIdRef.current = null;
+    startedAtRef.current = null;
+    setElapsedMs(0);
     statusRef.current = "idle";
     setState(initialState<TResult>());
   }, [stopReconnect]);
+
+  /**
+   * Repeat the last launch verbatim. A failure the person did not cause must
+   * never cost them their input a second time.
+   */
+  const retry = useCallback(async (): Promise<void> => {
+    const last = lastLaunchRef.current;
+    if (!last) return;
+    await launch(last.body, last.target, last.options);
+  }, [launch]);
 
   const fail = useCallback(
     (message: string) => {
@@ -1047,12 +1156,57 @@ export function useDurableRun<TResult>(
     progress,
   });
 
+  // ── The honest clock (see OVERDUE_FACTOR) ────────────────────────────────
+  // It ends nothing and cancels nothing. It exists so the sentence on screen
+  // can stop being a promise the moment the promise expires.
+  useEffect(() => {
+    if (!running || startedAtRef.current === null) return;
+    const tick = (): void => {
+      const startedAt = startedAtRef.current;
+      if (startedAt === null) return;
+      setElapsedMs(Math.max(0, Date.now() - startedAt));
+    };
+    tick();
+    const timer = setInterval(tick, ELAPSED_TICK_MS);
+    return () => clearInterval(timer);
+  }, [running]);
+
+  const expectedMs = options.expectedMs ?? DEFAULT_EXPECTED_MS;
+  const overdue = running && elapsedMs > expectedMs * OVERDUE_FACTOR;
+
+  /**
+   * The sentence itself. Note what it never does: it never says the run failed,
+   * never offers to "try again" over work that is still going, and never
+   * repeats a duration promise it has already outlived. Both overdue branches
+   * report the state this hook actually holds — a live stream means the server
+   * is still working on it; a reconnect loop means we have lost the view and
+   * are still asking. A verdict only ever comes from the row.
+   */
+  const waitMessage = ((): string | null => {
+    if (!running) return null;
+    if (!overdue) {
+      return state.status === "rejoining"
+        ? (options.rejoiningMessage ??
+            "Picking this back up — it kept working while you were away.")
+        : (options.workingMessage ??
+            `Working — this usually takes ${describeExpected(expectedMs)}.`);
+    }
+    const clock = formatElapsed(elapsedMs);
+    return state.status === "rejoining"
+      ? `This is taking longer than it should — ${clock} so far, and we have lost the live view. We are still asking the server, and the job may well still be running. You can leave this page: it keeps going, and this picks it back up.`
+      : `This is taking longer than it should — ${clock} so far. The job is still running on the server and we are still watching it. You can leave this page: it keeps going, and this picks it back up.`;
+  })();
+
   return {
     ...state,
     running,
     launch,
     reset,
     fail,
+    retry: lastLaunchRef.current ? retry : null,
+    elapsedMs: running ? elapsedMs : 0,
+    overdue,
+    waitMessage,
   };
 }
 

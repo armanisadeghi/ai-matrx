@@ -30,7 +30,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  AlertCircle,
   ChevronDown,
   ChevronRight,
   ExternalLink,
@@ -62,6 +61,8 @@ import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { writeDumpUrlSources } from "../../service";
 import { HeldOutCasesSection } from "./HeldOutCasesSection";
 import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
+import type { PastedSourceMetadata } from "../../record/pastedSource";
+import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 
 /**
  * The registered source→rulebook pairs (`platform.association_types`,
@@ -250,6 +251,43 @@ export function RulebookSourcesPanel({
       id: l.resourceId,
       label: l.label,
     })),
+  );
+
+  /**
+   * WHAT A PASTED SOURCE SAYS ABOUT ITSELF (census D5). A note the Expert
+   * attached by hand is just a note; a note the paste lane kept carries
+   * `pasted` + `source_key` on its edge, and every rule distilled from that
+   * text carries the SAME key in `source_ref.source` — so the count below is
+   * read from the live rules, never frozen into metadata at write time.
+   */
+  const detailForLink = useCallback(
+    (metadata: unknown): string | null => {
+      const meta = (metadata ?? {}) as Partial<PastedSourceMetadata>;
+      if (!meta.pasted) return null;
+      const bits: string[] = ["Pasted"];
+      if (meta.pasted_at) {
+        const when = new Date(meta.pasted_at);
+        if (!Number.isNaN(when.getTime())) {
+          bits.push(
+            when.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            }),
+          );
+        }
+      }
+      if (meta.words) bits.push(`${meta.words.toLocaleString()} words`);
+      if (meta.source_key) {
+        const produced = (rulebook.rules ?? []).filter(
+          (rule) => rule.source_ref?.source === meta.source_key,
+        ).length;
+        bits.push(
+          produced === 1 ? "1 rule so far" : `${produced} rules so far`,
+        );
+      }
+      return bits.join(" · ");
+    },
+    [rulebook.rules],
   );
 
   const stagedUrls = useMemo(() => dumpUrlSources(rulebook), [rulebook]);
@@ -503,6 +541,7 @@ export function RulebookSourcesPanel({
                     titleFor={(token, id, label) =>
                       titleFor({ token, id, label })
                     }
+                    detailFor={detailForLink}
                     status={links.status}
                     error={links.error}
                     busyKey={busyKey}
@@ -549,10 +588,20 @@ export function RulebookSourcesPanel({
                 extraActions={
                   <>
                     <span className="mx-1 h-4 w-px bg-border" />
+                    {/* A TOGGLE SAYS WHICH WAY IT WENT. Both of these open a
+                        panel below the row, and neither said so: no
+                        `aria-expanded`, no `aria-pressed`, so anyone who
+                        pressed twice — or read the page instead of seeing it —
+                        got "I clicked and nothing happened" (census row 9,
+                        2026-09-12). The state is now declared, not just
+                        painted. */}
                     <Button
                       type="button"
                       size="sm"
                       variant="ghost"
+                      aria-expanded={showUrlAdd}
+                      aria-pressed={showUrlAdd}
+                      aria-controls="rulebook-sources-url-add"
                       onClick={() => {
                         setShowUrlAdd((v) => !v);
                         setShowPicker(false);
@@ -569,6 +618,9 @@ export function RulebookSourcesPanel({
                       type="button"
                       size="sm"
                       variant="ghost"
+                      aria-expanded={showPicker}
+                      aria-pressed={showPicker}
+                      aria-controls="rulebook-sources-workspace-picker"
                       onClick={() => {
                         setShowPicker((v) => !v);
                         setShowUrlAdd(false);
@@ -585,7 +637,10 @@ export function RulebookSourcesPanel({
                 }
               >
                 {showUrlAdd ? (
-                  <div className="border-b border-border/60 p-2">
+                  <div
+                    id="rulebook-sources-url-add"
+                    className="border-b border-border/60 p-2"
+                  >
                     {/* Scrape-on-add: the Core fetches the page and shows an
                         honest preview before "Add Content" stages the URL. */}
                     <WebpageResourcePickerCore
@@ -600,7 +655,10 @@ export function RulebookSourcesPanel({
                   </div>
                 ) : null}
                 {showPicker ? (
-                  <div className="flex max-h-80 flex-col border-b border-border/60 bg-muted/30 p-2">
+                  <div
+                    id="rulebook-sources-workspace-picker"
+                    className="flex max-h-80 flex-col border-b border-border/60 bg-muted/30 p-2"
+                  >
                     <UniversalAssociationPicker
                       tokens={DUMP_SOURCE_TOKENS}
                       orgId={rulebook.organization_id}
@@ -663,27 +721,26 @@ export function RulebookSourcesPanel({
                     <div className="flex items-start gap-2 pt-1">
                       <LoadingSpinner size="sm" />
                       <p className="text-xs text-muted-foreground">
-                        {run.status === "rejoining"
-                          ? "Picking this back up — it kept working while you were away."
-                          : "Working — this takes a minute."}
+                        {run.waitMessage}
                       </p>
                     </div>
                   ) : null}
                 </div>
               ) : null}
 
-              {run.error ? (
-                <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                  <div className="text-xs text-destructive">
-                    <p>{run.error}</p>
-                    <p className="mt-1 text-muted-foreground">
-                      Your attached sources are safe — nothing was lost. Fix the
-                      problem (or try again later) and press the button again.
-                    </p>
-                  </div>
-                </div>
-              ) : null}
+              {/* The dump lane was the only one that kept its failure on screen
+                  — but it asked the reader to "press the button again" instead
+                  of giving them a button. Same notice as every other lane now,
+                  with the way out attached. */}
+              <DurableRunFailure
+                error={run.error}
+                retry={run.retry}
+                running={run.running}
+              >
+                <p className="self-center text-xs text-muted-foreground">
+                  Your attached sources are safe — nothing was lost.
+                </p>
+              </DurableRunFailure>
 
               {run.result ? (
                 <DumpOutcomes summary={run.result} onDone={() => run.reset()} />
@@ -727,6 +784,7 @@ function SourceRows({
   sourceLinks,
   stagedUrls,
   titleFor,
+  detailFor,
   status,
   error,
   busyKey,
@@ -738,9 +796,12 @@ function SourceRows({
     token: string;
     resourceId: string;
     label: string | null;
+    metadata?: unknown;
   }[];
   stagedUrls: DumpUrlSource[];
   titleFor: (token: string, id: string, label: string | null) => string;
+  /** The second line of a row — what a pasted source says about itself. */
+  detailFor?: (metadata: unknown) => string | null;
   status: string;
   error: string | null;
   busyKey: string | null;
@@ -777,6 +838,7 @@ function SourceRows({
         const info = tryGetEntityInfo(link.token);
         const key = attachedKey(link.token, link.resourceId);
         const unsupported = UNSUPPORTED_TOKENS.has(link.token);
+        const detail = detailFor?.(link.metadata) ?? null;
         return (
           <li
             key={key}
@@ -799,7 +861,11 @@ function SourceRows({
                 className="text-sm text-foreground"
               />
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
-                {info ? (
+                {detail ? (
+                  <span className="text-[10px] text-muted-foreground">
+                    {detail}
+                  </span>
+                ) : info ? (
                   <span className="text-[10px] text-muted-foreground">
                     {info.labelPlural}
                   </span>

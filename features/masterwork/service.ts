@@ -1,6 +1,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
+import { presentedPreview } from "@/features/workflow-runtime/run-result/presented-result";
 import { pokeUnderstudy } from "./understudy/refresh";
 import {
   parseRulebook,
@@ -360,9 +361,41 @@ export interface MasterworkRun {
   steps_executed: number | null;
   /** Summed node cost (workflow.node_outcome output.usage.cost_usd); null when unpriced. */
   cost_usd: number | null;
+  /**
+   * The first line of what this run handed over, read from the payload its
+   * terminal step PRESENTED (wall W36). Null when the run produced nothing
+   * readable — the row then says less rather than something invented.
+   */
+  deliverable_preview: string | null;
+  /**
+   * The run's own recorded, person-facing failure sentence. Null for a run
+   * that did not fail, and for a failure the engine recorded without one —
+   * never a filler line standing in for an honest error.
+   */
+  error_message: string | null;
 }
 
 const RUNS_PER_MASTERWORK = 5;
+
+/**
+ * The person-facing sentence a failed run recorded. The engine writes
+ * `{cause, message, technical}`; `message` is the half written for a reader and
+ * `technical` is for us. A failure with neither is reported as neither — a row
+ * says "Failed" and nothing more rather than inventing a reason.
+ */
+function runErrorMessage(error: unknown): string | null {
+  if (typeof error === "string") return error.trim() || null;
+  if (error === null || typeof error !== "object") return null;
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" && message.trim() ? message.trim() : null;
+}
+
+/**
+ * Emissions carry the presented payload, so a handful of the most recent ones
+ * per run is all a preview line needs. Bounded on purpose — this is a preview
+ * read, never a completeness read.
+ */
+const EMISSIONS_SCANNED_PER_RUN = 20;
 
 /**
  * Recent runs per Masterwork, with per-run cost summed from node outcomes. Two
@@ -377,7 +410,7 @@ export async function listRecentRunsForMasterworks(
     .schema("workflow")
     .from("run")
     .select(
-      "id,definition_id,status,created_at,started_at,completed_at,steps_executed",
+      "id,definition_id,status,created_at,started_at,completed_at,steps_executed,error",
     )
     .in("definition_id", masterworkIds)
     .order("created_at", { ascending: false })
@@ -398,6 +431,8 @@ export async function listRecentRunsForMasterworks(
       completed_at: row.completed_at,
       steps_executed: row.steps_executed,
       cost_usd: null,
+      deliverable_preview: null,
+      error_message: runErrorMessage(row.error),
     });
     kept.push({ id: row.id, definition_id: masterworkId });
   }
@@ -423,10 +458,43 @@ export async function listRecentRunsForMasterworks(
       costByRun.set(row.run_id, (costByRun.get(row.run_id) ?? 0) + cost);
     }
   }
+  // ── THE FIRST LINE OF THE ANSWER (wall W36) ──────────────────────────────
+  // A row that carries only status, time and cost cannot tell one run from
+  // another. What the run PRESENTED is the answer, so the last emission per
+  // run supplies the preview — the same rule `readPresentedResult` follows for
+  // the full document, through the same module, so the list and the page can
+  // never disagree about what a run said.
+  const { data: emissions, error: emissionError } = await supabase
+    .schema("workflow")
+    .from("node_events")
+    .select("run_id,seq,payload")
+    .in(
+      "run_id",
+      kept.map((r) => r.id),
+    )
+    .eq("event_type", "node_emitted")
+    .order("seq", { ascending: false })
+    .limit(EMISSIONS_SCANNED_PER_RUN * kept.length);
+  // A preview is enrichment: a refused or failed emission read leaves the rows
+  // without their first line, never without the runs.
+  if (emissionError) {
+    console.warn("[masterwork] run previews unavailable:", emissionError.message);
+  }
+  const previewByRun = new Map<string, string>();
+  for (const row of emissions ?? []) {
+    // Descending seq: the FIRST row seen per run is its last emission, which is
+    // what the reader was left looking at.
+    if (previewByRun.has(row.run_id)) continue;
+    const envelope = row.payload as { payload?: unknown } | null;
+    const preview = presentedPreview(envelope?.payload ?? envelope);
+    if (preview) previewByRun.set(row.run_id, preview);
+  }
+
   for (const bucket of Object.values(byMasterwork)) {
     for (const run of bucket) {
       const total = costByRun.get(run.id);
       if (total !== undefined) run.cost_usd = total;
+      run.deliverable_preview = previewByRun.get(run.id) ?? null;
     }
   }
   return byMasterwork;

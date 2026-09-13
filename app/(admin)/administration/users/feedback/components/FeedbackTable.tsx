@@ -86,7 +86,6 @@ import {
 } from "@/features/admin/users/components/AdminUserRef";
 import { FEEDBACK_DEEP_LINK_PARAM, feedbackHref } from "../doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { feedbackBrief, feedbackRowSummary } from "../format";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -1346,19 +1345,18 @@ export default function FeedbackTable() {
                       }),
                     },
                   ]}
-                />
-                <ExportMenu
-                  label="feedback"
-                  items={[
-                    jsonExportItem(() => feedback, "JSON (all feedback)"),
-                    csvExportItem(
-                      () =>
-                        filteredAndSortedFeedback.map(
-                          feedbackBrief,
-                        ) as unknown as Array<Record<string, unknown>>,
-                      "CSV (current view)",
-                    ),
-                  ]}
+                  export={{
+                    items: [
+                      jsonExportItem(() => feedback, "JSON (all feedback)"),
+                      csvExportItem(
+                        () =>
+                          filteredAndSortedFeedback.map(
+                            feedbackBrief,
+                          ) as unknown as Array<Record<string, unknown>>,
+                        "CSV (current view)",
+                      ),
+                    ],
+                  }}
                 />
               </div>
             )}

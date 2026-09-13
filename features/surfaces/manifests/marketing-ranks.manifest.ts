@@ -246,7 +246,7 @@ export const marketingRanksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-ranks",
   readiness: "verified",
   label: "Marketing Rank Tracking",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/ranks",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/rankings",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the rank tracking workspace of a managed website: the portfolio of keywords (and AI-answer prompts) this site tracks, and where it currently sits for each of them. The brand_context and site_context values give you the client and website framing; read them first, and read site_domain — a SERP result only counts as "this site" when it matches that domain.

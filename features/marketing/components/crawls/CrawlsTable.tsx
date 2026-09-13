@@ -7,9 +7,7 @@ import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   groomerPresetVariants,
   type AgentCopyGroomerConfig,
@@ -357,25 +355,24 @@ export function CrawlsTable() {
               attributes: { site_id: site.id, domain: site.root_url },
             })}
             aiVariants={groomerPresetVariants(groomerConfig)}
+            groomer={groomerConfig}
+            export={{
+              items: [
+                jsonExportItem(() => rows, "JSON (loaded rows, raw)"),
+                {
+                  id: "csv",
+                  label: "CSV (loaded rows)",
+                  build: () => ({
+                    content: rowsToCsv(
+                      rows as unknown as Array<Record<string, unknown>>,
+                    ),
+                    extension: "csv",
+                    mime: "text/csv",
+                  }),
+                },
+              ],
+            }}
           />
-          <ExportMenu
-            label={`crawls-${site.root_url}`}
-            items={[
-              jsonExportItem(() => rows, "JSON (loaded rows, raw)"),
-              {
-                id: "csv",
-                label: "CSV (loaded rows)",
-                build: () => ({
-                  content: rowsToCsv(
-                    rows as unknown as Array<Record<string, unknown>>,
-                  ),
-                  extension: "csv",
-                  mime: "text/csv",
-                }),
-              },
-            ]}
-          />
-          <AgentCopyGroomerLauncher config={groomerConfig} />
         </div>
       </header>
       {/* Crawl session identity is page-local — `grep -rl "CrawlSession\b"

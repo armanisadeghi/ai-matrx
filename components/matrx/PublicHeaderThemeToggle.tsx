@@ -1,15 +1,16 @@
 'use client';
 
 import { Moon, Sun } from 'lucide-react';
-import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
+import { useAppDispatch } from '@/lib/redux/hooks';
 import { setMode } from '@/styles/themes/themeSlice';
+import { useThemeMode } from '@/styles/themes/useThemeMode';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { PUBLIC_HEADER_ICON_BUTTON } from "./publicHeaderChrome";
 
 export function PublicHeaderThemeToggle() {
-    const theme = useAppSelector((s) => s.theme.mode);
+    const theme = useThemeMode();
     const dispatch = useAppDispatch();
     const setTheme = (t: 'light' | 'dark') => dispatch(setMode(t));
     const mounted = useIsMounted();

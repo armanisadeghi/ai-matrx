@@ -13,9 +13,7 @@
 
 "use client";
 
-import { TrendingDown, TrendingUp } from "lucide-react";
-
-import { deltaPercent, formatDelta, usd, count, zoneLabel } from "./format";
+import { deltaPercent, formatDelta, usd, count } from "./format";
 
 export interface SpendHeadlineProps {
   today: number;
@@ -41,7 +39,13 @@ interface TileProps {
   size?: "hero" | "normal";
 }
 
-function Tile({ label, value, hint, tone = "normal", size = "normal" }: TileProps) {
+function Tile({
+  label,
+  value,
+  hint,
+  tone = "normal",
+  size = "normal",
+}: TileProps) {
   const alarm = tone === "alarm";
   return (
     <div
@@ -92,12 +96,10 @@ export function SpendHeadline({
   monthToDate,
   monthProjection,
   scareThresholdUsd,
-  timezone,
   density = "full",
 }: SpendHeadlineProps) {
   const alarm = today > scareThresholdUsd;
   const delta = deltaPercent(today, yesterday);
-  const rising = delta !== null && delta > 0;
 
   return (
     <div className="flex flex-col gap-2">
@@ -132,7 +134,11 @@ export function SpendHeadline({
             }
           />
         </div>
-        <Tile label="Yesterday" value={usd(yesterday)} hint={formatDelta(delta)} />
+        <Tile
+          label="Yesterday"
+          value={usd(yesterday)}
+          hint={formatDelta(delta)}
+        />
         <Tile label="Last 7 days" value={usd(last7d)} />
         {density === "full" && last30d !== undefined ? (
           <Tile label="Last 30 days" value={usd(last30d)} />
@@ -153,21 +159,6 @@ export function SpendHeadline({
           }
         />
       </div>
-
-      <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        {delta !== null ? (
-          rising ? (
-            <TrendingUp className="h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />
-          ) : (
-            <TrendingDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-          )
-        ) : null}
-        <span className="min-w-0">
-          AI and provider executions only. Days are cut at local midnight in{" "}
-          {zoneLabel(timezone)}. This is a lower bound — several cost sources
-          record nothing.
-        </span>
-      </p>
     </div>
   );
 }

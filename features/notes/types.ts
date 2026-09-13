@@ -86,24 +86,68 @@ export type CreateNoteInput = Pick<
     | "position"
     | "visibility"
 > & {
-    // org is resolved by the create path (ensureOrgId), so callers need not
-    // pass it — keep it optional even though NoteInsert.organization_id is now
-    // NOT NULL / required.
-    organization_id?: string | null;
+    /** Captured at the initiating edge. The note writer never resolves it. */
+    organization_id: string;
 } & Partial<NoteContextLinks>;
 
-export type UpdateNoteInput = Pick<
-    NoteUpdate,
-    | "label"
-    | "content"
-    | "folder_name"
-    | "folder_id"
-    | "organization_id"
-    | "tags"
-    | "metadata"
-    | "position"
-    | "visibility"
+/** Immutable identity for a folder operation; its name is display data only. */
+export interface FolderReference {
+    id: string;
+    organizationId: string;
+    name: string;
+}
+
+/** A persisted folder can be moved to by its stable organization-qualified ID. */
+export function noteFolderReference(
+    note: Pick<Note, "organization_id" | "folder_id" | "folder_name">,
+): FolderReference | null {
+    if (!note.folder_id || !note.organization_id) return null;
+    return {
+        id: note.folder_id,
+        organizationId: note.organization_id,
+        name: note.folder_name ?? "Uncategorized",
+    };
+}
+
+export function noteFolderIdentityKey(note: Pick<Note, "organization_id" | "folder_id" | "folder_name">): string {
+    return note.folder_id
+        ? `folder:${note.organization_id ?? "unassigned"}:${note.folder_id}`
+        : `pending:${note.organization_id ?? "unassigned"}:${note.folder_name ?? "Uncategorized"}`;
+}
+
+export type NoteContentUpdate = Pick<
+  NoteUpdate,
+  | "label"
+  | "content"
+  | "tags"
+  | "metadata"
+  | "position"
+  | "visibility"
 > & Partial<NoteContextLinks>;
+
+/**
+ * A persisted folder relationship is always changed by its admitted ID. The
+ * name is display data supplied by the service after it reads that folder;
+ * callers cannot use a name to select or create a persisted relationship.
+ */
+type PersistedFolderUpdate = {
+  /** `folder_id` is the only caller-supplied persisted folder relationship. */
+  folder_id?: string | null;
+  folder_name?: never;
+  organization_id?: never;
+};
+
+export type UpdateNoteInput = NoteContentUpdate & PersistedFolderUpdate;
+
+/**
+ * Captured identity at the editor boundary. A version turns the write into a
+ * compare-and-swap; the organization guards against saving a stale record
+ * snapshot into a different tenant.
+ */
+export interface UpdateNoteOptions {
+  expectedVersion?: number;
+  expectedOrganizationId?: string;
+}
 
 export interface FolderGroup {
     folder_name: string;

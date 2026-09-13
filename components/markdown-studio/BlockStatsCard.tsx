@@ -23,8 +23,10 @@ export function BlockStatsCard({ blocks, className }: BlockStatsCardProps) {
   const { byType, totalBytes, totalCount } = useMemo(() => {
     const map = new Map<string, TypeStat>();
     let totalBytes = 0;
+    // UTF-8 bytes — rendered as "B"; `.length` is UTF-16 code units.
+    const encoder = new TextEncoder();
     for (const b of blocks) {
-      const bytes = (b.content ?? "").length;
+      const bytes = encoder.encode(b.content ?? "").length;
       totalBytes += bytes;
       const existing = map.get(b.type);
       if (existing) {

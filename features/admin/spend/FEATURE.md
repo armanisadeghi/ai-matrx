@@ -6,13 +6,13 @@ the 80/20 view, the "dig here" signals and click-to-drill — and a floating
 window that puts today's number in front of a Super Admin once a day whether or
 not they went looking for it.
 
-**Why it exists.** Arman, 2026-09-11: *"a dashboard where I can easily and
+**Why it exists.** Arman, 2026-09-11: _"a dashboard where I can easily and
 quickly see where money is being spent… The key is to scare me by showing me how
-much money we spent so far today, not by putting blocks in the code."* Arman,
-2026-09-12, after two $100+ days he did not drive: *"it's not being registered
+much money we spent so far today, not by putting blocks in the code."_ Arman,
+2026-09-12, after two $100+ days he did not drive: _"it's not being registered
 under any user. It's not being registered under any organization. So where the
-heck is all this money going?"* and *"where do I go where I can see a line item
-and then click it and then see that data with the other dimensions?"* Nothing
+heck is all this money going?"_ and _"where do I go where I can see a line item
+and then click it and then see that data with the other dimensions?"_ Nothing
 in this feature blocks, throttles or refuses anything. The whole intervention is
 a number, made large, made red when it is high — and now made explorable.
 
@@ -22,13 +22,13 @@ The headline **and every number in the explorer** are `runtime.global_execution.
 and **nothing else**. Every other cost source is shown beside it, labelled with
 the role it plays, and never silently added:
 
-| Role | Meaning | Example |
-|---|---|---|
-| `primary` | The headline. One table. | `runtime.global_execution` |
-| `overlap` | Real spend, the SAME money through another lens. Shown, never added. | `chat.user_request` (the same executions counted per request) |
-| `additive` | Genuinely separate spend. | `ops.proof_run`, `batch.cost_event` |
-| `gap` | A ledger that EXISTS and records nothing (or nothing but zeros). | `docproc.derive_runs`, `communication.sms_messages` |
-| `unmeasured` | Money we know we spend with no row anywhere. | Resend email, TTS/STT, SerpAPI/DataForSEO/Brave, hosting |
+| Role         | Meaning                                                              | Example                                                       |
+| ------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `primary`    | The headline. One table.                                             | `runtime.global_execution`                                    |
+| `overlap`    | Real spend, the SAME money through another lens. Shown, never added. | `chat.user_request` (the same executions counted per request) |
+| `additive`   | Genuinely separate spend.                                            | `ops.proof_run`, `batch.cost_event`                           |
+| `gap`        | A ledger that EXISTS and records nothing (or nothing but zeros).     | `docproc.derive_runs`, `communication.sms_messages`           |
+| `unmeasured` | Money we know we spend with no row anywhere.                         | Resend email, TTS/STT, SerpAPI/DataForSEO/Brave, hosting      |
 
 Consequences that are not negotiable:
 
@@ -50,13 +50,13 @@ its per-user table from `chat.user_usage_summary` — the rolling THROTTLING
 window, a different ledger — so the person who spent $164 in 48h showed as $10
 and the spend looked unattributed. It was attributed all along:
 
-| Dimension | Where it lives on the ledger row |
-|---|---|
-| organization | `runtime.global_execution.organization_id` |
-| person, agent, conversation | `runtime.global_execution.context` (`user_id`, `agent_id`, `conversation_id`) |
-| app, feature, origin class, status, iterations, tokens | `chat.user_request` via `runtime.global_execution.request_id` (99.8% of conversation cost, 58% of internal-run cost links) |
-| model, provider | `chat.request` per API call, rolled up to the model that billed the most of the request |
-| trigger | derived: `origin_class` in (`human`, `api`) → **manual**; everything else (`child_agent`, `workflow`, `scheduled`, `system`, `client_auto`, and unlinked internal/scheduler runs) → **automated** |
+| Dimension                                              | Where it lives on the ledger row                                                                                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| organization                                           | `runtime.global_execution.organization_id`                                                                                                                                                        |
+| person, agent, conversation                            | `runtime.global_execution.context` (`user_id`, `agent_id`, `conversation_id`)                                                                                                                     |
+| app, feature, origin class, status, iterations, tokens | `chat.user_request` via `runtime.global_execution.request_id` (99.8% of conversation cost, 58% of internal-run cost links)                                                                        |
+| model, provider                                        | `chat.request` per API call, rolled up to the model that billed the most of the request                                                                                                           |
+| trigger                                                | derived: `origin_class` in (`human`, `api`) → **manual**; everything else (`child_agent`, `workflow`, `scheduled`, `system`, `client_auto`, and unlinked internal/scheduler runs) → **automated** |
 
 Rows no chat request explains (scheduler polls, internal runs without a
 request row) are attributed from the execution's own context and link kind —
@@ -81,11 +81,11 @@ as manual. If that ever misleads, it is a ruling to change in one place
 
 Three super-admin-gated `SECURITY DEFINER` RPCs:
 
-| Function | Migration | Used by | Returns |
-|---|---|---|---|
-| `public.admin_spend_overview(p_tz)` | `spend_dashboard_admin_rpcs.sql`, trimmed by `spend_explorer_admin_rpc.sql` | the headline half | today / yesterday / 7d / 30d / month + projection, the 30-day series, every ledger, print orders |
-| `public.admin_spend_headline(p_tz)` | `spend_dashboard_admin_rpcs.sql` | the popover | today / yesterday / 7d / month-to-date, today's top org, the gap count |
-| `public.admin_spend_breakdown(p_from, p_to, p_tz, p_filters, p_thresholds)` | `spend_explorer_admin_rpc.sql` | the explorer | for ANY window ≤ 92 days and ANY filters: totals, eleven dimensions ranked with share + remainder, day and hour series split manual/automated, the seven "dig here" signals, the 40 costliest requests |
+| Function                                                                    | Migration                                                                   | Used by           | Returns                                                                                                                                                                                                |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `public.admin_spend_overview(p_tz)`                                         | `spend_dashboard_admin_rpcs.sql`, trimmed by `spend_explorer_admin_rpc.sql` | the headline half | today / yesterday / 7d / 30d / month + projection, the 30-day series, every ledger, print orders                                                                                                       |
+| `public.admin_spend_headline(p_tz)`                                         | `spend_dashboard_admin_rpcs.sql`                                            | the popover       | today / yesterday / 7d / month-to-date, today's top org, the gap count                                                                                                                                 |
+| `public.admin_spend_breakdown(p_from, p_to, p_tz, p_filters, p_thresholds)` | `spend_explorer_admin_rpc.sql`                                              | the explorer      | for ANY window ≤ 92 days and ANY filters: totals, eleven dimensions ranked with share + remainder, day and hour series split manual/automated, the seven "dig here" signals, the 40 costliest requests |
 
 `public._spend_ledger_registry()` is the ONE list of every cost source and its
 role. **Adding a cost source is a row in that `VALUES` list** — the dashboard,
@@ -117,18 +117,18 @@ says so when the database did not recognise it and fell back to UTC.
 
 Reading order on the page: headline → explorer → the folded honesty tail.
 
-| Piece | File | What |
-|---|---|---|
-| Window | `explorer/WindowPicker.tsx`, `windows.ts` | Today / **Yesterday** / Last 24h / 7 days / 30 days / Custom (two local days, inclusive). Yesterday is first-class because a today-only page is worthless one minute past midnight. |
-| URL state | `windows.ts` | `?win=yesterday`, `?win=custom&from=…&to=…`, `&f.<dimension>=<key>` — a view reloads and can be handed to someone. The tables' own sort/filter params are left untouched. |
-| Filter chips | `explorer/FilterChips.tsx` | The drill-down breadcrumb + the coverage line. |
-| Totals | `explorer/TotalsStrip.tsx` | window total, manual vs automated (with shares), requests, tokens (with cache hit rate), "explained by a request". |
-| Timeline | `explorer/SeriesBars.tsx` | stacked bars per hour (≤ 4 days) or per day, manual under automated, legend always present, peak direct-labelled, hover title on every bar, click a day to drill. Colours are the theme's `chart-2` / `chart-1` tokens (validated with the dataviz palette script, light: all checks pass). |
-| Dig here | `explorer/DigHerePanel.tsx` | seven signal cards ordered by money — see below. |
-| 80/20 | `explorer/ParetoPanel.tsx` | per dimension: the fewest rows reaching 80% of the window, then ONE "everything else" row (`paretoCut`). |
-| Every dimension | `explorer/DimensionTables.tsx` | one `MatrxDataTable` per dimension, same columns everywhere (cost, share bar, manual, automated, requests, per request, tokens in/cached/out, last activity). |
-| Costliest requests | `explorer/TopRequestsTable.tsx` | 40 rows with every dimension, one per request (its ledger rows summed); a request opens its conversation. |
-| Names, hrefs, wording | `explorer/labels.ts` | plain-English dimension names, per-dimension "empty" wording, where each identity opens. |
+| Piece                 | File                                      | What                                                                                                                                                                                                                                                                                        |
+| --------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Window                | `explorer/WindowPicker.tsx`, `windows.ts` | Today / **Yesterday** / Last 24h / 7 days / 30 days / Custom (two local days, inclusive). Yesterday is first-class because a today-only page is worthless one minute past midnight.                                                                                                         |
+| URL state             | `windows.ts`                              | `?win=yesterday`, `?win=custom&from=…&to=…`, `&f.<dimension>=<key>` — a view reloads and can be handed to someone. The tables' own sort/filter params are left untouched.                                                                                                                   |
+| Filter chips          | `explorer/FilterChips.tsx`                | The drill-down breadcrumb + the coverage line.                                                                                                                                                                                                                                              |
+| Totals                | `explorer/TotalsStrip.tsx`                | window total, manual vs automated (with shares), requests, tokens (with cache hit rate), "explained by a request".                                                                                                                                                                          |
+| Timeline              | `explorer/SeriesBars.tsx`                 | stacked bars per hour (≤ 4 days) or per day, manual under automated, legend always present, peak direct-labelled, hover title on every bar, click a day to drill. Colours are the theme's `chart-2` / `chart-1` tokens (validated with the dataviz palette script, light: all checks pass). |
+| Dig here              | `explorer/DigHerePanel.tsx`               | seven signal cards ordered by money — see below.                                                                                                                                                                                                                                            |
+| 80/20                 | `explorer/ParetoPanel.tsx`                | per dimension: the fewest rows reaching 80% of the window, then ONE "everything else" row (`paretoCut`).                                                                                                                                                                                    |
+| Every dimension       | `explorer/DimensionTables.tsx`            | one `MatrxDataTable` per dimension, same columns everywhere (cost, share bar, manual, automated, requests, per request, tokens in/cached/out, last activity).                                                                                                                               |
+| Costliest requests    | `explorer/TopRequestsTable.tsx`           | 40 rows with every dimension, one per request (its ledger rows summed); a request opens its conversation.                                                                                                                                                                                   |
+| Names, hrefs, wording | `explorer/labels.ts`                      | plain-English dimension names, per-dimension "empty" wording, where each identity opens.                                                                                                                                                                                                    |
 
 **Drill = click.** Every name in the 80/20 cards, the dimension tables, the
 request table and the signal rows calls `drill(dimension, key)`, which writes
@@ -139,15 +139,15 @@ person → `/administration/users?focus=<id>`, agent →
 
 ### The "dig here" signals
 
-| Signal | Line (knob) | What it means |
-|---|---|---|
-| Conversations that ate the window | `hog_share_pct` (5%) | one conversation ≥ this share of the window |
-| Context-heavy conversations | `context_heavy_tokens` (200k) | average input+cached tokens per model call above the line — cost grows with the square of the conversation length |
-| Requests that looped | `iteration_heavy` (10) | model calls inside ONE request |
-| Spent and got nothing back | — | requests `failed` / `abandoned` / `max_tokens` |
-| Hours that spiked | `spike_multiplier` (3×) | an hour above N× the window's median non-zero hour, with who and what dominated it |
-| Repeat bursts | `repeat_burst` (5) | same person + agent + feature ≥ N requests in one ten-minute bucket |
-| Unpriced calls | — | `chat.request.cost IS NULL`: the ledger under-counts by an unknown amount |
+| Signal                            | Line (knob)                   | What it means                                                                                                     |
+| --------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Conversations that ate the window | `hog_share_pct` (5%)          | one conversation ≥ this share of the window                                                                       |
+| Context-heavy conversations       | `context_heavy_tokens` (200k) | average input+cached tokens per model call above the line — cost grows with the square of the conversation length |
+| Requests that looped              | `iteration_heavy` (10)        | model calls inside ONE request                                                                                    |
+| Spent and got nothing back        | —                             | requests `failed` / `abandoned` / `max_tokens`                                                                    |
+| Hours that spiked                 | `spike_multiplier` (3×)       | an hour above N× the window's median non-zero hour, with who and what dominated it                                |
+| Repeat bursts                     | `repeat_burst` (5)            | same person + agent + feature ≥ N requests in one ten-minute bucket                                               |
+| Unpriced calls                    | —                             | `chat.request.cost IS NULL`: the ledger under-counts by an unknown amount                                         |
 
 A signal that found nothing says "none" — it never disappears (the unpriced
 line included). Cards over 25% of
@@ -172,15 +172,15 @@ reads as "$0 spent today" would be the worst possible lie on this surface.
 All overridable by organization, reviewed 45 days out. `knobNumber`/`knobInt`
 throw when a row is missing and there is deliberately no fallback.
 
-| Key | Default | What it does |
-|---|---|---|
-| `platform.spend_popover.times_per_day` | `1` | How many times a day the window is raised. `0` turns it off. |
-| `platform.spend_popover.scare_threshold_usd` | `100` | Above this, today's figure turns destructive-toned — colour and wording only, never behaviour. |
-| `platform.spend_explorer.context_heavy_tokens` | `200000` | the context-heavy line (tokens per model call) |
-| `platform.spend_explorer.iteration_heavy` | `10` | the looped-request line (model calls per request) |
-| `platform.spend_explorer.spike_multiplier` | `3` | the spike line (× the median hour) |
-| `platform.spend_explorer.hog_share_pct` | `5` | the conversation-hog line (% of the window) |
-| `platform.spend_explorer.repeat_burst` | `5` | the burst line (requests per 10 minutes) |
+| Key                                            | Default  | What it does                                                                                   |
+| ---------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `platform.spend_popover.times_per_day`         | `1`      | How many times a day the window is raised. `0` turns it off.                                   |
+| `platform.spend_popover.scare_threshold_usd`   | `100`    | Above this, today's figure turns destructive-toned — colour and wording only, never behaviour. |
+| `platform.spend_explorer.context_heavy_tokens` | `200000` | the context-heavy line (tokens per model call)                                                 |
+| `platform.spend_explorer.iteration_heavy`      | `10`     | the looped-request line (model calls per request)                                              |
+| `platform.spend_explorer.spike_multiplier`     | `3`      | the spike line (× the median hour)                                                             |
+| `platform.spend_explorer.hog_share_pct`        | `5`      | the conversation-hog line (% of the window)                                                    |
+| `platform.spend_explorer.repeat_burst`         | `5`      | the burst line (requests per 10 minutes)                                                       |
 
 Seeded by `migrations/spend_popover_knobs.sql` and
 `migrations/spend_explorer_knobs.sql`. The explorer resolves its five and passes
@@ -192,7 +192,7 @@ explorer says so and computes nothing rather than guess where a line sits.
 `features/window-panels/windows/spend/DailySpendWindow.tsx` **wraps the canonical
 headline** (`SpendHeadline.tsx`), the same component the dashboard renders — a
 window panel wraps the canonical component, never a hand-rolled copy. It adds
-only the two doors out: *Dismiss for today* and *Open spend dashboard*.
+only the two doors out: _Dismiss for today_ and _Open spend dashboard_.
 
 It is raised by `DailySpendPopoverMount`, mounted render-free in
 `app/DeferredSingletonCore.tsx` and internally gated on `selectIsSuperAdmin`, so
@@ -227,23 +227,23 @@ boundary—the admin shell itself is structurally non-scrollable.
 
 ## Files
 
-| Path | What |
-|---|---|
-| `app/(admin)/administration/billing/{layout,page}.tsx` | the Billing domain root |
-| `app/(admin)/administration/billing/spend/page.tsx` | the route, super-admin gated server-side |
-| `features/admin/spend/SpendDashboard.tsx` | the page: headline → explorer → folded ledgers/gaps/print |
-| `features/admin/spend/SpendExplorer.tsx` + `explorer/*` | the explorer (see the table above) |
-| `features/admin/spend/SpendHeadline.tsx` | THE canonical headline, shared with the popover |
-| `features/admin/spend/service.ts` | the three RPC calls + runtime jsonb parsing (never a cast) |
-| `features/admin/spend/types.ts` | the narrowed payload shapes |
-| `features/admin/spend/windows.ts` | window presets, local-day maths, URL state |
-| `features/admin/spend/format.ts` | money/time formatting, one place |
-| `features/admin/spend/useSpendPopoverKnobs.ts`, `useSpendExplorerKnobs.ts` | the knobs |
-| `features/admin/spend/dailySpendPopoverState.ts` | per-viewer, per-day show/dismiss memory |
-| `features/admin/spend/DailySpendPopoverMount.tsx` | the once-a-day trigger |
-| `features/window-panels/windows/spend/DailySpendWindow.tsx` | the floating window |
-| `features/overlays/openers/dailySpendWindow.tsx` | the one way to open it |
-| `migrations/spend_dashboard_admin_rpcs.sql`, `spend_popover_knobs.sql`, `spend_explorer_admin_rpc.sql`, `spend_explorer_knobs.sql` | the database half |
+| Path                                                                                                                               | What                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `app/(admin)/administration/billing/{layout,page}.tsx`                                                                             | the Billing domain root                                    |
+| `app/(admin)/administration/billing/spend/page.tsx`                                                                                | the route, super-admin gated server-side                   |
+| `features/admin/spend/SpendDashboard.tsx`                                                                                          | the page: headline → explorer → folded ledgers/gaps/print  |
+| `features/admin/spend/SpendExplorer.tsx` + `explorer/*`                                                                            | the explorer (see the table above)                         |
+| `features/admin/spend/SpendHeadline.tsx`                                                                                           | THE canonical headline, shared with the popover            |
+| `features/admin/spend/service.ts`                                                                                                  | the three RPC calls + runtime jsonb parsing (never a cast) |
+| `features/admin/spend/types.ts`                                                                                                    | the narrowed payload shapes                                |
+| `features/admin/spend/windows.ts`                                                                                                  | window presets, local-day maths, URL state                 |
+| `features/admin/spend/format.ts`                                                                                                   | money/time formatting, one place                           |
+| `features/admin/spend/useSpendPopoverKnobs.ts`, `useSpendExplorerKnobs.ts`                                                         | the knobs                                                  |
+| `features/admin/spend/dailySpendPopoverState.ts`                                                                                   | per-viewer, per-day show/dismiss memory                    |
+| `features/admin/spend/DailySpendPopoverMount.tsx`                                                                                  | the once-a-day trigger                                     |
+| `features/window-panels/windows/spend/DailySpendWindow.tsx`                                                                        | the floating window                                        |
+| `features/overlays/openers/dailySpendWindow.tsx`                                                                                   | the one way to open it                                     |
+| `migrations/spend_dashboard_admin_rpcs.sql`, `spend_popover_knobs.sql`, `spend_explorer_admin_rpc.sql`, `spend_explorer_knobs.sql` | the database half                                          |
 
 Registered in `features/admin/constants/admin-categories.ts` +
 `admin-navigation.ts` (domain `billing`), `features/overlays/catalogue.ts`,
@@ -252,16 +252,32 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Known gaps this feature NAMES but does not fix
 
-- Twelve cost sources measure nothing (the folded "Every cost source" section
-  lists each with its last write). Closing any of them is work in the system
-  that spends the money, not here. Largest by likely value: Resend email,
-  TTS/STT, the search/SEO data APIs, hosting.
-- **Shared logins collapse attribution.** Every developer agent signs into the
-  UI as `admin@admin.com` (the repo's own instruction), so all agent-driven
-  testing lands on one person and one organization ("AI Matrx"). The explorer
-  separates it by conversation, feature and agent, but not by which agent
-  session or which developer drove it. A per-session tag on the conversation
-  (the coding-session bridge already mirrors sessions) would close this.
+- Cost sources that still measure nothing (the folded "Every cost source"
+  section lists each with its last write). Closing any of them is work in the
+  system that spends the money, not here. Remaining: Lulu print fulfilment
+  (captured per order, just not in this ledger), `docproc.derive_runs` (its
+  runners return no cost), and the two CRM tables with zero rows. Resend and
+  hosting are invoice-billed and live in the fixed-costs knob (below).
+  **Closed 2026-09-12:** the search/SEO data APIs and Twilio SMS, then speech,
+  page extraction, document cleaning and knowledge-graph sweeps — see the change
+  log entries below.
+- **Two speech paths remain genuinely unmeasured.** The Meet note-taker's
+  live transcription runs on LiveKit Inference (Deepgram Nova-3) inside the
+  LiveKit worker process — LiveKit bills it, there is no `ai.offering` for it,
+  and no row reaches this ledger. The resumable per-page document cleaner also
+  still writes no cost: its runner returns a bare dict across the matrx-rag
+  package seam, so the cleaner's spend cannot reach the document row without
+  changing that protocol. Both scream where they happen; neither is silent.
+- **Shared logins no longer hide the actor.** Closed 2026-09-12: the LOGIN
+  SESSION dimension (`session`) cuts by the Supabase session id on the
+  request's JWT claims, so two agents driving the UI as `admin@admin.com` are
+  two rows ("admin@admin.com · signed in Sep 11, 02:57 AM"). Server-side runs
+  with no sign-in read "No sign-in (server-side run)".
+- **Invoice-billed costs are a knob, not a gap.** Hosting and plan-billed
+  services (Resend) can never be ledger rows; `platform.spend.fixed_monthly_usd`
+  holds the monthly figure and the headline shows it per day, never added in.
+  Zero or a missing row reads compactly as `Fixed: not set`; a configured value
+  shows monthly and per-day amounts without adding prose to the dashboard.
 - `admin_spend_overview` measured 3.95s once on the dev server (2026-09-12)
   while every per-ledger aggregate it runs measures under 100ms in isolation
   (`chat.tool_call` 86ms is the largest; a 48h sum over the whole ledger is
@@ -271,6 +287,82 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Change Log
 
+- **2026-09-12 (hydration boundary)** — The explorer now mounts only after
+  hydration because its initial window and IANA zone come from the browser.
+  This keeps server HTML from disagreeing with the reader's local calendar
+  (React #418), while preserving the same local-window request after mount.
+
+- **2026-09-12 (data-density and table-wheel repair)** — Removed the repeated body title and explanatory paragraphs from the dashboard's normal state. The surface now leads with spend values, compact attribution/status labels, filters, charts, diagnostic totals, and drillable tables; deeper explanations remain attached as hover help where useful. Table timestamps use the single-line `MM/DD/YY · h:mm AM/PM` format. The canonical `MatrxDataTable` also forwards vertical wheel input from content-height horizontal wrappers to the real page scroller while preserving horizontal gestures and bounded-table scrolling.
+
+- **2026-09-12 (speech, docproc, sweeps — and the silent-zero class)** — Four
+  declared gaps closed, and the defect class underneath all of them.
+
+  **The class: an unknown cost was recorded as a believable $0.** The AI layer
+  is deliberately honest — `UsageTotals.total_cost` is `None` whenever any call
+  in a run could not be priced from the catalog, and `TokenUsage.calculate_cost()`
+  is `None` when an offering has no pricing row. Every consumer then wrote the
+  same line, `totals.total_cost or 0`, which converted that honest "unknown" into
+  a number indistinguishable from genuinely free work: 139 zero-cost
+  `internal_agent_run` rows and 5 zero-cost `audio_transcription` rows in the
+  live 30-day window. Two shared builders now replace that line everywhere
+  (`cost_meters_from_totals` / `cost_meters_from_usage` in matrx-ai): they record
+  the catalog-known subtotal as a floor, add an explicit `unpriced_calls` meter,
+  and scream with the model whose pricing row is missing. Guard proven
+  failing-then-passing.
+
+  **Speech was never unmeasured — the registry was wrong.** STT and TTS are
+  priced by the AI catalog like any other model (per audio-second or per
+  character `ai.offering` pricing) and already settle as `global_execution` rows.
+  3,364 transcriptions over 29,819 audio seconds cost $0.38 since 2026-07-15, and
+  that is correct, not a broken meter: $0.046/hour against Groq
+  whisper-large-v3-turbo's $0.04/hour list price (verified live against the
+  warmed catalog — a 3-second clip billed at Groq's 10-second minimum priced at
+  $0.000111111). No speech-price knob table was created: the catalog is the one
+  pricing path, and a second one would be the defect this work exists to remove.
+
+  **Page extraction had two bugs stacked.** The chunk executor read the run's
+  cost as `usage.get("cost")` against a `{"by_model", "total"}` dict — a key that
+  does not exist — so every extraction reported $0 regardless; and the run settle
+  never persisted the total it was handed. Both fixed; the run's real spend now
+  lands on `page_extraction_runs.total_cost` and as a `usd` meter on the primary
+  ledger.
+
+  **Document cleaning and derive runs.** The whole-document cleaner's cost now
+  writes to `processed_documents.clean_content_cost_usd`; the section-summary and
+  synthetic-QA derive runners now carry their spend to
+  `derive_runs.cost_usd`. The runners that still cannot (they return
+  `chunks_written` only, across a package seam) leave the column untouched rather
+  than stamping a fabricated 0, and say so loudly.
+
+  **Knowledge-graph sweeps.** Every sweep model call already lands on the primary
+  ledger as an `internal_agent_run` execution; the sweep-level `cost_usd` roll-up
+  is now fed by the corrected tally. All 62 live rows predate this and made zero
+  model calls, so their $0 is a measured zero.
+
+- **2026-09-12 (external API spend)** — Closed the two remaining per-call gaps.
+  aidream now records every SerpAPI, Brave, DataForSEO and Twilio SMS call on
+  the primary ledger as its own `runtime.global_execution` row (`type` utility,
+  `link_kind` `external_api`, `context.agent_run_label` `"<provider>:<operation>"`),
+  through ONE primitive (`aidream/services/runtime/external_api_cost.py`) reusing
+  the existing `track_utility_execution` spine — no second cost path. Wiring is
+  three observer registrations at the three transports every caller already
+  funnels through, not per-call-site instrumentation. Unit prices are
+  `platform.feature_knob` rows under feature `platform.external_api_prices`
+  (`serpapi_search_usd` 0.025, `brave_search_usd` 0.005, `dataforseo_serp_usd`
+  0.002, `dataforseo_keyword_usd` 0.05, `google_cse_query_usd` 0.005,
+  `twilio_sms_segment_usd` 0.0083 — agent-set from each provider's public price
+  list, review due 2026-10-27); DataForSEO's own reported per-response `cost`
+  wins over the knob, and a price we cannot resolve records the call UNPRICED
+  with a screaming log line rather than as $0. Twilio's `num_segments` /
+  `price` / `price_unit` now land on `communication.sms_messages`. Registry rows
+  updated: `unmeasured.search_apis` became `search.global_execution` (overlap,
+  inside the headline) and `communication.sms_messages` moved from gap to
+  additive. Live-verified 2026-09-12 on brsgrqvjdzwihsvnfqkf as
+  admin@admin.com: one real Brave search recorded $0.00500000 and one real
+  SerpAPI search $0.02500000, both completed against admin's Workspace
+  (`scripts/_verify_external_api_cost_ledger.py` in aidream). Twilio's price
+  capture is proven by a forcing-function test against a mocked provider
+  response and is NOT yet verified against a live send.
 - **2026-09-12 (scroll ownership follow-up)** — Reproduced production with two
   nested vertical scroll owners (`.shell-main`: 1,430px content in a 1,264px
   viewport; the admin page `<main>`: 3,479px content in 1,264px). Made the

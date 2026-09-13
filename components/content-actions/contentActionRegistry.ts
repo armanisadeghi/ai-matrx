@@ -36,6 +36,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action_content";
@@ -69,6 +70,7 @@ export interface ContentActionContext {
   instanceKey?: string;
   isAuthenticated: boolean;
   dispatch: AppDispatch;
+  organizationId: string | null;
   onClose: () => void;
 }
 
@@ -305,11 +307,17 @@ function googleDocItem(ctx: ContentActionContext): MenuItem {
     iconColor: "text-blue-500 dark:text-blue-400",
     label: "Send to Google Doc",
     action: async () => {
-      if (!requireAuth(ctx, "send-google-doc", "Google Docs", "Send this to your Google Drive"))
+      if (
+        !requireAuth(
+          ctx,
+          "send-google-doc",
+          "Google Docs",
+          "Send this to your Google Drive",
+        )
+      )
         return;
-      const { sendContentToGoogleDoc } = await import(
-        "@/features/google-workspace/export/sendToGoogle"
-      );
+      const { sendContentToGoogleDoc } =
+        await import("@/features/google-workspace/export/sendToGoogle");
       const result = await sendContentToGoogleDoc(content, title);
       if (!result.ok && result.reason === "failed") {
         toast.error("Could not create the Google Doc", {
@@ -319,10 +327,12 @@ function googleDocItem(ctx: ContentActionContext): MenuItem {
       }
       if (!result.ok) {
         toast.info("Connect Google to send this to a Doc", {
-          description: "Takes about ten seconds, and only for files you choose or that we create.",
+          description:
+            "Takes about ten seconds, and only for files you choose or that we create.",
           action: {
             label: "Connect",
-            onClick: () => window.open(result.settingsHref, "_blank", "noopener"),
+            onClick: () =>
+              window.open(result.settingsHref, "_blank", "noopener"),
           },
         });
         return;
@@ -331,7 +341,8 @@ function googleDocItem(ctx: ContentActionContext): MenuItem {
         action: result.openUrl
           ? {
               label: "Open",
-              onClick: () => window.open(result.openUrl as string, "_blank", "noopener"),
+              onClick: () =>
+                window.open(result.openUrl as string, "_blank", "noopener"),
             }
           : undefined,
       });
@@ -376,11 +387,16 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
                   await onSave(newContent);
                 } catch (err) {
                   // eslint-disable-next-line no-console
-                  console.error("[ContentActionBar] html-preview save failed", err);
+                  console.error(
+                    "[ContentActionBar] html-preview save failed",
+                    err,
+                  );
                   toast.error(getErrorMessage(err, "Failed to save changes"));
                   return;
                 }
-                dispatch(closeOverlay({ overlayId: "htmlPreview", instanceId }));
+                dispatch(
+                  closeOverlay({ overlayId: "htmlPreview", instanceId }),
+                );
               },
             }).callbackGroupId
           : null;
@@ -412,7 +428,7 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
       iconColor: "text-orange-500 dark:text-orange-400",
       label: "Copy HTML page",
       action: async () => {
-        await copyToClipboard(content, {
+        const copied = await copyToClipboard(content, {
           isMarkdown: true,
           formatForWordPress: true,
           showHtmlPreview: true,
@@ -421,16 +437,18 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
             const html = `<!DOCTYPE html>\n<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>${
               title ?? "Content"
             }</title><style>${cssContent}</style></head><body>${filteredHtml}</body></html>`;
-            await copyToClipboard(html, {
+            const htmlCopied = await copyToClipboard(html, {
               onSuccess: () => {},
               onError: () => {},
             });
+            return htmlCopied;
           },
           onSuccess: () => {},
           onError: (error) => {
             throw new Error(getErrorMessage(error, "Failed to copy HTML"));
           },
         });
+        if (!copied) throw new Error("HTML page was not copied.");
       },
       category: "Export",
       successMessage: "HTML page copied",
@@ -508,12 +526,13 @@ function saveItems(ctx: ContentActionContext): MenuItem[] {
           )
         )
           return;
-        await NotesAPI.create({
-          label: title ?? "New Note",
-          content,
-          folder_name: "Scratch",
-          tags: [],
-        });
+        try {
+          const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
+          await NotesAPI.create({ label: title ?? "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) throw error;
+          throw error;
+        }
       },
       category: "Actions",
       successMessage: "Saved to Scratch!",
@@ -737,6 +756,8 @@ function appItems(ctx: ContentActionContext): MenuItem[] {
 // ============================================================================
 
 export interface ContentActionsOptions {
+  /** The surface already supplies its single Alchemy Menu. */
+  hideTransferItems?: boolean;
   /** Hide the App items (feedback / announcements / preferences). Default false. */
   hideAppItems?: boolean;
   /** Hide the open-in-editor item. Default false. */
@@ -762,7 +783,14 @@ export function getContentActions(
   items.push(...exportItems(ctx));
   items.push(...saveItems(ctx));
   if (!options.hideAppItems) items.push(...appItems(ctx));
-  return items;
+  return options.hideTransferItems
+    ? items.filter(
+        (item) =>
+          !["copy-plain", "copy-docs", "copy-word", "save-file"].includes(
+            item.key,
+          ),
+      )
+    : items;
 }
 
 // ============================================================================
@@ -790,14 +818,17 @@ export function resumePendingContentAuthAction(
     };
     if (savedContent !== content) return;
     if (action === "save-scratch") {
-      NotesAPI.create({
-        label: "New Note",
-        content: savedContent,
-        folder_name: "Scratch",
-        tags: [],
-      })
-        .then(() => toast.success("Saved to Scratch!"))
-        .catch(() => toast.error("Failed to save to Scratch"));
+      dispatch(
+        openOverlay({
+          overlayId: "saveToNotes",
+          instanceId: `save-scratch-resume-${Date.now()}`,
+          data: {
+            initialContent: savedContent,
+            defaultFolder: "Scratch",
+            initialEditorMode: undefined,
+          },
+        }),
+      );
     } else if (action === "save-notes") {
       dispatch(
         openOverlay({

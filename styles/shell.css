@@ -1017,6 +1017,87 @@ button.shell-nav-flyout-item {
   flex: 1;
 }
 
+/* Settings is a route-owned navigation workspace. Its rail stays readable
+   while this family is active without changing the user's saved global-nav
+   collapsed preference; the normal width returns on exit. */
+@media (min-width: 1024px) {
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle) {
+    grid-template-columns: 15rem 1fr;
+  }
+
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle) .shell-sidebar {
+    width: 15rem;
+    background: var(--shell-sidebar-bg-expanded);
+    border-right-color: var(--shell-sidebar-border-expanded);
+  }
+
+  .shell-root[data-settings-route] .settings-route-menu .shell-nav-item {
+    justify-content: flex-start;
+    min-height: 1.9rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .shell-root[data-settings-route] .settings-route-menu .shell-nav-icon,
+  .shell-root[data-settings-route] .settings-route-menu .shell-nav-icon > svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .shell-root[data-settings-route] .shell-sidebar-footer {
+    display: none;
+  }
+}
+
+.settings-route-menu {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.settings-route-menu .shell-active-pill {
+  border-color: transparent;
+  background: hsl(var(--muted));
+  box-shadow: none;
+  view-transition-name: none;
+}
+
+.settings-route-menu .shell-active-pill .shell-nav-icon,
+.settings-route-menu .shell-active-pill .shell-nav-icon svg {
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-route-menu .shell-active-pill .settings-route-menu-label {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
+.settings-route-menu-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-route-menu-tree { display: flex; flex-direction: column; gap: 0.375rem; }
+.settings-route-menu-empty { padding: 1rem 0.5rem; color: hsl(var(--muted-foreground)); font-size: 0.75rem; }
+.settings-route-menu-results { display: flex; flex-direction: column; gap: 0.125rem; }
+.settings-route-menu-result { align-items: flex-start; }
+.settings-route-menu-result-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+.settings-route-menu-description,
+.settings-route-menu-location { overflow: hidden; color: hsl(var(--muted-foreground)); font-size: 0.6875rem; text-overflow: ellipsis; white-space: nowrap; }
+
+
+.shell-mobile-sheet .settings-route-menu {
+  padding: 0.5rem 0.75rem 1rem;
+  gap: 0.25rem;
+}
+
 /* Admin section — borderless block of admin chrome in the sidebar footer. */
 .shell-admin-section {
   display: flex;
@@ -1416,32 +1497,23 @@ button.shell-nav-flyout-item {
 .scroll-page-end-space,
 .education-scroll-boundary > .overflow-y-auto,
 .education-scroll-boundary > .overflow-auto {
+  padding-block-end: max(
+    clamp(10rem, 22dvh, 15rem),
+    calc(var(--keyboard-inset-height, 0px) + 6rem)
+  );
   scroll-padding-bottom: max(
     clamp(10rem, 22dvh, 15rem),
     calc(var(--keyboard-inset-height, 0px) + 6rem)
   );
 }
 
-.scroll-page-end-space::after,
-.education-scroll-boundary > .overflow-y-auto::after,
-.education-scroll-boundary > .overflow-auto::after {
-  content: "";
-  display: block;
-  inline-size: 100%;
-  block-size: max(
-    clamp(10rem, 22dvh, 15rem),
-    calc(var(--keyboard-inset-height, 0px) + 6rem)
-  );
-  pointer-events: none;
-}
-
 /* Education contains both natural-height pages and full-height pages whose
    leaf owns the actual scroll. Give exactly ONE of them the runway: the leaf
    when present, otherwise the route boundary itself. This keeps new education
    tools covered by the shared layout without a per-page padding sweep. */
-.education-scroll-boundary:has(> .overflow-y-auto)::after,
-.education-scroll-boundary:has(> .overflow-auto)::after {
-  display: none;
+.education-scroll-boundary:has(.scroll-page-end-space) {
+  padding-block-end: 0;
+  scroll-padding-bottom: 0;
 }
 
 /* Fixed ambient composers sit above keyboards that overlay rather than resize

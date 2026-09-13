@@ -8,7 +8,6 @@ import {
   RefreshCwTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { useScheduledTasks } from "@/features/scheduling/hooks/useScheduledTasks";
 import { ScheduleList } from "@/features/scheduling/components/list/ScheduleList";
@@ -47,20 +46,20 @@ export default function SchedulesPage() {
               <>
                 <CopyButtons
                   size="icon"
+                  unified
                   label="All schedules"
                   human={() => scheduleListHuman(tasks)}
                   json={() => tasks}
                   agent={() => buildScheduleListPayload(tasks, status, error)}
-                />
-                <ExportMenu
-                  label="Schedules"
-                  items={[
-                    jsonExportItem(() => tasks),
-                    csvExportItem(
-                      () => scheduleCsvRows(tasks),
-                      "CSV (all schedules)",
-                    ),
-                  ]}
+                  export={{
+                    items: [
+                      jsonExportItem(() => tasks),
+                      csvExportItem(
+                        () => scheduleCsvRows(tasks),
+                        "CSV (all schedules)",
+                      ),
+                    ],
+                  }}
                 />
               </>
             ) : null}

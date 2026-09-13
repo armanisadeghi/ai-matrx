@@ -59,9 +59,10 @@ export function TriggerCard({ task }: Props) {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <CopyButtons
-              size="xs"
-              label={`${task.title} trigger`}
+          <CopyButtons
+            size="xs"
+            unified
+            label={`${task.title} trigger`}
               className="lg:opacity-0 lg:group-hover/trigger:opacity-100 lg:focus-within:opacity-100 transition-opacity"
               human={triggerHuman}
               json={() => trigger}

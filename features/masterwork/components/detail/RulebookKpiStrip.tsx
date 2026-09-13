@@ -31,14 +31,6 @@ export interface RulebookKpis {
   rejected: number;
   changeRequests: number;
   retired: number;
-  /**
-   * 🚨 Per-piece observations a body-of-work run filed as EVIDENCE behind the
-   * cross-piece rules they prove (`types.ts` § standing). They are NOT rules,
-   * NOT waiting on the Expert, and are excluded from `total`, `approved`,
-   * `drafts` and `progressPct` — counted here only so the page can offer the
-   * door to them honestly instead of hiding them.
-   */
-  evidence: number;
   /** 0-100, share of live rules the Expert has approved. */
   progressPct: number;
 }
@@ -97,36 +89,29 @@ export function computeKpis(rulebook: Pick<Rulebook, "rules">): RulebookKpis {
   let drafts = 0;
   let rejected = 0;
   let retired = 0;
-  let evidence = 0;
   let changeRequests = 0;
   for (const rule of rulebook.rules) {
     const state = ruleState(rule);
+    // 🚨 Every rule counts (2026-09-12). For a few hours a per-piece judgment
+    // was counted as "evidence" and set aside here so the strip would say a
+    // smaller number — a counter that hides work is a counter that lies.
+    // Volume is answered by the default view, the sections and a bulk approve
+    // that records what was read, never by a smaller total.
     if (state === "retired") retired += 1;
-    // 🚨 Evidence is counted and then set aside — never folded into "Rules" or
-    // "Waiting on you". 20 published pieces produced 416 per-piece drafts on
-    // 2026-09-12 and the strip asked the Expert for 416 decisions; they pressed
-    // Approve-all. An observation behind a pattern is not a question.
-    else if (state === "evidence") evidence += 1;
     else if (state === "rejected") rejected += 1;
     else if (state === "draft") drafts += 1;
     else approved += 1;
-    if (
-      rule.feedback &&
-      state !== "rejected" &&
-      state !== "retired" &&
-      state !== "evidence"
-    )
+    if (rule.feedback && state !== "rejected" && state !== "retired")
       changeRequests += 1;
   }
   const live = approved + drafts + rejected;
   return {
-    total: rulebook.rules.length - evidence,
+    total: rulebook.rules.length,
     approved,
     drafts,
     rejected,
     changeRequests,
     retired,
-    evidence,
     progressPct: live === 0 ? 0 : Math.round((approved / live) * 100),
   };
 }
@@ -228,8 +213,36 @@ function Tile({
   return <div className={className}>{content}</div>;
 }
 
+/**
+ * The views of a Rulebook's rules. The first four are review STATES; the last
+ * four are SAVED VIEWS (Airtable's answer to volume), and `attention` is what a
+ * large Rulebook OPENS on.
+ *
+ * 🚨 THE DEFAULT VIEW IS NOT EVERYTHING (2026-09-12, Linear's triage inbox).
+ * A Rulebook past `LARGE_RULEBOOK` rules opens on `attention` — the
+ * disagreements plus the rules only one source holds — and "All N" is a
+ * deliberate click. Grouping sorts a pile; a default filter shrinks it. The
+ * live shape that forced this: Newsroom Desk, 416 rules in ONE section, zero
+ * drafts, because Approve-all had fired on all of them.
+ */
 export type RuleKpiFilter =
-  "all" | "approved" | "draft" | "rejected" | "changes";
+  | "all"
+  | "approved"
+  | "draft"
+  | "rejected"
+  | "changes"
+  | "attention"
+  | "disagreements"
+  | "seen_once"
+  | "only_source";
+
+/**
+ * Where a Rulebook stops being a list and becomes a pile. Hardcoded with this
+ * comment, deliberately: it is the same 40 the server sections at
+ * (`aidream/services/distillation/sectioning.py`), and it stays a constant
+ * until an organization asks for a different number.
+ */
+export const LARGE_RULEBOOK = 40;
 
 export function RulebookKpiStrip({
   kpis,

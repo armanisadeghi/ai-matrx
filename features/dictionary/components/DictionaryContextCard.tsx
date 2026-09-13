@@ -16,7 +16,6 @@ import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryC
 import { useOpenDictionarySelectorWindow } from "@/features/overlays/openers/dictionarySelectorWindow";
 import { DICT_LEVEL_LABELS } from "@/features/dictionary/constants";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { effectiveInlineChars } from "@/features/dictionary/utils/format";
 import {
@@ -35,7 +34,8 @@ const SOURCE_BADGE: Record<string, string> = {
 };
 
 export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
-  const { consumption, activeCount, selection } = useDictionaryContext(surfaceKey);
+  const { consumption, activeCount, selection } =
+    useDictionaryContext(surfaceKey);
   const openSelector = useOpenDictionarySelectorWindow();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(true);
@@ -58,8 +58,10 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
     ? "Everything"
     : [
         selection.includePersonal && "Personal",
-        selection.organizationIds.length && `${selection.organizationIds.length} org`,
-        selection.scopeTypeIds.length && `${selection.scopeTypeIds.length} scope type`,
+        selection.organizationIds.length &&
+          `${selection.organizationIds.length} org`,
+        selection.scopeTypeIds.length &&
+          `${selection.scopeTypeIds.length} scope type`,
         selection.scopeIds.length && `${selection.scopeIds.length} scope`,
       ]
         .filter(Boolean)
@@ -93,11 +95,18 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
         >
           <BookA className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Dictionary</span>
-          <Badge variant="secondary" className="ml-0.5">{activeCount}</Badge>
+          <Badge variant="secondary" className="ml-0.5">
+            {activeCount}
+          </Badge>
           <span className="ml-auto text-[11px] text-muted-foreground truncate max-w-[140px]">
             {selectionSummary}
           </span>
-          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </button>
         <CopyButtons
           size="xs"
@@ -126,16 +135,17 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
             },
             context: { surface_key: surfaceKey },
           })}
+          export={
+            resolved.entries.length > 0
+              ? {
+                  items: [
+                    jsonExportItem(() => resolved.entries.map(dictEntryData)),
+                    csvExportItem(() => dictEntriesCsvRows(resolved.entries)),
+                  ],
+                }
+              : undefined
+          }
         />
-        {resolved.entries.length > 0 && (
-          <ExportMenu
-            label="Resolved dictionary"
-            items={[
-              jsonExportItem(() => resolved.entries.map(dictEntryData)),
-              csvExportItem(() => dictEntriesCsvRows(resolved.entries)),
-            ]}
-          />
-        )}
       </div>
 
       {open && (
@@ -170,7 +180,10 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
             ) : (
               <ul className="divide-y divide-border">
                 {filtered.map((e) => (
-                  <li key={`${e.source_level}:${e.id}`} className="group/dict-term px-3 py-2 text-sm">
+                  <li
+                    key={`${e.source_level}:${e.id}`}
+                    className="group/dict-term px-3 py-2 text-sm"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate">{e.term}</span>
                       {(e.pronunciation || e.ipa) && (
@@ -206,7 +219,8 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
                         className={cn(
                           // ml-auto now lives on the copy pair that precedes this badge.
                           "rounded px-1.5 py-0.5 text-[10px] font-medium shrink-0",
-                          SOURCE_BADGE[e.source_level] ?? "bg-muted text-muted-foreground",
+                          SOURCE_BADGE[e.source_level] ??
+                            "bg-muted text-muted-foreground",
                         )}
                         title={`${DICT_LEVEL_LABELS[e.source_level]} · ${e.source_name}`}
                       >
@@ -226,7 +240,8 @@ export function DictionaryContextCard({ surfaceKey }: { surfaceKey: string }) {
 
           {sourceCount > 1 && (
             <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-              Merged from {sourceCount} sources · most-specific level wins on conflicts.
+              Merged from {sourceCount} sources · most-specific level wins on
+              conflicts.
             </p>
           )}
         </div>

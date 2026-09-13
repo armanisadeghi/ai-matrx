@@ -111,26 +111,7 @@ list — work it as: pick the one live sidebar/select/spinner implementation and
 duplicates' *usages* (never just the files), and finish adopting `matrx/dialog.tsx` where the
 window-panel system needs popout dialogs. Owner: whoever owns `components/ui`.
 
-### D311 — the admin shell fires ~30 no-argument RPC probes on every page load and each one 400s (2026-09-12)
-
-Seen on `/administration/billing/spend` in the preview: on every load the page's network log
-carries `assoc_add`, `assoc_remove`, `assoc_set_targets`, `assoc_for_entity`, `cat_create`,
-`cat_update`, `cat_delete`, `conversation_file_add`, `agent_resource_add`, `ues_set`,
-`ues_get_bulk`, `cmt_add`, `cmt_edit`, `cmt_delete`, `reference_search_candidates` … each a
-POST to `/rest/v1/rpc/<name>` answered **400** (PostgREST: required argument missing), ~25
-errors in the console before the page's own reads. They come from the shell, not the page (a
-capability probe that calls every write RPC with no body?). Fix: find the caller (grep the
-`rpc(` names above in `features/shell` / `lib`) and probe existence through `pg_proc` or a
-HEAD/`OPTIONS`, never by invoking a write RPC. Owner: whoever owns the shell's RPC catalogue.
-
-### D312 — `CREATE INDEX CONCURRENTLY` is refused by BOTH appliers when the file carries a second statement (2026-09-12)
-
-CLAUDE.md says an autocommit file is "refused by `pnpm db:apply` by name — apply it from
-aidream", and aidream's `db/apply_migrations.py` says it "runs such files in autocommit
-automatically". A two-statement file (`CREATE INDEX CONCURRENTLY …; COMMENT ON INDEX …;`) was
-refused there too: `CREATE INDEX CONCURRENTLY cannot run inside a transaction block`. Either
-the autocommit lane only fires for a single-statement file (then say so in both docs) or it
-does not fire at all (then fix the applier). Not chased — the index turned out unnecessary.
+### D312 — RESOLVED 2026-09-12 — an autocommit migration with more than one statement was refused mid-run: `psycopg` sent the whole file as one simple query and libpq wraps that in an implicit transaction block; `aidream/db/apply_migrations.py` now splits an autocommit file and sends one statement at a time, reporting PARTIALLY APPLIED with no ledger row if a later statement fails (guard: `aidream/db/tests/test_autocommit_statement_split.py`).
 
 ### D309 — deleting an `auth.users` row takes MINUTES and cannot finish inside an HTTP request
 
@@ -3117,6 +3098,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D311 — the associations boot probe INVOKED 26 RPCs (14 of them writes) on every page load; 25 answered 400.** `AssociationsProvider`'s default `probeSchema` runs the package's `assertDemandedSchema`, which asks whether each demanded function exists by CALLING it with sentinel args. Its "dev only" gate was `process.env.NODE_ENV`, which esbuild bakes to `true` under `platform:"browser"`, so it ran in production too. Switched off at the host, then closed at the class: **@ai-matrx/associations 0.9.0 deletes the probe and the `probeSchema` knob** — a write RPC is never invoked to ask whether it exists, and PGRST202 at real call sites already screams `demanded_schema_violation` with the same remedy. Guard `features/scopes/host/__tests__/noBootRpcProbe.test.tsx` plus the package's own pair; live 25→0 on `/administration/billing/spend`, 0 on `/administration`. 2026-09-12.
 
 - **D314 — THE MERGE-ONLY REMOVAL CLASS: a reset that could never reset.** `setContextEntries` upserts every incoming key and deletes none, so `setContextEntries({ conversationId, entries: [] })` — what `clearContext()` and `resetConversation()` in `features/agent-apps/hooks/useAgentApp.ts` both used — cleared nothing: resetting a conversation in an agent app left the previous turn's context values in place and they leaked into the next conversation. Census of every `*.slice.ts` in `features/agents/redux/execution-system/` found ONE sibling live: `setOverrides` is merge-only too, and `ColumnOverridesEditor.tsx`'s `clearKey` "removed" an override by re-sending the map without the key — the per-column Clear chip on `/agents/battle/settings` was a silent no-op. **FIXED 2026-09-12**: the two agent-app call sites dispatch `clearInstanceContext(conversationId)`; `clearKey` dispatches `resetOverride({ conversationId, key })`. Merge semantics are untouched (≈30 call sites depend on them) and both reducers now carry a MERGE-ONLY contract note naming the real removal actions. Guard: `features/agents/redux/execution-system/instance-context/__tests__/context-reset-is-real.test.ts` — real reducers in a real store pin the merge/clear semantics, plus a repo-wide scan that fails on any caller passing an empty payload to a merge-only action or deleting a key from a copied map and re-sending it. Proven failing-then-passing: 2 of 8 red against the pre-fix files, naming `useAgentApp.ts:600/686` and `ColumnOverridesEditor.tsx:77`; 8/8 green after. Live-verified on the running app as admin@admin.com at `/agents/battle/settings`: set Max output tokens 1234 (header chip `max=1234 (1)`), clicked Clear override, field reverted to the agent default and the chip returned to `Agent defaults`. 2026-09-12.
 

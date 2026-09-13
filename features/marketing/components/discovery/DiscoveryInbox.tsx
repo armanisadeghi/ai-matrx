@@ -23,9 +23,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   buildGroomerPresetPayload,
   groomerPresetVariants,
@@ -657,28 +655,25 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
                   }
                   json={() => rows}
                   aiVariants={groomerPresetVariants(groomerConfig)}
+                  groomer={groomerConfig}
+                  export={{
+                    items: [
+                      jsonExportItem(() => rows, "JSON (loaded items, raw)"),
+                      {
+                        id: "csv",
+                        label: "CSV (loaded items)",
+                        build: () => ({
+                          content: rowsToCsv(
+                            rows as unknown as Array<Record<string, unknown>>,
+                          ),
+                          extension: "csv",
+                          mime: "text/csv",
+                        }),
+                      },
+                    ],
+                  }}
                 />
               ) : null}
-              {rows.length > 0 ? (
-                <ExportMenu
-                  label={`discovery-inbox-${currentBrand.name}-${status}`}
-                  items={[
-                    jsonExportItem(() => rows, "JSON (loaded items, raw)"),
-                    {
-                      id: "csv",
-                      label: "CSV (loaded items)",
-                      build: () => ({
-                        content: rowsToCsv(
-                          rows as unknown as Array<Record<string, unknown>>,
-                        ),
-                        extension: "csv",
-                        mime: "text/csv",
-                      }),
-                    },
-                  ]}
-                />
-              ) : null}
-              <AgentCopyGroomerLauncher config={groomerConfig} />
               <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
                 {STATUS_TABS.map((tab) => (
                   <button

@@ -5,8 +5,9 @@
 // Backed by the notes Redux slice instead of React Context.
 
 import { useCallback, useEffect, useRef } from "react";
+import { unwrapResult } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { Note, CreateNoteInput, UpdateNoteInput } from "../types";
+import type { Note, CreateNoteInput, FolderReference, UpdateNoteInput } from "../types";
 import {
   setActiveNote as setActiveNoteAction,
   addTab,
@@ -32,7 +33,12 @@ import {
   findOrCreateEmptyNote as findOrCreateEmptyNoteThunk,
   saveNoteField,
   moveNoteToFolder,
+  moveNoteToNewFolder as moveNoteToNewFolderThunk,
 } from "../redux/thunks";
+import {
+  NoteContextPartialSaveError,
+  type NoteSaveReceipt,
+} from "../service/noteSaveErrors";
 
 /**
  * Drop-in replacement for useNotesContext().
@@ -115,8 +121,31 @@ export function useNotesRedux() {
 
   const createNote = useCallback(
     async (input: CreateNoteInput): Promise<Note> => {
-      const result = await dispatch(createNewNote(input)).unwrap();
-      return result;
+      const action = await dispatch(createNewNote(input));
+      if (createNewNote.fulfilled.match(action)) return action.payload;
+
+      // The thunk has already opened the durable note and retained only the
+      // failed context values as dirty. Preserve that receipt for generic
+      // consumers instead of turning it into an indistinguishable rollback.
+      if (
+        createNewNote.rejected.match(action) &&
+        action.payload?.code === "context_partial"
+      ) {
+        const serializedReceipt = action.payload.receipt;
+        const receipt: NoteSaveReceipt = {
+          note: serializedReceipt.note,
+          databaseWrite: serializedReceipt.databaseWrite,
+          succeededFields: serializedReceipt.succeededFields,
+          failedFields: serializedReceipt.failedFields,
+          safeCauses: serializedReceipt.safeCauses,
+          ...(serializedReceipt.postSaveRecoveryError
+            ? { postSaveRecoveryError: new Error(serializedReceipt.postSaveRecoveryError) }
+            : {}),
+        };
+        throw new NoteContextPartialSaveError(receipt);
+      }
+
+      return unwrapResult(action);
     },
     [dispatch],
   );
@@ -136,25 +165,12 @@ export function useNotesRedux() {
         dispatch(setNoteField({ id, field: "tags", value: updates.tags }));
       }
 
-      // Moving a note must update both folder_name and folder_id. The move
-      // thunk resolves/materializes the folder and saves every field edited
-      // above in the same write; ordinary updates use the standard save.
-      if (updates.folder_name !== undefined) {
-        const folder = updates.folder_name?.trim();
-        if (folder) {
-          await dispatch(moveNoteToFolder({ noteId: id, folder })).unwrap();
-        } else {
-          dispatch(setNoteField({ id, field: "folder_name", value: null }));
-          dispatch(setNoteField({ id, field: "folder_id", value: null }));
-          await dispatch(saveNote(id)).unwrap();
-        }
-      } else {
-        await dispatch(saveNote(id)).unwrap();
-      }
+      await dispatch(saveNote(id)).unwrap();
 
       // Return current note state (approximate — the real note is in Redux)
       const note = notes.find((n) => n.id === id);
-      return note ? { ...note, ...updates } : ({ id, ...updates } as Note);
+      if (!note) throw new Error("Note not found after save");
+      return note;
     },
     [dispatch, notes],
   );
@@ -182,6 +198,26 @@ export function useNotesRedux() {
       return await dispatch(
         findOrCreateEmptyNoteThunk(folderName ?? "Draft"),
       ).unwrap();
+    },
+    [dispatch],
+  );
+
+  const moveNote = useCallback(
+    async (noteId: string, folder: FolderReference): Promise<void> => {
+      await dispatch(
+        moveNoteToFolder({
+          noteId,
+          folder,
+        }),
+      ).unwrap();
+    },
+    [dispatch],
+  );
+
+  /** A name is accepted only while creating a folder that is not persisted yet. */
+  const moveNoteToNewFolder = useCallback(
+    async (noteId: string, folderName: string): Promise<void> => {
+      await dispatch(moveNoteToNewFolderThunk({ noteId, folderName })).unwrap();
     },
     [dispatch],
   );
@@ -225,6 +261,8 @@ export function useNotesRedux() {
     copyNote: copyNoteFn,
     refreshNotes,
     findOrCreateEmptyNote,
+    moveNote,
+    moveNoteToNewFolder,
     openTabs,
     openNoteInTab,
     closeTab,

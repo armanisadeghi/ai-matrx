@@ -238,7 +238,7 @@ export const marketingLinksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-links",
   readiness: "verified",
   label: "Marketing Site Links",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/links",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/links",
   inheritsFrom: "matrx-user/marketing-site",
   groups,
   intro: `<surface_intro>

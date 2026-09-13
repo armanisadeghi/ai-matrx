@@ -16,13 +16,13 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import {
-  RulePolicy,
-  rulePolicyIsEmpty,
-} from "../components/detail/RulePolicy";
+  RuleMove,
+  ruleMoveIsEmpty,
+} from "../components/detail/RuleMove";
 import {
-  EMPTY_RULE_POLICY_FIELDS,
-  rulePolicyFieldsFromRule,
-  rulePolicyFromFields,
+  EMPTY_RULE_MOVE_FIELDS,
+  ruleMoveFieldsFromRule,
+  ruleMoveFromFields,
   type RulebookRule,
 } from "../types";
 
@@ -37,18 +37,21 @@ const STATIC_RULE: RulebookRule = {
 const POLICY_RULE: RulebookRule = {
   ...STATIC_RULE,
   id: "R2",
-  precondition: {
-    summary: "adult, fever + headache + neck stiffness, meningitis not excluded",
-    known: ["fever", "headache"],
-    unknown: ["CSF result"],
-  },
-  next_action: {
-    kind: "test",
-    target: "lumbar puncture (CT first if focal signs)",
-    buys: "excludes the worst thing first",
-    cost: 3,
-    risk: 2,
-    urgency: "now",
+  move: {
+    when: {
+      summary:
+        "adult, fever + headache + neck stiffness, meningitis not excluded",
+      known: ["fever", "headache"],
+      unknown: ["CSF result"],
+    },
+    next: {
+      kind: "test",
+      target: "lumbar puncture (CT first if focal signs)",
+      buys: "excludes the worst thing first",
+      cost: 3,
+      risk: 2,
+      urgency: "now",
+    },
   },
 };
 
@@ -77,9 +80,9 @@ function renderToText(node: React.ReactElement): {
   };
 }
 
-describe("RulePolicy — the When/Next block", () => {
+describe("RuleMove — the When/Next block", () => {
   it("renders both halves, the chips and the numbers", () => {
-    const out = renderToText(<RulePolicy rule={POLICY_RULE} />);
+    const out = renderToText(<RuleMove rule={POLICY_RULE} />);
     expect(out.text).toContain("When:");
     expect(out.text).toContain("meningitis not excluded");
     expect(out.text).toContain("fever");
@@ -93,51 +96,48 @@ describe("RulePolicy — the When/Next block", () => {
   });
 
   it("renders NOTHING for a rule without the fields — every other lane's rule", () => {
-    const out = renderToText(<RulePolicy rule={STATIC_RULE} />);
+    const out = renderToText(<RuleMove rule={STATIC_RULE} />);
     expect(out.html).toBe("");
-    expect(rulePolicyIsEmpty(STATIC_RULE)).toBe(true);
-    expect(rulePolicyIsEmpty(POLICY_RULE)).toBe(false);
+    expect(ruleMoveIsEmpty(STATIC_RULE)).toBe(true);
+    expect(ruleMoveIsEmpty(POLICY_RULE)).toBe(false);
     out.cleanup();
   });
 });
 
-describe("the rule form's policy fields", () => {
+describe("the rule form's move fields", () => {
   it("round-trips a rule through the form values unchanged", () => {
-    const values = rulePolicyFieldsFromRule(POLICY_RULE);
+    const values = ruleMoveFieldsFromRule(POLICY_RULE);
     expect(values.preconditionKnown).toBe("fever\nheadache");
     expect(values.nextActionCost).toBe("3");
-    expect(rulePolicyFromFields(values)).toEqual({
-      precondition: POLICY_RULE.precondition,
-      next_action: POLICY_RULE.next_action,
-    });
+    expect(ruleMoveFromFields(values)).toEqual({ move: POLICY_RULE.move });
   });
 
   it("emits nothing from an empty form — a rule the Expert did not annotate", () => {
-    expect(rulePolicyFromFields(EMPTY_RULE_POLICY_FIELDS)).toEqual({});
+    expect(ruleMoveFromFields(EMPTY_RULE_MOVE_FIELDS)).toEqual({});
   });
 
   it("treats a half-filled next action as absent, never as 'Next: —'", () => {
     expect(
-      rulePolicyFromFields({
-        ...EMPTY_RULE_POLICY_FIELDS,
+      ruleMoveFromFields({
+        ...EMPTY_RULE_MOVE_FIELDS,
         nextActionKind: "test",
       }),
     ).toEqual({});
     expect(
-      rulePolicyFromFields({
-        ...EMPTY_RULE_POLICY_FIELDS,
+      ruleMoveFromFields({
+        ...EMPTY_RULE_MOVE_FIELDS,
         preconditionKnown: "fever",
       }),
     ).toEqual({});
   });
 
   it("drops a cost or risk outside 1–5 rather than clamping it to a lie", () => {
-    const out = rulePolicyFromFields({
-      ...EMPTY_RULE_POLICY_FIELDS,
+    const out = ruleMoveFromFields({
+      ...EMPTY_RULE_MOVE_FIELDS,
       nextActionKind: "ask",
       nextActionTarget: "the client",
       nextActionCost: "9",
     });
-    expect(out.next_action).toEqual({ kind: "ask", target: "the client" });
+    expect(out.move?.next).toEqual({ kind: "ask", target: "the client" });
   });
 });

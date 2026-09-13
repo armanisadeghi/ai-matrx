@@ -21,6 +21,10 @@ export interface OpenAddToRulebookDialogOptions {
   initialContent: string;
   /** The conversation the message came from — recorded in `source_ref`. */
   initialConversationId?: string | null;
+  /** The message itself — its id is the draft's provenance in `source_ref`. */
+  initialMessageId?: string | null;
+  /** The user's question this message answered, when there was one. */
+  initialQuestion?: string | null;
 }
 
 export interface AddToRulebookDialogHandle {
@@ -37,6 +41,8 @@ export function useOpenAddToRulebookDialog() {
           data: {
             initialContent: opts.initialContent,
             initialConversationId: opts.initialConversationId ?? null,
+            initialMessageId: opts.initialMessageId ?? null,
+            initialQuestion: opts.initialQuestion ?? null,
           },
         }),
       );
@@ -55,6 +61,12 @@ export function AddToRulebookDialogController(
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.initialContent, props.initialConversationId]);
+  }, [
+    open,
+    props.initialContent,
+    props.initialConversationId,
+    props.initialMessageId,
+    props.initialQuestion,
+  ]);
   return null;
 }

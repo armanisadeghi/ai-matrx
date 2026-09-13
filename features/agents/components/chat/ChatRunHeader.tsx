@@ -12,6 +12,8 @@ import { selectUserInputText } from "@/features/agents/redux/execution-system/in
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
+import { ConversationRecordsChip } from "./ConversationRecordsChip";
+import { ConversationRoomNotice } from "./ConversationRoomNotice";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 
@@ -106,6 +108,22 @@ export function ChatRunHeader({
         />
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {/* "Personal — only you can see this, even inside a shared room"
+            (DD-171, 2026-09-12; it read the opposite until that day). A
+            `personal` conversation dropped into a war room or a thread USED to
+            be readable by that room's members; the chair overturned that —
+            containment carries a container's reach to rows at `internal` and
+            above, never to `personal` — and the kernel moved before this
+            sentence did. The chip renders for the OWNER and only when the
+            conversation really does sit inside a room other people can reach. */}
+        <ConversationRoomNotice conversationId={conversationId} />
+        {/* What this chat PRODUCED — the reverse view of the record chrome
+            drawn under a kind block. Only an existing conversation can have
+            produced anything, so `/chat/new` shows nothing rather than an
+            empty control. */}
+        {conversationId && (
+          <ConversationRecordsChip conversationId={conversationId} />
+        )}
         {/* Canvas — the unified live workspace, one click away at the top. */}
         <ChatCanvasButton conversationId={conversationId} />
       </div>

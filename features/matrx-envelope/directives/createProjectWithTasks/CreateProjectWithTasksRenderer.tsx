@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  AlertCircle,
   ArrowUpRight,
   Calendar,
   CheckSquare,
@@ -144,10 +143,12 @@ function ProjectDirectiveCard({
   item,
   resolved,
   status,
+  onRecheck,
 }: {
   item: CreateProjectWithTasksItem;
   resolved: ResolvedCreatedProject | null;
   status: "polling" | "resolved" | "exhausted";
+  onRecheck: () => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -306,11 +307,28 @@ function ProjectDirectiveCard({
                   and `workspace.projects` was empty at that instant. All this
                   state actually knows is that no project by this name was found
                   after the poll schedule ran out, so that is what it says. */}
-              <span>
+              <span className="flex-1">
                 Nothing has been created yet — no project by this name exists.
-                A project is written only once this action is approved; if you
-                already approved it, refresh to see it.
+                A project is written only once this action is approved.
               </span>
+              {/* 🚨 AN HONEST CONTROL, NOT AN INSTRUCTION TO REFRESH (V-34,
+                  live 2026-09-12). This used to end with "if you already
+                  approved it, refresh to see it", and it kept saying so after
+                  the apply had succeeded, directly above the receipt that said
+                  the project WAS created. The poll runs on a fixed schedule and
+                  the approval is a human click — no schedule can outwait that —
+                  so the card asks again on demand instead of asking the user to
+                  reload the page. */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRecheck();
+                }}
+                className="shrink-0 rounded-md border border-amber-500/40 px-2 py-0.5 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-500/20 dark:text-amber-100"
+              >
+                Check again
+              </button>
             </div>
           )}
         </div>
@@ -373,14 +391,14 @@ const CreateProjectWithTasksRenderer: React.FC<DirectiveRendererProps> = ({
 }) => {
   const items = parseCreateProjectWithTasksItems(directive);
 
-  if (items.length === 0) {
-    return (
-      <div className="my-3 flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
-        <AlertCircle className="h-4 w-4 shrink-0" />
-        <span>Project directive — waiting for project details…</span>
-      </div>
-    );
-  }
+  // NOTHING TO SHOW, SO NOTHING IS SHOWN (DD-135, V-34 2026-09-12). This used to
+  // render "Project directive — waiting for project details…", which is a screen
+  // that lies whenever nothing more is coming: a bound agent answering a plain
+  // question ("what is the difference between a project and a task?") emits its
+  // shell with an empty items array, and the user was shown a pending-looking
+  // project card — above an Approve button for zero items — instead of an answer.
+  // A streaming block is announced by its own partial skeleton, not by this branch.
+  if (items.length === 0) return null;
 
   return (
     <div className="space-y-3">
@@ -399,12 +417,17 @@ function ProjectDirectiveCardContainer({
 }: {
   item: CreateProjectWithTasksItem;
 }) {
-  const { status, data } = useResolveCreatedProject(item);
+  const { status, data, recheck } = useResolveCreatedProject(item);
 
   const displayStatus = status === "idle" ? "polling" : status;
 
   return (
-    <ProjectDirectiveCard item={item} resolved={data} status={displayStatus} />
+    <ProjectDirectiveCard
+      item={item}
+      resolved={data}
+      status={displayStatus}
+      onRecheck={recheck}
+    />
   );
 }
 

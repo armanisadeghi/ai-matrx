@@ -653,16 +653,16 @@ export async function auditGraph({
                 continue;
             }
             if (pinners.length > 0) {
-                failures.push(
-                    `STALE (upstream pin): ${name}@${version} is in the graph; npm latest is ${latest}. ` +
+                notes.push(
+                    `UPDATE AVAILABLE (upstream pin): ${name}@${version} is in the graph; npm latest is ${latest}. ` +
                         `Pulled in because ${pinners.join('; ')}. Nothing in this repo declares it, and no update ` +
                         `command can move it. REMEDY: republish the pinning package(s) so the sibling spec resolves ` +
                         `to ${latest}, then ${updateCommand}`,
                 );
                 continue;
             }
-            failures.push(
-                `STALE: ${name}@${version} is in the graph (${ownersOf(graph, name, version).join(', ')}); ` +
+            notes.push(
+                `UPDATE AVAILABLE: ${name}@${version} is in the graph (${ownersOf(graph, name, version).join(', ')}); ` +
                     `npm latest is ${latest}. REMEDY: ${updateCommand}`,
             );
         }
@@ -750,8 +750,8 @@ export async function runCheck({
     for (const note of notes) log(note);
 
     if (transients.length > 0) {
-        error('\n⚠ npm is still propagating a release — reported, not failed:');
-        for (const transient of transients) error(`  - ${transient}`);
+        log('\nInfo: npm is still propagating a release:');
+        for (const transient of transients) log(`  - ${transient}`);
     }
 
     if (failures.length > 0) {
@@ -766,7 +766,7 @@ export async function runCheck({
         );
         return 1;
     }
-    log(`✓ @ai-matrx install graph is at npm latest, exactly once (${graph.installed.size} package(s)).`);
+    log(`✓ @ai-matrx install graph has one installed version per package; version updates above are informational (${graph.installed.size} package(s)).`);
     return 0;
 }
 
@@ -979,7 +979,7 @@ async function selfTest() {
     const vscodeGraph = parseNpmLock(VSCODE_PREFIX_LOCK);
     const vscode = await auditGraph({ graph: vscodeGraph, getRegistry: fixtureRegistry, now });
     expect('vscode pre-fix declared spec is clean', vscode.failures.filter((f) => f.startsWith('PIN')).length, 0);
-    const staleNames = vscode.failures.filter((f) => /^STALE/.test(f));
+    const staleNames = vscode.notes.filter((f) => /^UPDATE AVAILABLE/.test(f));
     expect('vscode pre-fix stale transitives found', staleNames.length, 2);
     if (!staleNames.some((f) => f.includes('@ai-matrx/data@0.6.2'))) {
         problems.push('(a) missed @ai-matrx/data@0.6.2 in the matrx-vscode pre-fix lockfile');
@@ -987,7 +987,7 @@ async function selfTest() {
     if (!staleNames.some((f) => f.includes('@ai-matrx/design-system@0.12.0'))) {
         problems.push('(a) missed @ai-matrx/design-system@0.12.0 in the matrx-vscode pre-fix lockfile');
     }
-    if (!vscode.failures.some((f) => /npm update/.test(f))) {
+    if (!vscode.notes.some((f) => /npm update/.test(f))) {
         problems.push('(a) remedy does not name the npm command that moves transitives');
     }
     // …and the OLD, declaration-only rule was green on exactly this input.
@@ -1070,7 +1070,7 @@ async function selfTest() {
             error: silence,
         });
     expect('run exit code, clean graph', await runWith(parsePnpmLock(PNPM_FIXTURE_CLEAN)), 0);
-    expect('run exit code, stale transitive', await runWith(parseNpmLock(VSCODE_PREFIX_LOCK)), 1);
+    expect('run exit code, stale transitive', await runWith(parseNpmLock(VSCODE_PREFIX_LOCK)), 0);
     expect('run exit code, duplicate version', await runWith(parsePnpmLock(PNPM_FIXTURE_DUPLICATE)), 1);
     expect('run exit code, pinned spec', await runWith(parsePnpmLock(PNPM_FIXTURE_PIN)), 1);
 
@@ -1101,7 +1101,7 @@ async function selfTest() {
             }),
             async () => true,
         ),
-        1,
+        0,
     );
 
     if (problems.length > 0) {

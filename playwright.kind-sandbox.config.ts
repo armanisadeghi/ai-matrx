@@ -16,7 +16,17 @@
  */
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.MATRX_SANDBOX_BASE_URL ?? "http://localhost:3000";
+import { NO_APP_SENTENCE, resolveBaseURL } from "./features/content-ir/sandbox/browser/base-url";
+
+/**
+ * Refuse here rather than inside a test. A missing app is not a failing
+ * assertion about the boundary — it is a setup fact, and saying so before a
+ * browser launches is the difference between a remedy and a stack trace.
+ */
+const baseURL = resolveBaseURL();
+if (!baseURL) throw new Error(NO_APP_SENTENCE);
+// eslint-disable-next-line no-console
+console.log(`[kind-sandbox gate] driving ${baseURL}`);
 
 export default defineConfig({
     testDir: "features/content-ir/sandbox/browser",

@@ -249,7 +249,7 @@ export const marketingCrawlManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-crawl",
   readiness: "verified",
   label: "Marketing Crawl Session",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are inside one frozen crawl session of a managed website: its timing, frozen scope, run stats, error state, URL ledger, event log, and the ten technical SEO reports built from the run's URL outcomes and immutable snapshots. Read the inherited brand_context and site_context first for the client and site framing; crawl_stats and crawl_scope tell you what this run did and what it was allowed to do.

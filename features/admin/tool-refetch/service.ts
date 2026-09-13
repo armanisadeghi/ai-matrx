@@ -28,6 +28,16 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import type { Database } from "@/types/database.types";
+
+/**
+ * One row of the all-time rollup. The generator types a SETOF-composite RPC as
+ * `unknown[]` (it cannot see that `public.admin_tool_refetch_all_time()` returns
+ * `SETOF chat.mv_tool_refetch_summary`), so the row shape is taken from the
+ * relation the function actually returns — not invented here, and it moves when
+ * the relation moves.
+ */
+type ToolRefetchAllTimeRow = Database["chat"]["Views"]["mv_tool_refetch_summary"]["Row"];
 
 /** Tool-call rows this report counts as denominator. Matches the views' own scope. */
 const COUNTED_TOOL_TYPES: string[] = ["local", "agent", "external"];
@@ -156,12 +166,20 @@ async function loadAllTime(): Promise<ToolRefetchSummary> {
   // the data API's 8s statement limit), so all-time reads the materialized
   // snapshot chat.mv_tool_refetch_summary, refreshed hourly by pg_cron
   // (aidream db/migrations/0605). refreshed_at says how old the snapshot is.
-  const { data, error } = await supabase
-    .schema("chat")
-    .from("mv_tool_refetch_summary")
-    .select("*")
+  //
+  // 🚨 THROUGH THE ADMIN DOOR, NOT THE TABLE (DD-164). A MATERIALIZED view can
+  // never carry `security_invoker` and RLS never applies to one, so the snapshot
+  // is by construction the OWNER's unfiltered read of chat.request,
+  // chat.tool_call and tool.definition — every organization's tool calls. It was
+  // granted to plain `authenticated`, so any signed-in user could read the whole
+  // platform's telemetry. The grant is revoked and this page reads
+  // `public.admin_tool_refetch_all_time()`, which refuses anyone who is not a
+  // platform administrator with a sentence that says why.
+  const { data: rpcData, error } = await supabase
+    .rpc("admin_tool_refetch_all_time")
     .order("same_data_repeats", { ascending: false })
     .limit(PAGE_SIZE);
+  const data = rpcData as ToolRefetchAllTimeRow[] | null;
   if (error) {
     if (isStatementTimeout(error)) {
       throw new RefetchTimeoutError(

@@ -41,6 +41,7 @@ import type {
   AccessLogEntry,
   EmergencyAccessResult,
   EmergencyDoorDecision,
+  EmergencyDoorEligibility,
   EmergencyDoorOutcome,
   EmergencyDoorPurpose,
   EmergencyDoorRequest,
@@ -184,6 +185,49 @@ export async function listEmergencyDoorPurposes(
     purposes.push({ slug, name: str(row?.name) ?? slug });
   }
   return { ok: true, data: purposes };
+}
+
+// ── 1b. May this person open this door at all? ──────────────────────────────
+
+/**
+ * `iam.emergency_door_eligibility(...)` — asked by the access-refusal screen
+ * BEFORE it offers anything.
+ *
+ * 🚨 THIS EXISTS SO THE AFFORDANCE CAN BE ABSENT RATHER THAN DEAD. A "Request
+ * emergency access" button shown to somebody the door will always refuse — a
+ * plain member, the record's own owner, a record whose class has no door — is
+ * exactly the dead control law 4 forbids. The browser cannot work any of that
+ * out for itself: the record is the one thing it was just refused.
+ *
+ * A failure answers `eligible: false`, so a surface that cannot reach the
+ * database shows nothing rather than a button that cannot work.
+ */
+export async function checkEmergencyDoorEligibility(
+  client: EmergencyAccessClient,
+  args: { token: string; id: string },
+): Promise<EmergencyAccessResult<EmergencyDoorEligibility>> {
+  const result = await callDoor(
+    client,
+    "emergency_door_eligibility",
+    { p_token: args.token, p_id: args.id },
+    "The emergency access check",
+  );
+  if (!result.ok) return result;
+
+  const row = asRecord(result.data);
+  if (!row) {
+    return failed("The emergency door gave an answer we could not read.");
+  }
+  return {
+    ok: true,
+    data: {
+      eligible: bool(row.eligible),
+      reason: str(row.reason) ?? "unknown",
+      dataClass: str(row.data_class),
+      pendingRequestId: str(row.pending_request_id),
+      needsSecondPerson: bool(row.needs_second_person),
+    },
+  };
 }
 
 // ── 2. Opening the door ─────────────────────────────────────────────────────
@@ -386,6 +430,8 @@ function mapAccessLogRows(payload: unknown): AccessLogEntry[] {
       denialReason: str(row.denial_reason),
       actorUserId: str(row.actor_user_id),
       actorLabel: str(row.actor_label),
+      granteeUserId: str(row.grantee_user_id),
+      granteeLabel: str(row.grantee_label),
       grantExpiresAt: str(row.grant_expires_at),
       organizationId: str(row.organization_id),
       basis: str(row.basis),

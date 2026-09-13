@@ -1,8 +1,10 @@
 /**
  * Save-from-chat — extract REGISTERED `__kind` blocks from an assistant
  * message's text and persist them as `content_ir.kind_instance` rows through
- * the shared studio insert path (`saveKindInstance` — ONE write contract for
- * the Test tab and chat).
+ * THE ONE CLIENT STORE (`./store-kind-record.ts` — the same function the chat
+ * block's record chrome and the Shape Studio's Test tab call), so every client
+ * save writes the same metadata shape and the same `produced_by` provenance
+ * edge the server store writes.
  *
  * Extraction reuses the artifact-materialization path's exact detection
  * (planMaterialization's Track-2B), never a bespoke re-parse:
@@ -22,10 +24,8 @@ import { readEnvelope } from "@ai-matrx/content-ir";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 import { readObjectKind } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
-import {
-  saveKindInstance,
-  type KindInstanceWriteResult,
-} from "./instance-service";
+import { type KindInstanceWriteResult } from "./instance-service";
+import { storeKindRecord } from "./store-kind-record";
 import { kindTitleKeyFromMetadata } from "./instance-title";
 import { supabase } from "@/utils/supabase/client";
 
@@ -33,6 +33,8 @@ export interface ExtractedKindBlock {
   kind: string;
   /** The envelope's root value (zero-loss reconstruction) or the parsed root. */
   value: Record<string, unknown>;
+  /** The envelope's own fingerprint, when this block carried one. */
+  fingerprint: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -67,6 +69,7 @@ export async function extractRegisteredKindBlocks(
         out.push({
           kind: envelope.root.kind,
           value: reconstructRegionValue(envelope),
+          fingerprint: envelope.fingerprint ?? null,
         });
       }
       continue;
@@ -84,7 +87,9 @@ export async function extractRegisteredKindBlocks(
     if (!isRecord(parsed)) continue;
     const kind = readObjectKind(parsed);
     if (!kind || !kindRegistry.isKnownKind(kind)) continue;
-    out.push({ kind, value: parsed });
+    // A parse-fallback block has no envelope, so it has no fingerprint. The
+    // key is omitted rather than invented (THE ONE CLIENT STORE's rule).
+    out.push({ kind, value: parsed, fingerprint: null });
   }
   return out;
 }
@@ -92,6 +97,8 @@ export async function extractRegisteredKindBlocks(
 export interface SavedMessageInstance extends KindInstanceWriteResult {
   kind: string;
   label: string;
+  /** Present when the row landed but its provenance edge did not. */
+  provenanceWarning: string | null;
 }
 
 /**
@@ -102,6 +109,10 @@ export interface SavedMessageInstance extends KindInstanceWriteResult {
 export async function saveKindInstancesFromMessage(args: {
   text: string;
   organizationId: string | null;
+  /** `chat.conversation.id` — the HOME the saved records are filed under. */
+  conversationId?: string | null;
+  /** `chat.message.id` — the provenance anchor and the `produced_by` edge. */
+  messageId?: string | null;
 }): Promise<SavedMessageInstance[]> {
   const blocks = await extractRegisteredKindBlocks(args.text);
   if (blocks.length === 0) {
@@ -129,14 +140,24 @@ export async function saveKindInstancesFromMessage(args: {
       // Registry-visible but not RLS-readable as a row — skip honestly.
       continue;
     }
-    const result = await saveKindInstance({
+    const result = await storeKindRecord({
       kindDefinitionId: def.id,
       kindVersion: def.version,
       value: block.value,
       organizationId: args.organizationId,
       titleKey: kindTitleKeyFromMetadata(def.metadata),
+      provenance: {
+        conversationId: args.conversationId ?? null,
+        messageId: args.messageId ?? null,
+        fingerprint: block.fingerprint,
+      },
     });
-    saved.push({ ...result, kind: def.kind, label: def.label });
+    saved.push({
+      ...result,
+      kind: def.kind,
+      label: def.label,
+      provenanceWarning: result.provenanceWarning,
+    });
   }
   if (saved.length === 0) {
     throw new Error(

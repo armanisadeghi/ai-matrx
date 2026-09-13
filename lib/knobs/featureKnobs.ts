@@ -103,6 +103,33 @@ export async function knobString(feature: string, key: string): Promise<string> 
 }
 
 /**
+ * Read a `value_type = 'json'` knob holding an ORDERED LIST OF STRINGS — the
+ * shape an "which of these, and in what order" opinion takes (a curated tier, a
+ * default column order, a preferred-provider ranking). Entries must be strings;
+ * a non-string member raises rather than being coerced, because a silently
+ * stringified `null` in such a list becomes a lookup that matches nothing.
+ */
+export async function knobStringList(
+  feature: string,
+  key: string,
+): Promise<string[]> {
+  const v = await readKnob(feature, key);
+  if (!Array.isArray(v)) {
+    throw new Error(
+      `feature knob "${feature}.${key}" is not a JSON array: ${String(v)}`,
+    );
+  }
+  return v.map((entry, i) => {
+    if (typeof entry !== "string") {
+      throw new Error(
+        `feature knob "${feature}.${key}" entry ${i} is not a string: ${String(entry)}`,
+      );
+    }
+    return entry;
+  });
+}
+
+/**
  * Read several integer knobs of one feature in a single awaited step. The whole
  * table is one cached fetch, so this is purely ergonomic: it keeps a caller from
  * writing six sequential awaits that read as six round-trips.

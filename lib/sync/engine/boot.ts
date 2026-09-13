@@ -33,7 +33,7 @@ import { buildIdentityResetAction } from "./identityReset";
 import { buildRehydrateAction } from "./rehydrate";
 import { createStaleRefreshScheduler, invokeRemoteFetch, type StaleRefreshRegistration } from "./remoteFetch";
 import { extractErrorMessage } from "@/utils/errors";
-import { setMode, type ThemeMode } from "@/styles/themes/themeSlice";
+import { setMode, type ThemeMode, type ResolvedThemeMode } from "@/styles/themes/themeSlice";
 // MATRX-EXCEPTION: `Policy<any>` throughout this file — same invariant-TState
 // reason as lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes
 // TState invariant, so `Policy<unknown>` cannot accept the registry's
@@ -441,11 +441,11 @@ export async function resyncForIdentity(options: {
  */
 function reconcileThemeFromPaintedDom(store: Store): void {
     if (typeof document === "undefined") return;
-    const painted: ThemeMode = document.documentElement.classList.contains("dark")
+    const painted: ResolvedThemeMode = document.documentElement.classList.contains("dark")
         ? "dark"
         : "light";
     const state = store.getState() as { theme?: { mode?: ThemeMode } };
-    if (state.theme?.mode === painted) return;
+    if (state.theme?.mode === "system" || state.theme?.mode === painted) return;
     store.dispatch(setMode(painted));
     logger.debug("boot.theme.reconciledFromDom", { meta: { mode: painted } });
 }

@@ -20,13 +20,14 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { updateNoteTags } from "../redux/slice";
-import { moveNoteToFolder } from "../redux/thunks";
+import { moveNoteToFolder, moveNoteToNewFolder } from "../redux/thunks";
 import {
   selectNoteFolder,
   selectNoteTags,
-  selectAllFolders,
+  selectFolderReferences,
   selectNoteById,
 } from "../redux/selectors";
+import type { FolderReference } from "../types";
 import {
   selectOrganizationName,
   selectProjectName,
@@ -40,7 +41,6 @@ import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { createFolder } from "../service/notesService";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   noteDisplayLabel,
@@ -68,7 +68,7 @@ export function NoteMetadataBar({
 
   const folder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
   const tags = useAppSelector(selectNoteTags(noteId));
-  const allFolders = useAppSelector(selectAllFolders);
+  const folderReferences = useAppSelector(selectFolderReferences);
   const note = useAppSelector(selectNoteById(noteId));
 
   const ctxOrgId = useAppSelector(selectOrganizationId);
@@ -163,7 +163,7 @@ export function NoteMetadataBar({
   }, [folderOpen, recomputeFolderMenuPos]);
 
   const handleFolderChange = useCallback(
-    (f: string) => {
+    (f: FolderReference) => {
       dispatch(moveNoteToFolder({ noteId, folder: f }));
       setFolderOpen(false);
     },
@@ -172,8 +172,7 @@ export function NoteMetadataBar({
 
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      await createFolder(folderName);
-      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
+      await dispatch(moveNoteToNewFolder({ noteId, folderName })).unwrap();
     },
     [dispatch, noteId],
   );
@@ -393,21 +392,23 @@ export function NoteMetadataBar({
               <FolderPlus className="h-3.5 w-3.5" />
               New folder…
             </button>
-            {allFolders.map((f) => (
+            {folderReferences
+              .filter((candidate) => candidate.organizationId === noteOrgId)
+              .map((f) => (
               <button
-                key={f}
+                key={`${f.organizationId}:${f.id}`}
                 type="button"
                 className={cn(
                   "w-full cursor-pointer px-3 py-1.5 text-left text-xs transition-colors",
-                  f === folder
+                  f.id === note?.folder_id
                     ? "bg-primary/10 font-medium text-primary"
                     : "text-foreground hover:bg-accent",
                 )}
                 onClick={() => handleFolderChange(f)}
               >
-                {f}
+                {f.name}
               </button>
-            ))}
+              ))}
           </div>,
           document.body,
         )}
@@ -416,7 +417,9 @@ export function NoteMetadataBar({
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         onConfirm={handleCreateFolder}
-        existingFolders={allFolders}
+        existingFolders={folderReferences
+          .filter((candidate) => candidate.organizationId === noteOrgId)
+          .map((candidate) => candidate.name)}
         description="Create a folder and assign this note to it immediately."
         confirmLabel="Create & Assign"
       />

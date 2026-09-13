@@ -171,7 +171,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const marketingBrandAssetsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand-assets",
   label: "Brand Asset Desk",
-  urlPattern: "/marketing/brands/[brandId]/assets",
+  urlPattern: "/marketing/[brandId]/identity/media",
   inheritsFrom: "matrx-user/marketing-brand",
   readiness: "partial",
   readinessNote:

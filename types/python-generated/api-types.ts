@@ -3754,7 +3754,8 @@ export interface paths {
          *     Like `/token`, this route takes NO authentication dependency: a guest holding
          *     the meeting link is a first-class participant (D6), and it is the SERVICE
          *     that decides what a guest may do — `authorize_meeting_question` mirrors the
-         *     join decision exactly, including the org's `meet.guest_join_enabled` knob.
+         *     admission decision, including a verified room pass and the org's
+         *     `meet.guest_join_enabled` knob. The pass rides `x-meet-room-token`, never a URL.
          *
          *     The body is `{meeting_id, question}` and nothing else. No transcript, no
          *     context, no agent id crosses the wire — the answer is built server-side from
@@ -24131,6 +24132,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/ingest-timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Timeline
+         * @description The `timeline` Approach: a case written in the order it happened. A
+         *     segmenter finds the case's own moments, and each moment is distilled
+         *     knowing only what was known at the time — the ending is kept back by
+         *     default — so the rules come back forward-looking ("given what you know now,
+         *     do X") instead of static and written with hindsight.
+         */
+        post: operations["ingest_rulebook_timeline_masterworks_ingest_timeline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/triage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Triage Rulebook Drafts
+         * @description Sort the DRAFT pile by what the Rulebook is FOR (W59 + W61).
+         *
+         *     A distiller reads the page in front of it, never the Rulebook's purpose, so
+         *     one training workbook produced 336 drafts about infection control for a
+         *     Rulebook about deciding the next diagnostic question. Asking the Scout to
+         *     "retire them as classes" died at the model's output ceiling with zero tool
+         *     calls, twice, because retiring was one rule per call. This lane takes the
+         *     Expert's own two sentences — what belongs, what to set aside — and reads
+         *     every draft against them in batches, applying each batch in one write.
+         *     `dry_run` returns the plan and writes nothing.
+         */
+        post: operations["triage_rulebook_drafts_masterworks_triage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/ingest-file": {
         parameters: {
             query?: never;
@@ -24304,6 +24358,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/audition-outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Audition Outcome Endpoint
+         * @description The OUTCOME Audition — judge a Masterwork run over a SEALED CASE by the
+         *     fact the case only reveals at the bottom, and by the path it took there.
+         *
+         *     Not the text-vs-text comparison ``/audition`` runs: the desk's committed
+         *     answer is judged against the published resolution, and every score is
+         *     derived mechanically from the case's own disclosure ledger (the judge is
+         *     never asked for a number).
+         */
+        post: operations["audition_outcome_endpoint_masterworks_audition_outcome_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/audition-pairwise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Audition Pairwise Endpoint
+         * @description The BLIND PAIRWISE Audition — two candidates, no reference.
+         *
+         *     ``/audition`` ranks one candidate against the Expert's real published work.
+         *     This ranks two answers written from the same inputs against EACH OTHER, with
+         *     a judge that is never told which is which: the A/B assignment is randomised
+         *     and SEALED on the run row before the judge is called, and revealed only with
+         *     the verdict. ``mode="faithfulness"`` asks the other question the two-schools
+         *     shape needs — is each answer true to its own Rulebook — rather than which is
+         *     better.
+         */
+        post: operations["audition_pairwise_endpoint_masterworks_audition_pairwise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/clean-corpus": {
         parameters: {
             query?: never;
@@ -24344,6 +24452,51 @@ export interface paths {
          *     (`services/masterwork_corpus/`).
          */
         get: operations["read_expert_corpus_masterworks__rulebook_id__corpus_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/sealed-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Sealed Case Endpoint
+         * @description Seal one case onto a Rulebook — the source a Masterwork has to INTERROGATE.
+         *
+         *     Refuses BEFORE writing anything when the ``resolution_marker`` does not
+         *     locate the ending: a case whose resolution cannot be proven removed would
+         *     hand the answer to the first agent that asked it a question.
+         */
+        post: operations["create_sealed_case_endpoint_masterworks_sealed_cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/sealed-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sealed Cases Endpoint
+         * @description The sealed cases on this Rulebook. NEVER the case text or the resolution —
+         *     a list that leaked either would be the seal, opened, from a GET.
+         */
+        get: operations["list_sealed_cases_endpoint_masterworks__rulebook_id__sealed_cases_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29842,6 +29995,10 @@ export interface paths {
          *     duplicate of them. Read-only. Optionally graded against a proposed change
          *     that has not been written yet (``delta``), so a batch can be judged BEFORE
          *     it runs.
+         *
+         *     The envelope also carries ``withheld``: how many rungs exist on these agents
+         *     that this caller may not read, by principal kind and with the reason (R31).
+         *     A short list is never shown as if it were the whole answer.
          */
         post: operations["agent_impact_mandates_impact_post"];
         delete?: never;
@@ -40855,6 +41012,8 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+            /** Scanned Count */
+            scanned_count: number;
             /** Filter Summary */
             filter_summary: string;
         };
@@ -42565,6 +42724,57 @@ export interface components {
              * @description compare_vanilla only: the SAME input the Masterwork was given (the text to edit, or the job brief), so the vanilla arm is a fair fight.
              */
             vanilla_input?: string | null;
+        };
+        /**
+         * AuditionOutcomeRequest
+         * @description Judge one Masterwork run over a SEALED CASE by the held-out later fact.
+         *
+         *     Not a text-vs-text comparison: the desk's committed answer is judged against
+         *     the case's published resolution, and the path it took (every fact it had to
+         *     ask the case for, what each cost and risked) is scored mechanically from the
+         *     case's own disclosure ledger. ``run_scope`` is the identity of the RUN whose
+         *     ledger is being judged — two runs over the same case keep separate ledgers,
+         *     and the count of what one run had to ask IS the measurement.
+         */
+        AuditionOutcomeRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Case Id
+             * @description platform.masterwork_corpus_item id (sealed_case)
+             */
+            case_id: string;
+            /**
+             * Run Scope
+             * @description The run whose disclosure ledger is judged, e.g. 'workflow_run:<id>'.
+             */
+            run_scope: string;
+            /**
+             * Compare Vanilla
+             * @description Also hand the WHOLE case (resolution stripped) to the same model tier in one call, with nothing to ask, and judge it the same way. A paid call.
+             * @default false
+             */
+            compare_vanilla?: boolean;
+            /**
+             * Masterwork Id
+             * @description The built Masterwork this run came from, when the caller knows it.
+             */
+            masterwork_id?: string | null;
         };
         /**
          * AudiusTrackStatistics
@@ -54592,6 +54802,11 @@ export interface components {
              */
             model_guidance?: string;
             /**
+             * Model Profile
+             * @description Optional database-owned model class. 'balanced' selects a primary, non-premium mid-cost text model; 'strongest' selects a primary premium text model.
+             */
+            model_profile?: ("balanced" | "strongest") | null;
+            /**
              * Tools
              * @description Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.
              */
@@ -54736,6 +54951,55 @@ export interface components {
         CreateProfileRequest: {
             /** Display Name */
             display_name: string;
+        };
+        /**
+         * CreateSealedCaseRequest
+         * @description Seal one case onto a Rulebook.
+         *
+         *     Inherits ``AcceptsInjectedScope`` because the FE's ``callApi`` merges
+         *     ``organization_id`` / ``project_id`` / ``task_id`` onto every POST body.
+         */
+        CreateSealedCaseRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Case Text
+             * @description The FULL case, ending included.
+             */
+            case_text: string;
+            /**
+             * Resolution
+             * @description The final answer, VERBATIM — what a run is graded against.
+             */
+            resolution: string;
+            /**
+             * Resolution Marker
+             * @description A phrase that appears exactly where the answer begins. Everything from it onward is removed before the case is ever asked anything.
+             */
+            resolution_marker: string;
+            /** Url */
+            url?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** License */
+            license?: string | null;
         };
         /** CreateSendingIdentityRequest */
         CreateSendingIdentityRequest: {
@@ -69119,6 +69383,29 @@ export interface components {
             subject_user_id?: string | null;
         };
         /**
+         * ImpactReport
+         * @description The envelope. ``verdicts`` is the frozen contract; the rest is what the
+         *     read must SAY about its own completeness rather than leave a screen to
+         *     guess.
+         */
+        ImpactReport: {
+            /** Verdicts */
+            verdicts?: components["schemas"]["ImpactVerdict"][];
+            withheld?: components["schemas"]["ImpactWithheld"];
+            /**
+             * Agents Examined
+             * @default 0
+             */
+            agents_examined?: number;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /** Computed At */
+            computed_at: string;
+        };
+        /**
          * ImpactRequest
          * @description There is no batch id on ``agent.definition_version`` — a batch writer
          *     passes the ids it touched. A time window is NOT accepted: it sweeps
@@ -69180,6 +69467,37 @@ export interface components {
              * @default false
              */
             auto_advance_eligible?: boolean;
+        };
+        /**
+         * ImpactWithheld
+         * @description Rungs that EXIST on these agents and this caller may not read (R31).
+         *
+         *     🚨 COUNTS ONLY, grouped by principal kind — never an id, a mandate key, an
+         *     organization or a person. R26 forbids leaking WHICH mandates exist; R31
+         *     forbids a silent short list that lets a screen imply it showed everything.
+         *     A count with a reason is the one shape that satisfies both, and it is why
+         *     these numbers are computed here rather than by widening ``iam.has_access``,
+         *     which is not an agent's call.
+         */
+        ImpactWithheld: {
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /** By Principal Kind */
+            by_principal_kind?: components["schemas"]["ImpactWithheldGroup"][];
+            /** Sentence */
+            sentence?: string | null;
+        };
+        /** ImpactWithheldGroup */
+        ImpactWithheldGroup: {
+            /** Principal Kind */
+            principal_kind: string;
+            /** Count */
+            count: number;
+            /** Explanation */
+            explanation: string;
         };
         /**
          * ImpairmentAvailableAttributes
@@ -70093,6 +70411,84 @@ export interface components {
              * @enum {string}
              */
             standing?: "evidence" | "rule";
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestTimelineRequest
+         * @description Distill a case that UNFOLDS IN TIME into forward-looking POLICY rules.
+         *
+         *     The `timeline` Approach (W58). A case report, an incident write-up, a
+         *     deal that took four meetings: the expert skill in such a document is not
+         *     a list of facts, it is the SEQUENCE of choices — what was known at each
+         *     moment, what was still unknown, what was done next, and what that cost
+         *     and risked.
+         *
+         *     So this lane does NOT chunk by size. A segmenter reads the narrative into
+         *     ordered steps, and ONE distiller run sees ONE step: everything known up to
+         *     the previous step, this step's new facts, and the action taken — with the
+         *     future, including the ending, withheld. Rules come back as "given what you
+         *     know now, do X, because Y".
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestTimelineRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Text
+             * @description The narrative, in the order it happened, verbatim.
+             */
+            text: string;
+            /**
+             * Source Note
+             * @description Where this case came from ('ED case 3, March 2026').
+             */
+            source_note?: string | null;
+            /**
+             * Approach
+             * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults to 'timeline'.
+             */
+            approach?: string | null;
+            /**
+             * Hide Resolution
+             * @description 🚨 Keep the ENDING away from the distiller (default). A rule written by an agent that already knows how the case turned out is hindsight wearing a rule's clothes — it says 'suspect X' where the expert, at that moment, could only say 'this is what makes X worth ruling out'. The resolution is still STORED on the Rulebook (metadata.timeline_sources) so the Audition can score against it. Set false only when the ending itself is the lesson.
+             * @default true
+             */
+            hide_resolution?: boolean;
+            /**
+             * Chunk Words
+             * @description Word budget for the cumulative `known_before` history handed to each step. The step's own facts are never trimmed; the OLDEST history is.
+             * @default 2500
+             */
+            chunk_words?: number;
+            /**
+             * Source Ref Extra
+             * @description Extra provenance keys merged into every rule's source_ref — how a delegating lane anchors rules to the piece they came from. Never overrides the lane's own keys.
+             */
+            source_ref_extra?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
             /**
              * Redistill
              * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
@@ -82293,6 +82689,22 @@ export interface components {
             organizations: components["schemas"]["OrganizationSummary"][];
             /** Default Organization Id */
             default_organization_id: string | null;
+            /**
+             * Default Preference Status
+             * @default unset
+             * @enum {string}
+             */
+            default_preference_status?: "malformed" | "stale" | "unavailable" | "unset" | "valid";
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings?: ("membership_organization_missing" | "organization_preference_unavailable")[];
+            /**
+             * Missing Organization Count
+             * @default 0
+             */
+            missing_organization_count?: number;
         };
         /** OrganizationSecretContributeRequest */
         OrganizationSecretContributeRequest: {
@@ -83950,6 +84362,107 @@ export interface components {
             run_count?: number;
         };
         /** PantheonServiceStatus */
+        /**
+         * PairwiseCandidate
+         * @description ONE arm of a blind pairwise Audition, and where its text comes from.
+         *
+         *     ``label`` is the OPERATOR's name for this arm ("the Masterwork", "the simple
+         *     path", "Watson"). It is how the unsealed verdict is read back and it NEVER
+         *     reaches the judge — a label is a tell, and the whole point of this mode is a
+         *     judge that cannot know which desk it is reading.
+         *
+         *     Exactly one source: pasted ``text``, a finished ``run_id``
+         *     (``platform.masterwork_run`` — its stored output), or a sealed case worked by
+         *     a run (``case_id`` + ``run_scope`` — the answer that run committed to).
+         */
+        PairwiseCandidate: {
+            /**
+             * Label
+             * @description The operator's name for this arm.
+             */
+            label: string;
+            /**
+             * Text
+             * @description Pasted output text.
+             */
+            text?: string | null;
+            /**
+             * Run Id
+             * @description platform.masterwork_run id.
+             */
+            run_id?: string | null;
+            /**
+             * Case Id
+             * @description platform.masterwork_corpus_item id (sealed_case).
+             */
+            case_id?: string | null;
+            /**
+             * Run Scope
+             * @description With case_id: the run whose committed answer is the arm.
+             */
+            run_scope?: string | null;
+            /**
+             * Rulebook Id
+             * @description faithfulness mode: this arm's OWN school. Defaults to the request's rulebook_id when both arms come from the same Rulebook.
+             */
+            rulebook_id?: string | null;
+        };
+        /**
+         * PairwiseCompareRequest
+         * @description Judge TWO candidate outputs BLIND against each other — no reference.
+         *
+         *     The Audition's other two modes both have a reference (the Expert's published
+         *     work; the case's held-out resolution). This one does not: both texts are
+         *     candidates, written from the same inputs, and the question is either which a
+         *     practitioner would rather have received (``preference``) or whether each is
+         *     true to its own school (``faithfulness``).
+         *
+         *     The service randomises which arm the judge sees as A and seals that key on
+         *     the run row BEFORE the judge is called. The key is never in the prompt, and
+         *     it is revealed to the caller only alongside the verdict.
+         */
+        PairwiseCompareRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rulebook Id
+             * @description The Rulebook this Audition belongs to — the run's home, the ownership check, and (unless an arm names its own) the school both arms are judged against.
+             */
+            rulebook_id: string;
+            /**
+             * Mode
+             * @description preference: which answer would a practitioner rather have received. faithfulness: is each answer true to ITS OWN school (each arm scored against its own Rulebook) — the mandate's two-schools shape.
+             * @default preference
+             * @enum {string}
+             */
+            mode?: "preference" | "faithfulness";
+            candidate_one: components["schemas"]["PairwiseCandidate"];
+            candidate_two: components["schemas"]["PairwiseCandidate"];
+            /**
+             * Case Note
+             * @description The shared inputs both arms answered ('the shoes/kitchen-counter case').
+             */
+            case_note?: string | null;
+            /**
+             * Judge By Rules
+             * @description preference mode: also give the judge the Rulebook's approved rules and ask for a rule-by-rule reading. Ignored in faithfulness mode, where the rules ARE the question.
+             * @default true
+             */
+            judge_by_rules?: boolean;
+        };
         PantheonServiceStatus: {
             /**
              * Kind
@@ -96712,6 +97225,45 @@ export interface components {
              */
             reason?: string;
         };
+        /** SealedCaseListResponse */
+        SealedCaseListResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Cases */
+            cases?: components["schemas"]["SealedCaseSummary"][];
+        };
+        /**
+         * SealedCaseSummary
+         * @description A sealed case as a LIST row — never carries raw_value or the resolution.
+         */
+        SealedCaseSummary: {
+            /** Case Id */
+            case_id: string;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Title */
+            title?: string | null;
+            /** Canonical Key */
+            canonical_key: string;
+            /** Url */
+            url?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** License */
+            license?: string | null;
+            /**
+             * Words
+             * @default 0
+             */
+            words?: number;
+            /**
+             * Sealed
+             * @default true
+             */
+            sealed?: boolean;
+            /** Run Scopes */
+            run_scopes?: string[];
+        };
         /** SearchAndScrapeLimitedRequest */
         SearchAndScrapeLimitedRequest: {
             /**
@@ -107109,6 +107661,71 @@ export interface components {
             status_page?: "https://status.tresorit.com";
         };
         /**
+         * TriageDraftsRequest
+         * @description Sort a Rulebook's DRAFT pile by what the Rulebook is FOR.
+         *
+         *     🚨 W59 + W61, 2026-09-12. A Rulebook's intake says, in the Expert's own
+         *     words, what it is for ("given the first facts of an acutely ill person,
+         *     decide the next question or test"). The chunk distiller never sees it, so
+         *     an 18,000-word training workbook produced 336 draft rules about PPE, hand
+         *     hygiene, CPR technique and snakebite, and a back-pain guideline produced 83
+         *     about disclaimers, GRADE wording and drug choices. Then the Expert asked
+         *     the Scout, in one sentence, to "retire, as classes, every draft that is
+         *     …" — and the turn died at the model's 16,000-token output ceiling with
+         *     ZERO tool calls, because the only retirement verb took one id at a time and
+         *     the agent tried to plan 250 retirements in prose. Twice, at ~$0.53 each,
+         *     nothing landed.
+         *
+         *     So the sorting is a LANE, not a conversation: the Expert says what to keep
+         *     and what to set aside in plain English, and the platform reads every draft
+         *     against it in batches sized to the holder's output ceiling.
+         *
+         *     Human-first, unchanged: only DRAFT rules are ever touched, an approved rule
+         *     is refused by id, and a rewrite lands as a NEW draft the Expert reviews.
+         */
+        TriageDraftsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Keep
+             * @description What SERVES this Rulebook, in the Expert's own words — the kind of rule that belongs here.
+             */
+            keep: string;
+            /**
+             * Set Aside
+             * @description The classes to set aside, in the Expert's own words. Optional: `keep` alone is a complete instruction, and an empty value means 'anything that does not serve the purpose'.
+             * @default
+             */
+            set_aside?: string;
+            /**
+             * Batch Size
+             * @description How many drafts one triage run reads. A CEILING, never a promise: the lane sizes every batch against the holder's real output ceiling and halves a batch whose reply was cut.
+             * @default 80
+             */
+            batch_size?: number;
+            /**
+             * Dry Run
+             * @description Return the plan — every draft with its verdict and reason — and write NOTHING. The Expert's 'show me first'.
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /**
          * TriggerCreate
          * @description Child sch_trigger row payload.
          */
@@ -109877,6 +110494,12 @@ export interface components {
             credential_item_id: string;
             /** Field Key */
             field_key: string;
+            /**
+             * Execution Purpose
+             * @default general
+             * @enum {string}
+             */
+            execution_purpose?: "general" | "passkey_private";
             /** Env Key */
             env_key?: string | null;
             /**
@@ -122959,7 +123582,9 @@ export interface operations {
     intelligence_ask_v1_meet_intelligence_ask_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -123572,6 +124197,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                "Idempotency-Key"?: string | null;
                 "X-Organization-Id": string;
             };
             path?: never;
@@ -123743,6 +124369,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                "Idempotency-Key"?: string | null;
                 "X-Organization-Id": string;
             };
             path: {
@@ -123850,6 +124477,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                "Idempotency-Key"?: string | null;
                 "X-Organization-Id": string;
             };
             path: {
@@ -152671,6 +153299,72 @@ export interface operations {
             };
         };
     };
+    ingest_rulebook_timeline_masterworks_ingest_timeline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestTimelineRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    triage_rulebook_drafts_masterworks_triage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriageDraftsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     ingest_rulebook_file_masterworks_ingest_file_post: {
         parameters: {
             query?: never;
@@ -152935,6 +153629,72 @@ export interface operations {
             };
         };
     };
+    audition_pairwise_endpoint_masterworks_audition_pairwise_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairwiseCompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audition_outcome_endpoint_masterworks_audition_outcome_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditionOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     clean_expert_corpus_endpoint_masterworks_clean_corpus_post: {
         parameters: {
             query?: never;
@@ -152986,6 +153746,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpertCorpusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_sealed_case_endpoint_masterworks_sealed_cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSealedCaseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SealedCaseSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sealed_cases_endpoint_masterworks__rulebook_id__sealed_cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SealedCaseListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -163194,7 +164018,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ImpactVerdict"][];
+                    "application/json": components["schemas"]["ImpactReport"];
                 };
             };
             /** @description Validation Error */
@@ -163227,7 +164051,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ImpactVerdict"][];
+                    "application/json": components["schemas"]["ImpactReport"];
                 };
             };
             /** @description Validation Error */

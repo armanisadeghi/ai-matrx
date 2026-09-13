@@ -192,9 +192,17 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `readAllRows`. Label · date · licence and NOTHING else: the query selects no narrative, no
   step and no resolution, so there is nothing in the component's props to leak. THE DOOR LAW's
   one deliberate exception here — a door onto a sealed case is a door onto the answer.
-- `components/detail/RulePolicy.tsx` — the ONE renderer of a rule's `precondition` /
-  `next_action` ("When: …" / "Next: …"), used by the rule card and the review wizard. Always
-  UNDER `statement`, never instead of it.
+- `components/detail/RuleMove.tsx` — the ONE renderer of a rule’s `move` half (`move.when` /
+  `move.next` — "When: …" / "Next: …" with the known/unknown chips and the 1–5 cost/risk
+  numbers), used by the rule card and the review wizard. Rendered directly UNDER
+  `RuleDecision`, never instead of it and never instead of `statement`.
+- `sourceTypes.ts` — 🚨 THE ONE LIST. Every Masterwork upload picker takes its
+  `accept` from `MASTERWORK_UPLOAD_ACCEPT` and nowhere else, and that string is
+  the server's own readable-type list (`aidream/aidream/services/distillation/
+  source_types.py`), diffed by a guard in aidream that fails on any drift. Born
+  2026-09-12: the picker advertised `.txt,.md,.rtf,.epub,.doc` and the server
+  read none of them, so a person's own 599-byte `.txt` was invited by the file
+  dialog and refused by the backend. Never hand-type an accept string here.
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).
 - `components/masterworks/MasterworksPage.tsx` — Masterworks list, run links into
   workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors. Its
@@ -235,6 +243,39 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-13` — **Two trials built the rule's decision shape on the same two field names; the
+  592 live rows decided which one keeps them.** Trial 8 shipped a FLAT policy shape to `main`
+  (`kind` / `precondition` / `next_action` / `action_kind` / `cost` / `risk`, all strings,
+  rendered by `RuleDecision`) while trial 7 was building a STRUCTURED one on `precondition` and
+  `next_action` as objects. A census of `platform.rulebook` found **592 rules across 3 Rulebooks
+  carrying `precondition` as a JSON STRING and zero carrying it as an object**, so the branch as
+  written would have made every one of those rules read wrong through the typed reader. Reality
+  arbitrates fact against fact: the flat shape keeps the key names.
+  - Trial 7's structured halves moved into **`rule.move`**, its own uncontested group:
+    `RulePrecondition{summary, known, unknown}` folded into **`RuleMoveWhen`** at `move.when`
+    (it also carries `counterparty_state`, so one shape is a strict superset of both, nothing
+    lost), and `RuleNextAction` became **`RuleMoveNext`** at `move.next`. Mirrors
+    `aidream/services/distillation/distill.py` exactly.
+  - **One renderer per concept.** `RulePolicy.tsx` became
+    [`components/detail/RuleMove.tsx`](./components/detail/RuleMove.tsx) and reads `rule.move`;
+    `RuleDecision` (the incumbent) still owns the flat strings. They render as ONE block, decision
+    first and the move under it — two depths of one judgment, never two components competing for
+    the same fields. `RuleDecision` was not touched.
+  - `RULE_ACTION_KINDS` was declared TWICE in `types.ts` (six values for the flat half, nine for
+    the structured one); it is now declared once with the nine, which are a strict superset, and
+    the `distill.py` parity guard in `__tests__/policy-rule-surface.test.tsx` still holds.
+  - The form values renamed with their target (`RuleMoveFieldValues`, `ruleMoveFromFields`, …)
+    and now emit `{ move }`. `agent-context/rulebookDocument.ts` prints the flat decision lines
+    first and the move detail (including `move.ask`, verbatim) under them.
+  - `IngestTimelineDialog` now posts to `/masterworks/ingest-unfolding`: trial 8's timeline lane
+    is merged and keeps `/masterworks/ingest-timeline` and the `timeline` lane of
+    `IngestSourceDialog`, and this dialog is the only door that can SEAL a held-out exam case.
+    It reaches the registry through a real `{kind: "unfolding"}` lane in
+    `browse/approachLane.ts` rather than a hand-written query branch. **Unfinished:** two ingest
+    doors for one `timeline` Approach is a duplicate nobody has collapsed yet, and the generated
+    `api-types.ts` still lacks the new path until `pnpm sync-types` runs on a machine with
+    database access.
 
 - `2026-09-13` — **"Rebuilt <time>" dated the surviving build by the wrong clock (Bugbot, PR #222,
   low severity, real).** The staleness ledger keeps two different moments and they were conflated:
@@ -280,7 +321,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   additions, all additive; nothing any other lane does changes. **(1) Policy rule fields.**
   `precondition` (summary + known/unknown) and `next_action` (kind, target, buys, cost, risk,
   urgency) are two OPTIONAL fields on `RulebookRule`, rendered by ONE component
-  (`components/detail/RulePolicy.tsx`) on the rule card and in the review wizard, carried to
+  (`components/detail/RuleMove.tsx`) on the rule card and in the review wizard, carried to
   every Rulebook-reading agent by `agent-context/rulebookDocument.ts`, and typed into the ONE
   shared rule form (`RuleFields`; the Final Checkup passes `omitFields={["quote","policy"]}` —
   a checkup suggestion has nowhere to put them, so rendering the inputs there would discard
@@ -309,6 +350,19 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   never seen" tab: desks × sealed cases × an optional vanilla arm told everything at once, scored
   into a per-case table plus the desk-beats-vanilla headline. Guards: `TryMasterworkBox.test.tsx`
   (the picker appears with the node and never without it; the W15 and W33 tests stay green).
+- `2026-09-12` — **A signed-out Masterwork tab no longer mounts any private reader as `anon`.**
+  The Rulebook `[id]` layout protected only one dynamic branch: sibling
+  `/masterwork/encore/[id]` was client-only and could mount its direct Supabase readers, including
+  an Operator's run history, before authentication. The private-route census also found the same
+  structural risk in every future private sibling beside those branches. The shared
+  `app/(core)/masterwork/layout.tsx` now keeps only the intentional public `/masterwork` landing
+  and the Vision Interview's existing server guest gate outside its boundary; it stops every other
+  Masterwork descendant through `getServerAuth` before a child mounts. Guests use
+  `currentRequestLoginHref`, so the exact deep path and query survive the sign-in trip. Database
+  access stays closed to `anon`; this is a routing repair, not a grant. Guard:
+  `app/(core)/masterwork/__tests__/layout.test.tsx` census-tests the static, Rulebook, and Encore
+  private routes (including deep query preservation), plus the public and Vision Interview
+  exceptions.
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
 

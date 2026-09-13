@@ -1,9 +1,7 @@
 "use client";
 
 import { Palette, Sun } from "lucide-react";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
-import { SettingsSegmented } from "@/components/official/settings/primitives/SettingsSegmented";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -18,16 +16,9 @@ import {
   type ThemeMode,
 } from "../agent-writable-settings";
 
-/**
- * Appearance — theme mode (theme slice, boot-critical) + display module
- * (userPreferences, warm-cache). Two persistence tiers in one tab.
- */
 export default function AppearanceTab() {
   const [mode, setMode] = useSetting<ThemeMode>("theme.mode");
   const [theme, setTheme] = useSetting<string>("userPreferences.display.theme");
-  const [darkMode, setDarkMode] = useSetting<boolean>(
-    "userPreferences.display.darkMode",
-  );
   const [dashboardLayout, setDashboardLayout] = useSetting<string>(
     "userPreferences.display.dashboardLayout",
   );
@@ -50,19 +41,12 @@ export default function AppearanceTab() {
       />
 
       <SettingsSection title="Theme" icon={Sun}>
-        <SettingsSegmented<ThemeMode>
+        <SettingsSelect<ThemeMode>
           label="Color mode"
-          description="Applies before first paint — synced across tabs."
+          description="Use your device setting, light, or dark. Applies before first paint and syncs across tabs."
           value={mode}
           onValueChange={setMode}
           options={THEME_MODE_OPTIONS}
-        />
-        <SettingsSwitch
-          label="Dark mode (legacy flag)"
-          description="Used by older components that don't yet read from the theme slice."
-          badge={{ label: "Deprecated", variant: "deprecated" }}
-          checked={darkMode}
-          onCheckedChange={setDarkMode}
         />
         <SettingsSelect
           label="Accent theme"
@@ -103,8 +87,8 @@ export default function AppearanceTab() {
       </SettingsSection>
 
       <SettingsCallout tone="info">
-        Theme color mode is saved to your account and applied before the page
-        paints on reload. Layout preferences sync via IndexedDB.
+        Your color mode is saved and applied before the page loads. Layout
+        preferences are saved for your next visit.
       </SettingsCallout>
     </>
   );

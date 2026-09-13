@@ -20,6 +20,9 @@ import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders, getFolderIconAndColor } from "../utils/folderUtils";
 import { NotesAPI } from "../service/notesApi";
 import type { Note } from "../types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 export interface NotesTreeViewProps {
   onSelectNote?: (note: Note) => void;
@@ -35,6 +38,7 @@ export function NotesTreeView({
   className,
 }: NotesTreeViewProps) {
   const { notes, isLoading, findOrCreateEmptyNote } = useNotesRedux();
+  const organizationId = useAppSelector(selectOrganizationId);
   const allFolders = useAllFolders(notes);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [creatingNoteIn, setCreatingNoteIn] = useState<string | null>(null);
@@ -111,10 +115,12 @@ export function NotesTreeView({
       }
       setBusyAction(`note-${folder}`);
       try {
+        const capturedOrganizationId = requireOrganizationContext(organizationId);
         const note = await NotesAPI.create({
           label,
           content: "",
           folder_name: folder,
+          organization_id: capturedOrganizationId,
         });
         onSelectNote?.(note);
       } catch {
@@ -154,9 +160,10 @@ export function NotesTreeView({
       setCreatingFolder(false);
       return;
     }
-    setBusyAction("folder");
-    try {
-      await NotesAPI.ensureFolderMaterialized(name);
+      setBusyAction("folder");
+      try {
+      const capturedOrganizationId = requireOrganizationContext(organizationId);
+      await NotesAPI.ensureFolderMaterialized(name, capturedOrganizationId);
       const note = await findOrCreateEmptyNote(name);
       setExpandedFolder(name);
       onSelectNote?.(note);

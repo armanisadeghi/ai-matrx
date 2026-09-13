@@ -77,6 +77,10 @@ async function latestBrief(
     .select("id,data,created_at")
     .eq("kind_definition_id", definitionId)
     .contains("data", { site_id: siteId })
+    // archived-items-law-exempt: this resolves THE current brief for a site (one
+    // record), not a browsable list — an archived brief is not the current one,
+    // so there is no state of a filter that should surface it here.
+    .is("archived_at", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(1)

@@ -5,7 +5,7 @@ description: "End-of-task routine: health checks, fixes, then commit and push. U
 
 # finalize-and-ship
 
-Before handing work back, prove it's healthy, then deliver it. Migrations and types are two line items among several — run the whole sweep, not just the part that bit you last time.
+Complete the owned feature with proportionate checks, then commit and push. Scheduled release owners follow the ship-first policy below; they do not run the feature-author checklist as an unconditional release prerequisite.
 
 ## The commit/push contract (read first)
 
@@ -25,29 +25,30 @@ When scope = your-own and the tree also holds files you didn't touch, never swee
 
 | User said | Do |
 |---|---|
-| "commit & push" / "ship it" / "push to main" / **nothing about pushing** / just "do this" | All checks → fix → **commit → push to `main`** |
-| "get it ready, but don't push" / "don't push" | All checks → fix → **commit → STOP** (no push) |
-| "don't commit" / "just stage" / "leave it for review" | All checks → fix → **stop before committing** |
+| "commit & push" / "ship it" / "push to main" / **nothing about pushing** / just "do this" | Relevant checks → fix owned behavior → **commit → push to `main`** |
+| "get it ready, but don't push" / "don't push" | Relevant checks → fix owned behavior → **commit → STOP** (no push) |
+| "don't commit" / "just stage" / "leave it for review" | Relevant checks → fix owned behavior → **stop before committing** |
 
 Defaults: scope = **this task's files**, delivery = **commit and push**. Follow explicit holds. Concurrent edits are normal: stage scoped paths and coordinate overlapping files; do not turn unrelated dirty files into an approval request.
 
-## Checklist
+## Feature-author checks
 
-```
-- [ ] 1. Matrx packages + types current   → pnpm sync-types
-- [ ] 2. No unapplied/drifted migrations   → pnpm check:migrations
-- [ ] 3. Touch-based checks (table below)
-- [ ] 4. Fix everything the checks surfaced
-- [ ] 5. Commit (+ push) per the contract above
-```
+Run checks relevant to changed behavior. Regenerate types only for changed contracts;
+use the canonical generator and never suppress errors or hand-edit generated files.
+Record unrelated ordinary findings for bounded repair; do not repeat a full
+`pnpm sync-types` until green merely to dispatch a release. Migrations belong to their
+own implementation: never apply an unrelated pending backlog as release preparation.
 
-### 1. Types — `pnpm sync-types`
+## Scheduled release owners
 
-Refreshes every `@ai-matrx/*` dependency from npm `latest`, regenerates Supabase DB types + Python API types, then type-checks. Commit `package.json` + `pnpm-lock.yaml` when package resolution changes. Must print **"Type-check passed."** Errors → fix per the **`type-safety`** skill (DB types are canonical; never `as any` / `as unknown` / `@ts-ignore` / `@ts-expect-error`; escalate what you can't fix properly). Re-run until green.
-
-### 2. Migrations — `pnpm check:migrations`
-
-Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: discover the configured database capability for `https://db.matrxserver.com`, recover authentication or the established local admin path if needed, then apply and record the ledger row. Never assume a named MCP tool is always available or target a database by project ref. Full procedure: **CLAUDE.md → "Database migrations"** (idempotency, SHA-256 ledger write, verify-live).
+The September 12 pre-production [release policy](../../../../common-docs/policies/deployment-is-the-deploy-agents-job.md)
+is authoritative. Integrate once, perform prescribed preparation once, dispatch and
+return. No unconditional type-generation/type-check or local build gate. Preserve real
+organization authorization and hosted build/startup acceptance. A previous failed build
+requires a targeted repair and relevant passing check before retry; never blindly
+re-dispatch the same failed source. Read bounded script logs after dispatch, batch real
+warnings/errors, and fix the actual failure at the next run's start. Normal version
+advance is information, not a warning or a reason for a repair loop.
 
 ### 3. Touch-based checks — only the rows your change hit
 
@@ -60,29 +61,32 @@ Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: dis
 | Any **user-facing surface** | No `window.confirm/alert/prompt`; no new barrel `index.ts`; Lucide icons only, no emojis |
 | A **completed plan / handoff / campaign** | Invoke `handoffs` for handoffs: completed handoffs are deleted, not archived. Archive completed plans/history under their owning documentation policy and repair inbound pointers. |
 
-Fuller sweep when unsure (surface-drift + doctrine + types): `pnpm validate --no-lint`. (`lint` is advisory and slow — skip unless asked.)
+Do not broaden scheduled release preparation into a full validation sweep.
 
 ### 5. Commit & push
 
 Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit.
 
-> `pnpm ship "msg"` is the **versioned-release** path. Use the release-freshness rule below after every push; do not leave runtime-bearing `main` changes behind an ignored Vercel commit.
+> `pnpm ship "msg"` is the **versioned-release** path. Use the release-freshness rule below after every push; the existing owner performs the release.
 
 ### 6. If it must reach USERS, release it — `git push` alone deploys nothing
 
 **Vercel skips every commit whose first line is not release-prefixed** (`vercel.json` → `scripts/vercel-ignore-build.sh`). A plain `git push origin main` reaches GitHub and **no user, ever**: no build starts, the deployment reads `CANCELED`, and production stays on the last release. Polling the live URL will never turn green — there is nothing running to wait for.
 
-Before ending the turn, close the release gap:
+The release owner dispatches; the central build monitor observes completion every 30 minutes:
 
 | Situation | Do |
 |---|---|
 | Latest applicable `origin/main` code is already contained in every affected target's latest `Ready` deployment | No release; record the verified target SHAs. |
-| Any affected target is missing applicable `origin/main` code | Coordinate with the existing frontend release-watch task and follow the repair through its next authorized release. Run `./scripts/release.sh` yourself only when the user requested an immediate release, per `CLAUDE.md`. Shared runtime changes affect all three targets. |
-| A release for the exact applicable SHA is already queued or building | Do not duplicate it; monitor it to `Ready`, repair failure, and re-verify freshness. |
+| Any affected target is missing applicable `origin/main` code | After completing and pushing a fix for an already shipped partial feature, request one expedited release from the existing frontend owner. Otherwise use its normal cadence. Run `./scripts/release.sh` yourself only when the user requested an immediate release, per `CLAUDE.md`. Shared runtime changes affect all three targets. |
+| A release for the exact applicable SHA is already queued or building | Do not duplicate or wait through it. The central build monitor reports new failures once to its owner. |
 
 Verify a release actually landed: a `READY` production deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`), then assert on a string that exists **only** in the new build — a marker the old build also contained reports a false success.
 
-**Never edit `scripts/release.sh` to skip a check so a build goes out.** A `TEMP_SKIP_RELEASE_CHECKS` flag added during one emergency silently disabled migrations, protocol sync, source attribution, and every gate for *all* subsequent releases. Per-invocation `--no-migrate` / `--no-gates` exist for that; use those, and never commit a default-on skip.
+Release-script changes require task authorization and must preserve real authorization,
+source-integrity and hosted build/boot boundaries. Arman's September 12 release review
+explicitly authorizes removing redundant quality prerequisites; a stale sentence in this
+skill cannot reintroduce them.
 
 ## Recover before escalating
 

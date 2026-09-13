@@ -2980,6 +2980,16 @@ export default function OverlayController() {
                 ? data.initialConversationId
                 : null
             }
+            initialMessageId={
+              typeof data?.initialMessageId === "string"
+                ? data.initialMessageId
+                : null
+            }
+            initialQuestion={
+              typeof data?.initialQuestion === "string"
+                ? data.initialQuestion
+                : null
+            }
           />
         );
       })()}

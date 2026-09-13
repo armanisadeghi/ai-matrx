@@ -76,8 +76,10 @@ const RULE: RulebookRule = {
   quote: "the worst headache of her life",
   severity: "critical",
   section: "G",
-  precondition: { summary: "The LIVE rule's precondition", known: [], unknown: [] },
-  next_action: { kind: "test", target: "The LIVE rule's next action" },
+  move: {
+    when: { summary: "The LIVE rule's precondition", known: [], unknown: [] },
+    next: { kind: "test", target: "The LIVE rule's next action" },
+  },
 } as RulebookRule;
 
 /** What the Expert typed and has NOT saved, as the wizard draft holds it. */

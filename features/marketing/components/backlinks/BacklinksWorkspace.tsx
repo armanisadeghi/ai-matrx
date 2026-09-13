@@ -30,9 +30,7 @@ import {
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   applyGroomerPreset,
   type AgentCopyGroomerConfig,
@@ -581,7 +579,10 @@ export function BacklinksWorkspace({
       // paging/sort/search must never carry into the other's query.
       // Discrete view switch — Back returns to the previous view.
       router.push(
-        tabHref("domains", next === "ours" ? {} : { [DOMAIN_VIEW_PARAM]: next }),
+        tabHref(
+          "domains",
+          next === "ours" ? {} : { [DOMAIN_VIEW_PARAM]: next },
+        ),
         { scroll: false },
       );
     });
@@ -1151,8 +1152,7 @@ export function BacklinksWorkspace({
                   variant: query.variant,
                   seed_keyword: query.seed_keyword,
                 })),
-                estimated_cost_usd:
-                  serpProspects.preview.estimated_cost_usd,
+                estimated_cost_usd: serpProspects.preview.estimated_cost_usd,
                 dropped: serpProspects.preview.dropped ?? [],
               }
             : undefined,
@@ -1258,27 +1258,26 @@ export function BacklinksWorkspace({
                   build: () => pagePresetPayload("minimal"),
                 },
               ]}
+              groomer={groomerConfig}
+              export={{
+                items: [
+                  jsonExportItem(pageFullData, "Page data (.json)"),
+                  {
+                    id: "csv",
+                    label: "CSV (top backlink rows)",
+                    build: () => ({
+                      content: rowsToCsv(
+                        (backlinks.data?.rows ?? []).map(
+                          projectBacklinkRow,
+                        ) as unknown as Array<Record<string, unknown>>,
+                      ),
+                      extension: "csv",
+                      mime: "text/csv",
+                    }),
+                  },
+                ],
+              }}
             />
-            <ExportMenu
-              label={`backlinks-${site.domain}`}
-              items={[
-                jsonExportItem(pageFullData, "Page data (.json)"),
-                {
-                  id: "csv",
-                  label: "CSV (top backlink rows)",
-                  build: () => ({
-                    content: rowsToCsv(
-                      (backlinks.data?.rows ?? []).map(
-                        projectBacklinkRow,
-                      ) as unknown as Array<Record<string, unknown>>,
-                    ),
-                    extension: "csv",
-                    mime: "text/csv",
-                  }),
-                },
-              ]}
-            />
-            <AgentCopyGroomerLauncher config={groomerConfig} />
             <Select
               value={profile}
               onValueChange={(value) =>

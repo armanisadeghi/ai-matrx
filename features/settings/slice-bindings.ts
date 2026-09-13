@@ -5,6 +5,7 @@ import {
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import { setMode, toggleMode } from "@/styles/themes/themeSlice";
+import { readThemeModeFromDOM } from "@/styles/themes/useThemeMode";
 import {
   setServerOverride,
   setCustomServerUrl,
@@ -78,12 +79,16 @@ export const sliceBindings: Record<string, SliceBinding> = {
     read: (state, key) => readDotted(state.theme, key),
     write: (key, value) => {
       if (key === "mode") {
-        if (value !== "light" && value !== "dark") {
-          throw new Error(`theme.mode must be "light" | "dark", got ${value}`);
+        if (value !== "light" && value !== "dark" && value !== "system") {
+          throw new Error(`theme.mode must be "light" | "dark" | "system", got ${value}`);
         }
-        return setMode(value as "light" | "dark");
+        return setMode(value as "light" | "dark" | "system");
       }
-      if (key === "toggle") return toggleMode();
+      if (key === "toggle") {
+        // The painted DOM is the canonical effective mode. It preserves an
+        // explicit preference even when it differs from the OS preference.
+        return toggleMode(readThemeModeFromDOM());
+      }
       throw new Error(`theme has no writable key "${key}"`);
     },
     persistence: "synced",

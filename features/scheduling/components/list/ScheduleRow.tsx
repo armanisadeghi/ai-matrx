@@ -150,6 +150,7 @@ export function ScheduleRow({ task, kpis }: Props) {
             Link — CopyButtons stops propagation so copying never navigates). */}
         <CopyButtons
           size="icon"
+          unified
           label={`Schedule ${task.title}`}
           className="lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
           human={() => scheduleSummary(task)}

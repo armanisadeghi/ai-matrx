@@ -31,7 +31,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from "@/lib/toast";
 import FeedbackDetailDialog from './FeedbackDetailDialog';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
-import { ExportMenu } from '@/components/agent-copy/ExportMenu';
 import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
 import { feedbackBrief, feedbackRowSummary } from '../format';
 
@@ -173,19 +172,18 @@ export default function WorkQueueTab() {
                                             }),
                                         },
                                     ]}
-                                />
-                                <ExportMenu
-                                    label="feedback-work-queue"
-                                    items={[
-                                        jsonExportItem(() => items),
-                                        csvExportItem(
-                                            () =>
-                                                items.map(feedbackBrief) as unknown as Array<
-                                                    Record<string, unknown>
-                                                >,
-                                            'CSV',
-                                        ),
-                                    ]}
+                                  export={{
+                                    items: [
+                                      jsonExportItem(() => items),
+                                      csvExportItem(
+                                          () =>
+                                              items.map(feedbackBrief) as unknown as Array<
+                                                  Record<string, unknown>
+                                              >,
+                                          'CSV',
+                                      ),
+                                    ],
+                                  }}
                                 />
                             </>
                         )}

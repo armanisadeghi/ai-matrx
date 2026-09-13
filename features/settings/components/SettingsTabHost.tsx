@@ -1,12 +1,19 @@
 "use client";
 
-import { Suspense, Component, createContext, useContext, type ReactNode } from "react";
+import {
+  Suspense,
+  Component,
+  createContext,
+  useContext,
+  type ReactNode,
+} from "react";
 import { AlertTriangle, Settings as SettingsIcon } from "lucide-react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsBreadcrumb } from "@/components/official/settings/tree/SettingsBreadcrumb";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 import type { SettingsTabDef } from "../types";
+import { SettingsPage } from "@/components/official/settings/SettingsPage";
 
 type SettingsTabHostProps = {
   activeTab: SettingsTabDef | null;
@@ -18,6 +25,8 @@ type SettingsTabHostProps = {
   showBreadcrumb?: boolean;
   /** True while a breadcrumb navigation is changing the active route. */
   navigationPending?: boolean;
+  /** The route's app shell is the single scroll owner; overlays own theirs. */
+  scrollOwner?: "host" | "shell";
 };
 
 const ActiveSettingsTabIdContext = createContext<string | null>(null);
@@ -37,6 +46,7 @@ export function SettingsTabHost({
   onNavigate,
   showBreadcrumb = true,
   navigationPending = false,
+  scrollOwner = "host",
 }: SettingsTabHostProps) {
   if (!activeTab) {
     return <EmptyState />;
@@ -45,7 +55,11 @@ export function SettingsTabHost({
   const TabComponent = activeTab.component;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div
+      className={
+        scrollOwner === "host" ? "flex h-full min-h-0 flex-col" : "min-h-full"
+      }
+    >
       {showBreadcrumb && (
         <div className="flex min-h-11 shrink-0 items-center border-b border-border/50 px-3 sm:h-10 sm:min-h-0 sm:px-4">
           <SettingsBreadcrumb
@@ -56,14 +70,20 @@ export function SettingsTabHost({
           />
         </div>
       )}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <TabErrorBoundary tabLabel={activeTab.label}>
-          <ActiveSettingsTabIdContext.Provider value={activeTab.id}>
-            <Suspense fallback={<TabLoading tabLabel={activeTab.label} />}>
-              <TabComponent />
-            </Suspense>
-          </ActiveSettingsTabIdContext.Provider>
-        </TabErrorBoundary>
+      <div
+        className={
+          scrollOwner === "host" ? "min-h-0 flex-1 overflow-y-auto" : undefined
+        }
+      >
+        <SettingsPage>
+          <TabErrorBoundary key={activeTab.id} tabLabel={activeTab.label}>
+            <ActiveSettingsTabIdContext.Provider value={activeTab.id}>
+              <Suspense fallback={<TabLoading tabLabel={activeTab.label} />}>
+                <TabComponent />
+              </Suspense>
+            </ActiveSettingsTabIdContext.Provider>
+          </TabErrorBoundary>
+        </SettingsPage>
       </div>
     </div>
   );

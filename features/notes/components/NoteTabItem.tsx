@@ -48,6 +48,7 @@ import {
   selectNoteContent,
   selectInstanceTabs,
   selectAllFolders,
+  selectFolderReferences,
   selectNoteFolder,
   selectNoteById,
   selectNoteEditorMode,
@@ -65,7 +66,7 @@ import {
   normalizeNoteEditorMode,
   usePreferredDefaultEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
-import { saveNote, copyNote, moveNoteToFolder } from "../redux/thunks";
+import { saveNote, copyNote, moveNoteToFolder, moveNoteToNewFolder } from "../redux/thunks";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
@@ -83,6 +84,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NoteContextStatusIcon } from "./NoteContextSection";
 import { MoveNoteDialog } from "./MoveNoteDialog";
+import { noteFolderReference, type FolderReference } from "../types";
 
 interface NoteTabItemProps {
   noteId: string;
@@ -105,7 +107,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
   const allFolders = useAppSelector(selectAllFolders);
+  const folderReferences = useAppSelector(selectFolderReferences);
   const currentFolder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
+  const note = useAppSelector(selectNoteById(noteId));
 
   const openNoteInfo = useOpenNoteInfoWindow();
   const openKnowledge = useOpenNoteKnowledgePanel();
@@ -339,9 +343,18 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   }, [noteId, label]);
 
   const handleMoveToFolder = useCallback(
-    async (folder: string) => {
+    async (folder: FolderReference) => {
       bumpTabInteraction();
       await dispatch(moveNoteToFolder({ noteId, folder })).unwrap();
+      toast.success(`Moved to ${folder.name}`);
+    },
+    [bumpTabInteraction, dispatch, noteId],
+  );
+
+  const handleCreateFolder = useCallback(
+    async (folder: string) => {
+      bumpTabInteraction();
+      await dispatch(moveNoteToNewFolder({ noteId, folderName: folder })).unwrap();
       toast.success(`Moved to ${folder}`);
     },
     [bumpTabInteraction, dispatch, noteId],
@@ -669,10 +682,13 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
         onConfirm={handleMoveToFolder}
+        onCreateFolder={handleCreateFolder}
         noteId={noteId}
         noteName={label}
-        currentFolder={currentFolder}
-        availableFolders={allFolders}
+        currentFolder={note ? noteFolderReference(note) : null}
+        availableFolders={folderReferences.filter(
+          (folder) => folder.organizationId === note?.organization_id,
+        )}
       />
 
       {/* NO DELETE DIALOG HERE, ON PURPOSE. It used to be hand-assembled from

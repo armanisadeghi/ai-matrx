@@ -38,7 +38,6 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -95,7 +94,10 @@ import {
 import { ENTITY_TYPES, type CuratedEntityType } from "../setup/ai";
 import { useSetupAgents } from "../setup/ai";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { PLAN_ENTITY_ROSTER_KIND, entityRosterValue } from "../setup/kind-values";
+import {
+  PLAN_ENTITY_ROSTER_KIND,
+  entityRosterValue,
+} from "../setup/kind-values";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
@@ -748,7 +750,9 @@ export function EntityManager({
                     <Button
                       size="sm"
                       className="h-7 text-xs"
-                      disabled={pendingProposals.length === 0 || addingProposals}
+                      disabled={
+                        pendingProposals.length === 0 || addingProposals
+                      }
                       onClick={() => setConfirmingAdd(true)}
                     >
                       {addingProposals ? (
@@ -868,22 +872,21 @@ export function EntityManager({
                         site_id: siteId,
                       },
                     })}
-                  />
-                  <ExportMenu
-                    label="Content plan people and companies"
-                    items={[
-                      jsonExportItem(() => partyRows, "JSON (all)"),
-                      csvExportItem(
-                        () =>
-                          partyRows.map((party) => ({
-                            id: party.id,
-                            display_name: party.display_name,
-                            party_kind: party.party_kind,
-                            job_title: party.job_title ?? "",
-                          })),
-                        "CSV (all)",
-                      ),
-                    ]}
+                    export={{
+                      items: [
+                        jsonExportItem(() => partyRows, "JSON (all)"),
+                        csvExportItem(
+                          () =>
+                            partyRows.map((party) => ({
+                              id: party.id,
+                              display_name: party.display_name,
+                              party_kind: party.party_kind,
+                              job_title: party.job_title ?? "",
+                            })),
+                          "CSV (all)",
+                        ),
+                      ],
+                    }}
                   />
                 </>
               ) : null}
@@ -894,8 +897,7 @@ export function EntityManager({
                 onLink={(partyId) =>
                   linkParty.mutate(partyId, {
                     onSuccess: () => toast.success("Linked to this site."),
-                    onError: (error) =>
-                      toast.error(extractErrorMessage(error)),
+                    onError: (error) => toast.error(extractErrorMessage(error)),
                   })
                 }
               />
@@ -995,22 +997,21 @@ export function EntityManager({
                       data: { sources: rows },
                       attributes: { rows: rows.length, site_id: siteId },
                     })}
-                  />
-                  <ExportMenu
-                    label="Content plan sources and media"
-                    items={[
-                      jsonExportItem(() => rows, "JSON (all)"),
-                      csvExportItem(
-                        () =>
-                          rows.map((entity) => ({
-                            id: entity.id,
-                            label: entity.label,
-                            entity_type: entity.entity_type,
-                            source_type_id: entity.source_type_id ?? "",
-                          })),
-                        "CSV (all)",
-                      ),
-                    ]}
+                    export={{
+                      items: [
+                        jsonExportItem(() => rows, "JSON (all)"),
+                        csvExportItem(
+                          () =>
+                            rows.map((entity) => ({
+                              id: entity.id,
+                              label: entity.label,
+                              entity_type: entity.entity_type,
+                              source_type_id: entity.source_type_id ?? "",
+                            })),
+                          "CSV (all)",
+                        ),
+                      ],
+                    }}
                   />
                 </>
               ) : null}
@@ -1357,9 +1358,8 @@ function EntityEditorDialog({
           const originalEvent = (
             event as unknown as { detail?: { originalEvent?: Event } }
           ).detail?.originalEvent;
-          const node = (originalEvent?.target ?? event.target) as
-            | HTMLElement
-            | null;
+          const node = (originalEvent?.target ??
+            event.target) as HTMLElement | null;
           if (
             typeof node?.closest === "function" &&
             node.closest('[role="alertdialog"]')

@@ -1,17 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpCircle, CheckCircle2, CircleHelp, Loader2, RefreshCw, TriangleAlert } from "lucide-react";
+import {
+  ArrowUpCircle,
+  CheckCircle2,
+  CircleHelp,
+  Loader2,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { toast } from "@/lib/toast";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { SandboxMigrateResponse, SandboxVersionHealth } from "@/types/sandbox";
+import type {
+  SandboxMigrateResponse,
+  SandboxVersionHealth,
+} from "@/types/sandbox";
 import {
   sandboxRuntimeReplaced,
   selectSandboxRuntimeRevision,
 } from "../../redux/codeWorkspaceSlice";
+import {
+  classifySandboxMigrationFailure,
+  sandboxMigrationMessage,
+} from "./migrationResponse";
 
 interface SandboxVersionHealthCardProps {
   sandboxId: string;
@@ -33,7 +48,9 @@ function isVersionHealth(value: unknown): value is SandboxVersionHealth {
     typeof candidate.sandbox_id === "string" &&
     typeof candidate.reason === "string" &&
     typeof candidate.can_migrate === "boolean" &&
-    ["current", "outdated", "unknown", "not_running"].includes(String(candidate.status))
+    ["current", "outdated", "unknown", "not_running"].includes(
+      String(candidate.status),
+    )
   );
 }
 
@@ -42,34 +59,51 @@ function isMigrateResponse(value: unknown): value is SandboxMigrateResponse {
     typeof value === "object" &&
     value !== null &&
     typeof (value as Record<string, unknown>).sandbox_id === "string" &&
-    ["migrated", "already_current"].includes(String((value as Record<string, unknown>).status))
+    ["migrated", "already_current"].includes(
+      String((value as Record<string, unknown>).status),
+    )
   );
 }
 
-function responseMessage(value: unknown, fallback: string): string {
-  if (typeof value !== "object" || value === null) return fallback;
-  const record = value as Record<string, unknown>;
-  if (typeof record.error === "string") return record.error;
-  if (typeof record.detail === "string") return record.detail;
-  if (typeof record.details === "object" && record.details !== null) {
-    const details = record.details as Record<string, unknown>;
-    if (typeof details.detail === "string") return details.detail;
+function captureMigrationFailure(
+  payload: unknown,
+  message: string,
+  status?: number,
+  code?: string,
+): void {
+  let details: string | undefined;
+  try {
+    details = JSON.stringify(payload);
+  } catch {
+    details = String(payload);
   }
-  return fallback;
+  captureError({
+    source: status === undefined ? "api-network" : "api-http",
+    operation: "update",
+    relation: "POST /api/sandbox/:id/migrate",
+    code: code ?? (status ? `http_${status}` : "network_error"),
+    message,
+    userMessage: message,
+    status,
+    details,
+    raw: payload,
+  });
 }
 
 function statusPresentation(status: SandboxVersionHealth["status"]) {
   if (status === "current") {
     return {
       label: "Image current",
-      className: "border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300",
+      className:
+        "border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300",
       Icon: CheckCircle2,
     };
   }
   if (status === "outdated") {
     return {
       label: "Image update available",
-      className: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
+      className:
+        "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
       Icon: TriangleAlert,
     };
   }
@@ -118,15 +152,21 @@ export function SandboxVersionHealthCard({
           ? payload.health
           : undefined;
       if (!response.ok || !isVersionHealth(health)) {
-        throw new Error(responseMessage(payload, "Freshness could not be checked."));
+        throw new Error(
+          sandboxMigrationMessage(payload, "Freshness could not be checked."),
+        );
       }
       if (requestRef.current.revision !== revision) return;
       setLoadState({ state: "ready", health });
     } catch (error) {
-      if (controller.signal.aborted || requestRef.current.revision !== revision) return;
+      if (controller.signal.aborted || requestRef.current.revision !== revision)
+        return;
       setLoadState({
         state: "error",
-        message: error instanceof Error ? error.message : "Freshness could not be checked.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Freshness could not be checked.",
       });
     }
   }
@@ -134,13 +174,35 @@ export function SandboxVersionHealthCard({
   async function migrate() {
     setUpdating(true);
     try {
-      const response = await fetch(`/api/sandbox/${sandboxId}/migrate`, { method: "POST" });
+      const response = await fetch(
+        `/api/sandbox/${sandboxId}/migrate?interrupt_attached_sessions=true`,
+        { method: "POST" },
+      );
       const payload: unknown = await response.json();
       if (!response.ok) {
-        throw new Error(responseMessage(payload, "Sandbox image update failed."));
+        const failure = classifySandboxMigrationFailure(
+          payload,
+          response.status,
+        );
+        if (failure.kind === "busy_deferred") {
+          toast.info(failure.message);
+          return;
+        }
+        captureMigrationFailure(
+          payload,
+          failure.message,
+          response.status,
+          failure.code,
+        );
+        toastErrorAlreadyCaptured(failure.message);
+        return;
       }
       if (!isMigrateResponse(payload)) {
-        throw new Error("Sandbox manager returned an invalid image update response.");
+        const message =
+          "Sandbox manager returned an invalid image update response.";
+        captureMigrationFailure(payload, message, response.status);
+        toastErrorAlreadyCaptured(message);
+        return;
       }
       const result = payload;
       toast.success(
@@ -152,7 +214,10 @@ export function SandboxVersionHealthCard({
       onMigrated?.();
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Sandbox image update failed.");
+      const message =
+        error instanceof Error ? error.message : "Sandbox image update failed.";
+      captureMigrationFailure(error, message);
+      toastErrorAlreadyCaptured(message);
     } finally {
       setUpdating(false);
     }
@@ -165,7 +230,13 @@ export function SandboxVersionHealthCard({
 
   if (loadState.state === "loading") {
     return (
-      <div className={compact ? "flex items-center gap-1.5 text-xs text-muted-foreground" : "flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground"}>
+      <div
+        className={
+          compact
+            ? "flex items-center gap-1.5 text-xs text-muted-foreground"
+            : "flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground"
+        }
+      >
         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking sandbox image…
       </div>
     );
@@ -173,7 +244,13 @@ export function SandboxVersionHealthCard({
 
   if (loadState.state === "error") {
     return (
-      <div className={compact ? "flex items-center justify-between gap-2 text-xs text-muted-foreground" : "flex items-center justify-between gap-2 rounded-md border border-muted-foreground/30 px-3 py-2 text-xs text-muted-foreground"}>
+      <div
+        className={
+          compact
+            ? "flex items-center justify-between gap-2 text-xs text-muted-foreground"
+            : "flex items-center justify-between gap-2 rounded-md border border-muted-foreground/30 px-3 py-2 text-xs text-muted-foreground"
+        }
+      >
         <span>Freshness unavailable: {loadState.message}</span>
         <Button variant="ghost" size="xs" onClick={() => void refresh()}>
           <RefreshCw className="mr-1 h-3 w-3" /> Retry
@@ -190,32 +267,62 @@ export function SandboxVersionHealthCard({
       <div className="flex items-center justify-between gap-2 text-xs">
         <details className="min-w-0 flex-1 text-muted-foreground">
           <summary className="flex cursor-pointer list-none items-center gap-1.5">
-            <Badge variant="outline" className={`shrink-0 gap-1 ${presentation.className}`}>
+            <Badge
+              variant="outline"
+              className={`shrink-0 gap-1 ${presentation.className}`}
+            >
               <Icon className="h-3 w-3" /> {presentation.label}
             </Badge>
-            <span className="text-[11px] underline-offset-2 hover:underline">Details</span>
+            <span className="text-[11px] underline-offset-2 hover:underline">
+              Details
+            </span>
           </summary>
           <div className="mt-2 space-y-1 rounded border border-border bg-background p-2 text-[11px]">
             <p>{health.reason}</p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 font-mono">
-              <dt>Running</dt><dd>{versionLabel(health.running_version)}</dd>
-              <dt>Current</dt><dd>{versionLabel(health.current_version)}</dd>
-              <dt>Manager</dt><dd>{health.manager_version ?? "version not reported"} · freshness not checked</dd>
-              <dt>Tools</dt><dd>freshness not checked</dd>
+              <dt>Running</dt>
+              <dd>{versionLabel(health.running_version)}</dd>
+              <dt>Current</dt>
+              <dd>{versionLabel(health.current_version)}</dd>
+              <dt>Manager</dt>
+              <dd>
+                {health.manager_version ?? "version not reported"} · freshness
+                not checked
+              </dd>
+              <dt>Tools</dt>
+              <dd>freshness not checked</dd>
             </dl>
             {health.status === "outdated" && !health.can_migrate && (
-              <p>{health.migration_action_reason ?? "This manager has not confirmed an in-place update action."}</p>
+              <p>
+                {health.migration_action_reason ??
+                  "This manager has not confirmed an in-place update action."}
+              </p>
             )}
           </div>
         </details>
         <div className="flex shrink-0 items-center gap-1">
           {health.status === "outdated" && health.can_migrate && (
-            <Button size="xs" onClick={() => setConfirmUpdateOpen(true)} disabled={updating}>
-              {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="mr-1 h-3 w-3" />}
+            <Button
+              size="xs"
+              onClick={() => setConfirmUpdateOpen(true)}
+              disabled={updating}
+            >
+              {updating ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <ArrowUpCircle className="mr-1 h-3 w-3" />
+              )}
               Update
             </Button>
           )}
-          <Button variant="ghost" size="xs" aria-label="Check sandbox image freshness" title="Check sandbox image freshness" onClick={() => void refresh()} disabled={updating}>
+          <Button
+            variant="ghost"
+            size="xs"
+            aria-label="Check sandbox image freshness"
+            title="Check sandbox image freshness"
+            onClick={() => void refresh()}
+            disabled={updating}
+          >
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -223,7 +330,7 @@ export function SandboxVersionHealthCard({
           open={confirmUpdateOpen}
           onOpenChange={setConfirmUpdateOpen}
           title="Update sandbox image"
-          description="The running container will be replaced, interrupting active terminal, file, and agent connections. The sandbox identity and persistent /home/agent workspace are kept."
+          description="The running container will be replaced. Open terminals, file watchers, and agent connections will reconnect; a command already running must finish first. The sandbox identity and persistent /home/agent workspace are kept."
           confirmLabel="Update image"
           busy={updating}
           onConfirm={migrate}
@@ -235,19 +342,39 @@ export function SandboxVersionHealthCard({
     <div className="rounded-md border border-border px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Badge variant="outline" className={`gap-1 ${presentation.className}`}>
+          <Badge
+            variant="outline"
+            className={`gap-1 ${presentation.className}`}
+          >
             <Icon className="h-3 w-3" /> {presentation.label}
           </Badge>
-          {health.template && <span className="truncate text-xs text-muted-foreground">{health.template}</span>}
+          {health.template && (
+            <span className="truncate text-xs text-muted-foreground">
+              {health.template}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           {health.status === "outdated" && health.can_migrate && (
-            <Button size="xs" onClick={() => setConfirmUpdateOpen(true)} disabled={updating}>
-              {updating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <ArrowUpCircle className="mr-1 h-3 w-3" />}
+            <Button
+              size="xs"
+              onClick={() => setConfirmUpdateOpen(true)}
+              disabled={updating}
+            >
+              {updating ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <ArrowUpCircle className="mr-1 h-3 w-3" />
+              )}
               Update image
             </Button>
           )}
-          <Button variant="ghost" size="xs" onClick={() => void refresh()} disabled={updating}>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => void refresh()}
+            disabled={updating}
+          >
             <RefreshCw className="mr-1 h-3 w-3" /> Check
           </Button>
         </div>
@@ -256,24 +383,42 @@ export function SandboxVersionHealthCard({
       <details className="mt-1 text-xs text-muted-foreground">
         <summary className="cursor-pointer">Image details</summary>
         <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 font-mono text-[11px]">
-          <dt>Running</dt><dd>{versionLabel(health.running_version)}</dd>
-          <dt>Current</dt><dd>{versionLabel(health.current_version)}</dd>
-          <dt>Manager</dt><dd>{health.manager_version ?? "version not reported"} · freshness not checked</dd>
-          <dt>Tools</dt><dd>freshness not checked</dd>
-          {health.running_image_id && <><dt>Running image</dt><dd className="truncate">{health.running_image_id}</dd></>}
-          {health.current_image_id && <><dt>Current image</dt><dd className="truncate">{health.current_image_id}</dd></>}
+          <dt>Running</dt>
+          <dd>{versionLabel(health.running_version)}</dd>
+          <dt>Current</dt>
+          <dd>{versionLabel(health.current_version)}</dd>
+          <dt>Manager</dt>
+          <dd>
+            {health.manager_version ?? "version not reported"} · freshness not
+            checked
+          </dd>
+          <dt>Tools</dt>
+          <dd>freshness not checked</dd>
+          {health.running_image_id && (
+            <>
+              <dt>Running image</dt>
+              <dd className="truncate">{health.running_image_id}</dd>
+            </>
+          )}
+          {health.current_image_id && (
+            <>
+              <dt>Current image</dt>
+              <dd className="truncate">{health.current_image_id}</dd>
+            </>
+          )}
         </dl>
       </details>
       {health.status === "outdated" && !health.can_migrate && (
         <p className="mt-1 text-xs text-muted-foreground">
-          {health.migration_action_reason ?? "This manager has not confirmed an in-place update action."}
+          {health.migration_action_reason ??
+            "This manager has not confirmed an in-place update action."}
         </p>
       )}
       <ConfirmDialog
         open={confirmUpdateOpen}
         onOpenChange={setConfirmUpdateOpen}
         title="Update sandbox image"
-        description="The running container will be replaced, interrupting active terminal, file, and agent connections. The sandbox identity and persistent /home/agent workspace are kept."
+        description="The running container will be replaced. Open terminals, file watchers, and agent connections will reconnect; a command already running must finish first. The sandbox identity and persistent /home/agent workspace are kept."
         confirmLabel="Update image"
         busy={updating}
         onConfirm={migrate}

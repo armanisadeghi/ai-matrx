@@ -96,7 +96,7 @@ const STATUS_BADGE_MAP: Record<
 // <CopyButtons> primitive; humanAll just composes per-instance summaries with
 // the admin-only stats header.
 const PAGE_LOCATION =
-  "AI Matrx Admin — Sandbox Management (/administration/compute/sandbox)";
+  "AI Matrx Admin — Accessible Sandboxes (/administration/compute/sandbox)";
 
 interface SandboxStats {
   active: number;
@@ -149,7 +149,7 @@ function humanAll(
   stats: SandboxStats,
   filter: string,
 ): string {
-  const header = `Sandbox Management — ${list.length} instance(s) [filter: ${filter}]
+  const header = `Accessible sandboxes — ${list.length} accessible instance(s) [filter: ${filter}]
 Active: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.uniqueUsers} · Failed: ${stats.failed}`;
   const body = list
     .map((i, idx) => `--- [${idx + 1}] ---\n${sandboxInstanceSummary(i)}`)
@@ -160,17 +160,19 @@ Active: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.unique
 export default function AdminSandboxManagementPage() {
   // THE DOOR LAW, with a hard limit this console must respect: `/sandbox/[id]`
   // reads `/api/sandbox/[id]`, which filters `.eq("user_id", user.id)`. This
-  // table is FLEET-WIDE, so linking every row there would 404 for every
-  // sandbox the viewing admin doesn't own — a wrong door is worse than none.
+  // table is RLS-bound, so linking every row there would 404 for every
+  // sandbox the viewing admin does not own — a wrong door is worse than none.
   // The door is therefore offered only for the viewer's own instances; every
   // row's OWNER is reachable through `AdminUserRef` regardless.
   const viewerUserId = useAppSelector(selectUserId);
-  const [fleet, setFleet] = useState<SandboxInstance[]>([]);
+  const [accessibleSandboxes, setAccessibleSandboxes] = useState<SandboxInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const instances = statusFilter === "all" ? fleet : fleet.filter((instance) => instance.status === statusFilter);
+  const instances = statusFilter === "all"
+    ? accessibleSandboxes
+    : accessibleSandboxes.filter((instance) => instance.status === statusFilter);
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
@@ -190,8 +192,8 @@ export default function AdminSandboxManagementPage() {
   const fetchInstances = useCallback(async () => {
     try {
       const supabase = createClient();
-      // Fleet-wide admin scope, authorized by RLS. Counts and local filters
-      // require every non-deleted row, not a single PostgREST page.
+      // The current account's RLS-authorized scope. Counts and local filters
+      // require every accessible, non-deleted row, not one PostgREST page.
       const rows = await readAllRows<SandboxInstance>(({ from, to }) =>
         supabase.from("sandbox_instances").select("*", { count: "exact" })
           .is("deleted_at", null)
@@ -200,7 +202,7 @@ export default function AdminSandboxManagementPage() {
           .range(from, to),
         { label: "admin.sandbox_instances" },
       );
-      setFleet(rows);
+      setAccessibleSandboxes(rows);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -260,7 +262,7 @@ export default function AdminSandboxManagementPage() {
         const body = await resp.json().catch(() => ({}));
         throw new Error(body.error || `Failed to delete (HTTP ${resp.status})`);
       }
-      setFleet((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+      setAccessibleSandboxes((prev) => prev.filter((i) => i.id !== deleteTarget.id));
       toast.success(`Sandbox ${deleteTarget.sandbox_id} deleted`);
       setDeleteTarget(null);
     } catch (err) {
@@ -326,11 +328,11 @@ export default function AdminSandboxManagementPage() {
     URL.revokeObjectURL(url);
   };
 
-  const activeCount = fleet.filter((i) =>
+  const activeCount = accessibleSandboxes.filter((i) =>
     ["creating", "starting", "ready", "running"].includes(i.status),
   ).length;
-  const uniqueUsers = new Set(fleet.map((i) => i.user_id)).size;
-  const failedCount = fleet.filter((i) => i.status === "failed").length;
+  const uniqueUsers = new Set(accessibleSandboxes.map((i) => i.user_id)).size;
+  const failedCount = accessibleSandboxes.filter((i) => i.status === "failed").length;
 
   const statusFilters = [
     "all",
@@ -351,7 +353,7 @@ export default function AdminSandboxManagementPage() {
   // `getScope` is SYNCHRONOUS over live render state, and must stay that way:
   // `useLiveSurfaceScope` samples it every 400ms for as long as a Surface
   // Context window is open. An async builder that re-read the sandbox table
-  // to "freshen" the values would hammer the fleet-wide read
+  // to "freshen" the values would hammer this RLS-authorized read
   // continuously behind a debug panel that looks idle. The 15s interval above
   // is this page's ONLY fetch; this callback just reads what that already put
   // in state, so the values are exactly what the admin is looking at.
@@ -361,21 +363,21 @@ export default function AdminSandboxManagementPage() {
 
   const getAdminSandboxScope = () =>
     createAdminSandboxScope({
-      sandbox_active_count: activeCount,
-      sandbox_total_count: fleet.length,
-      sandbox_unique_user_count: uniqueUsers,
-      sandbox_failed_count: failedCount,
-      sandbox_status_filter: statusFilter,
-      sandbox_instances: instances.map(toScopeEntry),
-      sandbox_list_loading: loading,
-      ...(error ? { sandbox_list_error: error } : {}),
+      accessible_sandbox_active_count: activeCount,
+      accessible_sandbox_total_count: accessibleSandboxes.length,
+      accessible_sandbox_unique_user_count: uniqueUsers,
+      accessible_sandbox_failed_count: failedCount,
+      accessible_sandbox_status_filter: statusFilter,
+      accessible_sandbox_instances: instances.map(toScopeEntry),
+      accessible_sandbox_list_loading: loading,
+      ...(error ? { accessible_sandbox_list_error: error } : {}),
       // `expandedRow` can name a row that the next poll dropped from the list
       // (an admin expands an instance, it expires out of the active filter).
       // The id still describes what the page thinks is open, but the detail
       // object is only emitted when the row is genuinely there to project.
-      ...(expandedRow ? { expanded_sandbox_instance_id: expandedRow } : {}),
+      ...(expandedRow ? { expanded_accessible_sandbox_instance_id: expandedRow } : {}),
       ...(expandedInstance
-        ? { expanded_sandbox_instance: toExpandedEntry(expandedInstance) }
+        ? { expanded_accessible_sandbox_instance: toExpandedEntry(expandedInstance) }
         : {}),
     });
 
@@ -386,21 +388,35 @@ export default function AdminSandboxManagementPage() {
     >
     <div className="min-h-dvh bg-textured">
       <div className="p-4 border-b border-border bg-textured">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex max-w-7xl mx-auto flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Container className="w-6 h-6 text-orange-500" />
+            <div>
+              <h1 className="text-lg font-semibold">Accessible sandboxes</h1>
+              <p className="text-xs text-muted-foreground">
+                Sandbox records your account is authorized to access. Fleet-wide host health is separate.
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
+            <AppLink
+              href="/administration/compute/sandbox-infra"
+              className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent sm:w-auto"
+            >
+              <Activity className="w-4 h-4" />
+              Fleet health
+              <ExternalLink className="w-3.5 h-3.5" />
+            </AppLink>
             {instances.length > 0 && (
               <CopyButtons
                 size="sm"
-                label="All sandboxes"
+                label="Accessible sandboxes"
                 human={() =>
                   humanAll(
                     instances,
                     {
                       active: activeCount,
-                      total: fleet.length,
+                      total: accessibleSandboxes.length,
                       uniqueUsers,
                       failed: failedCount,
                     },
@@ -411,7 +427,7 @@ export default function AdminSandboxManagementPage() {
                   kind: "sandbox-instances",
                   location: PAGE_LOCATION,
                   description:
-                    "All sandbox instances currently listed in the admin sandbox management table.",
+                    "Sandbox instances currently listed within this account's authorized access scope.",
                   data: instances,
                   attributes: {
                     count: instances.length,
@@ -419,71 +435,78 @@ export default function AdminSandboxManagementPage() {
                   },
                   context: {
                     active: activeCount,
-                    total: fleet.length,
+                    total: accessibleSandboxes.length,
                     "unique-users": uniqueUsers,
                     failed: failedCount,
                   },
                 })}
               />
             )}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Refresh sandbox instances"
+                  title="Refresh sandbox instances"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh sandbox instances</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
 
       <div className="p-4 max-w-7xl mx-auto space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card data-surface-value="sandbox_active_count">
+          <Card data-surface-value="accessible_sandbox_active_count">
             <CardContent className="p-4 flex items-center gap-3">
               <Server className="w-8 h-8 text-green-500" />
               <div>
                 <p className="text-2xl font-semibold">{activeCount}</p>
                 <p className="text-xs text-muted-foreground">
-                  Active Instances
+                  Active accessible instances
                 </p>
               </div>
             </CardContent>
           </Card>
-          <Card data-surface-value="sandbox_total_count">
+          <Card data-surface-value="accessible_sandbox_total_count">
             <CardContent className="p-4 flex items-center gap-3">
               <Activity className="w-8 h-8 text-blue-500" />
               <div>
-                <p className="text-2xl font-semibold">{fleet.length}</p>
-                <p className="text-xs text-muted-foreground">Total Instances</p>
+                <p className="text-2xl font-semibold">{accessibleSandboxes.length}</p>
+                <p className="text-xs text-muted-foreground">Accessible instances</p>
               </div>
             </CardContent>
           </Card>
-          <Card data-surface-value="sandbox_unique_user_count">
+          <Card data-surface-value="accessible_sandbox_unique_user_count">
             <CardContent className="p-4 flex items-center gap-3">
               <Users className="w-8 h-8 text-purple-500" />
               <div>
                 <p className="text-2xl font-semibold">{uniqueUsers}</p>
-                <p className="text-xs text-muted-foreground">Unique Users</p>
+                <p className="text-xs text-muted-foreground">Accessible users</p>
               </div>
             </CardContent>
           </Card>
-          <Card data-surface-value="sandbox_failed_count">
+          <Card data-surface-value="accessible_sandbox_failed_count">
             <CardContent className="p-4 flex items-center gap-3">
               <AlertCircle className="w-8 h-8 text-red-500" />
               <div>
                 <p className="text-2xl font-semibold">{failedCount}</p>
-                <p className="text-xs text-muted-foreground">Failed</p>
+                <p className="text-xs text-muted-foreground">Failed accessible instances</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {error && (
-          <Card className="border-destructive" data-surface-value="sandbox_list_error">
+          <Card className="border-destructive" data-surface-value="accessible_sandbox_list_error">
             <CardContent className="flex items-center gap-2 p-4">
               <AlertCircle className="w-4 h-4 text-destructive" />
               <p className="text-sm text-destructive">{error}</p>
@@ -493,7 +516,7 @@ export default function AdminSandboxManagementPage() {
 
         <div
           className="flex items-center gap-2 flex-wrap"
-          data-surface-value="sandbox_status_filter"
+          data-surface-value="accessible_sandbox_status_filter"
         >
           {statusFilters.map((s) => (
             <Button
@@ -510,23 +533,23 @@ export default function AdminSandboxManagementPage() {
         {loading ? (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-              Loading sandbox instances...
+              Loading accessible sandbox instances...
             </CardContent>
           </Card>
         ) : instances.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-              No sandbox instances found for the selected filter.
+              No accessible sandbox instances found for the selected filter.
             </CardContent>
           </Card>
         ) : (
-          <div className="rounded-md border" data-surface-value="sandbox_instances">
+          <div className="rounded-md border" data-surface-value="accessible_sandbox_instances">
             {isRefreshing && (
               <div className="absolute top-2 right-2 z-10">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
               </div>
             )}
-            <Table>
+            <Table wrapperClassName="phone-stack">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
@@ -556,14 +579,14 @@ export default function AdminSandboxManagementPage() {
                           setExpandedRow(isExpanded ? null : instance.id)
                         }
                       >
-                        <TableCell className="w-8 px-2">
+                        <TableCell className="w-8 px-2" data-phone="inline">
                           {isExpanded ? (
                             <ChevronDown className="w-4 h-4 text-muted-foreground" />
                           ) : (
                             <ChevronRight className="w-4 h-4 text-muted-foreground" />
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="font-mono text-xs" data-phone="lead">
                           {instance.user_id === viewerUserId ? (
                             <AppLink
                               href={`/sandbox/${instance.id}`}
@@ -581,27 +604,28 @@ export default function AdminSandboxManagementPage() {
                         </TableCell>
                         <TableCell
                           className="max-w-[160px] text-xs"
+                          data-label="User"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* The owner is a real user — reach their admin
                               surfaces instead of printing 8 hex characters. */}
                           <AdminUserRef userId={instance.user_id} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-phone="inline">
                           <Badge variant={statusConfig.variant}>
                             {statusConfig.label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground" data-label="Created" data-phone="inline">
                           {formatSandboxTimestamp(instance.created_at)}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground" data-label="Expires" data-phone="inline">
                           {formatSandboxTimestamp(instance.expires_at)}
                         </TableCell>
-                        <TableCell className="text-xs font-mono">
+                        <TableCell className="text-xs font-mono" data-label="Tier" data-phone="inline">
                           {instance.tier ?? "--"}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" data-phone="actions">
                           <div
                             className="flex items-center justify-end gap-1"
                             onClick={(e) => e.stopPropagation()}
@@ -673,7 +697,7 @@ export default function AdminSandboxManagementPage() {
                           <TableCell
                             colSpan={8}
                             className="bg-muted/30 p-4"
-                            data-surface-value="expanded_sandbox_instance"
+                            data-surface-value="expanded_accessible_sandbox_instance"
                           >
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                               <div>

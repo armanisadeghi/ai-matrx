@@ -19,7 +19,9 @@ export const DIMENSION_LABEL: Record<SpendDimension, string> = {
   source: "Execution type",
   model: "Model",
   conversation: "Conversation",
+  session: "Login session",
   day: "Day",
+  hour: "Hour",
 };
 
 /** One line under each table: what the dimension actually is. */
@@ -34,7 +36,9 @@ export const DIMENSION_HINT: Record<SpendDimension, string> = {
   source: "What kind of execution the ledger row is: a conversation turn, an internal agent run, a scheduler poll…",
   model: "The model that billed the most of the request. A request that fell back across models is counted once, under the model that cost the most.",
   conversation: "The conversation the turn belongs to. Internal runs with no conversation are grouped under 'Not inside a conversation'.",
+  session: "One sign-in. Two agents (or a person and an agent) sharing admin@admin.com each sign in separately, so this is the row that tells them apart: who, and when they signed in.",
   day: "Local calendar day in the zone shown at the top of the page.",
+  hour: "Local clock hour in the zone shown at the top of the page.",
 };
 
 /** What an empty value means, per dimension — never the bare word "Unattributed". */
@@ -49,12 +53,15 @@ export const NONE_LABEL: Record<SpendDimension, string> = {
   source: "No execution type",
   model: "Model not recorded (no API-call row)",
   conversation: "Not inside a conversation",
+  session: "No sign-in (server-side run)",
   day: "No day",
+  hour: "No hour",
 };
 
 export function rowLabel(dim: SpendDimension, row: Pick<SpendDimensionRow, "key" | "label">): string {
   if (row.key === SPEND_NONE_KEY) return NONE_LABEL[dim];
   if (dim === "trigger") return row.key === "manual" ? "Manual (someone asked)" : "Automated (ran on its own)";
+  if (dim === "hour") return shortLocal(row.key);
   return row.label || row.key;
 }
 

@@ -37,33 +37,45 @@ function Tile({
       <div className="truncate text-lg font-semibold leading-tight tabular-nums text-foreground">
         {value}
       </div>
-      {hint ? <div className="truncate text-[11px] text-muted-foreground">{hint}</div> : null}
+      {hint ? (
+        <div className="truncate text-[11px] text-muted-foreground">{hint}</div>
+      ) : null}
     </div>
   );
 }
 
 export function TotalsStrip({ data }: { data: SpendBreakdown }) {
   const t = data.totals;
-  const perHour = t.hours > 0 ? t.cost / t.hours : 0;
-  const cached = t.tokensIn + t.tokensCached > 0 ? t.tokensCached / (t.tokensIn + t.tokensCached) : 0;
+  // A slice filtered to one hour or one day spans that, not the whole window;
+  // dividing by the window's hours would caption a $27 hour as "$0.57 per hour".
+  const sliceHours = data.filters.hour ? 1 : data.filters.day ? 24 : t.hours;
+  const perHour = sliceHours > 0 ? t.cost / sliceHours : 0;
+  const cached =
+    t.tokensIn + t.tokensCached > 0
+      ? t.tokensCached / (t.tokensIn + t.tokensCached)
+      : 0;
   return (
     <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       <Tile
         label="Window total"
         value={usd(t.cost)}
-        hint={`${usd(perHour)} per hour · ${count(t.paidExecutions)} paid executions`}
+        hint={
+          data.filters.hour
+            ? `${count(t.paidExecutions)} executions`
+            : `${usd(perHour)}/hr · ${count(t.paidExecutions)} executions`
+        }
       />
       <Tile
         label="Manual"
         tone="manual"
         value={usd(t.manualCost)}
-        hint={`${percent(t.cost > 0 ? t.manualCost / t.cost : 0)} — a person or an API caller asked`}
+        hint={percent(t.cost > 0 ? t.manualCost / t.cost : 0)}
       />
       <Tile
         label="Automated"
         tone="automated"
         value={usd(t.automatedCost)}
-        hint={`${percent(t.cost > 0 ? t.automatedCost / t.cost : 0)} — child agents, workflows, schedules`}
+        hint={percent(t.cost > 0 ? t.automatedCost / t.cost : 0)}
       />
       <Tile
         label="Requests"
@@ -80,8 +92,8 @@ export function TotalsStrip({ data }: { data: SpendBreakdown }) {
         value={percent(t.cost > 0 ? t.linkedCost / t.cost : 0)}
         hint={
           t.unlinkedCost > 0
-            ? `${usd(t.unlinkedCost)} attributed from the execution's own context`
-            : "every dollar has an app, feature and model"
+            ? `${usd(t.unlinkedCost)} from execution context`
+            : "Fully attributed"
         }
       />
     </div>

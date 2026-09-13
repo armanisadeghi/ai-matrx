@@ -1,6 +1,6 @@
 # FEATURE.md — copy-subset ("Filter & sort before copying…")
 
-**Status:** `live` · **Tier:** `2` (platform primitive under `agent-copy`) · **Last updated:** `2026-09-11`
+**Status:** local copy-subset contract retained · **Tier:** `2` (platform primitive under `agent-copy`) · **Last updated:** `2026-09-12`
 
 **Working label.** No canonical vocabulary term exists for this; "copy-subset" is a plainly descriptive working label (directory, overlay id `copySubsetWindow`, menu row "Filter & sort before copying…"). Naming is Arman's — flagged, not coined. "workspace" is retired in the lexicon and is never used for this.
 
@@ -14,7 +14,7 @@ Every Copy-for-AI control gets one more menu row, **Filter & sort before copying
 
 | Piece | File | Job |
 |---|---|---|
-| `useCopySubsetVariant()` | `useCopySubsetVariant.ts` | Returns a factory `(getSource, overrides?) => AiVariant`. Spread the variant into any `CopyButtons` / `AiCopyMenu` `aiVariants`. The getter runs at click time. |
+| `useCopySubsetVariant()` | `useCopySubsetVariant.ts` | Returns a factory `(getSource, overrides?) => Alchemy Menu variant`. Pass it through `CopyButtons` `aiVariants`. The getter runs at click time. |
 | `CopySubsetSource<T>` | `types.ts` | `{ label, location, kind, rows: T[] \| () => Promise<T[]>, columns?, getRowId?, serializer?, initialSelectedIds?, defaultFormat?, onCopied? }`. No `columns` → inferred from the first 200 rows' keys. No `getRowId` → snapshot index. No `serializer` → generic envelope (records + Markdown summary + shaping attributes). |
 | Overlay | `features/overlays/catalogue.ts` `copySubsetWindow` · `features/overlays/openers/copySubsetWindow.tsx` (`useOpenCopySubsetWindow` / `CopySubsetWindowController`) · `OverlayController.tsx` block · `CopySubsetWindow.tsx` | Multi-instance WindowPanel. Bound with `onClose` (never `overlayId`), so window persistence never restores a session-less window. |
 
@@ -39,7 +39,7 @@ Pure core: `serialize.ts` (formats, size, column inference), `model.ts` (`comput
 
 ### Census of "little popover UIs that modify data before copying" (2026-09-11)
 
-`TableCustomCopyWindow` — row-subset-shaped → superseded and deleted. Not row-subset-shaped, therefore kept: `AgentCopyGroomerWindow` (whole-page sections × detail levels), `AiCustomDialog` (`aiCustom` option schemas, 8 surfaces), `ragAiCopyWindow` (RAG hit bundle options), `features/html-pages/…/CustomCopyTab.tsx` (page-content options). They shape *what detail*; copy-subset shapes *which rows and columns*. A future surface that needs both composes them; none forks either.
+`TableCustomCopyWindow` — row-subset-shaped → superseded and deleted. Not row-subset-shaped, therefore kept: Alchemy Menu's groomer (whole-page sections × detail levels), its `aiCustom` options, `ragAiCopyWindow` (RAG hit bundle options), `features/html-pages/…/CustomCopyTab.tsx` (page-content options). They shape *what detail*; copy-subset shapes *which rows and columns*. A future surface that needs both composes them; none forks either.
 
 ## Tests
 
@@ -47,4 +47,5 @@ Pure core: `serialize.ts` (formats, size, column inference), `model.ts` (`comput
 
 ## Change Log
 
+- **2026-09-12** — Aligned menu terminology with Matrx Alchemy. Copy-subset remains a frontend-owned custom-scope primitive; package artifacts and the full registry canary are public/accepted, while trusted-publishing receipt and deployed host proof remain pending.
 - **2026-09-11** — Created. Design attacked before build (standard lane): 4 blocking fixed — server-paged tables suppressed; hook returns a factory so view and selection menus open different sources; `buildViewAgentInput` `meta.scope` widened with `"custom"`; loader sources with loading / error / retry so the UDT path lost nothing. Adjudicated as REJECT: none. Owner-only: the user-visible wording of the menu row.

@@ -35,10 +35,8 @@ import KindInputForm from "@/features/content-ir/input/KindInputForm";
 import KindInstanceRender, {
   isRecordValue,
 } from "@/features/content-ir/studio/components/KindInstanceRender";
-import {
-  isValidatorDrift,
-  saveKindInstance,
-} from "@/features/content-ir/studio/instance-service";
+import { isValidatorDrift } from "@/features/content-ir/studio/instance-service";
+import { storeKindRecord } from "@/features/content-ir/studio/store-kind-record";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
@@ -164,7 +162,10 @@ export default function ShapeTestTab({
     }
     setSaveState({ status: "saving" });
     try {
-      const result = await saveKindInstance({
+      // THE ONE CLIENT STORE. The Test tab has no conversation and no
+      // message, so it carries no provenance — and the store writes none,
+      // rather than inventing a home this record does not have.
+      const result = await storeKindRecord({
         kindDefinitionId,
         kindVersion,
         value: instance,

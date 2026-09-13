@@ -37,7 +37,14 @@
 // because it lands THERE. Never reintroduce a second stream reader.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CircleCheck, CircleDashed, CircleX, Play, Scale } from "lucide-react";
+import {
+  CircleCheck,
+  CircleDashed,
+  CircleX,
+  GitCompareArrows,
+  Play,
+  Scale,
+} from "lucide-react";
 
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -192,6 +199,7 @@ export function TryMasterworkBox({
   fieldLabels,
   onRunFinished,
   onCompare,
+  onCompareTwo,
 }: {
   masterworkId: string;
   /** From the Masterwork's metadata (masterwork_kind): "edit" | "generate". */
@@ -225,6 +233,15 @@ export function TryMasterworkBox({
    * the Audition, prefilled. Omit to hide it.
    */
   onCompare?: (candidateText: string) => void;
+  /**
+   * The second door beside the result: hand this output to the BLIND PAIRWISE
+   * Audition, which puts it against another answer to the same question with no
+   * reference at all. "Judge this against your own work" needs the Expert's real
+   * published piece; this one needs only a second answer, which is what the
+   * Expert has when two Masterworks — or two schools — answered the same case.
+   * Omit to hide it.
+   */
+  onCompareTwo?: (candidateText: string) => void;
 }) {
   const isEdit = masterworkKind !== "generate";
 
@@ -786,15 +803,29 @@ export function TryMasterworkBox({
         </div>
       ) : null}
 
-      {onCompare && candidateText ? (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onCompare(candidateText)}
-        >
-          <Scale className="mr-1 h-4 w-4" />
-          Judge this against your own work
-        </Button>
+      {(onCompare || onCompareTwo) && candidateText ? (
+        <div className="flex flex-wrap gap-2">
+          {onCompare ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onCompare(candidateText)}
+            >
+              <Scale className="mr-1 h-4 w-4" />
+              Judge this against your own work
+            </Button>
+          ) : null}
+          {onCompareTwo ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onCompareTwo(candidateText)}
+            >
+              <GitCompareArrows className="mr-1 h-4 w-4" />
+              Compare it to another answer
+            </Button>
+          ) : null}
+        </div>
       ) : onCompare && noResultReason ? (
         // THE DOOR IS ABSENT AND HONEST, never a filler sentence about where
         // runs land: this run FINISHED, and this line says what it finished

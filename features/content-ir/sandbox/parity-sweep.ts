@@ -2,9 +2,9 @@
  * parity-sweep — the DD-123 S5 rendering-parity proof over EVERY live
  * organization-authored component body.
  *
- *   pnpm sweep:kind-sandbox-parity          # all 162 live bodies, light + dark
+ *   pnpm sweep:kind-sandbox-parity          # all 139 live bodies, light + dark
  *   pnpm check:kind-sandbox-parity          # the fixed sample, fails on regression
- *   pnpm sweep:kind-sandbox-parity --keys a,b,c
+ *   pnpm sweep:kind-sandbox-parity --keys=a,b,c
  *
  * WHAT IT PROVES. For each body it renders the SAME live source twice in one
  * document, at the same moment, at the same width:
@@ -193,7 +193,7 @@ async function buildCases(keys: string[] | null): Promise<{
         cases.push({
             componentKey: row.component_key,
             kind: def?.kind ?? "unknown",
-            sourceBytes: row.component_source.length,
+            sourceBytes: new TextEncoder().encode(row.component_source).length,
             dataSource: live
                 ? `live content_ir.kind_instance ${live.id}`
                 : "the kind's example payload (content_ir.kind_definition.sample_data)",
@@ -222,10 +222,30 @@ function pageHtml(cases: Case[]): string {
      found (fixed in runtime/sandbox.css). */
   body { margin: 0; padding: 16px; background: hsl(var(--background)); color: hsl(var(--foreground));
          font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif); }
+  /* 🚨 EVERY BOX IN THIS PAGE'S OWN CHROME IS A WHOLE NUMBER OF PIXELS, and
+     that is load-bearing, not tidiness. The header used to be 11px/1.4 —
+     a 15.4 px line box plus 8 px of padding — so EVERY case's two columns
+     began at a y ending in .4. There the columns stop being comparable: the
+     unframed render is laid out AT that fraction and its glyphs are positioned
+     against it, while the framed render is laid out at 0 inside its own
+     document and its layer is then composited on a whole pixel. Two pictures
+     of the SAME layout, a fraction of a pixel apart, which reads as 1-6 % of
+     pixels differing on any text-heavy body and moves with whatever sat above
+     it (the "not comparable across batch compositions" limit in B-36 §5).
+     11px/16px + 4 px padding is exactly 24 px; __SNAP__ keeps the cases
+     below it on whole pixels too. */
   .case { margin: 0 0 24px; }
-  .case > header { font: 11px/1.4 ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
+  .case > header { font: 11px/16px ui-monospace, monospace; padding: 4px 0; color: hsl(var(--muted-foreground)); }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  iframe { width: 100%; border: 0; display: block; }
+  /* THE CLIP — what KindSandboxFrame does, and for the same reason (S5b,
+     sandbox/protocol.ts, THE READER'S VIEWPORT): the iframe is as wide as the
+     READER'S window so viewport media queries inside the frame answer the same
+     question they answer in the page, and this element is the component's real
+     column. A sweep whose host page did not do this would measure the host's
+     bug, not the frame's parity. */
+  .col { min-width: 0; }
+  .clip { overflow: hidden; min-width: 0; width: 100%; }
+  iframe { border: 0; display: block; max-width: none; }
 </style>
 </head>
 <body>
@@ -271,6 +291,8 @@ function rootTokens() {
   return out;
 }
 function scheme() { return document.documentElement.classList.contains("dark") ? "dark" : "light"; }
+/** The width the HOST page's own media queries answer against. */
+function readerViewportWidth() { return document.documentElement.clientWidth || window.innerWidth; }
 
 var host = document.getElementById("cases");
 var ports = {};
@@ -282,7 +304,7 @@ window.__CASES__.forEach(function (item, index) {
     '<header>' + item.componentKey + ' · kind=' + item.kind + ' · ' + item.sourceBytes + ' bytes · ' + item.dataSource + '</header>' +
     '<div class="cols">' +
       '<div class="col"><div class="unframed" id="off-' + index + '"></div></div>' +
-      '<div class="col"><div id="on-' + index + '"></div></div>' +
+      '<div class="col"><div class="clip" id="on-' + index + '"></div></div>' +
     '</div>';
   host.appendChild(section);
 
@@ -306,6 +328,7 @@ window.__CASES__.forEach(function (item, index) {
   frame.src = "/kind-sandbox";
   frame.title = item.componentKey + " — component";
   frame.style.height = "200px";
+  frame.style.width = readerViewportWidth() + "px";
   frameWrap.appendChild(frame);
 
   frame.addEventListener("load", function () {
@@ -330,7 +353,9 @@ window.__CASES__.forEach(function (item, index) {
       propsTransform: null,
       props: { data: item.data, kind: item.kind, config: {}, uiOptions: {} },
       themeTokens: rootTokens(),
-      colorScheme: scheme()
+      colorScheme: scheme(),
+      readerViewportWidth: readerViewportWidth(),
+      contentWidth: frameWrap.clientWidth
     }, "*", [channel.port2]);
   });
 });
@@ -341,6 +366,98 @@ window.__SETTLED__ = function () {
     if (window.__PARITY__[keys[i]].heights.length === 0) return false;
   }
   return true;
+};
+
+/**
+ * SNAP EVERY CASE TO A WHOLE PIXEL BEFORE ANYTHING IS SHOT.
+ *
+ * A component is 912.31 px tall, so the NEXT case in the page starts at a
+ * fractional y — and there the two columns stop being comparable: the unframed
+ * render is laid out AT that fraction (Chrome rounds its borders and text
+ * baselines against it), while the framed render is laid out at 0 inside its
+ * own document and then composited at the fraction. The pictures are then one
+ * sharp image and one half-pixel-shifted image of the SAME layout, which reads
+ * as 4-6 % of pixels differing on any text-heavy body — a difference the
+ * product does not have and the DOM does not have.
+ *
+ * It is also why a body's number used to move with the batch it was measured
+ * in (B-36 §5): a different neighbour above it meant a different fraction.
+ * Rounding each case's height puts every case back on a whole pixel.
+ */
+window.__SNAP__ = function () {
+  var sections = document.querySelectorAll(".case");
+  // Release any previous snap first: a theme change can make a body taller,
+  // and a case frozen at yesterday's height would clip it instead of measuring
+  // it — a parity number taken off a clipped render proves nothing.
+  for (var i = 0; i < sections.length; i++) sections[i].style.height = "";
+  void document.body.offsetHeight;
+  for (var j = 0; j < sections.length; j++) {
+    sections[j].style.height = Math.ceil(sections[j].getBoundingClientRect().height) + "px";
+  }
+  return sections.length;
+};
+
+/**
+ * SETTLE-BEFORE-CAPTURE (B-49). The sweep already waits for heights
+ * (__SETTLED__), the theme transition (3 s) and two whole-pixel snaps, and
+ * that was enough for 139 of 139 bodies on the day of the S5 sweep — but a
+ * later run of \`check:kind-sandbox-parity\` flaked once (schema_fix_card,
+ * 40 % different, then 8/8 clean three runs straight): the fixed sample is
+ * captured with a much shorter path than a full sweep, so a body whose CSS
+ * keeps something moving after the theme wait (an \`animate-pulse\` badge, a
+ * \`transition-all\` row, a font swap-in) can still be mid-transition at the
+ * exact millisecond \`Page.captureScreenshot\` fires. This does not change
+ * what a body IS allowed to look like — it only makes sure both columns are
+ * captured after they have stopped changing, the same discipline the 3 s
+ * theme wait already applies to color, extended to layout/opacity too.
+ *
+ * Three checks, in order, each with its own small bound so a body that
+ * genuinely never stops (a permanent \`animate-pulse\` loader) cannot hang the
+ * sweep — it falls through to capture at the bound like every other timeout
+ * in this file:
+ *   1. \`document.fonts.ready\` — a face still swapping in moves every glyph's
+ *      width, which moves every line break after it (bounded: already a
+ *      resolved/rejecting promise or the browser's own timeout).
+ *   2. two \`requestAnimationFrame\` ticks — lets layout/paint catch up with
+ *      whatever \`__SNAP__\`'s height write and the theme-class toggle just
+ *      queued, mirroring the two-rAF idiom this file's own comments describe
+ *      for the cross-origin frame's self-measurement.
+ *   3. no RUNNING, FINITE-duration Web Animation on the case root — polled at
+ *      50 ms up to \`maxMs\` (default 1500 ms, comfortably past the app's
+ *      longest named one-shot, the 900 ms "beat" B-45 diagnosed). An
+ *      INFINITE-iteration animation (\`animate-pulse\`, a permanent skeleton)
+ *      is excluded on purpose: it never finishes, and a body that pulses
+ *      forever is a real product state, not a capture-timing accident — same
+ *      \`canonicalization_map_board\` reasoning B-45 already recorded, made
+ *      into a guard here instead of a one-off explanation there.
+ */
+window.__CAPTURE_SETTLE__ = async function (rootSelector, maxMs) {
+  var start = Date.now();
+  var bound = maxMs || 1500;
+  var until = start + bound;
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  } catch (e) { /* a font-load rejection is not a reason to fail the capture */ }
+  await new Promise(function (r) {
+    requestAnimationFrame(function () { requestAnimationFrame(r); });
+  });
+  function stillRunning() {
+    var root = rootSelector ? document.querySelector(rootSelector) : document.body;
+    if (!root || !root.getAnimations) return false;
+    try {
+      return root.getAnimations({ subtree: true }).some(function (a) {
+        if (a.playState !== "running") return false;
+        var timing = a.effect && a.effect.getTiming ? a.effect.getTiming() : null;
+        return !!timing && timing.iterations !== Infinity;
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+  while (stillRunning() && Date.now() < until) {
+    await new Promise(function (r) { setTimeout(r, 50); });
+  }
+  return Date.now() - start;
 };
 
 window.__SET_THEME__ = function (dark) {
@@ -358,7 +475,9 @@ window.__RECTS__ = function (index) {
     var r = el.getBoundingClientRect();
     return { x: r.x + window.scrollX, y: r.y + window.scrollY, width: r.width, height: r.height };
   }
-  return { off: box(document.getElementById('off-' + index)), on: box(document.querySelector('#on-' + index + ' iframe')) };
+  // The CLIP is the component's column; the iframe inside it is deliberately
+  // as wide as the whole window, so shooting the iframe would shoot the page.
+  return { off: box(document.getElementById('off-' + index)), on: box(document.getElementById('on-' + index)) };
 };
 window.__READY__ = true;
 </script>
@@ -436,7 +555,16 @@ async function runBatch(
                 note: `the parity page for this batch never finished loading at ${ORIGIN}`,
             }));
         }
-        let settled = await settle(page, 25000);
+        // THE SETTLE BUDGET, and why it is this big (S5b). Each frame is now
+        // as wide as the READER'S window (THE READER'S VIEWPORT in
+        // sandbox/protocol.ts), so a batch of four lays out four
+        // viewport-wide documents before any of them reports a height. At the
+        // old 25 s + 15 s, two or three batches a run came back "did not
+        // settle" with the iframe still at its initial 200 px — and a
+        // different two or three each time, which is how a flake looks. Those
+        // are non-renders, not parity failures, and a sweep that reports them
+        // as differences is lying about the product.
+        let settled = await settle(page, 60000);
         if (!settled) {
             // Last resort for a very tall batch: put each silent frame at the
             // top of the viewport so its rAF runs, then wait again.
@@ -445,11 +573,14 @@ async function runBatch(
                     "Object.values(window.__PARITY__ || {}).filter(r => !r.heights.length).forEach(r => { var f = document.querySelector('#on-' + r.index + ' iframe'); if (f) f.scrollIntoView(); })",
                 )
                 .catch(() => undefined);
-            settled = await settle(page, 15000);
+            settled = await settle(page, 40000);
             await page.evaluate("window.scrollTo(0, 0)").catch(() => undefined);
         }
         // One more frame for the host to apply the last reported height.
         await new Promise((r) => setTimeout(r, 1200));
+        // …then put every case back on a whole pixel (see `__SNAP__`).
+        await page.evaluate("window.__SNAP__()").catch(() => undefined);
+        await new Promise((r) => setTimeout(r, 300));
 
         const perTheme: Record<
             "light" | "dark",
@@ -464,6 +595,28 @@ async function runBatch(
             // the sweep waits the transition out rather than reporting a
             // difference that does not exist a second later.
             await new Promise((r) => setTimeout(r, 3000));
+            // A theme change can change type metrics and therefore heights, so
+            // the whole-pixel snap is re-taken for this theme.
+            await page.evaluate("window.__SNAP__()").catch(() => undefined);
+            await new Promise((r) => setTimeout(r, 300));
+            // SETTLE-BEFORE-CAPTURE (B-49), once for the whole page, ONE beat
+            // before the per-case loop starts — not per case. An earlier
+            // version of this fix called it once per column per case, which
+            // stretches the LATER cases in a batch further from the snap
+            // moment than the earlier ones (each settle call, even a fast
+            // one, is more time for an unrelated async re-render to land) and
+            // made the flake WORSE, not better (measured: every one of 6
+            // back-to-back runs failed, mostly in the second half of the
+            // batch, vs 0 of 9 on the unmodified sweep run the same way).
+            // Settling the root ONCE keeps every case in the batch the same
+            // distance from the snap it is measured and shot against.
+            const settleMs = await page
+                .evaluate<number>('window.__CAPTURE_SETTLE__("body", 1500)')
+                .catch(() => -1);
+            if (process.env.PARITY_DEBUG) {
+                // eslint-disable-next-line no-console
+                console.log(`    settle[${theme}] ${settleMs}ms`);
+            }
             for (let i = 0; i < cases.length; i++) {
                 const rects = await page.evaluate<{ off: Rect; on: Rect }>(
                     `window.__RECTS__(${i})`,

@@ -21,6 +21,8 @@ import { MAP_LIST_SCOPES, mapHref, type MapListRow } from "./types";
 
 export const mapListConfig: EntityListConfig<MapListRow> = {
   surfaceKey: "canvas-maps-browse",
+  // DD-137c / §3.3: where this list OPENS comes from platform.entity_types, never a literal.
+  registryToken: "canvas_item",
   entityLabel: { singular: "map", plural: "maps" },
   sourceFeature: "canvas",
   scopes: MAP_LIST_SCOPES,

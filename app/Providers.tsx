@@ -34,6 +34,7 @@ import StoreProvider from "@/providers/StoreProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { BaseReduxState } from "@/types/reduxTypes";
 import { RefProvider } from "@/lib/refs";
+import { AlchemyHost } from "@/components/agent-copy/AlchemyHost";
 import { ToastProvider } from "@/providers/toast-context";
 import { ModuleHeaderProvider } from "@/providers/ModuleHeaderProvider";
 import { PersistentComponentProvider } from "@/providers/persistance/PersistentComponentProvider";
@@ -169,65 +170,66 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
         <AssociationsHost>
-        <AgentCatalogHost>
-        <MatrxDataTableHost>
-        <WindowPersistenceManager>
-          <PersistentComponentProvider>
-            <ToastProvider>
-              <RefProvider>
-                <TooltipProvider delayDuration={200}>
-                  <ModuleHeaderProvider>
-                      <SelectedImagesProvider>
-                            <RequestRecoveryProvider>
-                              <RealtimeHost>
-                              <MeetHost>
-                              <MessagingHost>
-                              <MediaHostProvider>
-                              {/* ONE audio mount — the whole audio system
+          <AgentCatalogHost>
+            <MatrxDataTableHost>
+              <WindowPersistenceManager>
+                <PersistentComponentProvider>
+                  <ToastProvider>
+                    <AlchemyHost>
+                      <RefProvider>
+                        <TooltipProvider delayDuration={200}>
+                          <ModuleHeaderProvider>
+                            <SelectedImagesProvider>
+                              <RequestRecoveryProvider>
+                                <RealtimeHost>
+                                  <MeetHost>
+                                    <MessagingHost>
+                                      <MediaHostProvider>
+                                        {/* ONE audio mount — the whole audio system
                                 (devices, recording engine, TTS output,
                                 playback/session mirrors, modal, recovery)
                                 mounts lazily on first audio engagement.
                                 See providers/AudioSystemHost.tsx. */}
-                              <AudioSystemHost />
-                              <React.Fragment>
-                                <GlobalAuthSync />
-                                {children}
-                                <RecoveryWindow />
-                                <RecoveryNudge />
-                                <DeferredSingletonWrapper />
-                                <ServerToggleQueryReset />
-                                <LoopbackApiAccessSync />
-                                <GoogleOAuthRedirectNotice />
-                                <ExtensionBridgeSubscriber />
-                                <PlatformDirectiveSubscriber />
-                                <GlobalTaskShortcut />
-                                <CreateTaskFromSourceDialog />
-                                {/* Cloud-files realtime — mounted globally so
+                                        <AudioSystemHost />
+                                        <React.Fragment>
+                                          <GlobalAuthSync />
+                                          {children}
+                                          <RecoveryWindow />
+                                          <RecoveryNudge />
+                                          <DeferredSingletonWrapper />
+                                          <ServerToggleQueryReset />
+                                          <LoopbackApiAccessSync />
+                                          <GoogleOAuthRedirectNotice />
+                                          <ExtensionBridgeSubscriber />
+                                          <PlatformDirectiveSubscriber />
+                                          <GlobalTaskShortcut />
+                                          <CreateTaskFromSourceDialog />
+                                          {/* Cloud-files realtime — mounted globally so
                                   every authed page receives file/folder/share
                                   link updates. Reads userId from Redux and
                                   tears down on sign-out. Replaces five
                                   previous per-route mounts (Phase 0 of the
                                   file-handling consolidation). See
                                   docs/FILE_HANDLING_CONSOLIDATION_PLAN.md. */}
-                                <CloudFilesRealtimeProvider />
-                                {/* Cloud-files imperative pickers:
+                                          <CloudFilesRealtimeProvider />
+                                          {/* Cloud-files imperative pickers:
                                   openFilePicker() / openFolderPicker() / openSaveAs()
                                   are callable from anywhere in the app once this host
                                   mounts. See features/files/components/pickers/. */}
-                                <CloudFilesPickerHost />
-                                {/* Upload guard — exposes the imperative
+                                          <CloudFilesPickerHost />
+                                          {/* Upload guard — exposes the imperative
                                   `requestUpload()` API. Hashes incoming
                                   files, scans Redux for duplicates,
                                   shows the resolution dialog when
                                   needed, then dispatches the upload.
                                   See features/files/upload/. */}
-                                <UploadGuardHost />
-                                {/* Imperative confirm dialog host. Exposes
+                                          <UploadGuardHost />
+                                          {/* Imperative confirm dialog host. Exposes
                                   `confirm({title, variant, ...})` — the
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
-                                <ConfirmDialogHost />
-                                {/* Imperative manual-copy host. When
+                                          <ConfirmDialogHost />
+                                          {/* Imperative manual-copy host. When
                                   `navigator.clipboard` refuses to write
                                   (embedded browser, permission policy),
                                   `copyToClipboard` falls back to
@@ -235,53 +237,54 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   selected for a manual Cmd/Ctrl+C instead
                                   of a dead "Copy failed" toast.
                                   See components/dialogs/clipboard-fallback/. */}
-                                <ClipboardFallbackHost />
-                                {/* Imperative sandbox pre-send gate host.
+                                          <ClipboardFallbackHost />
+                                          {/* Imperative sandbox pre-send gate host.
                                   Exposes `openSandboxGate({conversationId})` —
                                   a bound-but-unreachable sandbox blocks the send
                                   and lets the user attach / detach / cancel.
                                   See components/dialogs/sandbox-gate/. */}
-                                <SandboxGateHost />
-                                <ValuePromptsDialogHost />
-                                {/* Imperative chat↔scope mismatch dialog host.
+                                          <SandboxGateHost />
+                                          <ValuePromptsDialogHost />
+                                          {/* Imperative chat↔scope mismatch dialog host.
                                   Exposes `promptScopeMismatch({current, chat})` —
                                   the 3-way pre-send ask (switch / combine / keep)
                                   when the sidebar's active scopes differ from the
                                   chat's durable tags. Dismiss cancels the send.
                                   See components/dialogs/scope-mismatch/. */}
-                                <ScopeMismatchDialogHost />
-                                {/* Agent quick-look host. `openAgentPeek(id)`
+                                          <ScopeMismatchDialogHost />
+                                          {/* Agent quick-look host. `openAgentPeek(id)`
                                   from anywhere opens the canonical
                                   AgentPeekWindow; it is what fills the ONE
                                   agent picker's `openPeek` port.
                                   See features/agents/components/agent-listings/
                                   openAgentPeek.ts. */}
-                                <AgentPeekHost />
-                                {/* Audio hosts (modal, TTS output, playback +
+                                          <AgentPeekHost />
+                                          {/* Audio hosts (modal, TTS output, playback +
                                   session mirrors, devices, recording, recovery)
                                   all live inside <AudioSystemHost /> above. */}
-                                {/* File preview is delivered via a registered
+                                          {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the OverlayController — no host needed
                                   here. Anywhere in the app:
                                     import { openFilePreview } from
                                       "@/features/files/components/preview/openFilePreview";
                                     openFilePreview(fileId); */}
-                              </React.Fragment>
-                              </MediaHostProvider>
-                              </MessagingHost>
-                              </MeetHost>
-                              </RealtimeHost>
-                            </RequestRecoveryProvider>
-                      </SelectedImagesProvider>
-                  </ModuleHeaderProvider>
-                </TooltipProvider>
-              </RefProvider>
-            </ToastProvider>
-          </PersistentComponentProvider>
-        </WindowPersistenceManager>
-        </MatrxDataTableHost>
-        </AgentCatalogHost>
+                                        </React.Fragment>
+                                      </MediaHostProvider>
+                                    </MessagingHost>
+                                  </MeetHost>
+                                </RealtimeHost>
+                              </RequestRecoveryProvider>
+                            </SelectedImagesProvider>
+                          </ModuleHeaderProvider>
+                        </TooltipProvider>
+                      </RefProvider>
+                    </AlchemyHost>
+                  </ToastProvider>
+                </PersistentComponentProvider>
+              </WindowPersistenceManager>
+            </MatrxDataTableHost>
+          </AgentCatalogHost>
         </AssociationsHost>
       </StoreProvider>
     </ReactQueryProvider>

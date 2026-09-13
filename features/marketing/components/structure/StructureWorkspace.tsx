@@ -24,7 +24,6 @@ import {
 } from "@/features/marketing/lib/route-tree";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import {
   LoadingSurface,
@@ -347,8 +346,8 @@ function ColumnsView({
         </p>
         {selected.virtual ? (
           <p className="text-[11px] text-muted-foreground">
-            No page is recorded at this exact path — it only exists as a
-            prefix of deeper URLs.
+            No page is recorded at this exact path — it only exists as a prefix
+            of deeper URLs.
           </p>
         ) : (
           <p className="text-[11px] text-muted-foreground">
@@ -409,7 +408,9 @@ function ColumnsView({
  * `/structure/columns` beside it is Columns as its own route). Left out, the
  * view still comes from `?view=` — the shape every other mount uses.
  */
-export function StructureWorkspace({ view: fixedView }: { view?: string } = {}) {
+export function StructureWorkspace({
+  view: fixedView,
+}: { view?: string } = {}) {
   const { site, brandId } = useMarketingSite();
   const structure = useSiteStructure(site.id);
 
@@ -480,12 +481,10 @@ export function StructureWorkspace({ view: fixedView }: { view?: string } = {}) 
       ["Routes", tree.totalRoutes],
       ["Route gaps (no page)", tree.virtualRoutes],
       ["Max depth", tree.maxDepth],
-      ...tree.levelBreakdown.map(
-        (level): [string, string] => [
-          `Level ${level.depth}`,
-          `${level.routes.toLocaleString()} routes · ${level.pages.toLocaleString()} pages · ${level.cumulativePages.toLocaleString()} cumulative`,
-        ],
-      ),
+      ...tree.levelBreakdown.map((level): [string, string] => [
+        `Level ${level.depth}`,
+        `${level.routes.toLocaleString()} routes · ${level.pages.toLocaleString()} pages · ${level.cumulativePages.toLocaleString()} cumulative`,
+      ]),
     ],
     attributes: { site_id: site.id },
   });
@@ -517,10 +516,9 @@ export function StructureWorkspace({ view: fixedView }: { view?: string } = {}) 
               human={structureCopy.human}
               json={() => tree}
               agent={structureCopy.agent}
-            />
-            <ExportMenu
-              label={`site-structure-${site.domain}`}
-              items={[jsonExportItem(() => tree, "Routing tree (.json)")]}
+              export={{
+                items: [jsonExportItem(() => tree, "Routing tree (.json)")],
+              }}
             />
           </div>
         </header>
@@ -646,8 +644,8 @@ export function StructureWorkspace({ view: fixedView }: { view?: string } = {}) 
               </p>
               <p className="mt-1 max-w-xl text-xs text-muted-foreground">
                 The routing tree builds from the canonical page registry. Run
-                site initialize or a crawl, or sync sitemaps, and the
-                structure will appear here.
+                site initialize or a crawl, or sync sitemaps, and the structure
+                will appear here.
               </p>
             </div>
           </div>

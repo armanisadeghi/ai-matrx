@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
-import { Skeleton } from "@ai-matrx/design-system";
-import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,12 +17,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Lock, Plus, Search, SlidersHorizontal } from "lucide-react";
-import type { AiSetting } from "../../types";
-import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+  Lock,
+  Pencil,
+  Plus,
+  RefreshCw,
+  SlidersHorizontal,
+  Trash2,
+} from "lucide-react";
+import type { AiSetting } from "../../types";
 
 function CompactRange({
   min,
@@ -30,38 +34,38 @@ function CompactRange({
   min: number | null;
   max: number | null;
 }) {
-  if (min === null && max === null) {
-    return <span className="text-muted-foreground text-xs">—</span>;
-  }
+  if (min === null && max === null)
+    return <span className="text-xs text-muted-foreground">—</span>;
   return (
-    <span className="text-xs font-mono tabular-nums">
+    <span className="font-mono text-xs tabular-nums">
       {min ?? "—"}
-      <span className="text-muted-foreground mx-0.5">–</span>
+      <span className="mx-0.5 text-muted-foreground">–</span>
       {max ?? "—"}
     </span>
   );
 }
 
-interface RowActionsProps {
+function RowActions({
+  item,
+  onEdit,
+  onDelete,
+}: {
   item: AiSetting;
   onEdit: (item: AiSetting) => void;
   onDelete: (item: AiSetting) => void;
-}
-
-function RowActions({ item, onEdit, onDelete }: RowActionsProps) {
+}) {
   const [pendingDelete, setPendingDelete] = useState(false);
   const isSystem = item.is_system ?? false;
-
   return (
     <>
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-0.5">
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className="h-11 w-11 sm:h-7 sm:w-7"
           title="Edit"
-          onClick={(e) => {
-            e.stopPropagation();
+          onClick={(event) => {
+            event.stopPropagation();
             onEdit(item);
           }}
         >
@@ -70,25 +74,24 @@ function RowActions({ item, onEdit, onDelete }: RowActionsProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 disabled:cursor-not-allowed"
-          title={isSystem ? "System settings can't be deleted" : "Delete"}
+          className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 sm:h-7 sm:w-7"
+          title={isSystem ? "System settings cannot be deleted" : "Delete"}
           disabled={isSystem}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!isSystem) setPendingDelete(true);
+          onClick={(event) => {
+            event.stopPropagation();
+            setPendingDelete(true);
           }}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
-
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete &quot;{item.key}&quot;?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the setting &quot;{item.key}&quot;
-              from the canonical settings vocabulary. This cannot be undone.
+              This will remove the setting &quot;{item.key}&quot;
+              from the active settings vocabulary.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -112,208 +115,204 @@ function RowActions({ item, onEdit, onDelete }: RowActionsProps) {
 export interface SettingTableProps {
   settings: AiSetting[];
   isLoading: boolean;
+  error: string | null;
   selectedId: string | null;
   onSelect: (setting: AiSetting) => void;
   onEdit: (setting: AiSetting) => void;
   onDelete: (setting: AiSetting) => void;
   onCreate: () => void;
+  onRetry: () => void;
 }
 
 export default function SettingTable({
   settings,
   isLoading,
+  error,
   selectedId,
   onSelect,
   onEdit,
   onDelete,
   onCreate,
+  onRetry,
 }: SettingTableProps) {
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
-
-  const filtered = useMemo(() => {
-    if (!q.trim()) return settings;
-    const lq = q.toLowerCase();
-    return settings.filter(
-      (s) =>
-        s.key.toLowerCase().includes(lq) ||
-        (s.value_type ?? "").toLowerCase().includes(lq) ||
-        (s.description ?? "").toLowerCase().includes(lq),
-    );
-  }, [settings, q]);
-
-  const paginated = useMemo(() => {
-    const start = (page - 1) * perPage;
-    return filtered.slice(start, start + perPage);
-  }, [filtered, page, perPage]);
-
-  const handleUpdateQ = (value: string) => {
-    setQ(value);
-    setPage(1);
-  };
-
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Header: search + count + create */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b bg-card">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => handleUpdateQ(e.target.value)}
-            placeholder="Search by key…"
-            className="h-8 pl-7 text-sm"
-          />
-        </div>
-        <span className="text-xs text-muted-foreground shrink-0">
-          {filtered.length === settings.length
-            ? `${settings.length} settings`
-            : `${filtered.length} of ${settings.length} settings`}
-        </span>
-        <div className="flex-1" />
-        <Button
-          size="sm"
-          className="h-8 px-3 text-xs gap-1.5"
-          onClick={onCreate}
+  const columns: MatrxColumnDef<AiSetting>[] = [
+    {
+      accessorKey: "key",
+      header: "Key",
+      sortable: false,
+      filter: false,
+      cell: (item) => (
+        <span
+          className="block max-w-[210px] truncate font-mono text-xs font-medium"
+          title={item.key}
         >
-          <Plus className="h-3.5 w-3.5" />
-          New Setting
-        </Button>
-      </div>
-
-      {/* Scrollable table */}
-      <div className="flex-1 overflow-auto min-h-0">
-        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
-          <thead className="sticky top-0 z-10 bg-card border-b border-border">
-            <tr className="h-8">
-              <th className="w-[220px] min-w-[160px] px-2 py-1.5 text-left align-middle text-xs font-semibold text-muted-foreground">
-                Key
-              </th>
-              <th className="w-[120px] min-w-[100px] px-2 py-1.5 text-left align-middle text-xs font-semibold text-muted-foreground">
-                Value Type
-              </th>
-              <th className="w-[110px] min-w-[100px] px-2 py-1.5 text-left align-middle text-xs font-semibold text-muted-foreground">
-                Min – Max
-              </th>
-              <th className="w-[90px] min-w-[80px] px-2 py-1.5 text-left align-middle text-xs font-semibold text-muted-foreground">
-                Origin
-              </th>
-              <th className="px-2 py-1.5 text-left align-middle text-xs font-semibold text-muted-foreground">
-                Description
-              </th>
-              <th className="w-[80px] min-w-[80px] px-2 py-1.5 text-right align-middle text-xs font-semibold text-muted-foreground">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="[&_tr:last-child]:border-0">
-            {isLoading ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <tr key={i} className="h-9 border-b border-border">
-                  {Array.from({ length: 6 }).map((__, j) => (
-                    <td key={j} className="px-2 py-1.5">
-                      <Skeleton className="h-4 w-full" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : paginated.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="h-32 text-center p-2">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <SlidersHorizontal className="h-10 w-10 opacity-30" />
-                    <p className="text-sm">No settings found</p>
-                    {q && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUpdateQ("")}
-                      >
-                        Clear search
-                      </Button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              paginated.map((item, idx) => (
-                <tr
-                  key={item.id}
-                  className={`group h-9 border-b border-border cursor-pointer transition-colors ${
-                    selectedId === item.id
-                      ? "bg-primary/10 hover:bg-primary/15"
-                      : idx % 2 === 0
-                        ? "hover:bg-muted/50"
-                        : "bg-muted/20 hover:bg-muted/50"
-                  }`}
+          {item.key}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "value_type",
+      header: "Value Type",
+      sortable: false,
+      filter: false,
+      cell: (item) => (
+        <Badge variant="outline" className="font-mono text-xs">
+          {item.value_type}
+        </Badge>
+      ),
+    },
+    {
+      id: "range",
+      header: "Min – Max",
+      sortable: false,
+      filter: false,
+      cell: (item) => (
+        <CompactRange min={item.canonical_min} max={item.canonical_max} />
+      ),
+    },
+    {
+      accessorKey: "is_system",
+      header: "Origin",
+      sortable: false,
+      filter: false,
+      cell: (item) =>
+        item.is_system ? (
+          <Badge
+            variant="outline"
+            className="gap-1 border-blue-200 bg-blue-50 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+          >
+            <Lock className="h-2.5 w-2.5" />
+            System
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-xs">
+            Custom
+          </Badge>
+        ),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      sortable: false,
+      filter: false,
+      cell: (item) => (
+        <span
+          className="block max-w-[420px] truncate text-xs text-muted-foreground"
+          title={item.description ?? ""}
+        >
+          {item.description || "—"}
+        </span>
+      ),
+    },
+  ];
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <MatrxDataTable<AiSetting>
+        data={settings}
+        isLoading={isLoading}
+        columns={columns}
+        getRowId={(item) => item.id}
+        pageSize={25}
+        pageSizeOptions={[10, 25, 50, 100]}
+        defaultSort={null}
+        processLocalRows={(rows, state) => {
+          const query = state.search.trim().toLowerCase();
+          if (!query) return rows;
+          return rows.filter((item) =>
+            [item.key, item.value_type, item.description ?? ""].some((value) =>
+              value.toLowerCase().includes(query),
+            ),
+          );
+        }}
+        onRowOpen={onSelect}
+        detail={{ enabled: false }}
+        rowClassName={(item) =>
+          item.id === selectedId
+            ? "bg-primary/10 hover:bg-primary/15"
+            : undefined
+        }
+        emptyState={
+          error
+            ? {
+                title: "Could not load settings",
+                description: error,
+                icon: <SlidersHorizontal className="h-8 w-8" />,
+                action: (
+                  <Button size="sm" variant="outline" onClick={onRetry}>
+                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                    Retry
+                  </Button>
+                ),
+              }
+            : {
+                title: "No settings found",
+                icon: <SlidersHorizontal className="h-8 w-8" />,
+              }
+        }
+        toolbar={{
+          searchPlaceholder: "Search by key…",
+          leading: (
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Settings Vocabulary</h2>
+              <Badge variant="outline" className="text-xs">
+                {settings.length}
+              </Badge>
+            </div>
+          ),
+          actions: (
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 px-2 text-xs"
+              onClick={onCreate}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Setting
+            </Button>
+          ),
+        }}
+        rowActions={(item) => (
+          <RowActions item={item} onEdit={onEdit} onDelete={onDelete} />
+        )}
+        mobileCards={(item, _index, controls) => (
+          <article
+            className={
+              item.id === selectedId
+                ? "space-y-2 rounded-md border border-primary/40 bg-primary/10 p-3"
+                : "space-y-2 rounded-md border border-border p-3"
+            }
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <button
+                  type="button"
+                  className="block max-w-full truncate text-left font-mono font-medium hover:underline"
                   onClick={() => onSelect(item)}
                 >
-                  <td className="py-1 px-2 align-middle">
-                    <span className="text-xs font-mono font-medium truncate block max-w-[210px]">
-                      {item.key}
-                    </span>
-                  </td>
-                  <td className="py-1 px-2 align-middle">
-                    <Badge variant="outline" className="text-xs font-mono">
-                      {item.value_type}
-                    </Badge>
-                  </td>
-                  <td className="py-1 px-2 align-middle">
-                    <CompactRange
-                      min={item.canonical_min}
-                      max={item.canonical_max}
-                    />
-                  </td>
-                  <td className="py-1 px-2 align-middle">
-                    {item.is_system ? (
-                      <Badge
-                        variant="outline"
-                        className="text-xs gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                      >
-                        <Lock className="h-2.5 w-2.5" />
-                        System
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        Custom
-                      </Badge>
-                    )}
-                  </td>
-                  <td className="py-1 px-2 align-middle">
-                    <span
-                      className="text-xs text-muted-foreground truncate block max-w-[420px]"
-                      title={item.description ?? ""}
-                    >
-                      {item.description || "—"}
-                    </span>
-                  </td>
-                  <td className="py-1 px-2 align-middle text-right">
-                    <RowActions item={item} onEdit={onEdit} onDelete={onDelete} />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pinned pagination footer */}
-      <div className="flex-shrink-0 border-t bg-card p-0">
-        <GenericTablePagination
-          totalItems={filtered.length}
-          itemsPerPage={perPage}
-          currentPage={page}
-          onPageChange={setPage}
-          onItemsPerPageChange={(n) => {
-            setPerPage(n);
-            setPage(1);
-          }}
-          compact
-          layoutType="flex"
-          containerClassName="border-t-0 pt-0"
-        />
-      </div>
+                  {item.key}
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  {item.value_type}
+                </p>
+              </div>
+              {item.is_system ? (
+                <Badge variant="outline" className="shrink-0 gap-1 text-xs">
+                  <Lock className="h-3 w-3" />
+                  System
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="shrink-0 text-xs">
+                  Custom
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <CompactRange min={item.canonical_min} max={item.canonical_max} />
+              <span className="truncate">{item.description || "—"}</span>
+            </div>
+            <div className="flex justify-end">{controls.actions}</div>
+          </article>
+        )}
+      />
     </div>
   );
 }

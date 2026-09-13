@@ -206,7 +206,7 @@ export const marketingDiscoveryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-discovery",
   readiness: "verified",
   label: "Marketing Discovery Inbox",
-  urlPattern: "/marketing/brands/[brandId]/discovery",
+  urlPattern: "/marketing/[brandId]/inbox",
   inheritsFrom: "matrx-user/marketing-brand",
   intro: `<surface_intro>
 You are on the Marketing discovery inbox: the review queue where machine-discovered candidates about this brand (logos and imagery, identity copy, social profiles, phone/fax/address facts, notable links) wait for a human decision. Each pending item carries the machine's guess (guessed_kind), its source URL, and a label; the user confirms it into brand truth, dismisses it, or deletes it.

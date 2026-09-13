@@ -117,6 +117,12 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-12 — `@/features/files/api/<module>` imports lint clean again.** The bare
+  `@/features/files/api` ban moved from a `patterns` group (gitignore semantics
+  match every module under a banned directory and cannot re-include children) to
+  an exact-name `paths` entry in `eslint.config.mjs`; the sanctioned module doors
+  (`api/files`, `api/assets`, …) no longer trip `no-restricted-imports`.
+
 - **2026-09-12 — Expected unavailable attachment reads stay typed UI state.**
   A revoked grant or deleted row from exact-id metadata hydration still reaches
   its file/access UI state, but no longer becomes a duplicate production

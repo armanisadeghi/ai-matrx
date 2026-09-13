@@ -262,7 +262,7 @@ export const publicAgentAppManifest: SurfaceManifest = {
   readinessNote:
     "All five /p render paths emit. Shell conversations remain mount-created, then smartExecute refreshes the named live provider and re-applies bindings at submit. Live-verified 2026-08-15 signed in and signed out with chat-shell app surface-submit-scope-probe and the deliberately non-name-matched mapping topic <- user_input; chat.conversation.variables.topic contained the exact typed Matrx-vs-matrix phrases in rows 71eb5d6e-b376-42f9-a07f-2030e237e4ae and 07f5dedc-c7df-45c3-a41a-bf884b373bb0.",
   label: "Public Agent App",
-  urlPattern: "/p",
+  urlPattern: "/p/[slug]",
   intro: `<surface_intro>
 You are bound to a PUBLISHED, PUBLIC agent app running for an anonymous or newly-arrived visitor at /p/[slug] — not the app's builder/owner. App identity tells you which app.definition row and which agent are running. Visitor tells you whether this person is signed in or an anonymous guest tracked only by browser fingerprint, and how many free guest runs remain — anonymous guests are the common case here, never assume a logged-in user. Run input is what THIS visitor just submitted (a typed message and/or form variable values validated against the app's schema); read it as their actual request, not a template. Run state is the resulting conversation and the live/streamed response for their run.
 Treat this like any first-contact interaction with a stranger: no prior context about this person exists beyond what is declared here.

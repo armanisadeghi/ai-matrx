@@ -1,0 +1,8 @@
+{
+  "_what": "DD-162 ratchet. The definer-class census's remaining distance, as a CEILING that may only fall. `pnpm check:definer-class` fails when a number here rises, and the only honest way to change a number is downward, in the same commit that closes the functions.",
+  "_why_not_zero": "These are SECURITY DEFINER functions that read a private or confidential table and explain themselves to nobody the census can see. They are not edited blind: dropping iam.assert_class_read into a reader on a `private` token makes it raise ALWAYS (the gate refuses a blanket read on private/confidential by design), so a sweep would break live product flows one function at a time, and a sweep of allowlist rows would turn iam.definer_class_exemption into a wall of 'ok'. Each one needs a person to decide what it is FOR. That is a campaign; the ratchet is what stops it growing while the campaign runs.",
+  "_measured_at": "2026-09-12",
+  "_measured_by": "B-53 (DD-162), against brsgrqvjdzwihsvnfqkf",
+  "unexplained_readers": 183,
+  "unexplained_readers_reachable_by_anon": 54
+}

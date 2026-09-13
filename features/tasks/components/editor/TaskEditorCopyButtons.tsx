@@ -87,6 +87,7 @@ export function TaskEditorCopyButtonsForDraft({
 
   return (
     <CopyButtons
+      sourceId={`task:${current.taskId}`}
       size={size}
       className={className}
       label={current.effective.title || "Task"}

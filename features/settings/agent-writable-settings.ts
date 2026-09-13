@@ -45,12 +45,13 @@ export function isOneOf<T extends string>(
 }
 
 // ── Theme mode (slice: theme.mode — boot-critical, synced) ────────────────
-// NOTE: `slice-bindings.ts` independently rejects anything but light/dark on
+// NOTE: `slice-bindings.ts` independently rejects anything but light/dark/system on
 // the way into the slice. This list is the UI + contract twin of that guard.
 
 export const THEME_MODE_OPTIONS = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
+  { value: "system", label: "Use system setting" },
 ] as const satisfies readonly SettingOption[];
 
 export type ThemeMode = (typeof THEME_MODE_OPTIONS)[number]["value"];

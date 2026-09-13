@@ -25,6 +25,7 @@ interface ShapeSurfaceRuntimeProps {
   studioTab:
     | "schema"
     | "instances"
+    | "table"
     | "test"
     | "stream"
     | "examples"

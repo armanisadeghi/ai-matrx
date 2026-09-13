@@ -17,9 +17,7 @@ import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import type {
   AgentCopyGroomerConfig,
   AgentCopyGroomerSection,
@@ -276,12 +274,11 @@ export function CoverageWorkspace() {
                 human={matrixCopy.human}
                 json={() => data}
                 agent={matrixCopy.agent}
+                groomer={groomerConfig}
+                export={{
+                  items: [jsonExportItem(() => data, "Matrix (.json)")],
+                }}
               />
-              <ExportMenu
-                label={`coverage-matrix-${site.domain}`}
-                items={[jsonExportItem(() => data, "Matrix (.json)")]}
-              />
-              <AgentCopyGroomerLauncher config={groomerConfig} />
             </div>
           </header>
 
@@ -328,7 +325,11 @@ export function CoverageWorkspace() {
                 label="Non-HTML resources"
                 description="Observed JSON, XML, images, PDFs, and other assets"
                 value={data?.resourceUrls ?? null}
-                href={marketingRoutes.site(brandId, site.id, "/pages?scope=resources")}
+                href={marketingRoutes.site(
+                  brandId,
+                  site.id,
+                  "/pages?scope=resources",
+                )}
                 anchor="resource_urls"
                 siteDomain={site.domain}
                 location={pageLocation}

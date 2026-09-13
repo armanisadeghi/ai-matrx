@@ -24,8 +24,8 @@ export default function LayoutTab() {
       />
 
       <SettingsCallout tone="warning">
-        These settings live in an unsynced Redux slice — they reset when the app
-        reloads. They're flagged for migration to the sync engine.
+        Applies until you reload. These layout choices are only kept for the
+        current session.
       </SettingsCallout>
 
       <SettingsSection title="Presentation">

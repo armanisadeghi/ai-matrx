@@ -66,10 +66,7 @@ import {
   selectTaskName,
 } from "@/lib/redux/slices/appContextSlice";
 import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
-import {
-  folderNamesForNotes,
-  noteMatchesActiveOrgContext,
-} from "../utils/noteUtils";
+import { noteMatchesActiveOrgContext } from "../utils/noteUtils";
 import {
   setInstanceActiveTab,
   addInstanceTab,
@@ -94,6 +91,7 @@ import {
   selectInstanceTabs,
   selectNotesListStatus,
   selectAllFolders,
+  selectFolderReferences,
   selectNotesGroupedByScope,
   selectNoteScopesLoaded,
 } from "../redux/selectors";
@@ -101,7 +99,6 @@ import {
   createFolder,
   renameFolder,
   deleteFolderNotes,
-  assignHomelessNotesToPersonalOrg,
 } from "../service/notesService";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { recordToast, toast } from "@/lib/toast";
@@ -135,7 +132,9 @@ import { formatRelativeTime } from "@/utils/datetime";
 
 /** Past a week a note in the sidebar reads as a calendar date, not an age. */
 const NOTE_AGE_CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
-import type { NoteSortField, NoteSortOrder, NoteGroupBy } from "../types";
+import { noteFolderIdentityKey, type NoteSortField, type NoteSortOrder, type NoteGroupBy } from "../types";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -174,6 +173,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const openTabIds = useAppSelector(selectInstanceTabs(instanceId));
   const listStatus = useAppSelector(selectNotesListStatus);
   const allFolders = useAppSelector(selectAllFolders);
+  const folderReferences = useAppSelector(selectFolderReferences);
   const scopeGrouped = useAppSelector(selectNotesGroupedByScope);
   const scopesLoaded = useAppSelector(selectNoteScopesLoaded);
 
@@ -206,7 +206,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   // user is working in a company org. Other company orgs stay excluded.
   // Null-org ("homeless") notes are hidden by default with a banner + toggle.
   const [includeHomeless, setIncludeHomeless] = useState(false);
-  const [claimingHomeless, setClaimingHomeless] = useState(false);
   const { contextFiltered, homelessCount } = useMemo(() => {
     let result = allNotes;
     let homeless: typeof allNotes = [];
@@ -249,7 +248,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
     if (!activeTabId) return new Set<string>();
     const activeNote = allNotes.find((n) => n.id === activeTabId);
-    if (activeNote?.folder_name) return new Set([activeNote.folder_name]);
+    if (activeNote?.folder_name) return new Set([noteFolderIdentityKey(activeNote)]);
     return new Set<string>();
   });
   const [sortField, setSortField] = useState<NoteSortField>("updated_at");
@@ -382,12 +381,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   // (`contextFiltered`). Building it from `allNotes` left empty folders
   // (count 0) for notes that the org filter had already excluded.
   const folders = useMemo(() => {
-    const result = folderNamesForNotes(contextFiltered);
-    const hasOrphans = contextFiltered.some((n) => !n.folder_name);
-    if (hasOrphans && !result.includes("Uncategorized")) {
-      result.push("Uncategorized");
-    }
-    return result;
+    return Array.from(new Set(contextFiltered.map(noteFolderIdentityKey)));
   }, [contextFiltered]);
 
   // Filter notes by search (operates on context-filtered set)
@@ -461,7 +455,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           break;
         case "default":
         default: // "folder"
-          key = n.folder_name || "Uncategorized";
+          key = noteFolderIdentityKey(n);
           break;
       }
       let bucket = map.get(key);
@@ -505,21 +499,20 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   }, [groupBy, filteredNotes, activeTabId, allNotes, searchQuery]);
 
   // Get group labels for display
-  const getGroupLabel = useCallback(
-    (key: string): string => {
-      if (key === "__all__") return "All Notes";
-      if (key === "__none__" || key === "Unassigned") return "Unassigned";
-      if (groupBy === "folder" || groupBy === "default") return key;
-      // Scope keys are already human-readable: "Department: SEO"
-      if (groupBy === "scope") return key;
-      // For org/project/task, the key is a UUID — show context name if matching
-      if (groupBy === "organization" && orgName) return orgName;
-      if (groupBy === "project" && projName) return projName;
-      if (groupBy === "task" && taskName) return taskName;
-      return key.slice(0, 8) + "...";
-    },
-    [groupBy, orgName, projName, taskName],
-  );
+  function getGroupLabel(key: string): string {
+    if (key === "__all__") return "All Notes";
+    if (key === "__none__" || key === "Unassigned") return "Unassigned";
+    if (groupBy === "folder" || groupBy === "default") {
+      return groupedNotes.get(key)?.[0]?.folder_name || "Uncategorized";
+    }
+    // Scope keys are already human-readable: "Department: SEO"
+    if (groupBy === "scope") return key;
+    // For org/project/task, the key is a UUID — show context name if matching
+    if (groupBy === "organization" && orgName) return orgName;
+    if (groupBy === "project" && projName) return projName;
+    if (groupBy === "task" && taskName) return taskName;
+    return key.slice(0, 8) + "...";
+  }
 
   // Ordered group keys
   const groupKeys = useMemo(() => {
@@ -656,39 +649,22 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       if (!noteId) return;
       // Find the note's current folder to avoid no-op moves
       const note = allNotes.find((n) => n.id === noteId);
-      if (note && note.folder_name !== targetFolder) {
-        dispatch(moveNoteToFolder({ noteId, folder: targetFolder }));
+      const target = groupedNotes.get(targetFolder)?.[0];
+      if (note && target?.folder_id && noteFolderIdentityKey(note) !== targetFolder) {
+        dispatch(moveNoteToFolder({
+          noteId,
+          folder: {
+            id: target.folder_id,
+            organizationId: requireOrganizationContext(target.organization_id),
+            name: target.folder_name ?? "Draft",
+          },
+        }));
       }
       setDraggedNoteId(null);
       setDropTargetFolder(null);
     },
-    [dispatch, allNotes],
+    [dispatch, allNotes, groupedNotes],
   );
-
-  const handleClaimHomeless = useCallback(async () => {
-    if (claimingHomeless || homelessCount === 0) return;
-    const ok = await confirm({
-      title: `Add ${homelessCount} note${homelessCount === 1 ? "" : "s"} to your organization?`,
-      description:
-        "Notes without an organization will be assigned to your personal organization so they appear in your workspace.",
-      confirmLabel: "Add to my organization",
-    });
-    if (!ok) return;
-    setClaimingHomeless(true);
-    try {
-      const { noteIds } = await assignHomelessNotesToPersonalOrg();
-      await dispatch(fetchNotesList());
-      setIncludeHomeless(false);
-      toast.success(
-        `Added ${noteIds.length} note${noteIds.length === 1 ? "" : "s"} to your organization`,
-      );
-    } catch (err) {
-      console.error("Failed to assign personal organization to notes:", err);
-      toast.error("Couldn't add notes to your organization");
-    } finally {
-      setClaimingHomeless(false);
-    }
-  }, [claimingHomeless, homelessCount, dispatch]);
 
   const toggleAllFolders = useCallback(() => {
     setExpandedFolders((prev) => {
@@ -722,20 +698,23 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   );
 
   const handleNewNote = useCallback(
-    (folder: string) => {
+    (folder: string, capturedOrganizationId?: string) => {
       if (!userId) return;
+      const target = groupedNotes.get(folder)?.[0];
+      const folderName = target?.folder_name ?? "Draft";
+      const organizationId = capturedOrganizationId ?? target?.organization_id ?? activeOrgId;
       const existing = allNotes.find(
         (n) =>
-          n._isAutogenerated && !n.content?.trim() && n.folder_name === folder,
+          n._isAutogenerated && !n.content?.trim() && n.folder_name === folderName && n.organization_id === organizationId && noteFolderIdentityKey(n) === folder,
       );
       if (existing) {
         selectNote(existing.id);
         return;
       }
       const id = crypto.randomUUID();
-      dispatch(createAutogeneratedNote({ id, userId, folder, instanceId }));
+      dispatch(createAutogeneratedNote({ id, userId, folder: folderName, organizationId: requireOrganizationContext(organizationId), instanceId }));
     },
-    [dispatch, instanceId, userId, allNotes, selectNote],
+    [dispatch, instanceId, userId, activeOrgId, allNotes, selectNote, groupedNotes],
   );
 
   // ── Folder context menu actions ────────────────────────────────────
@@ -745,8 +724,15 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
 
   const handleFolderDeleteAll = useCallback(
     async (folder: string) => {
-      const count = (groupedNotes.get(folder) ?? []).length;
+      const folderNotes = groupedNotes.get(folder) ?? [];
+      const count = folderNotes.length;
       if (count === 0) return;
+      const representative = folderNotes.find(
+        (note) => note.folder_id && note.organization_id === activeOrgId,
+      );
+      if (!representative?.folder_id) {
+        throw new Error("This folder cannot be changed until its organization identity is available.");
+      }
       const ok = await confirm({
         title: "Delete all notes in folder?",
         description: `${count} note${count === 1 ? "" : "s"} in "${folder}" will be moved to trash. You can restore them later.`,
@@ -755,29 +741,34 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       });
       if (!ok) return;
       try {
-        await deleteFolderNotes(folder);
+        await deleteFolderNotes({
+          id: representative.folder_id,
+          organizationId: requireOrganizationContext(representative.organization_id),
+          name: folder,
+        });
         // Re-fetch notes list to reflect deletions
         dispatch(fetchNotesList());
       } catch {
         // Error handled in service
       }
     },
-    [dispatch, groupedNotes],
+    [dispatch, groupedNotes, activeOrgId],
   );
 
   // Surface sections for the v3 right-click menu on a folder header.
   const buildFolderSections = useCallback(
     (folder: string): ContextMenuExtraSection[] => {
+      const label = groupedNotes.get(folder)?.[0]?.folder_name ?? "Uncategorized";
       const items: ContextMenuExtraItem[] = [
         {
           kind: "item",
           id: "new-note",
-          label: `New Note in ${folder}`,
+          label: `New Note in ${label}`,
           icon: Plus,
           onSelect: () => handleNewNote(folder),
         },
       ];
-      if (!isDefaultFolder(folder)) {
+      if (!isDefaultFolder(label)) {
         items.push(
           { kind: "separator", id: "folder-sep" },
           {
@@ -797,23 +788,33 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           },
         );
       }
-      return [{ id: "folder-actions", label: folder, items }];
+      return [{ id: "folder-actions", label, items }];
     },
-    [handleNewNote, handleFolderRename, handleFolderDeleteAll],
+    [handleNewNote, handleFolderRename, handleFolderDeleteAll, groupedNotes],
   );
 
   const handleRenameConfirm = useCallback(
     async (newName: string) => {
       if (!renameFolderTarget) return;
+      const representative = (groupedNotes.get(renameFolderTarget) ?? []).find(
+        (note) => note.folder_id && note.organization_id === activeOrgId,
+      );
+      if (!representative?.folder_id) {
+        throw new Error("This folder cannot be renamed until its organization identity is available.");
+      }
       try {
-        await renameFolder(renameFolderTarget, newName);
+        await renameFolder({
+          id: representative.folder_id,
+          organizationId: requireOrganizationContext(representative.organization_id),
+          name: renameFolderTarget,
+        }, newName);
         // Re-fetch notes list to reflect renamed folder_name
         dispatch(fetchNotesList());
       } catch {
         // Error handled in service
       }
     },
-    [dispatch, renameFolderTarget],
+    [dispatch, renameFolderTarget, groupedNotes, activeOrgId],
   );
 
   // ── Create folder handler ──────────────────────────────────────────
@@ -822,12 +823,15 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       // Create the note_folders record first, then complete the action that
       // launched the dialog. Row-menu creation moves that exact note; the
       // sidebar footer keeps its established create-a-note behavior.
-      await createFolder(folderName);
       if (createFolderIntent?.kind === "move-note") {
+        const note = allNotes.find((candidate) => candidate.id === createFolderIntent.noteId);
+        if (!note) throw new Error("Note not found in state");
+        const organizationId = requireOrganizationContext(note.organization_id);
+        const folderId = await createFolder(folderName, organizationId);
         await dispatch(
           moveNoteToFolder({
             noteId: createFolderIntent.noteId,
-            folder: folderName,
+            folder: { id: folderId, organizationId, name: folderName },
           }),
         ).unwrap();
         recordToast.success(
@@ -835,10 +839,17 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           `Created ${folderName} and moved the note`,
         );
       } else {
-        handleNewNote(folderName);
+        try {
+          const organizationId = await ensureOrganizationContext({ organizationId: activeOrgId });
+          await createFolder(folderName, organizationId);
+          handleNewNote(folderName, organizationId);
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) throw error;
+          throw error;
+        }
       }
     },
-    [createFolderIntent, dispatch, handleNewNote],
+    [createFolderIntent, dispatch, handleNewNote, activeOrgId, allNotes],
   );
 
   // ── Format time ────────────────────────────────────────────────────
@@ -908,15 +919,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               organization
             </span>
           </span>
-          <button
-            type="button"
-            onClick={handleClaimHomeless}
-            disabled={claimingHomeless}
-            className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 hover:bg-amber-500/10 disabled:opacity-50 dark:text-amber-400 transition-colors"
-            title="Assign your personal organization to these notes so they appear in your workspace."
-          >
-            {claimingHomeless ? "Adding…" : "Add to my organization"}
-          </button>
+          <span className="ml-auto text-[10px] text-amber-700 dark:text-amber-300">
+            Open the note to review its destination.
+          </span>
           <button
             type="button"
             onClick={() => setIncludeHomeless((v) => !v)}
@@ -1172,7 +1177,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         <NoteSidebarBulkBar
           instanceId={instanceId}
           selectedNotes={selectedNoteRecords}
-          allFolders={allFolders}
+          allFolders={folderReferences}
           openTabIds={openTabIds}
           onClear={exitSelectionMode}
           allVisibleSelected={allVisibleSelected}
@@ -1219,7 +1224,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       instanceId={instanceId}
                       isActive={isActive}
                       isOpenTab={isOpenTab}
-                      allFolders={allFolders}
+                      allFolders={folderReferences}
                       openKnowledge={openKnowledge}
                       formatTime={formatTime}
                       showFolderTag
@@ -1356,7 +1361,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   instanceId={instanceId}
                   isActive={isActive}
                   isOpenTab={isOpenTab}
-                  allFolders={allFolders}
+                  allFolders={folderReferences}
                   openKnowledge={openKnowledge}
                   formatTime={formatTime}
                   showFolderTag
@@ -1478,7 +1483,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                               instanceId={instanceId}
                               isActive={isActive}
                               isOpenTab={isOpenTab}
-                              allFolders={allFolders}
+                              allFolders={folderReferences}
                               openKnowledge={openKnowledge}
                               formatTime={formatTime}
                               draggable={isFolderMode}

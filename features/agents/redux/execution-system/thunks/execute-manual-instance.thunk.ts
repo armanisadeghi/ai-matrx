@@ -395,13 +395,17 @@ export async function assembleManualRequest(
     seedTools: seedFromAgent,
   });
 
-  // agent.mcpServers (slug list) → client.mcp per TOOL_ROUTING_RULES.md §10.
-  // Server merges into config.mcp_servers without disturbing whatever the
-  // agent definition already carries.
-  if (agent.mcpServers && agent.mcpServers.length > 0) {
+  // Agent and conversation MCP server slugs → client.mcp per
+  // TOOL_ROUTING_RULES.md §10. The server resolves the connected account at
+  // execution time and merges these without disturbing the agent definition.
+  const mcpServers = [
+    ...(agent.mcpServers ?? []),
+    ...(advancedSettings?.addedMcpServers ?? []),
+  ].filter((server, index, all) => all.indexOf(server) === index);
+  if (mcpServers.length > 0) {
     injection.client = {
       ...(injection.client ?? { capabilities: [], state: {} }),
-      mcp: agent.mcpServers,
+      mcp: mcpServers,
     };
   }
 

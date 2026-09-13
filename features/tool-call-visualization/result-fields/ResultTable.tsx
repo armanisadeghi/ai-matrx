@@ -59,7 +59,10 @@ const FILTER_THRESHOLD = 10;
  * remains reachable through the per-row Details disclosure below.
  */
 const TECHNICAL_COLUMN_TOKEN =
-    /(^|_)(ids?|uuids?|hash|checksum|digest|metadata|offset)(_|$)/i;
+    /(^|_)(ids?|uuids?|guids?|slugs?|hash|checksum|digest|metadata|offset)(_|$)/i;
+/** `rule_key`/`mandate_keys` name a machine handle; a bare `key` column is the
+ *  reader's own column in a key/value listing, so it is deliberately absent. */
+const TECHNICAL_SUFFIX_KEY = /_keys?$/i;
 const TECHNICAL_POSITION_KEY = /^(chunk|source|record|row)_index$/i;
 
 function normalizeColumnKey(key: string): string {
@@ -73,6 +76,7 @@ export function isTechnicalTableColumn(key: string): boolean {
     const normalizedKey = normalizeColumnKey(key);
     return (
         TECHNICAL_COLUMN_TOKEN.test(normalizedKey) ||
+        TECHNICAL_SUFFIX_KEY.test(normalizedKey) ||
         TECHNICAL_POSITION_KEY.test(normalizedKey)
     );
 }

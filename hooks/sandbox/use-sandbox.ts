@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   SandboxInstance,
   SandboxListResponse,
@@ -15,6 +15,14 @@ import { notifyComputeTargetsChanged } from "./use-compute-targets";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
+
+const SANDBOX_LIST_PAGE_SIZE = 50;
+
+type SandboxListOptions = {
+  status?: string;
+  limit?: number;
+  offset?: number;
+};
 
 /**
  * Shared error extractor for sandbox API responses. Surfaces the underlying
@@ -50,14 +58,32 @@ async function extractSandboxError(
 export function useSandboxInstances(projectId?: string) {
   const organizationId = useAppSelector(selectOrganizationId);
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const hasFetchedOnce = useRef(false);
+  const [listProjectId, setListProjectId] = useState(projectId);
+  const listProjectIdRef = useRef(projectId);
+  const listRequestId = useRef(0);
+  const listAbortController = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      listRequestId.current += 1;
+      listAbortController.current?.abort();
+      listAbortController.current = null;
+    };
+  }, [projectId]);
 
   const fetchInstances = useCallback(
-    async (opts?: { status?: string; limit?: number; offset?: number }) => {
+    async (opts?: SandboxListOptions) => {
+      const requestId = listRequestId.current + 1;
+      listRequestId.current = requestId;
+      listAbortController.current?.abort();
+      const abortController = new AbortController();
+      listAbortController.current = abortController;
+
       // Only show full loading state on initial fetch
       if (!hasFetchedOnce.current) {
         setLoading(true);
@@ -66,26 +92,88 @@ export function useSandboxInstances(projectId?: string) {
       }
       setError(null);
       try {
-        const params = new URLSearchParams();
-        if (projectId) params.set("project_id", projectId);
-        if (opts?.status) params.set("status", opts.status);
-        if (opts?.limit) params.set("limit", String(opts.limit));
-        if (opts?.offset) params.set("offset", String(opts.offset));
+        const fetchPage = async (limit: number, offset: number) => {
+          const params = new URLSearchParams();
+          if (projectId) params.set("project_id", projectId);
+          if (opts?.status) params.set("status", opts.status);
+          params.set("limit", String(limit));
+          params.set("offset", String(offset));
 
-        const resp = await fetch(`/api/sandbox?${params}`);
-        if (!resp.ok) {
-          throw new Error(
-            await extractSandboxError(resp, "Failed to fetch instances"),
+          const resp = await fetch(`/api/sandbox?${params}`, {
+            signal: abortController.signal,
+          });
+          if (!resp.ok) {
+            throw new Error(
+              await extractSandboxError(resp, "Failed to fetch instances"),
+            );
+          }
+          const page: SandboxListResponse = await resp.json();
+          return page;
+        };
+
+        const hasExplicitPage =
+          opts?.limit !== undefined || opts?.offset !== undefined;
+        let data: SandboxListResponse;
+
+        if (hasExplicitPage) {
+          data = await fetchPage(
+            opts?.limit ?? SANDBOX_LIST_PAGE_SIZE,
+            opts?.offset ?? 0,
           );
+        } else {
+          const instances: SandboxInstance[] = [];
+          let offset = 0;
+          let total = 0;
+          let hasMore = true;
+
+          while (hasMore) {
+            const page = await fetchPage(SANDBOX_LIST_PAGE_SIZE, offset);
+            if (listRequestId.current !== requestId) return null;
+
+            instances.push(...page.instances);
+            total = page.pagination.total;
+            hasMore = page.pagination.hasMore;
+
+            if (hasMore && page.instances.length === 0) {
+              throw new Error(
+                "Sandbox list reported another page but returned no rows.",
+              );
+            }
+            if (page.pagination.limit <= 0) {
+              throw new Error(
+                "Sandbox list returned an invalid page size while more rows remain.",
+              );
+            }
+            offset += page.pagination.limit;
+          }
+
+          data = {
+            instances,
+            pagination: {
+              total,
+              limit: SANDBOX_LIST_PAGE_SIZE,
+              offset: 0,
+              hasMore: false,
+            },
+          };
         }
 
-        const data: SandboxListResponse = await resp.json();
+        if (listRequestId.current !== requestId) return null;
 
-        // Deduplicate instances by ID to prevent React key conflicts
-        // This handles race conditions between optimistic updates and API refreshes
+        // Deduplicate by immutable database ID while preserving the server's
+        // descending-created-at sequence across every fetched page.
         const uniqueInstances = Array.from(
           new Map(data.instances.map((inst) => [inst.id, inst])).values(),
         );
+
+        if (
+          !hasExplicitPage &&
+          uniqueInstances.length !== data.pagination.total
+        ) {
+          throw new Error(
+            "Sandbox list changed while loading; refresh to load a complete list.",
+          );
+        }
 
         console.log("[useSandboxInstances] fetchInstances:", {
           received: data.instances.length,
@@ -97,18 +185,37 @@ export function useSandboxInstances(projectId?: string) {
         setInstances(uniqueInstances);
         setTotal(data.pagination.total);
         hasFetchedOnce.current = true;
-        return data;
+        listProjectIdRef.current = projectId;
+        setListProjectId(projectId);
+        return { ...data, instances: uniqueInstances };
       } catch (err) {
+        if (listRequestId.current !== requestId) return null;
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return null;
+        }
         const msg = err instanceof Error ? err.message : "Unknown error";
+        if (listProjectIdRef.current !== projectId) {
+          setInstances([]);
+          setTotal(0);
+          listProjectIdRef.current = projectId;
+          setListProjectId(projectId);
+        }
         setError(msg);
         return null;
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (listRequestId.current === requestId) {
+          setLoading(false);
+          setRefreshing(false);
+          if (listAbortController.current === abortController) {
+            listAbortController.current = null;
+          }
+        }
       }
     },
     [projectId],
   );
+
+  const showingCurrentProject = listProjectId === projectId;
 
   const createInstance = useCallback(
     async (
@@ -387,11 +494,11 @@ export function useSandboxInstances(projectId?: string) {
   );
 
   return {
-    instances,
-    loading,
-    refreshing,
-    error,
-    total,
+    instances: showingCurrentProject ? instances : [],
+    loading: showingCurrentProject ? loading : true,
+    refreshing: showingCurrentProject ? refreshing : false,
+    error: showingCurrentProject ? error : null,
+    total: showingCurrentProject ? total : 0,
     fetchInstances,
     createInstance,
     renameInstance,

@@ -37,7 +37,10 @@ import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import type { RootState } from "@/lib/redux/store";
-import type { ManagedResource } from "@/features/agents/types/instance.types";
+import {
+  DEFAULT_BUILDER_ADVANCED_SETTINGS,
+  type ManagedResource,
+} from "@/features/agents/types/instance.types";
 
 // ---------------------------------------------------------------------------
 // State fixtures
@@ -59,6 +62,7 @@ function makeState(
     tools?: string[];
     customTools?: Array<Record<string, unknown>>;
     mcpServers?: string[];
+    addedMcpServers?: string[];
     settings?: Record<string, unknown>;
     variableDefinitions?: Array<Record<string, unknown>>;
     parentAgentId?: string | null;
@@ -141,7 +145,12 @@ function makeState(
         [CONVERSATION_ID]: {
           showPreExecutionGate: false,
           preExecutionSatisfied: true,
-          builderAdvancedSettings: undefined,
+          builderAdvancedSettings: partial.addedMcpServers
+            ? {
+                ...DEFAULT_BUILDER_ADVANCED_SETTINGS,
+                addedMcpServers: partial.addedMcpServers,
+              }
+            : undefined,
         },
       },
     },
@@ -517,6 +526,16 @@ describe("assembleManualRequest — live read contract", () => {
     // merges them into config.mcp_servers. There is no top-level `mcp_servers`
     // wire field on the request.
     expect(payload.client?.mcp).toEqual(["mcp-uuid-1"]);
+  });
+
+  test("a connected MCP explicitly added to this chat joins the request MCP list", async () => {
+    const state = makeState({
+      mcpServers: ["agent-mcp"],
+      addedMcpServers: ["github", "agent-mcp"],
+    });
+    const payload = (await assembleManualRequest(state, CONVERSATION_ID))!;
+
+    expect(payload.client?.mcp).toEqual(["agent-mcp", "github"]);
   });
 
   test("UI-only capability flags do NOT leak into tools_replace", async () => {

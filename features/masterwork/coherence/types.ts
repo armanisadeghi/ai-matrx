@@ -19,8 +19,16 @@ export const TENSION_KINDS = ["contradiction", "vagueness", "overlap"] as const;
 export type TensionKind = (typeof TENSION_KINDS)[number];
 
 /** How it reads to the Expert, in their language. Never the machine's word. */
+/**
+ * 🚨 `contradiction` reads as "Two positions", never "Two rules disagree"
+ * (2026-09-12, Arman's expertise mandate). Dissent is an asset the system is
+ * built to RETAIN, not a defect queue: the old wording framed the Expert's own
+ * divergence as a problem on their page, one line above buttons that could
+ * settle it. The card's outcome for it keeps both rules and records the
+ * condition between them.
+ */
 export const TENSION_LABELS: Record<TensionKind, string> = {
-  contradiction: "Two rules disagree",
+  contradiction: "Two positions",
   vagueness: "A rule leaves a number open",
   overlap: "Two rules cover the same ground",
 };
@@ -64,6 +72,11 @@ export interface Tension {
   why: string;
   /** 2-4 concrete answers they can just pick. */
   options: string[];
+  /**
+   * The partner's own suggestion. 🚨 NEVER rendered on a `contradiction`: on
+   * that kind it reads as "keep this one", which is the consensus collapse the
+   * mandate forbids. `contradictionGuidance` is what that kind shows instead.
+   */
   recommendation: string;
   confidence: number;
   state: TensionState;
@@ -192,3 +205,11 @@ export function mootTensions(
 ): Tension[] {
   return allTensions(rulebook).filter((t) => t.state === MOOT_STATE);
 }
+
+/**
+ * What a `contradiction` shows in place of a recommendation: what the Expert's
+ * answer DOES, never which rule to keep. Both positions survive either way.
+ */
+export const CONTRADICTION_GUIDANCE =
+  "Both of these can stand. If they apply in different situations, say when " +
+  "each one applies — we keep both rules and record the line between them.";

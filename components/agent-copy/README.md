@@ -1,291 +1,45 @@
-# agent-copy — copy data (human + AI) anywhere
+# agent-copy — frontend adapters for Matrx Alchemy
 
-A reusable primitive for putting **Copy** and **Copy for AI** actions on any
-row, card, or page that shows data. It centralizes clipboard writes (with a
-legacy `execCommand` fallback), success toasts, and the AI payload envelope so
-no page reimplements them.
+Matrx Alchemy is the shared content-transfer toolkit. **Alchemy Menu** is its package-owned control. This directory contains only the frontend boundary: identity and live-run wiring, declared surface handles, Sheet delivery, and compatibility exports. Cross-repo status and acceptance live in `/Users/armanisadeghi/code/common-docs/projects/matrx-alchemy/REGISTER.md`.
 
-**Pieces:**
+## Use the menu
 
-- `CopyButtons` — **the shared compact two-icon pair.** Pass `human`, `agent`, and `export`;
-  hide any segment with `hide={["copy"|"ai"|"export"]}` (cards omit Download
-  by not passing `export`, or `hide={["export"]}` when sharing a builder).
-  human Copy is the first icon; every other action appears behind the
-  `CopyForAiIcon` trigger — do not also render `ExportMenu` beside it. AI-menu order is Copy JSON, Copy for
-  AI, shaped AI variants, then downloads and destinations. A menu item copies, or opens a
-  modal (`onSelect` / hosted `modal` on an `AiVariant`; `onSelect` on an
-  export item). `groomer` and `aiCustom` already host their own workspaces.
-  On phone/tablet, the quiet 18px icon keeps a non-shrinking 44px tap target;
-  desktop uses the requested compact size. **Naturally unframed action rails
-  use `appearance="bare"`** to remove hover/active fill or focus ring; keyboard
-  focus remains visible through icon color.
-  `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
-  (header). Stops click propagation by default. **Pass `json`** for
-  structured data; it is the first AI-menu item, never another button.
-- `CopyForAiIcon` — the shared text-free AI-copy mark: overlapping copy
-  sheets containing a connected intelligence node. Keep this semantic shape
-  across surfaces; do not substitute a bot, face, star, or sparkle.
-- `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
-  JSON dump).
-- `CopyActionGroup` — the shared compact grouped chrome used by `CopyButtons`
-  and intentionally standalone export-only controls.
-- `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
-  `textExportItem`, `rowsToCsv`) — the **Download** dropdown. Prefer
-  `CopyButtons export={{ items, sheetRows }}` so it sits in the AI menu.
-  Standalone `ExportMenu` stays valid for surfaces that export without copy.
-  **Every data surface offers export, not just clipboard copy** — a list/table
-  gets JSON + CSV; a page gets its data JSON. `MatrxDataTable` toolbars get it
-  free via the `copy` config; `rowsToCsvFromColumns` (tableCopy.ts) builds
-  view-shaped CSV.
-- **`copy-subset/`** — **"Filter & sort before copying…"**, the row-subset
-  door every Copy-for-AI menu carries: `useCopySubsetVariant()` returns a
-  factory whose `AiVariant` opens the `copySubsetWindow` overlay over a
-  SNAPSHOT of any rows (a table, a report, a card list, a non-tabular
-  surface) with the canonical `MatrxDataTable` — search, filters, sort,
-  column show/hide, row selection, live count + size, For AI / Markdown /
-  CSV / JSON — and copies exactly the visible+selected subset; the origin is
-  never touched. `MatrxDataTable` toolbars get it free via `copy`. Contract:
-  [`copy-subset/FEATURE.md`](./copy-subset/FEATURE.md).
-- `AgentCopyGroomerWindow` + `groomer-types.ts` — the page-level custom
-  workspace opened from the **Copy-for-AI menu**. It grooms the
-  whole-page payload before copying; its footer also exports payload `.md` /
-  data `.json`. Pass `groomer={() => config}` to `CopyButtons`; **never place
-  `AgentCopyGroomerLauncher` beside it.**
-  See "Whole-page copy" below.
-
-**Truncated lists must offer the rest.** A "top 8" list with no way to see all
-N is a defect — add a `show all N / top 8` toggle (scrollable when expanded);
-copy/export always operate on ALL rows, never just the visible slice.
-
-> Forward-looking: the **Copy for AI** button is the seam where these become
-> "connect this data to an agent" actions. The infrastructure already exists in
-> `features/surfaces/` (surface manifests) and `hooks/useScreenCapture.ts`
-> (screenshots); the `context` / `attributes` slots on `AgentPayloadInput` are
-> where a surface manifest's runtime values or a screenshot reference thread in
-> later — without changing any callsite.
-
-## Usage
+`CopyButtons` is a thin wrapper over the design-system `MatrxCopyMenu`. Supply the menu's typed source/configuration; function-valued sources are resolved on the user action, so capture is current. When `export.sheetRows` is present, the wrapper supplies the frontend's Sheet delivery outcome.
 
 ```tsx
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
-// Per-row / per-card (one compact two-icon pair):
 <CopyButtons
-  size="icon"
-  label={`Sandbox ${row.sandbox_id}`}
-  human={() => humanSummary(row)}          // page-specific readable text
-  agent={() => ({
-    kind: "sandbox-instance",              // root xml tag
-    location: "AI Matrx Admin — Sandbox Management",
-    description: "A single sandbox instance row.",
-    data: row,                              // full object → dumped as JSON
-    summary: humanSummary(row),             // optional <summary> block
-    attributes: { id: row.id, status: row.status },   // root tag attrs
-  })}
-/>
-
-// Whole-page / whole-list (the same icon-only pair, in the header):
-<CopyButtons
-  size="sm"
-  label="All sandboxes"
-  human={() => list.map(humanSummary).join("\n\n")}
-  json={() => list}                        // first item in the AI menu
+  label="Sandbox instances"
+  human={() => formatInstances(rows)}
+  json={() => rows}
   agent={() => ({
     kind: "sandbox-instances",
-    location: "...",
-    description: "All sandbox instances currently listed.",
-    data: list,
-    attributes: { count: list.length },
-    context: { filter, total },            // extra <context> entries
+    location: "AI Matrx Admin — Sandbox Management",
+    description: "The sandbox instances in the current view.",
+    data: rows,
   })}
-  groomer={() => getWholePageGroomerConfig()}
-  export={{
-    items: [
-      jsonExportItem(() => list),
-      csvExportItem(() => list, "CSV", COLUMNS),
-    ],
-  }}
 />
 ```
 
-`buildAgentPayload` (called for you by `CopyButtons`) auto-injects the live
-`url`, `route`, and `copied-at` timestamp into the `<context>` block — the
-single most useful thing for an agent picking up the data.
+The menu owns structured copy, exports, preparation, and destinations. Do not add a sibling JSON, AI, or export control. `CopyForAiIcon`, `AiCopyMenu`, and `ExportMenu` remain compatibility adapters for existing callers; new work uses the typed package menu through `CopyButtons`.
 
-Pass `human`/`agent` as **functions** so the URL/timestamp/data are captured at
-click time, not render time.
+## Host and declared surfaces
 
-## Placement guidance
+Mount `AlchemyHost` once at the application boundary. It provides the authenticated organization, the Matrx transfer adapter, and the existing live run window. It fences AI preparation when identity changes; it does not own preparation algorithms or menu rendering.
 
-Copy exists at EVERY level of granularity — individual field/entry, item, list,
-record, page. **Never display data the user can't copy** (each part alone, and
-the whole with context). Dense surfaces use a hover-reveal `size="xs"` control
-(`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`) so density
-survives.
+Use `AlchemySurfaceBridge` only around a declared surface. Its handle is local to that React mount and rejects an undeclared surface rather than looking up a same-named global registration.
 
-- **Lists/tables** (sandboxes, models, tasks…): per-row copy **and** a
-  copy-all in the header. You want "this one" or "the whole list."
-- **Metric cards / dimension list items**: hover-reveal `xs` control per card
-  and per item, plus a whole-list control in the section header.
-- **Detail/record pages & row windows**: a record-level control in the header +
-  per-field hover controls (see MatrxDataTable integration below).
-- **Whole page**: one `CopyButtons` pair. Its AI menu contains
-  JSON, shaped AI variants, and the Groomer/custom workspace when available.
-- **Don't overwhelm visually** — hover-reveal keeps ubiquity from becoming
-  clutter. Skip surfaces with no meaningful record (pure tools, visualizers,
-  demos).
+## Tables
 
-## Non-negotiable control shape
+`MatrxDataTable` has a built-in Alchemy Menu when no `copy` configuration is provided. Its default source is a single typed snapshot of the visible declared columns. `copy={false}` is the explicit opt-out. Table exports use the menu's canonical built-in XLSX action when `export.items` is empty; `sheetColumns` carry the declared metadata. A remote or append view describes only its loaded current view—it never implies all matching or unfetched rows.
 
-- **Two icons, any subset of the action categories:** human Copy, then Copy JSON, Copy for
-  AI, and Export behind the AI icon. Hide with `hide` or by omitting that payload. Export never
-  sits beside the control as a loose button.
-- **Icons only at every size.** Accessible names and tooltips carry the labels;
-  visible `Copy`, `JSON`, or `Copy for AI` text is forbidden.
-- **The AI menu owns every structured format and destination.** JSON comes
-  first when structured data exists, faithful AI next, then
-  shaped AI variants, Groomer/custom workspaces, and export destinations.
-- **`CopyForAiIcon` is the shared mark.** `Sparkles`, `Sparkle`, bot, face, star, and
-  any other substitute are banned for AI copy.
-- **Consolidate; never remove capability.** Move an existing JSON copy or
-  Groomer action into the correct dropdown instead of deleting it.
+Pass a `copy` configuration only to customize a table source or menu. The configuration does not require a second row-control implementation, and no per-row two-icon control contract exists.
 
-## Sized-to-data AI variants — `AiCopyMenu`
+## Verification boundary
 
-A "Copy for AI" control is an **AI context source**, not a copy button — and it
-must scale to its data. There is no one-size-fits-all; for every surface ask
-_"what would someone actually hand an AI here?"_:
+Source/package evidence does not establish deployed behavior. The current release, live browser, and independent-review gates are recorded in the shared register; do not describe this adapter as complete until those gates close.
 
-| Data                                                     | Control                                                           | Variants                                           |
-| -------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------- |
-| **Small / bounded** (one record, a short list)           | two icons; AI direct only for exactly one AI action | Copy + JSON when structured + faithful AI         |
-| **Medium** (a focused list, a digestible page)           | Copy icon + AI menu                                | Copy + JSON + faithful AI + focused variants      |
-| **Massive / unbounded** (giant payloads, full histories) | Copy icon + AI menu + custom workspace             | Copy + JSON + AI variants + export + custom       |
+## Change log
 
-- **`AiCopyMenu`** (`AiCopyMenu.tsx`) is the chrome: pass `variants`
-  (pure `build()` → envelope-or-string, may be async) and optionally `custom`
-  (an options schema — toggle/preset/slider/number — plus pure `build(opts)` +
-  `wrap`) or `groomer` (`() => AgentCopyGroomerConfig`). One variant with no
-  custom/Groomer renders a single icon button; anything more renders the
-  dropdown. Shortening logic NEVER lives in the chrome — write a pure
-  per-data builder.
-- **`CopyButtons` upgrades in place**: pass `aiVariants` / `aiCustom` and its
-  AI menu gains those choices, with `json`, the existing `agent` payload as the
-  never-lossy **Everything** escape hatch, and the page Groomer/custom
-  workspace. Never render a second AI icon or a standalone JSON icon beside
-  the control.
-- A surface may give that faithful payload a precise name and position with
-  `agentVariant` (`label`, `hint`, `position`) while continuing to source its
-  data from the one shared `agent` builder. The Error Inspector uses this
-  for **Error(s)** followed by the derived **Error(s) with prompt** variant.
-- **`MatrxDataTable`**: `copy.aiVariants` / `copy.aiCustom` (receive
-  `(visible, all)` rows) do the same for the toolbar view copy.
-- **Derive variants from existing section lists** — the Backlinks header builds
-  Balanced/Minimal from the SAME groomer sections via `applyGroomerPreset`;
-  never maintain a parallel list. Preset payloads carry the same envelope
-  `context` as the full one — a shortened variant is lossy in DATA, never in
-  ambient context.
-- Everything-variant parity with the aidream dashboard implementation
-  (`apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`) is deliberate —
-  change one, mirror the other.
-
-## Built-in integrations (don't rewire by hand)
-
-- **`MatrxDataTable`** — pass the `copy` config and you get per-row two-icon
-  pairs, a toolbar this-view pair (markdown table + summaries + JSON/CSV/Excel/
-  Google Sheets), a record control in the row window header
-  (`DataRowWindow.headerActions`), and per-field hover controls in
-  `DataRowInspector` (side panel + window View tab). One config, five surfaces.
-- **`DataRowInspector`** — per-field hover copy is ON by default
-  (`fieldCopy={false}` to opt out); pass `recordKind`/`recordLabel`/`location`
-  for correct payloads.
-- **`JsonInspector`** — pass `agentCopy` (an `AgentPayloadInput` or builder) to
-  render the shared compact pair whose AI menu contains Copy JSON and agent
-  variants.
-
-## Whole-page copy — the Groomer inside the AI menu
-
-The page header still renders only the `CopyButtons` pair. Its AI menu opens
-`AgentCopyGroomerWindow` when `groomer={() => config}` is supplied (WindowPanel;
-the shared `AgentCopyGroomerHost` owns the one client-only loading boundary).
-The user grooms the payload before copying:
-
-- **Sections** (`AgentCopyGroomerSection[]`): each page area declares
-  `build(level)` for `full | compact | brief`, optional per-level labels, and
-  `cuttable: true` when dropping it entirely is known-safe.
-- **Presets**: Everything (all full) / Balanced (all compact) / Minimal (brief;
-  cuttable → off), plus per-section dials.
-- **Live size** per section and total (chars + ~tokens) and a live preview of
-  the exact payload.
-
-Pass `config` as a function — resolved at open, so sections capture the data on
-screen. Reference wiring: `features/marketing/components/backlinks/BacklinksWorkspace.tsx`.
-
-## Rollout checklist for a new page
-
-1. Identify the record/list the page shows.
-2. Add a `human` summary (reuse a shared formatter if one exists — e.g.
-   `lib/sandbox/format.ts`; don't duplicate).
-3. Drop `<CopyButtons size="icon" …>` on each row and/or
-   `<CopyButtons size="sm" …>` in the header for the whole set.
-4. Set a stable `kind`, a clear `location`, and useful `attributes`/`context`.
-
----
-
-## Roadmap — from "copy" to "connect"
-
-These buttons are a stepping stone. Today they copy data to the clipboard so a
-human can paste it into an agent; the end state is the agent reading that
-context directly and **acting** on the page. The pieces below already exist in
-the repo in some form — this is the glue plan to wire them together.
-
-### 1. Page-level state capture (near-term)
-
-`buildAgentPayload` already injects the live `url` + `route`. Extend the
-`context`/`data` on record/detail pages to include the page's primary state
-(active record, filters, selection). The live URL + full state is the
-single most valuable thing to hand an agent — "the user is HERE looking at
-THIS." Prefer this over per-field copying on detail pages.
-
-### 2. Surfaces-registry integration (`features/surfaces/`)
-
-There is already a registry of **surface manifests** (`features/surfaces/`,
-21+ surfaces) declaring the named runtime values each surface can supply, plus
-a Redux registry (`features/agents/redux/surfaces/`) tracking which surfaces are
-mounted. `buildAgentPayload` should learn to look up the active surface and
-fold its declared values into `<context>` automatically, so a page gets rich
-agent context without hand-listing fields at the callsite.
-
-### 3. Automatic screenshot (`hooks/useScreenCapture.ts`)
-
-`useScreenCapture` can grab a silent `html-to-image` PNG of the current tab. A
-"Copy for AI + screenshot" variant (or a flag on `CopyButtons`) would attach a
-screenshot reference/data URL to the payload so the agent sees the literal
-pixels alongside the structured data. Our AI backend handles images, so this is
-high-leverage for "what is the user looking at."
-
-### 4. Dynamic tool injection — the big one
-
-Imagine a page declares, in a registry: (a) its current state (including the
-relevant Redux slices — the mother of all state) and (b) the set of callbacks
-it can perform ("create sandbox", "stop instance", "promote admin", … ~15
-actions per page) with their argument schemas. We then tell an agent: _here is
-where the user is, here is everything you can see, and here is everything you
-can do — call any of these with these args._ The agent becomes a real
-co-pilot on the page, not just a reader.
-
-The "Copy for AI" button is deliberately the seam for this: when the registry +
-tool-injection layer lands, that button (or a sibling) flips from
-"copy context to clipboard" to "hand context **and callable actions** to the
-agent" — and every callsite that already uses `<CopyButtons>` comes along for
-free. Keep `kind` slugs stable and `attributes` meaningful now; they become the
-tool/identifier vocabulary later.
-
-### Open ideas
-
-- A keyboard shortcut (e.g. ⌘⇧C) to copy the active surface's agent payload
-  from anywhere.
-- A "copy-for-agent" action registered in the `features/rich-document` action
-  registry so markdown/content surfaces get it too.
-- A debug overlay that previews exactly what an agent would receive for the
-  current page.
+- 2026-09-12 — Reconciled the adapter contract with the package menu and the approved table defaults; removed retired two-icon and all-rows claims.

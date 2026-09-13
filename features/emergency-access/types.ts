@@ -66,6 +66,32 @@ export type EmergencyDoorOutcome =
       message: string;
     };
 
+/**
+ * What `iam.emergency_door_eligibility` answers — the ONE question the access
+ * refusal screen asks before it offers the door at all.
+ *
+ * 🚨 IT DISCLOSES NOTHING ABOUT THE RECORD. No title, no owner, no organization,
+ * not even whether a row with that id exists in a way a prober could use — only
+ * a yes/no plus a reason code for the viewer's own standing. The screen asking
+ * it is by definition a screen the viewer was just refused.
+ */
+export interface EmergencyDoorEligibility {
+  /** True only when this person, on this record, can actually get through. */
+  eligible: boolean;
+  /**
+   * Why not, when not: `anonymous` · `no_door_for_this_class` (ordinary data,
+   * reached by ordinary sharing) · `no_such_row` · `self` (it is their own
+   * data) · `not_an_org_admin` · `token_not_grantable` · `already_pending`
+   * (their own ask is in flight) · `ok`.
+   */
+  reason: string;
+  dataClass: string | null;
+  /** Set on `already_pending` — their own outstanding ask. */
+  pendingRequestId: string | null;
+  /** True for the `private` class: an owner has to approve before anything opens. */
+  needsSecondPerson: boolean;
+}
+
 /** One pending `private`-class request awaiting an organization owner. */
 export interface EmergencyDoorRequest {
   id: string;
@@ -125,6 +151,11 @@ export interface AccessLogEntry {
   /** Set when `granted` is false. */
   denialReason: string | null;
   /** Who did it. May be unresolvable to a name — show the id, never hide it. */
+  /**
+   * Who AUTHORISED it. On the two-person `private` path this is the APPROVER,
+   * not the reader — naming this person as the one who opened the record is
+   * the defect V-38 found on the subject's own page (2026-09-12).
+   */
   actorUserId: string | null;
   /**
    * Who did it, NAMED — resolved inside the definer door, because a person
@@ -132,6 +163,15 @@ export interface AccessLogEntry {
    * shows one is a screen that tells them nothing.
    */
   actorLabel: string | null;
+  /**
+   * WHO HOLDS THE KEY — the answer to "who opened my data". On a `confidential`
+   * open this is the same person as the actor; on the two-person path it is the
+   * REQUESTER. `null` only where the request that would have named them is gone
+   * and the truth is genuinely unrecoverable — which the screen says, rather
+   * than naming somebody.
+   */
+  granteeUserId: string | null;
+  granteeLabel: string | null;
   grantExpiresAt: string | null;
   organizationId: string | null;
   /** Why the access was allowed at all (`emergency_door`, `owner`, …). */

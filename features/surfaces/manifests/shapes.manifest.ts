@@ -424,7 +424,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "studio_tab",
     label: "Active studio tab",
     description:
-      "Where the user is: `list`, `preview`, `schema`, `instances`, `test`, `stream`, or `new`. Always emitted by every studio route's emitter.",
+      "Where the user is: `list`, `preview`, `schema`, `instances`, `table`, `test`, `stream`, or `new`. Always emitted by every studio route's emitter.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,

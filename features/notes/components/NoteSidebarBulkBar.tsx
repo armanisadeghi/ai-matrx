@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { removeInstanceTab } from "../redux/slice";
-import { deleteNote, moveNoteToFolder, restoreNote } from "../redux/thunks";
+import { deleteNote, moveNoteToFolder, moveNoteToNewFolder, restoreNote } from "../redux/thunks";
 import { ingestSource } from "@/features/rag/api/ingest";
 import { isNoteContentEmpty } from "../utils/noteUtils";
 import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
@@ -46,15 +46,15 @@ import {
 } from "../utils/exportNotesMarkdown";
 import { openNoteShareModal } from "./note-actions/noteMenuRegistry";
 import type { NoteRecord } from "../redux/notes.types";
+import type { FolderReference } from "../types";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { createFolder } from "../service/notesService";
 
 const MAX_PARALLEL = 4;
 
 interface NoteSidebarBulkBarProps {
   instanceId: string;
   selectedNotes: NoteRecord[];
-  allFolders: string[];
+  allFolders: FolderReference[];
   openTabIds: string[] | undefined;
   /** Exit selection mode entirely (clears selection). */
   onClear: () => void;
@@ -86,7 +86,14 @@ export function NoteSidebarBulkBar({
   const hasAny = count > 0;
   const singleNote = count === 1 ? selectedNotes[0] : null;
 
-  const handleMove = async (folder: string) => {
+  const selectedOrganizationId = hasAny
+    ? selectedNotes[0].organization_id
+    : null;
+  const selectionHasOneOrganization = selectedNotes.every(
+    (note) => note.organization_id === selectedOrganizationId,
+  );
+
+  const handleMove = async (folder: FolderReference) => {
     if (!hasAny || busyKind) return;
     setBusyKind("move");
     try {
@@ -103,7 +110,7 @@ export function NoteSidebarBulkBar({
         toast.error(`Moved ${succeeded}, ${failed} failed`);
       } else {
         toast.success(
-          `Moved ${succeeded} note${succeeded === 1 ? "" : "s"} to ${folder}`,
+          `Moved ${succeeded} note${succeeded === 1 ? "" : "s"} to ${folder.name}`,
         );
       }
       onClear();
@@ -136,8 +143,22 @@ export function NoteSidebarBulkBar({
   };
 
   const handleCreateFolder = async (folderName: string) => {
-    await createFolder(folderName);
-    await handleMove(folderName);
+    if (!hasAny || busyKind) return;
+    setBusyKind("move");
+    try {
+      const { succeeded, failed } = await runWithConcurrency(
+        selectedNotes,
+        MAX_PARALLEL,
+        async (note) => {
+          await dispatch(moveNoteToNewFolder({ noteId: note.id, folderName })).unwrap();
+        },
+      );
+      if (failed > 0) toast.error(`Moved ${succeeded}, ${failed} failed`);
+      else toast.success(`Created ${folderName} and moved ${succeeded} note${succeeded === 1 ? "" : "s"}`);
+      onClear();
+    } finally {
+      setBusyKind(null);
+    }
   };
 
   const handleExport = async () => {
@@ -267,14 +288,16 @@ export function NoteSidebarBulkBar({
               New folder…
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {allFolders.map((folder) => (
+            {selectionHasOneOrganization && allFolders
+              .filter((folder) => folder.organizationId === selectedOrganizationId)
+              .map((folder) => (
               <DropdownMenuItem
-                key={folder}
+                key={`${folder.organizationId}:${folder.id}`}
                 onSelect={() => void handleMove(folder)}
               >
-                {folder}
+                {folder.name}
               </DropdownMenuItem>
-            ))}
+              ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -356,7 +379,11 @@ export function NoteSidebarBulkBar({
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         onConfirm={handleCreateFolder}
-        existingFolders={allFolders}
+        existingFolders={selectionHasOneOrganization
+          ? allFolders
+              .filter((folder) => folder.organizationId === selectedOrganizationId)
+              .map((folder) => folder.name)
+          : []}
         description={`Create a folder and move ${count} selected note${count === 1 ? "" : "s"} into it.`}
         confirmLabel="Create & Move"
       />

@@ -47,7 +47,6 @@ import { selectAllCategoriesMap } from "@/features/agents/redux/agent-shortcut-c
 import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   agentShortcutPanelCsvRows,
@@ -260,17 +259,16 @@ export function AgentShortcutsPanel({
                   }),
                 },
               ]}
-            />
-            <ExportMenu
-              label={`agent-shortcuts-${agentName}`}
-              items={[
-                jsonExportItem(pageView, "JSON (panel data)"),
-                jsonExportItem(() => shortcuts, "JSON (full records)"),
-                csvExportItem(
-                  () => agentShortcutPanelCsvRows(panelRows),
-                  "CSV (all shortcuts)",
-                ),
-              ]}
+              export={{
+                items: [
+                  jsonExportItem(pageView, "JSON (panel data)"),
+                  jsonExportItem(() => shortcuts, "JSON (full records)"),
+                  csvExportItem(
+                    () => agentShortcutPanelCsvRows(panelRows),
+                    "CSV (all shortcuts)",
+                  ),
+                ],
+              }}
             />
             <Link href={`${basePath}/${agentId}/shortcuts/batch`}>
               <Button size="sm" variant="outline">

@@ -243,6 +243,14 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     ceilings,
 }) => {
     const frameRef = React.useRef<HTMLIFrameElement | null>(null);
+    /**
+     * THE CLIP (S5b). The iframe is given the READER'S viewport width so that
+     * viewport media queries and `100vw` inside the frame answer the same
+     * question they answer in the page; this element is the component's real
+     * column, and it clips the rest away. Reasoning: `sandbox/protocol.ts`
+     * § THE READER'S VIEWPORT.
+     */
+    const clipRef = React.useRef<HTMLDivElement | null>(null);
     const portRef = React.useRef<MessagePort | null>(null);
     const answered = React.useRef<Set<string>>(new Set());
     const inFlight = React.useRef<Set<string>>(new Set());
@@ -250,6 +258,13 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     const [contentHeight, setContentHeight] = React.useState(INITIAL_HEIGHT);
     const [expanded, setExpanded] = React.useState(false);
     const [oversize, setOversize] = React.useState<string | null>(null);
+    /**
+     * 0 until the first measurement, which happens in a layout effect — before
+     * paint and before the frame's `load`, so the frame never renders at the
+     * wrong viewport. Until then the iframe fills its column, which is what it
+     * did before S5b.
+     */
+    const [readerViewportWidth, setReaderViewportWidth] = React.useState(0);
 
     const instanceId = React.useId();
     const { payload, error: transformError, propsTransform } = transformFor(
@@ -399,6 +414,55 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         }
     }
 
+    /**
+     * What the reader's window is, and what this component is allotted in it.
+     * `documentElement.clientWidth` on purpose: that is the width the host
+     * page's OWN media queries answer against (it excludes a classic
+     * scrollbar), so the frame gets the identical number.
+     */
+    function readLayout(): { readerViewportWidth: number; contentWidth: number } {
+        const viewport =
+            typeof document === "undefined"
+                ? 0
+                : document.documentElement.clientWidth || window.innerWidth || 0;
+        const allotted = clipRef.current?.clientWidth ?? 0;
+        return { readerViewportWidth: viewport, contentWidth: allotted };
+    }
+
+    /**
+     * Keep both numbers live. A window resize changes the reader's viewport; a
+     * panel opening beside the component changes only its column. Either one
+     * changes what the framed render should look like, so both are watched and
+     * the frame is told.
+     */
+    React.useLayoutEffect(() => {
+        const apply = () => {
+            const layout = readLayout();
+            if (layout.readerViewportWidth > 0) {
+                setReaderViewportWidth(layout.readerViewportWidth);
+            }
+            if (layout.readerViewportWidth > 0 && layout.contentWidth > 0) {
+                post({
+                    type: "matrx:sandbox:layout",
+                    instanceId,
+                    readerViewportWidth: layout.readerViewportWidth,
+                    contentWidth: layout.contentWidth,
+                });
+            }
+        };
+        apply();
+        const node = clipRef.current;
+        const observer =
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
+        if (node) observer?.observe(node);
+        window.addEventListener("resize", apply);
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", apply);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [instanceId]);
+
     /** Open the channel once the frame document has run its bundle. */
     function handleLoad(): void {
         const frame = frameRef.current;
@@ -428,6 +492,9 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                 // accent). Both cross here, at mount, before first paint.
                 themeTokens: readThemeTokens(document),
                 colorScheme: readColorScheme(document),
+                // S5b: the reader's window and this component's column, so the
+                // frame lays out the same way the page would have.
+                ...readLayout(),
             },
             // The frame's origin is OPAQUE (no allow-same-origin), so "*" is
             // the only targetOrigin that can reach it. The frame checks the
@@ -512,23 +579,49 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
 
     return (
         <>
-            <iframe
-                ref={frameRef}
-                src={KIND_SANDBOX_ROUTE}
-                // NEVER allow-same-origin: with it the frame could script this
-                // page and read the signed-in session.
-                sandbox="allow-scripts"
-                onLoad={handleLoad}
-                // THE ACCESSIBLE NAME. An unnamed iframe is announced as
-                // "frame"; with this a screen-reader user knows what they have
-                // tabbed into, and the frame stays in the page's tab order
-                // exactly where it sits (an iframe is focusable by default —
-                // nothing here removes it from the sequence).
-                title={title}
-                data-matrx-kind-sandbox={kind}
-                className={className ?? "w-full border-0"}
-                style={{ height: decision.height, display: "block" }}
-            />
+            <div
+                ref={clipRef}
+                data-matrx-kind-sandbox-clip={kind}
+                className={className ?? "w-full"}
+                // The iframe inside is as wide as the reader's WINDOW; this is
+                // the component's actual column, and everything past it is
+                // clipped away. Without the clip the page would gain a
+                // horizontal scrollbar on every framed component.
+                // `minWidth: 0` because the iframe inside is WIDER than this
+                // element: in a flex or grid parent the default automatic
+                // minimum is the content's, and the column would be stretched
+                // to the reader's whole window instead of clipping.
+                style={{ overflow: "hidden", minWidth: 0, height: decision.height }}
+            >
+                <iframe
+                    ref={frameRef}
+                    src={KIND_SANDBOX_ROUTE}
+                    // NEVER allow-same-origin: with it the frame could script this
+                    // page and read the signed-in session.
+                    sandbox="allow-scripts"
+                    onLoad={handleLoad}
+                    // THE ACCESSIBLE NAME. An unnamed iframe is announced as
+                    // "frame"; with this a screen-reader user knows what they have
+                    // tabbed into, and the frame stays in the page's tab order
+                    // exactly where it sits (an iframe is focusable by default —
+                    // nothing here removes it from the sequence).
+                    title={title}
+                    data-matrx-kind-sandbox={kind}
+                    className="border-0"
+                    style={{
+                        height: decision.height,
+                        display: "block",
+                        // THE READER'S VIEWPORT (S5b). Before the first
+                        // measurement there is no number yet and the frame fills
+                        // its column, exactly as it did before.
+                        width:
+                            readerViewportWidth > 0
+                                ? `${readerViewportWidth}px`
+                                : "100%",
+                        maxWidth: "none",
+                    }}
+                />
+            </div>
             {decision.capped ? (
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                     <button

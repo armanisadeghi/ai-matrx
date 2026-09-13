@@ -177,3 +177,108 @@ export function absentResultReason(args: {
     ? `This Masterwork's final step returned no ruling, deliverable or report — it returned ${keys.join(", ")} — so there is nothing for the Audition to judge yet.`
     : "This Masterwork's final step returned no ruling, deliverable or report, so there is nothing for the Audition to judge yet.";
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * THE PREVIEW LINE — one sentence of the deliverable, for a list of runs.
+ *
+ * Wall W36 (2026-09-12): a Recent-runs row said "Completed · 4m · $0.21" and
+ * nothing else, so choosing which of five runs held the answer meant opening
+ * all five. A row that carries the first line of what the run produced is the
+ * difference between a log and a record (Linear's issue rows, Vercel's
+ * deployment rows — both lead with the content, never only the metadata).
+ *
+ * The rule is the same one `readPresentedResult` follows: what the run
+ * PRESENTED last is what the reader ended on, so that payload is the preview.
+ * The three result keys win when they are there; otherwise the first readable
+ * sentence in the payload does, identifiers and machine keys skipped — never a
+ * JSON dump, and never an invented summary.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Keys that carry machinery, never something a person reads as an answer. */
+const UNREADABLE_KEY = /(^_|^__|_id$|^id$|_ids$|^ids$|_key$|^key$|^kind$|slug|^status$|^usage$|^cost|^model$|^order$|_at$)/i;
+
+/** A string only counts as a preview when it reads as a sentence, not a flag. */
+const MIN_PREVIEW_CHARS = 24;
+
+/**
+ * The keys a payload puts its ANSWER under. Searched before anything else, so
+ * a deliverable whose first field happens to be a list of rule names previews
+ * as its finding rather than as "No Petting the Raging Child" (run cef6ae07,
+ * where `stop_doing[0].rule_name` sits four keys above `headline_finding`).
+ */
+const ANSWER_KEY =
+  /(headline|finding|summary|verdict|conclusion|answer|advice|ruling|words|letter|^value$|^text$|^body$|^message$|^content$|^markdown$|first_thing)/i;
+
+function firstAnswerString(value: unknown, depth = 0): string | null {
+  if (depth > 4) return null;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = firstAnswerString(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  const record = asRecord(value);
+  if (!record) return null;
+  // This level's own answer key wins over anything nested below it.
+  for (const [key, child] of Object.entries(record)) {
+    if (!ANSWER_KEY.test(key)) continue;
+    const text = firstReadableString(child, depth + 1);
+    if (text) return text;
+  }
+  for (const [key, child] of Object.entries(record)) {
+    if (UNREADABLE_KEY.test(key)) continue;
+    const found = firstAnswerString(child, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+function firstReadableString(value: unknown, depth = 0): string | null {
+  if (depth > 4) return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length >= MIN_PREVIEW_CHARS ? trimmed : null;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = firstReadableString(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  const record = asRecord(value);
+  if (!record) return null;
+  for (const [key, child] of Object.entries(record)) {
+    if (UNREADABLE_KEY.test(key)) continue;
+    const found = firstReadableString(child, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Collapse to ONE line, cut on a word boundary, ellipsis only when cut. */
+export function previewLine(text: string, maxLength = 140): string {
+  const oneLine = text.replace(/\s+/g, " ").trim();
+  if (oneLine.length <= maxLength) return oneLine;
+  const cut = oneLine.slice(0, maxLength);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
+/**
+ * The first line of what a run handed over, from the payload its terminal step
+ * presented (or its stored output). `null` when the payload carries nothing a
+ * person would read — a row then says what it knows and no more, rather than
+ * printing keys or JSON at a reader.
+ */
+export function presentedPreview(
+  payload: unknown,
+  maxLength = 140,
+): string | null {
+  const record = asRecord(payload);
+  const viaResultKey = pick(record, "emitted")?.text ?? null;
+  const text =
+    viaResultKey ?? firstAnswerString(record) ?? firstReadableString(record);
+  return text === null ? null : previewLine(text, maxLength);
+}

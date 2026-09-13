@@ -17,9 +17,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CostValue } from "@/components/processing-units/CostValue";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   buildGroomerPresetPayload,
   groomerPresetVariants,
@@ -374,9 +372,6 @@ export function LastRunSummary({
             </span>
           )}
           <div className={cn("flex items-center gap-1", !when && "ml-auto")}>
-            {/* Quick pair — plain click copies the what-I-see page payload;
-                Balanced/Minimal come from the SAME section list as the
-                Groomer window below. */}
             <CopyButtons
               size="icon"
               label="Research topic overview"
@@ -391,28 +386,23 @@ export function LastRunSummary({
                 position: "last",
               }}
               aiVariants={groomerPresetVariants(groomerConfig)}
-            />
-            <ExportMenu
-              label="Research topic overview"
-              items={[
-                jsonExportItem(() => ({
-                  receipt: receiptLines(),
-                  kpis,
-                  ranked_sources: rankedSources().map(sourceBrief),
-                  media: media ?? [],
-                  cost: costSummary ?? null,
-                })),
-                csvExportItem(
-                  () => rankedSources().map(sourceBrief),
-                  "CSV (all ranked sources)",
-                  SOURCE_CSV_COLUMNS,
-                ),
-              ]}
-            />
-            <AgentCopyGroomerLauncher
-              config={groomerConfig}
-              buttonLabel="Groom"
-              className="h-7 px-2 text-[11px]"
+              groomer={groomerConfig}
+              export={{
+                items: [
+                  jsonExportItem(() => ({
+                    receipt: receiptLines(),
+                    kpis,
+                    ranked_sources: rankedSources().map(sourceBrief),
+                    media: media ?? [],
+                    cost: costSummary ?? null,
+                  })),
+                  csvExportItem(
+                    () => rankedSources().map(sourceBrief),
+                    "CSV (all ranked sources)",
+                    SOURCE_CSV_COLUMNS,
+                  ),
+                ],
+              }}
             />
           </div>
         </div>
@@ -435,7 +425,9 @@ export function LastRunSummary({
           <Line
             icon={FileText}
             label="Pages read"
-            value={attempted != null ? `${pagesRead} / ${attempted}` : pagesRead}
+            value={
+              attempted != null ? `${pagesRead} / ${attempted}` : pagesRead
+            }
             href={`${base}/content`}
             dim={pagesRead === 0}
           />

@@ -5,6 +5,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { createNote } from '../service/notesService';
 import { findEmptyNewNote } from '../utils/noteUtils';
 import type { Note } from '../types';
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 interface UseActiveNoteOptions {
     notes: Note[];
@@ -17,6 +20,7 @@ interface UseActiveNoteOptions {
 export function useActiveNote({ notes, onNoteCreated }: UseActiveNoteOptions) {
     const [activeNote, setActiveNote] = useState<Note | null>(null);
     const [isCreatingDefault, setIsCreatingDefault] = useState(false);
+    const organizationId = useAppSelector(selectOrganizationId);
 
     /**
      * Ensure we always have an active note
@@ -50,6 +54,7 @@ export function useActiveNote({ notes, onNoteCreated }: UseActiveNoteOptions) {
                             label: 'New Note',
                             content: '',
                             folder_name: 'Draft',
+                            organization_id: requireOrganizationContext(organizationId),
                 });
                 setActiveNote(newNote);
                 onNoteCreated?.(newNote);
@@ -59,7 +64,7 @@ export function useActiveNote({ notes, onNoteCreated }: UseActiveNoteOptions) {
                 setIsCreatingDefault(false);
             }
         }
-    }, [activeNote, notes, isCreatingDefault, onNoteCreated]);
+    }, [activeNote, notes, isCreatingDefault, onNoteCreated, organizationId]);
 
     useEffect(() => {
         ensureActiveNote();
@@ -79,4 +84,3 @@ export function useActiveNote({ notes, onNoteCreated }: UseActiveNoteOptions) {
         isCreatingDefault,
     };
 }
-

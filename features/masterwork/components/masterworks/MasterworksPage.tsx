@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Clock3,
-  ExternalLink,
   History,
   MessageCircleQuestion,
   Play,
@@ -29,8 +28,13 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import {
+  runHref,
+  workflowRunsHref,
+} from "@/features/workflow-runtime/run-doors";
 import { ScoutInterviewPanel } from "../detail/ScoutInterviewPanel";
 import { AuditionDialog } from "./AuditionDialog";
+import { CompareTwoDialog } from "./CompareTwoDialog";
 import { MasterworkDriftDialog } from "./MasterworkDriftDialog";
 import { TryMasterworkBox } from "./TryMasterworkBox";
 import {
@@ -70,7 +74,8 @@ const RUN_STATUS_STYLES: Record<string, string> = {
   cancelled: "bg-muted-foreground",
 };
 
-function MasterworkRunRow({
+/** Exported for the W36 guard: the row IS the door to a finished run. */
+export function MasterworkRunRow({
   run,
   onFeedback,
 }: {
@@ -79,32 +84,49 @@ function MasterworkRunRow({
 }) {
   const duration = runDuration(run);
   return (
-    <div className="group flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50">
-      <a
-        href={`${WORKFLOWS_APP_URL}/runs/${run.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex min-w-0 flex-1 items-center gap-2 hover:text-foreground"
+    <div className="group flex items-start gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50">
+      {/* THE DOOR IS IN THIS APP (wall W36). This row used to open
+          workflows.aimatrx.com in a new tab — the workflow author's Studio, not
+          the place the reader was standing — so a parent who closed the tab
+          could not read the answer anywhere in the product. `/workflows/runs/
+          {id}` rebuilds the finished run, showcase and all, right here. */}
+      <Link
+        href={runHref(run.id)}
+        className="flex min-w-0 flex-1 flex-col gap-0.5 hover:text-foreground"
       >
-        <span
-          className={cn(
-            "h-1.5 w-1.5 shrink-0 rounded-full",
-            RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
-          )}
-        />
-        <span className="capitalize">{run.status}</span>
-        <span>· {runWhen(run)}</span>
-        {duration ? <span>· {duration}</span> : null}
-        {run.cost_usd !== null ? (
-          <span>
-            · $
-            {run.cost_usd < 0.01
-              ? run.cost_usd.toFixed(4)
-              : run.cost_usd.toFixed(2)}
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 shrink-0 rounded-full",
+              RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
+            )}
+          />
+          <span className="capitalize">{run.status}</span>
+          <span>· {runWhen(run)}</span>
+          {duration ? <span>· {duration}</span> : null}
+          {run.cost_usd !== null ? (
+            <span>
+              · $
+              {run.cost_usd < 0.01
+                ? run.cost_usd.toFixed(4)
+                : run.cost_usd.toFixed(2)}
+            </span>
+          ) : null}
+          <SquareArrowOutUpRight className="ml-auto h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+        </span>
+        {/* WHAT THIS RUN ACTUALLY SAID — the first line of the deliverable for
+            a finished run, the run's own honest error for a failed one. A row
+            with neither carries neither; it never invents a sentence. */}
+        {run.error_message ? (
+          <span className="line-clamp-2 pl-3.5 text-destructive">
+            {run.error_message}
+          </span>
+        ) : run.deliverable_preview ? (
+          <span className="line-clamp-2 pl-3.5 text-foreground/80">
+            {run.deliverable_preview}
           </span>
         ) : null}
-        <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-      </a>
+      </Link>
       {onFeedback && run.status === "completed" ? (
         <button
           type="button"
@@ -163,6 +185,9 @@ export function MasterworksPage({
   const [auditionCandidate, setAuditionCandidate] = useState<string | null>(
     null,
   );
+  // The BLIND PAIRWISE Audition, optionally prefilled with a finished run's own
+  // output as the FIRST of two answers. `null` = closed.
+  const [compareFirst, setCompareFirst] = useState<string | null>(null);
   // THE DOOR ON THE DRIFT FLAG: "the Rulebook has newer rules" is a timestamp,
   // not a verdict, until the Expert can see WHICH rules moved. Holds the
   // drifted Masterwork.
@@ -521,14 +546,12 @@ export function MasterworksPage({
                           variant="ghost"
                           className="h-8 w-8"
                         >
-                          <a
-                            href={`${WORKFLOWS_APP_URL}/runs?workflow=${masterwork.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <Link
+                            href={workflowRunsHref(masterwork.id)}
                             aria-label="Past runs"
                           >
                             <History className="h-4 w-4" />
-                          </a>
+                          </Link>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Past runs</TooltipContent>
@@ -551,6 +574,11 @@ export function MasterworksPage({
                     onCompare={
                       isOwner
                         ? (candidate) => setAuditionCandidate(candidate)
+                        : undefined
+                    }
+                    onCompareTwo={
+                      isOwner
+                        ? (candidate) => setCompareFirst(candidate)
                         : undefined
                     }
                   />
@@ -618,6 +646,16 @@ export function MasterworksPage({
               ?.intake?.benchmark
           }
           initialCandidate={auditionCandidate ?? undefined}
+        />
+      ) : null}
+      {isOwner ? (
+        <CompareTwoDialog
+          open={compareFirst !== null}
+          onOpenChange={(open) => {
+            if (!open) setCompareFirst(null);
+          }}
+          rulebookId={rulebookId}
+          initialFirst={compareFirst ?? undefined}
         />
       ) : null}
       {isOwner ? (

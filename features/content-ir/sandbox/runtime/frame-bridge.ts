@@ -185,6 +185,37 @@ function startInstance(
         return;
     }
 
+    // ── the reader's viewport, not the frame's box (S5b) ──────────────────
+    //
+    // The whole reasoning lives once, in `protocol.ts` § THE READER'S VIEWPORT.
+    // Here: the host has given the IFRAME ELEMENT the reader's viewport width,
+    // so this document's media queries and viewport units already answer the
+    // right question; what is left is to lay the component out at the width it
+    // is actually allotted rather than across the whole viewport.
+    const applyAllottedWidth = (width: unknown): boolean => {
+        if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) {
+            return false;
+        }
+        container.style.width = `${width}px`;
+        // `main` carries `max-width: 100vw` unlayered in the app's own sheet;
+        // an allotted width narrower than the viewport must survive it.
+        container.style.maxWidth = "none";
+        return true;
+    };
+
+    if (!applyAllottedWidth(init.contentWidth)) {
+        // NOTHING SILENT (Law 4). Without the allotted width the component is
+        // laid out across the reader's whole viewport, which is not where it
+        // sits in the page — the reader would see a component wider than its
+        // column. Say which half is missing and what it costs.
+        send({
+            type: "matrx:sandbox:error",
+            instanceId,
+            message:
+                "The page did not tell this component how wide it is allowed to be, so it is being laid out across the whole window instead of inside its own column. The component may be wider than the space it sits in.",
+        });
+    }
+
     // ── what the frame's CSP refused, said out loud (S5) ─────────────────
     //
     // The frame's `img-src` is `data: blob:` plus the platform image door
@@ -449,6 +480,15 @@ function startInstance(
             case "matrx:sandbox:theme":
                 handle.setTheme(message.themeTokens ?? {}, message.colorScheme);
                 // A theme change can change type metrics and therefore height.
+                scheduleSize();
+                break;
+            case "matrx:sandbox:layout":
+                // The reader resized, rotated, or opened a panel beside the
+                // component. The host has already resized the iframe element
+                // to the new viewport width; this re-fits the component to the
+                // width it is now allotted. The numbers were validated by
+                // `checkHostMessage`, so this cannot silently do nothing.
+                applyAllottedWidth(message.contentWidth);
                 scheduleSize();
                 break;
             case "matrx:sandbox:action-result": {

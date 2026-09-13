@@ -154,6 +154,20 @@ if $STRICT; then
         # re-ENABLE inside ONE transaction, so a guard left disabled at rest is a
         # mistake, not a state. (aidream/scripts/release.sh asserts the same.)
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards:strict"
+        # IMPL DOORS is BLOCKING as of 2026-09-12 (DD-152, the condition DD-154
+        # named): its backlog is gone. D6 — a declared ANONYMOUS door whose body
+        # reads visibility-bearing rows with no gate of any kind — had REGRESSED
+        # from 6 to 9 since the DD-110 sweep while the gate only warned about it,
+        # which is the whole argument for blocking: an advisory security census
+        # that nobody's release depends on gets overtaken by the next lane's
+        # migration. All nine were settled in
+        # migrations/dd152_anon_doors_closed_again_and_gated.sql (five closed,
+        # four gated in-body), D6 is 0 with a zero floor, and D1/D3/D4/D7 are
+        # absolutes with no allowlist. D2 and D5 stay shrink-only baselines, so
+        # this blocks on GROWTH of the anonymous surface, never on the tail that
+        # DD-110 already measured (345 anon-executable definers with no door row
+        # — every one standing on a grandfather row, B-52's own census).
+        "Impl doors: client-callable SECURITY DEFINER census (D1-D7)|pnpm check:impl-doors:strict"
         # A policy that reads its own relation raises 42P17 and the table is
         # unreadable by everyone — platform.rulebook and seo.starter_pack, live,
         # 2026-09-12, from the moment a routine iam.apply_rls sweep first emitted
@@ -188,6 +202,7 @@ if $STRICT; then
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
+        "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -214,6 +229,18 @@ if $STRICT; then
         # banner instead of a silent green [OK].
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live --strict"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
+        # 🚨 THE STAFF DOOR (DD-137b). Our own staff go through the audited emergency
+        # door like anyone on a `private` or `confidential` table — COMPONENTS INCLUDED.
+        # V-40 measured the gap this exists to keep shut: 131,763 of 131,763
+        # `chat.message` rows readable by a platform admin while only 226 of 24,590
+        # conversations were, because a component's NULL lane set was read as "allow".
+        # `check:admin-door` has the ORG-admin twin of this and stayed green throughout.
+        "Staff door (private/confidential, components included)|pnpm exec tsx scripts/check-staff-door.ts --strict"
+        # THE LIST-SCOPE AXIS (DD-137b §3.3) is RED at 11 of 11 on purpose: the eleven
+        # %_list_scoped RPCs are still SECURITY DEFINER. It runs NON-strict here so the
+        # standing RED is printed at every release instead of being remembered, without
+        # blocking a release on work that is scheduled rather than broken.
+        "List-scope axis (RED until the eleven RPCs convert)|pnpm exec tsx scripts/check-list-scope.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         # THE COMPONENT OWNERSHIP LAW exits 1 in strict mode, unlike most
         # drift gates here. Its live count is 0 today (191 component tables, 945
@@ -510,11 +537,11 @@ else
         # below: release.sh runs THIS list `--advisory || true`, so a bare invocation
         # would exit 0 and print a silent green [OK]; with `:strict` the checker
         # exits 1, run_gate prints a red [FAIL] naming the doors, and advisory mode
-        # still exits 0 — scream, never block. Deliberately NOT in the strict list:
-        # it carries a real backlog today (3 findings, 2026-09-12 — declared doors
-        # whose bodies still need the DD-116 visibility filter), so putting it there
-        # would block every release over a defect that predates the gate.
-        "Impl doors: client-callable SECURITY DEFINER census (D3/D4/D7)|pnpm check:impl-doors:strict"
+        # still exits 0 here — scream, never block. It is ALSO in the strict list
+        # as of 2026-09-12 (DD-152 closed the 3-finding D6 backlog that kept it
+        # out); this advisory copy is what release.sh runs, so the report still
+        # appears on every release.
+        "Impl doors: client-callable SECURITY DEFINER census (D1-D7)|pnpm check:impl-doors:strict"
         "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference"
         # HR PUNCH WRITE PATH — BLOCKING in --strict (see the strict list above for
         # why RLS does not prevent a client-direct `insert into hr.punch`). Listed
@@ -538,6 +565,7 @@ else
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
+        "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -558,6 +586,8 @@ else
         "Entity registry generation drift|pnpm check:entity-types"
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
+        "Staff door (private/confidential, components included)|pnpm exec tsx scripts/check-staff-door.ts --strict"
+        "List-scope axis (RED until the eleven RPCs convert)|pnpm exec tsx scripts/check-list-scope.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         # 🚨 `:strict` ON PURPOSE, IN THE ADVISORY LIST TOO — and this line is the
         # fix for a gate that was decor for five days. The checker gates its EXIT

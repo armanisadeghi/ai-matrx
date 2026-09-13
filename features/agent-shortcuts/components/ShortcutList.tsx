@@ -56,7 +56,6 @@ import type {
 } from "../types";
 import { isValidShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
@@ -405,19 +404,18 @@ export function ShortcutList({
                           wiredToAgent: stats.wiredToAgent,
                         },
                       })}
-                    />
-                    <ExportMenu
-                      label="agent-shortcuts"
-                      items={[
-                        jsonExportItem(() => filtered),
-                        csvExportItem(
-                          () =>
-                            filtered as unknown as Array<
-                              Record<string, unknown>
-                            >,
-                          "CSV",
-                        ),
-                      ]}
+                      export={{
+                        items: [
+                          jsonExportItem(() => filtered),
+                          csvExportItem(
+                            () =>
+                              filtered as unknown as Array<
+                                Record<string, unknown>
+                              >,
+                            "CSV",
+                          ),
+                        ],
+                      }}
                     />
                   </>
                 )}
@@ -610,19 +608,18 @@ export function ShortcutList({
                           wiredToAgent: stats.wiredToAgent,
                         },
                       })}
-                    />
-                    <ExportMenu
-                      label="agent-shortcuts"
-                      items={[
-                        jsonExportItem(() => filtered),
-                        csvExportItem(
-                          () =>
-                            filtered as unknown as Array<
-                              Record<string, unknown>
-                            >,
-                          "CSV",
-                        ),
-                      ]}
+                      export={{
+                        items: [
+                          jsonExportItem(() => filtered),
+                          csvExportItem(
+                            () =>
+                              filtered as unknown as Array<
+                                Record<string, unknown>
+                              >,
+                            "CSV",
+                          ),
+                        ],
+                      }}
                     />
                   </>
                 )}
@@ -698,7 +695,10 @@ export function ShortcutList({
                 fixed by this view
               </Badge>
             ) : (
-              <Select value={placementFilter} onValueChange={setPlacementFilter}>
+              <Select
+                value={placementFilter}
+                onValueChange={setPlacementFilter}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue />
                 </SelectTrigger>

@@ -20,17 +20,17 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   RULE_ACTION_KINDS,
-  RULE_ACTION_LABELS,
+  RULE_ACTION_KIND_LABELS,
   RULE_ACTION_URGENCIES,
   RULE_ACTION_URGENCY_LABELS,
   type RuleActionKind,
   type RuleActionUrgency,
   type RulebookSections,
-  type RulePolicyFieldValues,
+  type RuleMoveFieldValues,
   type RuleSeverity,
 } from "../../types";
 
-export interface RuleFieldValues extends Partial<RulePolicyFieldValues> {
+export interface RuleFieldValues extends Partial<RuleMoveFieldValues> {
   name: string;
   statement: string;
   rationale: string;
@@ -237,7 +237,7 @@ export function RuleFields({
                     </SelectItem>
                     {RULE_ACTION_KINDS.map((kind) => (
                       <SelectItem key={kind} value={kind}>
-                        {RULE_ACTION_LABELS[kind]}
+                        {RULE_ACTION_KIND_LABELS[kind]}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -19,12 +19,20 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
+import type { IngestLane } from "../../browse/approachLane";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
+import {
+  MonologueRecorder,
+  describeDistillWait,
+} from "../../record/MonologueRecorder";
+import { recordPastedSource } from "../../record/pastedSource";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -51,9 +59,51 @@ import { formatFileSize } from "@ai-matrx/kit/format";
 
 const INGEST_PATH = "/masterworks/ingest" satisfies keyof paths;
 const INGEST_FILE_PATH = "/masterworks/ingest-file" satisfies keyof paths;
+/**
+ * THE TIMELINE LANE (census row 3, wired 2026-09-12). The `timeline` Approach
+ * has been live and selectable since its registry row landed, with a real
+ * server lane behind it (`aidream/services/distillation/timeline_ingest.py`) —
+ * and no capture UI anywhere in the product, so choosing it created a bare,
+ * empty Rulebook. It is a PASTE lane like `source`, with two differences that
+ * are the whole point of it: a mandate segments the case into its own ordered
+ * moments, and the ENDING is kept back from the distiller so the rules it
+ * writes are forward-looking ("given what you know now, do X") instead of
+ * hindsight. The ending is still stored, for the Audition to score against.
+ */
+const INGEST_TIMELINE_PATH =
+  "/masterworks/ingest-timeline" satisfies keyof paths;
+
+/**
+ * THE MONOLOGUE (VOICE-FIRST) LANE, wired 2026-09-12. Arman's expertise
+ * mandate puts "just talk" first; the server lane has existed since the
+ * recording lane shipped (`file_ingest._ingest_recording` → transcription →
+ * `_distill_transcript`, chunked by transcript time range, distilled through
+ * `masterwork.monologue_distiller`, every rule anchored to the moment it was
+ * said) and the `monologue` Approach was `enabled=false` purely because the
+ * product had no door: an Expert who wanted to talk was sent to the generic
+ * "Upload a file" card, i.e. told to go and make a recording somewhere else.
+ *
+ * It posts to the SAME endpoint as the file lane — a recording IS a file to
+ * the server, which routes audio/video to the monologue distiller by content
+ * type — so the door is a capture surface, not a second pipeline. What it adds
+ * is the half that was missing: recording in the browser, through the
+ * platform's one capture primitive (`useSimpleRecorder`).
+ */
+const MONOLOGUE_MANDATE_KEY = MANDATE_KEYS.masterwork__monologue_distiller;
+
+/** Only a recording goes down this lane — a PDF is the `file` card's job. */
+const MONOLOGUE_ACCEPT = "audio/*,video/*";
+
+/** The server's own floor (`IngestTimelineRequest.text`, min_length=200). */
+const MIN_SOURCE_CHARS = 200;
+
+/** The published declaration shared with the server. */
+const TIMELINE_MANDATE_KEY = MANDATE_KEYS.masterwork__timeline_distiller;
 
 /** Documents come back with page anchors; audio/video is transcribed first. */
-const FILE_ACCEPT = ".pdf,.doc,.docx,.txt,.md,.rtf,.epub,.pptx,audio/*,video/*";
+// THE ONE LIST (features/masterwork/sourceTypes.ts): the picker offers
+// exactly what the server reads — never a hand-typed second copy.
+const FILE_ACCEPT = MASTERWORK_UPLOAD_ACCEPT;
 
 type IngestMode = "instructional" | "exemplar";
 type SourceShape = "text" | "file";
@@ -181,17 +231,30 @@ export function IngestSourceDialog({
    * Deep-link entry (the Approach picker's `?ingest=` param): pre-select the
    * lane so choosing an Approach lands ON that Approach, never on a default.
    * "source" = instructional text · "exemplar" = examples of best work ·
-   * "file" = upload a file/recording.
+   * "file" = upload a file/recording · "timeline" = a case that unfolds in time.
    */
-  initialLane?: "source" | "exemplar" | "file" | null;
+  initialLane?: IngestLane | null;
 }) {
   const { upload } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // The timeline lane is its OWN dialog shape, not a mode of the source lane:
+  // a case has no "is it the finished work?" question and no upload half, and
+  // it carries one choice the others do not (whether to keep the ending back).
+  const timeline = initialLane === "timeline";
+  // The voice-first lane: record here, or upload a recording you already have.
+  // No "is it the finished work?" question and no paste half — a person who
+  // came here to talk is not choosing a source shape.
+  const monologue = initialLane === "monologue";
   const [shape, setShape] = useState<SourceShape>(
     initialLane === "file" ? "file" : "text",
   );
+  /** Timeline only: keep the ending out of the distiller (server default). */
+  const [hideResolution, setHideResolution] = useState(true);
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  /** Monologue only: how long the just-finished recording ran, for the
+   *  measured wait promise (never a bare spinner). */
+  const [recordedSeconds, setRecordedSeconds] = useState<number | null>(null);
   const [mode, setMode] = useState<IngestMode>(
     initialLane === "exemplar" ? "exemplar" : "instructional",
   );
@@ -208,7 +271,11 @@ export function IngestSourceDialog({
   const run = useMasterworkRun<IngestSummary>({
     surface: "ingest",
     rulebookId: rulebook.id,
-    path: shape === "file" ? INGEST_FILE_PATH : INGEST_PATH,
+    path: timeline
+      ? INGEST_TIMELINE_PATH
+      : monologue || shape === "file"
+        ? INGEST_FILE_PATH
+        : INGEST_PATH,
     parseResult: parseIngestSummary,
   });
   const running = run.running || uploading;
@@ -216,11 +283,11 @@ export function IngestSourceDialog({
   const progress = uploading
     ? [`Uploading “${file?.name ?? "your file"}”…`, ...run.stages]
     : run.stages;
-  const rejoining = run.status === "rejoining";
 
   const reset = () => {
     run.reset();
     setUploading(false);
+    setRecordedSeconds(null);
   };
 
   // Drafts that landed while the user was away still have to reach the page
@@ -245,16 +312,37 @@ export function IngestSourceDialog({
   }, [open, run.running, onOpenChange]);
 
   const ingest = async () => {
+    if (timeline) {
+      await ingestTimeline();
+      return;
+    }
+    if (monologue) {
+      // A recording IS a file to the server; the only difference is that the
+      // person made it here, a moment ago.
+      await ingestFile();
+      return;
+    }
     if (shape === "file") {
       await ingestFile();
       return;
     }
-    if (text.trim().length < 200) {
+    if (text.trim().length < MIN_SOURCE_CHARS) {
       toast.error(
         "Paste a real chunk of source material first (at least a few paragraphs).",
       );
       return;
     }
+    // WHAT YOU PASTE IS A SOURCE (census D5) — kept BEFORE the run, so it is
+    // listed in Sources whether the distillation succeeds, fails, or is
+    // rejoined after a reload that took `text` with it.
+    await recordPastedSource({
+      rulebookId: rulebook.id,
+      orgId: rulebook.organization_id,
+      text,
+      sourceNote,
+      // `instructional` is this dialog's word for the `source` Approach.
+      approach: mode === "exemplar" ? "exemplar" : "source",
+    });
     await run.launch(
       {
         rulebook_id: rulebook.id,
@@ -266,9 +354,39 @@ export function IngestSourceDialog({
     );
   };
 
+  const ingestTimeline = async () => {
+    if (text.trim().length < MIN_SOURCE_CHARS) {
+      toast.error(
+        "Paste the case as it happened — at least a few paragraphs, in order.",
+      );
+      return;
+    }
+    // The timeline lane is a paste lane too — same law (census D5).
+    await recordPastedSource({
+      rulebookId: rulebook.id,
+      orgId: rulebook.organization_id,
+      text,
+      sourceNote,
+      approach: "timeline",
+    });
+    await run.launch(
+      {
+        rulebook_id: rulebook.id,
+        text,
+        source_note: sourceNote.trim() || undefined,
+        hide_resolution: hideResolution,
+      },
+      sourceNote.trim() || "your case",
+    );
+  };
+
   const ingestFile = async () => {
     if (!file) {
-      toast.error("Choose a document or a recording first.");
+      toast.error(
+        monologue
+          ? "Record something, or choose a recording you already have."
+          : "Choose a document or a recording first.",
+      );
       return;
     }
     // The upload happens BEFORE the run exists — there is no run row to rejoin
@@ -320,19 +438,53 @@ export function IngestSourceDialog({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Add rules from a source
-            <AgentCredit
-              mandate={MANDATE_KEYS.masterwork__source_distiller}
-              agent="masterwork_source_distiller"
-            />
+            {timeline
+              ? "Add rules from a case"
+              : monologue
+                ? "Just talk \u2014 we'll do the rest"
+                : "Add rules from a source"}
+            {timeline ? (
+              <AgentCredit
+                mandate={TIMELINE_MANDATE_KEY}
+              />
+            ) : monologue ? (
+              <AgentCredit mandate={MONOLOGUE_MANDATE_KEY} />
+            ) : (
+              <AgentCredit
+                mandate={MANDATE_KEYS.masterwork__source_distiller}
+                agent="masterwork_source_distiller"
+              />
+            )}
           </DialogTitle>
           <DialogDescription>
-            Bring in source material — paste a chapter or a playbook, or upload
-            a document or a recording of you explaining your method out loud.
-            The system distills candidate rules and adds them as drafts for you
-            to approve one by one. Nothing goes live without you.
+            {monologue
+              ? "Talk through how you actually work \u2014 rambling is fine, and " +
+                "you can pause whenever you like. It gets written down, your " +
+                "rules are pulled out with the moment you said each one, and " +
+                "anything you touched on but didn\u2019t explain comes back as " +
+                "questions you can answer later. They arrive as drafts for you " +
+                "to approve one by one."
+              : timeline
+              ? "Paste a case the way it actually happened — what you knew at each " +
+                "moment, what you did next, and how it turned out. It gets read " +
+                "step by step, and each step is judged knowing only what you knew " +
+                "at the time, so the rules come back as \u201cgiven what you know now, " +
+                "do X\u201d. They arrive as drafts for you to approve one by one."
+              : "Bring in source material — paste a chapter or a playbook, or upload " +
+                "a document or a recording of you explaining your method out loud. " +
+                "The system distills candidate rules and adds them as drafts for you " +
+                "to approve one by one. Nothing goes live without you."}
           </DialogDescription>
         </DialogHeader>
+
+        {/* A failure STAYS on screen with its reason and a way out. It used to
+            be a toast that removed itself, over a dialog that then showed the
+            empty form again (census D4). */}
+        <DurableRunFailure
+          error={run.error}
+          retry={run.retry}
+          running={run.running}
+        />
 
         {summary ? (
           <div className="space-y-3">
@@ -382,15 +534,14 @@ export function IngestSourceDialog({
               <div className="flex items-start gap-2">
                 <LoadingSpinner size="sm" />
                 <p className="text-xs text-muted-foreground">
-                  {rejoining
-                    ? "Picking this back up — it kept reading while you were away."
-                    : "Working — this takes a minute."}
+                  {run.waitMessage ?? "Uploading your file…"}
                 </p>
               </div>
             ) : null}
           </div>
         ) : (
           <div className="space-y-3">
+            {timeline || monologue ? null : (
             <div className="space-y-1.5">
               <Label>What kind of source is it?</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -416,6 +567,8 @@ export function IngestSourceDialog({
                 ))}
               </div>
             </div>
+            )}
+            {timeline || monologue ? null : (
             <div className="space-y-1.5">
               <Label>How do you want to bring it in?</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -441,8 +594,80 @@ export function IngestSourceDialog({
                 ))}
               </div>
             </div>
+            )}
 
-            {shape === "file" ? (
+            {monologue ? (
+              <div className="space-y-3">
+                {file ? (
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)}
+                        {recordedSeconds !== null
+                          ? ` \u00b7 ${describeDistillWait(recordedSeconds)}`
+                          : ""}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Start over"
+                      onClick={() => {
+                        setFile(null);
+                        setRecordedSeconds(null);
+                        if (fileInputRef.current)
+                          fileInputRef.current.value = "";
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <MonologueRecorder
+                    disabled={running}
+                    onRecorded={(blob, seconds) => {
+                      setRecordedSeconds(seconds);
+                      // A recording is delivered as a real file with a real
+                      // name, because it becomes a Source row the Expert will
+                      // see listed later.
+                      const stamp = new Date()
+                        .toISOString()
+                        .slice(0, 16)
+                        .replace("T", " ");
+                      const ext =
+                        (blob.type.split("/")[1] || "webm").split(";")[0];
+                      setFile(
+                        new File([blob], `Talking it through \u2014 ${stamp}.${ext}`, {
+                          type: blob.type || "audio/webm",
+                        }),
+                      );
+                    }}
+                  />
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={MONOLOGUE_ACCEPT}
+                  className="hidden"
+                  onChange={(e) => {
+                    setRecordedSeconds(null);
+                    setFile(e.target.files?.[0] ?? null);
+                  }}
+                />
+                {file ? null : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  >
+                    Or upload a recording you already have
+                  </button>
+                )}
+              </div>
+            ) : !timeline && shape === "file" ? (
               <div className="space-y-1.5">
                 <Label>The file</Label>
                 <input
@@ -498,21 +723,46 @@ export function IngestSourceDialog({
               </div>
             ) : (
             <div className="space-y-1.5">
-              <Label htmlFor="ingest-text">The source material</Label>
+              <Label htmlFor="ingest-text">
+                {timeline ? "The case, in the order it happened" : "The source material"}
+              </Label>
               <ProTextarea
                 id="ingest-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={
-                  mode === "exemplar"
-                    ? "Paste the finished work — one or several examples; separate them with blank lines."
-                    : "Paste the text here — long is fine; it gets split automatically."
+                  timeline
+                    ? "Paste the case in order — what was known at the start, what happened next, what you did about it, and how it ended."
+                    : mode === "exemplar"
+                      ? "Paste the finished work — one or several examples; separate them with blank lines."
+                      : "Paste the text here — long is fine; it gets split automatically."
                 }
                 rows={10}
                 enableTextStats
               />
             </div>
             )}
+            {timeline ? (
+              <label className="flex items-start gap-2.5 rounded-md border border-border bg-card p-2.5">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 accent-primary"
+                  checked={hideResolution}
+                  onChange={(e) => setHideResolution(e.target.checked)}
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">
+                    Keep the ending back while the rules are written
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Recommended. A rule written by something that already knows
+                    how it turned out is hindsight, not judgment. The ending is
+                    still saved on this Rulebook, so a Masterwork can be scored
+                    against what actually happened.
+                  </span>
+                </span>
+              </label>
+            ) : null}
             <div className="space-y-1.5">
               <Label htmlFor="ingest-note">
                 Where is this from? (optional)
@@ -521,7 +771,13 @@ export function IngestSourceDialog({
                 id="ingest-note"
                 value={sourceNote}
                 onChange={(e) => setSourceNote(e.target.value)}
-                placeholder="e.g. Chapter 3, or 'recorded call, Aug 10'"
+                placeholder={
+                  timeline
+                    ? "e.g. 'ED case 3, March 2026'"
+                    : monologue
+                      ? "e.g. 'how I triage a Monday morning'"
+                      : "e.g. Chapter 3, or 'recorded call, Aug 10'"
+                }
               />
             </div>
           </div>
@@ -541,9 +797,19 @@ export function IngestSourceDialog({
             </Button>
             <Button
               onClick={() => void ingest()}
-              disabled={running || (shape === "file" && !file)}
+              disabled={
+                running ||
+                (monologue && !file) ||
+                (!timeline && !monologue && shape === "file" && !file)
+              }
             >
-              {running ? "Distilling…" : "Distill rules"}
+              {running
+                ? "Distilling…"
+                : timeline
+                  ? "Distill this case"
+                  : monologue
+                    ? "Distill what I said"
+                    : "Distill rules"}
             </Button>
           </DialogFooter>
         ) : null}

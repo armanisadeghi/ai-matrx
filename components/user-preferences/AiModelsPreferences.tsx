@@ -129,7 +129,7 @@ const AiModelsPreferences = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Header stats bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/40">
+      <div className="flex items-center justify-between border-b border-border/40 px-3 py-2 sm:px-4">
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">
             {models.length} models
@@ -153,7 +153,7 @@ const AiModelsPreferences = () => {
       </div>
 
       {/* Filter bar */}
-      <div className="px-4 py-2 space-y-2 border-b border-border/40">
+      <div className="space-y-2 border-b border-border/40 px-3 py-2 sm:px-4">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -162,7 +162,7 @@ const AiModelsPreferences = () => {
             placeholder="Search models..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-7 text-xs"
+            className="h-8 pl-8 text-sm sm:h-7 sm:text-xs"
           />
         </div>
 
@@ -176,7 +176,7 @@ const AiModelsPreferences = () => {
               key={view}
               onClick={() => setFilterView(view)}
               className={cn(
-                "px-2 py-0.5 rounded text-xs transition-colors",
+                "min-h-11 rounded px-2 text-sm transition-colors sm:min-h-0 sm:py-0.5 sm:text-xs",
                 filterView === view
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -196,7 +196,7 @@ const AiModelsPreferences = () => {
           <select
             value={filterProvider ?? ""}
             onChange={(e) => setFilterProvider(e.target.value || null)}
-            className="h-6 px-1.5 rounded text-xs bg-muted/60 text-muted-foreground border-0 outline-none hover:bg-muted hover:text-foreground transition-colors cursor-pointer appearance-none"
+            className="h-11 cursor-pointer appearance-none rounded border-0 bg-muted/60 px-1.5 text-sm text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground sm:h-6 sm:text-xs"
           >
             <option value="">All Providers</option>
             {providers.map((p) => (
@@ -205,7 +205,6 @@ const AiModelsPreferences = () => {
               </option>
             ))}
           </select>
-
         </div>
       </div>
 
@@ -222,7 +221,7 @@ const AiModelsPreferences = () => {
               return (
                 <div
                   key={model.id}
-                  className="flex items-center gap-2.5 px-4 py-1.5 border-b border-border/30 hover:bg-muted/40 transition-colors group"
+                  className="group flex items-center gap-2.5 border-b border-border/30 px-3 py-2.5 transition-colors hover:bg-muted/40 sm:px-4 sm:py-1.5"
                 >
                   <Switch
                     checked={isActive}
@@ -264,7 +263,7 @@ const AiModelsPreferences = () => {
       </ScrollArea>
 
       {/* Results footer */}
-      <div className="flex items-center justify-between px-4 py-1.5 border-t border-border/40 text-[10px] text-muted-foreground">
+      <div className="flex items-center justify-between border-t border-border/40 px-3 py-2 text-[11px] text-muted-foreground sm:px-4 sm:py-1.5 sm:text-[10px]">
         <span>
           Showing {filteredModels.length} of {models.length}
         </span>

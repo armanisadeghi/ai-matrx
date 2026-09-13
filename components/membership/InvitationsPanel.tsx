@@ -59,7 +59,6 @@ import { formatDistanceToNow } from "date-fns";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { ConnectionUser } from "@/features/messaging/hooks/useUserConnections";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildInvitationListPayload,
@@ -560,16 +559,15 @@ export function InvitationsPanel({
                   agent={() =>
                     buildInvitationListPayload({ invitations, container })
                   }
-                />
-                <ExportMenu
-                  label={`${container.name ?? container.noun} invitations`}
-                  items={[
-                    jsonExportItem(() => invitations.map(invitationRow)),
-                    csvExportItem(
-                      () => invitationCsvRows(invitations),
-                      "CSV (all invitations)",
-                    ),
-                  ]}
+                  export={{
+                    items: [
+                      jsonExportItem(() => invitations.map(invitationRow)),
+                      csvExportItem(
+                        () => invitationCsvRows(invitations),
+                        "CSV (all invitations)",
+                      ),
+                    ],
+                  }}
                 />
               </>
             )}

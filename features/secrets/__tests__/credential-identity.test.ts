@@ -2,6 +2,7 @@ import {
   credentialIdentity,
   fieldLabelOf,
 } from "@/features/secrets/credential-identity";
+import { canShowField } from "@/features/secrets/components/SecretValue";
 import type { VaultField, VaultItem } from "@/features/secrets/types";
 
 const field: VaultField = {
@@ -61,5 +62,16 @@ describe("credential identity privacy contract", () => {
     expect(fieldLabelOf({ ...field, field_key: "client_secret" }, null)).toBe(
       "Client Secret",
     );
+  });
+
+  test("never permits browser reveal for protected private passkey material", () => {
+    expect(
+      canShowField(item, {
+        ...field,
+        field_key: "passkey_private",
+        execution_purpose: "passkey_private",
+        handling: "visible",
+      }),
+    ).toBe(false);
   });
 });

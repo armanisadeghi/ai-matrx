@@ -35,6 +35,10 @@ export interface RulebookNudgeProps {
   content: string;
   /** The conversation the message belongs to — recorded in `source_ref`. */
   conversationId: string | null;
+  /** The message itself — its id is the draft's provenance. */
+  messageId?: string | null;
+  /** The question this message answered, when there was one. */
+  question?: string | null;
   className?: string;
 }
 
@@ -42,6 +46,8 @@ export function RulebookNudge({
   verdictClickCount,
   content,
   conversationId,
+  messageId,
+  question,
   className,
 }: RulebookNudgeProps) {
   const openDialog = useOpenAddToRulebookDialog();
@@ -95,6 +101,8 @@ export function RulebookNudge({
           openDialog({
             initialContent: content,
             initialConversationId: conversationId,
+            initialMessageId: messageId ?? null,
+            initialQuestion: question ?? null,
           });
         }}
         className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-primary hover:bg-primary/10"

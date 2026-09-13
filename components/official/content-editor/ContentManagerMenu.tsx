@@ -25,6 +25,8 @@ import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewS
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 interface ContentManagerMenuProps {
   content: string;
@@ -42,6 +44,7 @@ export function ContentManagerMenu({
   const [isHtmlEditorOpen, setIsHtmlEditorOpen] = useState(false);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const user = useAppSelector(selectUser);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   // HTML Preview Editor state
   const htmlPreviewState = useHtmlPreviewState({
@@ -57,11 +60,13 @@ export function ContentManagerMenu({
 
   // Notes handlers
   const handleSaveToScratch = async () => {
+    const capturedOrganizationId = requireOrganizationContext(organizationId);
     await NotesAPI.create({
       label: "New Note",
       content: content,
       folder_name: "Scratch",
       tags: [],
+      organization_id: capturedOrganizationId,
     });
   };
 

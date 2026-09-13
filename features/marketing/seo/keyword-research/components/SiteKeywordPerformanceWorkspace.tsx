@@ -43,7 +43,6 @@ import { syncBingSearchPerformance } from "@/features/marketing/bing/service";
 import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import {
   groomerPresetVariants,
   type AgentCopyGroomerConfig,
@@ -637,8 +636,8 @@ export function SiteKeywordPerformanceWorkspace() {
             json={pageFullData}
             agent={pageAgentPayload}
             aiVariants={groomerPresetVariants(groomerConfig)}
+            groomer={groomerConfig}
           />
-          <AgentCopyGroomerLauncher config={groomerConfig} />
         </div>
       </section>
 

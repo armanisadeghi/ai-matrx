@@ -15,11 +15,7 @@ import { X, Mail, Building2, Globe, Loader2, Lock } from "lucide-react";
 import { PermissionBadge, PublicBadge } from "./PermissionBadge";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
-import {
-  csvExportItem,
-  jsonExportItem,
-} from "@/components/agent-copy/export";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   accessKpis,
   granteeKind,
@@ -322,13 +318,15 @@ export function PermissionsList({
               shown: visiblePermissions.length,
             },
           })}
-        />
-        <ExportMenu
-          label={`access-grants-${context.resourceType}`}
-          items={[
-            jsonExportItem(() => permissions, "JSON (all grants)"),
-            csvExportItem(() => grantCsvRows(permissions), "CSV (all grants)"),
-          ]}
+          export={{
+            items: [
+              jsonExportItem(() => permissions, "JSON (all grants)"),
+              csvExportItem(
+                () => grantCsvRows(permissions),
+                "CSV (all grants)",
+              ),
+            ],
+          }}
         />
       </div>
       {visiblePermissions.map((permission) => {
