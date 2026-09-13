@@ -325,7 +325,6 @@ export function LeaveQueueSurface() {
       header: "Balance on the start date",
       sortable: true,
       filter: false,
-      mobileHidden: true,
       cell: (row) => {
         const projected = row.request?.conflictCheck?.projectedBalanceAtStart;
         if (projected === null || projected === undefined) {
@@ -386,7 +385,6 @@ export function LeaveQueueSurface() {
       header: "Managed by HR",
       sortable: true,
       filter: "select",
-      mobileHidden: true,
       cell: (row) =>
         // 🚨 §9.6 — AN EXISTENCE STATEMENT ONLY. No category, no certification state, no
         // entitlement, and no door to the case. A manager must know an absence exists to
