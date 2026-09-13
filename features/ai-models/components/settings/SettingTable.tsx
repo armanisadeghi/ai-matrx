@@ -211,7 +211,7 @@ export default function SettingTable({
       cell: (item) => (
         <TruncatedText
           value={item.description || "—"}
-          className="block w-full truncate text-xs text-muted-foreground sm:!whitespace-nowrap sm:!break-normal sm:![overflow-wrap:normal]"
+          className="block max-w-[420px] truncate text-xs text-muted-foreground"
         />
       ),
     },
