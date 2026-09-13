@@ -62,6 +62,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  selectTriggerVariants,
 } from "@ai-matrx/design-system";
 import { useDialogContainer } from "@/components/ui/dialog";
 import {
@@ -212,6 +213,8 @@ interface ModelListDropdownProps {
    */
   onOfferingPinChange?: (offeringId: string | undefined) => void;
   className?: string;
+  /** Settings rows use the same standard select trigger as other setting controls. */
+  triggerVariant?: "default" | "settings";
   /** DOM id for the picker trigger. */
   id?: string;
   /** When true, renders the current value read-only — no picker opens. */
@@ -1423,6 +1426,7 @@ export function ModelListDropdown({
   pinnedOfferingId,
   onOfferingPinChange,
   className,
+  triggerVariant = "default",
   id,
   disabled = false,
   disabledTitle,
@@ -1794,7 +1798,13 @@ export function ModelListDropdown({
       aria-labelledby={ariaLabelledBy}
       aria-disabled={disabled || undefined}
       className={cn(
-        "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
+        triggerVariant === "settings"
+          ? selectTriggerVariants({
+              size: "default",
+              className:
+                "h-auto min-h-9 w-full min-w-0 max-w-full whitespace-normal text-left font-medium text-foreground [&>span]:line-clamp-none",
+            })
+          : "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
         disabled && "cursor-not-allowed opacity-50 hover:text-foreground/80",
         className,
       )}
@@ -1807,10 +1817,12 @@ export function ModelListDropdown({
               colored
               className="h-3.5 w-3.5 shrink-0"
             />
-            <span className="min-w-0 truncate">{selected.name}</span>
+            <span className={cn("min-w-0", triggerVariant === "settings" ? "whitespace-normal text-left leading-tight" : "truncate")}>
+              {selected.name}
+            </span>
           </>
         ) : (
-          <span className="min-w-0 truncate text-muted-foreground">
+          <span className={cn("min-w-0 text-muted-foreground", triggerVariant === "settings" ? "whitespace-normal text-left leading-tight" : "truncate")}>
             {isLoading
               ? "Loading models…"
               : emptyOptionLabel && !value

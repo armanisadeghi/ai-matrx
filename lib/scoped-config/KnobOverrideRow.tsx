@@ -311,18 +311,18 @@ export function KnobOverrideRow(props: {
       controlLayout="wide"
       variant="inline"
     >
-      <div className="flex w-[20rem] min-w-0 max-w-full flex-col items-stretch gap-2 @[40rem]/settings:items-end">
-        {stateOnly ? (
-          <div className="text-sm text-muted-foreground">
+      <div className="flex w-full min-w-0 max-w-[calc(20rem+2.5rem)] items-start gap-1">
+        <div className="w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]">
+          {stateOnly ? (
+            <div className="text-sm text-muted-foreground">
             This preference is not available yet.
-          </div>
-        ) : lockedForMe ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="h-4 w-4" />
-            Your organization manages this setting.
-          </div>
-        ) : fieldLadder ? (
-          <div className="flex w-full min-w-0 items-start">
+            </div>
+          ) : lockedForMe ? (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <Lock className="h-4 w-4" />
+              Your organization manages this setting.
+            </div>
+          ) : fieldLadder ? (
             <KnobFieldControl
               knob={knob}
               ladder={fieldLadder}
@@ -332,9 +332,8 @@ export function KnobOverrideRow(props: {
               disabled={busy || !canWrite}
               onCommit={(value) => write(value)}
             />
-          </div>
-        ) : (
-          <div className="flex w-full min-w-0 flex-wrap items-start gap-2">
+          ) : (
+            <div className="flex w-full min-w-0 flex-wrap items-start gap-2">
             {enumOptions ? (
               <Select
                 value={draft || undefined}
@@ -380,15 +379,16 @@ export function KnobOverrideRow(props: {
             >
               Save
             </Button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               size="icon"
               variant="ghost"
               aria-label={`Options for ${knob.label}`}
-              className="h-8 w-8 self-end"
+              className="h-9 w-9 shrink-0"
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>

@@ -20,7 +20,7 @@ type Width = "auto" | "sm" | "md" | "lg" | "full";
 const widthClass: Record<Width, string> = {
   auto: "w-full max-w-full @[40rem]/settings:w-auto @[40rem]/settings:min-w-32",
   sm: "w-32 max-w-full min-w-0",
-  md: "w-44 max-w-full min-w-0",
+  md: "w-80 max-w-full min-w-0",
   lg: "w-64 max-w-full min-w-0",
   full: "w-full",
 };
@@ -77,7 +77,7 @@ export function SettingsSelect<T extends string = string>({
         <SelectTrigger
           id={id}
           size={triggerSize[size]}
-          className={widthClass[effectiveWidth]}
+          className={`${widthClass[effectiveWidth]} h-auto min-h-9 whitespace-normal text-left [&>span]:line-clamp-none [&>span]:whitespace-normal`}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
