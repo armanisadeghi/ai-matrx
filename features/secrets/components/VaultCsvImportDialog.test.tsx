@@ -12,6 +12,7 @@ import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultWorkspace } from "./VaultWorkspace";
 import { fetchBitwardenJsonImportLimits, fetchCsvImportLimits } from "../csv-import-limits";
 import { createVaultItem, VaultImportTransportError } from "../vault-service";
+import type { StructuredImportRecord } from "../structured-import";
 
 let mockAuthStateListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
@@ -138,19 +139,18 @@ function jsonFile(text: string, size = text.length): File {
   return file;
 }
 
-function jsonRecord(overrides: Partial<Record<string, unknown>> = {}) {
+function jsonRecord(overrides: Partial<Extract<StructuredImportRecord, { status: "supported" }>> = {}): Extract<StructuredImportRecord, { status: "supported" }> {
   return {
     ordinal: 0,
     title: "Example",
     kind: "website_login",
     status: "supported",
+    sourceState: "active",
     sourceRecord: '{"source_vendor":"bitwarden"}',
     urls: ["https://example.test"],
     hasOtp: false,
     username: "user",
     password: "password",
-    deleted: false,
-    hasVisiblePublicKey: false,
     ...overrides,
   };
 }
@@ -518,9 +518,9 @@ describe("VaultCsvImportDialog", () => {
     await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
     await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [
       jsonRecord(),
-      jsonRecord({ ordinal: 1, title: "Invalid", status: "invalid", reason: "Bad shape", sourceRecord: undefined }),
-      jsonRecord({ ordinal: 2, title: "Unsupported", status: "unsupported", reason: "Passkey", sourceRecord: undefined }),
-      jsonRecord({ ordinal: 3, title: "Deleted", status: "skipped", deleted: true }),
+      { ordinal: 1, title: "Invalid", status: "invalid", reason: "Bad shape" },
+      { ordinal: 2, title: "Unsupported", status: "unsupported", reason: "Passkey" },
+      jsonRecord({ ordinal: 3, title: "Deleted", sourceState: "deleted" }),
     ] } } as MessageEvent));
     expect(document.body.textContent).toContain("0 selected; 1 skipped; 1 invalid; 1 unsupported; 1 deleted.");
     expect(document.body.textContent).toContain("destination https://example.test");
