@@ -22922,10 +22922,18 @@ export interface paths {
         };
         /**
          * Open Outages
-         * @description List unresolved provider-outage records.
+         * @description Every provider currently refusing every call — the OPEN rows THE
+         *     PROVIDER-OUTAGE ALARM keeps (``kind='provider_outage'``,
+         *     ``resolved_at IS NULL``).
          *
-         *     This literal route must remain before ``/{error_id}``: Starlette resolves
-         *     routes in declaration order, and the detail route is intentionally UUID-only.
+         *     This is the "is the platform's AI actually working right now" call: an empty
+         *     list means every provider that has been dialled is answering. A row closes
+         *     by itself the moment that provider answers again
+         *     (``aidream/services/provider_outage/detector.py``), so nothing here has to
+         *     be cleared by hand.
+         *
+         *     Declared BEFORE ``/{error_id}`` on purpose — FastAPI matches in declaration
+         *     order and the catch-all would otherwise swallow this path.
          */
         get: operations["open_outages_admin_system_errors_open_outages_get"];
         put?: never;
@@ -24319,6 +24327,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/ingest-unfolding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Unfolding
+         * @description The UNFOLDING-CASE lane of the `timeline` Approach: a narrative that
+         *     unfolds in TIME — a case report, an incident post-mortem, a negotiation log
+         *     — unfolded into the `serial_observation_timeline` kind, then either
+         *     distilled window by window (`role="teaching"`) or SEALED as an exam case
+         *     (`role="heldout"`, no rules are ever written from it).
+         *
+         *     🚨 A SECOND DOOR ONTO ONE APPROACH, not a rename of `/ingest-timeline`.
+         *     Trial 7 and trial 8 built a timeline lane the same night and both claimed
+         *     this path; trial 8's is merged, live and keeps it. Only THIS lane can seal a
+         *     held-out exam case, so it keeps its own path rather than losing that half.
+         *     Converging the two pipelines is open work — `distillation/FEATURE.md`.
+         */
+        post: operations["ingest_rulebook_unfolding_masterworks_ingest_unfolding_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/ingest-corpus": {
         parameters: {
             query?: never;
@@ -24462,7 +24500,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Audition Masterwork Endpoint */
+        /**
+         * Audition Masterwork Endpoint
+         * @description Three modes, one endpoint (`AuditionCompareRequest.mode`): `reference` —
+         *     our output vs the Expert's real exemplar; `unfolding` — the sealed-case
+         *     benchmark, where the desks actually RUN against held-out cases;
+         *     `elicitation` — the first-move benchmark, where the desks actually TALK to a
+         *     sealed, reactive counterparty.
+         */
         post: operations["audition_masterwork_endpoint_masterworks_audition_post"];
         delete?: never;
         options?: never;
@@ -39003,6 +39048,11 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
+             * Allow Empty Structured Output
+             * @description Allow an item's answer to come back with every declared field empty. Omit to follow the organization's setting (refuse by default).
+             */
+            allow_empty_structured_output?: boolean | null;
+            /**
              * Organization Id
              * @description Organization context for the request; omitted to use the authenticated context.
              */
@@ -42854,9 +42904,28 @@ export interface components {
         };
         /**
          * AuditionCompareRequest
-         * @description Judge a Masterwork's output against the real published exemplar (the R2
-         *     outcome signal). Comparison verdict cites rulebook rule ids; gaps the
-         *     reference exposes optionally land as DRAFT rules (never auto-activated).
+         * @description Judge a Masterwork against a reference. TWO modes, one endpoint.
+         *
+         *     ``mode="reference"`` (the default, and the only shape that existed before
+         *     2026-09-12): our Masterwork's output vs the Expert's real published exemplar
+         *     for the same inputs — comparison verdict citing rulebook rule ids, gaps
+         *     optionally landing as DRAFT rules. Every request written for that mode stays
+         *     valid byte-for-byte.
+         *
+         *     ``mode="elicitation"``: the FIRST-MOVE benchmark (trial 12, item 4) — one or
+         *     two Masterwork DESKS each hold a real conversation with a sealed, reactive
+         *     counterparty while a vanilla model is handed that person's opening line and
+         *     answers it. Mechanical throughout: decisive facts surfaced, turns to frame,
+         *     premature-advice events, lockouts caused and frame-order distance from the
+         *     source protocol. Nothing is pasted; the desks run for real and the profile
+         *     is read server-side from the sealed row.
+         *
+         *     ``mode="unfolding"``: the sealed-case benchmark
+         *     (``common-docs/systems/masterwork/unfolding-case-contract.md`` §4) — one or
+         *     two Masterwork DESKS each walk a held-out case through the case oracle while
+         *     a vanilla model is told every step's facts at once, and one judge ranks each
+         *     arm against the case's sealed outcome. Nothing is pasted: the desks run for
+         *     real and the reference is read server-side from the sealed row.
          */
         AuditionCompareRequest: {
             /**
@@ -42877,15 +42946,37 @@ export interface components {
             /** Rulebook Id */
             rulebook_id: string;
             /**
-             * Candidate Text
-             * @description Our Masterwork's output for the shared inputs.
+             * Mode
+             * @description reference: candidate vs pasted exemplar. unfolding: sealed-case benchmark. elicitation: sealed-counterparty first-move benchmark.
+             * @default reference
+             * @enum {string}
              */
-            candidate_text: string;
+            mode?: "elicitation" | "reference" | "unfolding";
+            /**
+             * Candidate Text
+             * @description reference mode: our Masterwork's output for the shared inputs.
+             */
+            candidate_text?: string | null;
             /**
              * Reference Text
-             * @description The real published work for the same inputs.
+             * @description reference mode: the real published work for the same inputs.
              */
-            reference_text: string;
+            reference_text?: string | null;
+            /**
+             * Masterwork Ids
+             * @description unfolding mode: the one or two desks to audition.
+             */
+            masterwork_ids?: string[];
+            /**
+             * Case Item Ids
+             * @description unfolding mode: the sealed held-out `platform.masterwork_corpus_item` rows to run against. Their content is read server-side only.
+             */
+            case_item_ids?: string[];
+            /**
+             * Profile Item Ids
+             * @description elicitation mode: the sealed `platform.masterwork_corpus_item` counterparty profiles to talk to. Their facts are read server-side only.
+             */
+            profile_item_ids?: string[];
             /**
              * Context Note
              * @description What the shared inputs were ('the Aug 14 newswire').
@@ -46840,6 +46931,8 @@ export interface components {
              * @default 5
              */
             variant_count?: number;
+            /** @description Optional. The facts that must be known before this Masterwork produces. Absent = it always produces (today's behaviour). */
+            refuse_until?: components["schemas"]["RefuseUntil"] | null;
         };
         /**
          * BuilderIoServiceStatus
@@ -70750,6 +70843,80 @@ export interface components {
             redistill?: "refuse" | "replace";
         };
         /**
+         * IngestUnfoldingRequest
+         * @description Read a narrative that UNFOLDS IN TIME as a serial-observation timeline.
+         *
+         *     🚨 The request of `unfolding_ingest.py` (`POST /masterworks/ingest-unfolding`),
+         *     NOT of `timeline_ingest.py` (`IngestTimelineRequest`, the incumbent
+         *     `/masterworks/ingest-timeline`). Two lanes, one `timeline` Approach — see
+         *     `unfolding_ingest.py`'s header for why both exist.
+         *
+         *     The gap (W57): the paste / link / file lanes flatten a narrative into
+         *     findings, so a case report, an incident post-mortem, a negotiation log or a
+         *     sales cycle loses the one thing it was carrying — WHICH FACT WAS KNOWN AT
+         *     WHICH MOMENT, and what the practitioner chose to find out next. This lane
+         *     unfolds the narrative into the `serial_observation_timeline` kind first,
+         *     then chunks BY TIME rather than by paragraph.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestUnfoldingRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Text
+             * @description The narrative, verbatim — the case as it was written.
+             */
+            text: string;
+            /**
+             * Title
+             * @description What this case is called, in the Expert's words.
+             */
+            title: string;
+            /**
+             * Domain
+             * @description What KIND of unfolding this is — clinical, incident, negotiation, sales, legal… Optional: the unfolder infers it from the narrative when the Expert does not say. Deliberately an open string; the platform does not own the list of human activities that happen in a sequence.
+             * @default
+             */
+            domain?: string;
+            /**
+             * Role
+             * @description teaching = unfold and distil rules from it; heldout = unfold and SEAL it as an exam case — no rules are ever written from a held-out case, and only the case oracle and the unfolding judge ever read past its opening.
+             * @default teaching
+             * @enum {string}
+             */
+            role?: "heldout" | "teaching";
+            /** @description Licence, link, publication date and external id of the case. */
+            source_meta?: components["schemas"]["TimelineSourceMeta"] | null;
+            /**
+             * Source Note
+             * @description Where this came from, in the Expert's words.
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
          * InitialIterationRequest
          * @description Turn 1 — the user's first message in either mode.
          */
@@ -82290,7 +82457,7 @@ export interface components {
         };
         /**
          * OpenOutageRecord
-         * @description One provider currently refusing every call.
+         * @description One provider that is refusing every call, right now.
          */
         OpenOutageRecord: {
             /** Id */
@@ -92858,6 +93025,31 @@ export interface components {
             /** Interval Hours */
             interval_hours?: number | null;
         };
+        /**
+         * RefuseUntil
+         * @description The declared condition: what must hold before this desk produces.
+         *
+         *     Authored with the Masterwork, carried on its workflow metadata, read at run
+         *     time. Every field except ``required_facts`` is presentation — they are the
+         *     words the refusal is written in, chosen by the desk's author rather than
+         *     improvised by a model in the moment.
+         */
+        RefuseUntil: {
+            /** Required Facts */
+            required_facts?: components["schemas"]["RequiredFact"][];
+            /**
+             * Protocol Frame
+             * @default
+             */
+            protocol_frame?: string;
+            /** Provenance */
+            provenance?: string[];
+            /**
+             * Headline
+             * @default
+             */
+            headline?: string;
+        };
         /** RegenerateAssetRequest */
         RegenerateAssetRequest: {
             /**
@@ -94171,6 +94363,36 @@ export interface components {
             conversation_id?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * RequiredFact
+         * @description One fact the frame requires before the desk may produce.
+         *
+         *     The three human halves are the same three a ``MissingFact`` renders, because
+         *     a refusal is just the unmet part of this condition made readable — declaring
+         *     them once here means the desk never has to invent the reason at run time.
+         */
+        RequiredFact: {
+            /**
+             * Fact
+             * @description What must be known, in one plain phrase.
+             */
+            fact: string;
+            /**
+             * Key
+             * @default
+             */
+            key?: string;
+            /**
+             * Why It Matters
+             * @default
+             */
+            why_it_matters?: string;
+            /**
+             * How To Get It
+             * @default
+             */
+            how_to_get_it?: string;
         };
         /** RerunFromRequest */
         RerunFromRequest: {
@@ -106453,6 +106675,25 @@ export interface components {
             dst_active: boolean;
             /** Utc Offset Seconds */
             utc_offset_seconds: number;
+        };
+        /**
+         * TimelineSourceMeta
+         * @description Where this case came from, and under what licence we may hold it.
+         *
+         *     Every field is optional because a person pasting their OWN incident
+         *     post-mortem has no licence, URL or external id — but a published case
+         *     report does, and a corpus of held-out cases with no provenance is a corpus
+         *     nobody can publish a result from.
+         */
+        TimelineSourceMeta: {
+            /** Licence */
+            licence?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Published */
+            published?: string | null;
+            /** External Id */
+            external_id?: string | null;
         };
         /**
          * TimelyServiceStatus
@@ -154004,6 +154245,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["IngestFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_unfolding_masterworks_ingest_unfolding_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestUnfoldingRequest"];
             };
         };
         responses: {

@@ -24396,6 +24396,8 @@ export type Database = {
           created_by: string
           guardian_user_id: string
           id: string
+          metadata: Json
+          organization_id: string
           relationship: string | null
           requested_by: string
           reviewed_at: string | null
@@ -24403,8 +24405,10 @@ export type Database = {
           status: string
           student_user_id: string
           updated_at: string
+          updated_by: string | null
           verification_ref: string | null
           verified_at: string | null
+          version: number
         }
         Insert: {
           consent_method?: string | null
@@ -24412,6 +24416,8 @@ export type Database = {
           created_by?: string
           guardian_user_id: string
           id?: string
+          metadata?: Json
+          organization_id: string
           relationship?: string | null
           requested_by?: string
           reviewed_at?: string | null
@@ -24419,8 +24425,10 @@ export type Database = {
           status?: string
           student_user_id: string
           updated_at?: string
+          updated_by?: string | null
           verification_ref?: string | null
           verified_at?: string | null
+          version?: number
         }
         Update: {
           consent_method?: string | null
@@ -24428,6 +24436,8 @@ export type Database = {
           created_by?: string
           guardian_user_id?: string
           id?: string
+          metadata?: Json
+          organization_id?: string
           relationship?: string | null
           requested_by?: string
           reviewed_at?: string | null
@@ -24435,8 +24445,10 @@ export type Database = {
           status?: string
           student_user_id?: string
           updated_at?: string
+          updated_by?: string | null
           verification_ref?: string | null
           verified_at?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -24707,7 +24719,7 @@ export type Database = {
       math_problems: {
         Row: {
           course_name: string
-          created_at: string | null
+          created_at: string
           created_by: string | null
           description: string | null
           difficulty_level: string | null
@@ -24716,7 +24728,9 @@ export type Database = {
           id: string
           intro_text: string | null
           is_published: boolean | null
+          metadata: Json
           module_name: string
+          organization_id: string
           problem_statement: Json
           related_content: Json | null
           resources: Json | null
@@ -24724,11 +24738,14 @@ export type Database = {
           sort_order: number | null
           title: string
           topic_name: string
-          updated_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           course_name: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
@@ -24737,7 +24754,9 @@ export type Database = {
           id?: string
           intro_text?: string | null
           is_published?: boolean | null
+          metadata?: Json
           module_name: string
+          organization_id: string
           problem_statement: Json
           related_content?: Json | null
           resources?: Json | null
@@ -24745,11 +24764,14 @@ export type Database = {
           sort_order?: number | null
           title: string
           topic_name: string
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           course_name?: string
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
@@ -24758,7 +24780,9 @@ export type Database = {
           id?: string
           intro_text?: string | null
           is_published?: boolean | null
+          metadata?: Json
           module_name?: string
+          organization_id?: string
           problem_statement?: Json
           related_content?: Json | null
           resources?: Json | null
@@ -24766,7 +24790,10 @@ export type Database = {
           sort_order?: number | null
           title?: string
           topic_name?: string
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -48622,7 +48649,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: number
       }
-      _l1_org_role: { Args: { p_org: string; p_user: string }; Returns: string }
+      _l1_org_role: {
+        Args: { p_org: string; p_require_role?: boolean; p_user: string }
+        Returns: string
+      }
       _l1_persona: {
         Args: { p_at: string; p_org: string; p_user: string }
         Returns: string
@@ -61552,10 +61582,13 @@ export type Database = {
           applied_at: string | null
           conversation_id: string | null
           created_at: string
+          id: string
           item_index: number | null
           key: string
           kind: string
           message: string | null
+          metadata: Json
+          organization_id: string
           receipt: Json
           type: string
           user_id: string
@@ -61564,10 +61597,13 @@ export type Database = {
           applied_at?: string | null
           conversation_id?: string | null
           created_at?: string
+          id?: string
           item_index?: number | null
           key: string
           kind?: string
           message?: string | null
+          metadata?: Json
+          organization_id: string
           receipt?: Json
           type: string
           user_id: string
@@ -61576,10 +61612,13 @@ export type Database = {
           applied_at?: string | null
           conversation_id?: string | null
           created_at?: string
+          id?: string
           item_index?: number | null
           key?: string
           kind?: string
           message?: string | null
+          metadata?: Json
+          organization_id?: string
           receipt?: Json
           type?: string
           user_id?: string
@@ -62498,8 +62537,9 @@ export type Database = {
           id: string
           label: string
           legal_hold: boolean
+          metadata: Json
           mode: string
-          organization_id: string | null
+          organization_id: string
           priority: number
           retention_days: number | null
           review_due: string | null
@@ -62511,6 +62551,8 @@ export type Database = {
           updated_by: string | null
           user_id: string | null
           user_predicate: Json | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           warn_days: number | null
         }
         Insert: {
@@ -62526,8 +62568,9 @@ export type Database = {
           id?: string
           label: string
           legal_hold?: boolean
+          metadata?: Json
           mode?: string
-          organization_id?: string | null
+          organization_id: string
           priority?: number
           retention_days?: number | null
           review_due?: string | null
@@ -62539,6 +62582,8 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           user_predicate?: Json | null
+          version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
           warn_days?: number | null
         }
         Update: {
@@ -62554,8 +62599,9 @@ export type Database = {
           id?: string
           label?: string
           legal_hold?: boolean
+          metadata?: Json
           mode?: string
-          organization_id?: string | null
+          organization_id?: string
           priority?: number
           retention_days?: number | null
           review_due?: string | null
@@ -62567,9 +62613,39 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           user_predicate?: Json | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
           warn_days?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "platform_retention_policy_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_retention_policy_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_retention_policy_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_retention_policy_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "retention_policy_entity_token_fkey"
             columns: ["entity_token"]
@@ -77402,6 +77478,8 @@ export type Database = {
           entity_type: string | null
           id: string
           industry_id: string | null
+          metadata: Json
+          organization_id: string
           target_organization_id: string | null
         }
         Insert: {
@@ -77414,6 +77492,8 @@ export type Database = {
           entity_type?: string | null
           id?: string
           industry_id?: string | null
+          metadata?: Json
+          organization_id: string
           target_organization_id?: string | null
         }
         Update: {
@@ -77426,6 +77506,8 @@ export type Database = {
           entity_type?: string | null
           id?: string
           industry_id?: string | null
+          metadata?: Json
+          organization_id?: string
           target_organization_id?: string | null
         }
         Relationships: []
@@ -80808,55 +80890,70 @@ export type Database = {
           char_count: number | null
           content: Json | null
           content_type: string | null
-          created_at: string | null
+          created_at: string
+          created_by: string | null
           domain: string | null
           expires_at: string | null
           id: string
           is_public: boolean | null
           local_path: string | null
+          metadata: Json
+          organization_id: string
           page_name: string
           remote_path: string | null
           scraped_at: string | null
-          updated_at: string | null
+          updated_at: string
+          updated_by: string | null
           url: string | null
           user_id: string | null
           validity: string
+          version: number
         }
         Insert: {
           char_count?: number | null
           content?: Json | null
           content_type?: string | null
-          created_at?: string | null
+          created_at?: string
+          created_by?: string | null
           domain?: string | null
           expires_at?: string | null
           id?: string
           is_public?: boolean | null
           local_path?: string | null
+          metadata?: Json
+          organization_id: string
           page_name: string
           remote_path?: string | null
           scraped_at?: string | null
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
           url?: string | null
           user_id?: string | null
           validity: string
+          version?: number
         }
         Update: {
           char_count?: number | null
           content?: Json | null
           content_type?: string | null
-          created_at?: string | null
+          created_at?: string
+          created_by?: string | null
           domain?: string | null
           expires_at?: string | null
           id?: string
           is_public?: boolean | null
           local_path?: string | null
+          metadata?: Json
+          organization_id?: string
           page_name?: string
           remote_path?: string | null
           scraped_at?: string | null
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
           url?: string | null
           user_id?: string | null
           validity?: string
+          version?: number
         }
         Relationships: []
       }

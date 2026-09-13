@@ -120,7 +120,7 @@ export function deriveMcpConnectionState(
     }
     return {
       state: availability.state,
-      reason: availability.reason,
+      reason: availability.reason ?? null,
       source: "server",
     };
   }

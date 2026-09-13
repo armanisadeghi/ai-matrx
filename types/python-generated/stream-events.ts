@@ -1037,9 +1037,15 @@ export interface MasterworkIngestCompleteData {
   quotes_unverified?: number;
   failed_chunks?: number;
   skipped_words?: number;
+  packaging_set_aside?: number;
   followup_seed?: string | null;
   already_distilled?: MasterworkSourceAlreadyDistilled[];
   replaced_rules?: number;
+  corpus_item_id?: string | null;
+  sealed?: boolean;
+  timeline_steps?: number;
+  role?: string | null;
+  timeline?: Record<string, JsonValue> | null;
   sections?: MasterworkSectionYield[];
 }
 
