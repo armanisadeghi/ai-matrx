@@ -17,12 +17,11 @@ export interface UseUserPersistenceResult extends UseUserPersistenceState {
   /** Re-fetch all tiers (or a single tier when `tier` is given). */
   refresh: (tier?: SandboxTier) => Promise<void>;
   /**
-   * Delete the persistent storage for the given tier (or every tier when
-   * omitted). Resolves to `{ ok }`; on `false`, `error` is populated. The
-   * orchestrator refuses to wipe a volume that's still mounted by an active
-   * sandbox — callers should stop their sandboxes first.
+   * Delete the hosted per-user volume. Resolves to `{ ok }`; on `false`,
+   * `error` is populated. The orchestrator refuses while any sandbox remains
+   * attached, including stopped retained-home containers.
    */
-  deleteVolume: (tier?: SandboxTier) => Promise<{ ok: boolean; error?: string }>;
+  deleteVolume: (tier: "hosted") => Promise<{ ok: boolean; error?: string }>;
 }
 
 /**
@@ -30,8 +29,8 @@ export interface UseUserPersistenceResult extends UseUserPersistenceState {
  * many sandboxes are referencing it. Talks to `GET /api/sandbox/persistence`,
  * which fans out to each orchestrator the deployment knows about.
  *
- * Backed by Phase 1+2+3 of the persistence plan — the Python-team-shipped
- * per-user Docker volume on hosted, and the existing S3 prefix on EC2.
+ * Backed by the hosted per-user Docker volume and EC2 per-sandbox retained
+ * homes. Unknown byte counts are deliberately not converted to zero.
  *
  * The hook fetches once on mount, then exposes `refresh()` for the caller to
  * re-poll explicitly (e.g. after creating/destroying a sandbox, or after
@@ -61,7 +60,11 @@ export function useUserPersistence(
       const reqId = ++reqIdRef.current;
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
-        const qs = overrideTier ? `?tier=${overrideTier}` : tier ? `?tier=${tier}` : "";
+        const qs = overrideTier
+          ? `?tier=${overrideTier}`
+          : tier
+            ? `?tier=${tier}`
+            : "";
         const resp = await fetch(`/api/sandbox/persistence${qs}`, {
           cache: "no-store",
         });
@@ -93,10 +96,8 @@ export function useUserPersistence(
   }, [skip, fetchOnce]);
 
   const deleteVolume = useCallback(
-    async (
-      deleteTier?: SandboxTier,
-    ): Promise<{ ok: boolean; error?: string }> => {
-      const qs = deleteTier ? `?tier=${deleteTier}` : "";
+    async (deleteTier: "hosted"): Promise<{ ok: boolean; error?: string }> => {
+      const qs = `?tier=${deleteTier}`;
       try {
         const resp = await fetch(`/api/sandbox/persistence${qs}`, {
           method: "DELETE",
@@ -115,42 +116,15 @@ export function useUserPersistence(
           const message =
             failed?.error ??
             (resp.status === 409
-              ? "Volume in use by an active sandbox — stop it first."
+              ? "Volume still has attached sandboxes — remove them first."
               : `Delete failed (${resp.status})`);
           setState((s) => ({ ...s, error: message }));
           return { ok: false, error: message };
         }
-        // Reflect the wipe locally before the next fetch returns.
-        setState((s) =>
-          s.info
-            ? {
-                ...s,
-                info: {
-                  ...s.info,
-                  total_size_bytes: deleteTier
-                    ? s.info.tiers
-                        .filter((t) => t.tier !== deleteTier)
-                        .reduce(
-                          (sum, t) => sum + (t.current_size_bytes ?? 0),
-                          0,
-                        )
-                    : 0,
-                  tiers: deleteTier
-                    ? s.info.tiers.map((t) =>
-                        t.tier === deleteTier
-                          ? { ...t, current_size_bytes: 0, sandbox_count: 0 }
-                          : t,
-                      )
-                    : s.info.tiers.map((t) => ({
-                        ...t,
-                        current_size_bytes: 0,
-                        sandbox_count: 0,
-                      })),
-                },
-              }
-            : s,
-        );
-        await fetchOnce(deleteTier);
+        // A volume delete does not delete sandbox records and the backend's
+        // byte/count read is authoritative. Do not manufacture a locally
+        // "zeroed" tier or replace an all-tier aggregate with a hosted-only one.
+        await fetchOnce();
         return { ok: true };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

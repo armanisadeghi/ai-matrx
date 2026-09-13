@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { readPersistenceTier } from "@/lib/sandbox/persistence-read";
 import {
   orchestratorJsonHeaders,
   resolveOrchestratorByTier,
 } from "@/lib/sandbox/orchestrator-routing";
-import type {
-  UserPersistenceInfo,
-  UserPersistenceResponse,
-} from "@/types/sandbox";
+import type { SandboxTier, UserPersistenceResponse } from "@/types/sandbox";
 
 /**
  * GET /api/sandbox/persistence
@@ -15,9 +13,8 @@ import type {
  * Aggregates per-user persistent-storage info across all tiers. Talks to each
  * orchestrator's `GET /users/{user_id}/persistence` endpoint shipped by the
  * Python team in Phase 1+2+3 of the persistence plan. The hosted tier returns
- * a real Docker volume + bytes; the EC2 tier may return empty/`{}` until the
- * cloud_sync work in Phase 6 lands — we still merge it so callers get a single
- * response shape.
+ * a Docker-volume record; size can remain unknown when Docker does not expose
+ * UsageData. Every tier outcome is retained so unavailable never means empty.
  *
  * The `partial` flag is set if any orchestrator was unreachable or returned
  * less data than expected, so the UI can render "—" rather than "0 B" without
@@ -25,10 +22,10 @@ import type {
  *
  * DELETE /api/sandbox/persistence
  *
- * Forwards to `DELETE /users/{user_id}/volume` on the relevant tier(s). Pass
- * `?tier=hosted` to scope the deletion (recommended); the bare DELETE wipes
- * every tier we know about. The orchestrator refuses if any sandbox is still
- * mounted; we surface that 4xx straight back to the user.
+ * Forwards only `?tier=hosted` to `DELETE /users/{user_id}/volume`. EC2 home
+ * management is per-sandbox and is not a user-level delete operation here.
+ * The orchestrator refuses while any sandbox remains attached to the volume;
+ * its 409 is surfaced without guessing from active-count telemetry.
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -42,75 +39,27 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url);
   const tierFilter = url.searchParams.get("tier");
-  const tiers: Array<"ec2" | "hosted"> =
+  const tiers: SandboxTier[] =
     tierFilter === "ec2" || tierFilter === "hosted"
       ? [tierFilter]
       : ["hosted", "ec2"];
 
-  const tierInfos: UserPersistenceInfo[] = [];
-  let partial = false;
-  let total = 0;
-
-  for (const tier of tiers) {
-    const target = resolveOrchestratorByTier(tier);
-    if (!target.apiKey) {
-      // Tier not configured on this deployment — skip but mark partial so
-      // the UI doesn't claim it knows the full picture.
-      partial = true;
-      continue;
-    }
-    try {
-      const resp = await fetch(
-        `${target.url}/users/${encodeURIComponent(user.id)}/persistence`,
-        { headers: orchestratorJsonHeaders(target) },
-      );
-      if (resp.status === 404) {
-        // No volume yet for this user on this tier — still a valid state
-        // (they've never created a sandbox on this tier).
-        tierInfos.push({
-          user_id: user.id,
-          tier,
-          current_size_bytes: 0,
-          sandbox_count: 0,
-        });
-        continue;
-      }
-      if (!resp.ok) {
-        partial = true;
-        continue;
-      }
-      const body = (await resp.json()) as Record<string, unknown>;
-      const info: UserPersistenceInfo = {
-        user_id: user.id,
-        tier,
-        volume_name:
-          typeof body.volume_name === "string" ? body.volume_name : null,
-        current_size_bytes:
-          typeof body.current_size_bytes === "number"
-            ? body.current_size_bytes
-            : null,
-        sandbox_count:
-          typeof body.sandbox_count === "number" ? body.sandbox_count : 0,
-        s3_prefix:
-          typeof body.s3_prefix === "string" ? body.s3_prefix : null,
-        in_use: typeof body.in_use === "boolean" ? body.in_use : undefined,
-        last_synced_at:
-          typeof body.last_synced_at === "string" ? body.last_synced_at : null,
-      };
-      tierInfos.push(info);
-      if (typeof info.current_size_bytes === "number") {
-        total += info.current_size_bytes;
-      } else {
-        partial = true;
-      }
-    } catch (err) {
-      console.error(
-        `[sandbox/persistence] tier=${tier} fetch failed:`,
-        err,
-      );
-      partial = true;
-    }
-  }
+  const tierInfos = await Promise.all(
+    tiers.map((tier) => readPersistenceTier(tier, user.id)),
+  );
+  const total = tierInfos.reduce(
+    (sum, info) =>
+      sum +
+      (typeof info.current_size_bytes === "number"
+        ? info.current_size_bytes
+        : 0),
+    0,
+  );
+  const partial = tierInfos.some(
+    (info) =>
+      info.status !== "available" ||
+      typeof info.current_size_bytes !== "number",
+  );
 
   const payload: UserPersistenceResponse = {
     user_id: user.id,
@@ -133,10 +82,13 @@ export async function DELETE(request: NextRequest) {
 
   const url = new URL(request.url);
   const tierFilter = url.searchParams.get("tier");
-  const tiers: Array<"ec2" | "hosted"> =
-    tierFilter === "ec2" || tierFilter === "hosted"
-      ? [tierFilter]
-      : ["hosted", "ec2"];
+  if (tierFilter !== "hosted") {
+    return NextResponse.json(
+      { ok: false, error: "Only hosted-tier storage can be wiped here." },
+      { status: 400 },
+    );
+  }
+  const tiers: Array<"hosted"> = ["hosted"];
 
   const results: Array<{
     tier: "ec2" | "hosted";
@@ -148,7 +100,12 @@ export async function DELETE(request: NextRequest) {
   for (const tier of tiers) {
     const target = resolveOrchestratorByTier(tier);
     if (!target.apiKey) {
-      results.push({ tier, ok: false, status: 0, error: "tier not configured" });
+      results.push({
+        tier,
+        ok: false,
+        status: 0,
+        error: "tier not configured",
+      });
       continue;
     }
     try {
@@ -167,10 +124,7 @@ export async function DELETE(request: NextRequest) {
       const text = await resp.text().catch(() => resp.statusText);
       results.push({ tier, ok: false, status: resp.status, error: text });
     } catch (err) {
-      console.error(
-        `[sandbox/persistence] tier=${tier} delete failed:`,
-        err,
-      );
+      console.error(`[sandbox/persistence] tier=${tier} delete failed:`, err);
       results.push({
         tier,
         ok: false,
