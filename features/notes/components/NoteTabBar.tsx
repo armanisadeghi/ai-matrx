@@ -229,7 +229,10 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
     return () => clearTimeout(timer);
   }, [activeTabId, openTabs, tabInteractionAt, instanceId, dispatch]);
 
-  if (!openTabs || openTabs.length === 0) return null;
+  // A registered but empty instance still needs its real New note control.
+  // Returning null here made the initializer unreachable as soon as a user
+  // closed their last tab.
+  if (!openTabs) return null;
 
   // Per-tab wrapper (drag handlers + drop-target styling). Shared between the
   // pinned active tab and the scrolling tabs so behaviour stays identical.
