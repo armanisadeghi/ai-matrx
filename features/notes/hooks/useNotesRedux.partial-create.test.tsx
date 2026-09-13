@@ -33,12 +33,41 @@ jest.mock("../redux/thunks", () => ({
 
 import { useNotesRedux } from "./useNotesRedux";
 import { NoteContextPartialSaveError } from "../service/noteSaveErrors";
+import type { Note } from "../types";
 
 let api: ReturnType<typeof useNotesRedux> | null = null;
 
 function Probe() {
   api = useNotesRedux();
   return null;
+}
+
+function note(overrides: Partial<Note> = {}): Note {
+  return {
+    id: "note-1",
+    content: "body",
+    content_hash: null,
+    created_at: "2026-09-12T00:00:00.000Z",
+    created_by: "user-1",
+    deleted_at: null,
+    file_path: null,
+    folder_id: null,
+    folder_name: null,
+    label: "Created",
+    last_device_id: null,
+    metadata: {},
+    organization_id: "org-1",
+    position: 0,
+    project_id: "project-1",
+    sync_version: 0,
+    tags: [],
+    task_id: null,
+    updated_at: "2026-09-12T00:00:00.000Z",
+    updated_by: null,
+    version: 1,
+    visibility: "personal",
+    ...overrides,
+  };
 }
 
 describe("useNotesRedux partial creation", () => {
@@ -67,7 +96,7 @@ describe("useNotesRedux partial creation", () => {
         code: "context_partial",
         message: "The note was saved, but one or more context links could not be saved.",
         receipt: {
-          note: { id: "note-1" },
+          note: note(),
           databaseWrite: "saved",
           succeededFields: ["project_id"],
           failedFields: ["task_id"],
@@ -79,7 +108,7 @@ describe("useNotesRedux partial creation", () => {
     if (!api) throw new Error("The Notes hook did not mount.");
     await expect(api.createNote({ organization_id: "org-1", content: "body" })).rejects.toMatchObject({
       name: "NoteContextPartialSaveError",
-      actualStoredNote: { id: "note-1" },
+      actualStoredNote: note(),
       failedFields: ["task_id"],
       safeCauses: { task_id: "task denied" },
     } satisfies Partial<NoteContextPartialSaveError>);
