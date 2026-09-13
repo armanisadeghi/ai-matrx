@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,11 +17,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
-import { AdminAuditTable } from "@/features/administration/canonicalization/components/AdminAuditTable";
-import type { AuditColumnDef } from "@/features/administration/canonicalization/components/AdminAuditTable";
-import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
+import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
 import {
   ProviderPriceCell,
   type ProviderPriceField,
@@ -32,6 +34,79 @@ interface OfferingTableProps {
   onSelect: (offering: AiOffering) => void;
   onDelete: (offering: AiOffering) => void;
   onCreate: () => void;
+  onRetry: () => void;
+}
+
+function ProviderModelIdCell({ value }: { value: string }) {
+  return (
+    <span className="inline-flex min-w-0 items-center">
+      <code className="min-w-0 truncate font-mono text-xs">{value}</code>
+      <CopyButton content={value} size="xs" tooltip="Copy provider model ID" />
+    </span>
+  );
+}
+
+function OfferingRowActions({
+  offering,
+  modelName,
+  endpointName,
+  onDelete,
+}: {
+  offering: AiOffering;
+  modelName: string | null;
+  endpointName: string;
+  onDelete: (offering: AiOffering) => void;
+}) {
+  const [pendingDelete, setPendingDelete] = useState(false);
+
+  return (
+    <>
+      <TrashTapButton
+        variant="solid"
+        bgColor="bg-destructive/10"
+        iconColor="text-destructive"
+        hoverBgColor="hover:bg-destructive/20"
+        activeBgColor="active:bg-destructive/25"
+        ariaLabel={`Delete offering for ${endpointName}`}
+        tooltip="Delete offering"
+        onClick={() => setPendingDelete(true)}
+      />
+      <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this offering?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the <strong>{endpointName}</strong> offering for{" "}
+              <strong>
+                <AiModelRef
+                  modelId={offering.model_id}
+                  name={modelName}
+                  showId
+                  showIcon={false}
+                  disableNavigation
+                />
+              </strong>
+              . This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDelete(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                onDelete(offering);
+                setPendingDelete(false);
+              }}
+            >
+              Delete Offering
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }
 
 export default function OfferingTable({
@@ -43,233 +118,182 @@ export default function OfferingTable({
   onSelect,
   onDelete,
   onCreate,
+  onRetry,
 }: OfferingTableProps) {
-  const [pendingDelete, setPendingDelete] = useState<AiOffering | null>(null);
   const modelName = (id: string) => {
-    const m = models.find((x) => x.id === id);
-    return m?.common_name || m?.name || `Unknown AI model (${id})`;
+    const model = models.find((item) => item.id === id);
+    return model?.common_name || model?.name || `Unknown AI model (${id})`;
   };
   const resolvedModelName = (id: string) => {
-    const m = models.find((x) => x.id === id);
-    return m?.common_name || m?.name || null;
+    const model = models.find((item) => item.id === id);
+    return model?.common_name || model?.name || null;
   };
   const endpointName = (id: string) => {
-    const e = endpoints.find((x) => x.id === id);
-    return e?.display_name || id;
+    const endpoint = endpoints.find((item) => item.id === id);
+    return endpoint?.display_name || id;
   };
   const apiName = (id: string) => {
-    const a = apis.find((x) => x.id === id);
-    return a?.display_name || id;
+    const api = apis.find((item) => item.id === id);
+    return api?.display_name || id;
   };
   const priceFor = (offering: AiOffering, field: ProviderPriceField) =>
     offering.pricing[0]?.[field] ?? null;
-  const usageBasisFor = (offering: AiOffering) =>
+  const pricingUsageBasisFor = (offering: AiOffering) =>
     offering.pricing[0]?.usage_basis ?? offering.usage_basis;
 
-  const columns: AuditColumnDef<AiOffering>[] = [
+  const columns: MatrxColumnDef<AiOffering>[] = [
     {
-      key: "model",
+      id: "model",
+      header: "Model",
       label: "Model",
-      type: "text",
-      getValue: (o) => modelName(o.model_id),
-      render: (o) => (
+      accessorFn: (offering) => modelName(offering.model_id),
+      width: 180,
+      cell: (offering) => (
         <AiModelRef
-          modelId={o.model_id}
-          name={resolvedModelName(o.model_id)}
+          modelId={offering.model_id}
+          name={resolvedModelName(offering.model_id)}
           showId
           showIcon={false}
         />
       ),
-      width: "minmax(180px,1.4fr)",
     },
     {
-      key: "endpoint",
+      id: "endpoint",
+      header: "Endpoint",
       label: "Endpoint",
-      type: "enum",
-      getValue: (o) => endpointName(o.endpoint_id),
-      width: "150px",
+      accessorFn: (offering) => endpointName(offering.endpoint_id),
+      width: 150,
     },
     {
-      key: "api",
+      id: "api",
+      header: "API",
       label: "API",
-      type: "enum",
-      getValue: (o) => apiName(o.api_id),
-      width: "150px",
+      accessorFn: (offering) => apiName(offering.api_id),
+      width: 150,
     },
     {
-      key: "provider_model_id",
-      label: "Provider Model ID",
-      type: "text",
-      getValue: (o) => o.provider_model_id,
-      monospace: true,
-      copyable: true,
-      width: "minmax(200px,1.6fr)",
-      noValueList: true,
+      accessorKey: "provider_model_id",
+      header: "Provider Model ID",
+      width: 220,
+      cell: (offering) => (
+        <ProviderModelIdCell value={offering.provider_model_id} />
+      ),
     },
     {
-      key: "priority",
-      label: "Priority",
-      type: "number",
-      getValue: (o) => o.priority,
-      width: "90px",
-      align: "right",
+      accessorKey: "priority",
+      header: "Priority",
+      width: 90,
+      cell: (offering) => (
+        <span className="block text-right font-mono text-xs tabular-nums">
+          {offering.priority}
+        </span>
+      ),
     },
     {
-      key: "input_price",
-      label: "Input Price",
-      type: "number",
-      getValue: (o) => priceFor(o, "input_price"),
-      width: "140px",
-      align: "right",
-      render: (o) => (
+      id: "input_price",
+      header: "Input Price",
+      accessorFn: (offering) => priceFor(offering, "input_price"),
+      width: 140,
+      cell: (offering) => (
         <ProviderPriceCell
-          value={priceFor(o, "input_price")}
-          usageBasis={usageBasisFor(o)}
+          value={priceFor(offering, "input_price")}
+          usageBasis={pricingUsageBasisFor(offering)}
           field="input_price"
         />
       ),
     },
     {
-      key: "cached_input_price",
-      label: "Cached Input",
-      type: "number",
-      getValue: (o) => priceFor(o, "cached_input_price"),
-      width: "150px",
-      align: "right",
-      render: (o) => (
+      id: "cached_input_price",
+      header: "Cached Input",
+      accessorFn: (offering) => priceFor(offering, "cached_input_price"),
+      width: 150,
+      cell: (offering) => (
         <ProviderPriceCell
-          value={priceFor(o, "cached_input_price")}
-          usageBasis={usageBasisFor(o)}
+          value={priceFor(offering, "cached_input_price")}
+          usageBasis={pricingUsageBasisFor(offering)}
           field="cached_input_price"
         />
       ),
     },
     {
-      key: "output_price",
-      label: "Output Price",
-      type: "number",
-      getValue: (o) => priceFor(o, "output_price"),
-      width: "140px",
-      align: "right",
-      render: (o) => (
+      id: "output_price",
+      header: "Output Price",
+      accessorFn: (offering) => priceFor(offering, "output_price"),
+      width: 140,
+      cell: (offering) => (
         <ProviderPriceCell
-          value={priceFor(o, "output_price")}
-          usageBasis={usageBasisFor(o)}
+          value={priceFor(offering, "output_price")}
+          usageBasis={pricingUsageBasisFor(offering)}
           field="output_price"
         />
       ),
     },
     {
-      key: "is_available",
-      label: "Available",
-      type: "enum",
-      getValue: (o) => (o.is_available ? "Yes" : "No"),
-      width: "100px",
-      render: (o) => (
+      id: "is_available",
+      header: "Available",
+      accessorFn: (offering) => (offering.is_available ? "Yes" : "No"),
+      width: 100,
+      cell: (offering) => (
         <Badge
           variant="outline"
           className={
-            o.is_available
-              ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 text-[10px]"
-              : "bg-muted text-muted-foreground text-[10px]"
+            offering.is_available
+              ? "border-green-300 bg-green-50 text-[10px] text-green-700 dark:bg-green-900/20 dark:text-green-300"
+              : "bg-muted text-[10px] text-muted-foreground"
           }
         >
-          {o.is_available ? "Available" : "Unavailable"}
+          {offering.is_available ? "Available" : "Unavailable"}
         </Badge>
       ),
     },
     {
-      key: "usage_basis",
-      label: "Usage Basis",
-      type: "enum",
-      getValue: (o) => o.usage_basis ?? "",
-      width: "120px",
-    },
-    {
-      key: "actions",
-      label: "",
-      type: "text",
-      sortable: false,
-      filterable: false,
-      getValue: () => "",
-      width: "56px",
-      render: (o) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-          title="Delete"
-          onClick={(e) => {
-            e.stopPropagation();
-            setPendingDelete(o);
-          }}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      ),
+      id: "usage_basis",
+      header: "Usage Basis",
+      accessorFn: (offering) => offering.usage_basis ?? "",
+      width: 120,
     },
   ];
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2">
-      <div className="flex shrink-0 items-center justify-end">
-        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={onCreate}>
-          <Plus className="h-3.5 w-3.5" />
-          New Offering
-        </Button>
-      </div>
-      <div className="min-h-0 flex-1">
-        <AdminAuditTable
-          rows={offerings}
-          columns={columns}
-          loading={loading}
-          emptyMessage="No offerings yet."
-          onRowClick={onSelect}
-          csvFilename="ai_offerings"
-        />
-      </div>
-
-      <AlertDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this offering?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingDelete && (
-                <>
-                  This removes the{" "}
-                  <strong>{endpointName(pendingDelete.endpoint_id)}</strong>{" "}
-                  offering for{" "}
-                  <strong>
-                    <AiModelRef
-                      modelId={pendingDelete.model_id}
-                      name={resolvedModelName(pendingDelete.model_id)}
-                      showId
-                      showIcon={false}
-                      disableNavigation
-                    />
-                  </strong>
-                  . This cannot be undone.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={() => {
-                if (pendingDelete) onDelete(pendingDelete);
-                setPendingDelete(null);
-              }}
-            >
-              Delete Offering
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+    <div className="flex h-full min-h-0 flex-col">
+      <MatrxDataTable<AiOffering>
+        data={offerings}
+        columns={columns}
+        getRowId={(offering) => offering.id}
+        isLoading={loading && offerings.length === 0}
+        isFetching={loading && offerings.length > 0}
+        pageSize={25}
+        pageSizeOptions={[10, 25, 50, 100]}
+        localPagination={{ mode: "progressive" }}
+        defaultSort={{ id: "priority", direction: "asc" }}
+        detail={{ enabled: false }}
+        onRowOpen={onSelect}
+        tableId="ai/offerings"
+        emptyState={{ title: "No offerings yet." }}
+        toolbar={{
+          title: "AI Offerings",
+          refresh: { onRefresh: onRetry },
+          add: { onAdd: onCreate },
+        }}
+        copy={{
+          label: "AI offering",
+          listLabel: "AI offerings",
+          location: "AI model administration",
+          rowKind: "ai_offering",
+          listKind: "ai_offerings",
+          humanRow: (offering) =>
+            `${modelName(offering.model_id)} via ${endpointName(offering.endpoint_id)} (${offering.provider_model_id})`,
+          agentRow: (offering) => offering,
+        }}
+        rowActions={(offering) => (
+          <OfferingRowActions
+            offering={offering}
+            modelName={resolvedModelName(offering.model_id)}
+            endpointName={endpointName(offering.endpoint_id)}
+            onDelete={onDelete}
+          />
+        )}
+      />
     </div>
   );
 }
