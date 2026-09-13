@@ -6,9 +6,9 @@ export type OnePuxArchive = { attributesText: string; dataText: string; binaryMe
 
 const safe = (value: number) => Number.isSafeInteger(value) && value >= 0;
 
-function boundedText(limit: number) {
+function boundedText(limit: number, used: { value: number }) {
   let size = 0; const parts: Uint8Array[] = [];
-  return { writable: new WritableStream<Uint8Array>({ write(chunk) { if (size > limit - chunk.byteLength) throw new Error("The 1Password export exceeds this organization’s import size limit."); size += chunk.byteLength; parts.push(chunk); } }), text: () => { const bytes = new Uint8Array(size); let offset = 0; for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; } return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } };
+  return { writable: new WritableStream<Uint8Array>({ write(chunk) { if (used.value > limit - chunk.byteLength) throw new Error("The 1Password export exceeds this organization’s import size limit."); used.value += chunk.byteLength; size += chunk.byteLength; parts.push(chunk); } }), text: () => { const bytes = new Uint8Array(size); let offset = 0; for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; } return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } };
 }
 
 export async function readOnePuxArchive(file: Blob, limits: CsvImportLimits, signal?: AbortSignal): Promise<OnePuxArchive> {
@@ -18,14 +18,15 @@ export async function readOnePuxArchive(file: Blob, limits: CsvImportLimits, sig
     if (signal?.aborted) throw new Error("The 1Password import was cancelled.");
     const entries = await reader.getEntries();
     if (reader.warnings?.length || entries.length > limits.maxRecords) throw new Error("The 1Password archive is unsafe.");
-    let declared = 0; let attributesText: string | undefined; let dataText: string | undefined; let binaryMemberCount = 0; const names = new Set<string>();
+    let declared = 0; let attributesText: string | undefined; let dataText: string | undefined; let binaryMemberCount = 0; const names = new Set<string>(); const actual = { value: 0 };
     for (const entry of entries) {
-      if (signal?.aborted || names.has(entry.filename) || entry.filename.includes("\\") || entry.filename.includes("\0") || !safe(entry.compressedSize) || !safe(entry.uncompressedSize) || declared > limits.maxFileBytes - entry.uncompressedSize || entry.encrypted || entry.externalFileAttributes >>> 16 === 0o120000) throw new Error("The 1Password archive is unsafe.");
+      const unixType = (entry.externalFileAttributes >>> 16) & 0o170000;
+      if (signal?.aborted || names.has(entry.filename) || entry.filename.includes("\\") || entry.filename.includes("\0") || !safe(entry.compressedSize) || !safe(entry.uncompressedSize) || !safe(entry.offset) || declared > limits.maxFileBytes - entry.uncompressedSize || entry.encrypted || (!entry.directory && unixType !== 0 && unixType !== 0o100000)) throw new Error("The 1Password archive is unsafe.");
       names.add(entry.filename); declared += entry.uncompressedSize;
       await entry.getData(new WritableStream(), { checkOverlappingEntryOnly: true, signal });
       if (entry.filename === "export.attributes" || entry.filename === "export.data") {
         if (entry.directory) throw new Error("The 1Password archive is invalid.");
-        const output = boundedText(limits.maxFileBytes);
+        const output = boundedText(limits.maxFileBytes, actual);
         const options = signal ? { checkCrc32: true, signal } : { checkCrc32: true };
         await entry.getData(output, options);
         const text = await output.text();

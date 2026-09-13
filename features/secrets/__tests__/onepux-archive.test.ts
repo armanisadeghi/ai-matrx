@@ -36,7 +36,7 @@ describe("1PUX archive reader", () => {
     const writer = new ZipWriter(new BlobWriter("application/zip"));
     await writer.add("export.attributes", new TextReader("a"));
     await writer.add("export.data", new TextReader("d"));
-    await writer.add("files/link", new TextReader("target"), { externalFileAttributes: 0o120000 << 16, versionMadeBy: 3 << 8 });
+    await writer.add("files/link", new TextReader("target"), { externalFileAttributes: 0o120777 << 16, versionMadeBy: 3 << 8 });
     await expect(read(await writer.close())).rejects.toThrow();
   });
   test("refuses a real split-disk fragment", async () => {
@@ -46,5 +46,9 @@ describe("1PUX archive reader", () => {
     const writer = new ZipWriter(new SplitDataWriter(writers(), 40));
     await writer.add("export.attributes", new TextReader("attributes")); await writer.add("export.data", new TextReader("data")); await writer.close();
     await expect(read(await disks[0]!.getData())).rejects.toThrow();
+  });
+  test("shares actual JSON expansion budget across both selected entries", async () => {
+    const file = await archive([["export.attributes", "12345"], ["export.data", "67890"]]);
+    await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 9, maxRecords: 10 } as never)).rejects.toThrow();
   });
 });
