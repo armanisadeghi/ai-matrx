@@ -2848,7 +2848,6 @@ export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfR
   { relation: "admin.admin_markdown_samples", policy: "admin_markdown_samples_super_admin_all", cmd: "*", reason: "A platform-admin-only sample store. Predicate: is_platform_admin() or is_super_admin() - both null-uid false." },
   { relation: "communication.sms_rate_limits", policy: "Service role only", cmd: "*", reason: "Service-role bookkeeping. Predicate: is_platform_admin() or auth.role() = service_role." },
   { relation: "communication.sms_webhook_logs", policy: "Service role only for webhook logs", cmd: "*", reason: "Service-role webhook log. Predicate: is_platform_admin() or auth.role() = service_role." },
-  { relation: "context.scope_dataset_instances", policy: "scope_dataset_instances_internal_only", cmd: "*", reason: "Platform-internal dataset instances. Predicate: is_platform_admin()." },
   { relation: "docproc.page_extraction_results", policy: "page_extraction_results_owner_write", cmd: "*", reason: "Owner of the parent extraction job. Predicate: is_platform_admin() or the job owner_id = auth.uid()." },
   { relation: "docproc.page_extraction_runs", policy: "page_extraction_runs_owner_write", cmd: "*", reason: "Owner of the parent extraction job. Predicate: is_platform_admin() or the job owner_id = auth.uid()." },
   { relation: "extend.wbx_demo", policy: "wbx_demo_owner_delete", cmd: "d", reason: "Row owner. Predicate: is_platform_admin() or created_by = auth.uid(). (Defect D257 tracks this table separately.)" },
