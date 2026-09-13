@@ -205,7 +205,7 @@ export function NoteContentEditor({
 
   const editableContentSource = usePreparedNoteContentSource(
     noteExists?._acknowledgedPhysicalSnapshot && conflictActorId && !readOnly
-      ? { record: noteExists, displayedNote: { ...noteExists, content: localContent }, actorId: conflictActorId }
+      ? { record: noteExists, displayedNote: { ...noteExists, content: localContent }, actorId: conflictActorId, hasLocalEdits: isDirty || noteExists._dirty || localContent !== noteExists.content }
       : null,
   );
 

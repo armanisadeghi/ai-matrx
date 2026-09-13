@@ -264,7 +264,7 @@ export function NoteEditor({
   // default (D33). Phantom (unsaved) notes stay raw — there is no row to save.
   const menuContentSource = usePreparedNoteContentSource(
     note?.id && note.id !== "__phantom__" && acknowledgedRecord?._acknowledgedPhysicalSnapshot && editingActorId
-      ? { record: acknowledgedRecord, displayedNote: { ...note, content: localContent, label: localLabel, folder_name: localFolder, tags: localTags }, actorId: editingActorId }
+      ? { record: acknowledgedRecord, displayedNote: { ...note, content: localContent, label: localLabel, folder_name: localFolder, tags: localTags }, actorId: editingActorId, hasLocalEdits: isDirty || acknowledgedRecord._dirty || localContent !== (acknowledgedRecord.content || "") || localLabel !== (acknowledgedRecord.label || "") || localFolder !== (acknowledgedRecord.folder_name || "Draft") || JSON.stringify(localTags) !== JSON.stringify(acknowledgedRecord.tags || []) }
       : null,
   );
 

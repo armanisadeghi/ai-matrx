@@ -9,7 +9,7 @@ const note=(o:Partial<Note>={}):Note=>({id,organization_id:org,version:0,content
 it("keeps an identical render stable and changes opaque snapshot identity for equal-length or metadata changes", async()=>{
  let latest=""; const root=createRoot(document.createElement("div"));
  (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT=true;
- function Probe({displayed}:{displayed:Note}) { const source=usePreparedNoteContentSource({record:createBlankNoteRecord(note()),displayedNote:displayed,actorId:actor}); latest=source?.type === "note" && source.mode === "editable" ? source.snapshotId : ""; return null; }
+ function Probe({displayed}:{displayed:Note}) { const source=usePreparedNoteContentSource({record:createBlankNoteRecord(note()),displayedNote:displayed,actorId:actor,hasLocalEdits:true}); latest=source?.type === "note" && source.mode === "editable" ? source.snapshotId : ""; return null; }
  await act(async()=>root.render(<Probe displayed={note()}/>)); const first=latest;
  await act(async()=>root.render(<Probe displayed={note()}/>)); const same=latest;
  await act(async()=>root.render(<Probe displayed={note({content:"diff"})}/>)); const equalLength=latest;
@@ -19,11 +19,18 @@ it("keeps an identical render stable and changes opaque snapshot identity for eq
 
 it("keeps mounted editors separate and advances for note, actor, base, and selection changes", async()=>{
  let left="",right=""; const root=createRoot(document.createElement("div"));
- function Probe({slot,displayed,actorId,selection}:{slot:"left"|"right";displayed:Note;actorId:string;selection?:string}) { const source=usePreparedNoteContentSource({record:createBlankNoteRecord(note({id:displayed.id,organization_id:displayed.organization_id,version:displayed.version})),displayedNote:displayed,actorId, ...(selection===undefined?{}:{actingSelection:selection})}); if(slot==="left") left=source?.type === "note" && source.mode === "editable" ? source.snapshotId : ""; else right=source?.type === "note" && source.mode === "editable" ? source.snapshotId : ""; return null; }
+ function Probe({slot,displayed,actorId,selection}:{slot:"left"|"right";displayed:Note;actorId:string;selection?:string}) { const source=usePreparedNoteContentSource({record:createBlankNoteRecord(note({id:displayed.id,organization_id:displayed.organization_id,version:displayed.version})),displayedNote:displayed,actorId,hasLocalEdits:true, ...(selection===undefined?{}:{actingSelection:selection})}); if(slot==="left") left=source?.type === "note" && source.mode === "editable" ? source.snapshotId : ""; else right=source?.type === "note" && source.mode === "editable" ? source.snapshotId : ""; return null; }
  const render=async(displayed:Note,actorId=actor,selection?:string)=>act(async()=>root.render(<><Probe slot="left" displayed={displayed} actorId={actorId} selection={selection}/><Probe slot="right" displayed={displayed} actorId={actor} /></>));
  await render(note()); const initialLeft=left,initialRight=right; expect(initialLeft).not.toBe(initialRight);
  await render(note({id:"44444444-4444-4444-8444-444444444444"})); expect(left).not.toBe(initialLeft);
  const switched=left; await render(note({id:"44444444-4444-4444-8444-444444444444"}),"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"); expect(left).not.toBe(switched);
  const actorChanged=left; await render(note({id:"44444444-4444-4444-8444-444444444444",version:1}),"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","selection"); expect(left).not.toBe(actorChanged);
  await act(async()=>root.unmount());
+});
+
+it("uses identity preparation for a clean newer observation while retaining dirty drafts on their base", async()=>{
+ let source: import("@/features/rich-document/types").ContentSource|undefined; const root=createRoot(document.createElement("div"));
+ function Probe({dirty}:{dirty:boolean}) { const record=createBlankNoteRecord(note({version:4})); record.version=5; source=usePreparedNoteContentSource({record,displayedNote:note({version:5,content:dirty?"draft":"remote"}),actorId:actor,hasLocalEdits:dirty}); return null; }
+ await act(async()=>root.render(<Probe dirty={false}/>)); expect(source).toMatchObject({type:"note",mode:"identity"});
+ await act(async()=>root.render(<Probe dirty/>)); expect(source).toMatchObject({type:"note",mode:"editable",editBase:{version:4},displayedPhysicalSnapshot:{content:"draft",version:4}}); await act(async()=>root.unmount());
 });

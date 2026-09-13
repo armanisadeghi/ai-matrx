@@ -84,9 +84,15 @@ export function captureNoteEditSourceFromRecord(args: {
   if (!args.record._acknowledgedPhysicalSnapshot) {
     throw new Error("This note has no acknowledged full snapshot. Reload it before editing.");
   }
+  // `record.version` is the newest observed server revision. A dirty editor's
+  // CAS base is instead the retained acknowledged row; preserve every
+  // displayed draft field but project its revision onto that retained base.
+  // This prevents a realtime observation from silently rebasing dirty text.
+  const acknowledgedNote = args.record._acknowledgedPhysicalSnapshot;
+  const displayedNote = { ...args.displayedNote, version: acknowledgedNote.version };
   return captureNoteEditSource({
-    acknowledgedNote: args.record._acknowledgedPhysicalSnapshot,
-    displayedNote: args.displayedNote,
+    acknowledgedNote,
+    displayedNote,
     actorId: args.actorId,
     sourceId: args.sourceId,
     snapshotId: args.snapshotId,
@@ -193,14 +199,14 @@ export function isPreparedEditableNoteSource(source: ContentSource): source is N
 export function advancePreparedNoteSource(
   source: NoteEditableContentSource,
   receipt: NoteSaveReceipt,
-  submittedContent?: string,
+  submittedContent: string,
 ): NoteEditableContentSource {
   const note = receipt.note;
   if (
     note.id !== source.noteId ||
     note.organization_id !== source.editBase.organizationId ||
     !validVersion(note.version)
-    || (submittedContent !== undefined && note.content !== submittedContent)
+    || (typeof submittedContent !== "string" || note.content !== submittedContent)
   ) {
     throw new Error("The acknowledged note receipt does not match this editor source.");
   }

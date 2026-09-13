@@ -3,6 +3,7 @@ import { enableMapSet } from "immer";
 import {
   advancePreparedNoteSource,
   captureNoteEditSource,
+  captureNoteEditSourceFromRecord,
   isPreparedEditableNoteSource,
 } from "./richDocumentSource";
 import { createBlankNoteRecord } from "./redux/notes.types";
@@ -78,7 +79,7 @@ describe("prepared Notes rich-document sources", () => {
       succeededFields: [],
       failedFields: [],
       safeCauses: {},
-    });
+    }, "saved body");
 
     expect(settled.editBase.version).toBe(1);
     expect(settled.displayedPhysicalSnapshot.content).toBe("saved body");
@@ -89,7 +90,7 @@ describe("prepared Notes rich-document sources", () => {
         succeededFields: [],
         failedFields: [],
         safeCauses: {},
-      }),
+      }, "saved body"),
     ).toThrow(/does not match/i);
   });
 
@@ -112,3 +113,32 @@ describe("prepared Notes source runtime admission", () => {
     expect(() => captureNoteEditSource({ acknowledgedNote: note(), displayedNote: note({ version: 1 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "source", snapshotId: "snapshot" })).toThrow(/requires/i);
   });
 });
+
+
+it("projects a newer observed record revision onto the retained acknowledged CAS base", () => {
+  const record = createBlankNoteRecord(note({ version: 4 }));
+  record.version = 5;
+  const source = captureNoteEditSourceFromRecord({ record, displayedNote: note({ version: 5, content: "dirty draft" }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "editor", snapshotId: "snapshot" });
+  expect(source.editBase.version).toBe(4);
+  expect(source.displayedPhysicalSnapshot).toMatchObject({ version: 4, content: "dirty draft" });
+});
+
+it("retains the old CAS base after a reducer save transition advances only the observed record version", () => {
+  const record = createBlankNoteRecord(note({ version: 4, content: "base" }));
+  record.version = 5; // markNoteSaved/realtime observation before retained-base settlement
+  record._dirty = true;
+  record._dirtyFields.add("content");
+  const source = captureNoteEditSourceFromRecord({ record, displayedNote: note({ version: 5, content: "dirty draft" }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "editor", snapshotId: "transition" });
+  expect(source).toMatchObject({ editBase: { version: 4 }, displayedPhysicalSnapshot: { version: 4, content: "dirty draft" } });
+  expect(() => advancePreparedNoteSource(source, { note: note({ version: 5, content: "remote" }), databaseWrite: "saved", succeededFields: [], failedFields: [], safeCauses: {} }, "dirty draft")).toThrow(/does not match/i);
+  expect(advancePreparedNoteSource(source, { note: note({ version: 5, content: "dirty draft" }), databaseWrite: "saved", succeededFields: [], failedFields: [], safeCauses: {} }, "dirty draft").editBase.version).toBe(5);
+});
+
+ it("refuses an omitted submitted body at the exported settlement boundary", () => {
+   const source = captureNoteEditSource({ acknowledgedNote: note(), displayedNote: note(), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "editor-a", snapshotId: "editor-a:base" });
+   const receipt = { note: note({ content: "unsubmitted receipt body", version: 5 }), databaseWrite: "saved" as const, succeededFields: [], failedFields: [], safeCauses: {} };
+   expect(() => {
+     // @ts-expect-error Prove runtime callers cannot bypass the required body.
+     advancePreparedNoteSource(source, receipt);
+   }).toThrow(/does not match/i);
+ });

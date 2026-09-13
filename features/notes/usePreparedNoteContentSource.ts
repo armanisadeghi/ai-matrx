@@ -2,9 +2,9 @@ import { useId, useState } from "react";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { Note } from "./types";
 import type { NoteRecord } from "./redux/notes.types";
-import { captureNoteEditSourceFromRecord } from "./richDocumentSource";
+import { captureNoteEditSourceFromRecord, noteIdentityContentSource } from "./richDocumentSource";
 
-type Args = { record: NoteRecord; displayedNote: Note; actorId: string; actingSelection?: string } | null;
+type Args = { record: NoteRecord; displayedNote: Note; actorId: string; hasLocalEdits: boolean; actingSelection?: string } | null;
 function canonical(value: unknown): string {
   if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -18,7 +18,8 @@ export function usePreparedNoteContentSource(args: Args): ContentSource | undefi
   const sourceId = `notes-editor:${mountId}`;
   // Normalize through the constructor first: Redux-only history/status fields
   // cannot influence an editor snapshot identity.
-  const normalized = args === null ? null : captureNoteEditSourceFromRecord({
+  const observedAhead = args !== null && args.record._acknowledgedPhysicalSnapshot !== null && args.record.version !== args.record._acknowledgedPhysicalSnapshot.version;
+  const normalized = args === null || (observedAhead && !args.hasLocalEdits) ? null : captureNoteEditSourceFromRecord({
     record: args.record, displayedNote: args.displayedNote, actorId: args.actorId,
     sourceId, snapshotId: `${sourceId}:pending`, ...(args.actingSelection === undefined ? {} : { actingSelection: args.actingSelection }),
   });
@@ -27,5 +28,6 @@ export function usePreparedNoteContentSource(args: Args): ContentSource | undefi
   let sequence = state.sequence;
   if (state.signature !== signature) { sequence += 1; setState({ signature, sequence }); }
   if (args === null) return undefined;
+  if (observedAhead && !args.hasLocalEdits) return noteIdentityContentSource(args.displayedNote.id, sourceId);
   return captureNoteEditSourceFromRecord({ record: args.record, displayedNote: args.displayedNote, actorId: args.actorId, sourceId, snapshotId: `${sourceId}:${sequence}`, ...(args.actingSelection === undefined ? {} : { actingSelection: args.actingSelection }) });
 }

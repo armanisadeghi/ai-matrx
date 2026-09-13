@@ -12,6 +12,8 @@ const tests = [
   "features/rich-document/actions/handlers/preparedEdit.test.ts",
   "features/notes/richDocumentSource.test.ts",
   "features/notes/usePreparedNoteContentSource.test.tsx",
+  "features/notes/components/NoteContentEditor.transition.test.tsx",
+  "features/notes/components/mobile/MobileNoteEditor.transition.test.tsx",
   "features/notes/service/notesService.convergence.test.ts",
   "features/overlays/callbacks/fullScreenEditor.test.ts",
 ];
@@ -36,7 +38,7 @@ for (const file of tracked) {
     sourceHash.update(file).update(readFileSync(source));
   }
 }
-for (const extra of ["features/notes/usePreparedNoteContentSource.ts", "features/notes/usePreparedNoteContentSource.test.tsx"]) {
+for (const extra of ["features/notes/usePreparedNoteContentSource.ts", "features/notes/usePreparedNoteContentSource.test.tsx", "features/notes/components/NoteContentEditor.transition.test.tsx", "features/notes/components/mobile/MobileNoteEditor.transition.test.tsx"]) {
   const source = join(sourceRoot, extra); const destination = join(runRoot, extra);
   mkdirSync(dirname(destination), { recursive: true }); copyFileSync(source, destination);
 }
@@ -86,9 +88,17 @@ const mutations = [
   { name: "zero-revision", file: "features/notes/service/notesService.ts", from: "options.expectedVersion < 0", to: "options.expectedVersion < 1", testName: "accepts an authoritative stored revision zero", assertion: "note revision must be a nonnegative safe integer" },
   { name: "returned-partial", file: "features/rich-document/actions/handlers/preparedEdit.ts", from: "if (receipt.failedFields.length > 0)", to: "if (false && receipt.failedFields.length > 0)", testName: "keeps a returned saved physical partial receipt", assertion: "rejects" },
   { name: "snapshot-sequence", file: "features/notes/usePreparedNoteContentSource.ts", from: "sequence += 1", to: "sequence += 0", testName: "keeps an identical render stable", assertion: "not.toBe" },
+  { name: "clean-observation-identity", file: "features/notes/usePreparedNoteContentSource.ts", from: "if (observedAhead && !args.hasLocalEdits) return noteIdentityContentSource(args.displayedNote.id, sourceId);", to: "if (false) return noteIdentityContentSource(args.displayedNote.id, sourceId);", testName: "renders mounted realtime", assertion: "mode\": \"identity" },
+  { name: "metadata-dirty-signal", file: "features/notes/components/NoteContentEditor.tsx", from: "hasLocalEdits: isDirty || noteExists._dirty || localContent !== noteExists.content", to: "hasLocalEdits: localContent !== noteExists.content", testName: "renders mounted realtime", assertion: "mode\": \"editable" },
 ];
+mutations.push(
+  { name: "mobile-normalized-folder", file: "features/notes/components/mobile/MobileNoteEditor.tsx", from: '(acknowledgedRecord.folder_name || "Draft")', to: 'acknowledgedRecord.folder_name', testName: "preserves local-only tags=false", assertion: '"identity"' },
+  { name: "mobile-local-metadata", file: "features/notes/components/mobile/MobileNoteEditor.tsx", from: 'isDirty || acknowledgedRecord._dirty || localContent !== (acknowledgedRecord.content || "") || localLabel !== (acknowledgedRecord.label || "") || localFolder !== (acknowledgedRecord.folder_name || "Draft") || JSON.stringify(localTags) !== JSON.stringify(acknowledgedRecord.tags || [])', to: 'acknowledgedRecord._dirty || localContent !== (acknowledgedRecord.content || "")', testName: "preserves local-only tags=true", assertion: '"editable"' },
+  { name: "required-submitted-body", file: "features/notes/richDocumentSource.ts", from: '(typeof submittedContent !== "string" || note.content !== submittedContent)', to: '(submittedContent !== undefined && note.content !== submittedContent)', testName: "refuses an omitted submitted body", assertion: "did not throw" },
+);
+const selectedMutations = process.env.NOTES_MUTATION_ONLY ? mutations.filter((mutation) => process.env.NOTES_MUTATION_ONLY.split(",").includes(mutation.name)) : mutations;
 if (isCleanGreen(manifest.baseline)) {
-  for (const mutation of mutations) {
+  for (const mutation of selectedMutations) {
     const file = join(runRoot, mutation.file);
     const original = readFileSync(file, "utf8");
     if (!original.includes(mutation.from)) throw new Error(`${mutation.name}: anchor missing`);
@@ -115,6 +125,6 @@ if (isCleanGreen(manifest.baseline)) {
   }
 }
 writeManifest(manifest);
-const success = isCleanGreen(manifest.baseline) && manifest.mutations.length === mutations.length && manifest.mutations.every((mutation) => mutation.intendedRed && mutation.cleanGreen && mutation.restored);
+const success = isCleanGreen(manifest.baseline) && manifest.mutations.length === selectedMutations.length && manifest.mutations.every((mutation) => mutation.intendedRed && mutation.cleanGreen && mutation.restored);
 console.log(JSON.stringify({ runRoot, baseline: isCleanGreen(manifest.baseline), success, mutations: manifest.mutations.map(({ name, intendedRed, cleanGreen, restored }) => ({ name, intendedRed, cleanGreen, restored })) }));
 process.exitCode = success ? 0 : 1;

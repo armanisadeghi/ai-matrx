@@ -84,7 +84,7 @@ export default function MobileNoteEditor({
 
   const editableContentSource = usePreparedNoteContentSource(
     editingActorId && acknowledgedRecord?._acknowledgedPhysicalSnapshot
-      ? { record: acknowledgedRecord, displayedNote: { ...note, label: localLabel, content: localContent, folder_name: localFolder, tags: localTags }, actorId: editingActorId }
+      ? { record: acknowledgedRecord, displayedNote: { ...note, label: localLabel, content: localContent, folder_name: localFolder, tags: localTags }, actorId: editingActorId, hasLocalEdits: isDirty || acknowledgedRecord._dirty || localContent !== (acknowledgedRecord.content || "") || localLabel !== (acknowledgedRecord.label || "") || localFolder !== (acknowledgedRecord.folder_name || "Draft") || JSON.stringify(localTags) !== JSON.stringify(acknowledgedRecord.tags || []) }
       : null,
   );
 
