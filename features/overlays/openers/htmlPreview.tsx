@@ -59,7 +59,9 @@ export function useOpenHtmlPreviewBridge() {
 
   return useCallback(
     (opts: OpenHtmlPreviewBridgeOptions): HtmlPreviewBridgeHandle => {
-      const instanceId = opts.instanceId ?? `htmlPreview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const instanceId =
+        opts.instanceId ??
+        `htmlPreview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       let callbackGroupId: string | null = null;
       let dispose: (() => void) | null = null;
@@ -76,22 +78,28 @@ export function useOpenHtmlPreviewBridge() {
         disposersRef.current.add(dispose);
       }
 
-      dispatch(
-        openOverlay({
-          overlayId: OVERLAY_ID,
-          instanceId,
-          data: {
-            content: opts.content,
-            messageId: opts.messageId,
-            conversationId: opts.conversationId,
-            title: opts.title,
-            description: opts.description,
-            callbackGroupId,
-            showSaveButton: opts.showSaveButton ?? (opts.onSave ? true : undefined),
-            isAgentSystem: opts.isAgentSystem,
-          },
-        }),
-      );
+      try {
+        dispatch(
+          openOverlay({
+            overlayId: OVERLAY_ID,
+            instanceId,
+            data: {
+              content: opts.content,
+              messageId: opts.messageId,
+              conversationId: opts.conversationId,
+              title: opts.title,
+              description: opts.description,
+              callbackGroupId,
+              showSaveButton:
+                opts.showSaveButton ?? (opts.onSave ? true : undefined),
+              isAgentSystem: opts.isAgentSystem,
+            },
+          }),
+        );
+      } catch (error) {
+        dispose?.();
+        throw error;
+      }
       return {
         instanceId,
         close: () => {
@@ -109,11 +117,23 @@ export function useOpenHtmlPreviewBridge() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function HtmlPreviewBridgeController(props: OpenHtmlPreviewBridgeOptions): null {
+export function HtmlPreviewBridgeController(
+  props: OpenHtmlPreviewBridgeOptions,
+): null {
   const open = useOpenHtmlPreviewBridge();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.content, props.messageId, props.conversationId, props.title, props.description, props.onSave, props.showSaveButton, props.isAgentSystem]);
+  }, [
+    open,
+    props.content,
+    props.messageId,
+    props.conversationId,
+    props.title,
+    props.description,
+    props.onSave,
+    props.showSaveButton,
+    props.isAgentSystem,
+  ]);
   return null;
 }

@@ -35,12 +35,19 @@ export interface RouteUserEditActionArgs {
 }
 
 /**
- * Run the chosen edit outcome. Owns its own error toasting so callers just
- * fire-and-forget. Unknown action ids are ignored (defensive).
+ * Run the chosen edit outcome. The toast is diagnostic only: failures reject
+ * back through the editor settlement boundary, and an unknown action is never
+ * an acknowledged save.
  */
 export async function routeUserEditAction(
   dispatch: AppDispatch,
-  { actionId, conversationId, messageId, newContent, surfaceKey }: RouteUserEditActionArgs,
+  {
+    actionId,
+    conversationId,
+    messageId,
+    newContent,
+    surfaceKey,
+  }: RouteUserEditActionArgs,
 ): Promise<void> {
   try {
     if (actionId === "save") {
@@ -67,6 +74,8 @@ export async function routeUserEditAction(
           surfaceKey,
         }),
       ).unwrap();
+    } else {
+      throw new Error(`Unknown editor action: ${actionId}`);
     }
   } catch (err) {
     const message =
@@ -80,5 +89,6 @@ export async function routeUserEditAction(
           : "Edit failed";
     console.error(`[routeUserEditAction] "${actionId}" failed`, err);
     toast.error(message);
+    throw err;
   }
 }

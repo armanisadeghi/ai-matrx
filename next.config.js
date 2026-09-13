@@ -245,7 +245,14 @@ const nextConfig = {
   // origin it was not told about — the page renders its fallback forever and
   // never hydrates, which looks like an app bug rather than a config one — so
   // the alias is declared here.
-  allowedDevOrigins: ["127.0.0.1", "0.0.0.0"],
+  // `*.localhost` is the SAME mechanism carried one step further (W56,
+  // 2026-09-12): every agent session driving this machine opens the one shared
+  // dev server at its own `<session>.localhost` label, so each gets its own
+  // cookie jar and one agent's dev-login can no longer evict every other
+  // agent's session. Without the wildcard here Next refuses the RSC payload to
+  // those labels and the page hangs on its fallback forever.
+  // See scripts/agent-harness/preview-session.sh.
+  allowedDevOrigins: ["127.0.0.1", "0.0.0.0", "*.localhost"],
   // Vercel Skew Protection — DISABLED on purpose (2026-06-21).
   //
   // The previous line was `deploymentId: process.env.NEXT_DEPLOYMENT_ID`.

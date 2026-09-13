@@ -103,36 +103,47 @@ export function useOpenFullScreenMarkdownEditorBridge() {
       let callbackGroupId: string | null = null;
       let dispose = () => {};
       if (opts.onSave) {
-        const group = createFullScreenEditorCallbackGroup({ onSave: opts.onSave, onEvent: opts.onEvent });
+        const group = createFullScreenEditorCallbackGroup({
+          onSave: opts.onSave,
+          onEvent: opts.onEvent,
+        });
         callbackGroupId = group.callbackGroupId;
         dispose = group.dispose;
       } else if (opts.onAction) {
-        const group = createFullScreenEditorCallbackGroup({ onAction: opts.onAction, onEvent: opts.onEvent });
+        const group = createFullScreenEditorCallbackGroup({
+          onAction: opts.onAction,
+          onEvent: opts.onEvent,
+        });
         callbackGroupId = group.callbackGroupId;
         dispose = group.dispose;
       }
 
-      dispatch(
-        openOverlay({
-          overlayId: OVERLAY_ID,
-          instanceId,
-          data: {
-            content: opts.content,
-            mode: opts.mode,
-            conversationId: opts.conversationId,
-            messageId: opts.messageId,
-            callbackGroupId,
-            tabs: opts.tabs,
-            initialTab: opts.initialTab,
-            analysisData: opts.analysisData,
-            title: opts.title,
-            description: opts.description,
-            showSaveButton: opts.showSaveButton,
-            showCopyButton: opts.showCopyButton,
-            primaryActions: opts.primaryActions,
-          },
-        }),
-      );
+      try {
+        dispatch(
+          openOverlay({
+            overlayId: OVERLAY_ID,
+            instanceId,
+            data: {
+              content: opts.content,
+              mode: opts.mode,
+              conversationId: opts.conversationId,
+              messageId: opts.messageId,
+              callbackGroupId,
+              tabs: opts.tabs,
+              initialTab: opts.initialTab,
+              analysisData: opts.analysisData,
+              title: opts.title,
+              description: opts.description,
+              showSaveButton: opts.showSaveButton,
+              showCopyButton: opts.showCopyButton,
+              primaryActions: opts.primaryActions,
+            },
+          }),
+        );
+      } catch (error) {
+        dispose();
+        throw error;
+      }
 
       const handleRef: HandleRef = { dispose };
       handlesRef.current.add(handleRef);

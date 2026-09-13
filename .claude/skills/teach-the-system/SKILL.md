@@ -51,6 +51,21 @@ your bound; treat it as the actual scope of the job, not a reason to escalate.
 cost you an hour, goes into this file in the same session (§7). A trial that ends without a skill
 edit either learned nothing or lost it.
 
+## 0. The mandate every trial is measured against
+
+🚨 Read `common-docs/projects/expert-book-challenge/MANDATE.md` (Arman, 2026-09-12, `authority: owner`)
+before choosing a subject, and answer its seven checks in your register before you build: which acquisition
+**modality** you add; whether the knowledge is genuinely **tacit** (if the expert could have written it down,
+you are working on the cheap half); whether the output is **executable** (rubrics, checklists, if-then rules,
+decision trees, annotated exemplars — never prose a desk must re-interpret); whether every atom carries
+**provenance** and opens to it; **how you resist consensus collapse**; whether the expert can **validate in
+their own modality**; and whether the platform can now execute something **previously inexpressible**.
+
+🚨 The trap with a name: **pooling**. Fitting several experts — or several sittings of one expert — into one
+merged model, one averaged verdict, or one consensus rulebook destroys exactly what the mandate calls the
+principal source of value. Keep per-expert or per-school profiles as the unit, be able to show a minority
+position that survived, and never resolve a disagreement by averaging.
+
 ## 1. Choose the subject — the opposite of what computers are good at
 
 REQUIRED before anything else: write the subject choice into your trial register (§3) with the
@@ -129,9 +144,21 @@ couple of little books".** Most expertise in a company never made it into a book
   you toward one of these as a wall.
 - **Cheat honestly.** A browser instead of an email tool, a pasted chapter instead of the whole
   PDF — allowed, logged as a cheat in the register with what the honest version would need.
-- **Sign in without typing a password.** Production browser pane signed out? Use the local preview
-  (`pnpm preview:start`, port 3001) with the single-use `.dev-login-nonce` handshake
-  (`matrx-frontend/app/api/dev-login/route.ts` explains it). Never type a credential into a field.
+- **Sign in without typing a password, ON YOUR OWN HOSTNAME.** Production browser pane signed out?
+  Use the local preview (`pnpm preview:start`, port 3001) and then `pnpm dev-login /<route>`, which
+  mints your session's single-use nonce and prints the URL to open. Never type a credential into a
+  field.
+- **🚨 Never open `localhost:3001` — open the hostname the harness prints.** Several trials run on
+  one machine at once, and cookies are scoped to a HOST and ignore the PORT: on 2026-09-12 five
+  sessions shared one cookie jar on `localhost`, so one agent's dev-login signed every other agent
+  in as somebody else mid-form and the page correctly paused itself with "Account Changed…". Each
+  session now gets its own `<label>.localhost` (printed by `pnpm preview:start` and
+  `pnpm preview:status`; set `MATRX_PREVIEW_SESSION=<name>` to claim a readable one), which gives it
+  its own cookie jar, storage and dev-login nonce on the SAME one server. Two more consequences for
+  a trial: the slot being "taken" by a server serving THIS checkout is no longer a refusal — take
+  the hostname it offers you — and your failed navigation can no longer burn another trial's nonce.
+  Mechanics and forcing proof: `matrx-frontend/docs/official/browser-testing.md`,
+  `pnpm check:preview-session`.
 - **Cost is a measured result.** Track model spend from `chat.request`; the comparison bar is a
   fresh vibe-code of the same source on cost, sturdiness, reliability, and reuse on source #2–#5.
 - **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
@@ -280,6 +307,62 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
+- 2026-09-12 — (trial 7, the unfolding case) Write the cross-repo CONTRACT before dispatching the build:
+  one document with the kind shapes, the rule fields, the node's handles and the Audition's request,
+  then five lanes (three aidream, two frontend) landed in about ninety minutes with no merge conflict.
+  The price is contract drift between halves — give every frontend lane a "consumer contract check"
+  against the pydantic models and expect a small alignment lane after.
+- 2026-09-12 — (trial 7) Prove the capability gate on the real thing FIRST and write down exactly what
+  the old lane lost (W57: 19 static rules, one flat section, alphabetical, no known/unknown, half
+  literature). That paragraph became the contract's §0 and the guard's pinned failure.
+- 2026-09-12 — (trial 7) Headless on the live build: ONE browser context at a time — two contexts from
+  one saved state rotate the refresh token and sign each other out ("Sign in to open this rulebook");
+  make the driver re-login when it sees that page. The guided start's approach cards are buttons whose
+  names begin "Start now…", so match Start exactly.
+- 2026-09-12 — (trial 7) A training workbook or a guideline PDF distils its PACKAGING as craft — course
+  attendance, exam pass marks, licence boilerplate, publisher disclaimers (W59). Reject by class with
+  one reason each; the platform fix is a source-frame on every rule (method vs packaging).
+- 2026-09-12 — (trial 7) Budget the paste lane: about one rule per fifty words from a checklist-style
+  source and about $6 per ten thousand words on the Opus distiller (189 rules from 9,900 words).
+- 2026-09-12 — (trial 7) The coherence pass asks about REJECTED drafts as if they were live (W62);
+  answer "set aside, not part of the desk" and log it — do not re-litigate a rejection.
+- 2026-09-12 — (trial 7) Check the MCP door in the first minute (`agent_catalog list_models`): it is a
+  per-account flag (W61), and when it is off the product's own New-agent builder is the path; the flag
+  is a ten-second item for Arman, never a reason to stop.
+- 2026-09-12 — (trial 7) From a cloud container there is no door to the two publish scripts (mandate
+  Holders, kind registry rows) — they need direct Postgres (W60). Plan every new mandate or kind as
+  "declared in code, synced at boot, Holder authored in the product, rows published by one command on a
+  machine with DB access" and put that command on the pending list from the start.
+- 2026-09-12 — (trial 7) Bugbot findings on your PR are bug reports: one fix lane with red-first
+  guards closed seven; the reload loop it named was a class across four ingest dialogs.
+- 2026-09-12 — (trial 7) Main was red twice on gates the PR never touched; compare the generated files
+  byte for byte with main before treating a CI red as yours, then one standing-down comment.
+- 2026-09-12 — (trial 7) Take every timestamp from the database clock; my first timeline entries were
+  guesses twenty minutes ahead of reality and had to be rewritten.
+- 2026-09-12 — (trial 7) The review wizard has no class-level action: 400 drafts meant 400 clicks, done
+  by a script walking the product's own wizard with a decisions file written after reading every
+  statement (logged as a cheat). Class-level review ("reject every course-logistics draft") is a gap.
+- 2026-09-12 — (trial 12) A Rulebook's free-text DESCRIPTION is a smuggling channel. The desk built from
+  88 approved dispositions still opened with one question and refused to advise — because the run quoted
+  the description back to itself as "the doctrine" and derived its deliverables from it. Before you credit
+  a Rulebook for a behaviour, read the run's own report and see which text it is actually obeying.
+- 2026-09-12 — (trial 12) The Understudy could not rebuild, for any Rulebook, because an automated write
+  declared `actor_tier=code` without naming a system and the provenance CHECK refused it — and the browser
+  caught the 500 and wrote it to the console. Two lessons: a fire-and-forget "poke" is a silent-failure
+  machine unless the surface shows the staleness it causes; and when a stand-in's behaviour disagrees with
+  the page's counters, read the built definition's own metadata before believing either.
+- 2026-09-12 — (trial 12) Approve/reject every draft one at a time through the wizard and the loop is
+  cheap to script, but check the counts in the database afterwards — the wizard's last card can be left
+  undecided and "reached last" is not "all decided".
+- 2026-09-12 — (trial 12) A run's report that opens with its own PRE-EXECUTION PROTOCOL, a rule
+  cross-reference table and a self-audit is not a deliverable, it is homework. Judge what the person is
+  shown, not what the agent produced.
+- 2026-09-13 — (trial 12) The coherence questions come with a RECOMMENDATION, and it is stated with the same
+  confidence whether it was read off the source or inferred. Six of seven were faithful; the seventh urged
+  writing clinical red flags into a rule the source never attached them to, justified as what the Expert
+  "clearly already has in mind". Accepting it would have stored the system's guess under the Expert's name
+  with the Expert's provenance. Check every recommendation against the source before clicking, and log the
+  ones you decline — that is a platform finding, not a preference.
 - 2026-09-12 — Arman, launching trials 7 and 8: victory = the count of "could not → can now"; aim at
   opinionated methods a frontier model would not produce unprompted (his keyword-research order, an
   agent equipped with Tony Robbins' systems); Sonnet for recon, Opus for coding, Fable rarely. Folded
@@ -331,3 +414,27 @@ lines by relocating trial-specific detail into the trial's register.
   night: retained dissent on the rule atom, the invisible policy rules, the voice-first and YouTube
   doors, the blind pairwise Audition arm; the `school` dimension is under design and attack
   (`DESIGN-schools-on-the-rule-atom.md`).
+- 2026-09-13 — (trial 12, found at a PR check-in) 🚨 **Trials run concurrently against ONE platform, and two
+  of them built the same primitive on the same night, on the same field names, in the same files.** Trial 8
+  landed a flat `precondition`/`next_action` policy shape on `main` while trial 7 was building a structured
+  one on the same keys; the collision surfaced only as 22 conflicted files at merge time, after both nights
+  of work were done. **Before you build a shared-layer primitive, read the other live trials' registers for
+  what they are building right now — not just their walls tables** — and name your new fields in your own
+  namespace when the concept is one another trial could plausibly reach for. When the collision has already
+  happened, the LIVE DATA decides who keeps the key names (here: 592 rules already carried the string form,
+  zero carried the object), which makes it a correction you resolve, not a question for Arman. Abort a blind
+  merge rather than resolve 22 semantic conflicts at speed.
+- 2026-09-13 — (trial 12) A local `pnpm type-check` on a SHARED checkout is not the verdict. After the merge
+  it reported 183 errors; 182 were `Cannot find module '@ai-matrx/*/content-transfer'` because the checkout's
+  installed packages lag what main's code imports, and 1 was main's own unpublished mandate key. CI installs
+  fresh and its type-check job passed on the same commit. Check the CI job before reporting a local type
+  failure as the branch's, and say which one you are quoting.
+- 2026-09-13 — **A refusal is not a permission wall until you have checked the credential.** A lane spent hours
+  blocked on "no MCP access" and filed it as a wall for Arman; the configured grant was already on both
+  accounts and the token in hand was simply stale. Before recording any access refusal as a human step,
+  re-issue the credential and re-try — routine access refusal is repair work, not a page.
+- 2026-09-13 — **Review found the same defect twice, one level apart, in the session's own convergence code.**
+  A converter rebuilt a record from the subset of fields one form owns, then the fix rebuilt a nested half the
+  same way. Fix these as the CLASS — carry every key the surface does not own — never by naming the key that
+  was reported; and expect a merge that reconciles two data shapes to be exactly where a field falls out,
+  because every test the merging lane runs will pass.
