@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2` (a sub-feature of the `hr` Tier 1 feature — its admin map is `/hr/admin`)
-**Last updated:** `2026-08-29`
+**Last updated:** `2026-09-12`
 
 **Register item:** HRB-017 — HR domain program, L5 Leave & PTO lane (matrx-frontend).
 **Spec (SoR):** [`SPEC-LEAVE.md`](../../../../common-docs/projects/hr-domain/specs/SPEC-LEAVE.md) —
@@ -38,11 +38,12 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
    `accrued − used − upcoming − removed = ledger_balance`. It fires on an explicit `false`
    only — `null` (never computed) says nothing and must not scream.
 6. 🚨 **`running_balance_ok === false` is BLOCKING** on the ledger (§12), naming
-   `divergence_at_entry_id`. *A silent drift is worse than a loud one.*
+   `divergence_at_entry_id`. _A silent drift is worse than a loud one._
 7. 🚨 **No cell prints a type name** (§12 LAW 3a). `entry_kind` is used to filter and never
    rendered; the visible cell is the server's `sentence`. Request-backed usage and reversal
    entries derive one sentence from the request state and dates; their machine note never gets
-   appended as a second, contradictory description.
+   appended as a second, contradictory description. On narrow screens, every filter, as-of
+   control, and rule door is at least 44px tall; compact desktop sizing starts at `md`.
 8. 🚨 **Refusals are data and they say what was actually checked.** A rejected-at-intake
    submit renders every `conflict_check.hard[].message` verbatim, with its numbers, in place —
    never a generic failure toast. `code` never reaches page text.
@@ -60,7 +61,7 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
     server's to compute.** Since `hr_l5_12`, `hr.leave_ledger_view`'s per-entry
     `counts_toward` mark and `hr.leave_figures`' `used_taken` / `approved_upcoming` predicates
     describe the same set (`used_taken` = `state in ('taken','partially_taken') OR (state =
-    'approved' AND ends_on < current_date)`), exhaustive over every approved request — which is
+'approved' AND ends_on < current_date)`), exhaustive over every approved request — which is
     what makes `identity_holds` mean anything. The migration's self-proof re-reads both
     `prosrc`s and fails if either side is edited alone. **Never re-derive the split on the
     client** from `request_state` + `request_ends_on`: that is a second implementation, and it
@@ -108,7 +109,7 @@ migration that creates a leave door ends with all four:
 2. **The body checks its caller first** — `hr._leave_viewer`, `hr._leave_admin_rung` or
    `hr._leave_case_rung` — and returns `{granted:false, reason, detail}`. A door with no check is
    an engine path, and an engine path must be sealed `'engine'` so no session can reach it.
-3. **Fix at the source.** A caller check added in a *later* migration is undone the moment the
+3. **Fix at the source.** A caller check added in a _later_ migration is undone the moment the
    file that creates the function is replayed. Two doors regressed exactly that way
    (`hr_leave_case_entitlement`, `hr_leave_reinstate_on_rehire`): the checks now live in
    `hr_l5_06`, the file that creates them.
@@ -126,6 +127,7 @@ own credential), never a grant.
 ## Entry points
 
 **Routes**
+
 - `app/(core)/hr/me/time-off/page.tsx` → `MyTimeOffSurface` — UI-IA route 8 (§4.1).
 - `app/(core)/hr/me/time-off/[policyId]/page.tsx` → `MyLeaveLedgerSurface` — §12,
   `viewer=self`. The employment is deliberately NOT in this URL; the shell resolves it as of
@@ -147,14 +149,14 @@ only door to the RPC lane.
 **RPCs** (all `public.hr_*` wrappers over `hr.*` bodies; `hr` is not exposed to PostgREST).
 Envelopes verified live against `pg_get_functiondef` on `brsgrqvjdzwihsvnfqkf`, 2026-08-27.
 
-| RPC | Returns | Notes |
-|---|---|---|
-| `hr_my_time_off(p_employment_id)` | `{granted, employment_id, viewer_rung, as_of, policies[], requests[], can_request}` | policies = `hr.leave_figures` ⊕ enrollment facts ⊕ `sentence` ⊕ `ledger_href` |
-| `hr_leave_request_preview(...)` | `{granted, span, breakdown_sentence, figures, projection, policy_name, increment_minutes, mandated_uses, documentation_required, documentation_required_after_days, submittable, blocker}` | `span.days[]` = `{date, hours, basis, excluded?, label?, partial?}`. `submittable:false` + a verbatim `blocker` sentence = the free-week refusal, in the submit door's own words |
-| `hr_leave_request_submit(...)` | `{granted, leave_request_id, workflow_instance_id, state, requested_hours, conflict_check, workflow, rejected_at_intake}` | `conflict_check` is inserted as `{}` and re-read after `hr.wf_submit` — an empty object is normal |
-| `hr_leave_request_cancel(...)` | `{granted, outcome, workflow[, workflow_instance_id]}` | `withdrawn` \| `cancellation_requested`; refuses `already_taken` / `not_cancellable`. **A `draft` refuses here — it goes to the discard door** (LAW 14) |
-| `hr_leave_request_discard(p_request_id, p_reason)` | `{granted, outcome, leave_request_id, state, workflow_instance_id, workflow_instance_kept, balance_moved}` | `hr_l5_34`. **`draft` only**; every other state refuses `not_discardable` naming the act that IS available, and an OPEN `hr.workflow_binding` refuses `workflow_still_open`. Soft delete — the audit is the `SOFT_DELETE` row `platform._version_capture` writes to `history.row_versions` |
-| `hr_leave_ledger_view(...)` | `{granted, entries[], figures, sentence, running_balance_ok, divergence_at_entry_id, unexplained_entry_count, entry_count}` | `amount`/`rate` excluded in the SQL by construction. Entries also carry `request_state`, `request_starts_on`, `request_ends_on`, `counts_toward` |
+| RPC                                                | Returns                                                                                                                                                                                    | Notes                                                                                                                                                                                                                                                                                      |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `hr_my_time_off(p_employment_id)`                  | `{granted, employment_id, viewer_rung, as_of, policies[], requests[], can_request}`                                                                                                        | policies = `hr.leave_figures` ⊕ enrollment facts ⊕ `sentence` ⊕ `ledger_href`                                                                                                                                                                                                              |
+| `hr_leave_request_preview(...)`                    | `{granted, span, breakdown_sentence, figures, projection, policy_name, increment_minutes, mandated_uses, documentation_required, documentation_required_after_days, submittable, blocker}` | `span.days[]` = `{date, hours, basis, excluded?, label?, partial?}`. `submittable:false` + a verbatim `blocker` sentence = the free-week refusal, in the submit door's own words                                                                                                           |
+| `hr_leave_request_submit(...)`                     | `{granted, leave_request_id, workflow_instance_id, state, requested_hours, conflict_check, workflow, rejected_at_intake}`                                                                  | `conflict_check` is inserted as `{}` and re-read after `hr.wf_submit` — an empty object is normal                                                                                                                                                                                          |
+| `hr_leave_request_cancel(...)`                     | `{granted, outcome, workflow[, workflow_instance_id]}`                                                                                                                                     | `withdrawn` \| `cancellation_requested`; refuses `already_taken` / `not_cancellable`. **A `draft` refuses here — it goes to the discard door** (LAW 14)                                                                                                                                    |
+| `hr_leave_request_discard(p_request_id, p_reason)` | `{granted, outcome, leave_request_id, state, workflow_instance_id, workflow_instance_kept, balance_moved}`                                                                                 | `hr_l5_34`. **`draft` only**; every other state refuses `not_discardable` naming the act that IS available, and an OPEN `hr.workflow_binding` refuses `workflow_still_open`. Soft delete — the audit is the `SOFT_DELETE` row `platform._version_capture` writes to `history.row_versions` |
+| `hr_leave_ledger_view(...)`                        | `{granted, entries[], figures, sentence, running_balance_ok, divergence_at_entry_id, unexplained_entry_count, entry_count}`                                                                | `amount`/`rate` excluded in the SQL by construction. Entries also carry `request_state`, `request_starts_on`, `request_ends_on`, `counts_toward`                                                                                                                                           |
 
 🚨 **This lane's refusal dialect is `granted`, not `ok`.** None of the six doors returns an
 `ok` key or an `error` object. A transport testing `ok` reads every refusal as a success and
@@ -192,25 +194,25 @@ control, and both doors refuse the rest with the act that IS available.
 `used_taken` / `approved_upcoming`, filtered on the server's per-entry `counts_toward`, never
 re-derived client-side) → `fetchLeaveLedger` →
 `LeaveLedgerView`: one row per entry, the server's sentence, a source door, a rule door onto
-`snapshot_id` + `calc` (verbatim, unmapped), a red *Unexplained entry* chip, and the blocking
+`snapshot_id` + `calc` (verbatim, unmapped), a red _Unexplained entry_ chip, and the blocking
 divergence banner.
 
 ---
 
 ## Files
 
-| File | Role |
-|---|---|
-| `api/rpc.ts` | THE ONE DOOR. `granted` dialect → `HrResult`; structural camelCase mapping; evidence-block `calc` left verbatim |
-| `api/service.ts` | Typed, field-by-field mappers over the six doors + the reason-category read. Mapped, never cast |
-| `api/types.ts` | Client shapes, written against the live function bodies |
-| `hrefs.ts` | `hrMeTimeOffPolicyHref` — the server's `ledger_href` re-attached to `?org=` |
-| `components/LeaveBalanceBlock.tsx` | THE HONESTY LAW component (§5) |
-| `components/LeaveRequestForm.tsx` | §4.1's form + live preview + verbatim intake refusals |
-| `components/LeaveRequestList.tsx` | Request history; discard/withdraw/cancel where lawful, one door per state (LAW 14) |
-| `components/LeaveLedgerView.tsx` | §12, viewer-agnostic — the manager route mounts this too |
-| `components/MyTimeOffSurface.tsx` | Route 8 host |
-| `components/MyLeaveLedgerSurface.tsx` | `/hr/me/time-off/[policyId]` host, `viewer=self` |
+| File                                  | Role                                                                                                            |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `api/rpc.ts`                          | THE ONE DOOR. `granted` dialect → `HrResult`; structural camelCase mapping; evidence-block `calc` left verbatim |
+| `api/service.ts`                      | Typed, field-by-field mappers over the six doors + the reason-category read. Mapped, never cast                 |
+| `api/types.ts`                        | Client shapes, written against the live function bodies                                                         |
+| `hrefs.ts`                            | `hrMeTimeOffPolicyHref` — the server's `ledger_href` re-attached to `?org=`                                     |
+| `components/LeaveBalanceBlock.tsx`    | THE HONESTY LAW component (§5)                                                                                  |
+| `components/LeaveRequestForm.tsx`     | §4.1's form + live preview + verbatim intake refusals                                                           |
+| `components/LeaveRequestList.tsx`     | Request history; discard/withdraw/cancel where lawful, one door per state (LAW 14)                              |
+| `components/LeaveLedgerView.tsx`      | §12, viewer-agnostic — the manager route mounts this too                                                        |
+| `components/MyTimeOffSurface.tsx`     | Route 8 host                                                                                                    |
+| `components/MyLeaveLedgerSurface.tsx` | `/hr/me/time-off/[policyId]` host, `viewer=self`                                                                |
 
 ---
 
@@ -225,7 +227,7 @@ divergence banner.
   (SPEC-ACCESS §4.2); no leave-lane export door exists yet.
 - **Holiday calendar and published shifts drawn into the date picker** (§4.1). The server
   already applies both — a holiday and a rest day come back as excluded days with their label —
-  so the *cost* is honest; the picker itself is still a plain range.
+  so the _cost_ is honest; the picker itself is still a plain range.
 - **Who's-out overlay** (§4.1 data) — `/hr/leave/calendar` (§10) is the other agent's surface.
 - **`hrMeTimeOffPolicyHref` belongs in `features/hr/routes.ts`** and should be lifted there by
   whoever next owns that file.
@@ -269,7 +271,9 @@ divergence banner.
   and the balance block unchanged at 38.50 / 62.50 / 24.00 / 0.00 with `last_accrual_at`
   untouched.
 - **2026-09-12** — Production review found approved ledger rows rendered duplicated state/date
-  fragments (`Used — … — Approved — …`). `hr_l5_35` moves the shared projection onto
-  `hr._leave_ledger_sentence`: request state and dates produce one human sentence, redundant
-  usage/reversal notes are ignored without rewriting immutable evidence, and non-request notes
-  remain visible.
+  fragments (`Used — … — Approved — …`) and 28–36px interactive controls at 390px. `hr_l5_35`
+  moves the shared projection onto `hr._leave_ledger_sentence`: request state and dates produce
+  one human sentence, redundant request-backed usage/reversal notes are ignored without
+  rewriting immutable evidence, and non-request notes remain visible. `LeaveLedgerView` keeps
+  its compact desktop controls while giving mobile filters, as-of controls, and rule doors 44px
+  targets; the already-contained horizontal table remains unchanged.

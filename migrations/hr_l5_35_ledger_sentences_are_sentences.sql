@@ -8,8 +8,9 @@
 -- ignores the redundant machine note for usage/reversal entries. All ledger consumers inherit it.
 --
 -- Authority: SPEC-LEAVE §12 LAW 3a. Idempotent.
-
-begin;
+--
+-- This file intentionally has no BEGIN/COMMIT: `pnpm db:apply` owns the one pinned,
+-- ledgered transaction for the full migration.
 
 create or replace function hr._leave_ledger_sentence(
   p_entry_kind text,
@@ -18,10 +19,13 @@ create or replace function hr._leave_ledger_sentence(
   p_ends_on date,
   p_request_state text,
   p_source_workweek_id uuid,
+  p_leave_request_id uuid,
+  p_hours_delta numeric,
   p_note text
 ) returns text
 language plpgsql
-immutable
+stable
+set search_path to 'pg_catalog'
 as $function$
 declare
   v_start date := coalesce(p_starts_on, p_occurred_on);
@@ -35,15 +39,16 @@ begin
   end;
 
   -- A request-backed ledger entry already has canonical dates and state. Its machine-generated
-  -- note repeats those same facts, so it never participates in the human sentence.
-  if p_entry_kind = 'usage' then
+  -- note repeats those same facts, so it never participates in the human sentence. A manually
+  -- posted usage/reversal is different evidence: keep its meaningful note visible.
+  if p_entry_kind = 'usage' and p_leave_request_id is not null then
     return case p_request_state
       when 'approved' then format('Approved for %s.', v_span)
       when 'taken' then format('Taken from %s.', v_span)
       when 'partially_taken' then format('Partly taken from %s.', v_span)
       else format('Booked for %s.', v_span)
     end;
-  elsif p_entry_kind = 'reversal' then
+  elsif p_entry_kind = 'reversal' and p_leave_request_id is not null then
     return format('Returned after the request for %s was cancelled or shortened.', v_span);
   end if;
 
@@ -51,7 +56,9 @@ begin
     when 'accrual' then case when p_source_workweek_id is not null
                          then format('Earned from the week of %s', to_char(p_occurred_on, 'FMMon FMDD'))
                          else 'Earned' end
-    when 'adjustment' then 'Balance adjusted by hand'
+    when 'usage' then 'Used'
+    when 'reversal' then 'Returned'
+    when 'adjustment' then case when p_hours_delta > 0 then 'Added by hand' else 'Removed by hand' end
     when 'carryover' then format('Carried over into the %s policy year', to_char(p_occurred_on, 'YYYY'))
     when 'carryover_expiry' then 'Carried-over time expired'
     when 'forfeiture' then 'Time forfeited at the policy-year boundary'
@@ -68,7 +75,7 @@ begin
 end
 $function$;
 
-comment on function hr._leave_ledger_sentence(text,date,date,date,text,uuid,text) is
+comment on function hr._leave_ledger_sentence(text,date,date,date,text,uuid,uuid,numeric,text) is
   'SPEC-LEAVE §12 LAW 3a. One human-readable sentence for every ledger row. Request-backed '
   'usage/reversal entries derive the sentence from canonical request dates/state and ignore the '
   'redundant writer note; immutable ledger evidence is never rewritten.';
@@ -121,7 +128,7 @@ begin
 
     v_sentence := hr._leave_ledger_sentence(
       v_r.entry_kind, v_r.occurred_on, v_r.starts_on, v_r.ends_on,
-      v_r.request_state, v_r.source_workweek_id, v_r.note);
+      v_r.request_state, v_r.source_workweek_id, v_r.leave_request_id, v_r.hours_delta, v_r.note);
 
     v_source := case
       when v_r.leave_request_id is not null
@@ -175,29 +182,36 @@ do $proof$
 begin
   if hr._leave_ledger_sentence(
        'usage', date '2026-09-13', date '2026-09-21', date '2026-09-22',
-       'approved', null, 'Approved — Sep 21 to Sep 22')
+       'approved', null, '00000000-0000-0000-0000-000000000001', -16,
+       'Approved — Sep 21 to Sep 22')
        is distinct from 'Approved for Sep 21 to Sep 22.' then
     raise exception 'hr_l5_35: approved usage still repeats its state or dates';
   end if;
   if hr._leave_ledger_sentence(
        'usage', date '2026-09-13', date '2026-09-21', date '2026-09-21',
-       'taken', null, 'Approved — Sep 21')
+       'taken', null, '00000000-0000-0000-0000-000000000001', -8, 'Approved — Sep 21')
        is distinct from 'Taken from Sep 21.' then
     raise exception 'hr_l5_35: a taken single-day request is not a human sentence';
   end if;
   if hr._leave_ledger_sentence(
        'reversal', date '2026-09-13', date '2026-09-21', date '2026-09-22',
-       'cancelled', null, 'Cancelled — 2026-09-21 to 2026-09-22')
+       'cancelled', null, '00000000-0000-0000-0000-000000000001', 16,
+       'Cancelled — 2026-09-21 to 2026-09-22')
        is distinct from 'Returned after the request for Sep 21 to Sep 22 was cancelled or shortened.' then
     raise exception 'hr_l5_35: reversal still repeats its machine note';
   end if;
   if hr._leave_ledger_sentence(
-       'opening_balance', date '2026-09-13', null, null, null, null, 'Imported opening balance')
+       'opening_balance', date '2026-09-13', null, null, null, null, null, 24,
+       'Imported opening balance')
        is distinct from 'Opening balance — Imported opening balance' then
     raise exception 'hr_l5_35: meaningful non-request notes were lost';
+  end if;
+  if hr._leave_ledger_sentence(
+       'usage', date '2026-09-13', null, null, null, null, null, -8,
+       'Manual correction after payroll audit')
+       is distinct from 'Used — Manual correction after payroll audit' then
+    raise exception 'hr_l5_35: a meaningful non-request usage note was lost';
   end if;
   raise notice 'hr_l5_35: usage/reversal sentences are singular and natural; meaningful notes survive.';
 end
 $proof$;
-
-commit;

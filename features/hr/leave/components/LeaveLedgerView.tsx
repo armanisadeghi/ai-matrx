@@ -44,7 +44,10 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-import type { LeaveLedgerEntry, LeaveLedgerView as LeaveLedger } from "../api/types";
+import type {
+  LeaveLedgerEntry,
+  LeaveLedgerView as LeaveLedger,
+} from "../api/types";
 import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
 
 /**
@@ -76,7 +79,8 @@ import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
  * re-reads BOTH `prosrc`s and fails if either side is edited alone, so the two cannot silently
  * part again. (An amendment to SPEC-LEAVE §5's "Used (taken)" wording is owed by that lane.)
  */
-export type LeaveLedgerFilter = "all" | "added" | "used_taken" | "approved_upcoming";
+export type LeaveLedgerFilter =
+  "all" | "added" | "used_taken" | "approved_upcoming";
 
 const ADDED_KINDS: ReadonlySet<string> = new Set([
   "accrual",
@@ -103,13 +107,18 @@ const FILTER_EXPLANATION: Record<LeaveLedgerFilter, string> = {
     "Showing the entries behind “Approved upcoming” — approved time whose last day is still ahead, and any time returned against it.",
 };
 
-function matchesFilter(entry: LeaveLedgerEntry, filter: LeaveLedgerFilter): boolean {
+function matchesFilter(
+  entry: LeaveLedgerEntry,
+  filter: LeaveLedgerFilter,
+): boolean {
   if (filter === "all") return true;
   if (filter === "added") {
     const kind = entry.entryKind;
     if (kind === null) return false;
     if (ADDED_KINDS.has(kind)) return true;
-    return kind === "adjustment" && entry.hoursDelta !== null && entry.hoursDelta > 0;
+    return (
+      kind === "adjustment" && entry.hoursDelta !== null && entry.hoursDelta > 0
+    );
   }
   return entry.countsToward === filter;
 }
@@ -160,7 +169,9 @@ export function LeaveLedgerView({
   workweekHref,
   className,
 }: LeaveLedgerViewProps) {
-  const [snapshotEntry, setSnapshotEntry] = useState<LeaveLedgerEntry | null>(null);
+  const [snapshotEntry, setSnapshotEntry] = useState<LeaveLedgerEntry | null>(
+    null,
+  );
 
   /**
    * Newest first. `hr.leave_ledger_view` returns oldest-first because `running_sum` is
@@ -169,7 +180,11 @@ export function LeaveLedgerView({
    * over rows whose numbers were all computed by the server.
    */
   const rows = useMemo(
-    () => ledger.entries.filter((e) => matchesFilter(e, filter)).slice().reverse(),
+    () =>
+      ledger.entries
+        .filter((e) => matchesFilter(e, filter))
+        .slice()
+        .reverse(),
     [ledger.entries, filter],
   );
 
@@ -205,14 +220,18 @@ export function LeaveLedgerView({
           role="alert"
           className="flex items-start gap-2 rounded-md border-2 border-destructive bg-destructive/10 p-3"
         >
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
+          <AlertTriangle
+            className="mt-0.5 h-5 w-5 shrink-0 text-destructive"
+            aria-hidden
+          />
           <div className="min-w-0 text-sm">
             <p className="font-semibold text-destructive">
-              This ledger does not add up, and these figures cannot be relied on.
+              This ledger does not add up, and these figures cannot be relied
+              on.
             </p>
             <p className="mt-0.5 text-destructive/90">
-              The running total of every change disagrees with the recorded balance. The first
-              row where they part company is marked below.
+              The running total of every change disagrees with the recorded
+              balance. The first row where they part company is marked below.
             </p>
             {/*
               The id is NOT printed. A bare uuid on screen is a dead end with extra steps —
@@ -230,15 +249,19 @@ export function LeaveLedgerView({
         </div>
       ) : null}
 
-      {ledger.unexplainedEntryCount !== null && ledger.unexplainedEntryCount > 0 ? (
+      {ledger.unexplainedEntryCount !== null &&
+      ledger.unexplainedEntryCount > 0 ? (
         <div className="flex items-start gap-2 rounded-md border border-destructive/60 bg-destructive/5 p-3 text-sm">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+          <ShieldAlert
+            className="mt-0.5 h-4 w-4 shrink-0 text-destructive"
+            aria-hidden
+          />
           <p className="text-destructive/90">
             {ledger.unexplainedEntryCount === 1
               ? "One entry on this policy has no calculation behind it."
               : `${ledger.unexplainedEntryCount} entries on this policy have no calculation behind them.`}{" "}
-            Every rule-driven entry is supposed to carry the snapshot that produced it. These
-            are marked in the table.
+            Every rule-driven entry is supposed to carry the snapshot that
+            produced it. These are marked in the table.
           </p>
         </div>
       ) : null}
@@ -259,6 +282,7 @@ export function LeaveLedgerView({
               type="button"
               size="sm"
               variant={filter === key ? "default" : "outline"}
+              className="h-11 px-3 md:h-8 md:px-3"
               onClick={() => onFilterChange?.(key)}
             >
               {FILTER_LABEL[key]}
@@ -282,7 +306,7 @@ export function LeaveLedgerView({
                 type="date"
                 value={asOf ?? ""}
                 onChange={(e) => onAsOfChange(e.target.value || null)}
-                className="h-9 w-40"
+                className="h-11 w-40 md:h-9"
               />
             </div>
             {asOf ? (
@@ -290,6 +314,7 @@ export function LeaveLedgerView({
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="h-11 px-3 md:h-8 md:px-3"
                 onClick={() => onAsOfChange(null)}
               >
                 Today
@@ -299,27 +324,44 @@ export function LeaveLedgerView({
         ) : null}
       </div>
 
-      <p className="text-xs text-muted-foreground">{FILTER_EXPLANATION[filter]}</p>
+      <p className="text-xs text-muted-foreground">
+        {FILTER_EXPLANATION[filter]}
+      </p>
 
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full min-w-[52rem] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/40 text-left">
-              <th className="px-3 py-2 font-medium text-muted-foreground">Date</th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">What happened</th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">Change</th>
+              <th className="px-3 py-2 font-medium text-muted-foreground">
+                Date
+              </th>
+              <th className="px-3 py-2 font-medium text-muted-foreground">
+                What happened
+              </th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+                Change
+              </th>
               <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                 Balance after
               </th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">Source</th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">Rule</th>
-              <th className="px-3 py-2 font-medium text-muted-foreground">By</th>
+              <th className="px-3 py-2 font-medium text-muted-foreground">
+                Source
+              </th>
+              <th className="px-3 py-2 font-medium text-muted-foreground">
+                Rule
+              </th>
+              <th className="px-3 py-2 font-medium text-muted-foreground">
+                By
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={7}
+                  className="px-3 py-8 text-center text-muted-foreground"
+                >
                   {ledger.entryCount === 0
                     ? "Nothing has been added to or taken from this policy yet."
                     : "No entries match this filter."}
@@ -353,7 +395,9 @@ export function LeaveLedgerView({
                       className={cn(
                         "text-foreground",
                         /* Reversal pairing: struck through, never removed. Neither disappears. */
-                        isReversed ? "line-through decoration-muted-foreground/60" : null,
+                        isReversed
+                          ? "line-through decoration-muted-foreground/60"
+                          : null,
                       )}
                     >
                       {entry.sentence ?? "This entry carries no description."}
@@ -366,7 +410,9 @@ export function LeaveLedgerView({
                         </Badge>
                       ) : null}
                       {isDivergent ? (
-                        <Badge variant="destructive">Balance parts company here</Badge>
+                        <Badge variant="destructive">
+                          Balance parts company here
+                        </Badge>
                       ) : null}
                       {isReversed && reversalId ? (
                         <a
@@ -404,7 +450,9 @@ export function LeaveLedgerView({
 
                   <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-foreground">
                     {after ?? (
-                      <span className="text-muted-foreground/70">Not provided</span>
+                      <span className="text-muted-foreground/70">
+                        Not provided
+                      </span>
                     )}
                   </td>
 
@@ -422,7 +470,7 @@ export function LeaveLedgerView({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7 gap-1 px-2"
+                        className="h-11 gap-1 px-3 md:h-7 md:px-2"
                         onClick={() => setSnapshotEntry(entry)}
                       >
                         <FileSearch className="h-3.5 w-3.5" aria-hidden />
@@ -433,12 +481,18 @@ export function LeaveLedgerView({
                         No door is rendered where none exists — a control the viewer cannot use
                         is not in the DOM. The red chip beside the sentence already says why.
                       */
-                      <span className="text-xs text-muted-foreground/70">None recorded</span>
+                      <span className="text-xs text-muted-foreground/70">
+                        None recorded
+                      </span>
                     )}
                   </td>
 
                   <td className="px-3 py-2 text-muted-foreground">
-                    {by ?? <span className="text-muted-foreground/70">Not recorded</span>}
+                    {by ?? (
+                      <span className="text-muted-foreground/70">
+                        Not recorded
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
@@ -448,8 +502,8 @@ export function LeaveLedgerView({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        This record is append-only: nothing on this screen can be edited or deleted, by anyone.
-        A correction is a new entry.
+        This record is append-only: nothing on this screen can be edited or
+        deleted, by anyone. A correction is a new entry.
         {viewer === "delegated"
           ? " You are looking at someone else's record."
           : null}
@@ -541,7 +595,10 @@ function RuleSnapshotDialog({
   onClose: () => void;
 }) {
   return (
-    <Dialog open={entry !== null} onOpenChange={(open) => (open ? null : onClose())}>
+    <Dialog
+      open={entry !== null}
+      onOpenChange={(open) => (open ? null : onClose())}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>How this was calculated</DialogTitle>
@@ -564,14 +621,16 @@ function RuleSnapshotDialog({
                   : "Not recorded"}
               </dd>
               <dt className="text-muted-foreground">Entry</dt>
-              <dd className="break-all font-mono text-xs text-foreground">{entry.id}</dd>
+              <dd className="break-all font-mono text-xs text-foreground">
+                {entry.id}
+              </dd>
             </dl>
 
             {entry.calc === null ? (
               <p className="rounded-md border border-destructive/60 bg-destructive/5 p-3 text-sm text-destructive/90">
-                No calculation was stored with this entry. That is the defect the
-                &ldquo;Unexplained entry&rdquo; mark reports — the figure exists and the
-                working behind it does not.
+                No calculation was stored with this entry. That is the defect
+                the &ldquo;Unexplained entry&rdquo; mark reports — the figure
+                exists and the working behind it does not.
               </p>
             ) : (
               <pre className="overflow-x-auto rounded-md border border-border bg-muted/40 p-3 text-xs text-foreground">
