@@ -27,6 +27,16 @@
  * it does fire, and (b) a storage re-read on focus/visibility and on a slow
  * interval — the cases where another tab rotated the cookie.
  *
+ * NEITHER STOP IS TERMINAL (2026-09-13). While an overlay is up the watcher
+ * keeps re-reading the cookie — on any activity in the tab (pointer, key,
+ * touch, focus, visibility), on a fast poll, and on a cross-tab
+ * `matrx-auth` broadcast fired by every tab's own auth events — and acts on
+ * the verdict from `authTabReconcile.ts`: resume in place when the booted
+ * identity is back, reload on its own when someone else is signed in
+ * (spread over a few seconds for hidden tabs), or swap to "Session Expired"
+ * when the cookie emptied. Before this, a sign-in from one tab left every
+ * other blocked tab blocked until a human pressed Reload on each of ~50.
+ *
  * The full-screen overlay (lucide icons, Button, the dialog markup) lives in
  * `AuthSessionWatcherImpl.tsx` and is `next/dynamic`-loaded ONLY when one of
  * the two conditions fires — i.e. nearly never — so the modal's dep graph
@@ -48,6 +58,12 @@ import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice
 import { clearUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { mediaFilesClient } from "@/features/files/media-client/client";
+import {
+  ACTIVITY_RECHECK_THROTTLE_MS,
+  BLOCKED_RECHECK_INTERVAL_MS,
+  decideBlockedTabReconcile,
+  reloadDelayMs,
+} from "./authTabReconcile";
 
 const AuthSessionWatcherImpl = dynamic(
   () => import("./AuthSessionWatcherImpl"),
@@ -79,6 +95,22 @@ function snapshotUnsavedWork(bootedId: string, currentId: string): number {
 // for a tab the user never blurs (long editing sessions).
 const IDENTITY_RECHECK_INTERVAL_MS = 60_000;
 
+// Cross-tab "the auth cookie may have changed" nudge. Deliberately NOT the
+// `matrx-sync` channel: that one is identity-gated by design (a message from
+// another identity is dropped), and this notice exists precisely to cross
+// identities. Payload-free on purpose — receivers re-read the cookie
+// themselves; the message only says "look now".
+const AUTH_BROADCAST_CHANNEL = "matrx-auth";
+
+function openAuthBroadcast(): BroadcastChannel | null {
+  if (typeof BroadcastChannel !== "function") return null;
+  try {
+    return new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
+  } catch {
+    return null;
+  }
+}
+
 export default function AuthSessionWatcher() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [driftedToEmail, setDriftedToEmail] = useState<string | null>(null);
@@ -109,9 +141,69 @@ export default function AuthSessionWatcher() {
     void mediaFilesClient.ensureSession();
   }, [userAuthId, organizationId]);
 
+  // Mirrors of the overlay state for callbacks that must not re-subscribe.
+  const blockedRef = useRef<"expired" | "identity-changed" | null>(null);
+  useEffect(() => {
+    blockedRef.current = driftedToEmail
+      ? "identity-changed"
+      : sessionExpired
+        ? "expired"
+        : null;
+  }, [driftedToEmail, sessionExpired]);
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleReload = useCallback((reason: string) => {
+    if (reloadTimerRef.current) return;
+    const visible = document.visibilityState === "visible";
+    const delay = reloadDelayMs(visible);
+    console.warn(
+      "[AuthSessionWatcher] blocked tab reloading on its own:",
+      reason,
+      visible ? "(visible — now)" : `(hidden — in ${Math.round(delay / 1000)}s)`,
+    );
+    reloadTimerRef.current = setTimeout(() => window.location.reload(), delay);
+  }, []);
+
+  /**
+   * The blocked-tab loop. Re-reads the cookie and acts on the verdict; runs
+   * on activity, on the fast poll, and on the cross-tab broadcast. Does
+   * nothing while no overlay is up — `checkIdentity` owns that half.
+   */
+  const reconcileBlockedTab = useCallback(async () => {
+    const variant = blockedRef.current;
+    if (!variant || reloadTimerRef.current) return;
+    const { data } = await supabase.auth.getSession();
+    const verdict = decideBlockedTabReconcile({
+      variant,
+      bootedId: bootedIdRef.current,
+      currentId: data.session?.user.id ?? null,
+    });
+    switch (verdict.action) {
+      case "stay":
+        return;
+      case "resume":
+        console.warn(
+          "[AuthSessionWatcher] the auth cookie belongs to the booted account again — resuming this tab in place.",
+        );
+        setDriftedToEmail(null);
+        setRescuedDraftCount(0);
+        return;
+      case "expire":
+        setDriftedToEmail(null);
+        setSessionExpired(true);
+        return;
+      case "reload":
+        scheduleReload(verdict.reason);
+        return;
+    }
+  }, [scheduleReload]);
+
   const checkIdentity = useCallback(async () => {
     const booted = bootedIdRef.current;
     if (!booted) return;
+    // Once an overlay is up, the reconcile loop owns the cookie; re-running
+    // the pre-block check would re-snapshot drafts and re-warn every tick.
+    if (blockedRef.current) return;
     // getSession() re-reads the cookie store — cheap, no network round-trip.
     const { data } = await supabase.auth.getSession();
     const current = data.session?.user;
@@ -138,9 +230,25 @@ export default function AuthSessionWatcher() {
   }, []);
 
   useEffect(() => {
+    const broadcast = openAuthBroadcast();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      // Every tab's own auth event (including INITIAL_SESSION on a fresh page
+      // load — the only event a server-action login ever produces) nudges
+      // every other tab to re-read the cookie now, not on its next poll.
+      if (
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "USER_UPDATED" ||
+        event === "INITIAL_SESSION"
+      ) {
+        try {
+          broadcast?.postMessage({ type: "auth-changed", event });
+        } catch {
+          /* a closed channel is not an error */
+        }
+      }
       const lostBootedSession =
         event === "SIGNED_OUT" ||
         (event === "INITIAL_SESSION" &&
@@ -262,7 +370,9 @@ export default function AuthSessionWatcher() {
     // cookie-storage client — re-read the cookie when the tab regains focus
     // or becomes visible, plus a slow interval backstop.
     const onFocusOrVisible = () => {
-      if (document.visibilityState === "visible") void checkIdentity();
+      if (document.visibilityState !== "visible") return;
+      void checkIdentity();
+      void reconcileBlockedTab();
     };
     window.addEventListener("focus", onFocusOrVisible);
     document.addEventListener("visibilitychange", onFocusOrVisible);
@@ -270,13 +380,56 @@ export default function AuthSessionWatcher() {
       if (document.visibilityState === "visible") void checkIdentity();
     }, IDENTITY_RECHECK_INTERVAL_MS);
 
+    // --- Blocked-tab recovery: activity, fast poll, cross-tab nudge. ---
+    // ANY activity in a blocked tab re-reads the cookie (throttled — pointer
+    // moves are a firehose). Cheap when nothing is blocked: one ref read.
+    let lastActivityCheck = 0;
+    const onActivity = () => {
+      if (!blockedRef.current) return;
+      const now = Date.now();
+      if (now - lastActivityCheck < ACTIVITY_RECHECK_THROTTLE_MS) return;
+      lastActivityCheck = now;
+      void reconcileBlockedTab();
+    };
+    const activityEvents = [
+      "pointermove",
+      "pointerdown",
+      "keydown",
+      "touchstart",
+      "wheel",
+    ] as const;
+    for (const name of activityEvents) {
+      window.addEventListener(name, onActivity, { passive: true });
+    }
+    // Fast poll while blocked, hidden tabs included — the browser throttles
+    // background timers on its own, and the broadcast covers the gap.
+    const blockedPoll = setInterval(() => {
+      if (blockedRef.current) void reconcileBlockedTab();
+    }, BLOCKED_RECHECK_INTERVAL_MS);
+    if (broadcast) {
+      broadcast.onmessage = () => {
+        // The nudge carries no payload; the cookie is the truth.
+        void checkIdentity();
+        void reconcileBlockedTab();
+      };
+    }
+
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("focus", onFocusOrVisible);
       document.removeEventListener("visibilitychange", onFocusOrVisible);
       clearInterval(interval);
+      for (const name of activityEvents) {
+        window.removeEventListener(name, onActivity);
+      }
+      clearInterval(blockedPoll);
+      broadcast?.close();
+      if (reloadTimerRef.current) {
+        clearTimeout(reloadTimerRef.current);
+        reloadTimerRef.current = null;
+      }
     };
-  }, [dispatch, checkIdentity]);
+  }, [dispatch, checkIdentity, reconcileBlockedTab]);
 
   if (driftedToEmail) {
     return (

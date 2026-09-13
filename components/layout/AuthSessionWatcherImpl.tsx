@@ -12,6 +12,10 @@
  *   account or have them silently rejected by RLS, which is how 14 hours of
  *   note edits were lost on 2026-08-08.
  *
+ * Neither stop is terminal: the watcher keeps re-reading the cookie behind
+ * this overlay and resumes or reloads the tab on its own (see
+ * `authTabReconcile.ts`); the button is only the shortcut.
+ *
  * Lazy-loaded by `AuthSessionWatcher.tsx` ONLY when one of the stops fires,
  * so the modal's dep graph never enters the static graph of any route.
  */
@@ -60,8 +64,9 @@ export default function AuthSessionWatcherImpl({
               </span>
               , but this tab was opened under another account. To protect your
               data, this tab has been paused — anything saved now could be lost
-              or attributed to the wrong account. Reload to continue as the
-              current account.
+              or attributed to the wrong account. It will reload on its own to
+              continue as the current account, or resume where it was if the
+              original account signs back in. Reload now to skip the wait.
             </p>
             {rescuedDraftCount > 0 && (
               <p className="text-sm text-foreground leading-relaxed">
@@ -99,7 +104,8 @@ export default function AuthSessionWatcherImpl({
             Session Expired
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Your session has timed out. Please sign in again to continue — your
+            Your session has timed out. Sign in again from this tab or any
+            other — this tab continues on its own once you are signed in. Your
             work is saved.
           </p>
         </div>
