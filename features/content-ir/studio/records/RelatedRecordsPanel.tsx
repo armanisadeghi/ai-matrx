@@ -12,6 +12,15 @@
 // gets its "Keyword lists" tab for exactly the same reason any future parent
 // shape gets its own: it declared a child edge.
 //
+// ONE TAB IS ONE FIELD, NEVER ONE CHILD KIND (DD-178). The tabs were already
+// per field, but the rows under them were read per child KIND — so a parent
+// declaring two array fields whose items share one kind (eleven live parent
+// definitions do: `claim_evidence`'s supportingEvidence + contrastingEvidence,
+// `tasting_note`'s aroma + palate, `captured_product_load_result`'s photos +
+// videos + audio) showed the SAME interleaved rows under both tabs, in an order
+// that was neither field's. The read now keys on the edge's `role`, which
+// carries the parent field.
+//
 // EACH TAB CARRIES ITS OWN FILTERS — the same two standing axes the records
 // grid outside it has: confirmation (All / Unconfirmed / Confirmed) and the
 // canonical archive tri-state. They are independent per tab, because two child
@@ -194,7 +203,7 @@ interface ListAnswer {
   message: string | null;
 }
 
-/** ONE child kind's rows under one parent, with this tab's own two filters. */
+/** ONE PARENT FIELD's rows under one parent, with this tab's own two filters. */
 function RelatedChildList({
   parentId,
   edge,
@@ -218,6 +227,10 @@ function RelatedChildList({
   // the stamped answer no longer matches the question — no reset write.
   const requestKey = [
     parentId,
+    // THE FIELD IS PART OF THE QUESTION. Two tabs of the same child kind are two
+    // different lists; leaving the field out of the key would let one tab answer
+    // with the other's cached rows (DD-178).
+    edge.fieldName,
     edge.childDefinitionId,
     confirmation,
     archiveFilter,
@@ -230,6 +243,7 @@ function RelatedChildList({
       try {
         const result = await listRelatedChildRecords({
           parentId,
+          fieldName: edge.fieldName,
           childDefinitionId: edge.childDefinitionId,
           confirmation,
           archiveFilter,
@@ -245,7 +259,14 @@ function RelatedChildList({
       cancelled = true;
     };
     // `requestKey` IS every input this read takes, said once.
-  }, [requestKey, parentId, edge.childDefinitionId, confirmation, archiveFilter]);
+  }, [
+    requestKey,
+    parentId,
+    edge.fieldName,
+    edge.childDefinitionId,
+    confirmation,
+    archiveFilter,
+  ]);
 
   const current = answer && answer.key === requestKey ? answer : null;
   const state: ListState = !current
@@ -292,6 +313,31 @@ function RelatedChildList({
           aria-label={`Archived ${edge.childLabel} records`}
         />
       </div>
+
+      {/* A record that belongs to this one but never said WHICH of the parent's
+          lists it came from cannot be put in any tab. It is named here rather
+          than dropped — a deliverable that vanishes without anybody being told
+          is the exact failure this feature exists to prevent (DD-178). This is
+          0 on a database that has `wf_055`. */}
+      {result && result.fieldlessCount > 0 ? (
+        <p
+          className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs"
+          role="status"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+          <span>
+            <strong>
+              {result.fieldlessCount} record
+              {result.fieldlessCount === 1 ? "" : "s"} belonging to this one
+              {result.fieldlessCount === 1 ? " does" : " do"} not say which list
+              {result.fieldlessCount === 1 ? " it" : " they"} came from,
+            </strong>{" "}
+            so {result.fieldlessCount === 1 ? "it is" : "they are"} in no tab
+            here. Nothing was deleted. This happens only to records written
+            before the field was recorded on the link.
+          </span>
+        </p>
+      ) : null}
 
       {state.status === "loading" ? (
         <p className="text-xs text-muted-foreground">
