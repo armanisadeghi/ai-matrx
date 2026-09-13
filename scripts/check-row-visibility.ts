@@ -25,11 +25,16 @@
  *   A. `platform_admin_all`'s USING excludes `visibility='personal'` — that policy is PERMISSIVE and
  *      grants everything on its own, so an arm-only check would miss it entirely;
  *   B. no permissive policy on the table carries an UNWALLED `is_platform_admin()` arm;
- *   C. no permissive policy carries an UNWALLED `is_super_admin()` arm, except the system-org arm
- *      (recognised by `system_orgs` in the same expression), which can only ever match a row owned by
- *      a global_readable SYSTEM organization — platform content, never a customer's person. That arm
- *      is named residue in the DD-165 report, not a silent exemption: it is mirrored from
- *      `iam.has_access_for_base`, and walling the mirror alone would change no access at all.
+ *   C. no permissive policy carries an UNWALLED `is_super_admin()` arm — INCLUDING the §6e
+ *      system-organization arm. Until DD-180 (2026-09-13) that one arm was exempt by name here,
+ *      because at the time the kernel `iam.has_access_for_base` still carried its own unwalled copy
+ *      and failing the mirror alone would have demanded a wall that changed no access. DD-170 walled
+ *      the kernel; DD-180 swept the 167 live policies that had been generated before it. The
+ *      exemption has nothing left behind it, so it is gone: the walled §6e form is subtracted from
+ *      the policy text like the other two, and anything still saying `is_super_admin` is a finding.
+ *      It exposed nothing at the time — zero `personal` rows sat under a global-readable system org,
+ *      measured — and that was the whole problem: a wall that holds only because of what the rows
+ *      happen to be is not a wall.
  *
  * Known-open rows are NOT silently excused. They are printed by name with the reason, and the list
  * fails in BOTH directions — an unexpected token open is a finding, and an expected one CLOSING is a
@@ -136,6 +141,15 @@ async function door(env: { url: string; key: string }, sql: string): Promise<Arr
 /** The two shapes `iam.apply_rls` emits for a walled staff arm, as `pg_get_expr` renders them. */
 const W_ADMIN = "(visibility >= 'internal'::platform.visibility) AND ( SELECT is_platform_admin() AS is_platform_admin)";
 const W_SUPER = "(visibility >= 'internal'::platform.visibility) AND is_super_admin()";
+/**
+ * The WALLED §6e system-organization super-admin arm (DD-180), as `iam.entity_read_expr` emits it
+ * and `pg_get_expr` renders it. Subtracted like the other two, so the arm is checked rather than
+ * excused: before DD-180 this guard skipped any policy whose text merely MENTIONED `system_orgs`.
+ */
+const W_SYSORG =
+  "(organization_id IS NOT NULL) AND (visibility >= 'internal'::platform.visibility) AND " +
+  "( SELECT is_super_admin() AS is_super_admin) AND (organization_id IN " +
+  "( SELECT so.organization_id FROM iam.system_orgs so WHERE so.global_readable))";
 
 export interface PolicyRow { polname: string; qual: string }
 /** A composition/containment parent whose FK column really exists on the child table. */
@@ -156,10 +170,14 @@ export function unwalledArms(row: RowVisibilityRow): string[] {
       bad.push(`${p.polname}: USING does not exclude visibility='personal'`);
       continue;
     }
-    const rest = q.split(W_ADMIN).join("").split(W_SUPER).join("");
+    const rest = q.split(W_ADMIN).join("").split(W_SUPER).join("").split(W_SYSORG).join("");
     if (rest.includes("is_platform_admin")) bad.push(`${p.polname}: unwalled platform-admin arm`);
-    else if (rest.includes("is_super_admin") && !q.includes("system_orgs")) {
-      bad.push(`${p.polname}: unwalled super-admin arm`);
+    else if (rest.includes("is_super_admin")) {
+      bad.push(
+        rest.includes("system_orgs")
+          ? `${p.polname}: unwalled system-organization super-admin arm (DD-180)`
+          : `${p.polname}: unwalled super-admin arm`,
+      );
     }
   }
   return bad;
@@ -330,8 +348,12 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR (created_by = ( SELECT auth.uid() AS uid)))` }] }, false],
     ["a restricted std_select with a bare super-admin arm",
       { token: "x", variant: "restricted", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR (created_by = ( SELECT auth.uid() AS uid)) OR is_super_admin())` }] }, true],
-    ["the system-org super-admin arm, which is mirrored from the kernel and named residue",
-      { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR ((organization_id IS NOT NULL) AND ( SELECT is_super_admin() AS is_super_admin) AND (organization_id IN ( SELECT so.organization_id FROM iam.system_orgs so WHERE so.global_readable))))` }] }, false],
+    // DD-180: the arm that used to be excused here, and the same arm with the wall. 167 live
+    // policies carried the first form until 2026-09-13 and this guard called every one of them fine.
+    ["the UNWALLED system-org super-admin arm (the DD-180 defect, on 167 live policies)",
+      { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR ((organization_id IS NOT NULL) AND ( SELECT is_super_admin() AS is_super_admin) AND (organization_id IN ( SELECT so.organization_id FROM iam.system_orgs so WHERE so.global_readable))))` }] }, true],
+    ["the WALLED system-org super-admin arm, which the generator has emitted since DD-170",
+      { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR (${W_SYSORG}))` }] }, false],
   ];
   const OLD_ARM = "(parent_folder_id IS NOT NULL) AND (visibility IS NOT NULL) AND (visibility <> 'public'::platform.visibility)";
   const NEW_ARM = "(parent_folder_id IS NOT NULL) AND (visibility >= 'internal'::platform.visibility) AND (visibility <> 'public'::platform.visibility)";
