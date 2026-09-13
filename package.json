@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.1897",
+  "version": "0.4.1898",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -301,6 +301,9 @@
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
     "check:impl-doors": "tsx scripts/check-impl-doors.ts",
     "check:impl-doors:strict": "tsx scripts/check-impl-doors.ts --strict",
+    "check:door-rows": "tsx scripts/check-door-rows.ts",
+    "check:door-rows:strict": "tsx scripts/check-door-rows.ts --strict",
+    "check:door-rows:self-test": "tsx scripts/check-door-rows.ts --self-test",
     "check:db-guards": "tsx scripts/check-db-guards.ts",
     "check:db-guards:strict": "tsx scripts/check-db-guards.ts --strict",
     "check:rls-on": "tsx scripts/check-rls-on.ts",
@@ -360,6 +363,8 @@
     "check:row-visibility:strict": "tsx scripts/check-row-visibility.ts --strict",
     "check:row-visibility:self-test": "tsx scripts/check-row-visibility.ts --self-test",
     "check:staff-door": "tsx scripts/check-staff-door.ts",
+    "check:knob-resolve-callers": "tsx scripts/check-knob-resolve-callers.ts",
+    "check:knob-resolve-callers:self-test": "tsx scripts/check-knob-resolve-callers.ts --self-test",
     "check:stale-rowtype-triggers": "tsx scripts/check-stale-rowtype-triggers.ts",
     "check:stale-rowtype-triggers:self-test": "tsx scripts/check-stale-rowtype-triggers.ts --self-test",
     "check:staff-door:strict": "tsx scripts/check-staff-door.ts --strict",
