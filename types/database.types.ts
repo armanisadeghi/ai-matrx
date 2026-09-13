@@ -51062,6 +51062,63 @@ export type Database = {
         }
         Relationships: []
       }
+      dd175_cast: {
+        Row: {
+          token: string
+          why: string
+        }
+        Insert: {
+          token: string
+          why: string
+        }
+        Update: {
+          token?: string
+          why?: string
+        }
+        Relationships: []
+      }
+      dd175_component_lane_baseline: {
+        Row: {
+          component_table: string
+          component_token: string
+          fk_column: string
+          measured_at: string
+          parent_ids_admitted: number
+          parent_ids_refused: number
+          parent_type: string
+          phase: string
+          principal_email: string
+          probe_error: string | null
+          rows_readable_under_refused_parent: number
+        }
+        Insert: {
+          component_table: string
+          component_token: string
+          fk_column: string
+          measured_at?: string
+          parent_ids_admitted: number
+          parent_ids_refused: number
+          parent_type: string
+          phase: string
+          principal_email: string
+          probe_error?: string | null
+          rows_readable_under_refused_parent: number
+        }
+        Update: {
+          component_table?: string
+          component_token?: string
+          fk_column?: string
+          measured_at?: string
+          parent_ids_admitted?: number
+          parent_ids_refused?: number
+          parent_type?: string
+          phase?: string
+          principal_email?: string
+          probe_error?: string | null
+          rows_readable_under_refused_parent?: number
+        }
+        Relationships: []
+      }
       definer_class_exemption: {
         Row: {
           declared_at: string
@@ -52256,6 +52313,21 @@ export type Database = {
       component_original_lane: {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: string
+      }
+      component_wider_than_parent: {
+        Args: { p_principals?: string[]; p_token?: string }
+        Returns: {
+          component_table: string
+          component_token: string
+          fk_column: string
+          parent_ids_admitted: number
+          parent_ids_refused: number
+          parent_type: string
+          principal: string
+          principal_email: string
+          probe_error: string
+          rows_readable_under_refused_parent: number
+        }[]
       }
       derive_organization_abbreviation: {
         Args: { p_is_personal?: boolean; p_name: string }

@@ -25,6 +25,7 @@ import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { useRunOutcome } from "../../durable-run/useRunOutcome";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -137,7 +138,8 @@ const MODE_OPTIONS: {
 export interface IngestSummary {
   added: number;
   duplicatesSkipped: number;
-  quotesUnverified: number;
+  /** Null when the lane did not report the word-for-word check at all. */
+  quotesUnverified: number | null;
   /**
    * Pieces of the source the distiller could not read even after retrying
    * them smaller, and the words they held. Non-zero = rules are MISSING and
@@ -162,7 +164,12 @@ export function parseIngestSummary(raw: unknown): IngestSummary | null {
   return {
     added: Number(data.added ?? 0),
     duplicatesSkipped: Number(data.duplicates_skipped ?? 0),
-    quotesUnverified: Number(data.quotes_unverified ?? 0),
+    // ABSENT is not ZERO: a lane that never ran the word-for-word check must
+    // not read as "every quote verified" (Bugbot, 2026-09-12).
+    quotesUnverified:
+      data.quotes_unverified === undefined || data.quotes_unverified === null
+        ? null
+        : Number(data.quotes_unverified),
     failedChunks: Number(data.failed_chunks ?? 0),
     skippedWords: Number(data.skipped_words ?? 0),
     followupSeed:
@@ -184,9 +191,11 @@ export function describeIngest({
     (missing ? `${missing} ` : "") +
     `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
     (duplicatesSkipped ? `, ${duplicatesSkipped} duplicates skipped` : "") +
-    (quotesUnverified
-      ? `. ${quotesUnverified} ${quotesUnverified === 1 ? "quote" : "quotes"} could not be verified word-for-word — those rules are flagged for your review.`
-      : ". Every quote verified word-for-word against your source.")
+    (quotesUnverified === null
+      ? "."
+      : quotesUnverified
+        ? `. ${quotesUnverified} ${quotesUnverified === 1 ? "quote" : "quotes"} could not be verified word-for-word — those rules are flagged for your review.`
+        : ". Every quote verified word-for-word against your source.")
   );
 }
 
@@ -268,14 +277,25 @@ export function IngestSourceDialog({
   const [uploading, setUploading] = useState(false);
 
   /**
-   * ONE durable run for both lanes — they emit the SAME terminal event
-   * (`masterwork_ingest_complete`; the file lane hands off to the text lane
-   * for a transcript), so they are one run to the user and one pointer to
-   * rejoin. `path` is read at launch time, which is what lets the current lane
-   * choose its endpoint without a second hook.
+   * ONE durable run for the paste and upload lanes — they emit the SAME
+   * terminal event (`masterwork_ingest_complete`; the file lane hands off to
+   * the text lane for a transcript), so they are one run to the user and one
+   * pointer to rejoin. `path` is read at launch time, which is what lets the
+   * current lane choose its endpoint without a second hook.
+   *
+   * 🚨 THE TIMELINE LANE IS A DIFFERENT SURFACE, NOT A DIFFERENT PATH (Bugbot,
+   * 2026-09-13). `useMasterworkRun` declares `timeline` as its own surface with
+   * its own measured expectation precisely so a case distillation never shares
+   * a durable-run pointer with a paste/upload distillation — and this dialog
+   * launched every lane, timeline included, as `surface: "ingest"`. The pointer
+   * key is `${surface}:${rulebookId}`, so one Rulebook's timeline run and its
+   * source run wrote the SAME browser receipt: a reload could reopen the wrong
+   * lane, and a later ingest could rejoin and report a timeline run's answer as
+   * its own. The surface is the dialog the user is looking at, so it is chosen
+   * here from the same `timeline` flag that chooses the copy and the endpoint.
    */
   const run = useMasterworkRun<IngestSummary>({
-    surface: "ingest",
+    surface: timeline ? "timeline" : "ingest",
     rulebookId: rulebook.id,
     path: timeline
       ? INGEST_TIMELINE_PATH
@@ -298,9 +318,10 @@ export function IngestSourceDialog({
 
   // Drafts that landed while the user was away still have to reach the page
   // behind this dialog.
-  useEffect(() => {
-    if (run.result) onIngested?.();
-  }, [run.result, onIngested]);
+  // Once per finished run, never once per render — the page hands a fresh
+  // arrow down every render and its refresh re-renders the page (see
+  // `useRunOutcome`).
+  useRunOutcome(run, onIngested);
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -309,9 +330,22 @@ export function IngestSourceDialog({
   // A run picked back up after a reload has to be VISIBLE. Rejoining behind a
   // closed dialog would leave the user staring at a page that says nothing is
   // happening — the same defect as losing the run.
+  //
+  // 🚨 The latch is per RUN, not per mount (Bugbot, 2026-09-13). It used to be
+  // set on the first auto-open and never cleared, so the dialog rejoined
+  // exactly once in the life of the page: a second run — started in another
+  // tab, or on a fresh pointer after the last one was reset — stayed hidden
+  // with the Start button armed, and the same work could be paid for twice.
+  // Clearing it the moment the run is no longer running lets the NEXT live run
+  // reopen in its turn, while the `open` guard still keeps it from re-firing on
+  // the run that is already on screen.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (reopenedRef.current || open || !run.running) return;
+    if (!run.running) {
+      reopenedRef.current = false;
+      return;
+    }
+    if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
