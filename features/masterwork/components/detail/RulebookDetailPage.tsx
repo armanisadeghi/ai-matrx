@@ -86,7 +86,7 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
-import { useTriageDialogSession } from "../../triage/triageSession";
+import { useTriageDialogSession } from "../../durable-run/rulebookDialogSession";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { RuleMove, ruleMoveIsEmpty } from "./RuleMove";
 import { RuleHistory } from "./RuleHistory";

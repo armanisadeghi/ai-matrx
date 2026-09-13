@@ -23,7 +23,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TriageDraftsDialog } from "../TriageDraftsDialog";
-import { useTriageDialogSession } from "../triageSession";
+import { useTriageDialogSession } from "../../durable-run/rulebookDialogSession";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
