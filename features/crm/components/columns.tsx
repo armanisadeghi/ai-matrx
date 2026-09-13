@@ -7,9 +7,11 @@
 
 import {
   BadgeCheck,
+  BrainCircuit,
   Building2,
   ChevronRight,
   Globe,
+  PenLine,
   PhoneOff,
   ShieldCheck,
   User,
@@ -24,12 +26,56 @@ import {
   EXPERT_STATUS_LABEL,
   RECORD_CLASS_FILTERS,
   RECORD_CLASS_FILTER_LABEL,
+  WRITTEN_BY_FILTERS,
+  WRITTEN_BY_FILTER_LABEL,
 } from "../types";
 
 const DATE_BUCKET_OPTIONS = DATE_BUCKETS.map((b) => ({
   value: b.value,
   label: b.label,
 }));
+
+/**
+ * What the two provenance columns say about one contact, in words a person can
+ * act on (DD-131 slice 3).
+ *
+ * FOUR HONEST STATES, and not one of them is a guess:
+ *  - an agent wrote it and nobody has corrected it   → "An agent"
+ *  - an agent wrote it and a person has since edited → "Agent, edited"
+ *  - machinery discovered it                          → "Found"-adjacent; the
+ *    Record column already says that, so this cell stays quiet rather than
+ *    saying the same thing twice in two words that do not match
+ *  - a person wrote it, or the row predates the columns → the em dash
+ *
+ * The tooltip carries WHICH agent, because "an agent did it" with no name is
+ * the thing the provenance rule exists to forbid.
+ */
+function writtenByBadge(row: PartyListRow) {
+  const tier = row.created_by_tier;
+  if (tier !== "ai") {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  const system = row.created_by_system;
+  const edited = row.updated_by_tier === "human";
+  const who = system ? `Added by ${system}` : "Added by an agent";
+  return (
+    <span
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium leading-none text-primary"
+      title={
+        edited
+          ? `${who}, and a person has edited it since.`
+          : `${who}. Nobody has edited it since.`
+      }
+    >
+      {edited ? (
+        <PenLine className="h-3 w-3" aria-hidden />
+      ) : (
+        <BrainCircuit className="h-3 w-3" aria-hidden />
+      )}
+      {edited ? "Agent, edited" : "An agent"}
+    </span>
+  );
+}
 
 function kindBadge(row: PartyListRow) {
   const isPerson = row.party_kind === "person";
@@ -245,6 +291,32 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
       ) : (
         <span className="text-xs text-muted-foreground">—</span>
       ),
+  },
+  {
+    // WHO WROTE IT (DD-131 slice 3, chair 2026-09-13). The SAME grid and the
+    // SAME row page get one control for the question "did an agent add this?",
+    // never a second list of agent-added contacts sitting beside the real one.
+    //
+    // The cell reads two columns the DATABASE fills from the declaration made
+    // at the write door — a contact cannot claim a person typed it. A NULL tier
+    // is a person's row (the documented reading), which is why the overwhelming
+    // majority of rows render the quiet em dash rather than a badge: they were
+    // written before this platform could tell, and guessing would be worse than
+    // the dash.
+    id: "written_by",
+    accessorKey: "created_by_tier",
+    header: "Written by",
+    sortable: false,
+    filter: "select",
+    // Exclusive views of one question, like `record_class` above — multi-select
+    // made that facet inert (D218).
+    filterSingle: true,
+    filterOptions: WRITTEN_BY_FILTERS.map((v) => ({
+      value: v,
+      label: WRITTEN_BY_FILTER_LABEL[v],
+    })),
+    width: 130,
+    cell: (row) => writtenByBadge(row),
   },
   {
     id: "updated_at",

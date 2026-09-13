@@ -234,6 +234,32 @@ export const RECORD_CLASS_FILTER_VALUE: Record<
 
 export const DEFAULT_RECORD_CLASS_FILTER: RecordClassFilter = "contacts";
 
+// ── Who wrote this contact (DD-131 slice 3, chair 2026-09-13) ────────────────
+//
+// ONE chip on the SAME grid, never a second list. Arman, 2026-09-12: data that
+// already has a home gets the same grid with one filter chip "added by an
+// agent" — the mixed case becomes its own record that relates to the customer.
+//
+// It reads `crm.party.created_by_tier` / `updated_by_tier`, which
+// `platform._stamp_actor_tier` fills from the actor DECLARED at the write door
+// (wf_056). NULL is not "unknown": it is the documented reading "a person did
+// this", which is why `anyone` is the default and why the 1,842 contacts that
+// existed before the columns were added are all — correctly — absent from the
+// agent filters.
+export const WRITTEN_BY_FILTERS = ["anyone", "agent", "agent_edited"] as const;
+export type WrittenByFilter = (typeof WRITTEN_BY_FILTERS)[number];
+
+export const WRITTEN_BY_FILTER_LABEL: Record<WrittenByFilter, string> = {
+  anyone: "Anyone",
+  agent: "Added by an agent",
+  // The row an agent created and a PERSON has since corrected. It is not a
+  // third kind of record — it is the second fact (`updated_by_tier`) read on
+  // top of the first, which is why it lives in this one control.
+  agent_edited: "Agent-written then edited",
+};
+
+export const DEFAULT_WRITTEN_BY_FILTER: WrittenByFilter = "anyone";
+
 export const CONTACT_PURPOSES = [
   "work",
   "personal",
@@ -304,6 +330,12 @@ export interface PartyListFilters {
   expert_status?: ExpertStatusFilter;
   /** Contacts you work with vs records the platform found. Defaults to contacts. */
   record_class?: RecordClassFilter;
+  /**
+   * Who wrote the contact (DD-131 slice 3). `anyone` — the default — is no
+   * predicate at all: a person's contact and an agent's sit in the same grid
+   * until somebody asks the question.
+   */
+  written_by?: WrittenByFilter;
   updated_at?: DateBucket;
   created_at?: DateBucket;
 }
@@ -380,6 +412,7 @@ export const PARTY_COLUMN_FILTER_KEYS = [
   "do_not_contact",
   "expert_status",
   "record_class",
+  "written_by",
   "updated_at",
   "created_at",
 ] as const;
@@ -412,6 +445,10 @@ export const EXPERT_STATUS_FILTER_ENUM_TEXT = EXPERT_STATUS_FILTERS.map((v) =>
  *  that does not know "contacts" is the default cannot ask for the rest. */
 export const RECORD_CLASS_FILTER_ENUM_TEXT = RECORD_CLASS_FILTERS.map(
   (v) => `"${v}" (${RECORD_CLASS_FILTER_LABEL[v]})`,
+).join(" | ");
+
+export const WRITTEN_BY_FILTER_ENUM_TEXT = WRITTEN_BY_FILTERS.map(
+  (v) => `"${v}" (${WRITTEN_BY_FILTER_LABEL[v]})`,
 ).join(" | ");
 
 export const PARTY_KIND_ENUM_TEXT = PARTY_KINDS.join(" | ");

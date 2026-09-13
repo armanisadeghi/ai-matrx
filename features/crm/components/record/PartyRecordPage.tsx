@@ -50,6 +50,7 @@ import {
   storedJournalistActivity,
 } from "./JournalistIntelligenceCard";
 import { PartyProvenanceCard } from "./PartyProvenanceCard";
+import { PartyOutputsSection } from "./PartyOutputsSection";
 import { PartyDealsCard } from "../deals/PartyDealsCard";
 import type { CrmRecordCopyParent } from "./record-copy";
 
@@ -313,6 +314,12 @@ export function PartyRecordPage({ partyId }: Props) {
                 {/* Deals with this person/company — the door goes both ways
                     (a deal names its party; the party names its deals). */}
                 <PartyDealsCard party={party} />
+                {/* "Outputs about this customer" — the reverse view slice 2
+                    built for sites, pointed at this party (DD-131 slice 3). */}
+                <PartyOutputsSection
+                  partyId={party.id}
+                  partyName={party.display_name}
+                />
                 <InteractionTimeline
                   partyId={party.id}
                   orgId={party.organization_id}

@@ -830,6 +830,29 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-09-13 — **A customer row says who made it, and the grid has ONE chip for
+  it** (DD-131 slice 3). `crm.party` gained `created_by_tier` /
+  `created_by_system` and the `updated_by_*` pair (aidream `wf_056`), filled by
+  `platform._stamp_actor_tier` from the actor DECLARED at the write door — so a
+  contact can no longer claim a person typed it. `resolve_party` now takes a
+  REQUIRED `writer` (`PartyWriter.person` / `.agent` / `.machinery`); all eleven
+  call sites are classified.
+  - The grid gains a **Written by** column and filter: *Anyone* (the default, no
+    predicate at all), *Added by an agent* (`created_by_tier = 'ai'`) and
+    *Agent-written then edited* (that plus `updated_by_tier = 'human'`). The SAME
+    grid and the SAME row page — never a second list of agent-added contacts
+    (Arman, 2026-09-12). `written_by` is agent-writable through `column_filters`
+    like every other facet.
+  - The record page gains **Outputs about this customer**
+    (`PartyOutputsSection`), which is `AnchorRecordsList` — the component the
+    chat Records popover and the site overview already use — pointed at
+    `{type: "party"}`. It is honestly empty on every customer today: no live kind
+    yet carries both a customer's own keys and its own output keys, so nothing
+    writes a kind-record → party edge. The chair deferred that split until a real
+    kind exists rather than inventing one; the section needs no change when it
+    arrives.
+  - A row written before the columns existed reads NULL, which is the documented
+    "a person did this". Nothing was backfilled.
 - 2026-08-31 — **CRM category creation now carries the record's organization.**
   The lifecycle-stage and rating `CategorySelect` callers pass
   `party.organization_id` explicitly, so inline `Create “…”` cannot borrow the
