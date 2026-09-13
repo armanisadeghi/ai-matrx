@@ -52,7 +52,10 @@ function makeStore() {
   store.dispatch({ type: "test/seed", payload: null });
   return store;
 }
-function context(store: ReturnType<typeof makeStore>, source = noteIdentityContentSource(ID, "identity-source")): RichDocumentActionContext {
+function context(
+  store: ReturnType<typeof makeStore>,
+  source: RichDocumentActionContext["source"] = noteIdentityContentSource(ID, "identity-source"),
+): RichDocumentActionContext {
   return {
     content: "selection only", source, metadata: null,
     dispatch: store.dispatch as AppDispatch, organizationId: ORG, isAuthenticated: true, isAdmin: false, isCreator: false,
@@ -97,9 +100,10 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     await action.run(context(store, source));
     const overlay = store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"];
     if (!overlay || !isFullScreenOverlayData(overlay.data)) throw new Error("missing prepared overlay");
-    expect(overlay.data.content).toBe("first dirty body");
+    const overlayData = overlay.data;
+    expect(overlayData.content).toBe("first dirty body");
     expect(mockSchema).not.toHaveBeenCalledWith(expect.anything());
-    await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlay.data.content} callbackGroupId={overlay.data.callbackGroupId} /></Provider>));
+    await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
     if (!editorProps) throw new Error("missing rendered editor"); await editorProps.onSave("second dirty body");
     expect(write.eq).toHaveBeenCalledWith("version", 4);
   });
