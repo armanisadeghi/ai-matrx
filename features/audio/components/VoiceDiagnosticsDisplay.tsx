@@ -321,12 +321,12 @@ export function VoiceDiagnosticsDisplay({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-4 border-t">
+      <div className="flex flex-wrap gap-2 border-t pt-4">
         <Button
           variant="outline"
           onClick={runDiagnostics}
           disabled={isRunning}
-          className="flex-1"
+          className="min-w-max flex-1 basis-auto"
         >
           <RefreshCw className={cn('h-4 w-4 mr-2', isRunning && 'animate-spin')} />
           Re-run Diagnostics
@@ -334,7 +334,7 @@ export function VoiceDiagnosticsDisplay({
         <Button
           variant="outline"
           onClick={() => window.open('https://support.google.com/chrome/answer/2693767', '_blank')}
-          className="flex-1"
+          className="min-w-max flex-1 basis-auto"
         >
           <ExternalLink className="h-4 w-4 mr-2" />
           Browser Help
