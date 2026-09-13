@@ -152,31 +152,29 @@ function RowActions({
   const [pendingDelete, setPendingDelete] = useState(false);
   return (
     <>
-      <div onClick={(event) => event.stopPropagation()}>
-        <PencilTapButton
-          variant="transparent"
-          ariaLabel={`Edit ${item.name}`}
-          tooltip="Edit provider"
-          onClick={() => onEdit(item)}
-        />
-        <TrashTapButton
-          variant="solid"
-          bgColor="bg-destructive/10"
-          iconColor="text-destructive"
-          hoverBgColor="hover:bg-destructive/20"
-          activeBgColor="active:bg-destructive/25"
-          ariaLabel={
-            item.is_system
-              ? "System providers cannot be deleted"
-              : `Delete ${item.name}`
-          }
-          tooltip={
-            item.is_system ? "System providers cannot be deleted" : "Delete provider"
-          }
-          disabled={item.is_system}
-          onClick={() => setPendingDelete(true)}
-        />
-      </div>
+      <PencilTapButton
+        variant="transparent"
+        ariaLabel={`Edit ${item.name}`}
+        tooltip="Edit provider"
+        onClick={() => onEdit(item)}
+      />
+      <TrashTapButton
+        variant="solid"
+        bgColor="bg-destructive/10"
+        iconColor="text-destructive"
+        hoverBgColor="hover:bg-destructive/20"
+        activeBgColor="active:bg-destructive/25"
+        ariaLabel={
+          item.is_system
+            ? "System providers cannot be deleted"
+            : `Delete ${item.name}`
+        }
+        tooltip={
+          item.is_system ? "System providers cannot be deleted" : "Delete provider"
+        }
+        disabled={item.is_system}
+        onClick={() => setPendingDelete(true)}
+      />
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -275,7 +273,7 @@ export default function ProviderTable({
   ];
 
   return (
-    <div className="flex h-full min-h-0 flex-col px-3 pt-2">
+    <div className="flex h-full min-h-0 flex-col">
       {error && providers.length > 0 ? (
         <div
           role="alert"
@@ -293,7 +291,7 @@ export default function ProviderTable({
         isFetching={isLoading && providers.length > 0}
         columns={columns}
         getRowId={(item) => item.id}
-        pageSize={25}
+        pageSize={50}
         pageSizeOptions={[10, 25, 50, 100]}
         defaultSort={{ id: "name", direction: "asc" }}
         onRowOpen={onSelect}

@@ -217,7 +217,7 @@ export default function SettingTable({
     },
   ];
   return (
-    <div className="flex h-full min-h-0 flex-col px-3 pt-2">
+    <div className="flex h-full min-h-0 flex-col">
       {error && settings.length > 0 ? (
         <div
           role="alert"
