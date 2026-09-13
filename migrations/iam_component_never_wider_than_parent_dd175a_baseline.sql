@@ -84,11 +84,11 @@ begin
   -- Probe each parent policy once per principal, then reuse that answer for every component under
   -- the parent. Component-first order repeated the expensive parent-policy probe for each sibling.
   foreach v_p in array v_principals loop
+    v_email := (select email from auth.users where id = v_p);
     perform set_config('request.jwt.claims',
       json_build_object('sub', v_p::text, 'role', 'authenticated')::text, true);
     perform set_config('role', 'authenticated', true);
     v_prev_parent := null;
-    v_email := (select email from auth.users where id = v_p);
 
     for r in
     select distinct et.token, et.schema_name, et.table_name, er.parent_type, er.fk_column,
