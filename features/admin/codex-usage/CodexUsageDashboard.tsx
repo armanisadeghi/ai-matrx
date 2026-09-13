@@ -214,8 +214,11 @@ function optionalActivity(
   metrics: CodexUsageMetrics,
 ): Array<{ label: string; value: number }> {
   const values = [
-    { label: "Peer messages", value: metrics.peer_messages },
-    { label: "Task wakes", value: metrics.task_wakes },
+    {
+      label: "Outbound peer messages",
+      value: metrics.peer_message_invocations,
+    },
+    { label: "Child-agent calls", value: metrics.child_invocations },
   ];
   return values.filter(
     (item): item is { label: string; value: number } =>
@@ -481,6 +484,35 @@ export function CodexUsageDashboard() {
                   detail="Captured only when Local reports it"
                 />
               ))}
+            </section>
+          ) : null}
+
+          {snapshot.activity ? (
+            <section className="rounded-lg border bg-muted/20 p-4 text-sm">
+              <p className="font-medium">Peer and child-agent activity</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {snapshot.activity.classification}
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <CountCard
+                  label="Inbound peer wakes"
+                  value={
+                    typeof snapshot.activity.inbound_peer_wakes === "number"
+                      ? metric(snapshot.activity.inbound_peer_wakes)
+                      : "Unknown"
+                  }
+                  detail="No recipient provenance is inferred"
+                />
+                <CountCard
+                  label="Causal cost"
+                  value={
+                    typeof snapshot.activity.causal_cost === "number"
+                      ? estimatedCredits(snapshot.activity.causal_cost)
+                      : "Unknown"
+                  }
+                  detail="Not inferred from nearby activity"
+                />
+              </div>
             </section>
           ) : null}
 

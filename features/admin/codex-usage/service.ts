@@ -9,8 +9,10 @@ export interface CodexUsageMetrics {
   total_tokens?: number;
   response_count?: number;
   estimated_standard_credits?: number;
-  peer_messages?: number;
-  task_wakes?: number;
+  peer_message_call_ids?: number;
+  peer_message_invocations?: number;
+  child_call_ids?: number;
+  child_invocations?: number;
 }
 
 export interface CodexUsageRow extends CodexUsageMetrics {
@@ -44,7 +46,13 @@ export interface CodexUsageSnapshot {
   projects: CodexUsageRow[];
   conversations: CodexUsageRow[];
   workers: CodexUsageRow[];
-  activity: CodexUsageRow[] | null;
+  activity: {
+    classification: string;
+    outbound_peer_calls: number;
+    child_calls: number;
+    inbound_peer_wakes: number | "unknown";
+    causal_cost: number | "unknown";
+  } | null;
   cells: CodexUsageRow[];
   tasks: CodexUsageRow[];
   bins: CodexUsageRow[];
@@ -91,7 +99,7 @@ function isSnapshot(value: unknown): value is CodexUsageSnapshot {
     isRows(value.projects) &&
     isRows(value.conversations) &&
     isRows(value.workers) &&
-    (value.activity === null || isRows(value.activity)) &&
+    (value.activity === null || isRecord(value.activity)) &&
     isRows(value.cells) &&
     isRows(value.tasks) &&
     isRows(value.bins)
@@ -154,7 +162,7 @@ export async function readCodexUsage(
   url.searchParams.set("grouping", input.grouping);
   if (input.refresh) url.searchParams.set("refresh", "true");
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${target.access_token}` },
+    headers: { "X-Sandbox-Access-Token": target.access_token },
   });
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
