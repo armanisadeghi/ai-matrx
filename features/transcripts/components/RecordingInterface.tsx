@@ -60,12 +60,6 @@ export function RecordingInterface({
     },
   });
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
   const calculateEstimatedSize = (durationSeconds: number) => {
     return durationSeconds * RECORDING_LIMITS.ESTIMATED_BYTES_PER_SECOND;
   };
@@ -189,7 +183,7 @@ export function RecordingInterface({
 
             <div className="text-center">
               <div className="text-3xl font-mono font-bold">
-                {formatTime(duration)}
+                {formatDurationSeconds(duration, { style: "clock" })}
               </div>
               <div className="text-sm text-muted-foreground">
                 {isRecording ? "Recording..." : "Recording Complete"}
@@ -202,7 +196,7 @@ export function RecordingInterface({
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>Duration</span>
                 <span>
-                  {formatTime(duration)} / {formatTime(maxDuration)}
+                  {formatDurationSeconds(duration, { style: "clock" })} / {formatDurationSeconds(maxDuration, { style: "clock" })}
                 </span>
               </div>
               <Progress

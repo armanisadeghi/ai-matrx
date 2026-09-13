@@ -37,6 +37,7 @@ import { Slider } from "@/components/ui/slider";
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export interface AudioPreviewProps {
   url: string | null;
@@ -46,14 +47,6 @@ export interface AudioPreviewProps {
 }
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
-
-function formatTime(seconds: number | undefined | null): string {
-  if (seconds == null || !Number.isFinite(seconds)) return "0:00";
-  const total = Math.max(0, Math.floor(seconds));
-  const mm = Math.floor(total / 60);
-  const ss = total % 60;
-  return `${mm}:${ss.toString().padStart(2, "0")}`;
-}
 
 export function AudioPreview({
   url,
@@ -353,8 +346,8 @@ function AudioPreviewSession({
           ) : null}
         </div>
         <div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
-          <span>{formatTime(position)}</span>
-          <span>{formatTime(duration)}</span>
+          <span>{formatDurationSeconds(position, { style: "clock" })}</span>
+          <span>{formatDurationSeconds(duration, { style: "clock" })}</span>
         </div>
       </div>
 

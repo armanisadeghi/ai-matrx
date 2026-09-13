@@ -12,6 +12,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { toast } from "@/lib/toast";
 import { Clock, ChevronRight, Flag, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,12 +39,6 @@ function isAnswerable(
     return response.trim().length > 0 || !!photo; // typed OR photographed
   if (type === "fill_blank") return response.trim().length > 0;
   return response.length > 0; // MC/TF: an option is selected
-}
-
-function fmt(secs: number): string {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export function AssessmentTaker({
@@ -189,7 +184,7 @@ export function AssessmentTaker({
                       )}
                     >
                       <Clock className="h-3.5 w-3.5" />
-                      {fmt(Math.max(0, remaining))}
+                      {formatDurationSeconds(Math.max(0, remaining), { style: "clock" })}
                     </span>
                   )}
                 </div>

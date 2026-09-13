@@ -32,6 +32,7 @@ import {
   Repeat2,
 } from "lucide-react";
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import AppLink from "@/components/navigation/AppLink";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { CopySubsetColumn } from "@/components/agent-copy/copy-subset/types";
@@ -78,14 +79,7 @@ function fmtGapCalls(n: number | null | undefined): string {
 
 /** mm:ss, with an h prefix once it stops fitting. */
 function fmtDuration(secs: number | null | undefined): string {
-  if (secs === null || secs === undefined || !Number.isFinite(secs)) return EM_DASH;
-  const total = Math.max(0, Math.round(secs));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const mm = String(h > 0 ? m : m).padStart(2, "0");
-  const ss = String(s).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  return formatDurationSeconds(secs, { style: "clock", fallback: EM_DASH });
 }
 
 function fmtWhen(iso: string | null): string {

@@ -31,6 +31,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
   BrainCircuit,
   Camera as CameraIcon,
@@ -638,8 +639,7 @@ export function IntakeCaptureScreen({
         >
           <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-            {Math.floor(recordElapsed / 60)}:
-            {String(recordElapsed % 60).padStart(2, "0")}
+            {formatDurationSeconds(recordElapsed, { style: "clock" })}
           </span>
         </div>
       )}

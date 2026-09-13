@@ -46,6 +46,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import type { RagSearchHit } from "@/features/rag/api/search";
 import { citationHrefFor } from "@/features/rag/api/search";
 import type { CitationInput } from "@/features/rag/components/source-inspector/useOpenCitation";
@@ -182,7 +183,11 @@ export function locatorLabel(locator: unknown): string | null {
   const start = num(locator.start_seconds);
   const end = num(locator.end_seconds);
   if (start != null) {
-    parts.push(end != null && end !== start ? `${clock(start)}–${clock(end)}` : clock(start));
+    parts.push(
+      end != null && end !== start
+        ? `${formatDurationSeconds(start, { style: "clock" })}–${formatDurationSeconds(end, { style: "clock" })}`
+        : formatDurationSeconds(start, { style: "clock" }),
+    );
   }
   const startIndex = num(locator.start_index);
   const endIndex = num(locator.end_index);
@@ -201,15 +206,6 @@ export function locatorLabel(locator: unknown): string | null {
 /** The first page a locator points at — what an inspector opens on. */
 export function locatorFirstPage(locator: unknown): number | null {
   return isRecord(locator) ? num(locator.first_page) : null;
-}
-
-function clock(totalSeconds: number): string {
-  const seconds = Math.max(0, Math.round(totalSeconds));
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-  return `${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
 }
 
 // ---------------------------------------------------------------------------

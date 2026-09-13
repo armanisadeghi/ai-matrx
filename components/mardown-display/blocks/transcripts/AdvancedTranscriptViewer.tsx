@@ -66,6 +66,7 @@ import { toast } from "@/lib/toast";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 // Define TypeScript types
 export type TranscriptSegment = Omit<
@@ -454,13 +455,6 @@ const TranscriptSegmentItem = React.memo(
   },
 );
 TranscriptSegmentItem.displayName = "TranscriptSegmentItem";
-
-const formatTime = (seconds: number) => {
-  if (!seconds && seconds !== 0) return "0:00";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-};
 
 const AdvancedTranscriptViewer = ({
   content,
@@ -1048,7 +1042,7 @@ const AdvancedTranscriptViewer = ({
                   <TooltipTrigger asChild>
                     <div className="flex items-center shrink-0 whitespace-nowrap">
                       <Clock className="h-3.5 w-3.5 pr-1" />
-                      <span>{formatTime(stats.totalDuration)}</span>
+                      <span>{formatDurationSeconds(stats.totalDuration, { style: "clock" })}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>Total duration</TooltipContent>

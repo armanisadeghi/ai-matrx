@@ -1,4 +1,5 @@
 import type { PlacementMode } from "@/features/context-menu-v3/types";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { createTranscriptsScope } from "@/features/surfaces/manifests/transcripts.manifest";
 import type { Transcript, TranscriptSegment } from "@/features/transcripts/types";
 
@@ -27,16 +28,6 @@ export const TRANSCRIPTS_CONTEXT_MENU_PROPS = {
   surfaceName: "matrx-user/transcripts" as const,
   placementMode: TRANSCRIPTS_CONTEXT_MENU_PLACEMENT_MODE,
 };
-
-function formatTimecode(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
-  const total = Math.floor(seconds);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-}
 
 /** Segment whose [seconds, nextSeconds) bracket contains `currentTime`. */
 function findCurrentSegment(
@@ -192,7 +183,7 @@ export function buildTranscriptsContextData(
     segment_count: segments.length,
     speaker_count: speakerList.length,
     current_timecode: currentSegment
-      ? formatTimecode(currentSegment.seconds)
+      ? formatDurationSeconds(currentSegment.seconds, { style: "clock", fallback: "00:00" })
       : undefined,
   };
 
@@ -217,7 +208,7 @@ export function buildTranscriptsContextData(
     current_segment_speaker: currentSegment?.speaker || undefined,
     current_segment_start_seconds: currentSegment?.seconds,
     current_segment_timecode: currentSegment
-      ? formatTimecode(currentSegment.seconds)
+      ? formatDurationSeconds(currentSegment.seconds, { style: "clock", fallback: "00:00" })
       : undefined,
     current_segment: currentSegment
       ? {
@@ -225,7 +216,7 @@ export function buildTranscriptsContextData(
           text: currentSegment.text,
           speaker: currentSegment.speaker || undefined,
           seconds: currentSegment.seconds,
-          timecode: formatTimecode(currentSegment.seconds),
+          timecode: formatDurationSeconds(currentSegment.seconds, { style: "clock", fallback: "00:00" }),
         }
       : undefined,
     current_playback_time: transcriptOpen ? currentTime : undefined,

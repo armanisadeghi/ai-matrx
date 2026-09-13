@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
-import { noteIdentityContentSource } from "../richDocumentSource";
+import { captureNoteEditSource } from "../richDocumentSource";
 import type { EditorMode as SurfaceEditorMode } from "./NoteEditorCore";
 import {
   buildNotesEditorContextData,
@@ -124,16 +124,22 @@ export function NoteEditor({
   const [localFolder, setLocalFolder] = useState(note?.folder_name || "Draft");
   const [localTags, setLocalTags] = useState<string[]>(note?.tags || []);
   const [localLabel, setLocalLabel] = useState(note?.label || "");
+  const [acknowledgedNote, setAcknowledgedNote] = useState(note);
   const [editorMode, setEditorMode] = useState<EditorMode>("plain");
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   // Live textarea selection, mirrored into React so the surface scope reflects
   // what the user is acting on (matches NotesDemoPanel's selection sync).
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
+  const editingActorId = useAppSelector((state) => state.userAuth.id);
   const tuiEditorRef = useRef<TuiEditorContentRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toast = useToastManager("notes");
+
+  useEffect(() => {
+    setAcknowledgedNote(note);
+  }, [note?.id]);
   const { refreshNotes, setActiveNoteDirty, openTabs, moveNoteToNewFolder } = useNotesRedux();
   const notesMap = useAppSelector(selectNotesMap);
 
@@ -260,8 +266,20 @@ export function NoteEditor({
   // Task linking) resolve the note adapter instead of the save-less `raw`
   // default (D33). Phantom (unsaved) notes stay raw — there is no row to save.
   const menuContentSource: ContentSource | undefined =
-    note?.id && note.id !== "__phantom__"
-      ? noteIdentityContentSource(note.id, `legacy-editor:${note.id}`)
+    note?.id && note.id !== "__phantom__" && acknowledgedNote && editingActorId
+      ? captureNoteEditSource({
+          acknowledgedNote,
+          displayedNote: {
+            ...acknowledgedNote,
+            content: localContent,
+            label: localLabel,
+            folder_name: localFolder,
+            tags: localTags,
+          },
+          actorId: editingActorId,
+          sourceId: `legacy-editor:${note.id}`,
+          snapshotId: `legacy-editor:${note.id}:${acknowledgedNote.version}:${localContent.length}`,
+        })
       : undefined;
 
   // Same phantom-note guard as `menuContentSource` — an unsaved note has no
@@ -949,7 +967,7 @@ export function NoteEditor({
                     content={localContent}
                     source={
                       note?.id && note.id !== "__phantom__"
-                        ? noteIdentityContentSource(note.id, `legacy-preview:${note.id}`)
+                        ? menuContentSource ?? { type: "raw" }
                         : ({ type: "raw" } as ContentSource)
                     }
                     actionsVariant="bar"

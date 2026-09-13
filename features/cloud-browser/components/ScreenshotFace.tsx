@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useState } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { Camera, CameraOff, RefreshCw, Eye, Zap } from "lucide-react";
@@ -24,11 +25,9 @@ function Countdown({ autoOffAt }: { autoOffAt: number | null }) {
   }, []);
   if (!autoOffAt || now === null) return null;
   const secs = Math.max(0, Math.round((autoOffAt - now) / 1000));
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
   return (
     <span className="tabular-nums text-muted-foreground">
-      auto-off in {m}:{s.toString().padStart(2, "0")}
+      auto-off in {formatDurationSeconds(secs, { style: "clock" })}
     </span>
   );
 }

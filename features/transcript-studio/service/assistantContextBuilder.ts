@@ -25,6 +25,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { buildWorkingDocumentContextValue } from "@/features/agents/utils/workingDocumentContext";
 import {
   selectCleanedSegmentForRecording,
@@ -49,8 +50,7 @@ function pad2(n: number): string {
 
 /** mm:ss for a seconds offset (display anchor alongside the raw seconds). */
 function clock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  return `${Math.floor(sec / 60)}:${pad2(sec % 60)}`;
+  return formatDurationSeconds(totalSec, { style: "clock" });
 }
 
 /**

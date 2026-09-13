@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -204,11 +205,7 @@ function formatPages(pages: number[]): string {
  */
 /** Seconds → "12:34" (or "1:02:34" past an hour) for recording time anchors. */
 function formatClock(seconds: number): string {
-  const s = Math.max(0, Math.round(seconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = String(s % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+  return formatDurationSeconds(seconds, { style: "clock" });
 }
 
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {

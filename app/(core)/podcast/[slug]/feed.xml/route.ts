@@ -14,6 +14,7 @@
 // Resolves the show by slug OR id. Returns 404 (plain Response) when missing.
 
 import { createClient } from '@/utils/supabase/server';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { mapPcShowRow, mapPcEpisodeRow } from '@/features/podcasts/types';
 import {
     buildChaptersJson,
@@ -66,12 +67,7 @@ function audioMimeType(url: string): string {
 
 /** Format seconds as H:MM:SS (or M:SS when under an hour) for <itunes:duration>. */
 function formatItunesDuration(seconds: number): string {
-    const total = Math.max(0, Math.floor(seconds));
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = total % 60;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+    return formatDurationSeconds(seconds, { style: 'clock' });
 }
 
 /** RFC-822 date string, as required by RSS <pubDate> / <lastBuildDate>. */

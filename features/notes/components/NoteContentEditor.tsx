@@ -110,7 +110,8 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import type { ContentSource } from "@/features/rich-document/types";
 import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
 import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
-import { noteIdentityContentSource } from "../richDocumentSource";
+import { captureNoteEditSource, noteIdentityContentSource } from "../richDocumentSource";
+import type { Note } from "../types";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -196,11 +197,29 @@ export function NoteContentEditor({
 
   // ── Local content state — initialized from Redux, synced back on debounce
   const [localContent, setLocalContent] = useState(reduxContent);
+  const [acknowledgedSourceNote, setAcknowledgedSourceNote] = useState<Note | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReduxRef = useRef(reduxContent);
   const noteIdRef = useRef(noteId);
   const localContentRef = useRef(localContent);
+
+  useEffect(() => {
+    if (noteExists && !noteExists._dirty) {
+      setAcknowledgedSourceNote({ ...noteExists });
+    }
+  }, [noteId, noteExists, noteExists?._dirty]);
+
+  const editableContentSource: ContentSource | undefined =
+    acknowledgedSourceNote && conflictActorId && !readOnly && noteExists
+      ? captureNoteEditSource({
+          acknowledgedNote: acknowledgedSourceNote,
+          displayedNote: { ...noteExists, content: localContent },
+          actorId: conflictActorId,
+          sourceId: `content-editor:${instanceId}:${noteId}`,
+          snapshotId: `content-editor:${instanceId}:${noteId}:${acknowledgedSourceNote.version}:${localContent.length}`,
+        })
+      : undefined;
 
 
   useEffect(() => {
@@ -874,7 +893,7 @@ export function NoteContentEditor({
           contentSource={
             access.loading || readOnly
               ? undefined
-              : noteIdentityContentSource(noteId, `content-editor:${noteId}`)
+              : editableContentSource
           }
           contextData={surfaceContextData}
           onTextReplace={handleChangeFlush}
@@ -937,6 +956,7 @@ export function NoteContentEditor({
               className="flex-1 min-h-0"
               resetKey={`${noteId}:${resetGen}`}
               noteId={noteId}
+              actionsSource={editableContentSource ?? noteIdentityContentSource(noteId, `editor-core:${noteId}`)}
               actionsSurfaceId={actionsSurfaceId}
               largeScrollbar={!embedded}
               embedded={embedded}

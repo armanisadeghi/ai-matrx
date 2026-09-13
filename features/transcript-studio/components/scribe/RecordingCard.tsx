@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { requestScribeAudioSeek } from "../../state/scribeAudioBus";
 import {
@@ -43,13 +44,6 @@ interface RecordingCardProps {
   selectionActive?: boolean;
   onToggleSelect?: (id: string) => void;
   onOpenTranscript: (id: string, section?: TranscriptSection) => void;
-}
-
-function formatClock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 const LONG_PRESS_MS = 450;
@@ -340,7 +334,7 @@ export function RecordingCard({
             </span>
             <span aria-hidden>·</span>
             <span className="font-mono tabular-nums">
-              {formatClock(durationSec)}
+              {formatDurationSeconds(durationSec, { style: "clock" })}
             </span>
             {uploading && (
               <span className="flex items-center gap-1 text-muted-foreground">

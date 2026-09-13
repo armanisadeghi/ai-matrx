@@ -10,8 +10,6 @@
 import type { HrInboxRow, HrUrgencyBucket } from "@/features/hr/tasks/types";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
 
 export const URGENCY_ORDER: HrUrgencyBucket[] = [
     "overdue",
@@ -69,11 +67,12 @@ export function relativeDue(dueAt: string | null | undefined, now = new Date()):
     const deltaMs = due.getTime() - now.getTime();
     const overdue = deltaMs < 0;
     const magnitude = Math.abs(deltaMs);
-    const text =
-        magnitude < HOUR_MS
-            ? formatDurationMs(magnitude, { style: "coarse" })
-            : magnitude < 48 * HOUR_MS
-              ? `${Math.round(magnitude / HOUR_MS)} hr`
-              : `${Math.round(magnitude / DAY_MS)} days`;
+    // ONE CALL, not a cascade with one adopted branch (2026-09-12). Until now
+    // only the under-an-hour branch went to the package and the two above it
+    // were hand-rolled against local `HOUR_MS` / `DAY_MS` constants — invisible
+    // to the duration guard, which read literal time bases only. `coarse` owns
+    // every tier this needed, including the day tier the hand-rolled version
+    // printed as "3 days" flat where the voice says "3d 4h".
+    const text = formatDurationMs(magnitude, { style: "coarse" });
     return overdue ? `${text} overdue` : `in ${text}`;
 }

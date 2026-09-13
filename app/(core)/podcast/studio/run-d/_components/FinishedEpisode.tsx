@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isReadyMediaSlot, type PodcastRunState } from "@/features/podcasts/generator/types";
 import { episodeHref } from "@/features/podcasts/generator/constants";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export function FinishedEpisode({ state }: { state: PodcastRunState }) {
   const cover = state.images.find((i) => i.status === "done" && i.url)?.url;
@@ -231,17 +232,10 @@ function AudioPlayer({ src }: { src: string }) {
           />
         </div>
         <div className="mt-1 flex justify-between font-mono text-[11px] text-muted-foreground">
-          <span>{fmt(current)}</span>
-          <span>{fmt(duration)}</span>
+          <span>{formatDurationSeconds(current, { style: "clock" })}</span>
+          <span>{formatDurationSeconds(duration, { style: "clock" })}</span>
         </div>
       </div>
     </div>
   );
-}
-
-function fmt(s: number): string {
-  if (!Number.isFinite(s)) return "0:00";
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, "0")}`;
 }

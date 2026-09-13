@@ -27,6 +27,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 
 /**
@@ -77,12 +78,6 @@ const SPEED_OPTIONS = [1, 1.25, 1.5, 2, 3] as const;
 // ~13s window before declaring failure — long enough that the object is almost
 // always live by the final attempt, so the user never has to refresh the page.
 const AUDIO_RETRY_DELAYS_MS = [800, 1200, 2000, 3000, 3000, 3000] as const;
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 function formatSpeed(speed: number): string {
   // Use real multiplication sign (×) — matches YouTube/Spotify/Apple Podcasts.
@@ -521,7 +516,7 @@ export function PodcastAudioPlayer({
           )}
           <p className={`flex items-center gap-1.5 text-sm mt-0.5 ${txtMuted}`}>
             {duration > 0 ? (
-              formatTime(duration)
+              formatDurationSeconds(duration, { style: "clock" })
             ) : retrying ? (
               <>
                 <RefreshCw className="h-3 w-3 animate-spin" />
@@ -578,8 +573,8 @@ export function PodcastAudioPlayer({
 
       {/* Time labels */}
       <div className={`flex justify-between text-xs -mt-2 px-0.5 ${txtMuted}`}>
-        <span>{formatTime(currentTime)}</span>
-        <span>{duration > 0 ? formatTime(duration) : "--:--"}</span>
+        <span>{formatDurationSeconds(currentTime, { style: "clock" })}</span>
+        <span>{duration > 0 ? formatDurationSeconds(duration, { style: "clock" }) : "--:--"}</span>
       </div>
 
       {/* Seek slider */}

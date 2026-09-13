@@ -9,6 +9,7 @@
 import React from 'react';
 import { Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 
 export interface RecordingIndicatorProps {
   duration: number;
@@ -50,9 +51,7 @@ export function RecordingIndicator({
   const config = sizeConfig[size];
 
   // Format duration
-  const minutes = Math.floor(duration / 60);
-  const seconds = duration % 60;
-  const formattedDuration = `${minutes}:${String(seconds).padStart(2, '0')}`;
+  const formattedDuration = formatDurationSeconds(duration, { style: 'clock' });
 
   // Color configurations
   const colorConfig = {
