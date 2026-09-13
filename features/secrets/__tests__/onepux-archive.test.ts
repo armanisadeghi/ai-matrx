@@ -52,4 +52,12 @@ describe("1PUX archive reader", () => {
     expect(file.size).toBeLessThan(1_000);
     await expect((await import("../onepux-archive")).readOnePuxArchive(file, { maxFileBytes: 900, maxRecords: 10 })).rejects.toThrow();
   });
+  test("refuses a mutated binary local-header name", async () => {
+    const file = await archive([["export.attributes", "a"], ["export.data", "d"], ["files/icon", "x"]]);
+    const bytes = new Uint8Array(await file.arrayBuffer()); const name = new TextEncoder().encode("files/icon");
+    const offset = bytes.findIndex((_, index) => name.every((value, inner) => bytes[index + inner] === value));
+    if (offset < 0) throw new Error("binary local header name missing");
+    bytes[offset] = 120;
+    await expect(read(new Blob([bytes], { type: "application/zip" }))).rejects.toThrow();
+  });
 });
