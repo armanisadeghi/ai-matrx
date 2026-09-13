@@ -39,4 +39,12 @@ describe("1PUX archive reader", () => {
     await writer.add("files/link", new TextReader("target"), { externalFileAttributes: 0o120000 << 16, versionMadeBy: 3 << 8 });
     await expect(read(await writer.close())).rejects.toThrow();
   });
+  test("refuses a real split-disk fragment", async () => {
+    const { BlobWriter, SplitDataWriter, TextReader, ZipWriter } = await import("@zip.js/zip.js");
+    const disks: BlobWriter[] = [];
+    async function* writers() { while (true) { const writer = new BlobWriter("application/zip"); disks.push(writer); yield writer; } }
+    const writer = new ZipWriter(new SplitDataWriter(writers(), 40));
+    await writer.add("export.attributes", new TextReader("attributes")); await writer.add("export.data", new TextReader("data")); await writer.close();
+    await expect(read(await disks[0]!.getData())).rejects.toThrow();
+  });
 });
