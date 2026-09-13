@@ -82,6 +82,13 @@ export interface UnderstudyRefreshState {
   message: string | null;
   /** When the last attempt finished (epoch ms). */
   at: number | null;
+  /**
+   * What the last SUCCESSFUL rebuild built — the version it baked in and the
+   * rule counts it saw. Survives a later failure (the stand-in really is still
+   * performing from that build) and is what lets the card stop saying "behind
+   * your rules" the moment a rebuild lands, without reloading the workflow row.
+   */
+  result: UnderstudyRefreshResult | null;
 }
 
 const IDLE: UnderstudyRefreshState = {
@@ -89,10 +96,31 @@ const IDLE: UnderstudyRefreshState = {
   failed: false,
   message: null,
   at: null,
+  result: null,
 };
 
 const states = new Map<string, UnderstudyRefreshState>();
 const listeners = new Set<() => void>();
+
+/**
+ * THE GENERATION TOKEN. The review wizard saves once per rule, so two or three
+ * pokes for one Rulebook are in flight at once as a matter of course (95 of
+ * them in two hours on 2026-09-12). Network order is not start order: without
+ * this counter an older poke settling late overwrote a newer outcome — an
+ * older failure burying a success that landed, or an older success hiding a
+ * failure the Expert needed to see. Only the newest attempt may write.
+ */
+const generations = new Map<string, number>();
+
+function startGeneration(rulebookId: string): number {
+  const next = (generations.get(rulebookId) ?? 0) + 1;
+  generations.set(rulebookId, next);
+  return next;
+}
+
+function isCurrent(rulebookId: string, generation: number): boolean {
+  return generations.get(rulebookId) === generation;
+}
 
 function setState(rulebookId: string, next: UnderstudyRefreshState): void {
   states.set(rulebookId, next);
@@ -121,26 +149,104 @@ export function getUnderstudyRefreshState(
 export async function refreshUnderstudyTracked(
   rulebookId: string,
 ): Promise<UnderstudyRefreshResult> {
-  setState(rulebookId, { pending: true, failed: false, message: null, at: null });
+  const generation = startGeneration(rulebookId);
+  const previous = getUnderstudyRefreshState(rulebookId);
+  setState(rulebookId, {
+    pending: true,
+    failed: false,
+    message: null,
+    at: null,
+    result: previous.result,
+  });
   try {
     const result = await refreshUnderstudy(rulebookId);
-    setState(rulebookId, {
-      pending: false,
-      failed: false,
-      message: null,
-      at: Date.now(),
-    });
+    // A poke that started earlier may land later. It still did its work on the
+    // server, but it is no longer what the card should report.
+    if (isCurrent(rulebookId, generation)) {
+      setState(rulebookId, {
+        pending: false,
+        failed: false,
+        message: null,
+        at: Date.now(),
+        result,
+      });
+    }
     return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    setState(rulebookId, {
-      pending: false,
-      failed: true,
-      message,
-      at: Date.now(),
-    });
+    if (isCurrent(rulebookId, generation)) {
+      setState(rulebookId, {
+        pending: false,
+        failed: true,
+        message,
+        at: Date.now(),
+        // The stand-in is still performing from the last build that landed —
+        // keep it, so the banner can name the version it is actually running.
+        result: getUnderstudyRefreshState(rulebookId).result,
+      });
+    }
     throw err;
   }
+}
+
+/**
+ * What the card must say about the stand-in right now: which Rulebook version
+ * it is performing from, the rule counts baked into it, and whether it is
+ * behind the Rulebook. Lives here rather than in the card so the honesty of
+ * the amber banner is testable without rendering React.
+ */
+export interface UnderstudyStandIn {
+  /** The Rulebook version the stand-in was built from, when known. */
+  builtFromVersion: number | null;
+  /** Approved rules baked into that build. */
+  approved: number | null;
+  /** Rules still in review at that build. */
+  unconfirmed: number | null;
+  /** When that build happened (ISO), from whichever account is newer. */
+  rebuiltAt: string | null;
+  /** The stand-in is older than the Rulebook — the amber banner's condition. */
+  behind: boolean;
+}
+
+/** The Understudy workflow row's side of the comparison. */
+export interface UnderstudyRowFacts {
+  rulebook_version: number | null;
+  approved: number | null;
+  unconfirmed: number | null;
+  refreshed_at: string | null;
+}
+
+export function readUnderstudyStandIn(
+  refresh: UnderstudyRefreshState,
+  row: UnderstudyRowFacts | null,
+  rulebookVersion: number,
+): UnderstudyStandIn {
+  // Two accounts of the same build: the workflow row the page loaded (which
+  // goes stale the moment a save pokes a rebuild) and the payload the rebuild
+  // itself returned. Believe whichever is NEWER — that is what the stand-in
+  // will actually perform from, and it is why a successful rebuild takes the
+  // amber banner down without a reload.
+  const rebuilt = refresh.result;
+  const rowVersion = row?.rulebook_version ?? null;
+  const useRebuild =
+    rebuilt !== null &&
+    (rowVersion === null || rebuilt.rulebook_version >= rowVersion);
+  const builtFromVersion = useRebuild
+    ? rebuilt.rulebook_version
+    : (rowVersion ?? null);
+  return {
+    builtFromVersion,
+    approved: useRebuild ? rebuilt.approved_rules : (row?.approved ?? null),
+    unconfirmed: useRebuild
+      ? rebuilt.unconfirmed_rules
+      : (row?.unconfirmed ?? null),
+    rebuiltAt: useRebuild
+      ? refresh.at !== null
+        ? new Date(refresh.at).toISOString()
+        : (row?.refreshed_at ?? null)
+      : (row?.refreshed_at ?? null),
+    behind: builtFromVersion !== null && builtFromVersion < rulebookVersion,
+  };
 }
 
 /**

@@ -92,6 +92,17 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     reviewed 94 rules, and she then tested a stand-in built from zero of them under a page
     reading "88 approved". The Masterwork read projects the two stamps
     (`understudy_refreshed_at`, `understudy_rules`) through the ONE `parseMasterworkRow`.
+    **And it never lies in the other direction either.** The card reads its whole account of the
+    stand-in through `readUnderstudyStandIn(refreshState, row, rulebookVersion)` in
+    `understudy/refresh.ts`, which believes whichever of the two accounts is NEWER — the workflow
+    row the page loaded, or the payload the last successful rebuild returned (`rulebook_version`,
+    `approved_rules`, `unconfirmed_rules`). A rebuild that lands therefore takes the amber banner
+    down by itself, with no host reload; a banner still amber after a rebuild that worked is the
+    same defect as a silent failure. And because the review wizard saves once per rule, several
+    pokes for one Rulebook are in flight at once as a matter of course — so every ledger write
+    carries a GENERATION TOKEN and only the newest attempt may write: an older poke settling late
+    never buries a newer outcome in either direction. Guard:
+    `__tests__/understudy-refresh.test.ts`, proven failing then passing on all four cases.
 18. **`TryMasterworkBox` asks `runIsOver` (`features/workflow-runtime/types.ts`), never a narrower
     set** — a run the engine records as `errored` is over for anything WATCHING it, but the
     generated `TERMINAL_RUN_STATUSES` answers the engine's resume question and excludes it. Asking
@@ -287,6 +298,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   (the picker appears with the node and never without it; the W15 and W33 tests stay green).
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
+
+- `2026-09-13` — 🚨 **The stand-in's banner stopped lying after a rebuild that worked, and overlapping rebuilds stopped clobbering each other.** Two defects in the staleness ledger shipped the day before: a successful `pokeUnderstudy` never reloaded the workflow row, so `behind` kept comparing the CACHED `rulebook_version` with the bumped Rulebook version and the amber "this stand-in is behind your rules" banner stayed up after a rebuild that actually landed (only the manual retry cleared it, because that path calls `onCreated`); and the ledger wrote pending/success/failure with no generation token, so two in-flight pokes — the normal case, the review wizard saves once per rule — could settle out of order and let an older failure bury a newer success, or an older success hide a newer failure. Now `readUnderstudyStandIn` derives the version, counts and rebuild time from whichever account is newer (the row, or the last successful refresh payload — which already returns `rulebook_version`, `approved_rules` and `unconfirmed_rules`, so no round trip is needed), and every ledger write is gated on a per-Rulebook generation token. Guard: `__tests__/understudy-refresh.test.ts` (4 cases, proven failing then passing). Found by Cursor Bugbot on PR #222.
 
 - `2026-09-12` — 🚨 **The Understudy could not be rebuilt, and the UI said nothing** (trial 12). Every `POST /masterworks/understudy/refresh` returned HTTP 500: the server's write to `workflow.definition` declared actor tier `code` and named no actor system, which Postgres refuses. So an existing Understudy never rebuilt and a brand-new Rulebook got none at all — "the system that runs from minute one" ran for nobody — while `pokeUnderstudy` caught the 500 into a `console.error`. The server half is fixed in aidream (`masterworks/understudy.py`, `build.py` now declare `masterwork_understudy` / `masterwork_build`). Here: the refresh outcome is recorded in a subscribable staleness ledger, `UnderstudyCard` shows a plain-English warning naming the version the stand-in performs from versus the Rulebook's current version plus a "Bring it up to date" retry, and the card now always shows that version, the baked approved/in-review counts and the last rebuild time (`understudy_refreshed_at` / `understudy_rules`, projected through `parseMasterworkRow`).
 

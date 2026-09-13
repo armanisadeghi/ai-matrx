@@ -27,6 +27,7 @@ import { AgentCredit } from "../components/AgentCredit";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import {
   getUnderstudyRefreshState,
+  readUnderstudyStandIn,
   refreshUnderstudy,
   refreshUnderstudyTracked,
   subscribeToUnderstudyRefresh,
@@ -71,10 +72,21 @@ export function UnderstudyCard({
     () => getUnderstudyRefreshState(rulebookId),
     () => getUnderstudyRefreshState(rulebookId),
   );
-  const builtFromVersion = understudy?.rulebook_version ?? null;
-  const behind =
-    builtFromVersion !== null && builtFromVersion < rulebookVersion;
-  const bakedApproved = understudy?.understudy_rules?.approved ?? null;
+  const standIn = readUnderstudyStandIn(
+    refreshState,
+    understudy
+      ? {
+          rulebook_version: understudy.rulebook_version ?? null,
+          approved: understudy.understudy_rules?.approved ?? null,
+          unconfirmed: understudy.understudy_rules?.unconfirmed ?? null,
+          refreshed_at: understudy.understudy_refreshed_at ?? null,
+        }
+      : null,
+    rulebookVersion,
+  );
+  const builtFromVersion = standIn.builtFromVersion;
+  const behind = standIn.behind;
+  const bakedApproved = standIn.approved;
   const missedApprovals =
     bakedApproved !== null ? Math.max(approvedCount - bakedApproved, 0) : null;
 
@@ -221,10 +233,10 @@ export function UnderstudyCard({
           ? `Performing from your rules as of version ${builtFromVersion}`
           : "Performing from your rules"}
         {bakedApproved !== null
-          ? ` · ${bakedApproved} approved, ${understudy.understudy_rules?.unconfirmed ?? 0} still in review`
+          ? ` · ${bakedApproved} approved, ${standIn.unconfirmed ?? 0} still in review`
           : ""}
-        {understudy.understudy_refreshed_at
-          ? ` · rebuilt ${new Date(understudy.understudy_refreshed_at).toLocaleString()}`
+        {standIn.rebuiltAt
+          ? ` · rebuilt ${new Date(standIn.rebuiltAt).toLocaleString()}`
           : ""}
       </p>
       <TryMasterworkBox
