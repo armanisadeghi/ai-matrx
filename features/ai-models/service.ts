@@ -899,14 +899,19 @@ export const aiModelService = {
   // ── Offering CRUD (ai.offering — model × endpoint × api, per-offering pricing/overrides) ──
 
   async fetchOfferings(): Promise<AiOffering[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("offering")
-      .select("*")
-      .is("deleted_at", null)
-      .order("priority", { ascending: true });
-    if (error) throw error;
-    return data.map(parseOffering);
+    const rows = await readAllRows<AiOfferingRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("offering")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("priority", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.offering" },
+    );
+    return rows.map(parseOffering);
   },
 
   /** The live offerings of one model. `token_billed` — the fact that a media

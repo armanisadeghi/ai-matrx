@@ -2,6 +2,7 @@ import type { Database } from "@/types/database.types";
 
 type EndpointRow = Database["ai"]["Tables"]["endpoint"]["Row"];
 type ApiRow = Database["ai"]["Tables"]["api"]["Row"];
+type OfferingRow = Database["ai"]["Tables"]["offering"]["Row"];
 
 type QueryCall = {
   table: string;
@@ -128,7 +129,42 @@ function apiRow(index: number): ApiRow {
   };
 }
 
-function expectCompleteReadContract(table: string) {
+function offeringRow(index: number): OfferingRow {
+  return {
+    api_id: `api-${index}`,
+    capabilities_override: {},
+    created_at: "2026-09-12T00:00:00.000Z",
+    created_by: null,
+    deleted_at: null,
+    endpoint_id: `endpoint-${index}`,
+    id: `offering-${index}`,
+    is_available: true,
+    is_system: false,
+    metadata: { fixture_source: "offering regression" },
+    model_id: `model-${index}`,
+    notes: null,
+    organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+    override: { params: {}, constraints: [] },
+    pricing: [],
+    pricing_verified_at: null,
+    priority: index,
+    provider_model_id: `provider-model-${index}`,
+    token_billed: false,
+    updated_at: "2026-09-12T00:00:00.000Z",
+    updated_by: null,
+    usage_basis: null,
+    version: 1,
+    visibility: "internal",
+  };
+}
+
+function expectCompleteReadContract(
+  table: string,
+  orders: Array<readonly [string, unknown]> = [
+    ["display_name", { ascending: true }],
+    ["id", { ascending: true }],
+  ],
+) {
   expect(mockTransport.calls).toHaveLength(2);
   expect(mockTransport.calls.map((call) => call.range)).toEqual([
     [0, 999],
@@ -138,10 +174,7 @@ function expectCompleteReadContract(table: string) {
     expect(call.table).toBe(table);
     expect(call.select).toEqual(["*", { count: "exact" }]);
     expect(call.predicates).toEqual([["deleted_at", null]]);
-    expect(call.orders).toEqual([
-      ["display_name", { ascending: true }],
-      ["id", { ascending: true }],
-    ]);
+    expect(call.orders).toEqual(orders);
   }
 }
 
@@ -186,6 +219,29 @@ describe("AI endpoint and API complete reads", () => {
       rules: { params: {}, constraints: [] },
     });
     expectCompleteReadContract("api");
+  });
+
+  it("fetchOfferings reads every server-capped page through the real complete-read helper", async () => {
+    mockTransport.pagesByTable.set(
+      "offering",
+      Array.from({ length: 1001 }, (_, index) => offeringRow(index)),
+    );
+
+    const offerings = await aiModelService.fetchOfferings();
+
+    expect(offerings).toHaveLength(1001);
+    expect(offerings[0]).toMatchObject({
+      id: "offering-0",
+      metadata: { fixture_source: "offering regression" },
+    });
+    expect(offerings.at(-1)).toMatchObject({
+      id: "offering-1000",
+      provider_model_id: "provider-model-1000",
+    });
+    expectCompleteReadContract("offering", [
+      ["priority", { ascending: true }],
+      ["id", { ascending: true }],
+    ]);
   });
 
   it("rejects an endpoint row whose JSON parser boundary is malformed", async () => {

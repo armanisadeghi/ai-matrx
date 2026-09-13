@@ -352,6 +352,7 @@ export default function OfferingsContainer() {
                 onSelect={openOffering}
                 onDelete={handleDelete}
                 onCreate={openNew}
+                onRetry={loadData}
               />
             </div>
 
