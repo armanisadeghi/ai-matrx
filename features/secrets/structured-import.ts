@@ -54,6 +54,9 @@ export function prepareStructuredImportCommand(input: {
   const { record } = input;
   if (record.status === "invalid") return { status: "invalid", diagnostic: record.reason };
   if (record.status === "unsupported") return { status: "skipped", reason: "unsupported" };
+  if (record.status !== "supported") return { status: "invalid", diagnostic: "The record is invalid." };
+  if (typeof record.sourceRecord !== "string" || record.sourceRecord.length === 0)
+    return { status: "invalid", diagnostic: "The record has no source representation." };
   if (record.sourceState === "deleted" && !input.includeDeleted) return { status: "skipped", reason: "deleted" };
   if (record.sourceState === "archived" && !input.includeArchived) return { status: "skipped", reason: "archived" };
   if (input.skipPossibleDuplicate && isPossibleStructuredImportDuplicate(record, input.existingItems ?? [])) return { status: "skipped", reason: "possible_duplicate" };
