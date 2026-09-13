@@ -318,7 +318,7 @@ export default function MobileTasksList({
         <ActiveScopeFilterChips />
 
         {/* Task List */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex-1 overflow-y-auto overscroll-contain pb-20">
           {!canShowTasks ? (
             <div className="flex items-center justify-center h-full p-8">
               <div className="text-center">
