@@ -588,6 +588,9 @@ const notesSlice = createSlice({
         savedSnapshot?: Partial<
           Record<NoteUndoableField, Note[NoteUndoableField]>
         >;
+        acknowledgedValues?: Partial<
+          Record<NoteUndoableField, Note[NoteUndoableField]>
+        >;
       }>,
     ) {
       const record = state.notes[action.payload.id];
@@ -605,7 +608,14 @@ const notesSlice = createSlice({
         record.version = action.payload.version;
       }
       if (action.payload.savedSnapshot) {
-        markSavedSnapshotClean(record, action.payload.savedSnapshot);
+        const settledSnapshot = { ...action.payload.savedSnapshot };
+        for (const [field, value] of Object.entries(action.payload.acknowledgedValues ?? {}) as Array<[NoteUndoableField, Note[NoteUndoableField]]>) {
+          if (record[field] === action.payload.savedSnapshot[field]) {
+            record[field] = value;
+            settledSnapshot[field] = value;
+          }
+        }
+        markSavedSnapshotClean(record, settledSnapshot);
       } else {
         markRecordClean(record);
       }

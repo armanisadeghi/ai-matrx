@@ -70,7 +70,7 @@ describe("saveNote receipt integration", () => {
   it("accepts a paired folder display name while persisting only its admitted ID", async () => {
     const existing = query({ data: note(), error: null });
     const folder = query({ data: { id: FOLDER_ID, name: "Archive" }, error: null });
-    const updated = query({ data: note({ folder_id: FOLDER_ID, folder_name: "Archive", version: 8 }), error: null });
+    const updated = query({ data: note({ folder_id: FOLDER_ID, folder_name: "Authoritative Archive", version: 8 }), error: null });
     schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(folder).mockReturnValueOnce(updated) });
     const store = storeWithNote();
     store.dispatch(setNoteFields({ id: NOTE_ID, updates: { folder_id: FOLDER_ID, folder_name: "Archive" } }));
@@ -79,6 +79,7 @@ describe("saveNote receipt integration", () => {
 
     expect(saveNote.fulfilled.match(action)).toBe(true);
     expect(updated.update).toHaveBeenCalledWith({ folder_id: FOLDER_ID, folder_name: "Archive", version: 8 });
+    expect(store.getState().notes.notes[NOTE_ID].folder_name).toBe("Authoritative Archive");
     expect(store.getState().notes.notes[NOTE_ID]._dirtyFields.size).toBe(0);
   });
 
@@ -135,5 +136,24 @@ describe("saveNote receipt integration", () => {
     expect(record).toMatchObject({ version: 7, content: "later physical edit", project_id: PROJECT_ID, task_id: TASK_ID });
     expect(record._dirtyFields).toEqual(new Set(["content", "task_id"]));
     expect(record._saving).toBe(false);
+  });
+
+  it("does not regress a clean newer remote base after an unchanged receipt", async () => {
+    const existing = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
+    const unchanged = query({ data: note({ version: 8, updated_at: "2026-09-12T01:00:00.000Z" }), error: null });
+    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(unchanged) });
+    let release: ((value: { ok: true; data: null }) => void) | undefined;
+    let started: (() => void) | undefined;
+    const startedPromise = new Promise<void>((resolve) => { started = resolve; });
+    setTargets.mockImplementation(() => new Promise((resolve) => { release = resolve; started?.(); }));
+    const store = storeWithNote();
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "project_id", value: PROJECT_ID }));
+    const pending = store.dispatch(saveNote(NOTE_ID));
+    await startedPromise;
+    store.dispatch(upsertNoteFromServer({ note: note({ version: 9, updated_at: "2026-09-12T02:00:00.000Z" }), fetchStatus: "full" }));
+    release?.({ ok: true, data: null });
+    await pending;
+
+    expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ version: 9, updated_at: "2026-09-12T02:00:00.000Z" });
   });
 });

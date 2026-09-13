@@ -319,7 +319,7 @@ function receiptBaseSettlement(
   // A context-only write does not create a new physical revision. If the user
   // typed a physical field while its edges were settling, retain the base that
   // edit was built on rather than adopting the service's earlier readback.
-  return currentRecord && hasDirtyPhysicalField(currentRecord)
+  return currentRecord && (hasDirtyPhysicalField(currentRecord) || currentRecord.version > receipt.note.version)
     ? { updated_at: currentRecord.updated_at, version: currentRecord.version }
     : receipt.note;
 }
@@ -398,12 +398,17 @@ export const saveNote = createAsyncThunk<void, string>(
 
       clearNoteWriteBlockedToast(noteId);
       const settledBase = receiptBaseSettlement(getState, noteId, receipt);
+      const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+      const acknowledgedValues = receipt.databaseWrite === "saved" && currentRecord?.folder_id === savedSnapshot.folder_id && currentRecord.folder_name === savedSnapshot.folder_name
+        ? { ...(savedSnapshot.folder_id !== undefined && savedSnapshot.folder_name !== undefined ? { folder_name: receipt.note.folder_name } : {}) }
+        : {};
       dispatch(
         markNoteSaved({
           id: noteId,
           updatedAt: settledBase.updated_at ?? undefined,
           version: settledBase.version,
           savedSnapshot,
+          acknowledgedValues,
         }),
       );
     } catch (error) {
@@ -413,11 +418,16 @@ export const saveNote = createAsyncThunk<void, string>(
           delete acknowledgedSnapshot[field];
         }
         const settledBase = receiptBaseSettlement(getState, noteId, error.receipt);
+        const currentRecord = (getState() as RootState).notes.notes[noteId] as NoteRecord | undefined;
+        const acknowledgedValues = error.databaseWrite === "saved" && currentRecord?.folder_id === acknowledgedSnapshot.folder_id && currentRecord.folder_name === acknowledgedSnapshot.folder_name
+          ? { ...(acknowledgedSnapshot.folder_id !== undefined && acknowledgedSnapshot.folder_name !== undefined ? { folder_name: error.actualStoredNote.folder_name } : {}) }
+          : {};
         dispatch(markNoteSaved({
           id: noteId,
           updatedAt: settledBase.updated_at ?? undefined,
           version: settledBase.version,
           savedSnapshot: acknowledgedSnapshot,
+          acknowledgedValues,
         }));
         if (error.receipt.postSaveRecoveryError) {
           console.error("Partial note context save needs a cache recovery", error.receipt.postSaveRecoveryError);

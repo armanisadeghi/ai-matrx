@@ -67,14 +67,16 @@ describe("createNewNote empty-note reuse integration", () => {
       .mockResolvedValueOnce({ ok: true, data: null })
       .mockResolvedValueOnce({ ok: false, error: { message: "task denied" } });
 
-    await expect(createNote({
+    const store = configureStore({
+      reducer: { notes: notesReducer, userAuth: () => ({ id: "user-1" }) },
+    });
+    const action = await store.dispatch(createNewNote({
       organization_id: organizationId, folder_id: folderId, folder_name: "Draft", label: "Created", content: "body",
       project_id: projectId, task_id: taskId,
-    })).rejects.toMatchObject({
-      name: "NoteContextPartialSaveError",
-      actualStoredNote: expect.objectContaining({ project_id: projectId, task_id: null }),
-      failedFields: ["task_id"],
-    } satisfies Partial<NoteContextPartialSaveError>);
+    }));
+    expect(createNewNote.rejected.match(action)).toBe(true);
+    expect(action.error.message).toMatch(/one or more context links/i);
+    expect(store.getState().notes.notes[noteId]).toBeUndefined();
   });
 
   it("returns a created note when cache recovery follows durable context settlement", async () => {
