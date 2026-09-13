@@ -73,14 +73,24 @@ returns table(component_token text, component_table text, parent_type text, fk_c
               rows_readable_under_refused_parent bigint, probe_error text)
 language plpgsql as $$
 declare
-  r record; v_ids uuid[]; v_ok uuid[]; v_bad uuid[]; v_n bigint; v_err text;
+  r record; v_ids uuid[]; v_ok uuid[]; v_bad uuid[]; v_n bigint;
+  v_err text; v_count_err text; v_email text;
   v_principals uuid[] := coalesce(p_principals, (select array_agg(user_id) from iam.entity_read_probe_users(6)));
   v_p uuid; v_prev_parent text; v_prev_principal uuid;
 begin
   if v_principals is null or cardinality(v_principals) = 0 then
     raise exception 'component_wider_than_parent: no principals. A read probe over nobody proves nothing.';
   end if;
-  for r in
+  -- Probe each parent policy once per principal, then reuse that answer for every component under
+  -- the parent. Component-first order repeated the expensive parent-policy probe for each sibling.
+  foreach v_p in array v_principals loop
+    perform set_config('request.jwt.claims',
+      json_build_object('sub', v_p::text, 'role', 'authenticated')::text, true);
+    perform set_config('role', 'authenticated', true);
+    v_prev_parent := null;
+    v_email := (select email from auth.users where id = v_p);
+
+    for r in
     select distinct et.token, et.schema_name, et.table_name, er.parent_type, er.fk_column,
            pt.schema_name as p_schema, pt.table_name as p_table
     from platform.entity_types et
@@ -97,13 +107,11 @@ begin
                    where c.table_schema = pt.schema_name and c.table_name = pt.table_name
                      and c.column_name = 'id' and c.udt_name = 'uuid')
     order by er.parent_type, et.token, er.fk_column
-  loop
-    foreach v_p in array v_principals loop
-      v_ids := null; v_ok := null; v_bad := null; v_n := 0; v_err := null;
-      perform set_config('request.jwt.claims',
-        json_build_object('sub', v_p::text, 'role', 'authenticated')::text, true);
-      perform set_config('role', 'authenticated', true);
-      begin
+    loop
+      v_n := 0; v_count_err := null;
+      if v_prev_parent is distinct from r.parent_type then
+        v_ids := null; v_ok := null; v_bad := null; v_err := null;
+        begin
         -- exactly what the generated component arm resolves
         v_ids := iam.accessible_entity_ids(r.parent_type, 'viewer'::public.permission_level, 0, true);
         -- and exactly what the parent's own deployed policy hands this principal back
@@ -112,23 +120,32 @@ begin
         select coalesce(array_agg(x), '{}') into v_bad
           from unnest(coalesce(v_ids,'{}'::uuid[])) x
          where not (x = any(coalesce(v_ok, '{}'::uuid[])));
-        if coalesce(array_length(v_bad,1),0) > 0 then
+        exception when others then
+          v_err := format('%s: %s', sqlstate, sqlerrm);
+        end;
+        v_prev_parent := r.parent_type;
+      end if;
+
+      if v_err is null and coalesce(array_length(v_bad,1),0) > 0 then
+        begin
           execute format('select count(*) from %I.%I t where t.%I = any($1)',
                          r.schema_name, r.table_name, r.fk_column) into v_n using v_bad;
-        end if;
-      exception when others then
-        v_err := format('%s: %s', sqlstate, sqlerrm);
-      end;
-      perform set_config('role', 'postgres', true);
-      if v_err is null and coalesce(array_length(v_bad,1),0) = 0 then continue; end if;
+        exception when others then
+          v_count_err := format('%s: %s', sqlstate, sqlerrm);
+        end;
+      end if;
+      if v_err is null and v_count_err is null and coalesce(array_length(v_bad,1),0) = 0 then
+        continue;
+      end if;
       component_token := r.token; component_table := r.schema_name||'.'||r.table_name;
       parent_type := r.parent_type; fk_column := r.fk_column;
-      principal := v_p; principal_email := (select email from auth.users where id = v_p);
+      principal := v_p; principal_email := coalesce(v_email, v_p::text);
       parent_ids_admitted := coalesce(array_length(v_ids,1),0);
       parent_ids_refused := coalesce(array_length(v_bad,1),0);
-      rows_readable_under_refused_parent := v_n; probe_error := v_err;
+      rows_readable_under_refused_parent := v_n; probe_error := coalesce(v_err, v_count_err);
       return next;
     end loop;
+    perform set_config('role', 'postgres', true);
   end loop;
 end $$;
 
