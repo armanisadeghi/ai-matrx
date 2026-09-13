@@ -558,7 +558,7 @@ export function BrandsPortfolio({
                     router.push(marketingRoutes.brand(row.id))
                   }
                   rowActions={(row) => (
-                    <div className="flex items-center gap-0.5">
+                    <>
                       <Button
                         type="button"
                         variant="ghost"
@@ -588,7 +588,7 @@ export function BrandsPortfolio({
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
-                    </div>
+                    </>
                   )}
                   emptyState={{
                     icon: (

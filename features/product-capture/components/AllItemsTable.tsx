@@ -474,7 +474,7 @@ export function AllItemsTable() {
         }}
         onRowOpen={openView}
         rowActions={(row) => (
-          <div className="flex items-center gap-1">
+          <>
             <Button
               variant="ghost"
               size="icon"
@@ -533,7 +533,7 @@ export function AllItemsTable() {
             >
               <Trash2 className="h-4 w-4" />
             </Button>
-          </div>
+          </>
         )}
       />
       {organizationId === null && (

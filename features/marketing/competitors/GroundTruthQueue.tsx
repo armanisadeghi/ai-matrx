@@ -545,10 +545,7 @@ export function GroundTruthQueue({
             onOpen: () => {},
           }}
           rowActions={(row, controls) => (
-            <div
-              className="flex items-center gap-1.5"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <>
               <AgreeAction
                 row={row}
                 onSaved={onSaved}
@@ -566,7 +563,7 @@ export function GroundTruthQueue({
                 <Pencil className="size-3.5" />
                 Edit details
               </Button>
-            </div>
+            </>
           )}
           emptyState={{
             title: "Nothing waiting",

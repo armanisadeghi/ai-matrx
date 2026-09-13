@@ -1496,7 +1496,7 @@ export default function CompetitorAutopsyWorkspace({
                 onOpen: () => {},
               }}
               rowActions={(row) => (
-                <div className="flex items-center gap-1">
+                <>
                   {row.status === "open" ? (
                     <Button
                       size="sm"
@@ -1538,7 +1538,7 @@ export default function CompetitorAutopsyWorkspace({
                       Dismiss
                     </Button>
                   ) : null}
-                </div>
+                </>
               )}
               emptyState={{
                 icon: <Target className="size-8" />,

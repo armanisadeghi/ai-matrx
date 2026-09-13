@@ -469,14 +469,14 @@ export function InstallationsClient({
               }),
             }}
             rowActions={(row) => (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Cpu className="h-3.5 w-3.5" />
-                <span className="max-w-40 truncate" title={row.cpu_model ?? ""}>
+              <>
+                <Cpu className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
+                <span className="max-w-40 truncate text-xs text-muted-foreground" title={row.cpu_model ?? ""}>
                   {row.cpu_model || "—"}
                 </span>
-                <MemoryStick className="ml-1 h-3.5 w-3.5" />
-                <span className="font-mono">{row.ram_total_gb ?? "—"}</span>
-              </div>
+                <MemoryStick className="ml-2 mr-1 h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-mono text-xs text-muted-foreground">{row.ram_total_gb ?? "—"}</span>
+              </>
             )}
           />
           </NonEditableContextMenu>

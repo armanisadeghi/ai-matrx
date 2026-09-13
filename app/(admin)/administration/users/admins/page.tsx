@@ -739,10 +739,7 @@ function AdminsManagementPageContent() {
               rowActions={(row) => {
                 const busy = !!rowBusy[row.user_id];
                 return (
-                  <div
-                    className="flex items-center justify-end gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <>
                     <Select
                       value={row.level}
                       onValueChange={(v) =>
@@ -775,7 +772,7 @@ function AdminsManagementPageContent() {
                       )}
                       <span className="ml-1.5">Revoke</span>
                     </Button>
-                  </div>
+                  </>
                 );
               }}
             />

@@ -549,7 +549,7 @@ export function SystemContextConsole() {
                   <Lock className="h-3 w-3" /> read-only
                 </span>
               ) : (
-                <div className="flex items-center justify-end gap-1">
+                <>
                   <Button
                     type="button"
                     size="sm"
@@ -575,7 +575,7 @@ export function SystemContextConsole() {
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
-                </div>
+                </>
               )
             }
             detail={{

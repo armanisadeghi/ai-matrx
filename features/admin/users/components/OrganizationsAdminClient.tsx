@@ -745,7 +745,7 @@ export function OrganizationsAdminClient() {
                   : undefined
               }
               rowActions={(member) => (
-                <div className="flex items-center gap-1">
+                <>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -773,7 +773,7 @@ export function OrganizationsAdminClient() {
                       <Trash2 className="h-4 w-4" />
                     )}
                   </Button>
-                </div>
+                </>
               )}
               emptyState={{
                 title: selectedOrganization

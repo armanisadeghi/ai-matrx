@@ -338,7 +338,7 @@ export function AdvancedMandateCrud() {
           rowActions={
             relation?.writable && pk
               ? (row) => (
-                  <div className="flex items-center gap-1">
+                  <>
                     {relation.softDeletes && (
                       <Button
                         size="sm"
@@ -358,7 +358,7 @@ export function AdvancedMandateCrud() {
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
-                  </div>
+                  </>
                 )
               : undefined
           }
