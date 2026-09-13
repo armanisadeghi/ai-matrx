@@ -13,6 +13,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { mapRowToLearnDoc } from "./mappers";
+import { LEARN_DOC_PUBLIC_SELECT } from "./publicColumns";
 import type { LearnDocRecord, LearnDocRow } from "./types";
 
 /** Cache tag busted by every authoring mutation (see actions.ts). */
@@ -26,7 +27,10 @@ async function fetchPublishedRows(): Promise<LearnDocRow[]> {
   const { data, error } = await sb
     .schema("education")
     .from("learn_doc")
-    .select("*")
+    // The publishable key runs as `anon`; the live grant deliberately withholds
+    // private columns, so `*` is a 42501. Keep this literal for Supabase's
+    // compile-time row inference; public-exposure.test.ts forces registry parity.
+    .select(LEARN_DOC_PUBLIC_SELECT)
     .eq("visibility", "public")
     .is("deleted_at", null)
     .order("content_updated_at", { ascending: false, nullsFirst: false });
