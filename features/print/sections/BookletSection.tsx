@@ -10,7 +10,7 @@ import { BookOpen } from "lucide-react";
 import { bookletSizeWarning, imposeBooklet, printBooklet } from "@ai-matrx/print/booklet";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { Field, SectionShell, StatusChip, controlClass } from "@/features/print/components/shared";
+import { Field, SectionShell, StatusChip, announcePrintOutcome, controlClass } from "@/features/print/components/shared";
 
 const PAGE_STYLES = `
   .booklet-page { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; font-family: Georgia, "Times New Roman", serif; }
@@ -34,7 +34,11 @@ export function BookletSection() {
 
     const handlePrint = () => {
         try {
-            printBooklet(samplePages(safeCount), { title: `Sample booklet — ${safeCount} pages`, pageStyles: PAGE_STYLES });
+            const outcome = printBooklet(samplePages(safeCount), {
+                title: `Sample booklet — ${safeCount} pages`,
+                pageStyles: PAGE_STYLES,
+            });
+            announcePrintOutcome(outcome, "Booklet");
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Booklet print failed");
         }

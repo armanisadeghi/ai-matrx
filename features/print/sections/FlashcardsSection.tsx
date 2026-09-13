@@ -9,7 +9,7 @@ import { Printer } from "lucide-react";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";
 import { Button } from "@/components/ui/button";
-import { SectionShell, StatusChip } from "@/features/print/components/shared";
+import { SectionShell, StatusChip, announcePrintOutcome } from "@/features/print/components/shared";
 import { SAMPLE_DECK_TITLE, SAMPLE_FLASHCARDS } from "./sample-data";
 
 export function FlashcardsSection() {
@@ -67,7 +67,13 @@ export function FlashcardsSection() {
                 </div>
             </div>
 
-            <PrintOptionsDialog printer={flashcardsPrinter} data={deck} open={open} onOpenChange={setOpen} />
+            <PrintOptionsDialog
+                printer={flashcardsPrinter}
+                data={deck}
+                open={open}
+                onOpenChange={setOpen}
+                onPrinted={(outcome) => announcePrintOutcome(outcome, SAMPLE_DECK_TITLE)}
+            />
         </SectionShell>
     );
 }
