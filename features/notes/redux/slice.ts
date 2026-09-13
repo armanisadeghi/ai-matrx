@@ -47,6 +47,15 @@ function popNonEmpty<T>(stack: T[]): T {
   return entry;
 }
 
+/** A revision is a database CAS value, never a loosely parsed counter. */
+function isCanonicalNoteRevision(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function hasMalformedNoteRevision(value: unknown): boolean {
+  return value !== null && value !== undefined && !isCanonicalNoteRevision(value);
+}
+
 // ── Byte estimation ─────────────────────────────────────────────────────────
 
 function estimateBytes(value: unknown): number {
@@ -273,6 +282,9 @@ function applyServerNoteUpsert(
   notes: Record<string, NoteRecord>,
   { note, fetchStatus, sharedMeta }: ServerNoteUpsert,
 ): void {
+  // Partial list evidence may omit a revision, but a supplied malformed
+  // revision must never enter the record or become highest remote evidence.
+  if (hasMalformedNoteRevision(note.version)) return;
   const existing = notes[note.id];
 
   if (!existing) {
@@ -307,8 +319,8 @@ function applyServerNoteUpsert(
     return;
   }
 
-  const incomingVersion = typeof note.version === "number" ? note.version : null;
-  const heldVersion = typeof existing.version === "number" ? existing.version : null;
+  const incomingVersion = isCanonicalNoteRevision(note.version) ? note.version : null;
+  const heldVersion = isCanonicalNoteRevision(existing.version) ? existing.version : null;
   const isNewerVersion =
     incomingVersion !== null && heldVersion !== null
       ? incomingVersion > heldVersion
@@ -365,6 +377,9 @@ function applyServerNoteUpsert(
   );
   if (existing._dirty && hasDirtyPhysicalField) {
     const heldObservationVersion = existing._remoteObservation?.version ?? null;
+    if (heldObservationVersion !== null && !isCanonicalNoteRevision(heldObservationVersion)) {
+      return;
+    }
     const isNewerObservation =
       incomingVersion !== null &&
       (heldObservationVersion === null || incomingVersion > heldObservationVersion);
@@ -637,7 +652,18 @@ const notesSlice = createSlice({
       }>,
     ) {
       const record = state.notes[action.payload.id];
-      if (!record) return;
+      if (
+        !record ||
+        record.id !== action.payload.id ||
+        action.payload.currentRow.id !== action.payload.id ||
+        record.organization_id !== action.payload.organizationId ||
+        action.payload.currentRow.organization_id !== action.payload.organizationId ||
+        !isCanonicalNoteRevision(action.payload.expectedVersion) ||
+        !isCanonicalNoteRevision(action.payload.currentVersion) ||
+        !isCanonicalNoteRevision(action.payload.currentRow.version)
+      ) return;
+      const observedVersion = record._remoteObservation?.version ?? null;
+      if (observedVersion !== null && !isCanonicalNoteRevision(observedVersion)) return;
       const decision: NoteConflictDecision = {
         decisionId: action.payload.decisionId,
         reviewId: action.payload.reviewId,
@@ -652,9 +678,7 @@ const notesSlice = createSlice({
         reviewedLiveContent: null,
         comparedVersion: action.payload.currentVersion,
         stale:
-          record._remoteObservation?.version !== null &&
-          record._remoteObservation?.version !== undefined &&
-          record._remoteObservation.version > action.payload.currentVersion,
+          observedVersion !== null && observedVersion > action.payload.currentVersion,
         dismissed: false,
       };
       record._conflictDecision = decision;
@@ -683,9 +707,15 @@ const notesSlice = createSlice({
       const decision = record?._conflictDecision;
       const refuse = (reason: string) => { state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason }; };
       if (!record || !decision || decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh the note again."); return; }
-      if (decision.organizationId !== record.organization_id || action.payload.currentRow.organization_id !== decision.organizationId || action.payload.currentRow.version == null) { refuse("This saved comparison is unavailable. Reopen the note before refreshing."); return; }
+      if (
+        record.id !== action.payload.id ||
+        action.payload.currentRow.id !== action.payload.id ||
+        decision.organizationId !== record.organization_id ||
+        action.payload.currentRow.organization_id !== decision.organizationId ||
+        !isCanonicalNoteRevision(action.payload.currentRow.version)
+      ) { refuse("This saved comparison is unavailable. Reopen the note before refreshing."); return; }
       const observedVersion = record._remoteObservation?.version;
-      if (observedVersion !== null && observedVersion !== undefined && observedVersion > action.payload.currentRow.version) {
+      if (observedVersion !== null && observedVersion !== undefined && (!isCanonicalNoteRevision(observedVersion) || observedVersion > action.payload.currentRow.version)) {
         refuse("A newer remote change arrived. Refresh this comparison again."); return;
       }
       decision.currentRow = action.payload.currentRow;
@@ -728,10 +758,19 @@ const notesSlice = createSlice({
       const refuse = (reason: string) => {
         state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason };
       };
-      if (!record || !decision) { refuse("This conflict is no longer available. Refresh the note."); return; }
+      if (!record || !decision || record.id !== action.payload.id) { refuse("This conflict is no longer available. Refresh the note."); return; }
       if (decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh before applying a choice."); return; }
-      if (decision.organizationId !== record.organization_id) { refuse("This note moved organizations. Reopen it before applying a choice."); return; }
-      if (decision.stale || decision.comparedVersion === null || (currentObserved !== null && currentObserved > decision.comparedVersion)) { refuse("A newer remote change arrived. Refresh before applying a choice."); return; }
+      if (decision.organizationId !== record.organization_id || decision.currentRow.id !== action.payload.id || decision.reviewedRemote.id !== action.payload.id) { refuse("This note moved organizations. Reopen it before applying a choice."); return; }
+      if (
+        !isCanonicalNoteRevision(decision.expectedVersion) ||
+        !isCanonicalNoteRevision(decision.currentVersion) ||
+        !isCanonicalNoteRevision(decision.comparedVersion) ||
+        !isCanonicalNoteRevision(decision.currentRow.version) ||
+        !isCanonicalNoteRevision(decision.reviewedRemote.version) ||
+        (currentObserved !== null && !isCanonicalNoteRevision(currentObserved)) ||
+        decision.stale ||
+        (currentObserved !== null && currentObserved > decision.comparedVersion)
+      ) { refuse("A newer remote change arrived. Refresh before applying a choice."); return; }
       if (decision.reviewedLiveContent !== action.payload.reviewedLiveContent) { refuse("Your editor buffer changed after this comparison. Refresh before applying a choice."); return; }
       if (!sameConflictSnapshot(conflictPhysicalSnapshot(record), decision.reviewedLocal)) { refuse("Your note fields changed after this comparison. Refresh before applying a choice."); return; }
       if (decision.reviewedRemote.id !== decision.currentRow.id || decision.reviewedRemote.version !== decision.currentRow.version || JSON.stringify(decision.reviewedRemote) !== JSON.stringify(decision.currentRow)) { refuse("The reviewed server package changed. Refresh before applying a choice."); return; }

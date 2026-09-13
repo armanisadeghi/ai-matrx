@@ -2,7 +2,7 @@
 
 **Status:** `active` — production, actively maintained
 **Tier:** `1`
-**Last updated:** `2026-09-07`
+**Last updated:** `2026-09-12`
 
 > User-facing README at [`README.md`](./README.md). This doc is the agent-facing architecture view.
 
@@ -60,6 +60,14 @@ authenticated thunks, mutating the store, or resolving editor identity. Initial
 list hydration also verifies the live Supabase user before its notes read and
 again before association hydration; an expired session pauses at that boundary
 instead of fanning out through both services.
+
+**Conflict review boundary:** A Refresh comparison accepts only the exact note
+row requested by the retained CAS decision, in that decision's organization,
+with a non-negative safe-integer revision. Missing, fractional, unsafe,
+non-finite, string, or moved-row revisions refuse the request-scoped receipt
+before rotating a review or changing the editor's reviewed package. Realtime
+upserts also discard supplied malformed revisions so they cannot poison the
+highest-remote-observation comparison.
 
 ### Flow 1 — Create / edit a note
 

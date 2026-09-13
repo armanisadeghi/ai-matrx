@@ -130,6 +130,58 @@ describe("Notes CAS conflict decision contract", () => {
     expect(state.notes[ID].content).toBe("mine");
   });
 
+  it("refuses malformed or moved Refresh rows before rotating the review receipt", () => {
+    const malformedVersions: unknown[] = [null, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, "6", -1, 1.5, Number.MAX_SAFE_INTEGER + 1];
+    for (const version of malformedVersions) {
+      let state = conflicted();
+      state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+      const before = state.notes[ID]._conflictDecision;
+      if (!before) throw new Error("Expected a decision");
+      const malformed = row({ content: "untrusted", version: 6 });
+      Reflect.set(malformed, "version", version);
+      state = notesReducer(state, refreshNoteConflictComparison({
+        id: ID, decisionId: before.decisionId, reviewId: before.reviewId, nextReviewId: `bad-${String(version)}`, requestId: `bad-${String(version)}`, liveContent: "changed during refresh", currentRow: malformed,
+      }));
+      expect(state.conflictResolutionReceipts[`bad-${String(version)}`]).toMatchObject({ status: "refused" });
+      expect(state.notes[ID]).toMatchObject({ content: "mine", version: 4 });
+      expect(state.notes[ID]._conflictDecision).toMatchObject({ reviewId: before.reviewId, currentVersion: 5, reviewedLiveContent: "mine" });
+    }
+
+    let moved = conflicted();
+    moved = notesReducer(moved, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const beforeMoved = moved.notes[ID]._conflictDecision;
+    if (!beforeMoved) throw new Error("Expected a decision");
+    const wrongRow = row({ content: "untrusted", version: 6 });
+    Reflect.set(wrongRow, "id", "33333333-3333-4333-8333-333333333333");
+    moved = notesReducer(moved, refreshNoteConflictComparison({
+      id: ID, decisionId: beforeMoved.decisionId, reviewId: beforeMoved.reviewId, nextReviewId: "moved", requestId: "moved", liveContent: "mine", currentRow: wrongRow,
+    }));
+    expect(moved.conflictResolutionReceipts.moved).toMatchObject({ status: "refused" });
+    expect(moved.notes[ID]._conflictDecision).toMatchObject({ reviewId: beforeMoved.reviewId, currentVersion: 5, reviewedLiveContent: "mine" });
+  });
+
+  it("accepts zero and positive integer Refresh revisions", () => {
+    for (const version of [0, 6]) {
+      let state = conflicted();
+      state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+      const before = state.notes[ID]._conflictDecision;
+      if (!before) throw new Error("Expected a decision");
+      state = notesReducer(state, refreshNoteConflictComparison({
+        id: ID, decisionId: before.decisionId, reviewId: before.reviewId, nextReviewId: `valid-${version}`, requestId: `valid-${version}`, liveContent: "mine", currentRow: row({ content: `revision-${version}`, version }),
+      }));
+      expect(state.conflictResolutionReceipts[`valid-${version}`]).toMatchObject({ status: "applied" });
+      expect(state.notes[ID]._conflictDecision).toMatchObject({ reviewId: `valid-${version}`, currentVersion: version, reviewedLiveContent: "mine" });
+    }
+  });
+
+  it("does not retain malformed realtime revisions as remote observations", () => {
+    let state = conflicted();
+    const malformed = row({ content: "untrusted", version: 6 });
+    Reflect.set(malformed, "version", Number.NaN);
+    state = notesReducer(state, upsertNoteFromServer({ note: malformed, fetchStatus: "list" }));
+    expect(state.notes[ID]).toMatchObject({ content: "mine", version: 4, _remoteObservation: null });
+  });
+
   it("refuses only a replaced review identity", () => {
     let state = conflicted(); state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
     const d = state.notes[ID]._conflictDecision!;

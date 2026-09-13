@@ -208,6 +208,27 @@ describe("saveNote receipt integration", () => {
     expect(store.getState().notes.notes[NOTE_ID]._conflictDecision).toMatchObject({ currentVersion: 8, stale: true, reviewedLiveContent: "mine" });
   });
 
+  it("returns a refused Refresh receipt without mutation for malformed or moved transport rows", async () => {
+    const invalidRows: Array<[string, (remote: Note) => boolean]> = [
+      ["malformed", (remote: Note) => Reflect.set(remote, "version", Number.NaN)],
+      ["moved", (remote: Note) => Reflect.set(remote, "id", "99999999-9999-4999-8999-999999999999")],
+    ];
+    for (const [requestId, mutate] of invalidRows) {
+      const remote = note({ content: "untrusted", version: 8 });
+      mutate(remote);
+      const transport = query({ data: remote, error: null });
+      schema.mockReturnValueOnce({ from: jest.fn().mockReturnValue(transport) });
+      const store = storeWithNote();
+      store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
+      store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: requestId, reviewId: "review" }));
+      store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
+
+      await expect(store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: requestId, reviewId: "review", getLiveBuffer: () => "mine" }))).resolves.toMatchObject({ status: "refused" });
+      expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", version: 7 });
+      expect(store.getState().notes.notes[NOTE_ID]._conflictDecision).toMatchObject({ reviewId: "review", currentVersion: 8, reviewedLiveContent: "mine" });
+    }
+  });
+
   it("accepts a paired folder display name while persisting only its admitted ID", async () => {
     const existing = query({ data: note(), error: null });
     const folder = query({ data: { id: FOLDER_ID, name: "Archive" }, error: null });
