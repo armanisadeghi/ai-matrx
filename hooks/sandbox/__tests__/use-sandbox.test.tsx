@@ -37,6 +37,23 @@ describe("useSandboxInstances list pagination", () => {
     jest.restoreAllMocks();
   });
 
+  it("starts in loading state until the first list response settles", async () => {
+    const fetchMock = jest.fn(async (_input: RequestInfo | URL) =>
+      listResponse([], 0, false),
+    );
+    installFetch(fetchMock);
+
+    const hook = await renderHook(() => useSandboxInstances());
+    expect(hook.current.loading).toBe(true);
+
+    await hook.act(async () => {
+      await hook.current.fetchInstances();
+    });
+
+    expect(hook.current.loading).toBe(false);
+    await hook.unmount();
+  });
+
   it("reads every API page before exposing the default list", async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input), "http://localhost");

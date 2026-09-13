@@ -58,7 +58,7 @@ async function extractSandboxError(
 export function useSandboxInstances(projectId?: string) {
   const organizationId = useAppSelector(selectOrganizationId);
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -71,6 +71,7 @@ export function useSandboxInstances(projectId?: string) {
     setInstances([]);
     setTotal(0);
     setError(null);
+    setLoading(true);
 
     return () => {
       listRequestId.current += 1;
