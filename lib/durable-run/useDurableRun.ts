@@ -347,6 +347,26 @@ function eventRecord(event: TypedStreamEvent): Record<string, unknown> | null {
     : null;
 }
 
+/**
+ * The specific thing that went wrong, when the server named one.
+ *
+ * aidream pipelines put it in `details` — the judge's exception, the model that
+ * could not be resolved. It is the difference between "this did not finish" and
+ * a sentence the reader can act on, so it rides alongside the headline instead
+ * of being dropped (W37, 2026-09-12). A reason already contained in the
+ * headline is not repeated.
+ */
+export function durableRunErrorDetail(raw: unknown): string | null {
+  if (!raw || typeof raw !== "object") return null;
+  const details = (raw as Record<string, unknown>).details;
+  if (!details || typeof details !== "object") return null;
+  for (const field of ["reason", "message", "error"]) {
+    const value = (details as Record<string, unknown>)[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
 /** aidream persists a structured error document; show its sentence. */
 export function durableRunErrorMessage(raw: unknown): string | null {
   if (typeof raw === "string" && raw.trim()) return raw;
@@ -354,10 +374,19 @@ export function durableRunErrorMessage(raw: unknown): string | null {
     const record = raw as Record<string, unknown>;
     for (const field of ["user_message", "message"]) {
       const value = record[field];
-      if (typeof value === "string" && value.trim()) return value;
+      if (typeof value === "string" && value.trim()) {
+        return withDetail(value, durableRunErrorDetail(raw));
+      }
     }
   }
   return null;
+}
+
+/** One sentence, then the server's own reason — never a reason on its own. */
+function withDetail(headline: string, detail: string | null): string {
+  if (!detail) return headline;
+  if (headline.toLowerCase().includes(detail.toLowerCase())) return headline;
+  return `${headline} (${detail})`;
 }
 
 export interface UseDurableRunOptions<TResult> {
@@ -626,11 +655,16 @@ export function useDurableRun<TResult>(
         const payload = event.data as {
           message?: string;
           user_message?: string;
+          details?: Record<string, unknown>;
         };
-        const message =
+        // The server's sentence AND the specific reason behind it — the live
+        // path must carry exactly what the durable row carries (W37).
+        const message = withDetail(
           payload?.user_message ||
-          payload?.message ||
-          "The run failed on the server.";
+            payload?.message ||
+            "The run failed on the server.",
+          durableRunErrorDetail(payload),
+        );
         clearPointer(wire, key);
         statusRef.current = "error";
         setState((prev) => ({
