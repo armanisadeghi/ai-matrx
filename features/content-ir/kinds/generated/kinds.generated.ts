@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 516 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 517 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "b8484b1dc330";
+export const KIND_REGISTRY_FINGERPRINT = "52e915894e60";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -873,16 +873,22 @@ export interface CannibalizationRisk {
 }
 
 /**
- * One approved rule, as a running agent needs to see it.
+ * One approved rule, including its optional policy judgment shape.
  *  *
  *  * From kind `masterwork_canon`.
  */
 export interface CanonRule {
   id: string;
+  cost?: string;
+  kind?: string;
   name?: string;
+  risk?: string;
   section?: string;
   severity?: string;
   statement?: string;
+  action_kind?: string;
+  next_action?: string;
+  precondition?: string;
 }
 
 /**
@@ -1286,6 +1292,37 @@ export interface CoreFinding {
   importance?: "low" | "medium" | "high";
   finding_type?: "fact" | "claim" | "statistic" | "expert_opinion" | "definition" | "trend" | "example" | "counterpoint";
   supporting_text?: string;
+}
+
+/**
+ * * Shared by 2 kinds (serp_placement, web_result).
+ */
+export interface CreativeWorkCreator {
+  url?: string | null;
+  name: string;
+  /**
+   * Provider-neutral creator role, such as person or organization.
+   */
+  role?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+}
+
+/**
+ * * Shared by 2 kinds (serp_placement, web_result).
+ */
+export interface CreativeWorkDetails {
+  title?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  rating?: Rating | null;
+  creators?: CreativeWorkCreator[];
+  thumbnail?: ProductImage | null;
+  page_count?: number | null;
 }
 
 /**
@@ -3710,7 +3747,7 @@ export interface PriceRange {
 }
 
 /**
- * * From kind `web_result`.
+ * * Shared by 2 kinds (serp_placement, web_result).
  */
 export interface ProductDetails {
   url?: string | null;
@@ -3722,6 +3759,7 @@ export interface ProductDetails {
    */
   __kind?: string;
   offers?: ProductOffer[];
+  rating?: Rating | null;
   thumbnail?: ProductImage | null;
   description?: string | null;
 }
@@ -3748,7 +3786,7 @@ export interface ProductIdentification_ItemVisionExtraction {
 }
 
 /**
- * * From kind `web_result`.
+ * * Shared by 2 kinds (serp_placement, web_result).
  */
 export interface ProductImage {
   src?: string | null;
@@ -3760,7 +3798,7 @@ export interface ProductImage {
 }
 
 /**
- * * From kind `web_result`.
+ * * Shared by 2 kinds (serp_placement, web_result).
  */
 export interface ProductOffer {
   url?: string | null;
@@ -7308,7 +7346,7 @@ export interface Citation {
 }
 
 /**
- * Kind `claim_evidence` (registry v2).
+ * Kind `claim_evidence` (registry v3).
  */
 export interface ClaimEvidence {
   claim: string;
@@ -7945,7 +7983,7 @@ export interface CriterionCoverage {
 }
 
 /**
- * Kind `crm_contact_save_result` (registry v2).
+ * Kind `crm_contact_save_result` (registry v3).
  */
 export interface CrmContactSaveResult {
   __kind: "crm_contact_save_result";
@@ -8464,7 +8502,7 @@ export interface EpisodeTitleOptions {
 }
 
 /**
- * Kind `evidence_source` (registry v2).
+ * Kind `evidence_source` (registry v3).
  */
 export interface EvidenceSource {
   __kind: "evidence_source";
@@ -8660,20 +8698,23 @@ export interface FileReadResult {
 }
 
 /**
- * Kind `file_search_match` (registry v5).
+ * Kind `file_search_match` (registry v7).
  */
 export interface FileSearchMatch {
   path?: string;
   size?: number | null;
+  lines?: unknown;
   /**
    * The registered kind this payload is an instance of.
    */
   __kind?: "file_search_match";
   matches?: string[];
+  submatches?: unknown[];
+  line_number?: number | null;
 }
 
 /**
- * Kind `file_search_results` (registry v5).
+ * Kind `file_search_results` (registry v7).
  */
 export interface FileSearchResults {
   path?: string | null;
@@ -8732,22 +8773,17 @@ export interface FileUploadResult {
 }
 
 /**
- * Kind `file_write_result` (registry v4).
+ * Kind `file_write_result` (registry v6).
  */
 export interface FileWriteResult {
   mode?: string | null;
   path?: string;
   size?: number | null;
-  stat?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-  } | null;
+  stat?: Record<string, unknown> | null;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_write_result";
+  __kind?: "file_write_result";
   bytes_written?: number | null;
 }
 
@@ -9947,7 +9983,7 @@ export interface KeywordRelationshipMap {
 }
 
 /**
- * Kind `keyword_relationship_research` (registry v10).
+ * Kind `keyword_relationship_research` (registry v11).
  */
 export interface KeywordRelationshipResearch {
   /**
@@ -10658,7 +10694,7 @@ export interface Markdown {
 /**
  * A Masterwork's Rulebook as it stands RIGHT NOW, for one run.
  *  *
- *  * Kind `masterwork_canon` (registry v2).
+ *  * Kind `masterwork_canon` (registry v4).
  */
 export interface MasterworkCanon {
   /**
@@ -11336,7 +11372,7 @@ export interface NewsjackingExpertArticle {
  * shape, so the column, the event, and the edge payload cannot drift into
  * three dialects of the same failure.
  *  *
- *  * Kind `node_error` (registry v4).
+ *  * Kind `node_error` (registry v5).
  */
 export interface NodeError {
   got?: string | null;
@@ -11347,14 +11383,9 @@ export interface NodeError {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "node_error";
+  __kind?: "node_error";
   fields?: FieldProblem[];
-  details?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-  } | null;
+  details?: Record<string, unknown> | null;
   message: string;
   step_id?: string | null;
   expected?: string | null;
@@ -14885,6 +14916,21 @@ export interface ScraperCrawlResult {
 }
 
 /**
+ * Kind `sealed_case_answer` (registry v2).
+ */
+export interface SealedCaseAnswer {
+  cost?: string;
+  risk?: string;
+  found?: boolean;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "sealed_case_answer";
+  answer?: string;
+  asked_kind?: string;
+}
+
+/**
  * The `seo_authority_route_analysis` Content IR Shape.
  *  *
  *  * Kind `seo_authority_route_analysis` (registry v5).
@@ -16204,7 +16250,7 @@ export interface SerpAnalysis {
  * dispatches on the nested `__kind` and renders the canonical component the
  * search pilot already built.
  *  *
- *  * Kind `serp_placement` (registry v3).
+ *  * Kind `serp_placement` (registry v5).
  */
 export interface SerpPlacement {
   /**
@@ -20202,10 +20248,14 @@ export interface WebRedirectLoopV1 {
 }
 
 /**
- * Kind `web_result` (registry v16).
+ * Kind `web_result` (registry v18).
  */
 export interface WebResult {
   url: string;
+  /**
+   * Provider-neutral book, film, show, or other creative-work metadata.
+   */
+  work?: CreativeWorkDetails | null;
   title: string;
   /**
    * The registered kind this payload is an instance of.
@@ -21615,6 +21665,7 @@ export type GeneratedKindSlug =
   | "scraped_page"
   | "scraper_batch_result"
   | "scraper_crawl_result"
+  | "sealed_case_answer"
   | "seo_authority_route_analysis"
   | "seo_authority_route_result"
   | "seo_backlink_enrichment_result"
@@ -22134,6 +22185,7 @@ export interface KindPayloadBySlug {
   "scraped_page": ScrapedPage;
   "scraper_batch_result": ScraperBatchResult;
   "scraper_crawl_result": ScraperCrawlResult;
+  "sealed_case_answer": SealedCaseAnswer;
   "seo_authority_route_analysis": SeoAuthorityRouteAnalysis;
   "seo_authority_route_result": SeoAuthorityRouteResult;
   "seo_backlink_enrichment_result": SeoBacklinkEnrichmentResult;
@@ -22657,6 +22709,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "scraped_page",
   "scraper_batch_result",
   "scraper_crawl_result",
+  "sealed_case_answer",
   "seo_authority_route_analysis",
   "seo_authority_route_result",
   "seo_backlink_enrichment_result",
