@@ -267,3 +267,9 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 12) A run's report that opens with its own PRE-EXECUTION PROTOCOL, a rule
   cross-reference table and a self-audit is not a deliverable, it is homework. Judge what the person is
   shown, not what the agent produced.
+- 2026-09-13 — (trial 12) The coherence questions come with a RECOMMENDATION, and it is stated with the same
+  confidence whether it was read off the source or inferred. Six of seven were faithful; the seventh urged
+  writing clinical red flags into a rule the source never attached them to, justified as what the Expert
+  "clearly already has in mind". Accepting it would have stored the system's guess under the Expert's name
+  with the Expert's provenance. Check every recommendation against the source before clicking, and log the
+  ones you decline — that is a platform finding, not a preference.
