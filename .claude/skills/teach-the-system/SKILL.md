@@ -417,3 +417,12 @@ lines by relocating trial-specific detail into the trial's register.
   installed packages lag what main's code imports, and 1 was main's own unpublished mandate key. CI installs
   fresh and its type-check job passed on the same commit. Check the CI job before reporting a local type
   failure as the branch's, and say which one you are quoting.
+- 2026-09-13 — **A refusal is not a permission wall until you have checked the credential.** A lane spent hours
+  blocked on "no MCP access" and filed it as a wall for Arman; the configured grant was already on both
+  accounts and the token in hand was simply stale. Before recording any access refusal as a human step,
+  re-issue the credential and re-try — routine access refusal is repair work, not a page.
+- 2026-09-13 — **Review found the same defect twice, one level apart, in the session's own convergence code.**
+  A converter rebuilt a record from the subset of fields one form owns, then the fix rebuilt a nested half the
+  same way. Fix these as the CLASS — carry every key the surface does not own — never by naming the key that
+  was reported; and expect a merge that reconciles two data shapes to be exactly where a field falls out,
+  because every test the merging lane runs will pass.
