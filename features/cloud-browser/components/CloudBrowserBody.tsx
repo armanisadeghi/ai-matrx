@@ -29,6 +29,7 @@ import { useCloudBrowser } from "../hooks/useCloudBrowser";
 import { useCloudBrowserTakeover } from "../hooks/useCloudBrowserTakeover";
 import { useScreenshotSession } from "../hooks/useScreenshotSession";
 import { dismissHandoff, mintStreamTicket } from "../service";
+import { BackendApiError } from "@/lib/api/errors";
 import type { StreamTicketEnvelope } from "../types";
 
 import { WrittenProgressFace } from "./WrittenProgressFace";
@@ -86,6 +87,7 @@ export function CloudBrowserBody({
   const [busy, setBusy] = useState(false);
   const [ticket, setTicket] = useState<StreamTicketEnvelope | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
 
   const controller = cb.controller;
   const isMeDriving = controller?.kind === "human" && controller.isMe;
@@ -111,9 +113,22 @@ export function CloudBrowserBody({
   const openStream = useCallback(async (takeover = false) => {
     if (!cb.run) return;
     setConnecting(true);
+    setStreamError(null);
     try {
       const t = await mintStreamTicket(cb.run.id, "control", takeover);
       setTicket(t);
+    } catch (error) {
+      // The takeover itself already succeeded — the person IS in control. A
+      // failed live view is shown IN the canvas where they are looking, not
+      // thrown into a toast that disappears and leaves a spinner behind.
+      setTicket(null);
+      setStreamError(
+        error instanceof BackendApiError
+          ? error.userMessage
+          : error instanceof Error
+            ? error.message
+            : "The live browser connection failed.",
+      );
     } finally {
       setConnecting(false);
     }
@@ -332,6 +347,7 @@ export function CloudBrowserBody({
                     controller={controller}
                     ticket={ticket}
                     connecting={connecting}
+                    openError={streamError}
                     onReconnect={() => void openStream(true)}
                   />
                 </div>
