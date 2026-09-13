@@ -4,45 +4,23 @@
 // For auto-generated notes, materializes them (first DB insert) on first edit.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { TablesUpdate } from "@/types/database.types";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { supabase } from "@/utils/supabase/client";
 import type { NotesSliceState, NoteUndoableField } from "./notes.types";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
-import type { Note } from "../types";
 
 // Minimal local state type — avoids importing RootState from store.ts (which
 // imports this middleware), breaking the type-level circular dependency.
 type StateWithNotes = { notes: NotesSliceState; userAuth: UserAuthState };
-import { supabase } from "@/utils/supabase/client";
-import { operationFailed } from "@/utils/errors";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
 import {
-  markNoteSaving,
-  markNoteSaved,
-  markNoteSaveError,
-  materializeNote,
-  recordNoteWriteAttempt,
   updateNoteLabel,
 } from "./slice";
 import { getAutoSaveDelay } from "./notes.types";
 import type { NoteRecord } from "./notes.types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { isNoteLabelEditing } from "../utils/labelEditing";
-import {
-  noteSaveErrorMessage,
-  toastNoteWriteBlocked,
-  clearNoteWriteBlockedToast,
-  reportNoteSaveFailure,
-} from "../utils/writeErrors";
-import { serverMatchesAttempt } from "../utils/saveVerification";
+import { saveNote } from "./thunks";
 
-// Timer map — one debounce timer per note
-const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-/**
- * Resolve an optional materialized folder for a first-save note.
- * A folder name can legitimately exist only on the note: default folders and
- * older rows are materialized lazily, so zero rows is not an error.
- */
 export async function resolveMaterializedFolderId(
   userId: string,
   folderName: string,
@@ -58,46 +36,19 @@ export async function resolveMaterializedFolderId(
     .is("deleted_at", null)
     .limit(1)
     .maybeSingle();
-
   if (error) throw error;
   return data?.id ?? null;
 }
 
-function snapshotDirtyFields(
-  record: NoteRecord,
-): Partial<Record<NoteUndoableField, Note[NoteUndoableField]>> {
-  const snap: Partial<Record<NoteUndoableField, Note[NoteUndoableField]>> = {};
-  for (const field of record._dirtyFields) {
-    snap[field] = record[field];
-  }
-  return snap;
-}
+// Timer map — one debounce timer per note
+// Timers are scoped to this middleware instance. A second configured store
+// must never cancel or inherit another store's pending note save.
 
 /**
- * Record the failure in Redux, toast once per burst, and — once the streak
- * reaches the threshold — snapshot the buffer + scream. The banner itself
- * reads the streak from Redux (see NoteSaveFailureBanner).
+ * Resolve an optional materialized folder for a first-save note.
+ * A folder name can legitimately exist only on the note: default folders and
+ * older rows are materialized lazily, so zero rows is not an error.
  */
-function failSave(
-  storeApi: {
-    getState: () => unknown;
-    dispatch: (action: ReturnType<typeof markNoteSaveError>) => unknown;
-  },
-  noteId: string,
-  message: string,
-): void {
-  storeApi.dispatch(markNoteSaveError({ id: noteId, error: message }));
-  toastNoteWriteBlocked(noteId, message);
-  const after = storeApi.getState() as StateWithNotes;
-  const record = after.notes?.notes?.[noteId];
-  reportNoteSaveFailure({
-    noteId,
-    failureCount: record?._consecutiveSaveFailures ?? 1,
-    message,
-    label: record?.label ?? null,
-  });
-}
-
 /**
  * Auto-save middleware.
  * Listens for updateNoteContent and updateNoteLabel actions.
@@ -109,8 +60,10 @@ function failSave(
  * Mid-save keystrokes: `markNoteSaved` receives a savedSnapshot and only
  * clears dirty fields that still match what was written.
  */
-export const autoSaveMiddleware: Middleware =
-  (storeApi) => (next) => (action) => {
+export const autoSaveMiddleware: Middleware<{}, RootState, AppDispatch> =
+  (storeApi) => {
+    const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    return (next) => (action) => {
     const result = next(action);
 
     // Content/label edits + internal follow-up after a mid-save dirty remain.
@@ -183,201 +136,15 @@ export const autoSaveMiddleware: Middleware =
         NoteRecord | undefined;
       if (!recordAfterLabel || !recordAfterLabel._dirty) return;
 
-      const savedSnapshot = snapshotDirtyFields(recordAfterLabel);
-
-      // Record what we are about to send BEFORE sending it — the realtime echo
-      // of this write can arrive before the REST response does.
-      storeApi.dispatch(
-        recordNoteWriteAttempt({ id: noteId, values: savedSnapshot }),
-      );
-      storeApi.dispatch(markNoteSaving(noteId));
-
       try {
-        if (recordAfterLabel._isAutogenerated) {
-          // ── First save: INSERT (materialize) ─────────────────────
-          const userId =
-            recordAfterLabel.created_by || currentState.userAuth?.id;
-          if (!userId) {
-            failSave(storeApi, noteId, "No signed-in user — cannot save this note.");
-            return;
-          }
-
-          // A client-only record is allowed only before it becomes a pending
-          // write. Refuse an empty/malformed destination before any folder or
-          // note I/O; do not recapture the active organization here.
-          const organizationId = requireOrganizationContext(recordAfterLabel.organization_id);
-          // Resolve folder_id if not already set
-          let folderId = recordAfterLabel.folder_id;
-          if (!folderId && recordAfterLabel.folder_name) {
-            folderId = await resolveMaterializedFolderId(
-              userId,
-              recordAfterLabel.folder_name,
-              organizationId,
-            );
-          }
-
-          const { data, error } = await supabase
-            .schema("workbench")
-            .from("notes")
-            .insert({
-              id: noteId,
-              // Canonical RLS std_insert requires created_by = auth.uid().
-              created_by: userId,
-              label: recordAfterLabel.label,
-              content: recordAfterLabel.content,
-              folder_name: recordAfterLabel.folder_name,
-              folder_id: folderId,
-              // folder_id may be null, so the org-inherit trigger may have no
-              // parent to read — resolve the org explicitly (never a null org).
-              organization_id: organizationId,
-              tags: recordAfterLabel.tags,
-              metadata: recordAfterLabel.metadata,
-              position: recordAfterLabel.position ?? 0,
-              // Persist the record's visibility (defaults to 'private' at
-              // record creation) — the DB column defaults to 'internal', so
-              // omitting it would silently make the note org-visible.
-              visibility: recordAfterLabel.visibility,
-            })
-            .select("updated_at")
-            .single();
-
-          if (error) {
-            console.error("[AutoSave] INSERT failed:", error.message);
-            failSave(storeApi, noteId, noteSaveErrorMessage(error));
-            return;
-          }
-
-          clearNoteWriteBlockedToast(noteId);
-          storeApi.dispatch(materializeNote(noteId));
-          storeApi.dispatch(
-            markNoteSaved({
-              id: noteId,
-              updatedAt: data?.updated_at ?? undefined,
-              savedSnapshot,
-            }),
-          );
-        } else {
-          // ── Subsequent saves: UPDATE ──────────────────────────────
-          const updates: Record<string, unknown> = { ...savedSnapshot };
-
-          if (Object.keys(updates).length === 0) {
-            storeApi.dispatch(markNoteSaved({ id: noteId, savedSnapshot }));
-            return;
-          }
-
-          // Atomic optimistic lock: WHERE updated_at = local. The BEFORE
-          // UPDATE `_touch_row` trigger only mutates NEW — the predicate
-          // still matches the OLD row. 0 rows ⇒ concurrent write won.
-          let query = supabase
-            .schema("workbench")
-            .from("notes")
-            .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
-            .eq("id", noteId);
-
-          if (recordAfterLabel.updated_at) {
-            query = query.eq("updated_at", recordAfterLabel.updated_at);
-          }
-
-          const { data, error } = await query
-            .select("updated_at")
-            .maybeSingle();
-
-          if (error) {
-            console.error("[AutoSave] UPDATE failed:", error.message);
-            failSave(storeApi, noteId, noteSaveErrorMessage(error));
-            return;
-          }
-
-          if (!data) {
-            // 0 rows: either RLS filtered (viewer) or updated_at mismatch.
-            // Distinguish by a follow-up SELECT we can still read.
-            const { data: stillThere, error: probeError } = await supabase
-              .schema("workbench")
-              .from("notes")
-              .select("updated_at, content, label")
-              .eq("id", noteId)
-              .maybeSingle();
-
-            if (probeError || !stillThere) {
-              failSave(
-                storeApi,
-                noteId,
-                operationFailed(
-                  "save this note — nothing was changed. It may need editor access you don't have, or the note may already be gone",
-                ).message,
-              );
-              return;
-            }
-
-            // Check the ACTUAL server row before crying conflict. If it already
-            // holds exactly what we tried to write, the write landed (or the
-            // row was already there) — only our cached `updated_at` was stale.
-            // That is a timestamp bookkeeping miss, not someone overwriting the
-            // user, and must never surface as a conflict prompt.
-            if (!serverMatchesAttempt(stillThere, savedSnapshot)) {
-              console.warn(
-                "[AutoSave] conflict — updated_at mismatch for",
-                noteId,
-              );
-              storeApi.dispatch(
-                markNoteSaveError({ id: noteId, error: "conflict" }),
-              );
-              return;
-            }
-
-            console.warn(
-              "[AutoSave] stale updated_at recovered — server row already matches this write for",
-              noteId,
-            );
-            clearNoteWriteBlockedToast(noteId);
-            storeApi.dispatch(
-              markNoteSaved({
-                id: noteId,
-                updatedAt: stillThere.updated_at ?? undefined,
-                savedSnapshot,
-              }),
-            );
-          } else {
-            clearNoteWriteBlockedToast(noteId);
-            storeApi.dispatch(
-              markNoteSaved({
-                id: noteId,
-                updatedAt: data.updated_at ?? undefined,
-                savedSnapshot,
-              }),
-            );
-          }
-        }
-
-        // Notify sidebar of label changes
-        if (savedSnapshot.label !== undefined) {
-          window.dispatchEvent(
-            new CustomEvent("notes:labelChange", {
-              detail: { noteId, label: savedSnapshot.label },
-            }),
-          );
-        }
-
-        // Mid-save keystrokes stay dirty — kick another debounce without
-        // touching undo history (requestAutoSave is middleware-only).
-        const afterSave = storeApi.getState() as StateWithNotes;
-        const stillDirty = afterSave.notes?.notes?.[noteId];
-        if (stillDirty?._dirty && !saveTimers.has(noteId)) {
-          storeApi.dispatch({
-            type: "notes/requestAutoSave",
-            payload: { id: noteId },
-          });
-        }
-      } catch (err) {
-        failSave(
-          storeApi,
-          noteId,
-          err instanceof Error ? err.message : "Save failed",
-        );
+        await storeApi.dispatch(saveNote(noteId)).unwrap();
+      } catch {
+        // `saveNote` owns durable error state and user-visible failure.
       }
     }, delay);
 
     saveTimers.set(noteId, timer);
 
     return result;
+  };
   };
