@@ -47,6 +47,7 @@ import type {
     HrDecision,
     HrEnvelope,
     HrInbox,
+    HrInboxPageOffsets,
     HrInboxScope,
     HrInstanceDetail,
 } from "@/features/hr/tasks/types";
@@ -59,13 +60,13 @@ export { HrContractError } from "@/features/hr/tasks/envelope";
  */
 export async function fetchHrInbox(
     scope: HrInboxScope = "mine",
-    options: { employmentId?: string | null; flowKey?: string | null } = {},
+    options: { employmentId?: string | null; flowKey?: string | null; pageOffsets?: HrInboxPageOffsets } = {},
 ): Promise<HrEnvelope<HrInbox>> {
     const supabase = createClient();
     const { data, error } = await supabase.rpc("hr_wf_inbox", {
         p_scope: scope,
         ...(options.employmentId ? { p_employment_id: options.employmentId } : {}),
-        p_filters: options.flowKey ? { flow_key: options.flowKey } : {},
+        p_filters: { ...(options.flowKey ? { flow_key: options.flowKey } : {}), ...(options.pageOffsets ? { page_offsets: options.pageOffsets } : {}) },
     });
     if (error) throw error;
     return parseEnvelope("hr_wf_inbox", data, parseInbox);
