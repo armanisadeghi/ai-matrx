@@ -422,7 +422,7 @@ interface AnonDefinerRow {
 // all of them every run is a gate nobody reads. It fails on GROWTH.
 const UNGATED_ANON_DOOR_QUERY = `
   with doors as (
-    select d.schema_name, d.function_name, d.identity_args,
+    select d.schema_name, d.function_name, d.identity_args, d.gate_predicate,
            pg_get_functiondef(p.oid) as def,
            -- The function's OWN search_path, so an unqualified table name in its
            -- body can be resolved the way Postgres resolves it.
@@ -461,14 +461,29 @@ const UNGATED_ANON_DOOR_QUERY = `
   select d.schema_name || '.' || d.function_name as fn,
          d.identity_args as args
   from doors d cross join gate_rx g
-  where exists (
-      select 1 from vis_tables v
-      where d.def ~* ('\\m' || replace(v.sch || '.' || v.tbl, '.', '\\.') || '\\M')
-         or (v.sch = any(d.spath) and d.def ~* ('\\m' || v.tbl || '\\M'))
+  where (
+      -- DD-173 / B-74: where a door has DECLARED its own gate predicate
+      -- (platform.client_callable_door.gate_predicate), that declaration is the whole
+      -- check — RED only if the literal text is absent from the door's live body. This
+      -- replaces vocabulary-guessing for every door that has been censused, and is why
+      -- billing.public_plans() (predicate is_public) no longer depends on a fixed
+      -- word list that never anticipated a plain column-name gate.
+      (d.gate_predicate is not null and strpos(lower(d.def), lower(d.gate_predicate)) = 0)
+      or (
+        -- Fallback for every door NOT yet censused with a gate_predicate: the original
+        -- vis-table + vocabulary heuristic, unchanged, so this migration can only make
+        -- checked doors more precise — it cannot turn any other door's check off.
+        d.gate_predicate is null
+        and exists (
+          select 1 from vis_tables v
+          where d.def ~* ('\\m' || replace(v.sch || '.' || v.tbl, '.', '\\.') || '\\M')
+             or (v.sch = any(d.spath) and d.def ~* ('\\m' || v.tbl || '\\M'))
+        )
+        and d.def !~* g.rx
+        and d.identity_args !~* '(secret|token|code|pin|password|passcode|session)'
+        and d.def !~* 'auth\\.uid\\(\\)'
+      )
     )
-    and d.def !~* g.rx
-    and d.identity_args !~* '(secret|token|code|pin|password|passcode|session)'
-    and d.def !~* 'auth\\.uid\\(\\)'
   order by 1, 2
 `;
 
