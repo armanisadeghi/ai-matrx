@@ -66,6 +66,7 @@ export function TopRequestsTable({
       id: "cost",
       header: "Cost",
       accessorFn: (r) => r.cost,
+      filter: "number",
       defaultSortDirection: "desc",
       width: 90,
       align: "right",
@@ -255,7 +256,11 @@ export function TopRequestsTable({
       defaultSort={{ id: "cost", direction: "desc" }}
       pageSize={20}
       emptyState={{ title: "No requests in this window." }}
-      toolbar={{ search: true, searchPlaceholder: "Search requests…" }}
+      toolbar={{
+        title: "Costliest requests",
+        search: true,
+        searchPlaceholder: "Search requests…",
+      }}
     />
   );
 }

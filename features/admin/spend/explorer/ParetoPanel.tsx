@@ -5,9 +5,8 @@
 // if you show everything that adds up to eighty percent in total, it would be
 // a few entries, and then everything else could be summed up as other").
 //
-// For each dimension: the fewest rows that together reach 80% of the window,
-// then ONE "everything else" row. A dimension where one row alone is 80% shows
-// one row. Every row drills; every identity opens.
+// For each dimension: 3–6 top rows, stopping once they reach 80%, then ONE
+// fixed-bottom "everything else" row. Every row drills; every identity opens.
 //
 // Doc: features/admin/spend/FEATURE.md
 
@@ -17,7 +16,11 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
 import { usd } from "../format";
-import type { SpendBreakdown, SpendDimension, SpendDimensionRow } from "../types";
+import type {
+  SpendBreakdown,
+  SpendDimension,
+  SpendDimensionRow,
+} from "../types";
 import { DIMENSION_LABEL, identityHref, percent, rowLabel } from "./labels";
 
 const PARETO_DIMENSIONS: readonly SpendDimension[] = [
@@ -44,12 +47,16 @@ export function paretoCut(
   distinct: number,
   total: number,
   target = 0.8,
+  minItems = 3,
+  maxItems = 6,
 ): ParetoCut {
   const sorted = [...rows].sort((a, b) => b.cost - a.cost);
   const head: SpendDimensionRow[] = [];
   let headCost = 0;
   for (const row of sorted) {
-    if (total > 0 && headCost / total >= target) break;
+    if (head.length >= maxItems) break;
+    if (head.length >= minItems && total > 0 && headCost / total >= target)
+      break;
     head.push(row);
     headCost += row.cost;
   }
@@ -75,17 +82,27 @@ function ParetoCard({
   return (
     <div className="flex min-w-0 flex-col rounded-md border border-border bg-card">
       <div className="flex items-baseline justify-between gap-2 border-b border-border px-3 py-1.5">
-        <span className="text-sm font-semibold text-foreground">{DIMENSION_LABEL[dim]}</span>
-        <span className="truncate text-[11px] text-muted-foreground">
-          {cut.head.length} of {cut.distinct} = {percent(headShare)}
+        <span className="text-sm font-semibold text-foreground">
+          {DIMENSION_LABEL[dim]}
         </span>
+        <div className="flex min-w-0 items-center gap-2 text-[11px] tabular-nums text-muted-foreground">
+          <span className="truncate">
+            {cut.head.length} of {cut.distinct} · {percent(headShare)}
+          </span>
+          <span className="shrink-0 font-medium text-foreground">
+            Total {usd(total)}
+          </span>
+        </div>
       </div>
-      <ul className="flex flex-col">
+      <ul className="flex h-full flex-col">
         {cut.head.map((row) => {
           const href = identityHref(dim, row.key);
           const label = rowLabel(dim, row);
           return (
-            <li key={row.key} className="group relative flex items-center gap-2 px-3 py-1">
+            <li
+              key={row.key}
+              className="group relative flex items-center gap-2 px-3 py-1"
+            >
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-y-0.5 left-0 rounded-r-sm bg-primary/10"
@@ -120,20 +137,22 @@ function ParetoCard({
             </li>
           );
         })}
-        {cut.restCount > 0 || cut.restCost > 0.005 ? (
-          <li className="flex items-center gap-2 border-t border-dashed border-border px-3 py-1 text-[11px] text-muted-foreground">
-            <span className="min-w-0 flex-1 truncate">
-              Everything else ({cut.restCount} more)
-            </span>
-            <span className="w-10 shrink-0 text-right tabular-nums">
-              {percent(total > 0 ? cut.restCost / total : 0)}
-            </span>
-            <span className="w-16 shrink-0 text-right tabular-nums">{usd(cut.restCost)}</span>
-            <span className="h-3 w-3 shrink-0" aria-hidden />
-          </li>
-        ) : null}
+        <li className="mt-auto flex items-center gap-2 border-t border-dashed border-border px-3 py-1 text-[11px] text-muted-foreground">
+          <span className="min-w-0 flex-1 truncate">
+            Everything else ({cut.restCount} more)
+          </span>
+          <span className="w-10 shrink-0 text-right tabular-nums">
+            {percent(total > 0 ? cut.restCost / total : 0)}
+          </span>
+          <span className="w-16 shrink-0 text-right tabular-nums">
+            {usd(cut.restCost)}
+          </span>
+          <span className="h-3 w-3 shrink-0" aria-hidden />
+        </li>
         {cut.head.length === 0 ? (
-          <li className="px-3 py-2 text-xs text-muted-foreground">Nothing in this window.</li>
+          <li className="px-3 py-2 text-xs text-muted-foreground">
+            Nothing in this window.
+          </li>
         ) : null}
       </ul>
     </div>
@@ -155,7 +174,15 @@ export function ParetoPanel({
       {dims.map((dim) => {
         const d = data.dimensions[dim];
         const cut = paretoCut(d.rows, d.distinct, total);
-        return <ParetoCard key={dim} dim={dim} cut={cut} total={total} onDrill={onDrill} />;
+        return (
+          <ParetoCard
+            key={dim}
+            dim={dim}
+            cut={cut}
+            total={total}
+            onDrill={onDrill}
+          />
+        );
       })}
     </div>
   );

@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Table2 } from "lucide-react";
 
 // Tabs come through the host wrapper, never straight from the package: the
 // wrapper is where "a tab activates on a plain click" lives (see
@@ -97,6 +97,7 @@ function columnsFor(
       id: "cost",
       header: "Cost",
       accessorFn: (r) => r.cost,
+      filter: "number",
       defaultSortDirection: "desc",
       width: 100,
       align: "right",
@@ -194,54 +195,68 @@ export function DimensionTables({
 }) {
   const [tab, setTab] = useState<SpendDimension>("user");
   return (
-    <Tabs value={tab} onValueChange={(v) => setTab(v as SpendDimension)}>
-      <TabsList className="h-auto flex-wrap justify-start">
+    <section className="flex min-w-0 flex-col gap-2">
+      <header className="flex min-w-0 items-center gap-2">
+        <Table2
+          className="h-4 w-4 shrink-0 text-muted-foreground"
+          aria-hidden
+        />
+        <h2 className="text-sm font-semibold text-foreground">
+          Every dimension
+        </h2>
+      </header>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as SpendDimension)}>
+        <div className="relative min-w-0 overflow-hidden after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-8 after:bg-gradient-to-l after:from-background after:to-transparent before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:z-10 before:w-5 before:bg-gradient-to-r before:from-background before:to-transparent">
+          <TabsList className="scrollbar-none h-auto max-w-full flex-nowrap justify-start overflow-x-auto px-1">
+            {SPEND_DIMENSIONS.map((dim) => {
+              const d = data.dimensions[dim];
+              return (
+                <TabsTrigger
+                  key={dim}
+                  value={dim}
+                  className="shrink-0 gap-1 px-2 text-xs whitespace-nowrap"
+                  title={DIMENSION_HINT[dim]}
+                >
+                  {DIMENSION_LABEL[dim]}
+                  <span className="rounded-full bg-muted px-1 text-[10px] tabular-nums text-muted-foreground">
+                    {d.distinct}
+                  </span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
         {SPEND_DIMENSIONS.map((dim) => {
           const d = data.dimensions[dim];
           return (
-            <TabsTrigger
+            <TabsContent
               key={dim}
               value={dim}
-              className="gap-1.5 text-xs"
-              title={DIMENSION_HINT[dim]}
+              className="mt-2 flex flex-col gap-1.5"
             >
-              {DIMENSION_LABEL[dim]}
-              <span className="rounded-full bg-muted px-1.5 text-[10px] tabular-nums text-muted-foreground">
-                {d.distinct}
-              </span>
-            </TabsTrigger>
+              {d.otherN > 0 ? (
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  Top {d.rows.length} of {d.distinct} · Other {usd(d.otherCost)}
+                </p>
+              ) : null}
+              <MatrxDataTable
+                urlState={{ id: `spend-${dim}` }}
+                data={d.rows}
+                columns={columnsFor(dim, onDrill)}
+                getRowId={(r) => r.key}
+                defaultSort={{ id: "cost", direction: "desc" }}
+                pageSize={15}
+                emptyState={{ title: "Nothing in this window." }}
+                toolbar={{
+                  title: DIMENSION_LABEL[dim],
+                  search: true,
+                  searchPlaceholder: `Search ${DIMENSION_LABEL[dim].toLowerCase()}…`,
+                }}
+              />
+            </TabsContent>
           );
         })}
-      </TabsList>
-      {SPEND_DIMENSIONS.map((dim) => {
-        const d = data.dimensions[dim];
-        return (
-          <TabsContent
-            key={dim}
-            value={dim}
-            className="mt-2 flex flex-col gap-1.5"
-          >
-            {d.otherN > 0 ? (
-              <p className="text-xs tabular-nums text-muted-foreground">
-                Top {d.rows.length} of {d.distinct} · Other {usd(d.otherCost)}
-              </p>
-            ) : null}
-            <MatrxDataTable
-              urlState={{ id: `spend-${dim}` }}
-              data={d.rows}
-              columns={columnsFor(dim, onDrill)}
-              getRowId={(r) => r.key}
-              defaultSort={{ id: "cost", direction: "desc" }}
-              pageSize={15}
-              emptyState={{ title: "Nothing in this window." }}
-              toolbar={{
-                search: true,
-                searchPlaceholder: `Search ${DIMENSION_LABEL[dim].toLowerCase()}…`,
-              }}
-            />
-          </TabsContent>
-        );
-      })}
-    </Tabs>
+      </Tabs>
+    </section>
   );
 }

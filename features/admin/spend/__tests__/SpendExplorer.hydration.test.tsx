@@ -72,6 +72,6 @@ describe("SpendExplorer hydration boundary", () => {
 
     expect(recoverable).toEqual([]);
     expect(consoleError).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("Loading");
+    expect(container.querySelector("[aria-busy]")).not.toBeNull();
   });
 });

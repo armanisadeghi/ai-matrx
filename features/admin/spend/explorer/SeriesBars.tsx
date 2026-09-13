@@ -21,7 +21,17 @@ export interface SeriesBarsProps {
   onPickDay?: (day: string) => void;
 }
 
-export function SeriesBars({ points, granularity, onPickDay }: SeriesBarsProps) {
+const ROUNDED_USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+export function SeriesBars({
+  points,
+  granularity,
+  onPickDay,
+}: SeriesBarsProps) {
   const peak = points.reduce((max, p) => Math.max(max, p.cost), 0);
   if (points.length === 0 || peak <= 0) {
     return (
@@ -32,35 +42,56 @@ export function SeriesBars({ points, granularity, onPickDay }: SeriesBarsProps) 
   }
   const peakIndex = points.findIndex((p) => p.cost === peak);
   // Label every Nth tick so the axis stays legible at 48 or 720 buckets.
-  const tickEvery = points.length <= 8 ? 1 : points.length <= 31 ? Math.ceil(points.length / 8) : 6;
+  const tickEvery =
+    points.length <= 8
+      ? 1
+      : points.length <= 31
+        ? Math.ceil(points.length / 8)
+        : 6;
 
   return (
     <div className="rounded-md border border-border bg-card p-2">
       <div className="mb-1 flex items-center gap-3 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span aria-hidden className="inline-block h-2 w-2 rounded-sm bg-chart-2" /> Manual
+          <span
+            aria-hidden
+            className="inline-block h-2 w-2 rounded-sm bg-chart-2"
+          />{" "}
+          Manual
         </span>
         <span className="flex items-center gap-1">
-          <span aria-hidden className="inline-block h-2 w-2 rounded-sm bg-chart-1" /> Automated
+          <span
+            aria-hidden
+            className="inline-block h-2 w-2 rounded-sm bg-chart-1"
+          />{" "}
+          Automated
         </span>
         <span className="ml-auto">
-          per {granularity} · peak {usd(peak)} at {shortLocal(points[peakIndex]?.at ?? "")}
+          per {granularity} · peak {usd(peak)} at{" "}
+          {shortLocal(points[peakIndex]?.at ?? "")}
         </span>
       </div>
-      <div className="flex h-28 items-end gap-[2px]">
+      <div className="flex h-28 items-end gap-[2px] pt-4">
         {points.map((p, i) => {
           const total = Math.max(0, p.cost);
           const heightPct = (total / peak) * 100;
           const manualPct = total > 0 ? (p.manual / total) * 100 : 0;
           const title = `${shortLocal(p.at)} — ${usd(p.cost)} (manual ${usd(p.manual)}, automated ${usd(p.automated)}, ${p.n} executions)`;
-          const clickable = granularity === "day" && onPickDay !== undefined && total > 0;
+          const clickable =
+            granularity === "day" && onPickDay !== undefined && total > 0;
           const bar = (
             <div
               className="flex w-full flex-col justify-end overflow-hidden rounded-t-[3px]"
               style={{ height: `${Math.max(total > 0 ? 2 : 0, heightPct)}%` }}
             >
-              <div className="w-full bg-chart-1" style={{ height: `${100 - manualPct}%` }} />
-              <div className="w-full bg-chart-2" style={{ height: `${manualPct}%` }} />
+              <div
+                className="w-full bg-chart-1"
+                style={{ height: `${100 - manualPct}%` }}
+              />
+              <div
+                className="w-full bg-chart-2"
+                style={{ height: `${manualPct}%` }}
+              />
             </div>
           );
           return (
@@ -70,8 +101,8 @@ export function SeriesBars({ points, granularity, onPickDay }: SeriesBarsProps) 
               title={title}
             >
               {i === peakIndex ? (
-                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium tabular-nums text-foreground">
-                  {usd(peak)}
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums text-foreground">
+                  {ROUNDED_USD.format(peak)}
                 </span>
               ) : null}
               {clickable ? (
@@ -97,7 +128,8 @@ export function SeriesBars({ points, granularity, onPickDay }: SeriesBarsProps) 
           apart (≥ 6 buckets at hour granularity) that labels never collide. */}
       <div className="relative mt-1 flex h-4 gap-[2px] overflow-hidden text-[10px] text-muted-foreground">
         {points.map((p, i) => {
-          if (i % tickEvery !== 0) return <div key={p.at} className="min-w-[3px] flex-1" />;
+          if (i % tickEvery !== 0)
+            return <div key={p.at} className="min-w-[3px] flex-1" />;
           // A label in the last quarter of the row runs LEFT from its cell's
           // right edge; running right there would leave the row's clip
           // (a 24-bucket window rendered "Sep 12, 7 A" on the last tick).
