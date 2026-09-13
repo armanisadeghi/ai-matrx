@@ -152,7 +152,7 @@ export function DatabaseAdminLayoutClient({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {children}
       </div>
     </div>
