@@ -18,12 +18,19 @@ function causes(value: unknown, failed: readonly NoteContextField[]): boolean {
   const ownNames = Object.getOwnPropertyNames(value);
   return Object.getOwnPropertySymbols(value).length === 0 && ownNames.every((field) => { const descriptor = Object.getOwnPropertyDescriptor(value, field); return descriptor !== undefined && "value" in descriptor && descriptor.enumerable && contexts.includes(field as NoteContextField) && failed.includes(field as NoteContextField) && typeof descriptor.value === "string"; });
 }
-export function validateNoteSaveReceipt(args: { base: { noteId: string; organizationId: string; version: number }; receipt: unknown; submittedPhysical: Partial<Physical>; contextFields?: readonly NoteContextField[]; requirePhysicalWrite?: boolean }): NoteSaveReceipt {
+export function validateNoteSaveReceipt(args: { base: { noteId: string; organizationId: string; version: number }; receipt: unknown; submittedPhysical: Partial<Physical>; submittedContext?: Partial<Pick<Note, NoteContextField>>; contextFields?: readonly NoteContextField[]; requirePhysicalWrite?: boolean }): NoteSaveReceipt {
   const receipt = args.receipt as NoteSaveReceipt;
   if (!receipt || typeof receipt !== "object" || !receipt.note || (receipt.databaseWrite !== "saved" && receipt.databaseWrite !== "unchanged") || !dense(receipt.succeededFields) || !dense(receipt.failedFields) || receipt.succeededFields.some((field) => receipt.failedFields.includes(field)) || !causes(receipt.safeCauses, receipt.failedFields)) throw new Error("The note save returned an invalid context acknowledgement receipt.");
   if (receipt.note.id !== args.base.noteId || receipt.note.organization_id !== args.base.organizationId || !Number.isSafeInteger(receipt.note.version) || receipt.note.version < 0) throw new Error("The note acknowledgement receipt does not match this editor source.");
   if ((receipt.databaseWrite === "saved" && receipt.note.version <= args.base.version) || (receipt.databaseWrite === "unchanged" && receipt.note.version !== args.base.version) || (args.requirePhysicalWrite && Object.keys(args.submittedPhysical).length && receipt.databaseWrite !== "saved")) throw new Error("The note acknowledgement receipt has an invalid revision outcome.");
   for (const key of Object.keys(args.submittedPhysical) as (keyof Physical)[]) if (!equalNoteSnapshotValue(receipt.note[key], args.submittedPhysical[key])) throw new Error("The note acknowledgement receipt does not match submitted physical fields.");
   if (args.contextFields && (receipt.succeededFields.length + receipt.failedFields.length !== args.contextFields.length || !args.contextFields.every((field) => receipt.succeededFields.includes(field) || receipt.failedFields.includes(field)))) throw new Error("The note acknowledgement receipt has an invalid context partition.");
+  if (args.submittedContext) {
+    const fields = Object.keys(args.submittedContext);
+    if (fields.length !== receipt.succeededFields.length + receipt.failedFields.length || !fields.every((field) => contexts.includes(field as NoteContextField) && (receipt.succeededFields.includes(field as NoteContextField) || receipt.failedFields.includes(field as NoteContextField)))) throw new Error("The note acknowledgement receipt has an invalid submitted context partition.");
+    for (const field of receipt.succeededFields) {
+      if (!Object.hasOwn(args.submittedContext, field) || !equalNoteSnapshotValue(receipt.note[field], args.submittedContext[field])) throw new Error("The note acknowledgement receipt does not match submitted context values.");
+    }
+  }
   return receipt;
 }

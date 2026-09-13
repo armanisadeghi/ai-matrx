@@ -2,7 +2,7 @@
 // Redux slice for notes — follows the agent-definition pattern with
 // per-note undo/redo, two-stage fetch, and dirty tracking.
 
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
 import type { FolderReference, Note } from "../types";
 import {
   type NoteRecord,
@@ -790,7 +790,7 @@ const notesSlice = createSlice({
         record._dirty = true;
         // Mine is an explicit reviewed rebase: retain the reviewed local
         // draft but use the reviewed remote physical row as its next CAS base.
-        record._acknowledgedPhysicalSnapshot = cloneAcknowledgedNote(remote);
+        record._acknowledgedPhysicalSnapshot = cloneAcknowledgedNote(current(remote));
         record.updated_at = remote.updated_at;
         record.version = remote.version;
         record._error = null;

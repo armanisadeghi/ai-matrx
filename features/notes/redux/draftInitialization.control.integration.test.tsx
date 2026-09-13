@@ -2,7 +2,7 @@ const schema = jest.fn();
 const getSession = jest.fn();
 const getUserId = jest.fn();
 const listForSources = jest.fn();
-const mockUser = { id: "33333333-3333-4333-833333333333" };
+const mockUser = { id: "33333333-3333-4333-8333-333333333333" };
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema, auth: { getSession } },
