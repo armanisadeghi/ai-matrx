@@ -203,12 +203,9 @@ export const editMessage = createAsyncThunk<
     // ── 3. Patch with authoritative row from the RPC return ─────────────
     // The RPC returns the full chat.message row after the edit (including the
     // updated `content_history` with the prior content archived). The generated
-    // Returns for cx_message_edit mis-resolves to `graveyard.message`: the
-    // Supabase type generator can't disambiguate the bare `message` composite
-    // return between the live chat.message and the retired graveyard.message and
-    // picks the wrong one. The RPC genuinely returns chat.message, so the
-    // `.returns<chat.message Row>()` on the call above pins the correct type and
-    // `data` is the real row here — no cast needed.
+    // signature now resolves the live chat.message row correctly; keeping the
+    // explicit `.returns<chat.message Row>()` at the call site makes the
+    // authoritative projection expected by this thunk unambiguous.
     if (data) {
       let authoritativeUserContent = data.user_content;
       if (
