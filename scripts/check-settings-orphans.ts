@@ -74,7 +74,15 @@ async function main(): Promise<void> {
 
   const rows = await loadRegistry(GUARD);
 
-  const fe = collectFrontend();
+  // A settings SURFACE is never a consumer. The universal settings pane, the
+  // first screen and the admin limits page quote every key they render, so
+  // scanning them made a key with zero runtime readers count as "forwarded"
+  // (2026-09-12: the three first-screen keys read as consumed while the UI
+  // itself said "Not connected yet"). They edit settings; they do not honour
+  // them.
+  const fe = collectFrontend().filter(
+    (f) => !/matrx-frontend\/(features\/settings\/(universal|tabs)|features\/admin\/limits)\//.test(f.rel),
+  );
   const ai = collectAidream(AIDREAM_SCAN_DIRS);
   if (!ai) {
     unmeasured(

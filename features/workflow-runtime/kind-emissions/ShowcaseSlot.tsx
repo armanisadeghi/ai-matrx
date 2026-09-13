@@ -28,6 +28,8 @@ import React from "react";
 import { Presentation } from "lucide-react";
 
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { StructuredDocumentPresentationProvider } from "@/features/tool-call-visualization/result-fields/document-presentation";
+import { fieldLabelsFromJsonSchema } from "@/features/tool-call-visualization/result-fields/schema-labels";
 import { cn } from "@/lib/utils";
 
 import { EmissionRender, type RenderableEmission } from "./EmissionRender";
@@ -69,6 +71,15 @@ export interface ShowcaseSlotProps {
 }
 
 /**
+ * THE AUTHOR NAMES THE FIELDS (wall W61, 2026-09-12). The declared
+ * deliverable carries the producing node's own JSON Schema, and a property's
+ * `title` there is what the author called that field. Handing those labels to
+ * the structured floor is what stops a showcase heading being derived from a
+ * payload key the reader was never meant to see. No schema, no titles, no
+ * change — the key-derived label remains the fallback.
+ */
+
+/**
  * The centered stage. Renders nothing at all when the workflow declares no
  * showcase and none has arrived — an empty stage on a page that will never use
  * one is furniture, and furniture is what this contract removes.
@@ -93,6 +104,13 @@ export function ShowcaseSlot({
   // slot reserves with the generic silhouette — an honest "something large is
   // coming" rather than a guess at its shape.
   const reservingKind = declared.find((d) => d.outputKind)?.outputKind ?? null;
+  const schemaLabels = React.useMemo(() => {
+    const forNode = emission
+      ? declared.find((d) => d.nodeId === emission.nodeId)
+      : null;
+    const schema = (forNode ?? declared[0])?.jsonSchema;
+    return schema ? fieldLabelsFromJsonSchema(schema) : null;
+  }, [declared, emission]);
   const title = staged
     ? (stagedTitle ?? "Waiting on you")
     : (emission?.title ?? declared[0]?.title ?? "The main event");
@@ -119,12 +137,14 @@ export function ShowcaseSlot({
           // `key` on the node id, not the seq: a REPLACEMENT is a different
           // subject and should mount fresh, while the same node re-emitting an
           // updated payload should update in place rather than restart.
-          <EmissionRender
-            key={emission.nodeId}
-            runId={runId}
-            emission={emission}
-            variant="bare"
-          />
+          <StructuredDocumentPresentationProvider labels={schemaLabels}>
+            <EmissionRender
+              key={emission.nodeId}
+              runId={runId}
+              emission={emission}
+              variant="bare"
+            />
+          </StructuredDocumentPresentationProvider>
         ) : (
           <KindSlot
             slotKey={`${runId}:showcase`}

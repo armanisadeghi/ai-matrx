@@ -28,6 +28,7 @@ import {
   selectRunStartedAt,
   selectRunStatus,
   selectRunStatusTs,
+  selectRunReadFailure,
 } from "../../redux/workflow-runs.selectors";
 import { runIsOver } from "../../types";
 import {
@@ -123,7 +124,14 @@ export function RunHero({
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const costTotal = useAppSelector(selectRunCostTotal(runId));
 
-  const copy = STATUS_COPY[status ?? "pending"] ?? STATUS_COPY.pending;
+  // WHY THE PAGE HAS NOTHING (W39, 2026-09-12). A run whose attach read was
+  // refused used to sit on the `pending` default and narrate "GETTING READY"
+  // over work that had finished hours earlier. A refused read is not progress,
+  // and the reader is told which it is.
+  const readFailure = useAppSelector(selectRunReadFailure(runId));
+  const copy = readFailure
+    ? ({ label: "Could not read this run", tone: "bad" } as const)
+    : (STATUS_COPY[status ?? "pending"] ?? STATUS_COPY.pending);
   const terminal = runIsOver(status);
   const live = !terminal;
 
@@ -190,10 +198,20 @@ export function RunHero({
       <h1 className="mt-2 line-clamp-2 min-h-[2.5rem] text-xl font-semibold leading-tight text-foreground sm:text-2xl">
         {workflowName}
       </h1>
-      <p className="mt-0.5 line-clamp-1 min-h-[1.25rem] text-sm text-muted-foreground">
-        {live && current
-          ? headline
-          : (workflowDescription ?? (terminal ? "" : headline))}
+      <p
+        className={cn(
+          "mt-0.5 min-h-[1.25rem] text-sm",
+          readFailure
+            ? "text-destructive"
+            : "line-clamp-1 text-muted-foreground",
+        )}
+        role={readFailure ? "alert" : undefined}
+      >
+        {readFailure
+          ? readFailure
+          : live && current
+            ? headline
+            : (workflowDescription ?? (terminal ? "" : headline))}
       </p>
 
       <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -206,7 +224,7 @@ export function RunHero({
                 ? "bg-emerald-500"
                 : "bg-gradient-to-r from-primary to-primary/60",
           )}
-          style={{ width: `${Math.max(2, pct)}%` }}
+          style={{ width: readFailure ? "100%" : `${Math.max(2, pct)}%` }}
         />
       </div>
 

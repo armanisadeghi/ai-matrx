@@ -66,6 +66,7 @@ import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDicta
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
 import { WizardAnswersLost } from "@/lib/wizard-draft/WizardAnswersLost";
@@ -399,6 +400,12 @@ export function NewRulebookFlow() {
     searchParams.get("approach"),
   );
   const [saving, setSaving] = useState(false);
+  // W39: what Start is doing RIGHT NOW, said on the page. "waiting" is the
+  // bounded wait for the workspace; `workspaceProblem` is the settled, honest
+  // "there is no workspace" — an inline sentence with a remedy, never a toast
+  // that tells somebody to press the button again.
+  const [waitingForWorkspace, setWaitingForWorkspace] = useState(false);
+  const [workspaceProblem, setWorkspaceProblem] = useState<string | null>(null);
   /** The "On the way" cards are one collapsed line until the Expert opens it. */
   const [showComingSoon, setShowComingSoon] = useState(false);
 
@@ -570,9 +577,23 @@ export function NewRulebookFlow() {
       toast.error("Pick how you'd like to do this first.");
       return;
     }
-    if (!organizationId) {
-      toast.error("Your workspace is still loading — try again in a moment.");
-      return;
+    // THE ACTION WAITS FOR THE WORKSPACE (wall W39). Pressing Start used to
+    // read the workspace once and refuse with "still loading — try again in a
+    // moment": wrong while the bootstrap was milliseconds from landing, and a
+    // lie once it had landed with nothing selected. Now the press waits, says
+    // so on the page, and when there is genuinely no workspace it says THAT,
+    // with the remedy, and stays said until it is fixed.
+    let workspaceId = organizationId;
+    if (!workspaceId) {
+      setWorkspaceProblem(null);
+      setWaitingForWorkspace(true);
+      const workspace = await awaitEffectiveOrganizationId();
+      setWaitingForWorkspace(false);
+      if (workspace.status !== "ready") {
+        setWorkspaceProblem(workspace.reason);
+        return;
+      }
+      workspaceId = workspace.organizationId;
     }
     // NOTHING FAILS SILENTLY: a Rulebook with no goal is not a Rulebook. The
     // step resolver should make this unreachable; if it ever is reached, the
@@ -591,7 +612,7 @@ export function NewRulebookFlow() {
         name: rulebookName,
         description: goal.trim(),
         source: {},
-        organizationId,
+        organizationId: workspaceId,
         intake: {
           goal: goal.trim(),
           who_runs_it: answers.who,
@@ -901,6 +922,15 @@ export function NewRulebookFlow() {
               anything, which reads as "there is no way to proceed". It is now
               a sticky bar that also NAMES the card it will start, so the
               Expert can see what pressing it does without scrolling back. */}
+          {workspaceProblem ? (
+            <div
+              role="alert"
+              className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+            >
+              {workspaceProblem}
+            </div>
+          ) : null}
+
           <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
             <Button
               variant="ghost"
@@ -913,7 +943,9 @@ export function NewRulebookFlow() {
             </Button>
             <div className="flex min-w-0 items-center gap-3">
               <p className="min-w-0 truncate text-right text-xs text-muted-foreground sm:text-sm">
-                {selectedApproach ? (
+                {waitingForWorkspace ? (
+                  "Getting your workspace ready…"
+                ) : selectedApproach ? (
                   <>
                     Starting with{" "}
                     <span className="font-medium text-foreground">
@@ -926,13 +958,17 @@ export function NewRulebookFlow() {
               </p>
               <Button
                 onClick={() => void create()}
-                disabled={saving || !effectiveKey}
+                disabled={saving || waitingForWorkspace || !effectiveKey}
                 className="min-h-[44px] shrink-0 gap-2 px-7"
               >
-                {saving ? (
+                {saving || waitingForWorkspace ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
-                {saving ? "Starting…" : "Start"}
+                {waitingForWorkspace
+                  ? "Getting ready…"
+                  : saving
+                    ? "Starting…"
+                    : "Start"}
               </Button>
             </div>
           </div>

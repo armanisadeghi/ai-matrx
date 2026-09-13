@@ -42,6 +42,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import {
   createTrackedObjectUrl,
   revokeTrackedObjectUrl,
@@ -222,14 +223,19 @@ export function useIntakeSession(
     const existing = batchRef.current;
     if (existing && existing.captureMode === modeRef.current) return existing;
     if (ensureBatchPromiseRef.current) return ensureBatchPromiseRef.current;
-    if (!organizationId) {
-      throw new Error("No organization resolved yet — try again in a moment.");
-    }
+    // W39 class: WAIT for the workspace rather than refusing with "try again
+    // in a moment" — the bootstrap is usually milliseconds away, and when it
+    // is not, the message names the remedy instead of promising an arrival.
+    const workspace = organizationId
+      ? ({ status: "ready", organizationId } as const)
+      : await awaitEffectiveOrganizationId();
+    if (workspace.status !== "ready") throw new Error(workspace.reason);
+    const workspaceId = workspace.organizationId;
     const create = (async () => {
       while (true) {
         const forMode = modeRef.current;
         const b = await ensureOpenBatch({
-          organizationId,
+          organizationId: workspaceId,
           captureMode: forMode,
         });
         if (modeRef.current !== forMode) {

@@ -2,8 +2,15 @@
 
 /**
  * ResultScalar — a single string / number / boolean with a subtle type cue.
- * Numbers and booleans get a mono treatment; booleans render as a Badge so
- * true/false reads instantly. Strings render as plain foreground text.
+ * Numbers get a mono treatment; strings render as plain foreground text.
+ *
+ * A BOOLEAN IS A FLAG, NOT A TOKEN (wall W61, 2026-09-12). This used to print
+ * the literal `true` / `false` in a mono badge, and a finished-run showcase
+ * written for a parent therefore read "Physician first: false". `true` and
+ * `false` are how a program spells a flag; "Yes" and "No" are how a person
+ * reads one, and the field's own label already says what is being answered.
+ * The badge (green for yes, quiet for no) is what makes it readable at a
+ * glance — so it stays a badge, and stops being a token.
  */
 
 import React from "react";
@@ -19,8 +26,8 @@ export interface ResultScalarProps {
 export const ResultScalar: React.FC<ResultScalarProps> = ({ value, type, className }) => {
     if (type === "boolean") {
         return (
-            <Badge variant={value ? "success" : "neutral"} className={cn("font-mono", className)}>
-                {value ? "true" : "false"}
+            <Badge variant={value ? "success" : "neutral"} className={className}>
+                {value ? "Yes" : "No"}
             </Badge>
         );
     }

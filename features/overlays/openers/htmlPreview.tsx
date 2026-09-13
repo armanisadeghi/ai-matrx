@@ -17,10 +17,10 @@
  * self-handle via `conversationId` + `messageId`.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
+import { createFullScreenEditorCallbackGroup, disposeFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 
 const OVERLAY_ID = "htmlPreview" as const;
 
@@ -50,13 +50,6 @@ export interface HtmlPreviewBridgeHandle {
 
 export function useOpenHtmlPreviewBridge() {
   const dispatch = useAppDispatch();
-  // The rendered bridge owns terminal disposal. Do not remove a callback on
-  // opener unmount: the overlay may still be visible after StrictMode replay.
-  const disposersRef = useRef<Set<() => void>>(new Set());
-  useEffect(() => {
-    return undefined;
-  }, []);
-
   return useCallback(
     (opts: OpenHtmlPreviewBridgeOptions): HtmlPreviewBridgeHandle => {
       const instanceId =
@@ -64,18 +57,12 @@ export function useOpenHtmlPreviewBridge() {
         `htmlPreview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       let callbackGroupId: string | null = null;
-      let dispose: (() => void) | null = null;
       if (opts.onSave) {
         const onSave = opts.onSave;
         const group = createFullScreenEditorCallbackGroup({
           onSave,
         });
         callbackGroupId = group.callbackGroupId;
-        dispose = () => {
-          group.dispose();
-          if (dispose) disposersRef.current.delete(dispose);
-        };
-        disposersRef.current.add(dispose);
       }
 
       try {
@@ -97,14 +84,14 @@ export function useOpenHtmlPreviewBridge() {
           }),
         );
       } catch (error) {
-        dispose?.();
+        disposeFullScreenEditorCallbackGroup(callbackGroupId);
         throw error;
       }
       return {
         instanceId,
         close: () => {
           dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId }));
-          dispose?.();
+          disposeFullScreenEditorCallbackGroup(callbackGroupId);
         },
       };
     },

@@ -49,7 +49,10 @@ import {
   startRunEventSource,
   type RunTransportMode,
 } from "../transport/run-event-source";
-import { stampRunStreamOrganizationContext } from "../transport/organization-context";
+import {
+  awaitRunStreamOrganizationContext,
+  stampRunStreamOrganizationContext,
+} from "../transport/organization-context";
 import { RenderBlockFrameAssembler } from "../transport/render-block-frames";
 import {
   applyNodeStreamMeta,
@@ -60,6 +63,7 @@ import {
   seedRunRow,
   refreshHeartbeatTails,
   setLastEventSeq,
+  noteRunReadFailure,
   setTransportMode,
 } from "./workflow-runs.slice";
 import { RunLaneManager } from "./lane-manager";
@@ -138,9 +142,18 @@ export function adoptWorkflowRun(
     };
 
     const fetchJson = async <T>(path: string): Promise<T> => {
-      const response = await fetch(`${baseUrl}${path}`, {
-        headers: getHeaders(),
+      // WAIT FOR THE WORKSPACE (W39, run-permalink instance). This read fires
+      // at page load, and on a cold load it used to beat the organization
+      // bootstrap, come back 400 `organization_required`, and leave the page
+      // narrating "GETTING READY" over a run that finished hours ago. The wait
+      // is bounded and returns instantly once an organization is selected.
+      const headers = await awaitRunStreamOrganizationContext(getState, {
+        "Content-Type": "application/json",
+        ...(selectAccessToken(getState())
+          ? { Authorization: `Bearer ${selectAccessToken(getState())}` }
+          : {}),
       });
+      const response = await fetch(`${baseUrl}${path}`, { headers });
       if (!response.ok) {
         throw new Error(
           `[workflow-runtime] GET ${path} failed: ${response.status}`,
@@ -596,7 +609,21 @@ export function adoptWorkflowRun(
             message: `[adopt-workflow-run] run ${runId}: ${message}`,
             raw: { runId, error },
           });
-          if (!stopped) dispatch(setTransportMode({ runId, mode: "idle" }));
+          if (!stopped) {
+            // NEVER A FAKE PROGRESS STATE (W39, 2026-09-12). A failed attach
+            // read used to leave the run on its `pending` default, so the page
+            // narrated "GETTING READY · Starting" over a finished run and the
+            // refusal existed only in the error log. The screen says it now.
+            dispatch(
+              noteRunReadFailure({
+                runId,
+                message: /\b(400|401|403)\b/.test(message)
+                  ? "We could not read this run — the server refused the request. Reload the page; if it keeps happening, check which workspace you are in."
+                  : "We could not read this run. Reload the page to try again.",
+              }),
+            );
+            dispatch(setTransportMode({ runId, mode: "idle" }));
+          }
         }
       })();
     };

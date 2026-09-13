@@ -43,4 +43,13 @@ describe("full-screen editor callback settlement", () => {
   it("rejects a missing save target", async () => {
     await expect(emitFullScreenEditorSave(null, "draft")).rejects.toThrow("no longer has a save target");
   });
+
+  it("rejects a runtime void save owner before async fan-out can acknowledge it", async () => {
+    const invalidVoidSave = jest.fn(() => undefined) as unknown as (content: string) => Promise<void>;
+    const { callbackGroupId } = createFullScreenEditorCallbackGroup({ onSave: invalidVoidSave });
+
+    await expect(emitFullScreenEditorSave(callbackGroupId, "draft")).rejects.toThrow("must return a Promise");
+    await expect(emitFullScreenEditorSave(callbackGroupId, "draft")).rejects.toThrow("must return a Promise");
+    expect(invalidVoidSave).toHaveBeenCalledTimes(2);
+  });
 });
