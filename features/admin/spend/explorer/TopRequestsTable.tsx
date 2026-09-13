@@ -249,11 +249,13 @@ export function TopRequestsTable({
 
   return (
     <MatrxDataTable
-      urlState={{ id: "spend-requests" }}
+      urlState={{
+        id: "spend-requests",
+        defaultSort: { id: "cost", direction: "desc" },
+      }}
       data={rows}
       columns={columns}
       getRowId={(r) => r.executionId}
-      defaultSort={{ id: "cost", direction: "desc" }}
       pageSize={20}
       emptyState={{ title: "No requests in this window." }}
       toolbar={{

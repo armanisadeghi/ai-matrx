@@ -240,11 +240,13 @@ export function DimensionTables({
                 </p>
               ) : null}
               <MatrxDataTable
-                urlState={{ id: `spend-${dim}` }}
+                urlState={{
+                  id: `spend-${dim}`,
+                  defaultSort: { id: "cost", direction: "desc" },
+                }}
                 data={d.rows}
                 columns={columnsFor(dim, onDrill)}
                 getRowId={(r) => r.key}
-                defaultSort={{ id: "cost", direction: "desc" }}
                 pageSize={15}
                 emptyState={{ title: "Nothing in this window." }}
                 toolbar={{

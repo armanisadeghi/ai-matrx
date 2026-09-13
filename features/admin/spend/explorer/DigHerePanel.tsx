@@ -502,7 +502,7 @@ export function DigHerePanel({
         hidePagination
         className="text-xs"
         tableClassName="[&_td]:py-1 [&_th]:py-1"
-        toolbar={{ title: "Signals", search: false }}
+        toolbar={{ title: "Dig here", search: false }}
       />
       {openSpec ? <DetailTable spec={openSpec} /> : null}
     </div>

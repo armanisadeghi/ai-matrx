@@ -56,7 +56,7 @@ function Tile({
   return (
     <div
       className={[
-        "flex min-w-0 flex-col justify-between rounded-md border px-3 py-2",
+        "flex h-full min-w-0 flex-col justify-between rounded-md border px-3 py-2",
         alarm
           ? "border-destructive/50 bg-destructive/10"
           : "border-border bg-card",
@@ -124,7 +124,7 @@ export function SpendHeadline({
           className={
             density === "compact"
               ? "col-span-2 sm:col-span-3"
-              : "col-span-2 sm:col-span-3 lg:col-span-2"
+              : "col-span-2 h-full sm:col-span-3 lg:col-span-2"
           }
         >
           <Tile

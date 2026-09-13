@@ -20,7 +20,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Compass, Percent, Search } from "lucide-react";
+import { Compass, Percent } from "lucide-react";
 
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
@@ -249,9 +249,7 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
               onPickDay={(day) => drill("day", day)}
             />
 
-            <Section icon={Search} title="Dig here">
-              <DigHerePanel data={data} onDrill={drill} />
-            </Section>
+            <DigHerePanel data={data} onDrill={drill} />
 
             <Section icon={Percent} title="80% of spend">
               <ParetoPanel data={data} onDrill={drill} />

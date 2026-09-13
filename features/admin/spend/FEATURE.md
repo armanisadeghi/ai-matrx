@@ -124,9 +124,9 @@ Reading order on the page: headline → explorer → the folded honesty tail.
 | Filter chips          | `explorer/FilterChips.tsx`                | The drill-down breadcrumb + the coverage line.                                                                                                                                                                                                                                              |
 | Totals                | `explorer/TotalsStrip.tsx`                | window total, manual vs automated (with shares), requests, tokens (with cache hit rate), "explained by a request".                                                                                                                                                                          |
 | Timeline              | `explorer/SeriesBars.tsx`                 | stacked bars per hour (≤ 4 days) or per day, manual under automated, legend always present, peak direct-labelled, hover title on every bar, click a day to drill. Colours are the theme's `chart-2` / `chart-1` tokens (validated with the dataviz palette script, light: all checks pass). |
-| Dig here              | `explorer/DigHerePanel.tsx`               | seven signal cards ordered by money — see below.                                                                                                                                                                                                                                            |
-| 80/20                 | `explorer/ParetoPanel.tsx`                | per dimension: the fewest rows reaching 80% of the window, then ONE "everything else" row (`paretoCut`).                                                                                                                                                                                    |
-| Every dimension       | `explorer/DimensionTables.tsx`            | one `MatrxDataTable` per dimension, same columns everywhere (cost, share bar, manual, automated, requests, per request, tokens in/cached/out, last activity).                                                                                                                               |
+| Dig here              | `explorer/DigHerePanel.tsx`               | seven signals ordered by money in a canonical compact table; an opened signal uses the full available width for its own canonical detail table — see below.                                                                                                                                 |
+| 80/20                 | `explorer/ParetoPanel.tsx`                | per dimension: at least 3 and at most 6 rows, stopping after 80%, then ONE fixed-bottom "everything else" row (`paretoCut`); every card names the full window total.                                                                                                                        |
+| Every dimension       | `explorer/DimensionTables.tsx`            | one titled `MatrxDataTable` per dimension, same columns everywhere (cost, share bar, manual, automated, requests, per request, tokens in/cached/out, last activity); its no-wrap dimension rail scrolls horizontally with edge fades.                                                       |
 | Costliest requests    | `explorer/TopRequestsTable.tsx`           | 40 rows with every dimension, one per request (its ledger rows summed); a request opens its conversation.                                                                                                                                                                                   |
 | Names, hrefs, wording | `explorer/labels.ts`                      | plain-English dimension names, per-dimension "empty" wording, where each identity opens.                                                                                                                                                                                                    |
 
@@ -150,8 +150,7 @@ person → `/administration/users?focus=<id>`, agent →
 | Unpriced calls                    | —                             | `chat.request.cost IS NULL`: the ledger under-counts by an unknown amount                                         |
 
 A signal that found nothing says "none" — it never disappears (the unpriced
-line included). Cards over 25% of
-the window turn destructive-toned.
+line included). Signal costs over 25% of the window turn destructive-toned.
 
 ## Gating
 
@@ -275,9 +274,9 @@ Registered in `features/admin/constants/admin-categories.ts` +
   with no sign-in read "No sign-in (server-side run)".
 - **Invoice-billed costs are a knob, not a gap.** Hosting and plan-billed
   services (Resend) can never be ledger rows; `platform.spend.fixed_monthly_usd`
-  holds the monthly figure and the headline shows it per day, never added in.
-  Zero or a missing row reads compactly as `Fixed: not set`; a configured value
-  shows monthly and per-day amounts without adding prose to the dashboard.
+  holds the monthly figure and the headline's compact scope tooltip names it,
+  never added in. Zero or a missing row reads as not set inside that tooltip;
+  it does not consume a dashboard row.
 - `admin_spend_overview` measured 3.95s once on the dev server (2026-09-12)
   while every per-ledger aggregate it runs measures under 100ms in isolation
   (`chat.tool_call` 86ms is the largest; a 48h sum over the whole ledger is
@@ -286,6 +285,20 @@ Registered in `features/admin/constants/admin-categories.ts` +
   statements with `auto_explain` rather than guessing.
 
 ## Change Log
+
+- **2026-09-13 (dashboard-density contract)** — Removed both standalone
+  Updated/Refresh rows and the redundant selected-window sentence. The one
+  icon-only refresh lives inside the headline, where its tooltip names the
+  last update; lower-bound, timezone and fixed-cost context moved to the
+  adjacent scope tooltip. All six full-page KPIs stay on one desktop row and
+  carry the same label/value/detail structure. The peak label has clearance,
+  stronger weight and rounded dollars. Dig Here's summary and opened detail
+  are canonical compact `MatrxDataTable` instances, not a nested hand-built
+  table. Dimension and request tables put their names in the shared title row;
+  numeric Cost filters are explicit. The Pareto rule is now min 3/max 6 with a
+  fixed-bottom remainder and visible total. Dimension tabs never wrap and use
+  a horizontally scrolling faded rail. The page uses the canonical
+  `scroll-page-end-space` runway.
 
 - **2026-09-12 (hydration boundary)** — The explorer now mounts only after
   hydration because its initial window and IANA zone come from the browser.
