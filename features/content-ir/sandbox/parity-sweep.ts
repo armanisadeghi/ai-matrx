@@ -40,7 +40,7 @@ import { readPng, bestAlignedDiff } from "./parity/png";
 const DEBUG = process.argv.includes("--debug");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, "../../..");
+const ROOT = resolve(/* turbopackIgnore: true */ __dirname, "../../..");
 const OUT_DIR = resolve(ROOT, ".kind-sandbox-parity");
 const BASELINE = resolve(__dirname, "generated/parity-baseline.json");
 

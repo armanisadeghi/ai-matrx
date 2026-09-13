@@ -36,7 +36,7 @@ import {
 } from "@/features/content-ir/studio/kind-component-code-service";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, "../../..");
+const ROOT = resolve(/* turbopackIgnore: true */ __dirname, "../../..");
 const OUT_DIR = resolve(ROOT, ".kind-sandbox-parity");
 
 function loadEnv(): Record<string, string> {

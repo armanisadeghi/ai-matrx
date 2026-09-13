@@ -40,7 +40,9 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
 6. 🚨 **`running_balance_ok === false` is BLOCKING** on the ledger (§12), naming
    `divergence_at_entry_id`. *A silent drift is worse than a loud one.*
 7. 🚨 **No cell prints a type name** (§12 LAW 3a). `entry_kind` is used to filter and never
-   rendered; the visible cell is the server's `sentence`.
+   rendered; the visible cell is the server's `sentence`. Request-backed usage and reversal
+   entries derive one sentence from the request state and dates; their machine note never gets
+   appended as a second, contradictory description.
 8. 🚨 **Refusals are data and they say what was actually checked.** A rejected-at-intake
    submit renders every `conflict_check.hard[].message` verbatim, with its numbers, in place —
    never a generic failure toast. `code` never reaches page text.
@@ -266,3 +268,8 @@ divergence banner.
   binding refused, a stranger refused; both stray rows discarded; ledger unchanged at 3 entries
   and the balance block unchanged at 38.50 / 62.50 / 24.00 / 0.00 with `last_accrual_at`
   untouched.
+- **2026-09-12** — Production review found approved ledger rows rendered duplicated state/date
+  fragments (`Used — … — Approved — …`). `hr_l5_35` moves the shared projection onto
+  `hr._leave_ledger_sentence`: request state and dates produce one human sentence, redundant
+  usage/reversal notes are ignored without rewriting immutable evidence, and non-request notes
+  remain visible.

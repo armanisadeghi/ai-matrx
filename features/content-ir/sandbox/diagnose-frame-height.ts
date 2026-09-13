@@ -35,7 +35,7 @@ import { SANDBOX_PROTOCOL_VERSION } from "./protocol";
 import { launch } from "./parity/cdp";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, "../../..");
+const ROOT = resolve(/* turbopackIgnore: true */ __dirname, "../../..");
 const ORIGIN = process.env.PARITY_ORIGIN ?? "http://localhost:3001";
 
 function loadEnv(): Record<string, string> {

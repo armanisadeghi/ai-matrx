@@ -25,12 +25,17 @@ export type ServerEnvironment =
   | "gpu"
   | "custom";
 
+type PersistedServerEnvironment = ServerEnvironment | "ec2";
+
 interface AdminPreferencesState {
   /**
    * Which server environment the admin wants to hit.
    * null = use production (the default for all users).
    */
-  serverOverride: ServerEnvironment | null;
+  serverOverride: PersistedServerEnvironment | null;
+
+  /** A stale runtime EC2 full-API override was migrated to production. */
+  retiredEc2ApiSelectionNotice: boolean;
 
   /**
    * Only used when serverOverride === 'custom'.
@@ -53,6 +58,7 @@ interface AdminPreferencesState {
 
 const initialState: AdminPreferencesState = {
   serverOverride: null,
+  retiredEc2ApiSelectionNotice: false,
   customServerUrl: null,
   desktopTargetInstanceId: null,
 };
@@ -65,6 +71,8 @@ const adminPreferencesSlice = createSlice({
       state,
       action: PayloadAction<ServerEnvironment | null>,
     ) => {
+      // The action type excludes retired values, but a stale preloaded Redux
+      // state or legacy caller can still deliver this runtime literal.
       state.serverOverride = action.payload;
       // Clear the custom URL when switching away from 'custom'
       if (action.payload !== "custom") {
@@ -74,6 +82,16 @@ const adminPreferencesSlice = createSlice({
     setCustomServerUrl: (state, action: PayloadAction<string>) => {
       state.serverOverride = "custom";
       state.customServerUrl = action.payload;
+    },
+    /** Normalize a stale preloaded override before any selected-backend call. */
+    migrateRetiredEc2ServerOverride: (state) => {
+      if (state.serverOverride !== "ec2") return;
+      state.serverOverride = "production";
+      state.customServerUrl = null;
+      state.retiredEc2ApiSelectionNotice = true;
+    },
+    acknowledgeRetiredEc2ServerOverrideNotice: (state) => {
+      state.retiredEc2ApiSelectionNotice = false;
     },
     setDesktopTargetInstanceId: (
       state,
@@ -88,6 +106,8 @@ const adminPreferencesSlice = createSlice({
 export const {
   setServerOverride,
   setCustomServerUrl,
+  migrateRetiredEc2ServerOverride,
+  acknowledgeRetiredEc2ServerOverrideNotice,
   setDesktopTargetInstanceId,
   clearAdminPreferences,
 } = adminPreferencesSlice.actions;
@@ -98,7 +118,18 @@ type StateWithAdminPreferences = { adminPreferences: AdminPreferencesState };
 
 export const selectServerOverride = (
   state: StateWithAdminPreferences,
-): ServerEnvironment | null => state.adminPreferences.serverOverride;
+): ServerEnvironment | null =>
+  state.adminPreferences.serverOverride === "ec2"
+    ? "production"
+    : state.adminPreferences.serverOverride;
+
+export const selectRetiredEc2ServerOverride = (
+  state: StateWithAdminPreferences,
+): boolean => state.adminPreferences.serverOverride === "ec2";
+
+export const selectRetiredEc2ServerOverrideNotice = (
+  state: StateWithAdminPreferences,
+): boolean => state.adminPreferences.retiredEc2ApiSelectionNotice;
 
 export const selectCustomServerUrl = (
   state: StateWithAdminPreferences,
@@ -110,7 +141,10 @@ export const selectDesktopTargetInstanceId = (
 
 export const selectEffectiveServer = (
   state: StateWithAdminPreferences,
-): ServerEnvironment => state.adminPreferences.serverOverride ?? "production";
+): ServerEnvironment => {
+  const selected = state.adminPreferences.serverOverride;
+  return selected === "ec2" ? "production" : (selected ?? "production");
+};
 
 /** Backward-compatible — true only when explicitly set to 'localhost' */
 export const selectIsUsingLocalhost = (
