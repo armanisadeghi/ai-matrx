@@ -10,9 +10,11 @@ jest.mock("lossless-json", () => ({
 
 import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultWorkspace } from "./VaultWorkspace";
-import { fetchBitwardenJsonImportLimits, fetchCsvImportLimits } from "../csv-import-limits";
+import {
+  fetchBitwardenJsonImportLimits,
+  fetchCsvImportLimits,
+} from "../csv-import-limits";
 import { createVaultItem, VaultImportTransportError } from "../vault-service";
-import type { StructuredImportRecord } from "../structured-import";
 
 let mockAuthStateListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
@@ -23,7 +25,10 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
       onAuthStateChange: (
-        listener: (event: string, session?: { user: { id: string } } | null) => void,
+        listener: (
+          event: string,
+          session?: { user: { id: string } } | null,
+        ) => void,
       ) => {
         mockAuthStateListener = listener;
         return { data: { subscription: { unsubscribe: jest.fn() } } };
@@ -73,20 +78,69 @@ jest.mock("../csv-import-limits", () => ({
     maxRequestBodyBytes: 10_000,
   })),
   fetchBitwardenJsonImportLimits: jest.fn(async () => ({
-    maxFileBytes: 10_000, maxRecords: 20, maxColumns: 20, maxCellBytes: 1_000,
-    maxFields: 202, maxPlaintextFieldBytes: 1_000, maxRequestBodyBytes: 10_000,
-    maxJsonDepth: 64, jsonWorkerTimeoutMs: 50,
+    maxFileBytes: 10_000,
+    maxRecords: 20,
+    maxColumns: 20,
+    maxCellBytes: 1_000,
+    maxFields: 202,
+    maxPlaintextFieldBytes: 1_000,
+    maxRequestBodyBytes: 10_000,
+    maxJsonDepth: 64,
+    jsonWorkerTimeoutMs: 50,
   })),
 }));
 
-type ControlledWorker = { terminated: boolean; onmessage: ((event: MessageEvent<{ ok: boolean; records?: unknown[]; error?: string }>) => void) | null; onerror: (() => void) | null; onmessageerror: (() => void) | null; postMessage: jest.Mock; terminate: jest.Mock };
+type ControlledWorker = {
+  terminated: boolean;
+  onmessage:
+    | ((
+        event: MessageEvent<{
+          ok: boolean;
+          records?: unknown[];
+          error?: string;
+        }>,
+      ) => void)
+    | null;
+  onerror: (() => void) | null;
+  onmessageerror: (() => void) | null;
+  postMessage: jest.Mock;
+  terminate: jest.Mock;
+};
 let workers: ControlledWorker[] = [];
+let onePuxWorkers: ControlledWorker[] = [];
 jest.mock("../bitwarden-json-worker-client", () => ({
   createBitwardenJsonWorker: () => {
-    const worker: ControlledWorker = { terminated: false, onmessage: null, onerror: null, onmessageerror: null, postMessage: jest.fn(), terminate: jest.fn(() => { worker.terminated = true; }) };
+    const worker: ControlledWorker = {
+      terminated: false,
+      onmessage: null,
+      onerror: null,
+      onmessageerror: null,
+      postMessage: jest.fn(),
+      terminate: jest.fn(() => {
+        worker.terminated = true;
+      }),
+    };
     workers.push(worker);
     return worker;
   },
+}));
+jest.mock("../onepux-worker-client", () => ({
+  createOnePuxWorker: () => {
+    const worker: ControlledWorker = {
+      terminated: false,
+      onmessage: null,
+      onerror: null,
+      onmessageerror: null,
+      postMessage: jest.fn(),
+      terminate: jest.fn(() => {
+        worker.terminated = true;
+      }),
+    };
+    onePuxWorkers.push(worker);
+    return worker;
+  },
+  cancelOnePuxWorker: (worker: ControlledWorker, requestId?: string) =>
+    worker.postMessage({ type: "cancel", requestId }),
 }));
 
 jest.mock("../vault-service", () => ({
@@ -113,14 +167,20 @@ if (typeof globalThis.TextDecoder === "undefined") {
     value: TextDecoder,
   });
 }
-if (typeof globalThis.TextEncoder === "undefined") Object.defineProperty(globalThis, "TextEncoder", { configurable: true, value: TextEncoder });
+if (typeof globalThis.TextEncoder === "undefined")
+  Object.defineProperty(globalThis, "TextEncoder", {
+    configurable: true,
+    value: TextEncoder,
+  });
 if (!HTMLElement.prototype.scrollIntoView) {
   HTMLElement.prototype.scrollIntoView = jest.fn();
 }
 
 const createVaultItemMock = jest.mocked(createVaultItem);
 const fetchCsvImportLimitsMock = jest.mocked(fetchCsvImportLimits);
-const fetchBitwardenJsonImportLimitsMock = jest.mocked(fetchBitwardenJsonImportLimits);
+const fetchBitwardenJsonImportLimitsMock = jest.mocked(
+  fetchBitwardenJsonImportLimits,
+);
 
 function csvFile(text: string): File {
   const file = new File([text], "passwords.csv", { type: "text/csv" });
@@ -135,42 +195,77 @@ function csvFile(text: string): File {
 function jsonFile(text: string, size = text.length): File {
   const file = new File([text], "vault.json", { type: "application/json" });
   Object.defineProperty(file, "size", { configurable: true, value: size });
-  Object.defineProperty(file, "arrayBuffer", { value: jest.fn(async () => new TextEncoder().encode(text).buffer) });
+  Object.defineProperty(file, "arrayBuffer", {
+    value: jest.fn(async () => new TextEncoder().encode(text).buffer),
+  });
   return file;
 }
 
-type WebsiteImportRecord = Extract<StructuredImportRecord, { status: "supported"; kind: "website_login" }>;
-
-function jsonRecord(overrides: Partial<WebsiteImportRecord> = {}): WebsiteImportRecord {
+function jsonRecord(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     ordinal: 0,
     title: "Example",
     kind: "website_login",
     status: "supported",
-    sourceState: "active",
     sourceRecord: '{"source_vendor":"bitwarden"}',
     urls: ["https://example.test"],
     hasOtp: false,
     username: "user",
     password: "password",
+    sourceState: "active",
     ...overrides,
   };
 }
 
 async function chooseBitwardenJson(): Promise<HTMLInputElement> {
-  const trigger = [...document.querySelectorAll("button")].find((button) =>
-    button.textContent?.includes("CSV export") ||
-    button.textContent?.includes("Bitwarden JSON"),
+  const trigger = [...document.querySelectorAll("button")].find(
+    (button) =>
+      button.textContent?.includes("CSV export") ||
+      button.textContent?.includes("Bitwarden JSON"),
   );
-  if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+  if (!(trigger instanceof HTMLButtonElement))
+    throw new Error("source trigger missing");
   await act(async () => trigger.click());
-  const option = [...document.querySelectorAll('[role="option"]')].find((node) => node.textContent?.includes("Bitwarden JSON"));
-  if (!(option instanceof HTMLElement)) throw new Error("JSON source option missing");
+  const option = [...document.querySelectorAll('[role="option"]')].find(
+    (node) => node.textContent?.includes("Bitwarden JSON"),
+  );
+  if (!(option instanceof HTMLElement))
+    throw new Error("JSON source option missing");
   await act(async () => option.click());
-  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
   const input = document.body.querySelector('input[type="file"]');
-  if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
-  if (!input.accept.includes("application/json")) throw new Error(`JSON source was not selected: ${input.accept}`);
+  if (!(input instanceof HTMLInputElement))
+    throw new Error("file input missing");
+  if (!input.accept.includes("application/json"))
+    throw new Error(`JSON source was not selected: ${input.accept}`);
+  return input;
+}
+
+async function chooseOnePux(): Promise<HTMLInputElement> {
+  const trigger = [...document.querySelectorAll("button")].find(
+    (button) =>
+      button.textContent?.includes("CSV export") ||
+      button.textContent?.includes("1Password 1PUX"),
+  );
+  if (!(trigger instanceof HTMLButtonElement))
+    throw new Error("source trigger missing");
+  await act(async () => trigger.click());
+  const option = [...document.querySelectorAll('[role="option"]')].find(
+    (node) => node.textContent?.includes("1Password 1PUX (unencrypted export)"),
+  );
+  if (!(option instanceof HTMLElement))
+    throw new Error("1PUX source option missing");
+  await act(async () => option.click());
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  const input = document.body.querySelector('input[type="file"]');
+  if (!(input instanceof HTMLInputElement))
+    throw new Error("file input missing");
+  if (!input.accept.includes(".1pux"))
+    throw new Error(`1PUX source was not selected: ${input.accept}`);
   return input;
 }
 
@@ -186,6 +281,7 @@ describe("VaultCsvImportDialog", () => {
     mockAuthStateListener = undefined;
     mockOrganizationId = "11111111-1111-4111-8111-111111111111";
     workers = [];
+    onePuxWorkers = [];
   });
 
   afterEach(() => {
@@ -289,7 +385,9 @@ describe("VaultCsvImportDialog", () => {
       );
     });
     expect(document.body.textContent).toContain("Choose import file");
-    expect(document.body.textContent).not.toContain("request organization changed");
+    expect(document.body.textContent).not.toContain(
+      "request organization changed",
+    );
   });
 
   it("refuses a normalized over-limit row before the create transport", async () => {
@@ -396,152 +494,424 @@ describe("VaultCsvImportDialog", () => {
   });
 
   it("terminates a mounted JSON worker and rejects its late reply after account change", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
     const file = jsonFile("{}");
-    Object.defineProperty(input, "files", { configurable: true, value: [file] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [file],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
     expect(fetchBitwardenJsonImportLimitsMock).toHaveBeenCalled();
     expect(file.arrayBuffer).toHaveBeenCalled();
     expect(workers).toHaveLength(1);
     if (!mockAuthStateListener) throw new Error("auth listener missing");
     await act(async () => mockAuthStateListener?.("SIGNED_OUT"));
     expect(workers[0]?.terminate).toHaveBeenCalled();
-    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [{ ordinal: 0, title: "late" }] } } as MessageEvent));
+    await act(async () =>
+      workers[0]?.onmessage?.({
+        data: { ok: true, records: [{ ordinal: 0, title: "late" }] },
+      } as MessageEvent),
+    );
     expect(document.body.textContent).not.toContain("late");
   });
 
   it("terminates a mounted JSON worker before a SIGNED_IN actor replacement can return its draft", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}")] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
     if (!mockAuthStateListener) throw new Error("auth listener missing");
-    await act(async () => mockAuthStateListener?.("SIGNED_IN", { user: { id: "user-b" } }));
+    await act(async () =>
+      mockAuthStateListener?.("SIGNED_IN", { user: { id: "user-b" } }),
+    );
     expect(workers[0]?.terminate).toHaveBeenCalled();
-    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "late signed in" })] } } as MessageEvent));
+    await act(async () =>
+      workers[0]?.onmessage?.({
+        data: { ok: true, records: [jsonRecord({ title: "late signed in" })] },
+      } as MessageEvent),
+    );
     expect(document.body.textContent).not.toContain("late signed in");
     expect(document.body.textContent).toContain("account changed");
   });
 
   it("keeps a loaded draft through a same-actor token refresh", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     if (!mockAuthStateListener) throw new Error("auth listener missing");
-    await act(async () => mockAuthStateListener?.("INITIAL_SESSION", { user: { id: "user-1" } }));
+    await act(async () =>
+      mockAuthStateListener?.("INITIAL_SESSION", { user: { id: "user-1" } }),
+    );
     const input = document.body.querySelector('input[type="file"]');
-    if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
-    Object.defineProperty(input, "files", { configurable: true, value: [csvFile("title\nCredential")] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    if (!(input instanceof HTMLInputElement))
+      throw new Error("file input missing");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [csvFile("title\nCredential")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(document.body.textContent).toContain("Masked preview:");
-    await act(async () => mockAuthStateListener?.("TOKEN_REFRESHED", { user: { id: "user-1" } }));
+    await act(async () =>
+      mockAuthStateListener?.("TOKEN_REFRESHED", { user: { id: "user-1" } }),
+    );
     expect(document.body.textContent).toContain("Masked preview:");
   });
 
   it("refuses an oversized JSON file before reading it", async () => {
-    fetchBitwardenJsonImportLimitsMock.mockResolvedValueOnce({ maxFileBytes: 1, maxRecords: 20, maxColumns: 20, maxCellBytes: 1_000, maxFields: 202, maxPlaintextFieldBytes: 1_000, maxRequestBodyBytes: 10_000, maxJsonDepth: 64, jsonWorkerTimeoutMs: 50 });
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    fetchBitwardenJsonImportLimitsMock.mockResolvedValueOnce({
+      maxFileBytes: 1,
+      maxRecords: 20,
+      maxColumns: 20,
+      maxCellBytes: 1_000,
+      maxFields: 202,
+      maxPlaintextFieldBytes: 1_000,
+      maxRequestBodyBytes: 10_000,
+      maxJsonDepth: 64,
+      jsonWorkerTimeoutMs: 50,
+    });
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
     const file = jsonFile("{}", 2);
-    Object.defineProperty(input, "files", { configurable: true, value: [file] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [file],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
     expect(file.arrayBuffer).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain("exceeds");
     expect(document.body.textContent).not.toContain("administrator");
   });
 
   it("replaces a JSON worker and ignores a late reply from the replaced worker", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
     expect(workers).toHaveLength(2);
     expect(workers[0]?.terminate).toHaveBeenCalled();
-    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "stale" })] } } as MessageEvent));
-    await act(async () => workers[1]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "fresh" })] } } as MessageEvent));
+    await act(async () =>
+      workers[0]?.onmessage?.({
+        data: { ok: true, records: [jsonRecord({ title: "stale" })] },
+      } as MessageEvent),
+    );
+    await act(async () =>
+      workers[1]?.onmessage?.({
+        data: { ok: true, records: [jsonRecord({ title: "fresh" })] },
+      } as MessageEvent),
+    );
     expect(document.body.textContent).not.toContain("stale");
     expect(document.body.textContent).toContain("fresh");
   });
 
   it("invalidates a mounted JSON worker on principal and request-organization changes", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "organization", organizationId: "organization-2" }} existingItems={[]} onCommitted={async () => undefined} />));
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "organization", organizationId: "organization-2" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     expect(workers[0]?.terminate).toHaveBeenCalled();
-    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "principal stale" })] } } as MessageEvent));
+    await act(async () =>
+      workers[0]?.onmessage?.({
+        data: { ok: true, records: [jsonRecord({ title: "principal stale" })] },
+      } as MessageEvent),
+    );
     expect(document.body.textContent).toContain("destination changed");
     expect(document.body.textContent).not.toContain("principal stale");
 
     const freshInput = await chooseBitwardenJson();
-    Object.defineProperty(freshInput, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { freshInput.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    Object.defineProperty(freshInput, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      freshInput.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
     mockOrganizationId = "22222222-2222-4222-8222-222222222222";
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "organization", organizationId: "organization-2" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "organization", organizationId: "organization-2" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     expect(workers[1]?.terminate).toHaveBeenCalled();
-    await act(async () => workers[1]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "organization stale" })] } } as MessageEvent));
+    await act(async () =>
+      workers[1]?.onmessage?.({
+        data: {
+          ok: true,
+          records: [jsonRecord({ title: "organization stale" })],
+        },
+      } as MessageEvent),
+    );
     expect(document.body.textContent).toContain("request organization changed");
     expect(document.body.textContent).not.toContain("organization stale");
     expect(document.body.textContent).not.toContain("Import selected records");
   });
 
   it("does not resurrect a timed-out or errored JSON parse after worker cleanup", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
     const first = workers[0];
     if (!first) throw new Error("worker missing");
-    await act(async () => first.onmessage?.({ data: { ok: false, error: "untrusted export detail" } } as MessageEvent));
+    await act(async () =>
+      first.onmessage?.({
+        data: { ok: false, error: "untrusted export detail" },
+      } as MessageEvent),
+    );
     expect(first.terminate).toHaveBeenCalled();
     expect(document.body.textContent).toContain("could not be read");
     expect(document.body.textContent).not.toContain("untrusted export detail");
-    await act(async () => first.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "error stale" })] } } as MessageEvent));
+    await act(async () =>
+      first.onmessage?.({
+        data: { ok: true, records: [jsonRecord({ title: "error stale" })] },
+      } as MessageEvent),
+    );
     expect(document.body.textContent).not.toContain("error stale");
 
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
     const second = workers[1];
     if (!second) throw new Error("replacement worker missing");
     // This is the deadline behavior under test, so wait for the configured worker deadline.
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 60)); });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
     expect(second.terminate).toHaveBeenCalled();
     expect(document.body.textContent).toContain("took too long");
-    await act(async () => second.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "timeout stale" })] } } as MessageEvent));
+    await act(async () =>
+      second.onmessage?.({
+        data: { ok: true, records: [jsonRecord({ title: "timeout stale" })] },
+      } as MessageEvent),
+    );
     expect(document.body.textContent).not.toContain("timeout stale");
   });
 
   it("shows JSON duplicate, invalid, unsupported, and deleted accounting before and after import", async () => {
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[{ displayName: "Example", loginUrls: ["https://example.test"] }]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[
+            { displayName: "Example", loginUrls: ["https://example.test"] },
+          ]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
-    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [
-      jsonRecord(),
-      { ordinal: 1, title: "Invalid", status: "invalid", reason: "Bad shape" },
-      { ordinal: 2, title: "Unsupported", status: "unsupported", reason: "Passkey" },
-      jsonRecord({ ordinal: 3, title: "Deleted", sourceState: "deleted" }),
-    ] } } as MessageEvent));
-    expect(document.body.textContent).toContain("0 selected; 1 skipped; 1 invalid; 1 unsupported; 1 deleted.");
-    expect(document.body.textContent).toContain("destination https://example.test");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    await act(async () =>
+      workers[0]?.onmessage?.({
+        data: {
+          ok: true,
+          records: [
+            jsonRecord(),
+            {
+              ordinal: 1,
+              title: "Invalid",
+              status: "invalid",
+              reason: "Bad shape",
+            },
+            {
+              ordinal: 2,
+              title: "Unsupported",
+              status: "unsupported",
+              reason: "Passkey",
+            },
+            jsonRecord({
+              ordinal: 3,
+              title: "Deleted",
+              sourceState: "deleted",
+            }),
+          ],
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).toContain(
+      "0 selected; 1 skipped; 1 invalid; 1 unsupported; 1 deleted.",
+    );
+    expect(document.body.textContent).toContain(
+      "destination https://example.test",
+    );
     const duplicateToggle = document.body.querySelector('[role="switch"]');
-    if (!(duplicateToggle instanceof HTMLElement)) throw new Error("duplicate toggle missing");
+    if (!(duplicateToggle instanceof HTMLElement))
+      throw new Error("duplicate toggle missing");
     await act(async () => duplicateToggle.click());
-    expect(document.body.textContent).toContain("1 selected; 0 skipped; 1 invalid; 1 unsupported; 1 deleted.");
-    const invalidSkip = [...document.querySelectorAll("button")].find((button) => button.textContent === "Skip");
-    if (!(invalidSkip instanceof HTMLButtonElement)) throw new Error("invalid skip missing");
+    expect(document.body.textContent).toContain(
+      "1 selected; 0 skipped; 1 invalid; 1 unsupported; 1 deleted.",
+    );
+    const invalidSkip = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent === "Skip",
+    );
+    if (!(invalidSkip instanceof HTMLButtonElement))
+      throw new Error("invalid skip missing");
     await act(async () => invalidSkip.click());
-    const approval = [...document.querySelectorAll('[role="switch"]')].find((node) => node.parentElement?.textContent?.includes("I approve disclosure"));
-    if (!(approval instanceof HTMLElement)) throw new Error("approval toggle missing");
+    const approval = [...document.querySelectorAll('[role="switch"]')].find(
+      (node) =>
+        node.parentElement?.textContent?.includes("I approve disclosure"),
+    );
+    if (!(approval instanceof HTMLElement))
+      throw new Error("approval toggle missing");
     await act(async () => approval.click());
-    const importButton = [...document.querySelectorAll("button")].find((button) => button.textContent?.includes("Import selected records"));
-    if (!(importButton instanceof HTMLButtonElement)) throw new Error("import button missing");
-    createVaultItemMock.mockResolvedValueOnce({ id: "created", display_name: "Example" } as never);
-    await act(async () => { importButton.click(); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    const importButton = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Import selected records"),
+    );
+    if (!(importButton instanceof HTMLButtonElement))
+      throw new Error("import button missing");
+    createVaultItemMock.mockResolvedValueOnce({
+      id: "created",
+      display_name: "Example",
+    } as never);
+    await act(async () => {
+      importButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(createVaultItemMock).toHaveBeenCalledTimes(1);
-    expect(document.body.textContent).toContain("Imported 1; skipped 0; failed 0. Invalid 1; unsupported 1; deleted 1.");
+    expect(document.body.textContent).toContain(
+      "Imported 1; skipped 0; failed 0. Invalid 1; unsupported 1; deleted 1.",
+    );
   });
 
   it("retries only the unresolved JSON command with its original UUID and cursor", async () => {
@@ -549,28 +919,272 @@ describe("VaultCsvImportDialog", () => {
       .mockResolvedValueOnce({ id: "first", display_name: "First" } as never)
       .mockRejectedValueOnce(new VaultImportTransportError("retryable"))
       .mockResolvedValueOnce({ id: "second", display_name: "Second" } as never);
-    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
     const input = await chooseBitwardenJson();
-    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("{}") ] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
-    await act(async () => workers[0]?.onmessage?.({ data: { ok: true, records: [jsonRecord({ title: "First" }), jsonRecord({ ordinal: 1, title: "Second", urls: ["https://second.test"] })] } } as MessageEvent));
-    const approval = [...document.querySelectorAll('[role="switch"]')].find((node) => node.parentElement?.textContent?.includes("I approve disclosure"));
-    if (!(approval instanceof HTMLElement)) throw new Error("approval toggle missing");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("{}")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    await act(async () =>
+      workers[0]?.onmessage?.({
+        data: {
+          ok: true,
+          records: [
+            jsonRecord({ title: "First" }),
+            jsonRecord({
+              ordinal: 1,
+              title: "Second",
+              urls: ["https://second.test"],
+            }),
+          ],
+        },
+      } as MessageEvent),
+    );
+    const approval = [...document.querySelectorAll('[role="switch"]')].find(
+      (node) =>
+        node.parentElement?.textContent?.includes("I approve disclosure"),
+    );
+    if (!(approval instanceof HTMLElement))
+      throw new Error("approval toggle missing");
     await act(async () => approval.click());
-    const importButton = [...document.querySelectorAll("button")].find((button) => button.textContent?.includes("Import selected records"));
-    if (!(importButton instanceof HTMLButtonElement)) throw new Error("import button missing");
-    await act(async () => { importButton.click(); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    const importButton = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Import selected records"),
+    );
+    if (!(importButton instanceof HTMLButtonElement))
+      throw new Error("import button missing");
+    await act(async () => {
+      importButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(createVaultItemMock).toHaveBeenCalledTimes(2);
-    const retryButton = [...document.querySelectorAll("button")].find((button) => button.textContent?.includes("Retry current row"));
-    if (!(retryButton instanceof HTMLButtonElement)) throw new Error("retry button missing");
-    await act(async () => { retryButton.click(); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    const retryButton = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Retry current row"),
+    );
+    if (!(retryButton instanceof HTMLButtonElement))
+      throw new Error("retry button missing");
+    await act(async () => {
+      retryButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(createVaultItemMock).toHaveBeenCalledTimes(3);
     const calls = createVaultItemMock.mock.calls;
-    expect(calls.map(([body]) => body.display_name)).toEqual(["First", "Second", "Second"]);
+    expect(calls.map(([body]) => body.display_name)).toEqual([
+      "First",
+      "Second",
+      "Second",
+    ]);
     expect(calls[2]?.[0]).toEqual(calls[1]?.[0]);
     expect(calls[2]?.[1]?.idempotencyKey).toBe(calls[1]?.[1]?.idempotencyKey);
-    expect(calls[0]?.[1]?.idempotencyKey).not.toBe(calls[1]?.[1]?.idempotencyKey);
-    expect(document.body.textContent).toContain("Imported 2; skipped 0; failed 0.");
+    expect(calls[0]?.[1]?.idempotencyKey).not.toBe(
+      calls[1]?.[1]?.idempotencyKey,
+    );
+    expect(document.body.textContent).toContain(
+      "Imported 2; skipped 0; failed 0.",
+    );
   });
 
+  it("posts the complete configured limits to the 1PUX worker and renders its canonical response", async () => {
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    const input = await chooseOnePux();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("zip", 3)],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    const worker = onePuxWorkers[0];
+    if (!worker) throw new Error("1PUX worker missing");
+    const request = worker.postMessage.mock.calls[0]?.[0] as {
+      requestId: string;
+      limits: Record<string, number>;
+    };
+    expect(request.limits).toEqual({
+      maxFileBytes: 10_000,
+      maxRecords: 20,
+      maxCellBytes: 1_000,
+      maxJsonDepth: 64,
+    });
+    await act(async () =>
+      worker.onmessage?.({
+        data: {
+          ok: true,
+          requestId: request.requestId,
+          records: [jsonRecord({ sourceState: "active" })],
+          binaryMemberCount: 2,
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).toContain(
+      "1 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 0 archived.",
+    );
+    expect(document.body.textContent).toContain(
+      "2 binary archive members and icon data are not imported.",
+    );
+  });
+
+  it("cancels a 1PUX worker when the source changes and ignores its late response", async () => {
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    const input = await chooseOnePux();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("zip", 3)],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    const worker = onePuxWorkers[0];
+    if (!worker) throw new Error("1PUX worker missing");
+    const requestId = (
+      worker.postMessage.mock.calls[0]?.[0] as { requestId: string }
+    ).requestId;
+    const trigger = [...document.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("1Password 1PUX"),
+    );
+    if (!(trigger instanceof HTMLButtonElement))
+      throw new Error("source trigger missing");
+    await act(async () => trigger.click());
+    const option = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Bitwarden JSON"),
+    );
+    if (!(option instanceof HTMLElement))
+      throw new Error("JSON source option missing");
+    await act(async () => option.click());
+    expect(worker.postMessage).toHaveBeenCalledWith({
+      type: "cancel",
+      requestId,
+    });
+    expect(worker.terminate).toHaveBeenCalled();
+    await act(async () =>
+      worker.onmessage?.({
+        data: {
+          ok: true,
+          requestId,
+          records: [jsonRecord({ title: "late 1pux", sourceState: "active" })],
+          binaryMemberCount: 1,
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).not.toContain("late 1pux");
+  });
+
+  it("invalidates a 1PUX worker when the request organization changes", async () => {
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "organization", organizationId: "organization-2" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    const input = await chooseOnePux();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("zip", 3)],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    const worker = onePuxWorkers[0];
+    if (!worker) throw new Error("1PUX worker missing");
+    const requestId = (
+      worker.postMessage.mock.calls[0]?.[0] as { requestId: string }
+    ).requestId;
+    mockOrganizationId = "22222222-2222-4222-8222-222222222222";
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "organization", organizationId: "organization-2" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    expect(worker.postMessage).toHaveBeenCalledWith({
+      type: "cancel",
+      requestId,
+    });
+    await act(async () =>
+      worker.onmessage?.({
+        data: {
+          ok: true,
+          requestId,
+          records: [
+            jsonRecord({ title: "organization late", sourceState: "active" }),
+          ],
+          binaryMemberCount: 0,
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).toContain("request organization changed");
+    expect(document.body.textContent).not.toContain("organization late");
+  });
+
+  it("shows only lifecycle controls represented by the loaded 1PUX records", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    const input = await chooseOnePux();
+    Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing");
+    const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
+    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], binaryMemberCount: 0 } } as MessageEvent));
+    expect(document.body.textContent).toContain("0 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 1 archived.");
+    expect(document.body.textContent).toContain("Include archived source items");
+    expect(document.body.textContent).not.toContain("Include deleted source items");
+    const archivedToggle = [...document.querySelectorAll('[role="switch"]')].find((node) => node.parentElement?.textContent?.includes("Include archived"));
+    if (!(archivedToggle instanceof HTMLElement)) throw new Error("archived toggle missing");
+    await act(async () => archivedToggle.click());
+    expect(document.body.textContent).toContain("1 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 0 archived.");
+  });
+
+  it("shows no lifecycle controls for active-only 1PUX records", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    const input = await chooseOnePux(); Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing"); const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
+    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], binaryMemberCount: 0 } } as MessageEvent));
+    expect(document.body.textContent).not.toContain("Include deleted source items"); expect(document.body.textContent).not.toContain("Include archived source items");
+  });
 });
