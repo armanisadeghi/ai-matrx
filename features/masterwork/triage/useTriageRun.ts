@@ -20,10 +20,12 @@ import { parseTriageResult, type TriageResult } from "./types";
  * becomes `"/masterworks/triage" satisfies keyof paths`, exactly as
  * `CHECKUP_PATH` did once its route shipped. NEVER hand-edit the generated file.
  */
+import type { DurableRunStatus } from "@/lib/durable-run/useDurableRun";
+
 export const TRIAGE_PATH = "/masterworks/triage";
 
 export interface TriageRunHandle {
-  status: "idle" | "rejoining" | "running" | "done" | "error";
+  status: DurableRunStatus;
   running: boolean;
   /** The server's own sentence for what it is doing right now. */
   stage: string | null;

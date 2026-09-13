@@ -245,14 +245,10 @@ function RuleEditorForm({
    * agent re-staging the same draft (W50) is the case that matters: the words
    * come back identical with a fresh id, so the id check catches nothing.
    */
-  const alreadyInRulebook = useMemo(
-    () =>
-      findIdenticalRule(
-        existingRules ?? [],
-        { name, statement },
-        initial?.id,
-      ),
-    [existingRules, name, statement, initial?.id],
+  const alreadyInRulebook = findIdenticalRule(
+    existingRules ?? [],
+    { name: values.name, statement: values.statement },
+    initial?.id,
   );
 
   const save = async () => {
