@@ -1173,4 +1173,13 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).toContain("Include archived source items");
     expect(document.body.textContent).not.toContain("Include deleted source items");
   });
+
+  it("shows no lifecycle controls for active-only 1PUX records", async () => {
+    await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
+    const input = await chooseOnePux(); Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing"); const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
+    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], binaryMemberCount: 0 } } as MessageEvent));
+    expect(document.body.textContent).not.toContain("Include deleted source items"); expect(document.body.textContent).not.toContain("Include archived source items");
+  });
 });
