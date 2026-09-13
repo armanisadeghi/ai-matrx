@@ -334,6 +334,8 @@ const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUs
     const record = state.notes.notes[noteId] as NoteRecord | undefined;
     const expectedUserId = getUserId(getState);
     if (expectedUserId !== expectedQueueUserId) throw new SessionUnavailableError();
+    await assertCurrentNotesUser(expectedQueueUserId);
+    if (getUserId(getState) !== expectedQueueUserId) throw new SessionUnavailableError();
 
     if (!record || !record._dirty || record._dirtyFields.size === 0) {
       return;
@@ -566,8 +568,12 @@ export const saveNote = Object.assign(
             "notes-save-queue",
             { noteId, expectedQueueUserId: entry.expectedUserId },
           );
-          dispatch(rejection);
           finalAction = rejection;
+          try {
+            dispatch(rejection);
+          } catch {
+            // The deferred result still resolves as the rejected RTK action.
+          }
         } finally {
           // Keep the entry through inner fulfilled/rejected subscribers. A
           // subscriber's immediate save joins this promise; its dirty edit is
