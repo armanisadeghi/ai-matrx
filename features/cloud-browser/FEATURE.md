@@ -2,7 +2,7 @@
 
 **Status:** `in-progress` (core production lifecycle accepted; provider-account acceptance remains)
 **Tier:** `1`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-09-13`
 
 > Frontend for the **Persistent Cloud Browser** program (WS-8). A real browser that
 > lives on our servers, stays signed in to a user's accounts, and lets an agent do
@@ -31,6 +31,17 @@
 3. **Takeover stream (D-8 tier 3).** The interactive canvas appears ONLY while a person
    is driving. It claims the server-minted one-use ticket and embeds the authenticated
    WebRTC client from `stream.aimatrx.com`; control renews on the server cadence.
+   - **One opener.** `CloudBrowserBody` opens the live view from a single effect whenever
+     THIS person drives and none is open (once per control revision) — a fresh take, a
+     page reload and a second tab all take that path. It opens **normally**, never as a
+     takeover.
+   - **Open elsewhere is its own state.** A normal open while another live view is
+     connected is refused `stream_already_connected`; `TakeoverCanvas` then shows "This
+     browser is open in another tab or window" + ONE button, **Show it here** (a takeover
+     open). The refusal arrives in the platform envelope with `code` at the TOP level —
+     `StreamConnectError` reads that, not a FastAPI `{detail}`.
+   - **A spinner means connecting, nothing else.** No ticket and not connecting is a
+     finished attempt: the canvas names the reason and points at Reconnect.
 
 The **controller banner** always names who is driving (agent / me / another person /
 system) and carries the accessible non-canvas controls (Take / Return / Request /
@@ -50,8 +61,15 @@ already uses** — never a second signalling path (`hooks/useCloudBrowserTakeove
 | Path | Mechanism | When |
 |---|---|---|
 | **Steer (default)** | `enqueueInboxMessage({mode:"steer", kind:"system_message"})` — the Turn-Boundary Inbox | An agent request is in flight. The banner becomes "Please wait while we tell your agent you're taking over" + **Take over immediately**. Control moves on the delivery ack (`injection_consumed` retires the card), or when the run ends first. |
-| **Interrupt (escape)** | `cancelExecution` + a `turn_end` system note | The user clicks **Take over immediately**. The run stops, the pending steer note is withdrawn, and because `cancelExecution` carries no reason of its own, the WHY rides the inbox to the agent's next turn. |
+| **Interrupt (escape)** | `cancelExecution` + a `turn_end` system note + `POST …/takeover {immediate: true}` | The user clicks **Take over immediately**. The run stops, the pending steer note is withdrawn, and because `cancelExecution` carries no reason of its own, the WHY rides the inbox to the agent's next turn. `immediate` makes the server bound the worker's transition drain to 500 ms (aidream `IMMEDIATE_TAKEOVER_DRAIN_MS`), so control never waits out the agent's in-flight browser step — that step finishes in the background and the rotated fence refuses every new agent command. Without it the escape measured 9.3 s. |
 | **Immediate** | claim, no notice | Nothing to steer: no bound conversation, the agent is idle, **or the agent itself raised the handoff** — steering a parked agent is a deadlock, it never reaches another boundary. |
+
+- **The banner never lies during the handoff.** While a claim is in flight it reads
+  "Taking control of the browser…" — never "The agent is driving." over a dimmed button.
+- 🚨 **Return control ignores clicks for `MORPH_GUARD_MS` (1.2 s) after control arrives.**
+  It renders in the exact spot "Take over immediately" occupied, and the person's cursor
+  is there at the moment the agent reaches its boundary: without the guard their click
+  handed control straight back to the agent.
 
 **The chat binding is load-bearing.** `useOpenCloudBrowserCanvas({conversationId, runId})`
 carries it into the canvas metadata and `CanvasBody` hands both to `CloudBrowserBody`;
@@ -164,6 +182,14 @@ had one browser forever.
 
 ## Invariants
 
+- **Before there is a browser, the Live area says what is happening.** Starting →
+  `CloudBrowserStarting` (what, elapsed seconds, "up to a minute"). Failed →
+  `CloudBrowserStartFailed`: the server's `user_message`, **Try again** ONLY when the
+  server marked it retryable, and the request id to quote. The panel error stays
+  STRUCTURED (`CloudBrowserLoadError`), never `e.message`.
+- **Try again is `retry`, never `reload`.** `reload` needs an `activeProfileId`, which a
+  first load that failed never set — wired to it, the button silently does nothing
+  (`useCloudBrowser.startFailure.test.tsx` pins that `reload` is inert there).
 - A user may hold any number of browsers; exactly one of them is the default. Never
   render a stored-profile ceiling — there isn't one (D-28).
 - Default face is written progress; a live-run block never sits at the top of a page.
@@ -192,10 +218,23 @@ had one browser forever.
 
 ## Known limits (this build)
 
-- Production now proves start, navigation, idle persistence, same-run resume,
-  takeover/reconnect/return, clean stop, and verified encrypted checkpoint restore.
-  Credential capture, structural recipe replay, and generated two-step-code entry
-  still require acceptance against real provider accounts.
+- **Verified on production 2026-09-13, as `admin@admin.com`:** start, warm restart
+  (2.5 s), take control, live-view ticket + claim from `aimatrx.com` (204), release,
+  stop, and an agent conversation driving the browser end to end; in the real panel,
+  steer ("Please wait…" for the full boundary wait, then control after delivery) and
+  the escape's stop + queued reason. **Not yet verified live:** the escape's instant
+  timing (needs aidream b1e50d852 deployed), the "Taking control…" banner and the
+  Return-control guard (unit-tested only). Credential capture, structural recipe replay, and generated two-step-code
+  entry still require acceptance against real provider accounts.
+- **The live view cannot be exercised from a local dev server.** The stream allowlist
+  (aidream `BROWSER_STREAM_ALLOWED_ORIGINS`) refuses a `*.localhost` origin with
+  `origin_not_allowed` — correct, not a bug. Verify the live view on `aimatrx.com`.
+- **A cold start scales with the saved session's size** (~17–28 s at 8–13 MB, 53 s at
+  86 MB: the worker unpacks the whole profile onto EFS). The warm path skips that
+  (2.5 s measured) but the worker records no per-step timing.
+- **The normal aidream deploy train never replaces the browser worker** — that is a
+  gated `deploy_browser_worker` + drain-confirmed release. A change that needs new
+  worker behaviour is not live until that runs; prefer control-plane-only fixes.
 - The in-app DM channel is offered as an opt-in but its server producer is assist-first
   in the first release (NOTIFICATIONS.md §1.4).
 
@@ -206,6 +245,20 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-09-13 — outage recovery verified and the panel made honest.** Every start had
+  been refused `already_bootstrapped` (a slow start reaped mid-bootstrap orphaned the
+  single worker; the server fix fences the orphan and retries — observed firing live).
+  Panel: real starting / failed states with a working Try again; the live view opens
+  from ONE effect (reload and second tab included), names a refused open instead of
+  spinning, and offers **Show it here** when it is open elsewhere (parser reads the
+  production envelope — the first version assumed `{detail}` and would have missed
+  it); "Taking control…" while a claim is in flight; the 1.2 s Return-control guard;
+  **Take over immediately** sends `immediate` (server bounds the drain to 500 ms,
+  aidream b1e50d852). Server `user_message`s no longer carry worker codes or agent
+  instructions (aidream 48dcfad9e). Guards: `CloudBrowserStartState.test.tsx`,
+  `useCloudBrowser.startFailure.test.tsx`, `TakeoverCanvas.test.tsx`,
+  `service.streamConnect.test.ts`, `ControllerBanner.test.tsx`.
 
 - **2026-08-29 — worker failure containment and exact profile identity:** profile hydration now drops rows whose canonical access resolves to `none`; exact run links retain their profile identity after the run becomes terminal and never auto-start a replacement; and the screenshot session owns every timer promise, keeping retryable worker replacement re-armable while stopping terminal/network failures without duplicate unhandled rejections.
 
