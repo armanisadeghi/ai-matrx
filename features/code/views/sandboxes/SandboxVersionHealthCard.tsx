@@ -154,15 +154,31 @@ export function SandboxVersionHealthCard({
     controller: null,
     attempts: 0,
   });
-  const capturedOperationRef = useRef(new Set<string>());
+  const captureRef = useRef({
+    provisional: new Set<string>(),
+    terminal: new Set<string>(),
+  });
   const migratedOperationRef = useRef<string | null>(null);
   const operationStartRef = useRef<string | null>(activeOperationId);
+  const lifecycleRef = useRef({
+    generation: 0,
+    mounted: false,
+    postController: null as AbortController | null,
+  });
   const requestRef = useRef<{ revision: number; controller: AbortController }>({
     revision: 0,
     controller: new AbortController(),
   });
 
-  async function refresh() {
+  function isCurrentGeneration(generation: number): boolean {
+    return (
+      lifecycleRef.current.mounted &&
+      lifecycleRef.current.generation === generation
+    );
+  }
+
+  async function refresh(generation: number) {
+    if (!isCurrentGeneration(generation)) return;
     requestRef.current.controller.abort();
     const revision = requestRef.current.revision + 1;
     const controller = new AbortController();
@@ -173,7 +189,9 @@ export function SandboxVersionHealthCard({
         cache: "no-store",
         signal: controller.signal,
       });
+      if (!isCurrentGeneration(generation)) return;
       const payload: unknown = await response.json();
+      if (!isCurrentGeneration(generation)) return;
       const health =
         typeof payload === "object" && payload !== null && "health" in payload
           ? payload.health
@@ -183,10 +201,18 @@ export function SandboxVersionHealthCard({
           sandboxMigrationMessage(payload, "Freshness could not be checked."),
         );
       }
-      if (requestRef.current.revision !== revision) return;
+      if (
+        !isCurrentGeneration(generation) ||
+        requestRef.current.revision !== revision
+      )
+        return;
       setLoadState({ state: "ready", health });
     } catch (error) {
-      if (controller.signal.aborted || requestRef.current.revision !== revision)
+      if (
+        controller.signal.aborted ||
+        !isCurrentGeneration(generation) ||
+        requestRef.current.revision !== revision
+      )
         return;
       setLoadState({
         state: "error",
@@ -203,10 +229,13 @@ export function SandboxVersionHealthCard({
     payload: unknown,
     message: string,
     code: string,
-  ) {
-    if (capturedOperationRef.current.has(operationId)) return;
-    capturedOperationRef.current.add(operationId);
+    classification: "provisional" | "terminal" = "provisional",
+  ): boolean {
+    const captured = captureRef.current[classification];
+    if (captured.has(operationId)) return false;
+    captured.add(operationId);
     captureMigrationFailure(payload, message, undefined, code);
+    return true;
   }
 
   function stopPolling() {
@@ -217,7 +246,8 @@ export function SandboxVersionHealthCard({
     pollRef.current.attempts = 0;
   }
 
-  function finishOperation(operationId: string) {
+  function finishOperation(operationId: string, generation: number) {
+    if (!isCurrentGeneration(generation)) return;
     stopPolling();
     clearOperationId(sandboxId);
     if (operationStartRef.current === operationId) {
@@ -231,7 +261,9 @@ export function SandboxVersionHealthCard({
   async function receiveMigrationStatus(
     operationId: string,
     status: SandboxMigrationStatus,
+    generation: number,
   ) {
+    if (!isCurrentGeneration(generation)) return false;
     if (status.operation_id !== operationId) {
       captureOperationFailure(
         operationId,
@@ -253,40 +285,61 @@ export function SandboxVersionHealthCard({
       return true;
     }
     if (status.outcome === "migrated") {
-      finishOperation(operationId);
+      finishOperation(operationId, generation);
       setMigrationNotice(null);
       if (migratedOperationRef.current !== operationId) {
         migratedOperationRef.current = operationId;
         toast.success("Sandbox image updated. Your workspace was kept.");
         dispatch(sandboxRuntimeReplaced(sandboxId));
         onMigrated?.();
-        await refresh();
+        await refresh(generation);
       }
       return false;
     }
     if (status.outcome === "rolled_back") {
-      finishOperation(operationId);
+      finishOperation(operationId, generation);
       const message =
         status.reason ??
         "The image update was rolled back. Your previous sandbox is still usable.";
       setMigrationNotice(`${message} Your previous sandbox is still usable.`);
-      captureOperationFailure(operationId, status, message, "rolled_back");
-      toastErrorAlreadyCaptured(message);
+      if (
+        captureOperationFailure(
+          operationId,
+          status,
+          message,
+          "rolled_back",
+          "terminal",
+        )
+      ) {
+        toastErrorAlreadyCaptured(message);
+      }
       return false;
     }
     if (status.outcome === "recovery_required") {
-      finishOperation(operationId);
+      finishOperation(operationId, generation);
       const message =
         status.reason ??
         "Sandbox update needs recovery. Its outcome is not safe to assume.";
       setMigrationNotice(message);
-      captureOperationFailure(
-        operationId,
-        status,
-        message,
-        "recovery_required",
-      );
-      toastErrorAlreadyCaptured(message);
+      if (
+        captureOperationFailure(
+          operationId,
+          status,
+          message,
+          "recovery_required",
+          "terminal",
+        )
+      ) {
+        toastErrorAlreadyCaptured(message);
+      }
+      return false;
+    }
+    if (status.outcome === "idle") {
+      finishOperation(operationId, generation);
+      const message =
+        "No active sandbox update was found. You can retry the image update.";
+      setMigrationNotice(message);
+      captureOperationFailure(operationId, status, message, "outcome_unknown");
       return false;
     }
     captureOperationFailure(
@@ -301,18 +354,20 @@ export function SandboxVersionHealthCard({
     return false;
   }
 
-  function schedulePoll(operationId: string) {
+  function schedulePoll(operationId: string, generation: number) {
+    if (!isCurrentGeneration(generation)) return;
     const delay =
       POLL_DELAYS_MS[
         Math.min(pollRef.current.attempts, POLL_DELAYS_MS.length - 1)
       ];
     pollRef.current.attempts += 1;
     pollRef.current.timer = setTimeout(() => {
-      void pollMigration(operationId);
+      void pollMigration(operationId, generation);
     }, delay);
   }
 
-  async function pollMigration(operationId: string) {
+  async function pollMigration(operationId: string, generation: number) {
+    if (!isCurrentGeneration(generation)) return;
     pollRef.current.controller?.abort();
     const controller = new AbortController();
     pollRef.current.controller = controller;
@@ -321,7 +376,9 @@ export function SandboxVersionHealthCard({
         `/api/sandbox/${sandboxId}/migration?operation_id=${operationId}`,
         { cache: "no-store", signal: controller.signal },
       );
+      if (!isCurrentGeneration(generation)) return;
       const payload: unknown = await response.json();
+      if (!isCurrentGeneration(generation)) return;
       const status = parseSandboxMigrationStatus(payload, {
         sandboxId,
         operationId,
@@ -334,10 +391,15 @@ export function SandboxVersionHealthCard({
           ),
         );
       }
-      const shouldContinue = await receiveMigrationStatus(operationId, status);
-      if (shouldContinue) schedulePoll(operationId);
+      const shouldContinue = await receiveMigrationStatus(
+        operationId,
+        status,
+        generation,
+      );
+      if (shouldContinue && isCurrentGeneration(generation))
+        schedulePoll(operationId, generation);
     } catch (error) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || !isCurrentGeneration(generation)) return;
       const message =
         error instanceof Error
           ? error.message
@@ -351,23 +413,26 @@ export function SandboxVersionHealthCard({
       setMigrationNotice(
         "Update outcome unknown; reconnecting status will continue.",
       );
-      schedulePoll(operationId);
+      schedulePoll(operationId, generation);
     }
   }
 
-  async function discoverOrResumeMigration() {
+  async function discoverOrResumeMigration(generation: number) {
+    if (!isCurrentGeneration(generation)) return;
     const saved = savedOperationId(sandboxId);
     if (saved) {
       operationStartRef.current = saved;
       setActiveOperationId(saved);
-      void pollMigration(saved);
+      void pollMigration(saved, generation);
       return;
     }
     try {
       const response = await fetch(`/api/sandbox/${sandboxId}/migration`, {
         cache: "no-store",
       });
+      if (!isCurrentGeneration(generation)) return;
       const payload: unknown = await response.json();
+      if (!isCurrentGeneration(generation)) return;
       const status = parseSandboxMigrationStatus(payload, { sandboxId });
       if (
         !response.ok ||
@@ -383,13 +448,15 @@ export function SandboxVersionHealthCard({
       setMigrationNotice(
         "A sandbox update is already in progress. Reconnecting status…",
       );
-      void pollMigration(status.operation_id);
+      void pollMigration(status.operation_id, generation);
     } catch {
       // No saved operation means there is no current action to label failed.
     }
   }
 
   async function migrate() {
+    const generation = lifecycleRef.current.generation;
+    if (!isCurrentGeneration(generation)) return;
     if (!canStartSandboxMigration(activeOperationId, operationStartRef.current))
       return;
     const operationId = newMigrationOperationId();
@@ -400,18 +467,23 @@ export function SandboxVersionHealthCard({
       "Sandbox update is starting. Reconnecting status if this request is interrupted…",
     );
     try {
+      const controller = new AbortController();
+      lifecycleRef.current.postController?.abort();
+      lifecycleRef.current.postController = controller;
       const response = await fetch(
         `/api/sandbox/${sandboxId}/migrate?interrupt_attached_sessions=true&operation_id=${operationId}`,
-        { method: "POST" },
+        { method: "POST", signal: controller.signal },
       );
+      if (!isCurrentGeneration(generation)) return;
       const payload: unknown = await response.json();
+      if (!isCurrentGeneration(generation)) return;
       if (!response.ok) {
         const failure = classifySandboxMigrationFailure(
           payload,
           response.status,
         );
         if (failure.kind === "busy_deferred") {
-          finishOperation(operationId);
+          finishOperation(operationId, generation);
           setMigrationNotice(null);
           toast.info(failure.message);
           return;
@@ -424,8 +496,10 @@ export function SandboxVersionHealthCard({
           const shouldContinue = await receiveMigrationStatus(
             operationId,
             status,
+            generation,
           );
-          if (shouldContinue) schedulePoll(operationId);
+          if (shouldContinue && isCurrentGeneration(generation))
+            schedulePoll(operationId, generation);
           return;
         }
         captureOperationFailure(
@@ -437,7 +511,7 @@ export function SandboxVersionHealthCard({
         setMigrationNotice(
           "Update outcome unknown; reconnecting status will continue.",
         );
-        void pollMigration(operationId);
+        void pollMigration(operationId, generation);
         toastErrorAlreadyCaptured(failure.message);
         return;
       }
@@ -457,13 +531,19 @@ export function SandboxVersionHealthCard({
         setMigrationNotice(
           "Update outcome unknown; reconnecting status will continue.",
         );
-        void pollMigration(operationId);
+        void pollMigration(operationId, generation);
         toastErrorAlreadyCaptured(message);
         return;
       }
-      const shouldContinue = await receiveMigrationStatus(operationId, status);
-      if (shouldContinue) schedulePoll(operationId);
+      const shouldContinue = await receiveMigrationStatus(
+        operationId,
+        status,
+        generation,
+      );
+      if (shouldContinue && isCurrentGeneration(generation))
+        schedulePoll(operationId, generation);
     } catch (error) {
+      if (!isCurrentGeneration(generation)) return;
       const message =
         error instanceof Error
           ? error.message
@@ -472,22 +552,31 @@ export function SandboxVersionHealthCard({
       setMigrationNotice(
         "Update outcome unknown; reconnecting status will continue.",
       );
-      void pollMigration(operationId);
+      void pollMigration(operationId, generation);
       toastErrorAlreadyCaptured(message);
     }
   }
 
   useEffect(() => {
     let disposed = false;
-    operationStartRef.current = savedOperationId(sandboxId);
+    lifecycleRef.current.generation += 1;
+    lifecycleRef.current.mounted = true;
+    const generation = lifecycleRef.current.generation;
+    const resumedOperationId = savedOperationId(sandboxId);
+    operationStartRef.current = resumedOperationId;
     queueMicrotask(() => {
       if (disposed) return;
-      void refresh();
-      void discoverOrResumeMigration();
+      setActiveOperationId(resumedOperationId);
+      void refresh(generation);
+      void discoverOrResumeMigration(generation);
     });
     return () => {
       disposed = true;
+      lifecycleRef.current.mounted = false;
+      lifecycleRef.current.generation += 1;
       requestRef.current.controller.abort();
+      lifecycleRef.current.postController?.abort();
+      lifecycleRef.current.postController = null;
       stopPolling();
     };
   }, [sandboxId, runtimeRevision]);
@@ -518,7 +607,11 @@ export function SandboxVersionHealthCard({
         }
       >
         <span>Freshness unavailable: {loadState.message}</span>
-        <Button variant="ghost" size="xs" onClick={() => void refresh()}>
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => void refresh(lifecycleRef.current.generation)}
+        >
           <RefreshCw className="mr-1 h-3 w-3" /> Retry
         </Button>
       </div>
@@ -586,7 +679,7 @@ export function SandboxVersionHealthCard({
             size="xs"
             aria-label="Check sandbox image freshness"
             title="Check sandbox image freshness"
-            onClick={() => void refresh()}
+            onClick={() => void refresh(lifecycleRef.current.generation)}
             disabled={updating}
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -643,7 +736,7 @@ export function SandboxVersionHealthCard({
           <Button
             variant="ghost"
             size="xs"
-            onClick={() => void refresh()}
+            onClick={() => void refresh(lifecycleRef.current.generation)}
             disabled={updating}
           >
             <RefreshCw className="mr-1 h-3 w-3" /> Check

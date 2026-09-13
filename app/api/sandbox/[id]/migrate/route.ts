@@ -63,13 +63,17 @@ function parseExactMigrationStatus(
   return value as MigrationStatus;
 }
 
+type ExactStatusResult =
+  | { status: MigrationStatus; mismatch: false }
+  | { status: null; mismatch: boolean };
+
 async function exactMigrationStatus(
   lookup: {
     sandboxId: string;
     orchestrator: { url: string; apiKey: string; tier: "ec2" | "hosted" };
   },
   operationId: string,
-): Promise<MigrationStatus | null> {
+): Promise<ExactStatusResult> {
   const statusUrl = new URL(
     `/sandboxes/${lookup.sandboxId}/migration`,
     lookup.orchestrator.url,
@@ -82,14 +86,25 @@ async function exactMigrationStatus(
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
     });
-    if (!response.ok) return null;
-    return parseExactMigrationStatus(
-      await response.json().catch(() => null),
+    if (!response.ok) return { status: null, mismatch: false };
+    const payload = await response.json().catch(() => null);
+    const status = parseExactMigrationStatus(
+      payload,
       lookup.sandboxId,
       operationId,
     );
+    if (status) return { status, mismatch: false };
+    const value =
+      typeof payload === "object" && payload !== null
+        ? (payload as Record<string, unknown>)
+        : null;
+    return {
+      status: null,
+      mismatch:
+        value?.sandbox_id !== undefined || value?.operation_id !== undefined,
+    };
   } catch {
-    return null;
+    return { status: null, mismatch: false };
   }
 }
 
@@ -218,9 +233,9 @@ export async function POST(
       signal: AbortSignal.timeout(180_000),
     });
   } catch (error) {
-    const status = await exactMigrationStatus(lookup, operationId);
-    if (status) {
-      const recovered = timeoutStatusResponse(status, id);
+    const exact = await exactMigrationStatus(lookup, operationId);
+    if (exact.status) {
+      const recovered = timeoutStatusResponse(exact.status, id);
       if (recovered) return recovered;
     }
     return NextResponse.json(
@@ -276,6 +291,24 @@ export async function POST(
     );
   }
   if (!response.ok) {
+    if (response.status >= 500) {
+      const exact = await exactMigrationStatus(lookup, operationId);
+      if (exact.status) {
+        const recovered = timeoutStatusResponse(exact.status, id);
+        if (recovered) return recovered;
+      }
+      if (exact.mismatch) {
+        return NextResponse.json(
+          {
+            error:
+              "Sandbox update outcome is unknown because the status response did not match this operation.",
+            status: "outcome_unknown",
+            operation_id: operationId,
+          },
+          { status: 502 },
+        );
+      }
+    }
     return NextResponse.json(
       {
         error: "Sandbox image update failed",
@@ -284,6 +317,28 @@ export async function POST(
       },
       { status: response.status >= 500 ? 502 : response.status },
     );
+  }
+  const protocolFailure =
+    typeof payload !== "object" ||
+    payload === null ||
+    ("body" in payload && typeof payload.body === "string");
+  if (protocolFailure) {
+    const exact = await exactMigrationStatus(lookup, operationId);
+    if (exact.status) {
+      const recovered = timeoutStatusResponse(exact.status, id);
+      if (recovered) return recovered;
+    }
+    if (exact.mismatch) {
+      return NextResponse.json(
+        {
+          error:
+            "Sandbox update outcome is unknown because the status response did not match this operation.",
+          status: "outcome_unknown",
+          operation_id: operationId,
+        },
+        { status: 502 },
+      );
+    }
   }
   if (
     typeof payload !== "object" ||

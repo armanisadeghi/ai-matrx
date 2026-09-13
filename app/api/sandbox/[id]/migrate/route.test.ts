@@ -283,6 +283,80 @@ test("on a POST timeout preserves a rolled-back result as actionable non-success
   });
 });
 
+test.each([
+  ["in_progress", "running", "target_start_intent", 202],
+  ["migrated", "done", "cleanup_complete", 200],
+  ["rolled_back", "done", "cleanup_complete", 409],
+] as const)(
+  "reconciles upstream 502 to exact %s status",
+  async (outcome, execution_state, phase, expectedStatus) => {
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: "upstream interrupted" }), {
+          status: 502,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            sandbox_id: "sbx-1",
+            operation_id: operationId,
+            outcome,
+            execution_state,
+            phase,
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const response = await POST(
+      new NextRequest(
+        `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=${operationId}`,
+        { method: "POST" },
+      ),
+      params,
+    );
+
+    expect(response.status).toBe(expectedStatus);
+    expect(await response.json()).toMatchObject({
+      sandbox_id: sandboxRowId,
+      outcome,
+    });
+  },
+);
+
+test("makes a 502 reconciliation mismatch loud rather than reusing stale success", async () => {
+  jest
+    .spyOn(global, "fetch")
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify({ detail: "failure" }), { status: 502 }),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          sandbox_id: "sbx-1",
+          operation_id: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          outcome: "migrated",
+          execution_state: "done",
+          phase: "cleanup_complete",
+        }),
+        { status: 200 },
+      ),
+    );
+
+  const response = await POST(
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=${operationId}`,
+      { method: "POST" },
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toMatchObject({ status: "outcome_unknown" });
+});
+
 test("refuses a timeout status response for a different operation", async () => {
   jest
     .spyOn(global, "fetch")
