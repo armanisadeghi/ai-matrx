@@ -65,7 +65,6 @@ import {
 export type ServerEnvironment =
   | "production"
   | "development"
-  | "ec2"
   | "staging"
   | "localhost"
   | "gpu"
@@ -122,6 +121,8 @@ function buildDefaultHealth(): Record<ServerEnvironment, ServerHealthRecord> {
 
 interface ApiConfigState {
   activeServer: ServerEnvironment;
+  /** A persisted retired EC2 full-API choice was migrated to production. */
+  retiredEc2ApiSelectionNotice: boolean;
   customUrl: string | null;
   /** Per-service production/localhost exceptions; absent means follow activeServer. */
   serviceOverrides: Partial<Record<ApiService, ServiceEnvironment>>;
@@ -176,6 +177,8 @@ const PERSIST_KEY = "matrx.apiConfig.v1";
 
 interface PersistedApiConfig {
   activeServer: ServerEnvironment;
+  /** Kept until the shared boot notice has actually been shown. */
+  retiredEc2ApiSelectionNotice?: boolean;
   customUrl: string | null;
   serviceOverrides: Partial<Record<ApiService, ServiceEnvironment>>;
   apiVersion: string | null;
@@ -186,6 +189,7 @@ interface PersistedApiConfig {
 function loadPersistedServer(): PersistedApiConfig {
   const fallback: PersistedApiConfig = {
     activeServer: "production",
+    retiredEc2ApiSelectionNotice: false,
     customUrl: null,
     serviceOverrides: {},
     apiVersion: null,
@@ -200,13 +204,16 @@ function loadPersistedServer(): PersistedApiConfig {
     const valid: ServerEnvironment[] = [
       "production",
       "development",
-      "ec2",
       "staging",
       "localhost",
       "gpu",
       "custom",
     ];
     const loopbackAllowed = allowsLoopbackApiTargets();
+    // `ec2` was the retired full AI API replica, never the sandbox
+    // orchestrator. A browser that explicitly selected it is deliberately
+    // migrated to the canonical AI API and receives a durable visible notice.
+    const retiredEc2ApiSelection = parsed.activeServer === "ec2";
     const persistedActiveServer =
       parsed.activeServer && valid.includes(parsed.activeServer)
         ? parsed.activeServer
@@ -221,6 +228,8 @@ function loadPersistedServer(): PersistedApiConfig {
         (persistedActiveServer === "custom" && unsafeCustomTarget)
           ? "production"
           : persistedActiveServer,
+      retiredEc2ApiSelectionNotice:
+        retiredEc2ApiSelection || parsed.retiredEc2ApiSelectionNotice === true,
       customUrl: unsafeCustomTarget ? null : persistedCustomUrl,
       serviceOverrides: Object.fromEntries(
         API_SERVICES.flatMap((service) => {
@@ -255,6 +264,7 @@ function persistServer(state: ApiConfigState): void {
   try {
     const payload: PersistedApiConfig = {
       activeServer: state.activeServer,
+      retiredEc2ApiSelectionNotice: state.retiredEc2ApiSelectionNotice,
       customUrl: state.customUrl,
       serviceOverrides: state.serviceOverrides,
       apiVersion: state.apiVersion,
@@ -271,6 +281,7 @@ const _persisted = loadPersistedServer();
 
 const initialState: ApiConfigState = {
   activeServer: _persisted.activeServer,
+  retiredEc2ApiSelectionNotice: _persisted.retiredEc2ApiSelectionNotice === true,
   customUrl: _persisted.customUrl,
   serviceOverrides: _persisted.serviceOverrides,
   health: buildDefaultHealth(),
@@ -466,8 +477,13 @@ const apiConfigSlice = createSlice({
       if (unlocked) {
         const persisted = loadPersistedServer();
         state.activeServer = persisted.activeServer;
+        state.retiredEc2ApiSelectionNotice =
+          persisted.retiredEc2ApiSelectionNotice === true;
         state.customUrl = persisted.customUrl;
         state.serviceOverrides = persisted.serviceOverrides;
+        state.apiVersion = persisted.apiVersion;
+        state.pathOverrides = persisted.pathOverrides;
+        state.aiApiVersionOverride = persisted.aiApiVersionOverride;
         return;
       }
 
@@ -494,6 +510,12 @@ const apiConfigSlice = createSlice({
       }
       state.activeServer = "custom";
       state.customUrl = action.payload;
+      persistServer(state);
+    },
+
+    /** Mark the one-time retired-API migration notice as visibly delivered. */
+    acknowledgeRetiredEc2ApiSelectionNotice: (state) => {
+      state.retiredEc2ApiSelectionNotice = false;
       persistServer(state);
     },
 
@@ -655,6 +677,10 @@ type StateWithApiConfig = { apiConfig: ApiConfigState };
 export const selectActiveServer = (
   state: StateWithApiConfig,
 ): ServerEnvironment => state.apiConfig.activeServer;
+
+export const selectRetiredEc2ApiSelectionNotice = (
+  state: StateWithApiConfig,
+): boolean => state.apiConfig.retiredEc2ApiSelectionNotice;
 
 /**
  * Whether loopback (localhost) API targets may be selected right now. React

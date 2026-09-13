@@ -84,6 +84,7 @@ import { AgentPeekHost } from "@/providers/AgentPeekHost";
 import DeferredSingletonWrapper from "./DeferredSingletonWrapper";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
+import { RetiredApiSelectionNotice } from "@/providers/RetiredApiSelectionNotice";
 // WindowPersistenceManager provides the React context that WindowPanel
 // reads via `useWindowPersistence()` — without this mounted, every
 // `saveWindow`/`closeWindow` call resolves to the no-op default and
@@ -199,6 +200,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                           <DeferredSingletonWrapper />
                                           <ServerToggleQueryReset />
                                           <LoopbackApiAccessSync />
+                                          <RetiredApiSelectionNotice />
                                           <GoogleOAuthRedirectNotice />
                                           <ExtensionBridgeSubscriber />
                                           <PlatformDirectiveSubscriber />

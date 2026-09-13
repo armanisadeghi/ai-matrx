@@ -9,7 +9,6 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
  *
  * - 'production'  → NEXT_PUBLIC_BACKEND_URL_PROD (default, used by all non-admin requests)
  * - 'development' → NEXT_PUBLIC_BACKEND_URL_DEV
- * - 'ec2'         → NEXT_PUBLIC_BACKEND_URL_EC2
  * - 'staging'     → NEXT_PUBLIC_BACKEND_URL_STAGING
  * - 'localhost'   → NEXT_PUBLIC_BACKEND_URL_LOCAL
  * - 'gpu'         → NEXT_PUBLIC_BACKEND_URL_GPU
@@ -21,7 +20,6 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 export type ServerEnvironment =
   | "production"
   | "development"
-  | "ec2"
   | "staging"
   | "localhost"
   | "gpu"

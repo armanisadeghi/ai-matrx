@@ -198,8 +198,12 @@ export const FRONTEND_SCAN_DIRS = [
   "providers",
 ];
 
+// `coverage` is skipped ONLY at a repo root (the jest/pytest output dir): until
+// 2026-09-13 it matched ANY directory of that name and silently hid
+// features/marketing/seo/value-system/coverage/ — the one reader of
+// `seo.dimension_coverage`, reported as an orphan for a day.
 export const SKIP_DIR_RE =
-  /(^|\/)(node_modules|\.next[^/]*|dist|build|coverage|__tests__|__mocks__|__pycache__|\.git|\.venv|venv|site-packages)(\/|$)/;
+  /(^|\/)(node_modules|\.next[^/]*|dist|build|__tests__|__mocks__|__pycache__|\.git|\.venv|venv|site-packages)(\/|$)|^[^/]+\/coverage(\/|$)/;
 export const SKIP_FILE_RE = /(\.test\.tsx?$|\.spec\.tsx?$|\.d\.ts$|_test\.py$|^test_.*\.py$)/;
 
 export interface SourceFile {

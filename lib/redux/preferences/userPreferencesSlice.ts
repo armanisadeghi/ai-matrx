@@ -248,8 +248,8 @@ export interface CodingPreferences {
 export interface SandboxPreferences {
   /** Template id the orchestrator will spawn (e.g. "bare", "node-22"). */
   template: string;
-  /** "hosted" survives container restart via per-user Docker volume; "ec2"
-   * is ephemeral. */
+  /** "hosted" survives container restart via a per-user Docker volume; "ec2"
+   * keeps a retained home per sandbox lifecycle. */
   tier: "ec2" | "hosted";
   /** Server uses its own default when null. Range [60, 86400]. */
   ttl_seconds: number | null;

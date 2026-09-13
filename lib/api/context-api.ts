@@ -31,6 +31,11 @@ import { hydrateContextState } from "@/features/agents/redux/execution-system/co
 export class SelectedBackendUnavailableError extends Error {}
 
 export function resolveSelectedBackendOrRaise(env: string): string {
+  if (env === "ec2") {
+    throw new SelectedBackendUnavailableError(
+      "The EC2 AI API selection was retired. Select Production (server.app.matrxserver.com) or another configured environment explicitly; production substitution is refused.",
+    );
+  }
   const url = BACKEND_URLS[env];
   if (!url) throw new SelectedBackendUnavailableError(
     `Backend environment "${env}" was requested, but its NEXT_PUBLIC_BACKEND_URL_* setting is missing. ` +

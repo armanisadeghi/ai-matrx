@@ -18,7 +18,7 @@ import { requireSandboxOrganizationId } from "@/lib/sandbox/explicit-organizatio
  * so the choice is meaningful instead of a bare radio toggle.
  */
 export const TIER_GUIDANCE: Record<SandboxTier, string> = {
-  ec2: "Best for one-shot agent runs and cost-controlled tasks. Backed by S3 — your home dir is restored on each new sandbox.",
+  ec2: "Best for one-shot agent runs and cost-controlled tasks. Each sandbox keeps its own retained home directory.",
   hosted:
     "Best for long-lived editor sessions, workloads > 5 GB, or anything that needs internal Matrx services. Per-user volume mounted at /home/agent.",
 };
