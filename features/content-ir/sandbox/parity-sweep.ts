@@ -34,6 +34,11 @@ import { SANDBOX_PROTOCOL_VERSION } from "./protocol";
 import { launch, type Rect } from "./parity/cdp";
 import { readPng, bestAlignedDiff } from "./parity/png";
 
+// `--debug` prints settle timings and captured state per case. A CLI flag, never
+// an env var: an env var may not control behaviour (Arman, 2026-09-10), and
+// `pnpm check:settings-env-toggles` refuses one.
+const DEBUG = process.argv.includes("--debug");
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "../../..");
 const OUT_DIR = resolve(ROOT, ".kind-sandbox-parity");
@@ -613,7 +618,7 @@ async function runBatch(
             const settleMs = await page
                 .evaluate<number>('window.__CAPTURE_SETTLE__("body", 1500)')
                 .catch(() => -1);
-            if (process.env.PARITY_DEBUG) {
+            if (DEBUG) {
                 // eslint-disable-next-line no-console
                 console.log(`    settle[${theme}] ${settleMs}ms`);
             }
@@ -656,7 +661,7 @@ async function runBatch(
         const state = await page.evaluate<Record<string, any>>(
             "JSON.parse(JSON.stringify(window.__PARITY__))",
         );
-        if (process.env.PARITY_DEBUG) {
+        if (DEBUG) {
             // eslint-disable-next-line no-console
             console.log("    state:", JSON.stringify(state));
         }
