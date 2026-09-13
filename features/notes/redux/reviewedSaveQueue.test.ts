@@ -88,4 +88,17 @@ describe("reviewed Notes queue receipt", () => {
     await expect(third.result).resolves.toMatchObject({ status: "physical-saved" });
     expect(updated.update).toHaveBeenCalledTimes(1);
   });
+  it("retains the reviewed first receipt when a later ordinary drain fails", async () => {
+    const store = storeWithNote(); store.dispatch(setNoteField({ id: ID, field: "content", value: "first" }));
+    const record = store.getState().notes.notes[ID]; const source = captureNoteEditSourceFromRecord({ record, displayedNote: record, actorId: USER, sourceId: "drain", snapshotId: "drain" });
+    const capture = store.dispatch(captureReviewedNoteSave(source)); if (capture.status !== "captured") throw new Error("capture refused");
+    let resolveFirst: ((value: unknown) => void) | undefined; let entered: (() => void) | undefined; const enteredFirst = new Promise<void>((resolve) => { entered = resolve; });
+    const existing = query({ data: note(), error: null }); const first = query(undefined); first.maybeSingle.mockImplementation(() => new Promise((resolve) => { resolveFirst = resolve; entered?.(); })); const failed = query({ data: null, error: null });
+    schema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(first).mockReturnValueOnce(existing).mockReturnValueOnce(failed) });
+    const observation = store.dispatch(saveReviewedNoteSnapshot({ permit: capture.permit, currentSource: source })); await enteredFirst;
+    store.dispatch(setNoteField({ id: ID, field: "content", value: "later" })); if (!resolveFirst) throw new Error("first transport never entered"); resolveFirst({ data: note({ content: "first", version: 8 }), error: null });
+    await expect(observation.result).resolves.toMatchObject({ status: "physical-saved", receipt: { note: { content: "first", version: 8 } } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.getState().notes.notes[ID]).toMatchObject({ content: "later", _dirty: true });
+  });
 });
