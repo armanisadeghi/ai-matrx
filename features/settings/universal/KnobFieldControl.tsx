@@ -413,7 +413,6 @@ function VoiceField({
       {open && (
         <PopoverContent
           align="start"
-          side="top"
           className="w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
         >
           <VoiceChooser
