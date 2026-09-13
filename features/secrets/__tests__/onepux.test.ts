@@ -3,7 +3,7 @@ import { parseOnePuxData } from "../onepux";
 const attrs = '{"version":3,"description":"1Password Unencrypted Export","createdAt":1}';
 const item = (state = "active", id = "item") => `{"uuid":"${id}","favIndex":0,"createdAt":1,"updatedAt":1,"state":"${state}","categoryUuid":"001","overview":{"title":"Example","subtitle":"","url":"https://example.com","urls":[{"label":"other","url":"https://two.example"}]},"details":{"loginFields":[{"id":"u","name":"user","value":"me","fieldType":"T","designation":"username"},{"id":"p","name":"pass","value":"secret","fieldType":"P","designation":"password"}]}}`;
 const data = (items = item()) => `{"accounts":[{"attrs":{"accountName":"a","name":"a","avatar":"","email":"a@b.c","uuid":"account","domain":"x"},"vaults":[{"attrs":{"uuid":"vault","desc":"","avatar":"","name":"P","type":"P"},"items":[${items}]}]}]}`;
-const limits = { maxFileBytes: 100000, maxRecords: 20 };
+const limits = { maxFileBytes: 100000, maxRecords: 20, maxCellBytes: 10000 };
 
 describe("sanitized upstream 1PUX ordinary login shape", () => {
   test("projects destinations, preserves source envelope, and tracks archived lifecycle", () => {
@@ -60,6 +60,9 @@ describe("sanitized upstream 1PUX ordinary login shape", () => {
     const huge = data(item().replace('"favIndex":0', '"favIndex":900719925474099312345').replace('"createdAt":1', '"createdAt":3e1').replace('"updatedAt":1', '"updatedAt":3e1'));
     const [record] = parseOnePuxData(attrs.replace('"version":3', '"version":3.0'), huge, limits);
     expect(record).toMatchObject({ status: "supported" }); if (record?.status === "supported") expect(record.sourceRecord).toContain("900719925474099312345");
+  });
+  test("accepts exact numeric version 30e-1", () => {
+    expect(parseOnePuxData(attrs.replace('"version":3', '"version":30e-1'), data(), limits)[0]).toMatchObject({ status: "supported" });
   });
   test.each([
     ['negative underflow', data(item().replace('"url":"https://example.com"', '"url":"https://example.com","ps":-1e-9999'))],
