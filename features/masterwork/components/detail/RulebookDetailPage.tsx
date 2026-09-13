@@ -85,6 +85,7 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
+import { useTriageDialogSession } from "../../triage/triageSession";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { RuleHistory } from "./RuleHistory";
 import {
@@ -612,7 +613,16 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // identity of what is on screen.
   const [wizardOpen, setWizardOpen] = useState(false);
   // W59 + W61: sorting the DRAFT pile by what the Rulebook is FOR.
-  const [triageOpen, setTriageOpen] = useState(false);
+  //
+  // 🚨 A TRIAGE SESSION BELONGS TO ONE RULEBOOK (Bugbot, 2026-09-13) — the same
+  // rule the ingest session lives by, and for the same reason: this page
+  // instance is REUSED across Rulebooks. A bare `useState(false)` left the sort
+  // dialog on screen after navigating, holding the purpose typed for the
+  // Rulebook she left. Story + why the dialog is also remounted per Rulebook:
+  // `../../triage/triageSession.ts`.
+  const triage = useTriageDialogSession(rulebook?.id ?? null);
+  const triageOpen = triage.open;
+  const setTriageOpen = triage.setOpen;
   const [feedbackTarget, setFeedbackTarget] = useState<{
     rule: RulebookRule;
     mode: RuleFeedbackMode;
@@ -2411,6 +2421,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             }}
           />
           <TriageDraftsDialog
+            // Her purpose, her preview choice and the run being rejoined all
+            // belong to THIS Rulebook — see `triageSession.ts`.
+            key={rulebook.id}
             open={triageOpen}
             onOpenChange={setTriageOpen}
             rulebookId={rulebook.id}
