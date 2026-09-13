@@ -35,6 +35,22 @@ describe("1PUX archive reader", () => {
     const bytes = new Uint8Array(await file.arrayBuffer()); bytes[40] = bytes[40]! ^ 1;
     await expect(read(new Blob([bytes], { type: "application/zip" }))).rejects.toThrow();
   });
+  test("rejects a real local-extra warning that appears only after reading", async () => {
+    const { BlobReader, BlobWriter, TextReader, ZipReader, ZipWriter } = await import("@zip.js/zip.js");
+    const writer = new ZipWriter(new BlobWriter("application/zip"));
+    await writer.add("export.attributes", new TextReader("attrs"), { extraField: new Map([[0xcafe, new Uint8Array([1, 2])]]) });
+    await writer.add("export.data", new TextReader("data"));
+    const bytes = new Uint8Array(await (await writer.close()).arrayBuffer());
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const extraOffset = 30 + view.getUint16(26, true); view.setUint16(extraOffset + 2, 0xffff, true);
+    const malformed = new Blob([bytes], { type: "application/zip" });
+    const raw = new ZipReader(new BlobReader(malformed), { strictness: "strict", filenameValidation: "strict", checkAmbiguity: true });
+    const [entry] = await raw.getEntries(); if (!entry || !("getData" in entry)) throw new Error("entry missing");
+    await entry.getData(new WritableStream<Uint8Array>(), { checkOverlappingEntryOnly: true });
+    expect(entry.warnings?.some((warning) => warning.reason === "malformed extra field")).toBe(true);
+    await raw.close();
+    await expect(read(malformed)).rejects.toThrow();
+  });
   test("refuses entries outside the exact member grammar", async () => {
     await expect(read(await archive([["export.attributes", "a"], ["export.data", "d"], ["../escape", "x"]]))).rejects.toThrow();
   });

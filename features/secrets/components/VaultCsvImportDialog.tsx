@@ -1019,15 +1019,21 @@ export function VaultCsvImportDialog({
                   );
                 })}
               </div>
-              <label className="flex items-start gap-2 text-xs text-muted-foreground">
-                <Switch
-                  checked={includeTrash}
-                  onCheckedChange={setIncludeTrash}
-                />
-                <span>
-                  Include deleted source items. They are skipped by default.
-                </span>
-              </label>
+              {jsonRecords.some(
+                (record) =>
+                  record.status === "supported" &&
+                  record.sourceState === "deleted",
+              ) && (
+                <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <Switch
+                    checked={includeTrash}
+                    onCheckedChange={setIncludeTrash}
+                  />
+                  <span>
+                    Include deleted source items. They are skipped by default.
+                  </span>
+                </label>
+              )}
               {jsonRecords.some(
                 (record) =>
                   record.status === "supported" &&
