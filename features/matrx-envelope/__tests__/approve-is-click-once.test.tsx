@@ -171,7 +171,20 @@ describe("Approve is a click-once control", () => {
       failed: 0,
       message: ALREADY,
       receipts: [
-        { kind: "directive_apply.item", status: "already_applied", message: ALREADY },
+        {
+          kind: "directive_apply.item",
+          status: "already_applied",
+          message: ALREADY,
+          // A REPLAY OF A FINISHED APPLY NAMES WHAT IT MADE (DD-145, 2026-09-13).
+          // The fixture used to omit these, which no real replay does: the
+          // sentence is re-composed from the stored receipt, and that receipt
+          // carries the holder's resource ids. The id-less `already_applied` is
+          // a different answer — "still being applied right now", which the card
+          // must not render as a finished apply — so the fixture now matches the
+          // server it stands in for. The assertions below are unchanged.
+          resource_kind: "project",
+          resource_ids: ["9f2b7c14-0000-4000-8000-0000000000aa"],
+        },
       ],
     };
     const view = mount();

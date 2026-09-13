@@ -43,8 +43,14 @@ export interface ProposedDirective {
    * count the client added up — so the card that asked "shall I?" answers
    * "here is what happened" in the same place, instead of vanishing behind a
    * toast that is gone in four seconds.
+   *
+   * `in_flight` (DD-145) is NOT an outcome — it is the honest statement that a
+   * concurrent request is still applying this and the server stopped waiting for
+   * it. The card holds that sentence while the zone re-reads the ledger, and
+   * disappears the moment the real receipt lands there, so exactly one of the
+   * two ever shows the apply.
    */
-  outcome?: "applied" | "already_applied" | "failed";
+  outcome?: "applied" | "already_applied" | "failed" | "in_flight";
   /** The server's sentence for that outcome. Rendered verbatim. */
   outcomeMessage?: string;
 }

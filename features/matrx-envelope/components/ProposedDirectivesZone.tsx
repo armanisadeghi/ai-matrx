@@ -62,11 +62,79 @@ interface ProposedDirectivesZoneProps {
   conversationId: string;
 }
 
+/**
+ * HOW LONG THE CARD WILL WAIT FOR A RECEIPT THAT IS STILL BEING WRITTEN
+ * (DD-145). Not a taste: `POST /directives/confirm` enters through the public
+ * ALB whose `idle_timeout` is 60 s, so a holder that has not finished by then
+ * cannot answer its OWN caller either and there is nothing left to wait for.
+ * aidream's `CLAIM_WAIT_SECONDS` (45 s) is derived from the same 60 s, which is
+ * why this poll is the thin residue rather than the mechanism.
+ */
+const RECEIPT_WAIT_MS = 60_000;
+const RECEIPT_POLL_MS = 2_000;
+
 export function ProposedDirectivesZone({
   conversationId,
 }: ProposedDirectivesZoneProps) {
+  const dispatch = useAppDispatch();
   const allProposals = useAppSelector(selectProposedDirectives(conversationId));
-  const { receipts, loadError } = useConversationReceipts(conversationId);
+  const { receipts, loadError, refresh } = useConversationReceipts(conversationId);
+
+  // THE RESIDUE OF DD-145, ON THE CLIENT. The server waits 45 s for a concurrent
+  // holder and hands back the real receipt; a handler slower than the door
+  // itself leaves the loser holding "that is already being applied right now",
+  // which is TRUE but is not what happened. So while any card is in that state
+  // the zone re-reads the ledger — the same read a reload does — and the moment
+  // a receipt that was not there before appears, the waiting card stands down
+  // and the ledger's receipt is the one thing on screen. Never both.
+  const waiting = allProposals.filter((p) => p.outcome === "in_flight");
+  const waitingCount = waiting.length;
+  const knownKeys = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (waitingCount === 0) {
+      knownKeys.current = null;
+      return;
+    }
+    if (knownKeys.current === null) {
+      knownKeys.current = new Set(receipts.map((r) => r.ledgerKey));
+    }
+    const deadline = Date.now() + RECEIPT_WAIT_MS;
+    let cancelled = false;
+    const timer = setInterval(() => {
+      if (cancelled) return;
+      if (Date.now() >= deadline) {
+        // The bound expired. NOTHING SILENT: the card keeps the server's
+        // sentence and its remedy rather than quietly turning into a lie or
+        // vanishing; the reader reloads and the ledger answers.
+        clearInterval(timer);
+        return;
+      }
+      void refresh();
+    }, RECEIPT_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+    // `receipts` is read only to seed the snapshot on the first waiting render;
+    // re-running this on every poll result would reset the deadline forever.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingCount, refresh]);
+
+  const seen = knownKeys.current;
+  const landed = seen ? receipts.some((r) => !seen.has(r.ledgerKey)) : false;
+  useEffect(() => {
+    if (!landed) return;
+    for (const p of waiting) {
+      dispatch(
+        removeProposal({
+          conversationId: p.conversationId,
+          proposalId: p.proposalId,
+        }),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [landed, waitingCount]);
 
   // AN APPROVE THAT WOULD WRITE NOTHING IS NEVER SHOWN (DD-135, V-34 2026-09-12).
   // A bound agent answering a plain question emits its shell with an EMPTY items
@@ -103,37 +171,48 @@ export function ProposedDirectivesZone({
 }
 
 /**
- * The conversation's already-applied directives, read ONCE per conversation from
- * the ledger. Once, deliberately: a confirm made later in this session is shown
- * by its own card, and re-reading would render the same apply twice.
+ * The conversation's already-applied directives, read from the ledger.
+ *
+ * Read ONCE on mount, deliberately: a confirm made later in this session is
+ * shown by its own card, and re-reading on every render would put the same apply
+ * on screen twice. `refresh` is the ONE deliberate exception (DD-145) — the zone
+ * calls it only while a card is waiting for a receipt another request is still
+ * writing, and that card removes itself the moment the read produces it, so the
+ * "never twice" rule holds through the exception rather than around it.
  */
 function useConversationReceipts(conversationId: string) {
   const [receipts, setReceipts] = useState<ConversationDirectiveReceipt[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const live = useRef(true);
+
+  const read = async (id: string) => {
+    try {
+      const rows = await fetchConversationReceipts(id);
+      if (live.current) setReceipts(rows);
+    } catch (err: unknown) {
+      if (!live.current) return;
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Could not load what this conversation's actions did.",
+      );
+    }
+  };
 
   useEffect(() => {
-    let cancelled = false;
+    live.current = true;
     setReceipts([]);
     setLoadError(null);
-    if (!conversationId) return;
-    void fetchConversationReceipts(conversationId)
-      .then((rows) => {
-        if (!cancelled) setReceipts(rows);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setLoadError(
-          err instanceof Error
-            ? err.message
-            : "Could not load what this conversation's actions did.",
-        );
-      });
+    if (conversationId) void read(conversationId);
     return () => {
-      cancelled = true;
+      live.current = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
-  return { receipts, loadError };
+  const refresh = () => (conversationId ? read(conversationId) : Promise.resolve());
+
+  return { receipts, loadError, refresh };
 }
 
 function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
@@ -195,6 +274,21 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       const replayed = result.receipts.some(
         (r) => "status" in r && r.status === "already_applied",
       );
+      // 🚨 "ALREADY APPLIED" AND "STILL BEING APPLIED" ARE NOT THE SAME ANSWER
+      // (DD-145). When a concurrent request outruns the server's claim wait, the
+      // loser is handed a receipt that says `already_applied` but names NOTHING —
+      // no resource ids — because nothing has been created yet to name. A real
+      // replay of a finished apply always carries the holder's ids. So the empty
+      // set is the tell, derived from the payload rather than matched against the
+      // server's wording, and it is safe in BOTH directions: if a genuine replay
+      // ever arrived id-less, the card would wait, the zone would re-read the
+      // ledger, and the receipt that is already there would be shown at once.
+      const stillApplying =
+        replayed &&
+        result.failed === 0 &&
+        result.receipts.every(
+          (r) => !("status" in r) || (r.resource_ids ?? []).length === 0,
+        );
       dispatch(
         resolveProposal({
           conversationId: proposal.conversationId,
@@ -202,9 +296,11 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
           outcome:
             result.failed > 0 && result.applied === 0
               ? "failed"
-              : replayed
-                ? "already_applied"
-                : "applied",
+              : stillApplying
+                ? "in_flight"
+                : replayed
+                  ? "already_applied"
+                  : "applied",
           // NOTHING SILENT: a server build from before DD-118 answers without a
           // sentence. Say so, with the remedy — never render an empty receipt,
           // and never invent the words here.
@@ -232,14 +328,20 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   if (proposal.outcome) {
     const done = proposal.outcome === "applied";
     const replayed = proposal.outcome === "already_applied";
+    // DD-145: still being written by a concurrent request. A WAITING state, not
+    // an outcome — the zone is re-reading the ledger and this card stands down
+    // the moment the real receipt lands there.
+    const waiting = proposal.outcome === "in_flight";
     const OutcomeIcon = done
       ? CheckCircle2
-      : replayed
-        ? RotateCcw
-        : AlertTriangle;
+      : waiting
+        ? Loader2
+        : replayed
+          ? RotateCcw
+          : AlertTriangle;
     const tone = done
       ? "text-primary"
-      : replayed
+      : replayed || waiting
         ? "text-muted-foreground"
         : "text-destructive";
     return (
@@ -250,7 +352,9 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-2">
-            <OutcomeIcon className={`mt-0.5 size-4 shrink-0 ${tone}`} />
+            <OutcomeIcon
+              className={`mt-0.5 size-4 shrink-0 ${tone}${waiting ? " animate-spin" : ""}`}
+            />
             <div className="min-w-0">
               <div className="text-sm font-medium text-foreground">{title}</div>
               {/* The server's sentence for what happened. Verbatim. */}
@@ -260,7 +364,13 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
             </div>
           </div>
           <Badge variant={done ? "default" : "secondary"} className="shrink-0">
-            {done ? "Done" : replayed ? "Already done" : "Failed"}
+            {done
+              ? "Done"
+              : waiting
+                ? "Finishing"
+                : replayed
+                  ? "Already done"
+                  : "Failed"}
           </Badge>
         </div>
       </div>

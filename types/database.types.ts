@@ -21324,6 +21324,8 @@ export type Database = {
           claimed_by: string | null
           created_at: string
           created_by: string | null
+          created_by_system: string | null
+          created_by_tier: string | null
           date_of_birth: string | null
           deleted_at: string | null
           display_name: string
@@ -21367,6 +21369,8 @@ export type Database = {
           timezone: string | null
           updated_at: string
           updated_by: string | null
+          updated_by_system: string | null
+          updated_by_tier: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -21382,6 +21386,8 @@ export type Database = {
           claimed_by?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           date_of_birth?: string | null
           deleted_at?: string | null
           display_name: string
@@ -21425,6 +21431,8 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -21440,6 +21448,8 @@ export type Database = {
           claimed_by?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_system?: string | null
+          created_by_tier?: string | null
           date_of_birth?: string | null
           deleted_at?: string | null
           display_name?: string
@@ -21483,6 +21493,8 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           updated_by?: string | null
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -49901,6 +49913,10 @@ export type Database = {
           problem: string
         }[]
       }
+      normalize_org_jurisdiction_rule_parameters: {
+        Args: { p_parameters: Json; p_rule_class: string }
+        Returns: Json
+      }
       notify_outsider_doors_client_reachable: {
         Args: never
         Returns: {
@@ -49947,6 +49963,10 @@ export type Database = {
           p_reason?: string
           p_rule_class: string
         }
+        Returns: Json
+      }
+      org_jurisdiction_rule_validation_parameters: {
+        Args: { p_parameters: Json; p_rule_class: string }
         Returns: Json
       }
       ot_preapproval_wf_apply: {
@@ -59841,6 +59861,7 @@ export type Database = {
           overridable_by: string[]
           override_direction: string
           propagation: string
+          public_read: boolean
           review_due: string | null
           set_by: string
           taxonomy_node_id: string | null
@@ -59866,6 +59887,7 @@ export type Database = {
           overridable_by?: string[]
           override_direction?: string
           propagation?: string
+          public_read?: boolean
           review_due?: string | null
           set_by?: string
           taxonomy_node_id?: string | null
@@ -59891,6 +59913,7 @@ export type Database = {
           overridable_by?: string[]
           override_direction?: string
           propagation?: string
+          public_read?: boolean
           review_due?: string | null
           set_by?: string
           taxonomy_node_id?: string | null
@@ -63638,6 +63661,7 @@ export type Database = {
         Args: never
         Returns: {
           admitted: boolean
+          carrier_effective: boolean
           has_carrier: boolean
           rls_variant: string
           schema_name: string
@@ -64388,12 +64412,15 @@ export type Database = {
       retrofit_entity: {
         Args: {
           p_legacy_trigger?: string
-          p_org_strategy?: string
+          p_org_expr?: string
+          p_org_strategy: string
           p_owner_col?: string
           p_parent_fk?: string
-          p_parent_table?: string
+          p_parent_ref?: string
+          p_schema: string
           p_table: string
           p_token: string
+          p_visibility_expr?: string
         }
         Returns: string
       }
