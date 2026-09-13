@@ -29,7 +29,7 @@ self.onmessage = async (event: MessageEvent<{ file: File; limits: Parameters<typ
     const attributesRoot = JSON.parse(attributes) as { version?: number; description?: string; createdAt?: number };
     const createdAt = attributesRoot.createdAt;
     if (attributesRoot.version !== 3 || attributesRoot.description !== "1Password Unencrypted Export" || !Number.isSafeInteger(createdAt) || createdAt === undefined || createdAt < 0) throw new Error("This is not a supported unencrypted 1Password v3 export.");
-    self.postMessage({ ok: true, records: parseOnePuxData(data, event.data.limits), binaryMembers });
+    self.postMessage({ ok: true, records: parseOnePuxData(attributes, data, event.data.limits), binaryMembers });
   } catch (error) {
     self.postMessage({ ok: false, error: error instanceof Error ? error.message : "The 1Password archive could not be read." });
   } finally { await reader.close(); }
