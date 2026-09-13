@@ -1006,6 +1006,22 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Question Desk",
+    landingPath: "/administration/question-desk",
+    iconName: "MessagesSquare",
+    iconColor: "text-amber-600",
+    features: [
+      {
+        title: "Question Desk",
+        description:
+          "Interviews that put open questions to one person and record the verdict and the verbatim answer: one question per screen with its recommendation and research, read aloud or answered by voice, plus a dense table for decisions made in their name.",
+        iconName: "MessagesSquare",
+        link: "/administration/question-desk",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Feedback",
     landingPath: "/administration/users/feedback",
     iconName: "MessageSquare",

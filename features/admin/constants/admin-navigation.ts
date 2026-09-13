@@ -234,6 +234,26 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     ],
   },
   {
+    // The desk is where a question an agent filed actually reaches the person
+    // who decides it — a peer of Feedback, not a child of Users: the row is a
+    // decision being made, not a report being triaged.
+    name: "Question Desk",
+    slug: "question-desk",
+    iconName: "MessagesSquare",
+    iconColor: "text-amber-600",
+    sections: [
+      {
+        name: "Question Desk",
+        iconName: "MessagesSquare",
+        destinations: [
+          destination("/administration/question-desk", [
+            "/administration/question-desk/[interviewId]",
+          ]),
+        ],
+      },
+    ],
+  },
+  {
     name: "Chat",
     slug: "chat",
     iconName: "MessageCircle",

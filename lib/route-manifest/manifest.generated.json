@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1081,
+  "routeCount": 1163,
   "routes": [
     {
       "pattern": "/",
@@ -284,9 +284,34 @@
       "source": "app/(admin)/administration/agents/system-agents/shortcuts/[shortcutId]/page.tsx"
     },
     {
+      "pattern": "/administration/agents/system-agents/shortcuts/agents",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/system-agents/shortcuts/agents/page.tsx"
+    },
+    {
       "pattern": "/administration/agents/system-agents/shortcuts/all",
       "status": "live",
       "source": "app/(admin)/administration/agents/system-agents/shortcuts/all/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/system-agents/shortcuts/apps",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/system-agents/shortcuts/apps/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/system-agents/shortcuts/categories",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/system-agents/shortcuts/categories/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/system-agents/shortcuts/content-blocks",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/system-agents/shortcuts/content-blocks/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/system-agents/shortcuts/lineage",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/system-agents/shortcuts/lineage/page.tsx"
     },
     {
       "pattern": "/administration/ai",
@@ -412,6 +437,16 @@
       "pattern": "/administration/automation/scheduling/templates",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/templates/page.tsx"
+    },
+    {
+      "pattern": "/administration/billing",
+      "status": "live",
+      "source": "app/(admin)/administration/billing/page.tsx"
+    },
+    {
+      "pattern": "/administration/billing/spend",
+      "status": "live",
+      "source": "app/(admin)/administration/billing/spend/page.tsx"
     },
     {
       "pattern": "/administration/chat",
@@ -679,6 +714,11 @@
       "source": "app/(admin)/administration/knowledge/page.tsx"
     },
     {
+      "pattern": "/administration/knowledge/batch",
+      "status": "live",
+      "source": "app/(admin)/administration/knowledge/batch/page.tsx"
+    },
+    {
       "pattern": "/administration/knowledge/cms-agents",
       "status": "live",
       "source": "app/(admin)/administration/knowledge/cms-agents/page.tsx"
@@ -759,9 +799,19 @@
       "source": "app/(admin)/administration/mandates/[mandateKey]/page.tsx"
     },
     {
+      "pattern": "/administration/mandates/advanced",
+      "status": "live",
+      "source": "app/(admin)/administration/mandates/advanced/page.tsx"
+    },
+    {
       "pattern": "/administration/mandates/new",
       "status": "live",
       "source": "app/(admin)/administration/mandates/new/page.tsx"
+    },
+    {
+      "pattern": "/administration/mandates/references",
+      "status": "live",
+      "source": "app/(admin)/administration/mandates/references/page.tsx"
     },
     {
       "pattern": "/administration/marketing",
@@ -784,6 +834,11 @@
       "source": "app/(admin)/administration/preview/page.tsx"
     },
     {
+      "pattern": "/administration/preview/one-binding-ui",
+      "status": "live",
+      "source": "app/(admin)/administration/preview/one-binding-ui/page.tsx"
+    },
+    {
       "pattern": "/administration/preview/unified-management",
       "status": "live",
       "source": "app/(admin)/administration/preview/unified-management/page.tsx"
@@ -802,6 +857,16 @@
       "pattern": "/administration/preview/unified-management/places",
       "status": "live",
       "source": "app/(admin)/administration/preview/unified-management/places/page.tsx"
+    },
+    {
+      "pattern": "/administration/question-desk",
+      "status": "live",
+      "source": "app/(admin)/administration/question-desk/page.tsx"
+    },
+    {
+      "pattern": "/administration/question-desk/[interviewId]",
+      "status": "live",
+      "source": "app/(admin)/administration/question-desk/[interviewId]/page.tsx"
     },
     {
       "pattern": "/administration/reporting",
@@ -842,6 +907,11 @@
       "pattern": "/administration/reporting/reports",
       "status": "live",
       "source": "app/(admin)/administration/reporting/reports/page.tsx"
+    },
+    {
+      "pattern": "/administration/reporting/tool-refetch",
+      "status": "live",
+      "source": "app/(admin)/administration/reporting/tool-refetch/page.tsx"
     },
     {
       "pattern": "/administration/reporting/unwired",
@@ -1354,6 +1424,11 @@
       "source": "app/(core)/agents/compare/page.tsx"
     },
     {
+      "pattern": "/agents/go/[...slug]",
+      "status": "live",
+      "source": "app/(core)/agents/go/[...slug]/page.tsx"
+    },
+    {
       "pattern": "/agents/new",
       "status": "live",
       "source": "app/(core)/agents/new/page.tsx"
@@ -1427,6 +1502,11 @@
       "pattern": "/agents/shortcuts/edit/[id]",
       "status": "live",
       "source": "app/(core)/agents/shortcuts/edit/[id]/page.tsx"
+    },
+    {
+      "pattern": "/agents/shortcuts/new",
+      "status": "live",
+      "source": "app/(core)/agents/shortcuts/new/page.tsx"
     },
     {
       "pattern": "/agents/templates",
@@ -1569,6 +1649,11 @@
       "source": "app/(core)/chat/voice/playground/page.tsx"
     },
     {
+      "pattern": "/check-email",
+      "status": "live",
+      "source": "app/(auth-pages)/check-email/page.tsx"
+    },
+    {
       "pattern": "/cms",
       "status": "live",
       "source": "app/(core)/cms/page.tsx"
@@ -1697,6 +1782,16 @@
       "pattern": "/commerce/labels/[batchId]",
       "status": "live",
       "source": "app/(core)/commerce/labels/[batchId]/page.tsx"
+    },
+    {
+      "pattern": "/commerce/labels/printers",
+      "status": "live",
+      "source": "app/(core)/commerce/labels/printers/page.tsx"
+    },
+    {
+      "pattern": "/commerce/labels/printers/certify",
+      "status": "live",
+      "source": "app/(core)/commerce/labels/printers/certify/page.tsx"
     },
     {
       "pattern": "/commerce/review/admin",
@@ -3311,6 +3406,31 @@
       "source": "app/(core)/marketing/[brandId]/intelligence/competitors/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/intelligence/competitors/competitors",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/competitors/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/competitors/evidence",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/evidence/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/competitors/history",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/history/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/competitors/opportunities",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/opportunities/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/competitors/review",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/review/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/intelligence/monitoring",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/intelligence/monitoring/page.tsx"
@@ -3324,6 +3444,26 @@
       "pattern": "/marketing/[brandId]/intelligence/reputation/[siteId]",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/intelligence/reputation/[siteId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/reputation/[siteId]/cases",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/reputation/[siteId]/cases/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/reputation/[siteId]/evidence",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/reputation/[siteId]/evidence/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/reputation/[siteId]/narratives",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/reputation/[siteId]/narratives/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/reputation/[siteId]/publications",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/reputation/[siteId]/publications/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/locations",
@@ -3359,6 +3499,11 @@
       "pattern": "/marketing/[brandId]/pr",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/pr/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/pr/outreach",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/pr/outreach/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/seo",
@@ -3401,14 +3546,84 @@
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/authority/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/authority/evidence",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/authority/evidence/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/authority/routes",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/authority/routes/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/seo/[siteId]/automations",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/automations/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/automations/history",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/automations/history/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/automations/proposals",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/automations/proposals/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/automations/unplaced",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/automations/unplaced/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/anchors",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/anchors/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/changes",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/changes/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/competitors",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/competitors/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/coverage",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/coverage/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/domains",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/domains/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/insights",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/insights/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/links",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/links/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/pages",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/pages/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks/prospects",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/prospects/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/seo/[siteId]/capabilities",
@@ -3419,6 +3634,11 @@
       "pattern": "/marketing/[brandId]/seo/[siteId]/changes",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/changes/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/changes/untracked",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/changes/untracked/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/seo/[siteId]/coverage",
@@ -3491,6 +3711,21 @@
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/links/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/links/external",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/links/external/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/links/plan",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/links/plan/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/links/table",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/links/table/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/seo/[siteId]/performance",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/performance/page.tsx"
@@ -3504,6 +3739,26 @@
       "pattern": "/marketing/[brandId]/seo/[siteId]/search-console",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/search-console/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/search-console/digs",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/search-console/digs/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/search-console/insights",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/search-console/insights/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/search-console/new-pages",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/search-console/new-pages/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/search-console/watchlist",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/search-console/watchlist/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/seo/[siteId]/valuation",
@@ -3586,6 +3841,16 @@
       "source": "app/(core)/marketing/[brandId]/websites/[siteId]/media/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/media/standards",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/media/standards/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/media/videos",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/media/videos/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/websites/[siteId]/pages",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/websites/[siteId]/pages/page.tsx"
@@ -3639,6 +3904,11 @@
       "pattern": "/marketing/[brandId]/websites/[siteId]/structure",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/websites/[siteId]/structure/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/structure/columns",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/structure/columns/page.tsx"
     },
     {
       "pattern": "/marketing/admin",
@@ -3836,6 +4106,26 @@
       "source": "app/(core)/marketing/operations/automations/page.tsx"
     },
     {
+      "pattern": "/marketing/operations/automations/history",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/automations/history/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/automations/proposals",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/automations/proposals/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/automations/unplaced",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/automations/unplaced/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/capabilities",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/capabilities/page.tsx"
+    },
+    {
       "pattern": "/marketing/operations/connections",
       "status": "live",
       "source": "app/(core)/marketing/operations/connections/page.tsx"
@@ -3899,6 +4189,31 @@
       "pattern": "/marketing/reports/ranks",
       "status": "live",
       "source": "app/(core)/marketing/reports/ranks/page.tsx"
+    },
+    {
+      "pattern": "/marketing/reports/search-console",
+      "status": "live",
+      "source": "app/(core)/marketing/reports/search-console/page.tsx"
+    },
+    {
+      "pattern": "/marketing/reports/search-console/digs",
+      "status": "live",
+      "source": "app/(core)/marketing/reports/search-console/digs/page.tsx"
+    },
+    {
+      "pattern": "/marketing/reports/search-console/insights",
+      "status": "live",
+      "source": "app/(core)/marketing/reports/search-console/insights/page.tsx"
+    },
+    {
+      "pattern": "/marketing/reports/search-console/new-pages",
+      "status": "live",
+      "source": "app/(core)/marketing/reports/search-console/new-pages/page.tsx"
+    },
+    {
+      "pattern": "/marketing/reports/search-console/watchlist",
+      "status": "live",
+      "source": "app/(core)/marketing/reports/search-console/watchlist/page.tsx"
     },
     {
       "pattern": "/marketing/screenshots/[screenshotId]",
@@ -4049,6 +4364,21 @@
       "pattern": "/matrx-extend-demo",
       "status": "live",
       "source": "app/(public)/matrx-extend-demo/page.tsx"
+    },
+    {
+      "pattern": "/me/access-log",
+      "status": "live",
+      "source": "app/(core)/me/access-log/page.tsx"
+    },
+    {
+      "pattern": "/meet/[slug]",
+      "status": "live",
+      "source": "app/(meet)/meet/[slug]/page.tsx"
+    },
+    {
+      "pattern": "/meetings",
+      "status": "live",
+      "source": "app/(core)/meetings/page.tsx"
     },
     {
       "pattern": "/messages",
@@ -4321,6 +4651,11 @@
       "source": "app/(core)/organizations/[orgId]/workflows/page.tsx"
     },
     {
+      "pattern": "/organizations/emergency-access",
+      "status": "live",
+      "source": "app/(core)/organizations/emergency-access/page.tsx"
+    },
+    {
       "pattern": "/p/[slug]",
       "status": "live",
       "source": "app/(public)/p/[slug]/page.tsx"
@@ -4494,6 +4829,76 @@
       "pattern": "/pricing/pledge",
       "status": "live",
       "source": "app/(public)/pricing/pledge/page.tsx"
+    },
+    {
+      "pattern": "/print",
+      "status": "live",
+      "source": "app/(core)/print/page.tsx"
+    },
+    {
+      "pattern": "/print/admin",
+      "status": "live",
+      "source": "app/(core)/print/admin/page.tsx"
+    },
+    {
+      "pattern": "/print/barcodes",
+      "status": "live",
+      "source": "app/(core)/print/barcodes/page.tsx"
+    },
+    {
+      "pattern": "/print/booklet",
+      "status": "live",
+      "source": "app/(core)/print/booklet/page.tsx"
+    },
+    {
+      "pattern": "/print/branded-qr",
+      "status": "live",
+      "source": "app/(core)/print/branded-qr/page.tsx"
+    },
+    {
+      "pattern": "/print/certificates",
+      "status": "live",
+      "source": "app/(core)/print/certificates/page.tsx"
+    },
+    {
+      "pattern": "/print/documents",
+      "status": "live",
+      "source": "app/(core)/print/documents/page.tsx"
+    },
+    {
+      "pattern": "/print/education",
+      "status": "live",
+      "source": "app/(core)/print/education/page.tsx"
+    },
+    {
+      "pattern": "/print/exams",
+      "status": "live",
+      "source": "app/(core)/print/exams/page.tsx"
+    },
+    {
+      "pattern": "/print/flashcards",
+      "status": "live",
+      "source": "app/(core)/print/flashcards/page.tsx"
+    },
+    {
+      "pattern": "/print/labels",
+      "status": "live",
+      "source": "app/(core)/print/labels/page.tsx"
+    },
+    {
+      "pattern": "/print/order",
+      "status": "live",
+      "source": "app/(core)/print/order/page.tsx"
+    },
+    {
+      "pattern": "/print/qr",
+      "status": "live",
+      "source": "app/(core)/print/qr/page.tsx"
+    },
+    {
+      "pattern": "/print/zpl",
+      "status": "live",
+      "source": "app/(core)/print/zpl/page.tsx"
     },
     {
       "pattern": "/privacy-policy",
@@ -5009,6 +5414,11 @@
       "pattern": "/shapes/[kind]/stream",
       "status": "live",
       "source": "app/(core)/shapes/(workspace)/[kind]/stream/page.tsx"
+    },
+    {
+      "pattern": "/shapes/[kind]/table",
+      "status": "live",
+      "source": "app/(core)/shapes/(workspace)/[kind]/table/page.tsx"
     },
     {
       "pattern": "/shapes/[kind]/template",
