@@ -67,13 +67,15 @@ must obey.
   ping-pong loop in `AiModelDetailPanel`.
 - **The registry table has one scrollport.** Its `<table>` keeps `table overflow-visible`; the
   `overflow-auto` wrapper owns scrolling so sticky Display Name and Actions cells actually freeze.
-- **Endpoints and APIs use the package table controls.** Stable identities `ai/endpoints` and `ai/apis` scope saved layouts; title, search, sort/filter menus, refresh, Add, column management, export, and bottom spacing are shared. Vendor/translator values are plain text. The tabs, record detail editor, system-record restrictions, and create/delete handlers are feature-owned. Complete source reads feed local pagination; these lists are not server-append demonstrations. Rollout/browser acceptance lives in `common-docs/projects/npm-package-extraction/TABLE-ROLLOUT-REGISTER.md`.
+- **Providers, Settings, Endpoints and APIs use the package table controls.** Stable identities `ai/providers`, `ai/settings`, `ai/endpoints` and `ai/apis` scope saved layouts; title, search, sort/filter menus, refresh, Add, column management, export, and bottom spacing are shared. Endpoint vendor/translator values are plain text. Tabs, record detail editors, system-record restrictions, and create/delete handlers are feature-owned. Complete source reads feed local pagination; these lists are not server-append demonstrations. Provider/Setting containers invalidate pending refreshes after successful mutations. Provider editors preserve same-record drafts and report an observed newer revision; this local check is not database compare-and-swap protection. Rollout/browser acceptance lives in `common-docs/projects/npm-package-extraction/TABLE-ROLLOUT-REGISTER.md`.
 - `/api/ai-models` is CDN-cached: registry changes need `POST /api/ai-models/revalidate` to reach SSR.
 
 > **Keep-docs-live rule (CLAUDE.md):** a change to this directory's file map or to any rule above
 > updates this file in the same change; a change to what the catalog MEANS updates the node's STATE.md.
 
 ## Change log
+
+- **2026-09-12** — Providers and Settings now expose the same package toolbar and saved views as Endpoints/APIs, with labeled row/close actions, retained-row refresh errors and Retry, and full-width mobile detail panels. Refresh/mutation ordering and Provider draft preservation are regression-covered; rollout acceptance remains separately recorded in the shared table register.
 
 - **2026-09-12** — Model Aliases now uses the shared `MatrxDataTable` over complete local `ai.model_alias` rows, ordered by alias/id and paged at 25. Alias target labels and the nondeprecated picker allowlist use a separate complete minimal `model_definition` identity read; this leaves the pricing-enriched model catalog untouched. The parent retains the inline editor, system-org create, soft-delete confirmation, model door, and save/error behavior; package detail is disabled so a row opens only that editor. Phone cards keep the alias editor and model door distinct, and fetch failure exposes Retry.
 
