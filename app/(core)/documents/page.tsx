@@ -44,6 +44,12 @@ import {
   type LegacyListViewImport,
 } from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 /**
  * Style prefs for this hub (synced across devices via `userPreferences`).
@@ -59,6 +65,7 @@ const DOCUMENTS_HUB_LEGACY_VIEW: LegacyListViewImport = {
 
 export default function DocumentsLandingPage() {
   const router = useRouter();
+  const organizationId = useAppSelector(selectOrganizationId);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +101,29 @@ export default function DocumentsLandingPage() {
 
   const handleCreate = useCallback(async () => {
     setCreating(true);
-    const res = await createDocument({ name: "Untitled document" });
+    let capturedOrganizationId: string;
+    try {
+      capturedOrganizationId = await ensureOrganizationContext({
+        organizationId,
+      });
+    } catch (error) {
+      setCreating(false);
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast({
+          title: "Could not create document",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Select an organization before creating a document.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+    const res = await createDocument({
+      name: "Untitled document",
+      organizationId: capturedOrganizationId,
+    });
     setCreating(false);
     if (isServiceFailure(res)) {
       toast({
@@ -105,7 +134,7 @@ export default function DocumentsLandingPage() {
       return;
     }
     router.push(`/documents/${res.data.id}`);
-  }, [router]);
+  }, [organizationId, router]);
 
   const handleDelete = useCallback(
     async (doc: DocumentRow) => {

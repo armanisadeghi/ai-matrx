@@ -57,12 +57,19 @@ export interface PushResult {
 export async function pushMarkdownToDocument(
   markdown: string,
   name?: string,
+  organizationId?: string,
 ): Promise<PushResult> {
   try {
+    if (!organizationId)
+      return {
+        ok: false,
+        error: "Select an organization before creating a document.",
+      };
     const docName = name?.trim() || deriveDocumentName(markdown);
     const created = await createDocument({
       name: docName,
       source: "imported_md",
+      organizationId,
     });
     if (isServiceFailure(created)) return { ok: false, error: created.error };
 
@@ -171,13 +178,20 @@ function tableToUniverSnapshot(input: TableInput): Partial<IWorkbookData> {
  */
 export async function pushTableToWorkbook(
   input: TableInput,
+  organizationId?: string,
 ): Promise<PushResult> {
   try {
+    if (!organizationId)
+      return {
+        ok: false,
+        error: "Select an organization before creating a workbook.",
+      };
     const name = input.name?.trim() || "Table";
     const created = await createWorkbook({
       name,
       description: "Created from a markdown table",
       source: "created",
+      organizationId,
     });
     if (isServiceFailure(created)) return { ok: false, error: created.error };
 

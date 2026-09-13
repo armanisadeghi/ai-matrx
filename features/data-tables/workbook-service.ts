@@ -13,7 +13,7 @@
  *
  * See `features/data-tables/FEATURE.md` for architecture context.
  */
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { supabase } from "@/utils/supabase/client";
 
 import type {
@@ -35,7 +35,7 @@ export type CreateWorkbookArgs = {
     | "imported_gsheet"
     | "imported_csv"
     | "linked_gsheet";
-  organizationId?: string | null;
+  organizationId: string;
   projectId?: string | null;
   taskId?: string | null;
   isPublic?: boolean;
@@ -50,24 +50,24 @@ export type CreateWorkbookArgs = {
 export async function createWorkbook(
   args: CreateWorkbookArgs,
 ): Promise<ServiceResult<Workbook>> {
+  let organizationId: string;
+  try {
+    organizationId = requireOrganizationContext(undefined, args.organizationId);
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Select an organization before creating a workbook.",
+    };
+  }
+
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData?.user) {
     return {
       success: false,
       error: userErr?.message ?? "not authenticated",
-    };
-  }
-
-  let organizationId: string;
-  try {
-    organizationId = await ensureOrgId(args.organizationId);
-  } catch (orgError) {
-    return {
-      success: false,
-      error:
-        orgError instanceof Error
-          ? orgError.message
-          : "Could not resolve organization for workbook",
     };
   }
 

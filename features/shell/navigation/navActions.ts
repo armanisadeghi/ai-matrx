@@ -40,7 +40,10 @@
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
@@ -84,10 +87,14 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
-          const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
+          const capturedOrganizationId = await ensureOrganizationContext({
+            organizationId,
+          });
           const { createNewNote } =
             await import("@/features/notes/redux/thunks");
-          const note = await dispatch(createNewNote({ organization_id: capturedOrganizationId })).unwrap();
+          const note = await dispatch(
+            createNewNote({ organization_id: capturedOrganizationId }),
+          ).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
         } catch (error) {
           if (isOrganizationSelectionCancelled(error)) return;
@@ -99,9 +106,22 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /documents page "New" button: create a blank cloud doc,
       // then open it.
       void (async () => {
+        let capturedOrganizationId: string;
+        try {
+          capturedOrganizationId = await ensureOrganizationContext({
+            organizationId,
+          });
+        } catch (error) {
+          if (!isOrganizationSelectionCancelled(error))
+            toast.error("Couldn't create the document");
+          return;
+        }
         const { createDocument } =
           await import("@/features/data-tables/document-service");
-        const res = await createDocument({ name: "Untitled document" });
+        const res = await createDocument({
+          name: "Untitled document",
+          organizationId: capturedOrganizationId,
+        });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the document");
           return;
@@ -113,9 +133,22 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /workbooks page "New" button: create a blank workbook,
       // then open it.
       void (async () => {
+        let capturedOrganizationId: string;
+        try {
+          capturedOrganizationId = await ensureOrganizationContext({
+            organizationId,
+          });
+        } catch (error) {
+          if (!isOrganizationSelectionCancelled(error))
+            toast.error("Couldn't create the workbook");
+          return;
+        }
         const { createWorkbook } =
           await import("@/features/data-tables/workbook-service");
-        const res = await createWorkbook({ name: "Untitled workbook" });
+        const res = await createWorkbook({
+          name: "Untitled workbook",
+          organizationId: capturedOrganizationId,
+        });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the workbook");
           return;

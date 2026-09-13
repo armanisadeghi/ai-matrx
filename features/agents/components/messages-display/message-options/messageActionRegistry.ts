@@ -811,12 +811,16 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
           )
         )
           return;
+        const organizationId = await ensureOrganizationContext({
+          organizationId: selectOrganizationId(ctx.getState()),
+        });
         // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
         const { pushMarkdownToDocument } =
           await import("@/features/data-tables/export-targets");
         const res = await pushMarkdownToDocument(
           content,
           deriveMessageTitle(ctx),
+          organizationId,
         );
         if (!res.ok || !res.href) {
           // showToast is false on this item, so AdvancedMenu won't surface a
@@ -2298,24 +2302,34 @@ export function resumePendingAuthAction(
         defaultRole: "assistant",
       });
     } else if (action === "add-docs") {
-      import("@/features/data-tables/export-targets")
-        .then(async ({ pushMarkdownToDocument }) => {
-          const res = await pushMarkdownToDocument(savedContent);
-          if (res.ok && res.href) {
-            const href = res.href;
-            toast.success("Saved as Document", {
-              action: {
-                label: "Open",
-                onClick: () =>
-                  window.open(href, "_blank", "noopener,noreferrer"),
-              },
-            });
-          } else {
-            toast.error("Failed to create document", {
-              description: res.ok ? undefined : res.error,
-            });
-          }
-        })
+      ensureOrganizationContext({
+        organizationId: selectOrganizationId(getState()),
+      })
+        .then((organizationId) =>
+          import("@/features/data-tables/export-targets").then(
+            async ({ pushMarkdownToDocument }) => {
+              const res = await pushMarkdownToDocument(
+                savedContent,
+                undefined,
+                organizationId,
+              );
+              if (res.ok && res.href) {
+                const href = res.href;
+                toast.success("Saved as Document", {
+                  action: {
+                    label: "Open",
+                    onClick: () =>
+                      window.open(href, "_blank", "noopener,noreferrer"),
+                  },
+                });
+              } else {
+                toast.error("Failed to create document", {
+                  description: res.ok ? undefined : res.error,
+                });
+              }
+            },
+          ),
+        )
         .catch(() => toast.error("Failed to create document"));
     } else if (action === "share-webpage") {
       import("./shareMessageAsWebpage")

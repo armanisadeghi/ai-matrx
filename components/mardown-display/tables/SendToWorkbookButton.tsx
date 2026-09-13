@@ -17,6 +17,7 @@
 import { useState } from "react";
 import { FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import { OpenDestinationDialog } from "@/features/page-extraction/data-review/OpenDestinationDialog";
@@ -51,15 +52,19 @@ export function SendToWorkbookButton({
     if (pushing) return;
     setPushing(true);
     try {
+      const organizationId = await ensureOrganizationContext();
       // Lazy-import so Univer (heavy) stays out of the markdown/chat bundle
       // until the user actually pushes a table to a workbook.
       const { pushTableToWorkbook } =
         await import("@/features/data-tables/export-targets");
-      const res = await pushTableToWorkbook({
-        name: workbookName,
-        headers,
-        rows,
-      });
+      const res = await pushTableToWorkbook(
+        {
+          name: workbookName,
+          headers,
+          rows,
+        },
+        organizationId,
+      );
       if (!res.ok || !res.href) {
         toast.error("Could not create workbook", { description: res.error });
         return;

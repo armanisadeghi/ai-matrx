@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { Download, Loader2, MoreHorizontal, Send } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -102,13 +103,20 @@ export function CatalogRowActions({
   };
 
   const push = async (target: "workbook" | "dataset") => {
+    const organizationId =
+      target === "workbook" ? await ensureOrganizationContext() : undefined;
     const view = await ensureView();
     if (!view) return;
     setBusy(true);
     try {
       const res =
         target === "workbook"
-          ? await pushToWorkbook(view.name, view.columns, view.rows)
+          ? await pushToWorkbook(
+              view.name,
+              view.columns,
+              view.rows,
+              organizationId,
+            )
           : await pushToDataset(view.name, view.columns, view.rows);
       if (!res.ok || !res.href) {
         toast.error(

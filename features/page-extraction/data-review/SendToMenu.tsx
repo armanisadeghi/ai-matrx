@@ -18,6 +18,7 @@
 import { useState } from "react";
 import { FileSpreadsheet, Loader2, Send, Table2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,9 +68,11 @@ export function SendToMenu({
   const push = async (target: Target) => {
     setPushing(target);
     try {
+      const organizationId =
+        target === "workbook" ? await ensureOrganizationContext() : undefined;
       const res =
         target === "workbook"
-          ? await pushToWorkbook(name, columns, rows)
+          ? await pushToWorkbook(name, columns, rows, organizationId)
           : await pushToDataset(name, columns, rows);
 
       if (!res.ok || !res.href) {
