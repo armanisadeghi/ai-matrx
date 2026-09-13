@@ -86,7 +86,7 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
-import { useTriageDialogSession } from "../../durable-run/rulebookDialogSession";
+import { useRulebookDialogSession } from "../../durable-run/rulebookDialogSession";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { RuleMove, ruleMoveIsEmpty } from "./RuleMove";
 import { RuleHistory } from "./RuleHistory";
@@ -625,8 +625,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // instance is REUSED across Rulebooks. A bare `useState(false)` left the sort
   // dialog on screen after navigating, holding the purpose typed for the
   // Rulebook she left. Story + why the dialog is also remounted per Rulebook:
-  // `../../triage/triageSession.ts`.
-  const triage = useTriageDialogSession(rulebook?.id ?? null);
+  // `../../durable-run/rulebookDialogSession.ts`.
+  const triage = useRulebookDialogSession(rulebook?.id ?? null);
   const triageOpen = triage.open;
   const setTriageOpen = triage.setOpen;
   const [feedbackTarget, setFeedbackTarget] = useState<{
@@ -730,9 +730,26 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // ?intake=timeline — the unfolding dialog IS the next step. The registry row
   // carries the same `{"intake":"timeline"}` in its `intake_query`, so the
   // deep link and the in-page picker can never drift apart.
-  const [timelineOpen, setTimelineOpen] = useState(
-    searchParams.get("intake") === "timeline",
-  );
+  //
+  // 🚨 AN UNFOLDING SESSION BELONGS TO ONE RULEBOOK (Bugbot HIGH, 2026-09-13),
+  // the same rule triage and ingest already live by — and the sharpest case of
+  // the three. This was a bare `useState`, and this page instance is REUSED
+  // across Rulebooks, so an open unfolding session stayed on screen after
+  // navigating: the form fields, the durable-run pointer, and a teaching
+  // case's RESOLUTION, all belonging to the Rulebook she left, while the run
+  // actually going on the one she arrived at stayed invisible. The deep link
+  // still opens it, now bound to the Rulebook that was on screen when it was
+  // read. Second half at the call site: `key={rulebook.id}` on the dialog.
+  const timelineSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const timelineOpen = timelineSession.open;
+  const setTimelineOpen = timelineSession.setOpen;
+  const timelineDeepLink = searchParams.get("intake") === "timeline";
+  const timelineDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!timelineDeepLink || timelineDeepLinkRef.current || !rulebook?.id) return;
+    timelineDeepLinkRef.current = true;
+    setTimelineOpen(true);
+  }, [timelineDeepLink, rulebook?.id, setTimelineOpen]);
 
   /**
    * THE ONE MAP from a `platform.approach` row to the lane it opens on this
@@ -2556,6 +2573,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             onIngested={() => void reloadRulebook()}
           />
           <IngestTimelineDialog
+            // The unfolding session, its form and its run pointer all belong to
+            // THIS Rulebook — see `durable-run/rulebookDialogSession.ts`.
+            key={rulebook.id}
             open={timelineOpen}
             onOpenChange={setTimelineOpen}
             rulebook={rulebook}
