@@ -17,9 +17,12 @@ source=source.replace('REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)', '
 source=source.replace('EXCEPTION WHEN OTHERS THEN allowed := false; END;', "EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'CURRENT_CONTROL_ERROR state=% message=%', SQLSTATE, SQLERRM; allowed := false; END;", 1)
 needle='"${PSQL[@]}" <<\'SQL\' | tee -a "$RESULTS"\nCREATE TEMP TABLE review_results'
 inject=r'''CURRENT_GUARD=%r
-DRAFT=%r
+CAPTURED_DRAFT=%r
 CURRENT_GUARD_SHA=%r
 DRAFT_SHA=%r
+DRAFT=${DD154_CURRENT_DRAFT_OVERRIDE:-$CAPTURED_DRAFT}
+DRAFT_SHA=${DD154_CURRENT_DRAFT_SHA:-$DRAFT_SHA}
+[[ $(shasum -a 256 "$DRAFT" | awk '{print $1}') == "$DRAFT_SHA" ]] || fail "fixture draft hash mismatch: $DRAFT"
 echo "PASS current source proof: live guard sha256=$CURRENT_GUARD_SHA; DD154 draft sha256=$DRAFT_SHA" | tee -a "$RESULTS"
 "${PSQL[@]}" -f "$CURRENT_GUARD" >/dev/null
 if [[ -n ${DD154_CURRENT_BEFORE_DRAFT_SQL:-} ]]; then
