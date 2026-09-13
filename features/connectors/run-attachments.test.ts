@@ -175,4 +175,16 @@ describe("mcpChipPresentation — the checkmark means one thing", () => {
       47,
     );
   });
+  it("shows no count when the server contributed none — 0 is not a claim", () => {
+    // An MCP catalog can be empty until the lister discovers live with the
+    // user's own connection, so "0 tools" would say more than we know.
+    expect(
+      mcpChipPresentation("connected", null, true, {
+        slug: "github",
+        state: "connected",
+        reason: null,
+        toolCount: 0,
+      }).toolCount,
+    ).toBeNull();
+  });
 });

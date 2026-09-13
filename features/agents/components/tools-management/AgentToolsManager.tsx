@@ -2798,7 +2798,7 @@ function McpAgentServerCard({
             >
               {badge.label}
             </Badge>
-            {truth.state === "connected" && toolCount !== null && (
+            {truth.state === "connected" && !!toolCount && (
               <span className="text-[10px] text-muted-foreground">
                 {toolCount} tool{toolCount === 1 ? "" : "s"}
               </span>
