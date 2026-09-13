@@ -57,6 +57,22 @@ export function ChatRunHeader({
   const label =
     liveName?.trim() || initialAgentName?.trim() || "Select an agent";
 
+  // On `/chat/a/[agentId]` the page has no conversation id to give us — the
+  // launcher mints one in the room below. The Sandbox toggle still has to
+  // find it, or a user who closes the panel on that route has no way to
+  // reopen it (the panel's own X would be a one-way door). The room registers
+  // its conversation under the chat surface key, so read it from there.
+  const focusedConversationId = useAppSelector((state) =>
+    activeAgentId
+      ? (state.conversationFocus.bySurface[chatRouteSurfaceKey(activeAgentId)]
+          ?.display ??
+        state.conversationFocus.bySurface[chatRouteSurfaceKey(activeAgentId)]
+          ?.input ??
+        null)
+      : null,
+  );
+  const sandboxConversationId = conversationId ?? focusedConversationId ?? undefined;
+
   const handleAgentSelect = (id: string) => {
     if (id === activeAgentId) return;
     // Carry any in-progress draft over to the newly-selected agent so switching
@@ -128,7 +144,7 @@ export function ChatRunHeader({
         {/* The bound SANDBOX — terminal, files and this conversation's sandbox
             work, one click away. Absent entirely when nothing is bound, so the
             header never carries a control with nothing behind it. */}
-        <ChatSandboxToggleButton conversationId={conversationId} />
+        <ChatSandboxToggleButton conversationId={sandboxConversationId} />
         {/* Canvas — the unified live workspace, one click away at the top. */}
         <ChatCanvasButton conversationId={conversationId} />
       </div>
