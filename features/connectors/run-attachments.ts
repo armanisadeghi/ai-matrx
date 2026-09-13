@@ -136,7 +136,12 @@ export interface McpChipPresentation {
   status: string | null;
   /** The sentence explaining a broken chip, from the server where possible. */
   reason: string | null;
-  /** Tools this server gave the run, when it gave any. */
+  /**
+   * Tools this server gave the run, when it gave any. A zero is deliberately
+   * NOT shown: an MCP catalog can be empty until the lister discovers live
+   * with the user's own connection, so "0 tools" would be a claim the count
+   * cannot support.
+   */
   toolCount: number | null;
 }
 
@@ -168,7 +173,7 @@ export function mcpChipPresentation(
       status: null,
       reason: null,
       toolCount:
-        attached && runAttachment?.state === "connected"
+        attached && runAttachment?.state === "connected" && runAttachment.toolCount
           ? runAttachment.toolCount
           : null,
     };

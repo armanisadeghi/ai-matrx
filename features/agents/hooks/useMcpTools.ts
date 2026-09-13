@@ -294,7 +294,8 @@ export function useMcpServerTruth(
   );
 }
 
-/** Tools a server contributed, once aidream has said. */
+/** Tools in a server's catalog right now; null when none are known yet (a
+ * zero is never rendered — the lister can still discover live). */
 export function useMcpServerToolCount(slug: string): number | null {
   const availability = useAppSelector(selectMcpAvailability);
   return availability[slug]?.tool_count ?? null;
