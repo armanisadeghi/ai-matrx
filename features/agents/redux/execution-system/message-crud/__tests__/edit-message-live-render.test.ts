@@ -23,7 +23,9 @@ const CONVERSATION_ID = "conversation-1";
 const MESSAGE_ID = "message-1";
 const REQUEST_ID = "request-1";
 
-function makeMessage(): MessageRecord {
+function makeMessage(
+  userContent: MessageRecord["userContent"] = null,
+): MessageRecord {
   return {
     id: MESSAGE_ID,
     conversationId: CONVERSATION_ID,
@@ -31,7 +33,7 @@ function makeMessage(): MessageRecord {
     role: "user",
     content: [{ type: "text", text: "Original answer" }],
     contentHistory: null,
-    userContent: null,
+    userContent,
     position: 1,
     source: "server",
     status: "active",
@@ -93,4 +95,52 @@ describe("editMessage retained-stream synchronization", () => {
     resolveRpc?.({ data: null, error: null });
     await pending;
   });
+
+  test.each([
+    ["Edited user request", "Edited user request"],
+    ["A second replacement", "A second replacement"],
+  ])(
+    "replaces stale pristine user text immediately when a user message is edited: %s",
+    async (replacement, expected) => {
+      let resolveRpc:
+        ((value: { data: null; error: null }) => void) | undefined;
+      rpcReturns.mockImplementationOnce(
+        () =>
+          new Promise<{ data: null; error: null }>((resolve) => {
+            resolveRpc = resolve;
+          }),
+      );
+
+      const store = configureStore({
+        reducer: createSlimRootReducer(),
+        middleware: (getDefaultMiddleware) =>
+          getDefaultMiddleware({ serializableCheck: false }),
+      });
+      store.dispatch(
+        hydrateMessages({
+          conversationId: CONVERSATION_ID,
+          messages: [
+            makeMessage([{ type: "text", text: "Stale user request" }]),
+          ],
+        }),
+      );
+
+      const pending = store.dispatch(
+        editMessage({
+          conversationId: CONVERSATION_ID,
+          messageId: MESSAGE_ID,
+          newContent: [{ type: "text", text: replacement }],
+        }),
+      );
+
+      expect(
+        store.getState().messages.byConversationId[CONVERSATION_ID]?.byId[
+          MESSAGE_ID
+        ]?.userContent,
+      ).toEqual([{ type: "text", text: expected }]);
+
+      resolveRpc?.({ data: null, error: null });
+      await pending;
+    },
+  );
 });
