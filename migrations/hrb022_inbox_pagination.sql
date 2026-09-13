@@ -4,8 +4,6 @@
 -- existing filters object so this remains the one inbox RPC, while each section is bounded before
 -- JSON construction (and before the display/notice decoration in wf_inbox).
 
-begin;
-
 insert into platform.feature_knob
   (feature, key, value, default_value, value_type, min_value, max_value,
    label, description, set_by, basis, review_due)
@@ -278,5 +276,3 @@ begin
     raise exception 'hrb022 pagination: workflow function contracts broke: %', v_broken;
   end if;
 end $$;
-
-commit;
