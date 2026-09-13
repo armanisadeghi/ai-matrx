@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-09-12`
+**Last updated:** `2026-09-13`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(core)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -128,6 +128,11 @@ and the unified compute-target picker all use the stored name first. Renaming
 updates only the owned database row; it never renames or replaces the running
 container.
 
+Shared Next sandbox proxy routes preserve upstream status, content type, custom
+headers, streaming bodies, and request `content-encoding`, but remove response
+`content-encoding`: Node fetch may already decode the body, so relaying that
+representation header would make browsers decode the bytes a second time.
+
 The management list exposes stored template/tier, resources, heartbeat, expiry, and storage fields without opening a sandbox. A heartbeat timestamp is not a health verdict; missing resource settings remain explicitly unrecorded. `useSandboxInstances` exhausts source pages for default list reads before local table filtering/paging, rejects incomplete snapshots, and cancels superseded requests. Explicit limit/offset callers retain one-page reads. Refresh preserves the current table controls; polling pauses during loading and confirmation dialogs. History batch selection is intersected with the currently loaded history records.
 
 `SandboxInstancesTable` declares its name column editable through the package cell editor; Save calls the existing owned-row rename operation and failures retain drafts. Its title, search, refresh, Add, views, column controls, and bottom spacing belong to the shared table. Active/history selection, resource summaries, lifecycle actions, and the create dialog remain Sandbox capabilities. Table identities `sandboxes/active` and `sandboxes/history` keep their saved layouts separate. Rollout and browser acceptance are tracked in `common-docs/projects/npm-package-extraction/TABLE-ROLLOUT-REGISTER.md`.
@@ -176,6 +181,7 @@ The management list exposes stored template/tier, resources, heartbeat, expiry, 
 
 ## Change log
 
+- `2026-09-13` — Shared sandbox proxy responses now remove stale `content-encoding` after Node fetch decodes upstream bytes. A loopback regression covers gzip, zstd, plain binary, SSE, non-2xx status, custom headers, and compressed request forwarding through the actual `forwardToOrchestrator` boundary.
 - `2026-09-12` — Replaced both bespoke `/sandbox` tables with the shared package table, exposing runtime configuration, timestamps and storage inline, with searchable columns, lifecycle selection and responsive cards. Complete-list reads exhaust pagination, refuse incomplete snapshots and isolate project changes before rendering. Desktop and phone checks passed with eight real active records, including search, refresh retention, empty history, navigation, sticky headers, column dragging and row JSON clipboard bytes. Six hook tests, scoped lint and the full frontend type check pass. Installed design-system 0.18.8 passed owner and independent browser review, including hydration, label dragging, truthful keyboard instructions and the unified export menu. CSV export includes the seven visible data columns and eight real rows. This adapter fetches the complete source up front and pages locally; physical-scroll server fetching, multi-page live data and lifecycle mutations are not certified by this pass.
 
 - `2026-09-12` — Fixed the Code page's impossible image-update gate: a confirmed owner update now explicitly permits idle PTY/watch attachments while the orchestrator still fences new calls and refuses executing work. Expected `busy_deferred` responses are informational; actionable failures retain structured status/reason evidence in the Error Inspector and do not create a second context-free toast record.

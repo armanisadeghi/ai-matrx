@@ -12,9 +12,6 @@ const { promisify } = require('node:util');
 const execFileAsync = promisify(execFile);
 const { chromium } = require('/Users/armanisadeghi/code/matrx-frontend/node_modules/playwright');
 
-if (process.env.MATRX_PROTON_IMPORT_RETRY_CANARY !== 'RUN_UNDER_REVIEW')
-  throw new Error('inert_canary_requires_explicit_arm');
-
 const FRONTEND = 'https://www.aimatrx.com';
 const API = 'https://server.app.matrxserver.com';
 const DB = 'https://db.matrxserver.com';
@@ -28,6 +25,17 @@ const PROFILE = path.join(ROOT, `cft-private-profile-${crypto.randomUUID()}`);
 const INPUT = path.join(ROOT, 'proton-input.json');
 const PROOF = path.join(ROOT, 'proof.json');
 const LEDGER = path.join(ROOT, 'pending-attempt-keys.json');
+const HISTORICAL_RUN = '47e54df6-25fc-4240-b6ae-250a56722e1a';
+const HISTORICAL_PROOF_SHA256 = '7fcacdbc5976e6d62f83e4e2f240caf625204e188e72508cd8bb7db0a67a7dbf';
+const RECOVERY_REVIEW_SHA256 = '9f9cc2958a145d18be3c10e757c4bd408448e8ab9a2d7758dbc6727731b79e7f';
+const RECOVERY_RECEIPT = path.join(ARTIFACT_ROOT, `reconciliation-${HISTORICAL_RUN}.json`);
+const RECOVERY_QUERY = path.join(ARTIFACT_ROOT, 'reconcile-run-47e54df6.sql');
+const AUTH_COOKIE = 'sb-matrx-auth-v2';
+const CANONICAL_COOKIE_SCOPES = new Set(['www.aimatrx.com', '.aimatrx.com']);
+const MAX_AUTH_COOKIE_CHUNKS = 16;
+const MAX_AUTH_COOKIE_BYTES = 16 * 1024;
+const MAX_AUTH_SESSION_BYTES = 12 * 1024;
+const MAX_ACCESS_TOKEN_BYTES = 8 * 1024;
 const LABEL = `Vault Proton retry ${RUN.slice(0, 8)} login`;
 const USERNAME = `proton-${RUN.slice(0, 8)}@example.invalid`;
 const PASSWORD = `Disposable-${crypto.randomUUID()}`;
@@ -44,6 +52,10 @@ let firstKey;
 let firstResponseDropped = false;
 let activeIntercepts = 0;
 let stage = 'artifact_preflight';
+let authStarted = false;
+let exactVerifiedSession = false;
+let lastVerifiedAuth;
+let finalAuthCertain = false;
 const attemptKeys = new Set();
 const ownedIds = new Set();
 const proof = {
@@ -54,7 +66,7 @@ const proof = {
   connectOverCDP: false,
   checks: {},
   attempts: [],
-  cleanup: { reconciliationRequired: true },
+  cleanup: { reconciliationRequired: true, authDisposition: 'not_started', mutationDisposition: 'no_attempts' },
 };
 
 const assert = (value, code) => {
@@ -64,7 +76,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const uuid = (value) => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
-function atomicJson(target, value) {
+function atomicJson(target, value, { fsync = syncFs.fsyncSync } = {}) {
   const temp = `${target}.tmp`;
   const fd = syncFs.openSync(
     temp,
@@ -73,14 +85,14 @@ function atomicJson(target, value) {
   );
   try {
     syncFs.writeFileSync(fd, `${JSON.stringify(value, null, 2)}\n`);
-    syncFs.fsyncSync(fd);
+    fsync(fd);
   } finally {
     syncFs.closeSync(fd);
   }
   syncFs.renameSync(temp, target);
-  const directory = syncFs.openSync(ROOT, syncFs.constants.O_RDONLY);
+  const directory = syncFs.openSync(path.dirname(target), syncFs.constants.O_RDONLY);
   try {
-    syncFs.fsyncSync(directory);
+    fsync(directory);
   } finally {
     syncFs.closeSync(directory);
   }
@@ -103,16 +115,251 @@ function setStage(next) {
 async function assertNoPriorPendingLedger() {
   const entries = await fs.readdir(ARTIFACT_ROOT, { withFileTypes: true }).catch(() => []);
   for (const entry of entries) {
-    if (!entry.isDirectory() || !entry.name.startsWith('run-')) continue;
-    const prior = await fs
-      .readFile(path.join(ARTIFACT_ROOT, entry.name, 'proof.json'), 'utf8')
-      .then(JSON.parse)
-      .catch(() => null);
-    assert(
-      prior?.cleanup?.reconciliationRequired === false && prior?.cleanup?.profileRemoved === true,
-      'previous_run_unreconciled',
-    );
+    if (!entry.isDirectory() || !entry.name.startsWith('run-') || entry.name === `run-${RUN}`) continue;
+    const priorPath = path.join(ARTIFACT_ROOT, entry.name, 'proof.json');
+    const priorBytes = await fs.readFile(priorPath).catch(() => null);
+    const prior = priorBytes && JSON.parse(priorBytes);
+    if (prior?.runId === HISTORICAL_RUN) {
+      assert(await historicalRecoveryAccepted(entry.name, priorBytes, prior), 'historical_recovery_unaccepted');
+      continue;
+    }
+    assert(prior?.cleanup?.reconciliationRequired === false && prior?.cleanup?.profileRemoved === true, 'previous_run_unreconciled');
   }
+}
+
+async function historicalRecoveryAccepted(directory, proofBytes, prior) {
+  if (
+    directory !== `run-${HISTORICAL_RUN}` ||
+    sha256(proofBytes) !== HISTORICAL_PROOF_SHA256 ||
+    !Array.isArray(prior?.attempts) || prior.attempts.length !== 0
+  ) return false;
+  const names = new Set(await fs.readdir(path.join(ARTIFACT_ROOT, directory)).catch(() => []));
+  if (names.has('pending-attempt-keys.json') || names.has('proton-input.json') || [...names].some((name) => name.startsWith('cft-private-profile-'))) return false;
+  const receipt = await fs.readFile(RECOVERY_RECEIPT, 'utf8').then(JSON.parse).catch(() => null);
+  const querySha256 = await fs.readFile(RECOVERY_QUERY).then(sha256).catch(() => null);
+  return historicalReceiptIsClosed(receipt, querySha256);
+}
+
+function exactKeys(value, keys) {
+  return value && typeof value === 'object' && !Array.isArray(value) &&
+    Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
+}
+
+function historicalReceiptIsClosed(receipt, querySha256) {
+  return (
+    exactKeys(receipt, [
+      'historicalRunId', 'originalProofSha256', 'correctedQuerySha256', 'correctedQueryResult',
+      'mutationDisposition', 'fixtureRemoved', 'profileRemoved', 'authDisposition', 'safeToRetry',
+      'reviewerEvidenceSha256', 'limitation',
+    ]) &&
+    exactKeys(receipt?.correctedQueryResult, ['headlessCftSessions', 'allAdminSessionsInWindow', 'canaryReceiptBackedItems']) &&
+    receipt?.historicalRunId === HISTORICAL_RUN &&
+    receipt?.originalProofSha256 === HISTORICAL_PROOF_SHA256 &&
+    receipt?.mutationDisposition === 'no_attempts_and_no_receipts' &&
+    receipt?.fixtureRemoved === true && receipt?.profileRemoved === true &&
+    receipt?.authDisposition === 'unattributed_possible_session' &&
+    receipt?.safeToRetry === true &&
+    receipt?.reviewerEvidenceSha256 === RECOVERY_REVIEW_SHA256 &&
+    receipt?.correctedQuerySha256 === querySha256 &&
+    receipt?.correctedQueryResult?.headlessCftSessions === 0 &&
+    receipt?.correctedQueryResult?.allAdminSessionsInWindow === 3 &&
+    receipt?.correctedQueryResult?.canaryReceiptBackedItems === 0
+  );
+}
+
+function cookieSession(cookies) {
+  const groups = new Map();
+  for (const cookie of cookies) {
+    const match = /^sb-matrx-auth-v2(?:\.(0|[1-9]\d*))?$/.exec(cookie.name);
+    if (!match || !CANONICAL_COOKIE_SCOPES.has(cookie.domain) || cookie.path !== '/' || !cookie.secure) continue;
+    const scope = `${cookie.domain}|${cookie.path}|${cookie.secure}`;
+    const entries = groups.get(scope) || [];
+    entries.push({ index: match[1] === undefined ? null : Number(match[1]), value: cookie.value });
+    groups.set(scope, entries);
+  }
+  assert(groups.size === 1, 'canonical_cookie_scope_ambiguous');
+  const entries = [...groups.values()][0];
+  const direct = entries.filter((entry) => entry.index === null);
+  const chunks = entries.filter((entry) => entry.index !== null).sort((a, b) => a.index - b.index);
+  assert(!(direct.length && chunks.length) && direct.length <= 1, 'canonical_cookie_shape_ambiguous');
+  assert(chunks.length <= MAX_AUTH_COOKIE_CHUNKS, 'canonical_cookie_chunk_count');
+  let encodedBytes = 0;
+  const encoded = direct.length
+    ? direct[0].value
+    : chunks.map((entry, index) => {
+        assert(entry.index === index, 'canonical_cookie_chunks_noncontiguous');
+        assert(entry.value.length <= MAX_AUTH_COOKIE_BYTES, 'canonical_cookie_chunk_bytes');
+        encodedBytes += entry.value.length;
+        assert(encodedBytes <= MAX_AUTH_COOKIE_BYTES, 'canonical_cookie_total_bytes');
+        return entry.value;
+      }).join('');
+  assert(encoded.startsWith('base64-'), 'canonical_cookie_encoding');
+  const payload = encoded.slice('base64-'.length);
+  assert(payload.length > 0 && payload.length <= MAX_AUTH_COOKIE_BYTES && /^[A-Za-z0-9_-]+$/.test(payload), 'canonical_cookie_base64url');
+  const decoded = Buffer.from(payload, 'base64url');
+  assert(decoded.length > 0 && decoded.length <= MAX_AUTH_SESSION_BYTES && decoded.toString('base64url') === payload, 'canonical_cookie_base64url_roundtrip');
+  const session = JSON.parse(decoded.toString('utf8'));
+  assert(typeof session?.access_token === 'string' && session.access_token.length > 20 && session.access_token.length <= MAX_ACCESS_TOKEN_BYTES, 'canonical_cookie_access_token');
+  return session;
+}
+
+function cleanupPlan({ authStarted: started, lastVerifiedSession, finalSessionCertain, logoutStatus, attempts, receipts, browserClosed }) {
+  const mustLogout = lastVerifiedSession;
+  const logoutComplete = !mustLogout || logoutStatus === 204;
+  const retainProfile = started && (!finalSessionCertain || !logoutComplete);
+  return {
+    mustLogout,
+    retainProfile,
+    canRemoveLocalSecrets: browserClosed === true && !retainProfile && logoutComplete && (!attempts || receipts === true),
+  };
+}
+
+async function runHarnessLifecycle({
+  persistArtifactPreflight,
+  historicalGate,
+  login,
+  workspace,
+  work,
+  onStageError,
+  captureFinally,
+  hasLastVerifiedSession,
+  cleanupReceipts,
+  logout,
+  closeBrowser,
+  getCleanupState,
+  removeFixture,
+  removeProfile,
+  removeLedger,
+  persistFinalProof,
+}) {
+  let stageError;
+  try {
+    await persistArtifactPreflight();
+    await historicalGate();
+    await login();
+    await workspace();
+    await work();
+  } catch (error) {
+    stageError = error;
+    try {
+      await onStageError(error);
+    } catch {
+      // A reporting error must not skip the owned cleanup sequence.
+    }
+  }
+
+  let finalCaptureError = false;
+  let cleanupError = false;
+  let logoutError = false;
+  let browserClosed = false;
+  let fixtureRemoved = false;
+  let profileRemoved = false;
+  let pendingLedgerRemoved = false;
+  try {
+    await captureFinally();
+  } catch {
+    finalCaptureError = true;
+  }
+  let verifiedSession = false;
+  try {
+    verifiedSession = hasLastVerifiedSession();
+  } catch {
+    cleanupError = true;
+  }
+  if (verifiedSession) {
+    try {
+      await cleanupReceipts();
+    } catch {
+      cleanupError = true;
+    }
+    try {
+      await logout();
+    } catch {
+      logoutError = true;
+    }
+  }
+  try {
+    browserClosed = await closeBrowser();
+  } catch {
+    browserClosed = false;
+  }
+
+  let cleanupState;
+  try {
+    cleanupState = getCleanupState({ finalCaptureError, cleanupError, logoutError, browserClosed });
+  } catch {
+    cleanupError = true;
+    cleanupState = {
+      authStarted: true,
+      lastVerifiedSession: verifiedSession,
+      finalSessionCertain: false,
+      logoutStatus: undefined,
+      attempts: true,
+      receipts: false,
+      ownedIdsEmpty: false,
+      ownedIdsCount: 0,
+      softDeletedCount: 0,
+      ownedActiveCount: 1,
+      baselineUnchanged: false,
+    };
+  }
+  const state = { ...cleanupState, finalSessionCertain: cleanupState.finalSessionCertain && !finalCaptureError };
+  const removalPlan = cleanupPlan({ ...state, browserClosed });
+  const removalAllowed = removalPlan.canRemoveLocalSecrets && !cleanupError && !logoutError;
+  if (removalAllowed) {
+    try {
+      fixtureRemoved = await removeFixture();
+    } catch {
+      fixtureRemoved = false;
+    }
+    try {
+      profileRemoved = await removeProfile();
+    } catch {
+      profileRemoved = false;
+    }
+  }
+  const mutationCleanupComplete = state.attempts === false
+    ? state.ownedIdsEmpty === true
+    : state.receipts === true && state.softDeletedCount === state.ownedIdsCount &&
+      state.ownedActiveCount === 0 && state.baselineUnchanged === true;
+  let reconciliationRequired = !(
+    mutationCleanupComplete &&
+    (!state.authStarted || state.logoutStatus === 204) &&
+    browserClosed === true && fixtureRemoved === true && profileRemoved === true
+  );
+  if (!reconciliationRequired && removalAllowed) {
+    try {
+      pendingLedgerRemoved = await removeLedger();
+    } catch {
+      pendingLedgerRemoved = false;
+    }
+    if (!pendingLedgerRemoved) reconciliationRequired = true;
+  }
+  const result = {
+    stageError,
+    finalCaptureError,
+    cleanupError,
+    logoutError,
+    browserClosed,
+    fixtureRemoved,
+    profileRemoved,
+    pendingLedgerRemoved,
+    profileRetainedForRecovery: !profileRemoved,
+    reconciliationRequired,
+    ok: !stageError && !reconciliationRequired,
+  };
+  try {
+    await persistFinalProof(result);
+  } catch {
+    result.finalProofPersistenceError = true;
+    result.ok = false;
+    try {
+      await persistFinalProof(result);
+    } catch {
+      result.finalProofRewriteError = true;
+    }
+  }
+  return result;
 }
 
 function fixture() {
@@ -228,9 +475,31 @@ async function resolveReceipts() {
   return proof.cleanup.receiptReconciliation === true;
 }
 
-async function waitForCanonicalAuth() {
-  for (let i = 0; i < 80 && (!token || !apiKey); i += 1) await wait(250);
-  assert(token && apiKey, 'canonical_auth_capture');
+async function captureOwnedCanonicalAuth(phase) {
+  assert(context && apiKey, 'canonical_auth_configuration');
+  const session = cookieSession(await context.cookies(FRONTEND));
+  const candidateToken = session.access_token;
+  const response = await fetch(`${DB}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${candidateToken}`, apikey: apiKey },
+  });
+  assert(response.status === 200, 'canonical_auth_identity_status');
+  const identity = await response.json();
+  assert(identity?.email === 'admin@admin.com' && typeof identity?.id === 'string', 'fresh_admin_identity');
+  token = candidateToken;
+  userId = identity.id;
+  exactVerifiedSession = true;
+  lastVerifiedAuth = { token: candidateToken, userId: identity.id };
+  proof.checks.freshAdminIdentity = true;
+  proof.checks[`canonicalAuth${phase}`] = true;
+  proof.cleanup.authDisposition = 'exact_verified_session';
+  const claims = token.split('.')[1];
+  try {
+    const sessionId = JSON.parse(Buffer.from(claims, 'base64url').toString('utf8')).session_id;
+    if (typeof sessionId === 'string') proof.cleanup.sessionIdSha256 = sha256(sessionId);
+  } catch {
+    // A verified token is enough for local logout; the optional digest is diagnostic only.
+  }
+  persistProof();
 }
 
 async function selectAdminWorkspace() {
@@ -269,21 +538,29 @@ function ownedCreate(body, key) {
   );
 }
 
-(async () => {
+async function main() {
   let mainError;
-  try {
-    await fs.mkdir(ARTIFACT_ROOT, { recursive: true, mode: 0o700 });
-    await assertNoPriorPendingLedger();
-    await fs.mkdir(ROOT, { recursive: true, mode: 0o700 });
-    setStage('fixture_prepare');
+  const lifecycle = await runHarnessLifecycle({
+    persistArtifactPreflight: async () => {
+      await fs.mkdir(ARTIFACT_ROOT, { recursive: true, mode: 0o700 });
+      await fs.mkdir(ROOT, { recursive: true, mode: 0o700 });
+      setStage('artifact_preflight');
+    },
+    historicalGate: assertNoPriorPendingLedger,
+    login: async () => {
+      setStage('fixture_prepare');
     const input = fixture();
     assertFixture(input);
     await fs.writeFile(INPUT, JSON.stringify(input), { mode: 0o600 });
     persistProof();
     require('/Users/armanisadeghi/code/matrx-frontend/node_modules/dotenv').config({
+      path: '/Users/armanisadeghi/code/matrx-frontend/.env.local', quiet: true,
+    });
+    require('/Users/armanisadeghi/code/matrx-frontend/node_modules/dotenv').config({
       path: '/Users/armanisadeghi/code/aidream/.env', quiet: true,
     });
-    assert(process.env.AI_ADMIN_USERNAME === 'admin@admin.com' && process.env.AI_ADMIN_PASSWORD, 'admin_configuration');
+    apiKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    assert(process.env.AI_ADMIN_USERNAME === 'admin@admin.com' && process.env.AI_ADMIN_PASSWORD && apiKey, 'admin_configuration');
 
     setStage('browser_launch');
     context = await chromium.launchPersistentContext(PROFILE, {
@@ -299,8 +576,6 @@ function ownedCreate(body, key) {
       const authorization = headers.authorization;
       if (!token && typeof authorization === 'string' && /^Bearer\s+.+/i.test(authorization))
         token = authorization.slice(7);
-      if (!apiKey && typeof headers.apikey === 'string' && headers.apikey.length > 10)
-        apiKey = headers.apikey;
       if (
         url.origin === API &&
         !requestOrgId &&
@@ -313,16 +588,25 @@ function ownedCreate(body, key) {
     await page.locator('#email').fill(process.env.AI_ADMIN_USERNAME);
     await page.locator('#password').fill(process.env.AI_ADMIN_PASSWORD);
     setStage('login_submit');
+    authStarted = true;
+    proof.cleanup.authDisposition = 'auth_unknown';
+    persistProof();
     await Promise.all([
       page.waitForURL((url) => url.pathname !== '/login', { timeout: 30_000 }),
       page.getByRole('button', { name: 'Sign in', exact: true }).click(),
     ]);
-    setStage('workspace_select');
+    setStage('canonical_auth_post_login');
+    await captureOwnedCanonicalAuth('PostLogin');
+    },
+    workspace: async () => {
+      setStage('workspace_select');
     await selectAdminWorkspace();
     setStage('vault_navigation');
     await page.goto(`${FRONTEND}/vault`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    setStage('canonical_auth_capture');
-    await waitForCanonicalAuth();
+    setStage('canonical_auth_before_workspace_work');
+    await captureOwnedCanonicalAuth('BeforeWorkspaceWork');
+    },
+    work: async () => {
 
     setStage('production_preflight');
     const preflight = await fetch(`${API}/api/vault/items`, {
@@ -336,12 +620,6 @@ function ownedCreate(body, key) {
     const allowed = (preflight.headers.get('access-control-allow-headers') || '').toLowerCase();
     assert(preflight.status === 200 && ['authorization', 'content-type', 'x-organization-id', 'idempotency-key'].every((header) => allowed.includes(header)), 'production_preflight');
     proof.checks.productionPreflight200 = true;
-
-    setStage('fresh_identity');
-    const identity = await api(`${DB}/auth/v1/user`, { label: 'fresh_identity' });
-    assert(identity?.email === 'admin@admin.com' && typeof identity?.id === 'string', 'fresh_admin_identity');
-    userId = identity.id;
-    proof.checks.freshAdminIdentity = true;
 
     setStage('dialog_open');
     await page.getByRole('button', { name: 'Import passwords', exact: true }).click();
@@ -376,6 +654,7 @@ function ownedCreate(body, key) {
         firstKey = key;
         firstBodyHash = bodyHash;
         attemptKeys.add(key);
+        proof.cleanup.mutationDisposition = 'attempts_dispatched';
         persistAttemptLedger();
         proof.attempts.push({ phase: 'response_dropped_after_completion', keySha256: sha256(key), bodySha256: bodyHash });
         persistProof(); // Durable ledger precedes the server request.
@@ -420,82 +699,113 @@ function ownedCreate(body, key) {
     // The current dialog refreshes existingItems after onCommitted. Reopen only
     // after the successful retry and require the real duplicate preflight.
     setStage('duplicate_reupload');
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: 'Import passwords', exact: true }).click();
     await chooseProtonFile(INPUT);
     await page.getByRole('dialog').getByText(/0 selected; 1 skipped; 0 invalid; 0 unsupported; 0 deleted/i).waitFor({ state: 'visible', timeout: 20_000 });
     proof.checks.reuploadDuplicateSkipped = true;
-  } catch (error) {
-    mainError = error;
-    proof.failureStage = stage;
-    proof.failureCode = /^[a-z0-9_]{1,80}$/.test(String(error?.message || '')) ? error.message : `canary_${stage}_refused`;
-  } finally {
-    for (let i = 0; i < 30 && activeIntercepts; i += 1) await wait(500);
-    proof.cleanup.activeInterceptsAtClose = activeIntercepts;
-    try {
-      if (context) await context.close();
-      proof.cleanup.browserClosed = true;
-    } catch {
-      proof.cleanup.browserClosed = false;
-    }
-    try {
-      await fs.rm(INPUT, { force: true });
-    } catch {}
-    proof.cleanup.fixtureRemoved = !(await fs.stat(INPUT).then(() => true, () => false));
-    try {
-      if (token && apiKey && userId && requestOrgId && attemptKeys.size) {
-        const reconciled = await resolveReceipts();
-        if (reconciled) {
-          for (const id of ownedIds) {
-            assert(!baselineIds.includes(id), 'cleanup_baseline_refusal');
-            await api(`${API}/api/vault/items/${id}`, { method: 'DELETE', label: 'owned_cleanup_delete' });
-          }
-          const retired = await itemMetadata([...ownedIds]);
-          proof.cleanup.softDeletedCount = retired.filter((row) => row.deleted_at !== null).length;
-          proof.cleanup.ownedActiveCount = retired.filter((row) => row.deleted_at === null).length;
-          const afterIds = (await listPersonalItems()).map((item) => item.id).sort();
-          proof.cleanup.baselineUnchanged = JSON.stringify(afterIds) === JSON.stringify(baselineIds);
-        }
-        const logout = await fetch(`${DB}/auth/v1/logout?scope=local`, {
-          method: 'POST', headers: { apikey: apiKey, Authorization: `Bearer ${token}` },
-        });
-        proof.cleanup.localLogoutStatus = logout.status;
+    },
+    onStageError: async (error) => {
+      mainError = error;
+      proof.failureStage = stage;
+      proof.failureCode = /^[a-z0-9_]{1,80}$/.test(String(error?.message || '')) ? error.message : `canary_${stage}_refused`;
+    },
+    captureFinally: async () => {
+      if (!context || !authStarted) {
+        finalAuthCertain = true;
+        return;
       }
-    } catch {
-      proof.cleanup.cleanupRefused = true;
-    }
-    try {
+      setStage('canonical_auth_finally');
+      await captureOwnedCanonicalAuth('Finally');
+      finalAuthCertain = true;
+    },
+    hasLastVerifiedSession: () => Boolean(lastVerifiedAuth),
+    cleanupReceipts: async () => {
+      if (!lastVerifiedAuth || !requestOrgId || !attemptKeys.size) return;
+      token = lastVerifiedAuth.token;
+      userId = lastVerifiedAuth.userId;
+      const reconciled = await resolveReceipts();
+      if (!reconciled) return;
+      for (const id of ownedIds) {
+        assert(!baselineIds.includes(id), 'cleanup_baseline_refusal');
+        await api(`${API}/api/vault/items/${id}`, { method: 'DELETE', label: 'owned_cleanup_delete' });
+      }
+      const retired = await itemMetadata([...ownedIds]);
+      proof.cleanup.softDeletedCount = retired.filter((row) => row.deleted_at !== null).length;
+      proof.cleanup.ownedActiveCount = retired.filter((row) => row.deleted_at === null).length;
+      const afterIds = (await listPersonalItems()).map((item) => item.id).sort();
+      proof.cleanup.baselineUnchanged = JSON.stringify(afterIds) === JSON.stringify(baselineIds);
+    },
+    logout: async () => {
+      if (!lastVerifiedAuth || !apiKey) return;
+      const response = await fetch(`${DB}/auth/v1/logout?scope=local`, {
+        method: 'POST', headers: { apikey: apiKey, Authorization: `Bearer ${lastVerifiedAuth.token}` },
+      });
+      proof.cleanup.localLogoutStatus = response.status;
+    },
+    closeBrowser: async () => {
+      for (let i = 0; i < 30 && activeIntercepts; i += 1) await wait(500);
+      proof.cleanup.activeInterceptsAtClose = activeIntercepts;
       if (context) await context.close();
-    } catch {}
-    try {
-      if (PROFILE.startsWith(`${ROOT}/cft-private-profile-`)) await fs.rm(PROFILE, { recursive: true, force: true });
-    } catch {}
-    proof.cleanup.profileRemoved = !(await fs.stat(PROFILE).then(() => true, () => false));
-    proof.finishedAt = new Date().toISOString();
-    proof.cleanup.reconciliationRequired = !(
-      proof.cleanup.receiptReconciliation === true &&
-      proof.cleanup.softDeletedCount === ownedIds.size &&
-      proof.cleanup.ownedActiveCount === 0 &&
-      proof.cleanup.baselineUnchanged === true &&
-      proof.cleanup.localLogoutStatus === 204 &&
-      proof.cleanup.browserClosed === true &&
-      proof.cleanup.fixtureRemoved === true &&
-      proof.cleanup.profileRemoved === true
-    );
-    if (!proof.cleanup.reconciliationRequired) {
-      try {
-        await fs.rm(LEDGER, { force: true });
-      } catch {}
-      proof.cleanup.pendingLedgerRemoved = !(await fs.stat(LEDGER).then(() => true, () => false));
-      if (!proof.cleanup.pendingLedgerRemoved) proof.cleanup.reconciliationRequired = true;
-    }
-    proof.ok = !mainError && !proof.cleanup.reconciliationRequired;
-    persistProof();
-  }
-  if (!proof.ok) {
+      return true;
+    },
+    getCleanupState: () => {
+      return {
+        authStarted,
+        lastVerifiedSession: Boolean(lastVerifiedAuth),
+        finalSessionCertain: finalAuthCertain,
+        logoutStatus: proof.cleanup.localLogoutStatus,
+        attempts: attemptKeys.size > 0,
+        receipts: proof.cleanup.receiptReconciliation,
+        ownedIdsEmpty: ownedIds.size === 0,
+        ownedIdsCount: ownedIds.size,
+        softDeletedCount: proof.cleanup.softDeletedCount,
+        ownedActiveCount: proof.cleanup.ownedActiveCount,
+        baselineUnchanged: proof.cleanup.baselineUnchanged,
+      };
+    },
+    removeFixture: async () => {
+      await fs.rm(INPUT, { force: true });
+      return !(await fs.stat(INPUT).then(() => true, () => false));
+    },
+    removeProfile: async () => {
+      assert(PROFILE.startsWith(`${ROOT}/cft-private-profile-`), 'private_profile_path');
+      await fs.rm(PROFILE, { recursive: true, force: true });
+      return !(await fs.stat(PROFILE).then(() => true, () => false));
+    },
+    removeLedger: async () => {
+      await fs.rm(LEDGER, { force: true });
+      return !(await fs.stat(LEDGER).then(() => true, () => false));
+    },
+    persistFinalProof: async (result) => {
+      if (result.finalCaptureError) proof.cleanup.authDisposition = authStarted ? 'auth_unknown' : 'not_started';
+      if (result.cleanupError || result.logoutError) proof.cleanup.cleanupRefused = true;
+      proof.cleanup.browserClosed = result.browserClosed;
+      proof.cleanup.fixtureRemoved = result.fixtureRemoved;
+      proof.cleanup.profileRemoved = result.profileRemoved;
+      proof.cleanup.pendingLedgerRemoved = result.pendingLedgerRemoved;
+      proof.cleanup.profileRetainedForRecovery = result.profileRetainedForRecovery;
+      proof.cleanup.reconciliationRequired = result.reconciliationRequired;
+      proof.cleanup.finalProofPersistenceError = Boolean(result.finalProofPersistenceError);
+      proof.finishedAt = new Date().toISOString();
+      proof.ok = result.ok && !mainError;
+      persistProof();
+    },
+  });
+  if (!lifecycle.ok || !proof.ok) {
     process.stderr.write('Acceptance refused: Proton retry canary did not prove complete cleanup\n');
     process.exitCode = 1;
   } else process.stdout.write('PASS: Proton UI response-loss retry acceptance and exact cleanup\n');
-})().catch(() => {
-  process.stderr.write('Canary initialization refused; no acceptance claimed\n');
-  process.exitCode = 1;
-});
+}
+
+module.exports = { atomicJson, cookieSession, cleanupPlan, historicalReceiptIsClosed, runHarnessLifecycle };
+
+if (require.main === module) {
+  if (process.env.MATRX_PROTON_IMPORT_RETRY_CANARY !== 'RUN_UNDER_REVIEW')
+    throw new Error('inert_canary_requires_explicit_arm');
+  main().catch(() => {
+    process.stderr.write('Canary initialization refused; no acceptance claimed\n');
+    process.exitCode = 1;
+  });
+}

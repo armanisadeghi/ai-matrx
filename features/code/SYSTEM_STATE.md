@@ -1,6 +1,6 @@
 # `/code` Workspace — System State & Gap Audit
 
-**Last updated:** 2026‑08‑30 (explicit live PTY interruption)
+**Last updated:** 2026‑09‑13 (shared proxy response compression integrity)
 **Scope:** Everything under `features/code/`, plus its hooks, adapters, and the slices it consumes from elsewhere in the app.
 
 > **2026‑07‑09 — activity icons → app shell.** On `/code`, the 48px ActivityBar icon rail injects into the main shell sidebar via `CodeSidebarMenu` + `route-menu-registry` (same Large-Route pattern as `/chat`). The resizable/collapsible side panel (Library / Explorer / …) stays in `WorkspaceLayout`. Floating `CodeWorkspaceWindow` and `/agent-apps/[id]/code` keep `showActivityBar` (embedded rail).
@@ -342,6 +342,13 @@ freezes the explicitly selected `appContext.organization_id` into its typed
 live app context immediately before `fetch`; `POST /api/sandbox` validates the
 required UUID again and forwards the exact value. No layer repairs absence with
 the personal organization, and a context switch invalidates a prebuilt request.
+
+All ten per-sandbox Next routes use `forwardToOrchestrator`. The helper preserves
+request `content-encoding`, authorization replacement, response status, content
+type, custom headers, and the upstream body stream. It removes response
+`content-encoding` because Node fetch transparently decodes compressed upstream
+bytes while retaining that now-stale header; forwarding both makes a native
+browser fetch attempt a second decode.
 
 ---
 
