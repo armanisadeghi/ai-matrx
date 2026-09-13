@@ -33,9 +33,18 @@ export interface UnderstudyRefreshResult {
 /**
  * Create or rebuild the Rulebook's Understudy. Idempotent and free on the
  * server (no AI call) — safe to call on every save. Throws on a real failure
- * so interactive callers (the Understudy card's self-heal) can say so.
+ * so interactive callers can say so.
+ *
+ * 🚨 MODULE-INTERNAL ON PURPOSE (Bugbot, 2026-09-13). It does not touch the
+ * staleness ledger, so a caller outside this file could mint a stand-in
+ * successfully and leave the ledger still holding an EARLIER failure — the
+ * card would then show the amber "the last rebuild did not go through" over a
+ * stand-in that had just come up. That is exactly what the self-heal did.
+ * Every caller outside this module goes through `refreshUnderstudyTracked`,
+ * which records the outcome; un-exporting this is what makes that structural
+ * rather than a convention nobody can see.
  */
-export async function refreshUnderstudy(
+async function refreshUnderstudy(
   rulebookId: string,
 ): Promise<UnderstudyRefreshResult> {
   const store = getStoreSingleton();

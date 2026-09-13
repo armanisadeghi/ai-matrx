@@ -28,7 +28,6 @@ import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import {
   getUnderstudyRefreshState,
   readUnderstudyStandIn,
-  refreshUnderstudy,
   refreshUnderstudyTracked,
   subscribeToUnderstudyRefresh,
 } from "./refresh";
@@ -112,7 +111,14 @@ export function UnderstudyCard({
   const heal = useCallback(() => {
     setHealing(true);
     setHealFailed(false);
-    void refreshUnderstudy(rulebookId)
+    // 🚨 THE TRACKED DOOR, ALWAYS (Bugbot, 2026-09-13). This used to call the
+    // untracked `refreshUnderstudy`, which mints the stand-in but writes
+    // nothing to the staleness ledger — so a `pokeUnderstudy` that had failed
+    // earlier in the tab was still sitting in that ledger, and a heal that
+    // SUCCEEDED left the amber "the last rebuild did not go through" banner up
+    // over a stand-in that had just come up. The retry path was already using
+    // the tracked door; this one was the odd one out.
+    void refreshUnderstudyTracked(rulebookId)
       .then(() => onCreated())
       .catch((err) => {
         // Never leave the card spinning on "Starting your system…" forever —
