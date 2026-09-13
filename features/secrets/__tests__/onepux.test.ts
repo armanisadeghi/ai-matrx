@@ -45,6 +45,17 @@ describe("sanitized upstream 1PUX ordinary login shape", () => {
     expect(record).toEqual(expect.objectContaining({ status: "invalid", title: "Item 1" }));
     expect(record).not.toHaveProperty("sourceRecord");
   });
+  test("rejects missing traits and classifies unknown login field types unsupported", () => {
+    const section = '"sections":[{"title":"x","fields":[{"title":"x","id":"x","guarded":false,"multiline":false,"dontGenerate":false,"inputTraits":{"keyboard":"x","correction":"x"},"value":{"string":"x"}}]}],';
+    const [invalid] = parseOnePuxData(attrs, data(item().replace('"loginFields"', `${section}"loginFields"`)), limits);
+    expect(invalid).toMatchObject({ status: "invalid" }); expect(invalid).not.toHaveProperty("sourceRecord");
+    const [unsupported] = parseOnePuxData(attrs, data(item().replace('"fieldType":"T"', '"fieldType":"UNKNOWN"')), limits);
+    expect(unsupported).toMatchObject({ status: "unsupported" }); expect(unsupported).not.toHaveProperty("sourceRecord");
+  });
+  test("dedupes safe URL metadata in source order", () => {
+    const [record] = parseOnePuxData(attrs, data(item().replace('"https://two.example"', '"https://example.com/path"')), limits);
+    expect(record).toMatchObject({ status: "supported", urls: ["https://example.com"] });
+  });
   test.each([
     ["unknown value", '"value":{"sshKey":"x"}'],
     ["multiple values", '"value":{"string":"x","url":"x"}'],
