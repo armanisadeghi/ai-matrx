@@ -220,6 +220,11 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-09-13** — Every user schedule route now reserves responsive bottom
+  clearance on its actual vertical scroll owner for the global fixed schedule
+  alarm. List, detail, edit, and new content can all scroll fully above the
+  control instead of letting the alarm cover their final meaningful row.
+
 - **2026-09-13** — The user schedule roster now aborts a stalled complete-list
   read after 20 seconds and enters the existing visible Retry state. The
   boundary preserves exact-count paging and stable ordering while preventing a
