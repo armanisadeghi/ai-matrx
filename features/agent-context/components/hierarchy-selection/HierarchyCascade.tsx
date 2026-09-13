@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createElement, useState } from "react";
 import {
   Building2,
   FolderKanban,
@@ -292,8 +292,10 @@ function AnimatedRow({
 }
 
 function ScopeIcon({ iconName, color }: { iconName: string; color: string }) {
-  const Icon = resolveIcon(iconName);
-  return <Icon className="h-3.5 w-3.5" style={{ color }} />;
+  return createElement(resolveIcon(iconName), {
+    className: "h-3.5 w-3.5",
+    style: { color },
+  });
 }
 
 interface ScopeLevelComboboxProps {
@@ -521,6 +523,12 @@ function LevelCombobox({
   const createTask = useCreateTask();
 
   const selectedName = options.find((o) => o.id === selectedId)?.name;
+  const [activeValue, setActiveValue] = useState(selectedName ?? "");
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) setActiveValue(selectedName ?? "");
+    setOpen(nextOpen);
+  };
 
   const handleCreate = async () => {
     if (!newName.trim() || !onCreateSubmit) return;
@@ -547,7 +555,7 @@ function LevelCombobox({
 
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -578,7 +586,7 @@ function LevelCombobox({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[240px] p-0" align="start">
-          <Command>
+          <Command value={activeValue} onValueChange={setActiveValue}>
             <CommandInput
               placeholder={`Search ${label.toLowerCase()}...`}
               className="h-8 text-xs"
@@ -595,7 +603,8 @@ function LevelCombobox({
                     key={opt.id}
                     value={opt.name}
                     onSelect={() => {
-                      onSelect(opt.id === selectedId ? null : opt.id);
+                      setActiveValue(opt.name);
+                      onSelect(opt.id);
                       setOpen(false);
                     }}
                     className="text-xs flex items-center gap-2"

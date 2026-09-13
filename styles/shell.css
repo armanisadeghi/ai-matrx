@@ -1474,8 +1474,19 @@ button.shell-nav-flyout-item {
      Routes that need space below the header add their own top padding/offset.
      No shell-level padding-top: routes own their own internal top spacing. */
   margin-top: calc(-1 * var(--shell-header-h));
-  padding-bottom: var(--shell-fixed-alert-clearance);
   scroll-padding-bottom: var(--shell-fixed-alert-clearance);
+}
+
+/* Padding on an overflow owner is absorbed by border-box sizing when a route
+   child is min-height:100%, so it does not reliably create scroll range. A
+   real final flow item does: even full-viewport route children can scroll
+   completely above the fixed alarm instead of leaving their last control
+   underneath it. */
+:root[data-schedule-alarm] .shell-main::after {
+  content: "";
+  display: block;
+  height: var(--shell-fixed-alert-clearance);
+  pointer-events: none;
 }
 
 /* Global fixed notices are route-independent. Their singleton publishes only

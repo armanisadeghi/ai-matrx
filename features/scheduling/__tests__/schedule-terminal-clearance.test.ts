@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const schedulesRoute = path.join(process.cwd(), "app/(core)/schedules");
+const shellStyles = path.join(process.cwd(), "styles/shell.css");
 
 function pageFiles(directory: string): string[] {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -12,6 +13,15 @@ function pageFiles(directory: string): string[] {
 }
 
 describe("schedule route terminal clearance", () => {
+  it("creates real scroll runway below min-height route children", () => {
+    const source = fs.readFileSync(shellStyles, "utf8");
+
+    expect(source).toContain(
+      ':root[data-schedule-alarm] .shell-main::after',
+    );
+    expect(source).toContain("height: var(--shell-fixed-alert-clearance)");
+  });
+
   it("reserves mobile and desktop space above the fixed schedule alarm in every route scroller", () => {
     const routePages = pageFiles(schedulesRoute);
 
