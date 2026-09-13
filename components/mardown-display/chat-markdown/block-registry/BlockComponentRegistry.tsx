@@ -25,6 +25,10 @@ import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import CmsHtmlPageResultBlock from "../../blocks/cms-html-page-result/CmsHtmlPageResultBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
+import SerialObservationTimelineBlock from "../../blocks/masterwork-timeline/SerialObservationTimelineBlock";
+import CaseDisclosureBlock from "../../blocks/masterwork-unfolding/CaseDisclosureBlock";
+import RefusalBlock from "../../blocks/refusal/RefusalBlock";
+import UnfoldingRulingBlock from "../../blocks/masterwork-unfolding/UnfoldingRulingBlock";
 import AgentResultBlock from "../../blocks/agent-result/AgentResultBlock";
 // Runtime wrapper kinds — transparent routers that DELEGATE the nested payload
 // back to the registry (RUNTIME_WRAPPER_WIRE.md §5).
@@ -446,6 +450,32 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MasterworkCheckupFindingBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  SerialObservationTimelineBlock: (
+    props: React.ComponentProps<typeof SerialObservationTimelineBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <SerialObservationTimelineBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  CaseDisclosureBlock: (
+    props: React.ComponentProps<typeof CaseDisclosureBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <CaseDisclosureBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  UnfoldingRulingBlock: (
+    props: React.ComponentProps<typeof UnfoldingRulingBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <UnfoldingRulingBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  RefusalBlock: (props: React.ComponentProps<typeof RefusalBlock>) => (
+    <LazyBlockWrapper>
+      <RefusalBlock {...props} />
     </LazyBlockWrapper>
   ),
   IngestedSourcesBlock: (

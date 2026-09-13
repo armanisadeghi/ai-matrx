@@ -81,10 +81,10 @@ export const CreateSandboxFormFields: React.FC<
         >
           <ToggleGroupItem
             value="ec2"
-            aria-label="EC2 (S3-backed)"
+            aria-label="EC2 (retained home)"
             className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
           >
-            EC2 (S3-backed)
+            EC2 (retained home)
           </ToggleGroupItem>
           <ToggleGroupItem
             value="hosted"

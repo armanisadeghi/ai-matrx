@@ -9,6 +9,7 @@ import type {
 import type { ApplyManifestSyncResult } from "@/features/surfaces/services/manifest-sync.service";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   TOOL_BUNDLE,
   assocData,
@@ -278,10 +279,13 @@ export async function createUiClient(args: {
   description: string | null;
   sortOrder?: number;
 }): Promise<void> {
-  const { error } = await sb()
+  const client = sb();
+  const { error } = await client
     .schema("ui")
     .from("ui_client")
     .insert({
+      organization_id: await resolveSystemOrgId(client),
+      visibility: "public",
       name: args.name,
       description: args.description ?? undefined,
       sort_order: args.sortOrder ?? 100,
@@ -682,11 +686,17 @@ export async function upsertSurfaceToolDefaults(
   surfaceName: string,
   patch: Partial<Omit<ToolSurfaceDefaultsUpsert, "surface_name">>,
 ): Promise<ToolSurfaceDefaultsRow> {
-  const { data, error } = await sb()
+  const client = sb();
+  const { data, error } = await client
     .schema("tool")
     .from("surface_defaults")
     .upsert(
-      { surface_name: surfaceName, ...patch },
+      {
+        ...patch,
+        surface_name: surfaceName,
+        organization_id: await resolveSystemOrgId(client),
+        visibility: "public",
+      },
       { onConflict: "surface_name" },
     )
     .select()

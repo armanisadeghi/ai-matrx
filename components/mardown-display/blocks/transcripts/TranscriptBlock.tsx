@@ -11,6 +11,7 @@ import AdvancedTranscriptViewer from "@/components/mardown-display/blocks/transc
 import { ImportTranscriptModal } from "@/features/transcripts/components/ImportTranscriptModal";
 import { parseTranscript } from "./transcript-parser";
 import { useToast } from "@/components/ui/use-toast";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 interface TranscriptBlockProps {
   content: string;
@@ -35,7 +36,7 @@ const TranscriptBlock: React.FC<TranscriptBlockProps> = ({ content }) => {
   const handleTimeClick = (seconds: number) => {
     toast({
       title: "Time selected",
-      description: `Jumped to ${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")} in the audio`,
+      description: `Jumped to ${formatDurationSeconds(seconds, { style: "clock" })} in the audio`,
     });
   };
 

@@ -920,8 +920,55 @@ async function streamRequest(
     body:
       operation === "claim" ? JSON.stringify({ ticket: ticket.ticket }) : "{}",
   });
-  if (!response.ok)
-    throw new Error(`The live browser connection failed (${response.status}).`);
+  if (!response.ok) throw await streamConnectError(response);
+}
+
+/**
+ * A live-view connection the stream server refused, WITH its reason.
+ *
+ * The old `new Error("…failed (409)")` threw the reason away, so the panel
+ * could not tell "this browser is already open in another tab" (recoverable
+ * with one click) from any other refusal.
+ *
+ * Shape, CAPTURED FROM PRODUCTION 2026-09-13 (not assumed): the platform's
+ * error handler rewrites the stream route's HTTPException into the standard
+ * envelope — `{code, error, message, user_message, details, request_id}` with
+ * `code` at the TOP level. Its `user_message` there is the handler's generic
+ * "Something went wrong", so `message` is the sentence to show. A bare FastAPI
+ * `{"detail": …}` is still accepted in case a route answers before that handler.
+ */
+export class StreamConnectError extends Error {
+  readonly code: string | null;
+  readonly status: number;
+  constructor(message: string, code: string | null, status: number) {
+    super(message);
+    this.name = "StreamConnectError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
+async function streamConnectError(
+  response: Response,
+): Promise<StreamConnectError> {
+  const fallback = `The live browser connection failed (${response.status}).`;
+  const text = (value: unknown): string | null =>
+    typeof value === "string" && value ? value : null;
+  try {
+    const body = (await response.json()) as Record<string, unknown>;
+    const detail = body.detail;
+    const nested =
+      detail && typeof detail === "object"
+        ? (detail as Record<string, unknown>)
+        : null;
+    const code = text(body.code) ?? text(nested?.code);
+    const message =
+      text(body.message) ?? text(nested?.message) ?? text(detail) ?? fallback;
+    return new StreamConnectError(message, code, response.status);
+  } catch {
+    // Not JSON (an edge/CDN page): the status is all we have.
+  }
+  return new StreamConnectError(fallback, null, response.status);
 }
 export async function claimStreamTicket(
   ticket: StreamTicketEnvelope,
@@ -943,10 +990,13 @@ export async function renewStreamTicket(
 export async function takeControl(
   runId: string,
   me: { userId: string; displayName: string },
+  /** "Take over immediately": the server does not wait for the agent's
+   *  in-flight browser step (it used to take as long as that step). */
+  opts: { immediate?: boolean } = {},
 ): Promise<ControllerState> {
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/takeover`,
-    {},
+    opts.immediate ? { immediate: true } : {},
   );
   const value = record(data);
   return {

@@ -179,6 +179,8 @@ function distinctBodies(notices: HrInboxNotice[]): string[] {
     return out;
 }
 
+// KNOB MIRROR of platform.feature_knob "hr.tasks" "compact_chip_limit" — a synchronous render path.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const COMPACT_CHIP_LIMIT = 3;
 
 function compactChips(notices: HrInboxNotice[]) {

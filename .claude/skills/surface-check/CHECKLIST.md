@@ -159,6 +159,13 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 ## S11 · Loading / empty / error states — `real-loading-states` (P8) + CLAUDE.md "Errors"
 
 - MUST: every loading state says WHAT is loading (or is a surface-shaped skeleton); no bare "Loading…"; empty states are real (`EntityListPage` empties); every async op has structured error handling that surfaces — recovery layers scream.
+- MUST (**TERMINAL-LOAD LAW**): an initial load may not remain a skeleton or
+  spinner indefinitely. Every request that owns a loading state has a bounded
+  terminal path: success, an honest empty state, or a visible recoverable error
+  after an explicit timeout/abort boundary. Prove the real route reaches that
+  terminal state after a cold load and a manual retry; a route that eventually
+  appears only after an unbounded wait fails certification even when its data
+  finally arrives.
 - MUST: a surface that streams AI never shows a spinner while AI works (S17).
 - MUST: re-open Error Inspector and console after each representative primary
   workflow has reached its terminal async state; initial-load cleanliness does

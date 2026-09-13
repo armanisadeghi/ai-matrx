@@ -16,6 +16,7 @@ type StructuredImportBase = {
   sourceState: "active" | "deleted" | "archived";
   sourceRecord: string;
   hasOtp: boolean;
+  notes?: string;
 };
 export type StructuredImportRecord = RejectedStructuredImportRecord | (StructuredImportBase & (
   | { kind: "website_login"; urls: string[]; username: string | null; password: string | null }
@@ -70,6 +71,7 @@ export function prepareStructuredImportCommand(input: {
     browserFillEnabled = Boolean(input.browserFillEnabled && record.username && record.password && destination && (new URL(destination).protocol === "https:" || isLoopbackApiUrl(destination)));
     uriMatchMode = browserFillEnabled ? "host" : "never";
   }
+  if (record.notes) add("import_notes", record.notes);
   if (record.kind === "ssh_key") { add("private_key", record.privateKey); add("public_key", record.publicKey, "visible"); }
   const body: VaultItemCreateRequest = { principal: input.principal.type === "organization" ? { type: "organization", organization_id: input.principal.organizationId } : { type: "user" }, display_name: record.title, definition_key: record.kind, source: "system_import", login_urls: record.kind === "website_login" && destination ? [destination] : [], uri_match_mode: uriMatchMode, browser_fill_enabled: browserFillEnabled, fields };
   if (fields.length > input.limits.maxFields || fields.some((field) => bytes(field.value) > input.limits.maxPlaintextFieldBytes) || bytes(JSON.stringify(body)) > input.limits.maxRequestBodyBytes) return { status: "invalid", diagnostic: "The record exceeds this organization’s encrypted field limit." };

@@ -54,13 +54,17 @@ feature. There is no cross-employer HR view, in v1 or later.
   gate; every page under `/hr/compliance` renders its own server refusal in place.
 - `LawPortalSurface.tsx` — the portal itself: the operating-jurisdiction line, the
   per-rule-class collapsible sections (count + `applies / removed / overridden`
-  summary), the D26 remove/restore control and its confirm dialog, the all-rules
-  toggle, and the org's own rules with add / edit / retire.
+  summary for current jurisdictions; `tracked` for the all-rules library), the D26
+  remove/restore control and its confirm dialog, the all-rules toggle, and the
+  org's own rules with add / edit / retire.
 - `LawRuleRow.tsx` — `PlatformLawRuleRow` · `OrgLawRuleRow` · `LawParameterList` ·
   `LawCitationLine` · `LawStatusBadge` · `LawRawParameters`. ONE rule is ONE row,
   collapsed by default; parameters, citation and `basis` live behind the chevron.
 - `OrgLawRuleEditor.tsx` — authoring an org rule, with the server's refusal
-  (`unlawful_configuration` / `warnings_unacknowledged`) rendered verbatim.
+  (`unlawful_configuration` / `warnings_unacknowledged`) rendered verbatim. The
+  save door persists the rule-class schema's native parameters; rounding-bounds
+  accepts legacy `increment_minutes` / `mode` callers only as a compatibility input
+  and normalizes them to `max_increment_minutes` / `allowed_modes` before writing.
 - `law-parameters.ts` — flat-schema form fields, or `null` meaning "show JSON and
   say why". Never a partial form.
 
@@ -174,6 +178,39 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-09-13 (law portal contract and scope labels)** — The rounding-bounds
+  class schema has always required `max_increment_minutes` and `allowed_modes`, but
+  the org-rule save door passed legacy configuration-validator names through to the
+  row trigger. A California advisory warning could therefore reach the explicit
+  "Save anyway" retry and then leak schema-validation SQLSTATE `22000`. Migration
+  `hr_l9_02_org_rule_rounding_contract.sql` normalizes legacy callers to the native
+  stored contract, projects native data into the validator's established compatibility
+  shape (surfacing any non-`nearest` mode), and makes a remaining `22000` an honest
+  `invalid_rule_parameters` refusal. Follow-up migration
+  `hr_l9_03_org_rule_rounding_validation_shape.sql` also keeps malformed scalar
+  `allowed_modes` on that caught schema-validation path rather than expanding it in
+  the compatibility projection.
+  The all-rules disclosure now says `<n> tracked`, never falsely `<n> applies`; the
+  current-jurisdiction `applies / removed / overridden` accounting is unchanged.
+  Guard: `features/hr/compliance/__tests__/law-portal-summary.test.ts`.
+
+- **2026-09-13 (law portal row controls name their own rows)** — Rule application
+  decisions remain class × jurisdiction, but records-retention can render multiple
+  platform rows in one decision scope. `AppliesControl` therefore includes the stable
+  platform rule ID in its DOM `id`; labels continue to target exactly their own switch
+  without changing the shared decision the switch writes. Guard:
+  `features/hr/compliance/__tests__/law-portal-control-id.test.ts`.
+
+- **2026-09-13 (law portal lifecycle refusals stay in product language)** — The
+  active one-per-window exclusion constraint remains the temporal integrity boundary:
+  it blocks a second active org rule over the same jurisdiction and effective period,
+  while retired rows are already excluded. Migration
+  `hr_l9_04_org_rule_overlap_refusal.sql` maps its `23P01` to
+  `rule_window_conflict` with an actionable sentence rather than exposing database
+  constraint text. `OrgLawRuleRow` action controls are siblings of its expansion
+  button; the direct interaction guard proves Edit and Retire fire once without
+  expanding the row.
+
 - **2026-09-11 (the HR Fields page shows what the database actually enables, DD-097)** —
   `features/hr/settings/service.ts` asked `platform.custom_field_target` about a
   hand-written list of seven `hr_*` tokens, filtered to the active employer. Live,
@@ -238,6 +275,15 @@ wrapper added in another lane's file.
   rule names, parameter keys and values, statuses, citations, refusal sentences — was
   raised to `text-foreground`; muted tone now survives only on timestamps and the
   source-confidence annotation. `LawRuleCard.tsx` was replaced by `LawRuleRow.tsx`.
+- **2026-09-13 (D25 org-rule edit advisory parity)** — The law portal save
+  door validates every candidate organization rule against the statutory
+  baseline, not a previously saved organization override. Create and edit now
+  share the same advisory contract: an unverified CA rounding candidate is
+  returned as `warnings_unacknowledged` until the current save receives the
+  explicit `Save anyway` acknowledgement; ordinary legal edits still save and
+  unlawful candidates still refuse. `hr_l9_05_org_rule_edit_advisory_contract.sql`
+  patches the canonical validator and proves the shared door cannot return to
+  self-referential validation.
 - **2026-08-28 (D25)** — The org **law portal** shipped at `/hr/compliance/laws`:
   the platform's employment-law baseline shown read-only and grouped by rule class,
   with advisory rules visually distinct ("flags only, never computes pay"), a

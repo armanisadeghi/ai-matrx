@@ -14,7 +14,12 @@ import {
   fetchBitwardenJsonImportLimits,
   fetchCsvImportLimits,
 } from "../csv-import-limits";
+import type { StructuredImportSource } from "../structured-import-source-registry";
 import { createVaultItem, VaultImportTransportError } from "../vault-service";
+
+let mockDeferredKeePassLoadWorker:
+  | StructuredImportSource["loadWorker"]
+  | undefined;
 
 let mockAuthStateListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
@@ -108,6 +113,7 @@ type ControlledWorker = {
 };
 let workers: ControlledWorker[] = [];
 let onePuxWorkers: ControlledWorker[] = [];
+let keePassWorkers: ControlledWorker[] = [];
 jest.mock("../bitwarden-json-worker-client", () => ({
   createBitwardenJsonWorker: () => {
     const worker: ControlledWorker = {
@@ -123,6 +129,8 @@ jest.mock("../bitwarden-json-worker-client", () => ({
     workers.push(worker);
     return worker;
   },
+  cancelBitwardenJsonWorker: (worker: ControlledWorker, requestId: string) =>
+    worker.postMessage({ type: "cancel", requestId }),
 }));
 jest.mock("../onepux-worker-client", () => ({
   createOnePuxWorker: () => {
@@ -140,6 +148,38 @@ jest.mock("../onepux-worker-client", () => ({
     return worker;
   },
   cancelOnePuxWorker: (worker: ControlledWorker, requestId?: string) =>
+    worker.postMessage({ type: "cancel", requestId }),
+}));
+jest.mock("../structured-import-source-registry", () => {
+  const actual = jest.requireActual(
+    "../structured-import-source-registry",
+  ) as typeof import("../structured-import-source-registry");
+  return {
+    ...actual,
+    structuredImportSource: (source: string) => {
+      const descriptor = actual.structuredImportSource(source);
+      return source === "keepass_xml" && mockDeferredKeePassLoadWorker && descriptor
+        ? { ...descriptor, loadWorker: mockDeferredKeePassLoadWorker }
+        : descriptor;
+    },
+  };
+});
+jest.mock("../keepass-xml-worker-client", () => ({
+  createKeePassXmlWorker: () => {
+    const worker: ControlledWorker = {
+      terminated: false,
+      onmessage: null,
+      onerror: null,
+      onmessageerror: null,
+      postMessage: jest.fn(),
+      terminate: jest.fn(() => {
+        worker.terminated = true;
+      }),
+    };
+    keePassWorkers.push(worker);
+    return worker;
+  },
+  cancelKeePassXmlWorker: (worker: ControlledWorker, requestId: string) =>
     worker.postMessage({ type: "cancel", requestId }),
 }));
 
@@ -269,6 +309,68 @@ async function chooseOnePux(): Promise<HTMLInputElement> {
   return input;
 }
 
+async function chooseKeePassXml(): Promise<HTMLInputElement> {
+  const trigger = [...document.querySelectorAll("button")].find(
+    (button) =>
+      button.textContent?.includes("CSV export") ||
+      button.textContent?.includes("KeePass / KeePassXC XML"),
+  );
+  if (!(trigger instanceof HTMLButtonElement))
+    throw new Error("source trigger missing");
+  await act(async () => trigger.click());
+  const option = [...document.querySelectorAll('[role="option"]')].find(
+    (node) => node.textContent?.includes("KeePass / KeePassXC XML"),
+  );
+  if (!(option instanceof HTMLElement))
+    throw new Error("KeePass XML source option missing");
+  await act(async () => option.click());
+  const input = document.body.querySelector('input[type="file"]');
+  if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+  if (!input.accept.includes("application/xml"))
+    throw new Error(`KeePass XML source was not selected: ${input.accept}`);
+  return input;
+}
+
+function deferKeePassWorkerLoad() {
+  const create = jest.fn();
+  let resolve: (
+    client: Awaited<ReturnType<StructuredImportSource["loadWorker"]>>,
+  ) => void;
+  const loadWorker = jest.fn(
+    () =>
+      new Promise<Awaited<ReturnType<StructuredImportSource["loadWorker"]>>>(
+        (next) => {
+          resolve = next;
+        },
+      ),
+  );
+  mockDeferredKeePassLoadWorker = loadWorker;
+  return {
+    create,
+    loadWorker,
+    resolve: () =>
+      resolve({
+        create: create as unknown as () => Worker,
+        cancel: jest.fn(),
+      }),
+  };
+}
+
+async function startDeferredKeePassLoad(
+  deferred: ReturnType<typeof deferKeePassWorkerLoad>,
+): Promise<void> {
+  const input = await chooseKeePassXml();
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: [jsonFile("<KeePassFile/>", 14)],
+  });
+  await act(async () => {
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((next) => setTimeout(next, 10));
+  });
+  expect(deferred.loadWorker).toHaveBeenCalledTimes(1);
+}
+
 describe("VaultCsvImportDialog", () => {
   let root: Root;
   let host: HTMLDivElement;
@@ -282,6 +384,8 @@ describe("VaultCsvImportDialog", () => {
     mockOrganizationId = "11111111-1111-4111-8111-111111111111";
     workers = [];
     onePuxWorkers = [];
+    keePassWorkers = [];
+    mockDeferredKeePassLoadWorker = undefined;
   });
 
   afterEach(() => {
@@ -516,14 +620,18 @@ describe("VaultCsvImportDialog", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
     });
     expect(fetchBitwardenJsonImportLimitsMock).toHaveBeenCalled();
-    expect(file.arrayBuffer).toHaveBeenCalled();
+    expect(file.arrayBuffer).not.toHaveBeenCalled();
     expect(workers).toHaveLength(1);
     if (!mockAuthStateListener) throw new Error("auth listener missing");
     await act(async () => mockAuthStateListener?.("SIGNED_OUT"));
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [{ ordinal: 0, title: "late" }] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [{ ordinal: 0, title: "late" }],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("late");
@@ -557,7 +665,11 @@ describe("VaultCsvImportDialog", () => {
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "late signed in" })] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "late signed in" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("late signed in");
@@ -669,12 +781,21 @@ describe("VaultCsvImportDialog", () => {
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "stale" })] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "stale" })],
+        },
       } as MessageEvent),
     );
     await act(async () =>
       workers[1]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "fresh" })] },
+        data: {
+          requestId: workers[1]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "fresh" })],
+          fileNotices: [],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("stale");
@@ -716,7 +837,11 @@ describe("VaultCsvImportDialog", () => {
     expect(workers[0]?.terminate).toHaveBeenCalled();
     await act(async () =>
       workers[0]?.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "principal stale" })] },
+        data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "principal stale" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).toContain("destination changed");
@@ -747,6 +872,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () =>
       workers[1]?.onmessage?.({
         data: {
+          requestId: workers[1]?.postMessage.mock.calls[0]?.[0]?.requestId,
           ok: true,
           records: [jsonRecord({ title: "organization stale" })],
         },
@@ -782,7 +908,11 @@ describe("VaultCsvImportDialog", () => {
     if (!first) throw new Error("worker missing");
     await act(async () =>
       first.onmessage?.({
-        data: { ok: false, error: "untrusted export detail" },
+        data: {
+          requestId: first.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: false,
+          error: "untrusted export detail",
+        },
       } as MessageEvent),
     );
     expect(first.terminate).toHaveBeenCalled();
@@ -790,7 +920,11 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).not.toContain("untrusted export detail");
     await act(async () =>
       first.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "error stale" })] },
+        data: {
+          requestId: first.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "error stale" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("error stale");
@@ -813,7 +947,11 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).toContain("took too long");
     await act(async () =>
       second.onmessage?.({
-        data: { ok: true, records: [jsonRecord({ title: "timeout stale" })] },
+        data: {
+          requestId: second.postMessage.mock.calls[0]?.[0]?.requestId,
+          ok: true,
+          records: [jsonRecord({ title: "timeout stale" })],
+        },
       } as MessageEvent),
     );
     expect(document.body.textContent).not.toContain("timeout stale");
@@ -845,6 +983,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () =>
       workers[0]?.onmessage?.({
         data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
           ok: true,
           records: [
             jsonRecord(),
@@ -866,11 +1005,21 @@ describe("VaultCsvImportDialog", () => {
               sourceState: "deleted",
             }),
           ],
+          fileNotices: [
+            { code: "unsupported_binary_definitions", count: 2 },
+            { code: "deleted_tombstones", count: 1 },
+          ],
         },
       } as MessageEvent),
     );
     expect(document.body.textContent).toContain(
       "0 selected; 1 skipped; 1 invalid; 1 unsupported; 1 deleted.",
+    );
+    expect(document.body.textContent).toContain(
+      "This export includes 2 unreferenced attachment definitions that cannot be imported.",
+    );
+    expect(document.body.textContent).toContain(
+      "This export records 1 deleted items without saved contents; these cannot be restored by importing.",
     );
     expect(document.body.textContent).toContain(
       "destination https://example.test",
@@ -942,6 +1091,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () =>
       workers[0]?.onmessage?.({
         data: {
+          requestId: workers[0]?.postMessage.mock.calls[0]?.[0]?.requestId,
           ok: true,
           records: [
             jsonRecord({ title: "First" }),
@@ -951,6 +1101,7 @@ describe("VaultCsvImportDialog", () => {
               urls: ["https://second.test"],
             }),
           ],
+          fileNotices: [],
         },
       } as MessageEvent),
     );
@@ -1036,7 +1187,9 @@ describe("VaultCsvImportDialog", () => {
           ok: true,
           requestId: request.requestId,
           records: [jsonRecord({ sourceState: "active" })],
-          binaryMemberCount: 2,
+          fileNotices: [
+            { code: "unsupported_archive_members", count: 2 },
+          ],
         },
       } as MessageEvent),
     );
@@ -1044,7 +1197,7 @@ describe("VaultCsvImportDialog", () => {
       "1 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 0 archived.",
     );
     expect(document.body.textContent).toContain(
-      "2 binary archive members and icon data are not imported.",
+      "This export includes 2 archive files that cannot be imported.",
     );
   });
 
@@ -1097,7 +1250,9 @@ describe("VaultCsvImportDialog", () => {
           ok: true,
           requestId,
           records: [jsonRecord({ title: "late 1pux", sourceState: "active" })],
-          binaryMemberCount: 1,
+          fileNotices: [
+            { code: "unsupported_archive_members", count: 1 },
+          ],
         },
       } as MessageEvent),
     );
@@ -1154,7 +1309,7 @@ describe("VaultCsvImportDialog", () => {
           records: [
             jsonRecord({ title: "organization late", sourceState: "active" }),
           ],
-          binaryMemberCount: 0,
+          fileNotices: [],
         },
       } as MessageEvent),
     );
@@ -1169,7 +1324,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing");
     const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
-    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], binaryMemberCount: 0 } } as MessageEvent));
+    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], fileNotices: [] } } as MessageEvent));
     expect(document.body.textContent).toContain("0 selected; 0 skipped; 0 invalid; 0 unsupported; 0 deleted; 1 archived.");
     expect(document.body.textContent).toContain("Include archived source items");
     expect(document.body.textContent).not.toContain("Include deleted source items");
@@ -1184,7 +1339,138 @@ describe("VaultCsvImportDialog", () => {
     const input = await chooseOnePux(); Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
     await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing"); const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
-    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], binaryMemberCount: 0 } } as MessageEvent));
+    await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], fileNotices: [] } } as MessageEvent));
     expect(document.body.textContent).not.toContain("Include deleted source items"); expect(document.body.textContent).not.toContain("Include archived source items");
+  });
+
+  it("selects KeePass XML, terminates its worker on source change, and suppresses its late completion", async () => {
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    const input = await chooseKeePassXml();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("<KeePassFile/>", 14)],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    const worker = keePassWorkers[0];
+    if (!worker) throw new Error("KeePass worker missing");
+    const requestId = (
+      worker.postMessage.mock.calls[0]?.[0] as { requestId: string }
+    ).requestId;
+    const trigger = [...document.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("KeePass / KeePassXC XML"),
+    );
+    if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+    await act(async () => trigger.click());
+    const replacement = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Bitwarden JSON"),
+    );
+    if (!(replacement instanceof HTMLElement)) throw new Error("replacement source missing");
+    await act(async () => replacement.click());
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: "cancel", requestId });
+    expect(worker.terminate).toHaveBeenCalled();
+    await act(async () =>
+      worker.onmessage?.({
+        data: {
+          ok: true,
+          requestId,
+          records: [jsonRecord({ title: "late KeePass record" })],
+          fileNotices: [{ code: "deleted_tombstones", count: 1 }],
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).not.toContain("late KeePass record");
+  });
+
+  it("does not create or post to a deferred KeePass worker after dialog cancellation", async () => {
+    const deferred = deferKeePassWorkerLoad();
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    await startDeferredKeePassLoad(deferred);
+    await act(async () =>
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })),
+    );
+    deferred.resolve();
+    await act(async () => {
+      await new Promise((next) => setTimeout(next, 0));
+    });
+    expect(deferred.create).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("late deferred record");
+  });
+
+  it("does not create or post to a deferred KeePass worker after source change", async () => {
+    const deferred = deferKeePassWorkerLoad();
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    await startDeferredKeePassLoad(deferred);
+    const trigger = [...document.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("KeePass / KeePassXC XML"),
+    );
+    if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+    await act(async () => trigger.click());
+    const replacement = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Bitwarden JSON"),
+    );
+    if (!(replacement instanceof HTMLElement)) throw new Error("replacement source missing");
+    await act(async () => replacement.click());
+    deferred.resolve();
+    await act(async () => {
+      await new Promise((next) => setTimeout(next, 0));
+    });
+    expect(deferred.create).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("late deferred record");
+  });
+
+  it("does not create or post to a deferred KeePass worker after unmount", async () => {
+    const deferred = deferKeePassWorkerLoad();
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    await startDeferredKeePassLoad(deferred);
+    await act(async () => root.unmount());
+    deferred.resolve();
+    await act(async () => {
+      await new Promise((next) => setTimeout(next, 0));
+    });
+    expect(deferred.create).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("late deferred record");
   });
 });

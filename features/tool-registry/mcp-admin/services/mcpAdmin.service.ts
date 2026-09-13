@@ -4,6 +4,7 @@ import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { refreshMcpCatalog } from "@/features/agents/services/mcp-connections.service";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 type Tables = Database["public"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -93,9 +94,12 @@ export async function createServerConfig(args: {
       .eq("server_id", args.serverId);
     if (clearErr) throw clearErr;
   }
-  const { data, error } = await sb()
+  const client = sb();
+  const { data, error } = await client
     .schema("tool").from("mcp_config")
     .insert({
+      organization_id: await resolveSystemOrgId(client),
+      visibility: "public",
       server_id: args.serverId,
       label: args.label,
       config_type: args.configType,

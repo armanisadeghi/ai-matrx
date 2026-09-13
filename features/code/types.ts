@@ -23,7 +23,8 @@ export interface FilesystemNode {
 }
 
 export interface FilesystemWatchEvent {
-  type: "created" | "modified" | "deleted" | "moved";
+  /** `resync` is a transport recovery signal, never a fabricated file change. */
+  type: "created" | "modified" | "deleted" | "moved" | "resync";
   path: string;
   /** Present for "moved" events — the original path before the rename. */
   fromPath?: string;

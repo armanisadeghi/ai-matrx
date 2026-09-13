@@ -35,16 +35,17 @@ export const SUB_ORG_SCOPE_SOURCES = [
   { kind: "site", noun: "Site" },
   { kind: "location", noun: "Location" },
   // DD-131: `platform.knob_scope_kind` names `table` (scope_schema/scope_table
-  // = platform.entity_types) and `agent` (agent.definition). Listed here per
-  // this file's own promise — "a rung listed here is addressed on the read
-  // and offered as a picker" — but `table`'s door is UNPROVEN: unlike every
-  // other row above, `platform.entity_types` has NO `organization_id` column
-  // (it is the platform-wide table-type catalog, not a per-org row set), and
-  // `platform.knob_scope_rows` (aidream 0639) filters every rung's query by
-  // `organization_id`. Picking "the table" rung here will error live until
-  // that door is taught the difference — flagged in the B-49 report as an
-  // aidream-side follow-up, not fixed here (out of this repo's migration
-  // reach). `agent` has `organization_id` and works with no change.
+  // = platform.entity_types) and `agent` (agent.definition). DD-166 (closed
+  // 2026-09-13, aidream 0642 + 0672): `platform.knob_scope_rows` no longer
+  // assumes every rung is a per-org row set — it branches on
+  // `knob_scope_kind.scope_row_identity`. `table` is `platform_taxonomy`:
+  // `platform.entity_types` has no `organization_id` (it is the platform-wide
+  // table catalog, not a tenant row set), so its branch lists every ACTIVE
+  // registered token with no organization filter — deliberately unfiltered by
+  // `confirmation_enabled`, because table-scoped knobs are not all
+  // confirmation knobs (e.g. `records.children.fan_out_ceiling` applies to
+  // any table). `agent` is `tenant_row` (`agent.definition.organization_id`
+  // is real) and needed no change. Live-verified both ways from this repo.
   { kind: "table", noun: "Table" },
   { kind: "agent", noun: "Agent" },
 ] as const satisfies readonly {
@@ -58,6 +59,21 @@ export const SUB_ORG_SCOPE_KINDS: readonly SubOrgScopeKind[] = SUB_ORG_SCOPE_SOU
 
 export function isSubOrgScopeKind(kind: string): kind is SubOrgScopeKind {
   return (SUB_ORG_SCOPE_KINDS as readonly string[]).includes(kind);
+}
+
+/**
+ * The rungs of ONE key that a person picks a ROW for — its `overridable_by`
+ * narrowed to the rungs this surface offers a picker for, in ladder order.
+ * `organization`, `user` and `device` are excluded because they are not
+ * picked: the screen already knows which organization, which person and which
+ * browser it is standing in.
+ */
+export function pickableRungsFor(
+  overridableBy: readonly string[],
+): SubOrgScopeKind[] {
+  return SUB_ORG_SCOPE_SOURCES.map((source) => source.kind).filter((kind) =>
+    overridableBy.includes(kind),
+  );
 }
 
 function sourceFor(kind: SubOrgScopeKind) {

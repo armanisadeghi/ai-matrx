@@ -159,6 +159,96 @@
         }
       }
     },
+    "/auth/session/exchange": {
+      "post": {
+        "tags": [
+          "Auth",
+          "Auth"
+        ],
+        "summary": "Exchange Session Handoff",
+        "description": "Trade the one-time handoff code from ``/auth/callback`` for the token.\n\nTHE reason this endpoint exists: the access token must never ride a query\nstring (feedback 08b3fdc0). ``/auth/callback`` redirects the SPA with an\nunguessable, single-use, 120-second code; the token itself comes back here,\nin a response body. Unauthenticated by design — the code IS the credential,\nand it is burned on first use.",
+        "operationId": "exchange_session_handoff_auth_session_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionExchangeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/session/oauth-incident": {
+      "post": {
+        "tags": [
+          "Auth",
+          "Auth"
+        ],
+        "summary": "Report Oauth Incident",
+        "description": "A client refused a URL carrying a token; file the ``oauth_token_in_query``.\n\nNothing we ship emits that shape any more, so a report here means a stale\nbuild or a forged link is live somewhere and someone must delete it. The\nclient has already refused the token — this is the scream, not the defence.",
+        "operationId": "report_oauth_incident_auth_session_oauth_incident_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Report Oauth Incident Auth Session Oauth Incident Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/whoami": {
       "get": {
         "tags": [
@@ -14632,6 +14722,102 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConnectionSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp-connections/availability": {
+      "get": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Availability",
+        "description": "Availability for every server the caller has a relationship with\n(no-auth servers, GitHub, and every server they hold a connection for),\nplus any extra comma-separated `slugs`.",
+        "operationId": "availability_mcp_connections_availability_get",
+        "parameters": [
+          {
+            "name": "slugs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slugs"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/McpAvailability"
+                  },
+                  "title": "Response Availability Mcp Connections Availability Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp-connections/availability/{server_slug}": {
+      "get": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Availability For Slug",
+        "operationId": "availability_for_slug_mcp_connections_availability__server_slug__get",
+        "parameters": [
+          {
+            "name": "server_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpAvailability"
                 }
               }
             }
@@ -44828,10 +45014,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK).",
+              "description": "Optional event filter (OK|FAIL|DELEGATED|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK|VARIANT_RECOVERED|ALIAS_RECOVERED|INFERRED|COERCED).",
               "title": "Event"
             },
-            "description": "Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK)."
+            "description": "Optional event filter (OK|FAIL|DELEGATED|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK|VARIANT_RECOVERED|ALIAS_RECOVERED|INFERRED|COERCED)."
           },
           {
             "name": "tool_name",
@@ -45195,6 +45381,28 @@
         }
       }
     },
+    "/admin/system-errors/open-outages": {
+      "get": {
+        "tags": [
+          "Admin / System Errors"
+        ],
+        "summary": "Open Outages",
+        "description": "Every provider currently refusing every call — the OPEN rows THE\nPROVIDER-OUTAGE ALARM keeps (``kind='provider_outage'``,\n``resolved_at IS NULL``).\n\nThis is the \"is the platform's AI actually working right now\" call: an empty\nlist means every provider that has been dialled is answering. A row closes\nby itself the moment that provider answers again\n(``aidream/services/provider_outage/detector.py``), so nothing here has to\nbe cleared by hand.\n\nDeclared BEFORE ``/{error_id}`` on purpose — FastAPI matches in declaration\norder and the catch-all would otherwise swallow this path.",
+        "operationId": "open_outages_admin_system_errors_open_outages_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenOutageListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/system-errors/{error_id}": {
       "get": {
         "tags": [
@@ -45210,6 +45418,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "uuid",
               "title": "Error Id"
             }
           }
@@ -48822,6 +49031,46 @@
         }
       }
     },
+    "/masterworks/ingest-unfolding": {
+      "post": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Ingest Rulebook Unfolding",
+        "description": "The UNFOLDING-CASE lane of the `timeline` Approach: a narrative that\nunfolds in TIME — a case report, an incident post-mortem, a negotiation log\n— unfolded into the `serial_observation_timeline` kind, then either\ndistilled window by window (`role=\"teaching\"`) or SEALED as an exam case\n(`role=\"heldout\"`, no rules are ever written from it).\n\n🚨 A SECOND DOOR ONTO ONE APPROACH, not a rename of `/ingest-timeline`.\nTrial 7 and trial 8 built a timeline lane the same night and both claimed\nthis path; trial 8's is merged, live and keeps it. Only THIS lane can seal a\nheld-out exam case, so it keeps its own path rather than losing that half.\nConverging the two pipelines is open work — `distillation/FEATURE.md`.",
+        "operationId": "ingest_rulebook_unfolding_masterworks_ingest_unfolding_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestUnfoldingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/masterworks/ingest-corpus": {
       "post": {
         "tags": [
@@ -49070,6 +49319,7 @@
           "Masterworks"
         ],
         "summary": "Audition Masterwork Endpoint",
+        "description": "Three modes, one endpoint (`AuditionCompareRequest.mode`): `reference` —\nour output vs the Expert's real exemplar; `unfolding` — the sealed-case\nbenchmark, where the desks actually RUN against held-out cases;\n`elicitation` — the first-move benchmark, where the desks actually TALK to a\nsealed, reactive counterparty.",
         "operationId": "audition_masterwork_endpoint_masterworks_audition_post",
         "requestBody": {
           "content": {
@@ -52199,6 +52449,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -77538,7 +77848,7 @@
           "cloud-browser"
         ],
         "summary": "Take Over",
-        "description": "A person takes the wheel. Available whenever the run is live — the manager\nraises the ``user_requested`` handoff itself when the agent has not paused for a\nperson (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,\nwhich could only be called inside an agent-initiated handoff window.",
+        "description": "A person takes the wheel. Available whenever the run is live — the manager\nraises the ``user_requested`` handoff itself when the agent has not paused for a\nperson (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,\nwhich could only be called inside an agent-initiated handoff window.\n\n``immediate`` (the panel's \"Take over immediately\") moves control without\nwaiting for the agent's in-flight browser step; omitted or false keeps the\nnon-disruptive default.",
         "operationId": "take_over_browser_manager_runs__run_id__takeover_post",
         "parameters": [
           {
@@ -77551,6 +77861,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TakeoverRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -83732,6 +84059,49 @@
         }
       }
     },
+    "/directives/apply_state": {
+      "post": {
+        "tags": [
+          "Directives",
+          "Directives"
+        ],
+        "summary": "Read Directive Apply State",
+        "description": "Has this proposed directive already been applied? (DD-144.)\n\nA READ. Nothing here writes, and this is deliberately NOT a second way to\napply anything — it is how a reloaded conversation can render an agent's\nproposal honestly. The client sends back the two-key shells it found in the\nstored assistant messages; the server computes the SAME per-item content key\nthe dispatcher would (frozen `content_key`, derived ledger type, the\nconversation as namespace), reads `platform.matrx_action_ledger`, and answers\n`not_applied` / `in_flight` / `applied` per item — the last carrying the\nledger row's own sentence and resource ids.\n\nWhy the client cannot do this itself: the key hashes the VALIDATED item model,\nso no client can reproduce it, and a client that guessed would offer an\nApprove button beside that proposal's own receipt.",
+        "operationId": "read_directive_apply_state_directives_apply_state_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectiveApplyStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectiveApplyStateResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/{file_id}/analysis": {
       "get": {
         "tags": [
@@ -87785,6 +88155,18 @@
             "type": "object",
             "title": "Metadata",
             "description": "Caller metadata preserved on the durable assignment session."
+          },
+          "allow_empty_structured_output": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Empty Structured Output",
+            "description": "Allow an item's answer to come back with every declared field empty. Omit to follow the organization's setting (refuse by default)."
           },
           "organization_id": {
             "anyOf": [
@@ -96322,17 +96704,69 @@
             "minLength": 32,
             "title": "Rulebook Id"
           },
-          "candidate_text": {
+          "mode": {
             "type": "string",
-            "minLength": 50,
+            "enum": [
+              "elicitation",
+              "reference",
+              "unfolding"
+            ],
+            "title": "Mode",
+            "description": "reference: candidate vs pasted exemplar. unfolding: sealed-case benchmark. elicitation: sealed-counterparty first-move benchmark.",
+            "default": "reference"
+          },
+          "candidate_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Candidate Text",
-            "description": "Our Masterwork's output for the shared inputs."
+            "description": "reference mode: our Masterwork's output for the shared inputs."
           },
           "reference_text": {
-            "type": "string",
-            "minLength": 50,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Reference Text",
-            "description": "The real published work for the same inputs."
+            "description": "reference mode: the real published work for the same inputs."
+          },
+          "masterwork_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Masterwork Ids",
+            "description": "unfolding mode: the one or two desks to audition."
+          },
+          "case_item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Case Item Ids",
+            "description": "unfolding mode: the sealed held-out `platform.masterwork_corpus_item` rows to run against. Their content is read server-side only."
+          },
+          "profile_item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Profile Item Ids",
+            "description": "elicitation mode: the sealed `platform.masterwork_corpus_item` counterparty profiles to talk to. Their facts are read server-side only."
           },
           "context_note": {
             "anyOf": [
@@ -96375,12 +96809,10 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "rulebook_id",
-          "candidate_text",
-          "reference_text"
+          "rulebook_id"
         ],
         "title": "AuditionCompareRequest",
-        "description": "Judge a Masterwork's output against the real published exemplar (the R2\noutcome signal). Comparison verdict cites rulebook rule ids; gaps the\nreference exposes optionally land as DRAFT rules (never auto-activated)."
+        "description": "Judge a Masterwork against a reference. TWO modes, one endpoint.\n\n``mode=\"reference\"`` (the default, and the only shape that existed before\n2026-09-12): our Masterwork's output vs the Expert's real published exemplar\nfor the same inputs — comparison verdict citing rulebook rule ids, gaps\noptionally landing as DRAFT rules. Every request written for that mode stays\nvalid byte-for-byte.\n\n``mode=\"elicitation\"``: the FIRST-MOVE benchmark (trial 12, item 4) — one or\ntwo Masterwork DESKS each hold a real conversation with a sealed, reactive\ncounterparty while a vanilla model is handed that person's opening line and\nanswers it. Mechanical throughout: decisive facts surfaced, turns to frame,\npremature-advice events, lockouts caused and frame-order distance from the\nsource protocol. Nothing is pasted; the desks run for real and the profile\nis read server-side from the sealed row.\n\n``mode=\"unfolding\"``: the sealed-case benchmark\n(``common-docs/systems/masterwork/unfolding-case-contract.md`` §4) — one or\ntwo Masterwork DESKS each walk a held-out case through the case oracle while\na vanilla model is told every step's facts at once, and one judge ranks each\narm against the case's sealed outcome. Nothing is pasted: the desks run for\nreal and the reference is read server-side from the sealed row."
       },
       "AuditionOutcomeRequest": {
         "properties": {
@@ -104882,6 +105314,17 @@
             "minimum": 2,
             "title": "Variant Count",
             "default": 5
+          },
+          "refuse_until": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefuseUntil"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional. The facts that must be known before this Masterwork produces. Absent = it always produces (today's behaviour)."
           }
         },
         "additionalProperties": false,
@@ -131591,6 +132034,61 @@
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DevtoServiceStatus": {
         "properties": {
           "__kind": {
@@ -132567,6 +133065,87 @@
         ],
         "title": "DirectiveApplyResult"
       },
+      "DirectiveApplyStateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "shells": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Shells"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id"
+        ],
+        "title": "DirectiveApplyStateRequest",
+        "description": "The shells a client read out of one conversation's stored messages.\n\nBatched on purpose: a reloaded conversation asks about every shell it found in\nONE round trip, so hydrating a long chat is one request and not one per\nmessage. ``conversation_id`` is REQUIRED and is not decoration — it is the\nidempotency NAMESPACE (`dispatcher.apply_directive_items`), so a state read\nthat omitted it would compute different keys from the apply it is asking\nabout and confidently answer \"not applied\" about work that was done."
+      },
+      "DirectiveApplyStateResult": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "shells": {
+            "items": {
+              "$ref": "#/components/schemas/DirectiveShellState"
+            },
+            "type": "array",
+            "title": "Shells"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "shells"
+        ],
+        "title": "DirectiveApplyStateResult"
+      },
       "DirectiveCatalog": {
         "properties": {
           "directive_version": {
@@ -132889,6 +133468,43 @@
         ],
         "title": "DirectiveItemFailed"
       },
+      "DirectiveItemState": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "resource_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resource Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "index",
+          "state"
+        ],
+        "title": "DirectiveItemState"
+      },
       "DirectivePublishReport": {
         "properties": {
           "published": {
@@ -132999,6 +133615,69 @@
           "status"
         ],
         "title": "DirectiveReceipt"
+      },
+      "DirectiveShellState": {
+        "properties": {
+          "directive": {
+            "type": "string",
+            "title": "Directive"
+          },
+          "proposal_id": {
+            "type": "string",
+            "title": "Proposal Id"
+          },
+          "directive_class": {
+            "type": "string",
+            "title": "Directive Class"
+          },
+          "noun": {
+            "type": "string",
+            "title": "Noun"
+          },
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectiveItemState"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "approvable": {
+            "type": "boolean",
+            "title": "Approvable"
+          },
+          "unreadable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unreadable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "directive",
+          "proposal_id",
+          "directive_class",
+          "noun",
+          "item_count",
+          "message",
+          "items",
+          "approvable"
+        ],
+        "title": "DirectiveShellState"
       },
       "DirectusServiceStatus": {
         "properties": {
@@ -156548,7 +157227,8 @@
           "model_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -156707,7 +157387,8 @@
         "properties": {
           "agent_ids": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             },
             "type": "array",
             "title": "Agent Ids"
@@ -158948,6 +159629,125 @@
         ],
         "title": "IngestTimelineRequest",
         "description": "Distill a case that UNFOLDS IN TIME into forward-looking POLICY rules.\n\nThe `timeline` Approach (W58). A case report, an incident write-up, a\ndeal that took four meetings: the expert skill in such a document is not\na list of facts, it is the SEQUENCE of choices — what was known at each\nmoment, what was still unknown, what was done next, and what that cost\nand risked.\n\nSo this lane does NOT chunk by size. A segmenter reads the narrative into\nordered steps, and ONE distiller run sees ONE step: everything known up to\nthe previous step, this step's new facts, and the action taken — with the\nfuture, including the ending, withheld. Rules come back as \"given what you\nknow now, do X, because Y\".\n\nHuman-first invariant, identical to every other lane: drafts only."
+      },
+      "IngestUnfoldingRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rulebook_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Rulebook Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 600000,
+            "minLength": 200,
+            "title": "Text",
+            "description": "The narrative, verbatim — the case as it was written."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title",
+            "description": "What this case is called, in the Expert's words."
+          },
+          "domain": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Domain",
+            "description": "What KIND of unfolding this is — clinical, incident, negotiation, sales, legal… Optional: the unfolder infers it from the narrative when the Expert does not say. Deliberately an open string; the platform does not own the list of human activities that happen in a sequence.",
+            "default": ""
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "heldout",
+              "teaching"
+            ],
+            "title": "Role",
+            "description": "teaching = unfold and distil rules from it; heldout = unfold and SEAL it as an exam case — no rules are ever written from a held-out case, and only the case oracle and the unfolding judge ever read past its opening.",
+            "default": "teaching"
+          },
+          "source_meta": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimelineSourceMeta"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Licence, link, publication date and external id of the case."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "Where this came from, in the Expert's words."
+          },
+          "redistill": {
+            "type": "string",
+            "enum": [
+              "refuse",
+              "replace"
+            ],
+            "title": "Redistill",
+            "description": "What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.",
+            "default": "refuse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rulebook_id",
+          "text",
+          "title"
+        ],
+        "title": "IngestUnfoldingRequest",
+        "description": "Read a narrative that UNFOLDS IN TIME as a serial-observation timeline.\n\n🚨 The request of `unfolding_ingest.py` (`POST /masterworks/ingest-unfolding`),\nNOT of `timeline_ingest.py` (`IngestTimelineRequest`, the incumbent\n`/masterworks/ingest-timeline`). Two lanes, one `timeline` Approach — see\n`unfolding_ingest.py`'s header for why both exist.\n\nThe gap (W57): the paste / link / file lanes flatten a narrative into\nfindings, so a case report, an incident post-mortem, a negotiation log or a\nsales cycle loses the one thing it was carrying — WHICH FACT WAS KNOWN AT\nWHICH MOMENT, and what the practitioner chose to find out next. This lane\nunfolds the narrative into the `serial_observation_timeline` kind first,\nthen chunks BY TIME rather than by paragraph.\n\nHuman-first invariant, identical to every other lane: drafts only."
       },
       "InitialIterationRequest": {
         "properties": {
@@ -175155,6 +175955,52 @@
         ],
         "title": "MazeServiceStatus"
       },
+      "McpAvailability": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "server_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "tool_count": {
+            "type": "integer",
+            "title": "Tool Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "state"
+        ],
+        "title": "McpAvailability",
+        "description": "The ONE truthful answer to \"can this user use this MCP right now?\".\n\nEmitted to the browser (``GET /api/mcp-connections/availability``) and to\nthe run timeline (``mcp_attachments`` info event) so no surface has to\nguess a connection's health from ``tool.mcp_user_conn.status`` alone — a\nrow that says ``connected`` while its access token expired days ago is\nexactly the lie a user saw as a green checkmark next to an MCP the model\ncould not reach (Arman, 2026-09-13).\n\n``state`` is one of:\n\n* ``connected``    — usable on the next run (token valid, refreshable, or\n  the server needs no auth at all).\n* ``needs_reauth`` — a connection exists but the user must re-authorize\n  (expired with no stored refresh token, ``refresh_failed``, ``error``).\n* ``not_connected``— no usable connection on file, or the server itself is\n  not active. ``reason`` always names why."
+      },
       "McpCatalogRefreshResult": {
         "properties": {
           "server_id": {
@@ -182313,6 +183159,27 @@
         ],
         "title": "NutshellCRMServiceStatus"
       },
+      "OAuthIncidentRequest": {
+        "properties": {
+          "params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Params"
+          },
+          "where": {
+            "type": "string",
+            "title": "Where"
+          }
+        },
+        "type": "object",
+        "required": [
+          "params",
+          "where"
+        ],
+        "title": "OAuthIncidentRequest"
+      },
       "OAuthTokenPersistRequest": {
         "properties": {
           "tokens": {
@@ -184145,6 +185012,117 @@
         ],
         "title": "OpenMLPublicDataset",
         "description": "Safe factual projection of one public OpenML dataset."
+      },
+      "OpenOutageListResponse": {
+        "properties": {
+          "outages": {
+            "items": {
+              "$ref": "#/components/schemas/OpenOutageRecord"
+            },
+            "type": "array",
+            "title": "Outages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outages"
+        ],
+        "title": "OpenOutageListResponse"
+      },
+      "OpenOutageRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "consecutive_failures": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consecutive Failures"
+          },
+          "models_affected": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Models Affected"
+          },
+          "rerouted_to": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rerouted To"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "OpenOutageRecord",
+        "description": "One provider that is refusing every call, right now."
       },
       "OpenProjectRootResult": {
         "properties": {
@@ -207422,6 +208400,38 @@
         "title": "RefreshScheduleRequest",
         "description": "`interval_hours=None` (or 0) turns unattended refresh off."
       },
+      "RefuseUntil": {
+        "properties": {
+          "required_facts": {
+            "items": {
+              "$ref": "#/components/schemas/RequiredFact"
+            },
+            "type": "array",
+            "title": "Required Facts"
+          },
+          "protocol_frame": {
+            "type": "string",
+            "title": "Protocol Frame",
+            "default": ""
+          },
+          "provenance": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Provenance"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RefuseUntil",
+        "description": "The declared condition: what must hold before this desk produces.\n\nAuthored with the Masterwork, carried on its workflow metadata, read at run\ntime. Every field except ``required_facts`` is presentation — they are the\nwords the refusal is written in, chosen by the desk's author rather than\nimprovised by a model in the moment."
+      },
       "RegenerateAssetRequest": {
         "properties": {
           "asset_kind": {
@@ -210755,6 +211765,37 @@
         "additionalProperties": true,
         "type": "object",
         "title": "RequestRecord"
+      },
+      "RequiredFact": {
+        "properties": {
+          "fact": {
+            "type": "string",
+            "title": "Fact",
+            "description": "What must be known, in one plain phrase."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "default": ""
+          },
+          "why_it_matters": {
+            "type": "string",
+            "title": "Why It Matters",
+            "default": ""
+          },
+          "how_to_get_it": {
+            "type": "string",
+            "title": "How To Get It",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fact"
+        ],
+        "title": "RequiredFact",
+        "description": "One fact the frame requires before the desk may produce.\n\nThe three human halves are the same three a ``MissingFact`` renders, because\na refusal is just the unmet part of this condition made readable — declaring\nthem once here means the desk never has to invent the reason at run time."
       },
       "RerunFromRequest": {
         "properties": {
@@ -221043,6 +222084,37 @@
         ],
         "title": "ServiceLine",
         "description": "One service with its OWN footprint and customer.\n\nThe whole reason this type exists: All Green is national for IT asset\ndisposition and Southern-California-only for small-business e-waste pickup,\nso a national ITAD rival is not a competitor for local pickup. Market\noverlap is a property of (service line x geography) — never of a company."
+      },
+      "SessionExchangeRequest": {
+        "properties": {
+          "handoff": {
+            "type": "string",
+            "title": "Handoff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "handoff"
+        ],
+        "title": "SessionExchangeRequest"
+      },
+      "SessionExchangeResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type"
+        ],
+        "title": "SessionExchangeResponse"
       },
       "SessionPayload": {
         "properties": {
@@ -234784,6 +235856,19 @@
         "type": "object",
         "title": "TagUpdate"
       },
+      "TakeoverRequest": {
+        "properties": {
+          "immediate": {
+            "type": "boolean",
+            "title": "Immediate",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TakeoverRequest",
+        "description": "Optional body. ``immediate`` is the panel's \"Take over immediately\":\ncontrol moves without waiting for the agent's in-flight browser step."
+      },
       "TakeoverResponse": {
         "properties": {
           "run_id": {
@@ -237249,6 +238334,62 @@
         ],
         "title": "TimeApiCurrentTime",
         "description": "Safe bounded projection of one timezone's current time."
+      },
+      "TimelineSourceMeta": {
+        "properties": {
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "published": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TimelineSourceMeta",
+        "description": "Where this case came from, and under what licence we may hold it.\n\nEvery field is optional because a person pasting their OWN incident\npost-mortem has no licence, URL or external id — but a published case\nreport does, and a corpus of held-out cases with no provenance is a corpus\nnobody can publish a result from."
       },
       "TimelyServiceStatus": {
         "properties": {
@@ -239770,13 +240911,6 @@
           },
           "event": {
             "type": "string",
-            "enum": [
-              "FAIL",
-              "LOOP_BLOCK",
-              "NO_EXECUTOR",
-              "OK",
-              "SURFACE_REJECT"
-            ],
             "title": "Event"
           },
           "tool_name": {
@@ -253753,6 +254887,7 @@
               "access_revoked",
               "already_bootstrapped",
               "audience_mismatch",
+              "bootstrap_in_progress",
               "browser_controlled_by_human",
               "browser_crashed",
               "capture_target_missing",
@@ -258064,6 +259199,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sandbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SandboxBindingRequest"
               },
               {
                 "type": "null"

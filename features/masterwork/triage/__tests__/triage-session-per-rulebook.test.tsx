@@ -8,7 +8,7 @@
  * Rulebook's drafts against the previous one's purpose.
  *
  * Two halves, both driven here through the real primitives:
- *   1. `useTriageDialogSession` — the open flag is held WITH the id it was
+ *   1. `useRulebookDialogSession` — the open flag is held WITH the id it was
  *      opened for and dropped the instant they differ.
  *   2. `key={rulebook.id}` on the dialog — a remount, so `keep`, `set aside`
  *      and the preview switch cannot carry over (and neither can the durable
@@ -23,7 +23,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TriageDraftsDialog } from "../TriageDraftsDialog";
-import { useTriageDialogSession } from "../triageSession";
+import { useRulebookDialogSession } from "../../durable-run/rulebookDialogSession";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -90,7 +90,7 @@ const INTAKE: Record<string, string> = {
  */
 let lastOpen = false;
 function PageWiring({ rulebookId }: { rulebookId: string | null }) {
-  const triage = useTriageDialogSession(rulebookId);
+  const triage = useRulebookDialogSession(rulebookId);
   lastOpen = triage.open;
   return (
     <TooltipProvider>
@@ -236,7 +236,7 @@ describe("RulebookDetailPage's triage door", () => {
     .filter((line) => !line.startsWith("*") && !line.startsWith("//"));
 
   it("owns the sort's open flag in a Rulebook-scoped session", () => {
-    expect(code.some((l) => l.includes("useTriageDialogSession("))).toBe(true);
+    expect(code.some((l) => l.includes("useRulebookDialogSession("))).toBe(true);
     expect(
       code.filter((l) => l.includes("triageOpen") && l.includes("useState(")),
     ).toEqual([]);
@@ -244,6 +244,35 @@ describe("RulebookDetailPage's triage door", () => {
 
   it("remounts the sort dialog per Rulebook", () => {
     const dialogAt = code.findIndex((l) => l.includes("<TriageDraftsDialog"));
+    expect(dialogAt).toBeGreaterThan(-1);
+    expect(code.slice(dialogAt, dialogAt + 8)).toContain("key={rulebook.id}");
+  });
+
+  /**
+   * 🚨 THE UNFOLDING DOOR, ADDED 2026-09-13 — the third occurrence, and the
+   * reason the primitive moved out of `triage/`.
+   *
+   * `IngestTimelineDialog` was mounted with a bare `useState` flag and NO key,
+   * so it reproduced this whole defect after it had been closed twice. On that
+   * dialog the carry-over is worse than a stale purpose: the session it holds
+   * across the navigation includes a teaching case's RESOLUTION, and the run
+   * actually going on the Rulebook she arrived at stays invisible behind it.
+   *
+   * Both halves are asserted here rather than in a file of their own, because
+   * the defect is the class and the next dialog on this page will be the
+   * fourth.
+   */
+  it("owns the unfolding session's open flag in a Rulebook-scoped session", () => {
+    expect(
+      code.filter((l) => l.includes("timelineOpen") && l.includes("useState(")),
+    ).toEqual([]);
+    expect(
+      code.some((l) => l.includes("useRulebookDialogSession(")),
+    ).toBe(true);
+  });
+
+  it("remounts the unfolding dialog per Rulebook", () => {
+    const dialogAt = code.findIndex((l) => l.includes("<IngestTimelineDialog"));
     expect(dialogAt).toBeGreaterThan(-1);
     expect(code.slice(dialogAt, dialogAt + 8)).toContain("key={rulebook.id}");
   });

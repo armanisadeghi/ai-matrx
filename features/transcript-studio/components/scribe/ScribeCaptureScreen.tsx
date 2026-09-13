@@ -11,6 +11,7 @@ import {
   Square,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useStudioSession } from "../../hooks/useStudioSession";
@@ -27,13 +28,6 @@ import {
 
 interface ScribeCaptureScreenProps {
   sessionId: string;
-}
-
-function formatClock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -143,7 +137,7 @@ export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
             />
           </span>
           <span className="font-mono tabular-nums text-foreground">
-            {formatClock(session.durationSec)}
+            {formatDurationSeconds(session.durationSec, { style: "clock" })}
           </span>
           <span className="text-muted-foreground">
             {isRecording

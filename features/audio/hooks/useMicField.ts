@@ -16,6 +16,13 @@
 // Because it rides the shared session: only one field records at a time,
 // start-always-wins (clicking record in another field takes over), and a
 // recording survives route/tab changes.
+//
+// 🚨 THERE IS ONE START. `startDictation()` / `stopDictation()` are the whole
+// verb set, and `handleVoiceClick` (the mic button) is written in terms of
+// them. A surface that starts dictation from a key, a command palette, or an
+// imperative handle calls the SAME functions the button calls — never
+// `capture.start()` directly, which would skip the append-base snapshot and
+// make a keyed recording behave differently from a clicked one.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isTransportFailure } from "@ai-matrx/data/net";
@@ -72,6 +79,16 @@ export interface UseMicFieldResult {
   available: boolean;
   /** Toggle record/stop for this field (captures the append base on start). */
   handleVoiceClick: () => Promise<void>;
+  /**
+   * Start dictating into this field. Identical to clicking its mic button when
+   * the field is idle: it snapshots the append base and takes the shared
+   * recorder over (start-always-wins). A no-op while this field is already
+   * recording or finalizing — the surface decides whether that deserves a
+   * sentence.
+   */
+  startDictation: () => Promise<void>;
+  /** Stop this field's recording. No-op unless this field owns the recorder. */
+  stopDictation: () => void;
   /** Ask to close — pops the protection dialog if a session is in flight. */
   requestClose: () => void;
   // Troubleshooting modal
@@ -179,15 +196,28 @@ export function useMicField(options: UseMicFieldOptions): UseMicFieldResult {
     );
   }, [liveTranscript, isRecording, isTranscribing]);
 
+  // THE ONE START. Both the mic button (via `handleVoiceClick`) and any
+  // programmatic caller (a keyboard shortcut on a surface that never shows the
+  // button) go through here, so a keyed dictation and a clicked one are the
+  // same recording on the same shared recorder — never a second path.
+  const startDictation = useCallback(async () => {
+    if (isRecording || isTranscribing) return;
+    // Snapshot the current text so append mode knows where to resume.
+    preRecordingValueRef.current = cbRef.current.getValue();
+    await capture.start();
+  }, [isRecording, isTranscribing, capture]);
+
+  const stopDictation = useCallback(() => {
+    if (isRecording) capture.stop();
+  }, [isRecording, capture]);
+
   const handleVoiceClick = useCallback(async () => {
     if (isRecording) {
-      capture.stop();
-    } else if (!isTranscribing) {
-      // Snapshot the current text so append mode knows where to resume.
-      preRecordingValueRef.current = cbRef.current.getValue();
-      await capture.start();
+      stopDictation();
+    } else {
+      await startDictation();
     }
-  }, [isRecording, isTranscribing, capture]);
+  }, [isRecording, startDictation, stopDictation]);
 
   const requestClose = useCallback(() => {
     if (protect && (isRecording || isTranscribing)) {
@@ -230,6 +260,8 @@ export function useMicField(options: UseMicFieldOptions): UseMicFieldResult {
     liveTranscript,
     available: capture.available,
     handleVoiceClick,
+    startDictation,
+    stopDictation,
     requestClose,
     showTroubleshooting,
     setShowTroubleshooting,

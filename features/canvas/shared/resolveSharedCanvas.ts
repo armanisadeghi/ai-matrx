@@ -28,7 +28,13 @@ export async function resolveSharedCanvas(
     const { data } = await client
       .schema("canvas")
       .from("shared_canvas_items")
-      .select("*")
+      // `/s/[token]` and `/canvas/shared` are public routes, so this read can run
+      // as `anon`, and `*` is refused there (42501). These are the columns a
+      // signed-out visitor may read; the register is
+      // lib/security/public-exposure.ts#ANON_COLUMN_SURFACE (DD-186).
+      .select(
+        "id,title,description,canvas_type,canvas_data,thumbnail_url,creator_username,creator_display_name,original_id,forked_from,version_number,fork_count,view_count,like_count,share_count,comment_count,play_count,completion_rate,has_scoring,high_score,high_score_user,average_score,total_attempts,visibility,allow_remixes,require_attribution,featured,tags,categories,created_at,updated_at,published_at,last_played_at,trending_score,search_vector,deleted_at",
+      )
       .is("deleted_at", null)
       .eq("id", tokenOrId)
       .maybeSingle();

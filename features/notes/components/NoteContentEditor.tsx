@@ -110,6 +110,8 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import type { ContentSource } from "@/features/rich-document/types";
 import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
 import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
+import { noteIdentityContentSource } from "../richDocumentSource";
+import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -200,6 +202,12 @@ export function NoteContentEditor({
   const lastReduxRef = useRef(reduxContent);
   const noteIdRef = useRef(noteId);
   const localContentRef = useRef(localContent);
+
+  const editableContentSource = usePreparedNoteContentSource(
+    noteExists?._acknowledgedPhysicalSnapshot && conflictActorId && !readOnly
+      ? { record: noteExists, displayedNote: { ...noteExists, content: localContent }, actorId: conflictActorId, hasLocalEdits: isDirty || noteExists._dirty || localContent !== noteExists.content }
+      : null,
+  );
 
 
   useEffect(() => {
@@ -873,7 +881,7 @@ export function NoteContentEditor({
           contentSource={
             access.loading || readOnly
               ? undefined
-              : ({ type: "note", noteId } satisfies ContentSource)
+              : editableContentSource
           }
           contextData={surfaceContextData}
           onTextReplace={handleChangeFlush}
@@ -936,6 +944,7 @@ export function NoteContentEditor({
               className="flex-1 min-h-0"
               resetKey={`${noteId}:${resetGen}`}
               noteId={noteId}
+              actionsSource={editableContentSource ?? noteIdentityContentSource(noteId, `editor-core:${noteId}`)}
               actionsSurfaceId={actionsSurfaceId}
               largeScrollbar={!embedded}
               embedded={embedded}

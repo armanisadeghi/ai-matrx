@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
@@ -43,12 +44,6 @@ export function RecordingPreview({
     const audioRef = useRef<HTMLAudioElement>(null);
 
     const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2, 3];
-
-    const formatTime = (time: number) => {
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    };
 
     const formatSpeed = (speed: number) => {
         if (speed === 1) return '1.0×';
@@ -136,7 +131,7 @@ export function RecordingPreview({
                 <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Audio Preview</span>
                     <span className="text-xs text-muted-foreground font-mono">
-                        {formatTime(duration)}
+                        {formatDurationSeconds(duration, { style: "clock" })}
                     </span>
                 </div>
 
@@ -200,8 +195,8 @@ export function RecordingPreview({
                             className="cursor-pointer"
                         />
                         <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                            <span>{formatTime(currentTime)}</span>
-                            <span>{formatTime(duration)}</span>
+                            <span>{formatDurationSeconds(currentTime, { style: "clock" })}</span>
+                            <span>{formatDurationSeconds(duration, { style: "clock" })}</span>
                         </div>
                     </div>
 

@@ -14,19 +14,43 @@
  * (`useCloudBrowserTakeover`).
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
-  Cpu,
-  User,
   Cog,
+  Cpu,
   Hand,
+  Loader2,
   LogOut,
   MousePointerClick,
+  User,
   Zap,
 } from "lucide-react";
 import type { ControllerState } from "../types";
+
+/**
+ * How long a button that just CHANGED MEANING under the cursor ignores clicks.
+ *
+ * Found live 2026-09-13: in the steer flow the person's cursor is on "Take over
+ * immediately" at exactly the moment the agent reaches its boundary and control
+ * arrives — and "Return control" renders in that same spot. Their click did the
+ * OPPOSITE of what they meant (control went straight back to the agent). The
+ * same morph turns a double-click on "Take control" into a return. A short
+ * guard makes that click a no-op instead of a reversal.
+ */
+export const MORPH_GUARD_MS = 1200;
+
+function useGuardAfterChange(changeKey: string | null): boolean {
+  const [guarded, setGuarded] = useState(false);
+  useEffect(() => {
+    if (changeKey === null) return;
+    setGuarded(true);
+    const timer = window.setTimeout(() => setGuarded(false), MORPH_GUARD_MS);
+    return () => window.clearTimeout(timer);
+  }, [changeKey]);
+  return guarded;
+}
 
 export function ControllerBanner({
   controller,
@@ -37,6 +61,7 @@ export function ControllerBanner({
   /** A takeover is in motion: the agent is being told, control has not moved. */
   waitingForAgent = false,
   onTakeImmediately,
+  claiming = false,
   busy,
   className,
 }: {
@@ -47,9 +72,23 @@ export function ControllerBanner({
   canTake?: boolean;
   waitingForAgent?: boolean;
   onTakeImmediately?: () => void;
+  /**
+   * The takeover request is in flight. Without this the banner kept saying
+   * "The agent is driving." over a dimmed button for as long as the server took
+   * (9.3 s measured on 2026-09-13) — a state that reads as broken.
+   */
+  claiming?: boolean;
   busy?: boolean;
   className?: string;
 }) {
+  // Hooks before any early return. Keyed on the control revision so it fires
+  // each time control arrives with THIS person, not just on first mount.
+  const returnGuarded = useGuardAfterChange(
+    controller?.kind === "human" && controller.isMe
+      ? `me:${controller.controlRevision}`
+      : null,
+  );
+
   if (!controller) return null;
 
   const { kind, isMe, displayName, pendingRequestFrom } = controller;
@@ -69,6 +108,24 @@ export function ControllerBanner({
   } else if (kind === "system") {
     icon = <Cog className="h-4 w-4 text-muted-foreground" aria-hidden />;
     label = "The system is running a maintenance step.";
+  }
+
+  // A takeover is being granted right now — say so, instead of leaving "The
+  // agent is driving." over a dimmed button. Not shown once control is ours.
+  if (claiming && !(kind === "human" && isMe)) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className={cn(
+          "flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-foreground",
+          className,
+        )}
+      >
+        <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />
+        Taking control of the browser…
+      </div>
+    );
   }
 
   // While the agent is being told, the wait IS the banner — one message, one
@@ -125,7 +182,7 @@ export function ControllerBanner({
             size="sm"
             variant={pendingRequestFrom ? "default" : "outline"}
             onClick={onReturn}
-            disabled={busy}
+            disabled={busy || returnGuarded}
           >
             <LogOut className="mr-1.5 h-3.5 w-3.5" />
             Return control

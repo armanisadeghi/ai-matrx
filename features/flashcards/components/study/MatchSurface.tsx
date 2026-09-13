@@ -9,6 +9,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
   Trophy,
   Layers,
@@ -27,13 +28,6 @@ import { StudyDeckHeader } from "./StudyDeckHeader";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
 const EDU_BASE = "/education/flashcards";
-
-function formatElapsed(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
 
 export function MatchSurface({ setId }: { setId: string }) {
   const router = useRouter();
@@ -101,7 +95,7 @@ function Board({ game }: { game: ReturnType<typeof useMatchGame> }) {
         </span>
         <span className="inline-flex items-center gap-1 tabular-nums">
           <Timer className="h-3.5 w-3.5" />
-          {formatElapsed(game.elapsedMs)}
+          {formatDurationMs(game.elapsedMs, { style: "clock" })}
         </span>
       </div>
 
@@ -163,11 +157,11 @@ function CompletionScreen({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Board cleared</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Matched all {totalCards} pairs in {formatElapsed(elapsedMs)}.
+          Matched all {totalCards} pairs in {formatDurationMs(elapsedMs, { style: "clock" })}.
         </p>
       </div>
       <div className="grid w-full grid-cols-3 gap-2 text-center">
-        <Stat label="Time" value={formatElapsed(elapsedMs)} />
+        <Stat label="Time" value={formatDurationMs(elapsedMs, { style: "clock" })} />
         <Stat label="Attempts" value={`${attempts}`} />
         <Stat label="Accuracy" value={`${accuracy}%`} />
       </div>

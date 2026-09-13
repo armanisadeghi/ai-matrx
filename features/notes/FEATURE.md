@@ -2,7 +2,7 @@
 
 **Status:** `active` — production, actively maintained
 **Tier:** `1`
-**Last updated:** `2026-09-12`
+**Last updated:** `2026-09-13`
 
 > User-facing README at [`README.md`](./README.md). This doc is the agent-facing architecture view.
 
@@ -18,7 +18,7 @@ Comprehensive notes system: rich-text editing (WYSIWYG + markdown split view), f
 
 **Routes**
 
-- `app/(authenticated)/notes/` — main surface (list, folder tree, editor)
+- `app/(core)/notes/` — main surface (list, folder tree, editor)
 
 **Feature code** (`features/notes/`)
 
@@ -31,7 +31,6 @@ Comprehensive notes system: rich-text editing (WYSIWYG + markdown split view), f
 - `route/` — route-level helpers
 - `service/` — Supabase DB calls
 - `components/cleanup/` — **Content cleanup** UI: `NoteCleanupButton` → `CleanupOptionsPopover` → `CleanupReviewDialog` (per-operation `CleanupChangeCard`s with Now/After examples). The engine is a reusable primitive at [`lib/content-cleanup/`](../../lib/content-cleanup/FEATURE.md) (`segment` → `operations` → `clean` → `review` → `debug`), not notes-specific. That module now also hosts a second, scalar-level **value** engine (`cleanValue` / `cleanCells`) for table cells — a different problem with different rules; read its FEATURE.md before adding an operation to either.
-- `index.ts` — public barrel
 
 **Floating window** (`features/window-panels/windows/notes/NotesWindow.tsx`) — thin composition root: owns the per-instance lifecycle (`registerInstance` + notes-list/scopes fetch) and maps independent, prop-drill-free units (each takes only `instanceId`, reads Redux) onto `WindowPanel` slots — `sidebar`=`NoteSidebar`, `actionsRight`=`NoteViewControls` (view-mode menu + versions toggle), `footer`=`NoteStatsFooter` (save status + content metrics only), body=`NotesWindowView` (tab bar + presence + editor + chrome `NoteMetadataBar` + split). Chrome lives in slots/body; no reinvented header, no `sidebarExpandsWindow` rect mutation. Version-history open state is per-instance (`historyOpen` on `NotesInstance`; `setInstanceHistoryOpen` / `selectInstanceHistoryOpen`).
 
@@ -47,7 +46,7 @@ DB tables (verify in Supabase; names representative):
 - `note_folders` — tree structure: parent references
 - `note_labels` — auto-labeling metadata
 
-Key types live in `features/notes/` — import from the feature barrel, not internal paths.
+Key types live in `features/notes/types.ts` and `redux/notes.types.ts`; import their source paths directly.
 
 ---
 
@@ -70,6 +69,24 @@ upserts also discard supplied malformed revisions so they cannot poison the
 highest-remote-observation comparison. A Refresh row may equal or advance the
 reviewed revision, never regress it; the CAS decision records a full row only
 when its declared current revision exactly equals that row's revision.
+
+**RichDocument direct-edit boundary:** A Notes content source is either an
+identity trigger or an editable snapshot. An identity trigger is prepared by
+one authorized full-row read before an Edit, full-screen, or HTML callback is
+allocated; selection text never becomes the persisted body. The resulting
+editable snapshot captures note ID, organization, nonnegative CAS revision,
+actor, and every displayed physical field. The adapter sends that captured
+organization/revision/actor to `persistNoteUpdate` and consumes its actual
+receipt privately. Partial context acknowledgement and post-acknowledgement
+auth/cache degradation advance only that callback's prepared base while the
+editor stays open; they never overwrite another Notes Redux buffer.
+
+Preparation shows a loading toast until the authorized source is ready. Every
+editable source rechecks its captured actor before opening, and identity
+sources check the same actor before and after their full-row read. Raw Notes
+content-source literals are forbidden outside `richDocumentSource.ts`:
+`pnpm check:note-content-source-constructors` inventories the workspace and
+its self-test proves the structural raw-literal failure.
 
 ### Flow 1 — Create / edit a note
 
@@ -115,13 +132,10 @@ when its declared current revision exactly equals that row's revision.
 
 - **Small, granular updates only.** Never replace the entire note object in Redux — follow the project's small-update rule.
 - **No silent lost writes.** RLS filters a non-editor's UPDATE/soft-delete to **0 rows with no SQL error** (our `.select().single()` turns it into PGRST116). Every note write path MUST verify rows-affected or single-row result and scream on failure via `utils/writeErrors.ts` (`noteSaveErrorMessage` + `toastNoteWriteBlocked`); the metadata bar shows a red "Save failed". Gate editors proactively with `useNoteAccess` — never render an editable surface for a view-only sharee. A UI acknowledgement derived from a rejected canonical save uses `toastErrorAlreadyCaptured`; the save boundary owns classification/capture, so the acknowledgement must not file a second context-free `system_error`.
-- **Atomic autosave concurrency.** Canonical saves (`autoSaveMiddleware`, `saveNote`) UPDATE with `.eq("updated_at", local)` — `_touch_row` only mutates NEW, so the predicate is valid. 0 rows → conflict (or RLS deny after probe). Do **not** reintroduce a separate SELECT-then-UPDATE TOCTOU check. Mid-save keystrokes: pass `savedSnapshot` to `markNoteSaved` so only matching fields clear dirty; leftover dirty re-triggers via `notes/requestAutoSave`.
-- **Echo suppression is timestamp-monotonic FIRST, content-aware second.** The realtime echo of your own UPDATE arrives **50–500ms after** the REST response already stored the fresh `updated_at` — any suppression keyed only on an in-flight-save flag misses it. `isOwnEcho` (realtimeMiddleware) drops any payload whose `updated_at` is not strictly newer than local state (equal timestamps also require content+label match so a same-millisecond collaborator write lands); `applyServerNoteUpsert` (slice) enforces the same monotonic guard on every merge path. While `_savingNoteIds`, the content-aware match still applies: divergent collaborator payloads must reach the upsert. **Never remove either guard; never go back to flag-only suppression.**
-- 🚨 **NEVER report a conflict without checking the ACTUAL data.** A conflict means _someone else_ changed the server copy — it is never "this payload differs from what I'm typing right now". Our own write's echo lands 50–500ms **after** the REST response, so during active typing the live buffer _always_ differs from the value we just saved; comparing against it alone manufactures a false conflict on every own-echo-during-typing. Three guards, all mandatory:
-  1. **Compare against what we wrote.** `recordNoteWriteAttempt` stores the exact values at the moment a write is **issued** (not when it returns — the echo can beat the response) in `_lastWrittenValues`. `applyServerNoteUpsert` only flags `conflict` when the incoming value differs from the live buffer **and** from everything this client wrote.
-  2. **Probe real rows before calling 0-rows a conflict.** Both save paths already SELECT the row to separate RLS-deny from lock-miss; that probe reads `content, label` and, when the server already holds exactly what we tried to write (`serverMatchesAttempt`, `utils/saveVerification.ts`), adopts its `updated_at` and marks saved. A stale cached timestamp is bookkeeping, not someone overwriting the user.
-  3. **Verify once more before the UI opens.** `NoteContentEditor`'s conflict effect fetches the live row; if it equals the editor buffer it dispatches `resolveNoteConflict` and shows nothing.
-     Guarded by `redux/conflictDetection.test.ts` (own-echo → no conflict; collaborator content → conflict). Every guard screams to the console when it fires — a firing means a real bug upstream.
+- **Atomic autosave concurrency.** The canonical save uses `guardedUpdate` with the acknowledged integer `version`, scoped to note ID and captured organization. A zero-row CAS produces a retained conflict decision; it never advances the base from the current editor buffer. `markNoteSaved` clears only fields still matching the exact sent snapshot, preserving later typing for the serialized replay.
+- **Reviewed saves return their own receipt.** `captureReviewedNoteSave` synchronously binds the actual store, actor, organization, full prepared source, acknowledged revision, and exact dirty fields before dispatch. `saveReviewedNote` reserves that immutable attempt before pending actions; repeated observers of the same permit share only that attempt. Unrelated in-flight writes refuse busy. Actual physical/context/partial receipts survive later replay failures and post-acknowledgement session/cache loss. A released observer does not cancel the write or another observer. Fresh edits require fresh capture; a settled permit never writes twice.
+- **Receipt validation precedes acknowledgement.** Physical postimages must match the sent values and unchanged captured fields; succeeded context matches its submitted value and failed context retains its acknowledged base. Context-only acknowledgement never advances the physical revision. Noncanonical JSON, unknown source keys, accessors and forged/cross-store permits refuse before I/O.
+- **Own-write and remote observations remain distinct.** The shared realtime write ledger owns echo classification; the Notes reducer preserves dirty fields and validates remote revisions. Conflict decisions bind the original actor, organization, expected/current revisions and reviewed row. Resolve or refresh only through the receipt-bearing commands below; never infer a successful save from the live editor buffer.
 - **Realtime is RLS-authorized.** Use Postgres Changes here (not Broadcast) so non-owners only see notes they have access to.
 - **The save-from-anywhere API is a public contract.** Agents and other features depend on it; don't break the signature silently.
 - **Cleanup's whitespace/typography ops never edit protected regions.** `lib/content-cleanup/` masks code / JSON / tables / front-matter / inline-code / HTML out before any whitespace or typography op, then restores them verbatim. The ONE exception is a **region operation** (JSON condense/minify/expand) — opt-in, exclusive, and applied through a real JSON parser + writer, never a regex; it refuses JSON that only parses tolerantly so comments are never silently deleted. The engine is pure and surface-agnostic — reuse it, never fork it, for any paste-cleanup need.
@@ -138,7 +152,7 @@ when its declared current revision exactly equals that row's revision.
 
 `/notes` has locked up entire browsers ~10 times in 6 months. Every incident was one of these four mechanisms; **each has a canonical guard in the code — never weaken or reintroduce:**
 
-1. **Self-echo → false conflict.** Covered by the timestamp-monotonic echo rule above. The failure shape: unsuppressed echo of save N arrives while the user typed toward N+1 → `upsertNoteFromServer` flags `_error="conflict"` → conflict UI does heavy work → next save clears it → its echo re-sets it, forever.
+1. **Self-echo → false conflict.** Covered by the shared realtime write ledger and reducer revision checks above. The failure shape: unsuppressed echo of save N arrives while the user typed toward N+1 → `upsertNoteFromServer` flags `_error="conflict"` → conflict UI does heavy work → next save clears it → its echo re-sets it, forever.
 2. **Heavy work per render.** `analyzeDiff` is O(lines²); it is memoized as `conflictAnalysis` in `NoteContentEditor` — **never call it (or any O(content) work) inline in JSX.** Same rule for O(all-notes) builds: `useNotesSurfaceScope` memoizes its notes-map projection; `contextData` uses the memoized `surfaceContextData`.
 3. **Per-item dispatch loops.** List hydration dispatches **one** `upsertNotesFromServer` batch. A dispatch-per-note loop re-runs every sorted list selector per note — O(N²·log N) on route entry. Event-driven refetches (`focus`/`visibilitychange`) are min-interval gated (30s); realtime reconnect backoff resets only after 30s healthy (a flapping channel must not fetch full lists at the 1s floor).
 4. **Effect-identity churn.** Callbacks passed into hooks are ref-held (`useAutoSave` — inline `onSaveSuccess`/`onSaveError` arrows once recreated `forceSave` every render, whose effect-cleanup call made one save attempt per render and an unbounded retry loop on failing saves). `urlActive` is ref-read in `NotesView`'s deep-link effect — `NoteTabBar`'s `history.replaceState` feeds back through `useSearchParams`, so putting it in deps re-dispatches per tab action. Selector factories stay `cached()`.
@@ -156,6 +170,15 @@ when its declared current revision exactly equals that row's revision.
 ---
 
 ## Change log
+
+- `2026-09-13` — Exact reviewed-save permits and per-attempt receipts accepted after independent review: 125 regression tests, canonical type check, and eight isolated failing-then-passing mutation probes. Session changes preserve acknowledged evidence without changing a new actor’s draft; malformed postimages cannot advance the base. Rendered Merge consumption and durable draft recovery remain separate campaign work.
+
+- `2026-09-13` — RichDocument Notes edit openings now prepare an immutable,
+  actor-bound source before allocating their callback overlay. The callback
+  accepts only validated physical service receipts; HTML preview retains its
+  callback owner across acknowledged saves, while partial or post-acknowledged
+  receipts settle only that private source. Guard: `pnpm
+  check:note-content-source-constructors`.
 
 - `2026-09-12` — The four autogenerated-note controls now initialize through one organization-qualified folder admission thunk. A draft carries either a re-read `FolderReference` with canonical stored name, an explicit create-or-get folder intent scoped to the click-time organization, or explicit unfiled `null`; raw folder strings cannot enter the reducer. The initializer preserves the generated note UUID and initiating user across awaits, verifies the live session before folder operations and store settlement, and only then creates the client-only draft. First persistence remains the existing stable-ID materialization INSERT; it never calls persisted-note creation or empty-note reuse. Historical name-only drafts remain buffered and refuse safely until moved to an admitted folder.
 

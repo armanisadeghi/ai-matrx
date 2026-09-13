@@ -2,7 +2,7 @@
   "_law": "THE ALLOWLIST ONLY SHRINKS. Growing it is the defect this guard exists to catch.",
   "_why": "CLAUDE.md law 6 — opinions become knobs. These are the knob-shaped constants that existed when check:settings-hardcoded was written; each one is a setting nobody can see or change. They are tolerated so the guard can hold the line against NEW ones, and they come off this list as the Unified Settings Platform migrates them (common-docs/projects/unified-settings-platform/REGISTER.md, USP-020).",
   "_how": "`pnpm check:settings-hardcoded --write` removes entries that no longer exist. It CANNOT add one: a new constant must be registered in platform.feature_knob, or the line must be argued for by a human editing this file by hand with a reason.",
-  "_baselined": "2026-09-12",
+  "_baselined": "2026-09-13",
   "entries": [
     {
       "file": "aidream/aidream/api/middleware/request_log.py",
@@ -887,10 +887,6 @@
     {
       "file": "aidream/aidream/services/distillation/dump_ingest.py",
       "name": "MIN_TEXT_CHARS"
-    },
-    {
-      "file": "aidream/aidream/services/distillation/rulebook_writes.py",
-      "name": "CAS_RETRIES"
     },
     {
       "file": "aidream/aidream/services/django_docs_integrations/service.py",
@@ -3643,14 +3639,6 @@
     {
       "file": "aidream/packages/matrx-files/matrx_files/specific_handlers/office/extract.py",
       "name": "MAX_CELL_CHARS"
-    },
-    {
-      "file": "aidream/packages/matrx-files/matrx_files/specific_handlers/office/extract.py",
-      "name": "MAX_PORTION_CHARS"
-    },
-    {
-      "file": "aidream/packages/matrx-files/matrx_files/specific_handlers/office/extract.py",
-      "name": "MAX_PORTIONS"
     },
     {
       "file": "aidream/packages/matrx-files/matrx_files/specific_handlers/office/extract.py",

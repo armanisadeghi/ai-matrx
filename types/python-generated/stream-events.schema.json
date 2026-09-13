@@ -7366,6 +7366,7 @@
   },
   "MasterworkIngestCompleteData": {
     "$defs": {
+      "JsonValue": {},
       "MasterworkSectionYield": {
         "description": "What ONE part of a source — a chapter, a lesson, a heading — produced.\n\n🚨 The answer to W42 (2026-09-12): a 31k-word book was cut by a ruler, its\nmost prescriptive chapter contributed 3 rules against its siblings' 15–23,\nand NOTHING anywhere said so. A source is now chunked by its own structure\nand every part reports its own yield, so a thin chapter is a row on a screen\nthe Expert can point at and re-read, not a silent hole.",
         "properties": {
@@ -7511,6 +7512,11 @@
         "title": "Skipped Words",
         "type": "integer"
       },
+      "packaging_set_aside": {
+        "default": 0,
+        "title": "Packaging Set Aside",
+        "type": "integer"
+      },
       "followup_seed": {
         "anyOf": [
           {
@@ -7534,6 +7540,55 @@
         "default": 0,
         "title": "Replaced Rules",
         "type": "integer"
+      },
+      "corpus_item_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Corpus Item Id"
+      },
+      "sealed": {
+        "default": false,
+        "title": "Sealed",
+        "type": "boolean"
+      },
+      "timeline_steps": {
+        "default": 0,
+        "title": "Timeline Steps",
+        "type": "integer"
+      },
+      "role": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Role"
+      },
+      "timeline": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Timeline"
       },
       "sections": {
         "items": {

@@ -98,10 +98,11 @@ export function formatQuietRemaining(
 ): string | null {
   if (!isQuiet(until, now)) return null;
   if (!until || until === QUIET_FOREVER) return "until you turn it back on";
+  // ONE CALL (2026-09-12). The sub-hour branch already spoke `coarse`; the two
+  // above it hand-rolled the same voice against the local `HOUR_MS`, which the
+  // duration guard could not see because its time bases were literals. `coarse`
+  // already carries the hour and day tiers, and carries them with more
+  // resolution than the rounding they replaced.
   const remaining = Date.parse(until) - now.getTime();
-  if (remaining < HOUR_MS) {
-    return `${formatDurationMs(remaining, { style: "coarse" })} left`;
-  }
-  if (remaining < 48 * HOUR_MS) return `${Math.round(remaining / HOUR_MS)}h left`;
-  return `${Math.round(remaining / (24 * HOUR_MS))}d left`;
+  return `${formatDurationMs(remaining, { style: "coarse" })} left`;
 }

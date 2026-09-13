@@ -25,11 +25,11 @@ import { Mic, Pause, Play, Square, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
-/** `m:ss` — the only clock a person talking needs. */
+/** `m:ss` — the only clock a person talking needs. The package's voice. */
 export function formatTalkTime(seconds: number): string {
-  const total = Math.max(0, Math.floor(seconds));
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+  return formatDurationSeconds(seconds, { style: "clock" });
 }
 
 /**

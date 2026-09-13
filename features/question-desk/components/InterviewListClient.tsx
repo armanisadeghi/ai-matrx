@@ -120,6 +120,26 @@ export function InterviewListClient() {
       ),
     },
     {
+      accessorKey: "respondentEmail",
+      header: "Respondent",
+      sortable: true,
+      // WHO IS BEING ASKED (verifier finding 4). Without it, an interview put
+      // to someone else looks exactly like one of your own.
+      cell: (row) =>
+        row.respondentEmail ? (
+          <span className="block truncate text-foreground/80">
+            {row.respondentEmail}
+          </span>
+        ) : (
+          <span
+            className="block truncate font-mono text-[11px] text-muted-foreground"
+            title="This account's address could not be read; the id is shown instead."
+          >
+            {row.respondent_user_id.slice(0, 8)}…
+          </span>
+        ),
+    },
+    {
       accessorKey: "purpose",
       header: "Purpose",
       sortable: true,

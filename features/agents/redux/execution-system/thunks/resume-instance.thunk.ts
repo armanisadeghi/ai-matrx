@@ -278,10 +278,10 @@ export const resumeInstance = createAsyncThunk<
         ...(scope_ids.length > 0 && { scope_ids }),
         ...(debug && { debug: true }),
       };
-      // ResumeRequest does NOT declare a top-level `sandbox` (unlike the
-      // turn-1 agent payload). The sandbox binding rides on
-      // `client.state["sandbox-fs"]` via buildToolInjection; the server reads
-      // it from there for the resume path.
+      // The sandbox binding rides on `client.state["sandbox-fs"]` via
+      // buildToolInjection. The server's resume route reads it (and also
+      // accepts a top-level `sandbox`) since aidream 130809524; before that
+      // resume ignored it and a turn-1 resume ran on the durable VFS emulator.
 
       // Create the request tracking entry. No optimistic user message — there
       // is no new input on a resume.

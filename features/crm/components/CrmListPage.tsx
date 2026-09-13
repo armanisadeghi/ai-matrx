@@ -81,13 +81,17 @@ import type {
   PartySortDirection,
   PartySortKey,
   RecordClassFilter,
+  WrittenByFilter,
 } from "../types";
 import {
   CRM_LIST_SCOPES,
   DATE_BUCKETS,
   DEFAULT_RECORD_CLASS_FILTER,
+  DEFAULT_WRITTEN_BY_FILTER,
   RECORD_CLASS_FILTERS,
+  WRITTEN_BY_FILTERS,
   RECORD_CLASS_FILTER_ENUM_TEXT,
+  WRITTEN_BY_FILTER_ENUM_TEXT,
   DATE_BUCKET_ENUM_TEXT,
   DATE_BUCKET_VALUES,
   EXPERT_STATUS_FILTERS,
@@ -159,6 +163,15 @@ function fromTableFilters(state: ColumnFiltersState): PartyListFilters {
       } else if (id === "record_class") {
         const value = lastMatch(values, RECORD_CLASS_FILTERS);
         if (value) out.record_class = value as RecordClassFilter;
+      } else if (id === "written_by") {
+        // DD-131 slice 3: "anyone" is the absence of the filter, not a value to
+        // send — leaving it in the bag would make every list read carry a
+        // predicate that matches everything and teach the next reader that the
+        // default is a filter. It isn't; `record_class`'s default is.
+        const value = lastMatch(values, WRITTEN_BY_FILTERS);
+        if (value && value !== DEFAULT_WRITTEN_BY_FILTER) {
+          out.written_by = value as WrittenByFilter;
+        }
       } else if (id === "updated_at" || id === "created_at") {
         const bucket = lastMatch(values, BUCKET_VALUES);
         if (bucket) out[id] = bucket as DateBucket;
@@ -194,6 +207,14 @@ function toTableFilters(filters: PartyListFilters): ColumnFiltersState {
   out.record_class = {
     kind: "select",
     value: filters.record_class ?? DEFAULT_RECORD_CLASS_FILTER,
+  };
+  // Always rendered, for the same reason the record-class facet is: the
+  // control has to be VISIBLE and sitting on its current answer, so "did an
+  // agent add any of these?" is one click away rather than a thing a user has
+  // to know exists (DD-131 slice 3).
+  out.written_by = {
+    kind: "select",
+    value: filters.written_by ?? DEFAULT_WRITTEN_BY_FILTER,
   };
   if (filters.updated_at)
     out.updated_at = { kind: "select", value: filters.updated_at };
@@ -360,6 +381,24 @@ function parseColumnFilters(value: unknown): PartyListFilters {
       );
     }
     out.record_class = entry as RecordClassFilter;
+  }
+
+  if ("written_by" in raw) {
+    const entry = raw.written_by;
+    if (
+      typeof entry !== "string" ||
+      !(WRITTEN_BY_FILTERS as readonly string[]).includes(entry)
+    ) {
+      throw new Error(
+        `column_filters.written_by expects one of ${WRITTEN_BY_FILTER_ENUM_TEXT} — received ${describeValue(entry)}. Omitting the key means no filter at all: contacts a person saved and contacts an agent saved share one list until you ask.`,
+      );
+    }
+    // "anyone" IS the absence of the filter, so it is normalised away here the
+    // same way the user's own click is — an agent write and a user click must
+    // produce the identical bag (DD-131 slice 3).
+    if (entry !== DEFAULT_WRITTEN_BY_FILTER) {
+      out.written_by = entry as WrittenByFilter;
+    }
   }
 
   for (const key of ["updated_at", "created_at"] as const) {

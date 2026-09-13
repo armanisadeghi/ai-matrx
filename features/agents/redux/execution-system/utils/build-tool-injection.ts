@@ -518,11 +518,25 @@ export async function buildToolInjection(
       detectActiveSurface() ||
       undefined;
 
-  if (surface || activeCapabilities.length > 0) {
+  // Per-conversation MCP servers the user attached from the Smart Input tools
+  // menu (`addedMcpServers`, server SLUGS) ride as `client.mcp` — the server
+  // unions them into config.mcp_servers and resolves each to its
+  // `bundle:list_<slug>` lister. Explicit picks, so they ride regardless of
+  // the disable-injection brake, exactly like `addedTools` above. Until
+  // 2026-09-13 only the Builder's manual thunk emitted `client.mcp`; every
+  // chat continue turn (executeInstance) dropped the attachment on the floor
+  // and the model truthfully reported "no GitHub MCP tool in my toolset".
+  const addedMcpServers = (perConversation?.addedMcpServers ?? []).filter(
+    (slug, index, all) =>
+      typeof slug === "string" && slug.length > 0 && all.indexOf(slug) === index,
+  );
+
+  if (surface || activeCapabilities.length > 0 || addedMcpServers.length > 0) {
     client = {
       surface,
       capabilities: activeCapabilities,
       state: stateMap,
+      ...(addedMcpServers.length > 0 && { mcp: addedMcpServers }),
     };
   }
 

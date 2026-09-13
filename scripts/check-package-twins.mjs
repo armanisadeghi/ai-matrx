@@ -30,6 +30,16 @@
  * now: same contract, same ratchet, same rule — `census` is never an exemption,
  * it is a debt that is READ OUT every run and may only get smaller.
  *
+ * AN OPTION-FIXING WRAPPER IS A DECLARED NON-FINDING, and this is the standing
+ * ruling rather than a concession: a local function that BINDS the package
+ * function's options and delegates in a line or two
+ * (`const formatDuration = (s) => formatDurationSeconds(s, { style: "coarse" })`)
+ * holds no copy of the capability — change the package and every wrapper
+ * changes with it — so it is the sanctioned adapter and needs no register
+ * entry. A re-implemented BODY is a twin, always. (The ALIAS lane below is a
+ * different question: it asks what FLOWS INTO a wrapper, not whether the
+ * wrapper may exist.)
+ *
  * Portable by construction: pure Node stdlib, no install, no repo-specific
  * import. Copy it plus its JSON register into matrx-extend / matrx-local /
  * matrx-games unchanged.
@@ -117,6 +127,55 @@ const BY_NAME = new Map(TWINS.map((t) => [t.name, t]));
  * at all, so nothing about the other six roots changes.
  */
 const OWNED_BY = register.ownedBy ?? {};
+
+/**
+ * THE CATALOG FLOOR (2026-09-12, the eighth adversarial review).
+ *
+ * THE INCIDENT. Two repos collapsed the same censused twin in the same hour
+ * and both deleted the whole register ROW along with the `census` entry inside
+ * it — matrx-extend 7671a85 and matrx-local 84adac0fd, each removing
+ * `base64ByteLength` from its catalog. The row is CANONICAL (the sync tool
+ * distributes `name` / `package` / `why` from the origin and preserves only
+ * the local `allow` / `census` lists), so deleting it deleted a GUARD: from
+ * that commit on, either repo could re-grow `base64ByteLength` as a private
+ * copy and `check:package-twins` would have nothing to say about it.
+ *
+ * NOTHING CAUGHT IT IN EITHER REPO. `sync_ts_package_guard.mjs --check` does
+ * compare each root's catalog against the origin — and it lives in aidream and
+ * runs there, so in a consumer repo's own gate the loss was invisible. Both
+ * commits ran `--self-test` and `--strict` and both were green.
+ *
+ * A floor written INTO the register travels with it, so the consumer repo's
+ * own guard can see the loss the moment it happens: the sync tool stamps the
+ * canonical row count on every write, and a catalog that has fewer rows than
+ * its own floor has lost a ruling. The floor RATCHETS UP with the catalog and
+ * is never lowered by hand; removing a name legitimately means removing it at
+ * the ORIGIN and re-running the sync, which rewrites every floor together.
+ */
+const CATALOG_FLOOR = register.$catalogFloor ?? null;
+
+/** `null` when the catalog is intact; the sentence to print when it is not. */
+export function catalogFloorBreach(rowCount, floor) {
+  if (typeof floor !== "number") return null;
+  if (rowCount >= floor) return null;
+  return (
+    `THE CATALOG HAS LOST ${floor - rowCount} REGISTERED NAME(S): this ` +
+    `register carries ${rowCount} rows and its own floor says ${floor}.\n\n` +
+    `A register row is a HISTORICAL RULING — "this capability was collapsed, a ` +
+    `local definition of it is a twin" — and it is CANONICAL: the same row ` +
+    `exists in every root and is distributed from the origin. Deleting one ` +
+    `deletes a guard.\n\n` +
+    `This is almost always a collapse that removed the row instead of the ` +
+    `\`census\` ENTRY inside it. When a censused twin is finally collapsed, ` +
+    `delete ONLY its entry in the row's \`census\` list — the row stays ` +
+    `forever, so a re-grown copy is still caught.\n\n` +
+    `Restore it with the sync tool, never by hand:\n` +
+    `  node scripts/sync_ts_package_guard.mjs      (from the aidream repo)\n\n` +
+    `If a name really must leave the catalog, remove it from the ORIGIN ` +
+    `register (aidream/apps/shared/scripts/package-twins.json) and re-run the ` +
+    `sync — that lowers every root's floor together.`
+  );
+}
 
 /** `"@ai-matrx/kit/format"` → the owning package's source prefix, or null. */
 function ownerPrefixFor(packageSpecifier) {
@@ -880,6 +939,37 @@ if (SELF_TEST) {
   }
 
   }
+  // ── THE CATALOG FLOOR must be able to fail (added 2026-09-12) ──
+  // Both legs pinned: a catalog SHORT of its own floor is a lost ruling, and a
+  // catalog at or above it is silent. A register with no floor (an older copy
+  // that predates the stamp) is also silent — the floor ratchets in, it never
+  // fails a root the sync tool has not written yet.
+  {
+    if (catalogFloorBreach(178, 179) === null) {
+      console.error(
+        "SELF-TEST FAILED: a catalog that has LOST a registered name was not " +
+          "reported — this is the matrx-extend / matrx-local `base64ByteLength` " +
+          "incident, where collapsing a censused twin deleted the whole row and " +
+          "with it the guard against re-growing it.",
+      );
+      process.exit(1);
+    }
+    if (catalogFloorBreach(179, 179) !== null) {
+      console.error(
+        "SELF-TEST FAILED: an INTACT catalog was reported as having lost a " +
+          "name — the floor now fails every root.",
+      );
+      process.exit(1);
+    }
+    if (catalogFloorBreach(3, null) !== null) {
+      console.error(
+        "SELF-TEST FAILED: a register with no `$catalogFloor` stamp was " +
+          "reported as breached — the floor must ratchet in, not fail a root " +
+          "the sync tool has not written yet.",
+      );
+      process.exit(1);
+    }
+  }
   // ── every SHAPE lane must also be able to fail ──
   for (const rule of SHAPE_RULES) {
     const shape = rule.selfTest();
@@ -957,6 +1047,16 @@ export function staleNameCensus(rows, hits) {
     }
   }
   return stale;
+}
+
+// THE CATALOG FLOOR, checked before anything is scanned: a guard running over
+// a catalog that has lost a ruling is a guard reporting on the wrong list.
+{
+  const breach = catalogFloorBreach(TWINS.length, CATALOG_FLOOR);
+  if (breach !== null) {
+    console.error(`\ncheck:package-twins — ${breach}\n`);
+    process.exit(1);
+  }
 }
 
 const findings = [];

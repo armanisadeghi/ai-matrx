@@ -26,6 +26,12 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchCsvImportLimits } from "../csv-import-limits";
 import { fetchBitwardenJsonImportLimits } from "../csv-import-limits";
 import {
+  hasValidStructuredImportFileNotices,
+  type StructuredImportFileNotice,
+  type StructuredImportWorkerResponse,
+} from "../structured-import-worker-protocol";
+import { structuredImportSource } from "../structured-import-source-registry";
+import {
   type StructuredImportRecord,
   hasVisiblePublicKey,
   isPossibleStructuredImportDuplicate,
@@ -73,6 +79,8 @@ const SOURCE_URLS: Record<string, string> = {
   bitwarden: "https://bitwarden.com/help/export-your-data/",
   "1password": "https://support.1password.com/export/",
   "1password_1pux": "https://support.1password.com/export/",
+  proton_pass: "https://proton.me/support/pass-export",
+  keepass_xml: "https://keepass.info/help/base/importexport.html",
   lastpass:
     "https://support.lastpass.com/s/document-item?language=en_US&bundleId=lastpass&topicId=LastPass/export-your-vault-data.html",
   apple: "https://support.apple.com/en-au/guide/passwords/mchl35b12625/mac",
@@ -114,6 +122,18 @@ type JsonPreflightCounts = {
   archived: number;
 };
 
+const fileNoticeText: Record<
+  StructuredImportFileNotice["code"],
+  (count: number) => string
+> = {
+  unsupported_archive_members: (count) =>
+    `This export includes ${count} archive files that cannot be imported.`,
+  unsupported_binary_definitions: (count) =>
+    `This export includes ${count} unreferenced attachment definitions that cannot be imported.`,
+  deleted_tombstones: (count) =>
+    `This export records ${count} deleted items without saved contents; these cannot be restored by importing.`,
+};
+
 export function VaultCsvImportDialog({
   open,
   onOpenChange,
@@ -131,7 +151,7 @@ export function VaultCsvImportDialog({
   const cancelled = useRef(false);
   const parseGeneration = useRef(0);
   const jsonWorker = useRef<Worker | null>(null);
-  const cancelOnePuxParse = useRef<(() => void) | null>(null);
+  const cancelJsonParse = useRef<(() => void) | null>(null);
   const jsonWorkerTimeout = useRef<number | null>(null);
   const limitsRef = useRef<Awaited<
     ReturnType<typeof fetchCsvImportLimits>
@@ -152,7 +172,7 @@ export function VaultCsvImportDialog({
   const [jsonLoaded, setJsonLoaded] = useState(false);
   const [includeTrash, setIncludeTrash] = useState(false);
   const [includeArchived, setIncludeArchived] = useState(false);
-  const [binaryMembers, setBinaryMembers] = useState(0);
+  const [fileNotices, setFileNotices] = useState<StructuredImportFileNotice[]>([]);
   const [metadataApproved, setMetadataApproved] = useState(false);
   const [preview, setPreview] = useState<CsvImportPreview | null>(null);
   const [mapping, setMapping] = useState<CsvColumnRole[]>([]);
@@ -172,8 +192,8 @@ export function VaultCsvImportDialog({
   const clearSensitiveDraft = (preserveResult = false) => {
     hasActiveFileIntake.current = false;
     parseGeneration.current += 1;
-    cancelOnePuxParse.current?.();
-    cancelOnePuxParse.current = null;
+    cancelJsonParse.current?.();
+    cancelJsonParse.current = null;
     jsonWorker.current?.terminate();
     jsonWorker.current = null;
     if (jsonWorkerTimeout.current !== null)
@@ -189,7 +209,7 @@ export function VaultCsvImportDialog({
     setJsonLoaded(false);
     setIncludeTrash(false);
     setIncludeArchived(false);
-    setBinaryMembers(0);
+    setFileNotices([]);
     setMetadataApproved(false);
     setMapping([]);
     setUnavailable(null);
@@ -219,8 +239,8 @@ export function VaultCsvImportDialog({
     () => () => {
       cancelled.current = true;
       parseGeneration.current += 1;
-      cancelOnePuxParse.current?.();
-      cancelOnePuxParse.current = null;
+      cancelJsonParse.current?.();
+      cancelJsonParse.current = null;
       jsonWorker.current?.terminate();
       jsonWorker.current = null;
       if (jsonWorkerTimeout.current !== null)
@@ -297,89 +317,27 @@ export function VaultCsvImportDialog({
       const actor = await getVaultImportActor();
       if (generation !== parseGeneration.current) return;
       const limits = await (
-        source === "bitwarden_json" || source === "1password_1pux"
+        structuredImportSource(source)
           ? fetchBitwardenJsonImportLimits
           : fetchCsvImportLimits
       )(actor.organizationId, actor.userId);
       if (generation !== parseGeneration.current || cancelled.current) return;
       previewActor.current = actor;
       limitsRef.current = limits;
-      if (source === "bitwarden_json") {
+      const descriptor = structuredImportSource(source);
+      if (descriptor) {
         if (file.size > limits.maxFileBytes)
           throw new Error(
-            "The file exceeds this organization’s import size limit.",
+            "The selected export exceeds this organization’s import size limit.",
           );
-        const buffer = await file.arrayBuffer();
         if (generation !== parseGeneration.current || cancelled.current) return;
-        const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+        const workerClient = await descriptor.loadWorker();
         if (generation !== parseGeneration.current || cancelled.current) return;
-        const { createBitwardenJsonWorker } =
-          await import("../bitwarden-json-worker-client");
-        if (generation !== parseGeneration.current || cancelled.current) return;
-        const parser = createBitwardenJsonWorker();
-        jsonWorker.current = parser;
-        let settled = false;
-        const settle = (message?: string) => {
-          if (settled) return false;
-          settled = true;
-          if (jsonWorkerTimeout.current !== null)
-            window.clearTimeout(jsonWorkerTimeout.current);
-          jsonWorkerTimeout.current = null;
-          parser.terminate();
-          if (jsonWorker.current === parser) jsonWorker.current = null;
-          if (generation !== parseGeneration.current || cancelled.current)
-            return false;
-          if (message) setUnavailable(message);
-          return !message;
-        };
-        jsonWorkerTimeout.current = window.setTimeout(
-          () =>
-            settle(
-              "The JSON export took too long to parse. Choose a smaller export and try again.",
-            ),
-          limits.jsonWorkerTimeoutMs ?? 5_000,
-        );
-        parser.onerror = () => settle("The JSON export could not be read.");
-        parser.onmessageerror = () =>
-          settle("The JSON export could not be read.");
-        parser.onmessage = (
-          event: MessageEvent<{
-            ok: boolean;
-            records?: StructuredImportRecord[];
-            error?: string;
-          }>,
-        ) => {
-          if (!event.data.ok) {
-            settle(jsonImportErrorMessage(event.data.error));
-            return;
-          }
-          if (!settle()) return;
-          setJsonRecords(event.data.records ?? []);
-          setJsonLoaded(true);
-        };
-        parser.postMessage({
-          text,
-          limits: {
-            maxFileBytes: limits.maxFileBytes,
-            maxRecords: limits.maxRecords,
-            maxCellBytes: limits.maxCellBytes,
-            maxJsonDepth: limits.maxJsonDepth ?? 64,
-          },
-        });
-        return;
-      }
-      if (source === "1password_1pux") {
-        if (file.size > limits.maxFileBytes)
-          throw new Error(
-            "The 1Password export exceeds this organization’s import size limit.",
-          );
-        const { cancelOnePuxWorker, createOnePuxWorker } =
-          await import("../onepux-worker-client");
-        if (generation !== parseGeneration.current || cancelled.current) return;
-        const parser = createOnePuxWorker();
+        const parser = workerClient.create();
         const requestId = crypto.randomUUID();
         jsonWorker.current = parser;
-        cancelOnePuxParse.current = () => cancelOnePuxWorker(parser, requestId);
+        cancelJsonParse.current = () =>
+          parser.postMessage({ type: "cancel", requestId });
         let settled = false;
         const settle = (message?: string) => {
           if (settled) return false;
@@ -387,7 +345,7 @@ export function VaultCsvImportDialog({
           if (jsonWorkerTimeout.current !== null)
             window.clearTimeout(jsonWorkerTimeout.current);
           jsonWorkerTimeout.current = null;
-          cancelOnePuxParse.current = null;
+          cancelJsonParse.current = null;
           parser.terminate();
           if (jsonWorker.current === parser) jsonWorker.current = null;
           if (generation !== parseGeneration.current || cancelled.current)
@@ -396,32 +354,31 @@ export function VaultCsvImportDialog({
           return !message;
         };
         jsonWorkerTimeout.current = window.setTimeout(
-          () =>
-            settle(
-              "The 1Password archive took too long to parse. Choose a smaller export and try again.",
-            ),
+          () => settle(descriptor.timeoutError),
           limits.jsonWorkerTimeoutMs ?? 5_000,
         );
-        parser.onerror = () =>
-          settle("The 1Password archive could not be read.");
-        parser.onmessageerror = () =>
-          settle("The 1Password archive could not be read.");
+        parser.onerror = () => settle(descriptor.parseError);
+        parser.onmessageerror = () => settle(descriptor.parseError);
         parser.onmessage = (
-          event: MessageEvent<{
-            ok: boolean;
-            requestId?: string;
-            records?: StructuredImportRecord[];
-            binaryMemberCount?: number;
-          }>,
+          event: MessageEvent<StructuredImportWorkerResponse>,
         ) => {
           if (event.data.requestId !== requestId) return;
           if (!event.data.ok) {
-            settle("The 1Password archive could not be read.");
+            settle(descriptor.parseError);
+            return;
+          }
+          if (
+            !hasValidStructuredImportFileNotices(
+              event.data.fileNotices,
+              limits.maxRecords,
+            )
+          ) {
+            settle(descriptor.parseError);
             return;
           }
           if (!settle()) return;
-          setJsonRecords(event.data.records ?? []);
-          setBinaryMembers(event.data.binaryMemberCount ?? 0);
+          setJsonRecords(event.data.records);
+          setFileNotices(event.data.fileNotices);
           setJsonLoaded(true);
         };
         parser.postMessage({
@@ -478,7 +435,7 @@ export function VaultCsvImportDialog({
   ]);
   const preparedJsonRows = useMemo(() => {
     if (
-      (source !== "bitwarden_json" && source !== "1password_1pux") ||
+      !structuredImportSource(source) ||
       !limitsRef.current ||
       !previewActor.current
     )
@@ -541,10 +498,7 @@ export function VaultCsvImportDialog({
   const importRows = async (retry = false) => {
     const limits = limitsRef.current;
     if ((!preview && !jsonLoaded) || !limits) return;
-    if (
-      (source === "bitwarden_json" || source === "1password_1pux") &&
-      !metadataApproved
-    ) {
+    if (structuredImportSource(source) && !metadataApproved) {
       setError(
         "Confirm the visible destination and public-key metadata before importing.",
       );
@@ -582,7 +536,7 @@ export function VaultCsvImportDialog({
       }
       const commands = retry
         ? frozenCommands.current
-        : source === "bitwarden_json" || source === "1password_1pux"
+        : structuredImportSource(source)
           ? preparedJsonRows.map((prepared) =>
               prepared.status === "ready"
                 ? {
@@ -661,8 +615,7 @@ export function VaultCsvImportDialog({
       if (!invalidated.current) {
         progressCursor.current = outcome.progressCursor;
         setResult((previous) => {
-          const jsonAccounting =
-            source === "bitwarden_json" || source === "1password_1pux";
+          const jsonAccounting = Boolean(structuredImportSource(source));
           const excluded = jsonAccounting
             ? jsonPreflightCounts.invalid +
               jsonPreflightCounts.unsupported +
@@ -752,6 +705,12 @@ export function VaultCsvImportDialog({
                   <SelectItem value="1password_1pux">
                     1Password 1PUX (unencrypted export)
                   </SelectItem>
+                  <SelectItem value="proton_pass">
+                    Proton Pass JSON or ZIP
+                  </SelectItem>
+                  <SelectItem value="keepass_xml">
+                    KeePass / KeePassXC XML
+                  </SelectItem>
                 </SelectContent>
               </Select>
               {SOURCE_URLS[source] && (
@@ -777,11 +736,7 @@ export function VaultCsvImportDialog({
                 className="hidden"
                 type="file"
                 accept={
-                  source === "bitwarden_json"
-                    ? "application/json,.json"
-                    : source === "1password_1pux"
-                      ? ".1pux,application/zip"
-                      : ".csv,text/csv"
+                  structuredImportSource(source)?.accept ?? ".csv,text/csv"
                 }
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -938,7 +893,7 @@ export function VaultCsvImportDialog({
                 {jsonPreflightCounts.invalid} invalid;{" "}
                 {jsonPreflightCounts.unsupported} unsupported;{" "}
                 {jsonPreflightCounts.deleted} deleted
-                {source === "1password_1pux"
+                {structuredImportSource(source)?.supportsArchived
                   ? `; ${jsonPreflightCounts.archived} archived`
                   : ""}
                 . Unsupported records stay local and are never sent.
@@ -1049,13 +1004,14 @@ export function VaultCsvImportDialog({
                   </span>
                 </label>
               )}
-              {source === "1password_1pux" && binaryMembers > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {binaryMembers} binary archive member
-                  {binaryMembers === 1 ? "" : "s"} and icon data are not
-                  imported.
+              {fileNotices.map((notice) => (
+                <p
+                  key={notice.code}
+                  className="text-xs text-muted-foreground"
+                >
+                  {fileNoticeText[notice.code](notice.count)}
                 </p>
-              )}
+              ))}
               <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Switch
                   checked={enableBrowserFill}
@@ -1102,8 +1058,8 @@ export function VaultCsvImportDialog({
               <p>
                 Imported {result.imported}; skipped {result.skipped}; failed{" "}
                 {result.failed}.
-                {source === "bitwarden_json" || source === "1password_1pux"
-                  ? ` Invalid ${result.invalid}; unsupported ${result.unsupported}; deleted ${result.deleted}${source === "1password_1pux" ? `; archived ${result.archived}` : ""}.`
+                {structuredImportSource(source)
+                  ? ` Invalid ${result.invalid}; unsupported ${result.unsupported}; deleted ${result.deleted}${structuredImportSource(source)?.supportsArchived ? `; archived ${result.archived}` : ""}.`
                   : ""}
                 {result.cancelled
                   ? " Stopped after the confirmed current row."
@@ -1160,20 +1116,6 @@ export function VaultCsvImportDialog({
       </CredenzaContent>
     </Credenza>
   );
-}
-
-function jsonImportErrorMessage(message: unknown): string {
-  const approved = new Set([
-    "The JSON export has duplicate keys or could not be read safely.",
-    "Encrypted Bitwarden exports need local decryption support before they can be imported.",
-    "This is not a supported plain Bitwarden JSON export.",
-    "The export has more records than this organization allows.",
-    "The export folders are not supported.",
-    "The file exceeds this organization’s import size limit.",
-  ]);
-  return typeof message === "string" && approved.has(message)
-    ? message
-    : "The JSON export could not be read.";
 }
 
 function maskedRowSummary(

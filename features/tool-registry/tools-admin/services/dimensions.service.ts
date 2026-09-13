@@ -10,6 +10,7 @@
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   TOOL,
   TOOL_BUNDLE,
@@ -61,24 +62,6 @@ export async function listToolBindings(toolId: string): Promise<ToolBindingRow[]
     .order("executor_name", { ascending: true });
   if (error) throw error;
   return data ?? [];
-}
-
-export async function addToolBinding(args: {
-  toolId: string;
-  executorName: string;
-  isActive?: boolean;
-}): Promise<ToolBindingRow> {
-  const { data, error } = await sb()
-    .schema("tool").from("binding")
-    .insert({
-      tool_id: args.toolId,
-      executor_name: args.executorName,
-      is_active: args.isActive ?? true,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
 }
 
 export async function updateToolBinding(args: {
@@ -212,9 +195,12 @@ export async function addToolToSurface(args: {
       .eq("surface_name", args.surfaceName);
     if (error) throw error;
   } else {
-    const { error } = await sb()
+    const client = sb();
+    const { error } = await client
       .schema("tool").from("surface_defaults")
       .insert({
+        organization_id: await resolveSystemOrgId(client),
+        visibility: "public",
         surface_name: args.surfaceName,
         always_include_tools: [toolName],
       });

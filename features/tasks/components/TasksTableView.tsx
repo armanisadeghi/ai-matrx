@@ -55,6 +55,7 @@ import {
 import { cn } from "@/utils/cn";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TaskProvenanceChip } from "@/features/tasks/components/TaskProvenanceChip";
+import { TASK_ROW_DOM_ATTR } from "@/features/tasks/components/TasksListContextMenu";
 import {
   compareTimestamps,
   formatAbsoluteDate,
@@ -733,7 +734,7 @@ export default function TasksTableView() {
                 return (
                   <TableRow
                     key={task.id}
-                    data-task-row-id={task.id}
+                    {...{ [TASK_ROW_DOM_ATTR]: task.id }}
                     className={cn(
                       "cursor-pointer",
                       isSelected && "bg-primary/[0.08] hover:bg-primary/[0.1]",

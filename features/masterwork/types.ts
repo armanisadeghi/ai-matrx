@@ -251,11 +251,20 @@ export interface RuleHistoryEntry {
  */
 export const RULE_POLICY_KIND = "policy" as const;
 
-/** What the Expert DID at this step. A closed vocabulary. */
+/**
+ * What the Expert DID at this step — and what a practitioner's NEXT move is.
+ * ONE closed vocabulary for both halves (2026-09-13): this list used to be
+ * declared twice in this file, six values for the flat decision half and nine
+ * for the structured move half. The nine are a superset, so one list serves
+ * both and no rule can be readable through one half and not the other.
+ */
 export const RULE_ACTION_KINDS = [
   "ask",
+  "examine",
   "test",
+  "image",
   "treat",
+  "observe",
   "refer",
   "wait",
   "commit",
@@ -271,11 +280,14 @@ export type RulePolicyLevel = (typeof RULE_POLICY_LEVELS)[number];
 /** How the chosen move reads to the Expert, in their language — never jargon. */
 export const RULE_ACTION_KIND_LABELS: Record<RuleActionKind, string> = {
   ask: "Ask",
+  examine: "Examine",
   test: "Test",
+  image: "Image",
   treat: "Treat",
+  observe: "Watch and wait",
   refer: "Refer",
   wait: "Wait",
-  commit: "Commit",
+  commit: "Commit to an answer",
 };
 
 /**
@@ -286,8 +298,13 @@ export const RULE_ACTION_KIND_LABELS: Record<RuleActionKind, string> = {
  */
 export const RULE_ACTION_KIND_HINTS: Record<RuleActionKind, string> = {
   ask: "get more information from the person",
+  // The three the merge of 2026-09-13 added: this map was written against the
+  // flat half's six moves, and the one closed list is the move half's nine.
+  examine: "look at it yourself, first-hand",
   test: "run a check or a measurement",
+  image: "look inside it with a scan or a picture",
   treat: "act on the situation itself",
+  observe: "keep watching it and re-look as it changes",
   refer: "hand it to someone else",
   wait: "deliberately do nothing yet, and re-look",
   commit: "settle on the answer and proceed",
@@ -316,6 +333,241 @@ export function rulePolicyLevel(value: string | undefined): RulePolicyLevel | nu
   return value && (RULE_POLICY_LEVELS as readonly string[]).includes(value)
     ? (value as RulePolicyLevel)
     : null;
+}
+
+/** How soon the next action has to happen. */
+export const RULE_ACTION_URGENCIES = ["now", "hours", "days", "weeks"] as const;
+
+export type RuleActionUrgency = (typeof RULE_ACTION_URGENCIES)[number];
+
+export const RULE_ACTION_URGENCY_LABELS: Record<RuleActionUrgency, string> = {
+  now: "right now",
+  hours: "within hours",
+  days: "within days",
+  weeks: "within weeks",
+};
+
+/**
+ * WHAT HAD TO BE TRUE for this step to fire — the known set at the moment of
+ * decision, what was still unknown, and (for an elicitation move) the state
+ * the counterparty is in. Optional: a static rule carries none, and absence
+ * means exactly that.
+ *
+ * 🚨 Lives at `rule.move.when`, never at `rule.precondition` — that key is the
+ * flat string 592 live rules carry. Mirrors `distill.py::MoveWhen`.
+ */
+export interface RuleMoveWhen {
+  /** The situation in one plain sentence — what the card prints after "When:". */
+  summary: string;
+  /** Facts that must already be known. */
+  known?: string[];
+  /** Facts that are still open at this moment — the reason the next step exists. */
+  unknown?: string[];
+  /** The counterparty's state this move is for ("guarded", "ambivalent"). */
+  counterparty_state?: string[];
+}
+
+/**
+ * WHAT TO DO NEXT — the step the rule prescribes, with what it buys and what
+ * it costs. `cost` and `risk` are 1–5; anything outside that is not rendered
+ * as a number rather than silently clamped to a lie.
+ *
+ * 🚨 Lives at `rule.move.next`, never at `rule.next_action` — that key is the
+ * flat string. The flat `cost` / `risk` beside it speak `RULE_POLICY_LEVELS`
+ * (low/medium/high); these two speak the 1–5 ladder. Mirrors
+ * `distill.py::MoveNext`.
+ */
+export interface RuleMoveNext {
+  kind: RuleActionKind;
+  /** The thing to do — "lumbar puncture (CT first if focal signs)". */
+  target: string;
+  /** What this step buys you — "excludes the worst thing first". */
+  buys?: string;
+  /** 1–5. */
+  cost?: number;
+  /** 1–5. */
+  risk?: number;
+  urgency?: RuleActionUrgency;
+}
+
+/** Tolerant reads — a malformed half never renders as a confident half. */
+export function parseRuleMoveWhen(value: unknown): RuleMoveWhen | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const rec = value as Record<string, unknown>;
+  const summary =
+    typeof rec.summary === "string" && rec.summary.trim()
+      ? rec.summary.trim()
+      : "";
+  if (!summary) return null;
+  const list = (raw: unknown): string[] =>
+    Array.isArray(raw)
+      ? raw.flatMap((item) =>
+          typeof item === "string" && item.trim() ? [item.trim()] : [],
+        )
+      : [];
+  const known = list(rec.known);
+  const unknown = list(rec.unknown);
+  const counterparty_state = list(rec.counterparty_state);
+  return {
+    summary,
+    ...(known.length ? { known } : {}),
+    ...(unknown.length ? { unknown } : {}),
+    ...(counterparty_state.length ? { counterparty_state } : {}),
+  };
+}
+
+export function parseRuleMoveNext(value: unknown): RuleMoveNext | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const rec = value as Record<string, unknown>;
+  const kind = RULE_ACTION_KINDS.find((k) => k === rec.kind);
+  const target =
+    typeof rec.target === "string" && rec.target.trim()
+      ? rec.target.trim()
+      : "";
+  // A next action with no verb or no object is not an instruction — render
+  // nothing rather than "Next: —".
+  if (!kind || !target) return null;
+  const scale = (raw: unknown): number | undefined =>
+    typeof raw === "number" && Number.isFinite(raw) && raw >= 1 && raw <= 5
+      ? Math.round(raw)
+      : undefined;
+  const urgency = RULE_ACTION_URGENCIES.find((u) => u === rec.urgency);
+  const cost = scale(rec.cost);
+  const risk = scale(rec.risk);
+  return {
+    kind,
+    target,
+    ...(typeof rec.buys === "string" && rec.buys.trim()
+      ? { buys: rec.buys.trim() }
+      : {}),
+    ...(cost === undefined ? {} : { cost }),
+    ...(risk === undefined ? {} : { risk }),
+    ...(urgency ? { urgency } : {}),
+  };
+}
+
+/**
+ * THE MOVE — a rule body that is a STEP rather than a standing statement.
+ *
+ * `when` and `next` are what the frontend renders today (`RuleMove`); `ask`,
+ * `rules_in`, `rules_out`, `information_value`, `frame` and `order` are the
+ * elicitation half the distillers write (`distill.py::Move`) and no surface
+ * reads yet — they are declared so a reader of this file sees the whole shape
+ * and the next surface does not have to rediscover it.
+ */
+export interface RuleMove {
+  when?: RuleMoveWhen;
+  next?: RuleMoveNext;
+  ask?: string;
+  rules_in?: { answer_class?: string; settles?: string }[];
+  rules_out?: { answer_class?: string; settles?: string }[];
+  information_value?: string;
+  frame?: string;
+  order?: number;
+}
+
+/**
+ * The MOVE fields as the rule FORM holds them: plain strings, one list item
+ * per line. A form that held the structured objects directly would throw away
+ * a half-typed line on every keystroke; these convert at the edges through the
+ * two functions below, which are the ONE conversion — never re-derive it.
+ */
+export interface RuleMoveFieldValues {
+  preconditionSummary: string;
+  /** One fact per line. */
+  preconditionKnown: string;
+  /** One still-open question per line. */
+  preconditionUnknown: string;
+  nextActionKind: RuleActionKind | "";
+  nextActionTarget: string;
+  nextActionBuys: string;
+  /** "" or "1".."5". */
+  nextActionCost: string;
+  nextActionRisk: string;
+  nextActionUrgency: RuleActionUrgency | "";
+}
+
+export const EMPTY_RULE_MOVE_FIELDS: RuleMoveFieldValues = {
+  preconditionSummary: "",
+  preconditionKnown: "",
+  preconditionUnknown: "",
+  nextActionKind: "",
+  nextActionTarget: "",
+  nextActionBuys: "",
+  nextActionCost: "",
+  nextActionRisk: "",
+  nextActionUrgency: "",
+};
+
+export function ruleMoveFieldsFromRule(
+  rule: Pick<RulebookRule, "move"> | undefined,
+): RuleMoveFieldValues {
+  const pre = rule?.move?.when;
+  const next = rule?.move?.next;
+  return {
+    preconditionSummary: pre?.summary ?? "",
+    preconditionKnown: (pre?.known ?? []).join("\n"),
+    preconditionUnknown: (pre?.unknown ?? []).join("\n"),
+    nextActionKind: next?.kind ?? "",
+    nextActionTarget: next?.target ?? "",
+    nextActionBuys: next?.buys ?? "",
+    nextActionCost: next?.cost === undefined ? "" : String(next.cost),
+    nextActionRisk: next?.risk === undefined ? "" : String(next.risk),
+    nextActionUrgency: next?.urgency ?? "",
+  };
+}
+
+/**
+ * Form values → `rule.move`. Each half is emitted only when
+ * it is genuinely there: a precondition needs its summary, a next action needs
+ * both a kind and a target. Half-filled is the same as absent — never a rule
+ * that prints "Next: —".
+ *
+ * 🚨 THE FORM OWNS TWO FIELDS, AND MAY DESTROY NOTHING ELSE. `move` also
+ * carries the elicitation half the distillers write (`ask`, `rules_in`,
+ * `rules_out`, `information_value`, `frame`, `order`) and no form field holds:
+ * pass the rule's CURRENT `move` as `prior` and those six ride through
+ * untouched. The key is always returned, so clearing both halves genuinely
+ * deletes them rather than leaving the stale policy the Expert thinks they
+ * cleared.
+ */
+export function ruleMoveFromFields(
+  values: RuleMoveFieldValues,
+  prior?: RuleMove,
+): {
+  move?: RuleMove;
+} {
+  const lines = (raw: string): string[] =>
+    raw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  const precondition = parseRuleMoveWhen({
+    summary: values.preconditionSummary,
+    known: lines(values.preconditionKnown),
+    unknown: lines(values.preconditionUnknown),
+  });
+  const next_action = parseRuleMoveNext({
+    kind: values.nextActionKind,
+    target: values.nextActionTarget,
+    buys: values.nextActionBuys,
+    cost: values.nextActionCost ? Number(values.nextActionCost) : undefined,
+    risk: values.nextActionRisk ? Number(values.nextActionRisk) : undefined,
+    urgency: values.nextActionUrgency || undefined,
+  });
+  const { when: priorWhen, next: _priorNext, ...carried } = prior ?? {};
+  // The same law one level down: `when` carries `counterparty_state`, which no
+  // form field owns and the Rulebook document prints. Carry every key of the
+  // prior `when` the form does not own — but only onto a `when` that survives,
+  // so clearing the summary still deletes the whole half.
+  const { summary: _s, known: _k, unknown: _u, ...carriedWhen } =
+    priorWhen ?? {};
+  const move: RuleMove = {
+    ...carried,
+    ...(precondition ? { when: { ...carriedWhen, ...precondition } } : {}),
+    ...(next_action ? { next: next_action } : {}),
+  };
+  return { move: Object.keys(move).length ? move : undefined };
 }
 
 /** One rule of the Rulebook. `id` is the citable handle every audit verdict points at. */
@@ -380,6 +632,17 @@ export interface RulebookRule {
    * compares, and relations are structural, not prose.
    */
   relates_to?: RuleRelation[];
+  /**
+   * 🚨 THE MOVE (trial 7 + W70) — the machine-readable body of a rule that is
+   * a STEP rather than a standing statement: when it fires (`when`, including
+   * what is still unknown and the counterparty's state) and what to do next
+   * (`next`). Trial 7 built these as top-level `precondition` / `next_action`
+   * OBJECTS; 592 live rules already carried those two keys as STRINGS, so the
+   * structured halves moved in here on 2026-09-13 and the flat strings below
+   * stayed. Mirrors `distill.py::Move`. Rendered by `RuleMove`, never by
+   * `RuleDecision`.
+   */
+  move?: RuleMove;
   /**
    * 🚨 THE DECISION HALF (W58, 2026-09-12) — see `RULE_POLICY_KIND` above.
    * `"policy"` means this rule is a judgment made under uncertainty, not a
@@ -852,6 +1115,17 @@ export interface Masterwork {
    * rendered on the Rulebook page, not in the built-Masterworks list.
    */
   understudy: boolean;
+  /**
+   * Understudy only — WHEN this stand-in was last rebuilt from the Rulebook,
+   * and WHAT it was rebuilt from. Stamped by aidream's understudy builder into
+   * the workflow row's metadata on every rebuild. The card shows both, because
+   * a stand-in silently two hours behind the rules is the same lie as a stale
+   * cache: on 2026-09-12 an Expert approved 88 rules and tested a stand-in
+   * that had seen none of them. Null on a row built before the stamp existed.
+   */
+  understudy_refreshed_at: string | null;
+  /** Understudy only — the rule counts baked into the running stand-in. */
+  understudy_rules: { approved: number; unconfirmed: number } | null;
   /**
    * THE ARCHIVED-ITEMS LAW (`common-docs/policies/archived-items.md`, Arman
    * 2026-09-09). `workflow.definition.is_archived` — carried on EVERY

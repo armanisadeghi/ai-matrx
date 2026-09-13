@@ -12,6 +12,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -206,8 +207,7 @@ export function CompactAssistantInput({
             <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 rounded px-1.5 py-0.5 animate-pulse">
               <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               <span className="text-[10px] font-medium text-blue-700 dark:text-blue-300">
-                {Math.floor(duration / 60)}:
-                {String(duration % 60).padStart(2, "0")}
+                {formatDurationSeconds(duration, { style: "clock" })}
               </span>
               <button
                 onClick={stopRecording}

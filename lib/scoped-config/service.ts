@@ -26,6 +26,16 @@ export type KnobScopeRef = {
   id: string;
 };
 
+/** One standing override row at a per-row rung, as the override store holds it. */
+export type KnobRungOverrideRow = {
+  scope_kind: KnobScopeKindName;
+  scope_id: string;
+  value: unknown;
+  updated_at: string | null;
+  updated_by: string | null;
+  set_note: string | null;
+};
+
 export async function fetchKnobIndex(options: {
   organizationId: string;
   featurePrefix?: string;
@@ -79,6 +89,48 @@ export async function setKnobOverride(options: {
   // changes behaviour in THIS tab the moment the screen says "saved".
   invalidateEffectiveKnob(`${options.feature}.${options.key}`);
   return data as KnobOverrideSetResult;
+}
+
+/**
+ * EVERY standing override for ONE key at the per-row rungs (table / agent /
+ * sub-organization) inside ONE organization — the list the per-rung override
+ * picker renders (DD-183).
+ *
+ * Why a table read and not `knob_index`: `knob_index` answers "what is the
+ * value HERE", for the rungs the CALLER addressed. A screen that wants "which
+ * tables have their own value for this key" does not know the rows to address
+ * — that is the question. Addressing all 800 registered tables to discover the
+ * three that are set would be a read of the whole catalogue per knob.
+ *
+ * This is a LIST read, never a resolution read: it returns the rows that exist
+ * and nothing about precedence, and no surface may derive an effective value
+ * from it (that stays `knob_index` / `knob_resolve`, which is what the header
+ * of this file forbids going around). `platform.knob_override` grants
+ * `authenticated` SELECT under `knob_override_read`
+ * (`organization_id in (select iam.my_orgs())`), so the caller's own JWT and
+ * RLS decide what comes back — there is nothing to gate here either.
+ */
+export async function fetchKnobRungOverrides(options: {
+  feature: string;
+  key: string;
+  organizationId: string;
+  /** The rungs to list. Empty list = nothing to ask for, so nothing is asked. */
+  kinds: readonly KnobScopeKindName[];
+}): Promise<KnobRungOverrideRow[]> {
+  if (options.kinds.length === 0) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from("knob_override")
+    .select("scope_kind, scope_id, value, updated_at, updated_by, set_note")
+    .eq("feature", options.feature)
+    .eq("key", options.key)
+    .eq("organization_id", options.organizationId)
+    .in("scope_kind", options.kinds as string[]);
+  if (error) throw new Error(`Reading the existing overrides failed: ${error.message}`);
+  return ((data ?? []) as KnobRungOverrideRow[]).filter(
+    (row): row is KnobRungOverrideRow => row.scope_id !== null,
+  );
 }
 
 /**

@@ -915,7 +915,7 @@ export function ExportRunList({
 
       {run.phase === "not_observable" ? (
         <Alert>
-          <Loader2 className="h-4 w-4" aria-hidden />
+          <CheckCircle2 className="h-4 w-4" aria-hidden />
           <AlertTitle>The replacement was accepted</AlertTitle>
           <AlertDescription>
             This environment serves HR from fixtures, so there is no run to

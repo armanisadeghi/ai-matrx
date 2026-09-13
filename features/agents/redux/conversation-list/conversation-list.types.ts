@@ -85,6 +85,18 @@ export interface ConversationListState {
   agentCaches: Record<string, ConversationListAgentCacheEntry>;
 
   /**
+   * THE TRASH — soft-deleted conversations (`deleted_at IS NOT NULL`), read on
+   * demand by the trash disclosure that every conversation list carries. They
+   * live in their OWN id list, never in `allConversationIds`, so a deleted row
+   * can never leak back into a normal list.
+   */
+  trashConversationIds: string[];
+  /** Bodies for the trash list, deliberately separate from `byConversationId`. */
+  trashByConversationId: Record<string, ConversationListItem>;
+  trashStatus: ConversationListLoadStatus;
+  trashError: string | null;
+
+  /**
    * In-flight optimistic operations (rename, delete). Stored as an array
    * (not Set) for serializability — the shared package requires JSON-safe state.
    */

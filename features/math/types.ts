@@ -1,5 +1,7 @@
 // features/math/types.ts
 
+import type { Database } from "@/types/database.types";
+
 /**
  * Step within a solution for a problem
  */
@@ -57,7 +59,8 @@ export type MathProblem = {
 /**
  * Insert type for creating new math problems
  */
-export type MathProblemInsert = Omit<MathProblem, 'id' | 'created_at' | 'updated_at'>;
+export type MathProblemInsert =
+    Database["education"]["Tables"]["math_problems"]["Insert"];
 
 /**
  * Props for the MathProblem component
@@ -75,4 +78,3 @@ export type MathProblemProps = Pick<
     | 'problem_statement'
     | 'solutions'
 >;
-

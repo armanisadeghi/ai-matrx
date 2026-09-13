@@ -9,10 +9,13 @@ import { NoteEditorDock } from "./NoteEditorDock";
 import { useNoteDelete } from "../../hooks/useNoteDelete";
 import { useToastManager } from "@/hooks/useToastManager";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
+import { noteIdentityContentSource } from "../../richDocumentSource";
+import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
@@ -74,8 +77,16 @@ export default function MobileNoteEditor({
   const [localContent, setLocalContent] = useState(note.content || "");
   const [localFolder, setLocalFolder] = useState(note.folder_name || "Draft");
   const [localTags, setLocalTags] = useState<string[]>(note.tags || []);
+  const editingActorId = useAppSelector((state) => state.userAuth.id);
+  const acknowledgedRecord = useAppSelector((state) => state.notes.notes[note.id]);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const editableContentSource = usePreparedNoteContentSource(
+    editingActorId && acknowledgedRecord?._acknowledgedPhysicalSnapshot
+      ? { record: acknowledgedRecord, displayedNote: { ...note, label: localLabel, content: localContent, folder_name: localFolder, tags: localTags }, actorId: editingActorId, hasLocalEdits: isDirty || acknowledgedRecord._dirty || localContent !== (acknowledgedRecord.content || "") || localLabel !== (acknowledgedRecord.label || "") || localFolder !== (acknowledgedRecord.folder_name || "Draft") || JSON.stringify(localTags) !== JSON.stringify(acknowledgedRecord.tags || []) }
+      : null,
+  );
 
   // The delete confirmation belongs to the platform, not to this screen —
   // `requestDelete` opens the canonical `confirm()` (see useNoteDelete). The
@@ -304,7 +315,7 @@ export default function MobileNoteEditor({
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
-            contentSource={{ type: "note", noteId: note.id } satisfies ContentSource}
+            contentSource={noteIdentityContentSource(note.id, `mobile-readonly:${note.id}`)}
             entity={{
               type: "note",
               id: note.id,
@@ -328,7 +339,7 @@ export default function MobileNoteEditor({
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
             contentSource={
-              { type: "note", noteId: note.id } satisfies ContentSource
+              editableContentSource
             }
             entity={{
               type: "note",
@@ -376,7 +387,7 @@ export default function MobileNoteEditor({
             {localContent.trim() ? (
               <RichDocument
                 content={localContent}
-                source={{ type: "note", noteId: note.id } as ContentSource}
+                source={editableContentSource ?? noteIdentityContentSource(note.id, `mobile-preview:${note.id}`)}
                 actionsVariant="mini-bar"
                 actionsClassName="mb-2"
               />

@@ -32,6 +32,7 @@ import {
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
+import { ChatSandboxDock } from "./sandbox-insight/ChatSandboxDock";
 import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
@@ -644,7 +645,8 @@ export function ChatRoomClient({
       isEditable
     >
       <div className="flex h-full flex-col overflow-hidden bg-textured">
-        <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
+        <div className="flex-1 min-h-0 overflow-hidden flex">
+          <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex justify-center">
           <AgentConversationColumn
             conversationId={conversationId}
             surfaceKey={surfaceKey}
@@ -668,6 +670,10 @@ export function ChatRoomClient({
                 : aboveInput
             }
           />
+          </div>
+          {/* The bound sandbox, live. Renders nothing when no box is bound or
+              the user has the panel closed; a bottom sheet on a phone. */}
+          <ChatSandboxDock conversationId={conversationId} />
         </div>
       </div>
       {/* ?attachDoc= deep link (fresh routes only) — the working document's

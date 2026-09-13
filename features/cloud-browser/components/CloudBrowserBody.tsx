@@ -16,7 +16,7 @@
  * driving. The controller banner always names who is in control.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
@@ -28,12 +28,21 @@ import { CLOUD_BROWSER_ASSIST_SURFACE } from "../constants";
 import { useCloudBrowser } from "../hooks/useCloudBrowser";
 import { useCloudBrowserTakeover } from "../hooks/useCloudBrowserTakeover";
 import { useScreenshotSession } from "../hooks/useScreenshotSession";
-import { dismissHandoff, mintStreamTicket } from "../service";
+import {
+  dismissHandoff,
+  mintStreamTicket,
+  StreamConnectError,
+} from "../service";
+import { BackendApiError } from "@/lib/api/errors";
 import type { StreamTicketEnvelope } from "../types";
 
 import { WrittenProgressFace } from "./WrittenProgressFace";
 import { ScreenshotFace } from "./ScreenshotFace";
 import { TakeoverCanvas } from "./TakeoverCanvas";
+import {
+  CloudBrowserStartFailed,
+  CloudBrowserStarting,
+} from "./CloudBrowserStartState";
 import { ControllerBanner } from "./ControllerBanner";
 import { ProfileSelector } from "./ProfileSelector";
 import { TelemetrySurface } from "./TelemetrySurface";
@@ -82,9 +91,21 @@ export function CloudBrowserBody({
   const [busy, setBusy] = useState(false);
   const [ticket, setTicket] = useState<StreamTicketEnvelope | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [streamError, setStreamError] = useState<{
+    message: string;
+    /** Refused because this browser's live view is open in another tab or
+     *  window — recoverable with one click ("Show it here"). */
+    openElsewhere: boolean;
+  } | null>(null);
 
   const controller = cb.controller;
   const isMeDriving = controller?.kind === "human" && controller.isMe;
+
+  // Before there is a browser, the Live area says what is happening instead
+  // of showing empty faces. `startFailed` wins over `starting` because a failed
+  // load is finished (the slice clears `loading` when it records an error).
+  const startFailed = !cb.run && !!cb.error;
+  const starting = !cb.run && !cb.error;
 
   // The media face the primary pane shows.
   const face: FaceTab = isMeDriving
@@ -101,21 +122,62 @@ export function CloudBrowserBody({
   const openStream = useCallback(async (takeover = false) => {
     if (!cb.run) return;
     setConnecting(true);
+    setStreamError(null);
     try {
       const t = await mintStreamTicket(cb.run.id, "control", takeover);
       setTicket(t);
+    } catch (error) {
+      // The takeover itself already succeeded — the person IS in control. A
+      // failed live view is shown IN the canvas where they are looking, not
+      // thrown into a toast that disappears and leaves a spinner behind.
+      setTicket(null);
+      setStreamError({
+        message:
+          error instanceof BackendApiError
+            ? error.userMessage
+            : error instanceof Error
+              ? error.message
+              : "The live browser connection failed.",
+        openElsewhere:
+          error instanceof StreamConnectError &&
+          error.code === "stream_already_connected",
+      });
     } finally {
       setConnecting(false);
     }
   }, [cb.run]);
 
+  // Whenever THIS person is driving and no live view is open, open it — once
+  // per control revision, so a refused open never retries itself in a loop.
+  // Only Take control and Reconnect used to open it, so a reload or a second
+  // tab left the canvas with nothing ever attempted. It opens NORMALLY (not
+  // as a takeover): if the view is live in another tab the server refuses
+  // with `stream_already_connected`, and the canvas offers "Show it here"
+  // rather than silently disconnecting that tab.
+  const autoOpenedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isMeDriving || !cb.run || ticket || connecting) return;
+    const key = `${cb.run.id}:${controller?.controlRevision ?? 0}`;
+    if (autoOpenedFor.current === key) return;
+    autoOpenedFor.current = key;
+    void openStream(false);
+  }, [
+    isMeDriving,
+    cb.run,
+    ticket,
+    connecting,
+    controller?.controlRevision,
+    openStream,
+  ]);
+
   /** The claim itself — control plane + control stream. WHEN it runs is the
    *  takeover controller's business, not this component's. */
-  const claimControl = useCallback(async () => {
+  const claimControl = useCallback(async (opts?: { immediate?: boolean }) => {
     setBusy(true);
     try {
-      await cb.takeControl();
-      await openStream();
+      await cb.takeControl(opts);
+      // The live view opens from the effect below — the ONE place that opens
+      // it — so a fresh take, a reload and a second tab all behave the same.
       toast.info("You are now driving this browser.");
     } catch (error) {
       toastErrorAlreadyCaptured(
@@ -124,7 +186,7 @@ export function CloudBrowserBody({
     } finally {
       setBusy(false);
     }
-  }, [cb, openStream]);
+  }, [cb]);
 
   // Steer by default, interrupt on demand — the composer's duality, reused.
   const takeover = useCloudBrowserTakeover({
@@ -156,6 +218,7 @@ export function CloudBrowserBody({
     try {
       await cb.returnControl();
       setTicket(null);
+      setStreamError(null);
       toast.success("Control returned to the agent.");
     } catch (error) {
       toastErrorAlreadyCaptured(
@@ -223,6 +286,28 @@ export function CloudBrowserBody({
         />
       ) : null}
 
+      {/* A refresh that failed while a browser is running. Shown at the TOP,
+          where the person is looking — it used to sit under the tab area. A
+          failure with no browser renders inside the Live area instead. */}
+      {cb.run && cb.error ? (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400"
+        >
+          <span>{cb.error.message}</span>
+          {cb.error.retryable ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void cb.retry()}
+              disabled={cb.loading}
+            >
+              Try again
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       {controller ? (
         <ControllerBanner
           controller={controller}
@@ -236,6 +321,7 @@ export function CloudBrowserBody({
           waitingForAgent={takeover.waiting}
           onTakeImmediately={takeover.takeOverImmediately}
           busy={busy || takeover.phase === "claiming"}
+          claiming={takeover.phase === "claiming"}
         />
       ) : null}
 
@@ -256,7 +342,7 @@ export function CloudBrowserBody({
         <TabsContent value="live" className="min-h-0 flex-1">
           <div className="flex h-full min-h-0 flex-col gap-2">
             {/* Face switcher — written vs screenshots (takeover is auto). */}
-            {face !== "takeover" ? (
+            {face !== "takeover" && cb.run ? (
               <div className="flex items-center gap-1.5 text-xs">
                 <Button
                   size="sm"
@@ -286,12 +372,22 @@ export function CloudBrowserBody({
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
-              {face === "takeover" && controller ? (
+              {startFailed && cb.error ? (
+                <CloudBrowserStartFailed
+                  error={cb.error}
+                  retrying={cb.loading}
+                  onRetry={() => void cb.retry()}
+                />
+              ) : starting ? (
+                <CloudBrowserStarting />
+              ) : face === "takeover" && controller ? (
                 <div className="h-full p-2">
                   <TakeoverCanvas
                     controller={controller}
                     ticket={ticket}
                     connecting={connecting}
+                    openError={streamError?.message ?? null}
+                    openElsewhere={streamError?.openElsewhere ?? false}
                     onReconnect={() => void openStream(true)}
                   />
                 </div>
@@ -451,15 +547,6 @@ export function CloudBrowserBody({
         </TabsContent>
       </Tabs>
 
-      {cb.error ? (
-        <p
-          className={cn(
-            "rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400",
-          )}
-        >
-          {cb.error}
-        </p>
-      ) : null}
     </div>
   );
 }

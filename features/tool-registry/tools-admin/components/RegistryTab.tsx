@@ -33,11 +33,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { addToolBinding } from "@/features/tool-registry/shared/toolBindings.service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import {
   listToolBindings,
-  addToolBinding,
   updateToolBinding,
   removeToolBinding,
   listSurfacesIncludingTool,

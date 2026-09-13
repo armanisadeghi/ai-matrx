@@ -37,6 +37,13 @@ import type { Scope } from "./scope/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 
+// This RPC gates the initial task workspace as well as the organization and
+// scope pickers. It must reach a visible retry state rather than leaving every
+// dependent surface in a permanent skeleton when the request stalls.
+export const FULL_CONTEXT_REQUEST_TIMEOUT_MS = 20_000;
+const FULL_CONTEXT_TIMEOUT_MESSAGE =
+  "Loading your workspace took too long. Please try again.";
+
 // ─── Internal helpers ─────────────────────────────────────────────────────
 
 /**
@@ -84,10 +91,23 @@ function mapScope(orgId: string, s: FullContextScope): Scope {
 
 async function doFetchFullContext(dispatch: AppDispatch) {
   dispatch(fullContextFetchStarted());
+  const controller = new AbortController();
+  let didTimeout = false;
+  const timeoutId = setTimeout(() => {
+    didTimeout = true;
+    controller.abort();
+  }, FULL_CONTEXT_REQUEST_TIMEOUT_MS);
+
   try {
-    const { data, error } = await supabase.rpc("get_user_full_context");
+    const { data, error } = await supabase
+      .rpc("get_user_full_context")
+      .abortSignal(controller.signal);
 
     if (error) {
+      if (didTimeout) {
+        throw new Error(FULL_CONTEXT_TIMEOUT_MESSAGE);
+      }
+
       // New users with no org memberships may trigger a Postgres-level error
       // (e.g. RLS, no rows). Treat this as an empty state rather than a crash.
       const msg = extractErrorMessage(error);
@@ -144,9 +164,13 @@ async function doFetchFullContext(dispatch: AppDispatch) {
 
     dispatch(fullContextFetchSucceeded(response));
   } catch (err) {
-    const message = extractErrorMessage(err);
+    const message = didTimeout
+      ? FULL_CONTEXT_TIMEOUT_MESSAGE
+      : extractErrorMessage(err);
     console.error("[fetchFullContext]", message, err);
     dispatch(fullContextFetchFailed(message));
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

@@ -20,6 +20,7 @@
 
 import { Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { requestScribeAudioSeek } from "@/features/transcript-studio/state/scribeAudioBus";
 import { useScribeCitationSessionId } from "@/features/transcript-studio/state/ScribeCitationContext";
 
@@ -28,13 +29,6 @@ interface AudioCitationBlockProps {
   content: string;
   /** Attributes parsed from the opening tag: start, end, session. */
   metadata?: Record<string, string>;
-}
-
-function formatClock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export function AudioCitationBlock({
@@ -68,7 +62,7 @@ export function AudioCitationBlock({
       disabled={!playable}
       title={
         playable
-          ? `Play audio from ${formatClock(start)}${end != null ? `–${formatClock(end)}` : ""}`
+          ? `Play audio from ${formatDurationSeconds(start, { style: "clock" })}${end != null ? `–${formatDurationSeconds(end, { style: "clock" })}` : ""}`
           : "Audio reference"
       }
       className={cn(
@@ -82,7 +76,7 @@ export function AudioCitationBlock({
       {label && <span className="truncate">{label}</span>}
       {hasValidTime && (
         <span className="shrink-0 font-mono text-xs tabular-nums opacity-80">
-          {formatClock(start)}
+          {formatDurationSeconds(start, { style: "clock" })}
         </span>
       )}
     </button>

@@ -125,7 +125,10 @@ export function validateProblem(problem: any): ValidationResult {
  * Transform AI-generated problem to database format
  * Applies LaTeX normalization to fix common AI mistakes
  */
-export function transformProblem(problem: AIGeneratedProblem): any {
+export function transformProblem(
+    problem: AIGeneratedProblem,
+    organizationId: string,
+): MathProblemInsert {
     // First, normalize all LaTeX content to fix common AI mistakes
     const normalized = normalizeMathProblemLatex(problem);
     
@@ -150,6 +153,8 @@ export function transformProblem(problem: AIGeneratedProblem): any {
         sort_order: normalized.sort_order || 0,
         is_published: true,
         created_by: null,
+        organization_id: organizationId,
+        visibility: "internal",
     };
 }
 
@@ -162,6 +167,7 @@ export function transformProblem(problem: AIGeneratedProblem): any {
  */
 export async function importMathProblem(
     problem: AIGeneratedProblem,
+    organizationId: string,
     validate: boolean = true
 ): Promise<{ success: boolean; error?: string }> {
     try {
@@ -177,7 +183,7 @@ export async function importMathProblem(
         }
 
         // Transform and insert
-        const transformed = transformProblem(problem);
+        const transformed = transformProblem(problem, organizationId);
         await insertMathProblem(transformed);
 
         return { success: true };
@@ -199,6 +205,7 @@ export async function importMathProblem(
  */
 export async function importMathProblems(
     problems: AIGeneratedProblem[],
+    organizationId: string,
     validate: boolean = true,
     stopOnError: boolean = false
 ): Promise<ImportResult> {
@@ -221,7 +228,7 @@ export async function importMathProblems(
             }
 
             // Transform and insert
-            const transformed = transformProblem(problem);
+            const transformed = transformProblem(problem, organizationId);
             await insertMathProblem(transformed);
             result.inserted++;
         } catch (error: unknown) {
@@ -256,6 +263,7 @@ export async function importMathProblems(
  */
 export async function importFromJSON(
     jsonString: string,
+    organizationId: string,
     validate: boolean = true
 ): Promise<ImportResult> {
     try {
@@ -276,7 +284,7 @@ export async function importFromJSON(
             problems = [parsed];
         }
         
-        return await importMathProblems(problems, validate);
+        return await importMathProblems(problems, organizationId, validate);
     } catch (error: any) {
         return {
             success: false,
@@ -342,4 +350,3 @@ export function validateJSON(jsonString: string): {
         };
     }
 }
-

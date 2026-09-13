@@ -17,6 +17,7 @@ import {
   Rows2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export interface AudioOutputBlockProps {
   /** URL to the audio file */
@@ -36,13 +37,6 @@ export interface AudioOutputBlockProps {
 /* ─────────────────────────────────────────────────────────────────────────────
    Shared utilities
 ───────────────────────────────────────────────────────────────────────────── */
-
-function formatTime(t: number): string {
-  if (!t || isNaN(t)) return "0:00";
-  const m = Math.floor(t / 60);
-  const s = Math.floor(t % 60);
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
-}
 
 /* Animated equalizer bars — purely CSS, no JS timers */
 function EqualizerBars({ active }: { active: boolean }) {
@@ -343,8 +337,8 @@ function PortraitPlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
           className="audio-range"
         />
         <div className="flex justify-between mt-1.5 text-[10px] font-mono text-muted-foreground">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
+          <span>{formatDurationSeconds(currentTime, { style: "clock" })}</span>
+          <span>{formatDurationSeconds(duration, { style: "clock" })}</span>
         </div>
       </div>
 
@@ -506,8 +500,8 @@ function LandscapePlayer({ url, mimeType, title, artist, cover }: PlayerProps) {
               className="audio-range"
             />
             <div className="flex justify-between mt-1 text-[10px] font-mono text-muted-foreground">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
+              <span>{formatDurationSeconds(currentTime, { style: "clock" })}</span>
+              <span>{formatDurationSeconds(duration, { style: "clock" })}</span>
             </div>
           </div>
 

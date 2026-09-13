@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-09-10`
+**Last updated:** `2026-09-12`
 
 ---
 
@@ -26,6 +26,16 @@ Every recording made through the shared recorder is auto-persisted as a `transcr
 - **Persistence needed no schema change** — `transcripts.transcripts.metadata` is an existing jsonb column. Readers query `metadata->origin->>conversationId` and must go through `parseRecordingOrigin` (every row written before this date has no origin at all).
 - **The door back** is `features/transcripts/components/RecordingOriginRef.tsx`, rendered in `TranscriptViewer`.
 - **Guarded by `__tests__/recordingOrigin.test.tsx`.** The microphone cannot be driven in a headless browser, so these are the only tests that can prove the write path; a regression here breaks nothing visible — recording keeps working and the words silently become unfindable again.
+
+## DICTATION FROM OUTSIDE THE FIELD — one start, no second recorder (2026-09-12)
+
+A keyboard-first surface must be able to say "press V and start talking into this box" without owning a recorder. `useMicField` therefore exposes the verbs, not just the button handler:
+
+- **`startDictation()` / `stopDictation()` are THE verb set**, and `handleVoiceClick` (the mic button) is written in terms of them. A key, a command palette, or an imperative handle calls the SAME functions the button calls — never `capture.start()` directly, which skips the append-base snapshot and makes a keyed recording behave differently from a clicked one.
+- **`ProTextarea` forwards them on the DOM node.** Its ref is a real `HTMLTextAreaElement` carrying `startDictation()` / `stopDictation()` / `isDictating()` expandos (type it `ProTextareaElement`), beside the older `requestClose()` / `isTranscribing()`. Expandos, not `useImperativeHandle`, because ~390 consumers forward that ref expecting a genuine textarea.
+- **A programmatic start NEVER fails silently.** With `enableVoice={false}`, a `disabled` field, no microphone, no recorder on the route, or a transcript still finalizing, `startDictation()` returns `{ started: false, reason, message }` **and** raises the sentence as a toast plus `onTranscriptionError`. The caller may also print `message` inline; a caller that ignores the return value still cannot produce a dead key.
+- **Everything else is unchanged**: one recording app-wide, start-always-wins, the same `RecordingOriginProvider` stamp, the same recording-protection modal on close.
+- **Guarded by `components/official/ProTextarea.dictation-handle.test.tsx`** — it mounts the field, mocks only the recorder, and asserts the handle produces the SAME `RecordingContext` a mic-button click produces, plus the loud refusal on a voice-disabled box.
 
 ## LISTENING & SPEECH — the read-aloud stack and its three-tier settings (2026-09-10)
 
@@ -249,6 +259,8 @@ The canonical "what mic/speaker is selected and is the mic permission granted" s
 Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and transcription finalization decisions; the device manager is covered in `features/media-devices/__tests__/deviceManager.test.ts`. MediaRecorder lifecycle, playback queue, session registry, TTS hooks, and providers still require manual/in-browser verification — do not claim otherwise.
 
 ## Change log
+
+- `2026-09-12` — **Dictation can be started from outside the field.** `useMicField` now exposes `startDictation()` / `stopDictation()` as the one verb set (the mic button's `handleVoiceClick` is written in terms of them), and `ProTextarea` forwards them plus `isDictating()` on its DOM node as `ProTextareaElement` expandos. A programmatic start on a voice-disabled, disabled, mic-less, recorder-less or still-finalizing box returns a named reason with a sentence AND raises it as a toast + `onTranscriptionError` — never a silent no-op. Zero change for every existing consumer (same props, same ref shape, same recorder). First consumer: the Question Desk's **V** key. Guard: `components/official/ProTextarea.dictation-handle.test.tsx` (proven failing before the change).
 
 - `2026-09-08` — **Listening & Speech gets a handoff; audio docs re-verified against reality.** The Listen/read-aloud feature had shipped with no owning doc and no handoff — it existed only as change-log entries in four unrelated FEATURE.md files. Work order + Arman's verbatim vision now live at [`docs/handoffs/listening-and-speech.md`](../../docs/handoffs/listening-and-speech.md) (registered on the cross-repo orphan list). Two drifts repaired: the `tts-audio-system` skill (its directory map omitted `service/`, `playback/`, `session/`, `unlock.ts` — the entire modern system — and two "Known Deferred Issues" asserted gaps the queue/lock architecture had already closed), and `features/window-panels/FEATURE.md`'s 2026-08-27 entry, which still claimed the Listen settings pane writes `userPreferences.voice.*`. Live state confirmed: mandate `ambient.spoken_summary` survived the `agent.mandate` → `mandate.definition` move (holder model) with its holder agent intact; `listening` namespace holds 1 system row + 33 user rows + **0 org rows** — the org rung resolves but has no editor, which is the handoff's headline leftover.
 

@@ -30,6 +30,7 @@ import { resolveConfigSection } from "./configTree";
 import { useUniversalSettings } from "./UniversalSettingsContext";
 import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 import { auditedSettingsDispositions, dispositionFor } from "./disposition";
+import { KnobRungOverrides } from "./KnobRungOverrides";
 
 export function UniversalSettingsRows({
   knobs,
@@ -88,25 +89,37 @@ export function UniversalSettingsRows({
       {[...groups.entries()].map(([group, rows]) => (
         <SettingsSection key={group} title={group}>
           {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId, ladder }) => (
-            <KnobOverrideRow
-              key={knob.full_key}
-              knob={knob}
-              scopeKind={scopeKind}
-              scopeId={scopeId}
-              organizationId={organizationId ?? ""}
-              ladder={ladder}
-              blastRadius={blastRadiusFor(scopeKind, {
-                organizationName,
-                members: memberCount,
-              })}
-              system={settings.editingContext === "system" ? {
-                canWrite: settings.canManageSystem,
-                registeredDefault: knob.shipped_default,
-              } : undefined}
-              stateOnly={dispositionFor(knob.full_key, settings.editingContext)}
-              hideKey={hideKey}
-              onChanged={onChanged ?? settings.refresh}
-            />
+            <div key={knob.full_key}>
+              <KnobOverrideRow
+                knob={knob}
+                scopeKind={scopeKind}
+                scopeId={scopeId}
+                organizationId={organizationId ?? ""}
+                ladder={ladder}
+                blastRadius={blastRadiusFor(scopeKind, {
+                  organizationName,
+                  members: memberCount,
+                })}
+                system={settings.editingContext === "system" ? {
+                  canWrite: settings.canManageSystem,
+                  registeredDefault: knob.shipped_default,
+                } : undefined}
+                stateOnly={dispositionFor(knob.full_key, settings.editingContext)}
+                hideKey={hideKey}
+                onChanged={onChanged ?? settings.refresh}
+              />
+              {/*
+                DD-183 — the rungs keyed by a ROW (table, agent, pay group, …)
+                are ORGANIZATION policy: the organization decides that this one
+                table is different, and the door gates those rungs on
+                owner/admin. So the exceptions hang under the ORGANIZATION
+                destination only; the personal tab edits one person's own value
+                and has no rows to pick.
+              */}
+              {settings.editingContext === "organization" && (
+                <KnobRungOverrides knob={knob} />
+              )}
+            </div>
           ))}
         </SettingsSection>
       ))}

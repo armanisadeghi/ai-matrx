@@ -24,8 +24,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Pencil,
-  Trash2,
   Building2,
   Lock,
   BookOpen,
@@ -33,6 +31,10 @@ import {
   Globe,
   ImageOff,
 } from "lucide-react";
+import {
+  PencilTapButton,
+  TrashTapButton,
+} from "@ai-matrx/tap-target/buttons";
 import type { AiProvider } from "../../types";
 
 function LinkIcon({
@@ -150,55 +152,31 @@ function RowActions({
   const [pendingDelete, setPendingDelete] = useState(false);
   return (
     <>
-      <TooltipProvider delayDuration={200}>
-        <div className="flex items-center gap-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 sm:h-7 sm:w-7"
-                aria-label={`Edit ${item.name}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onEdit(item);
-                }}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit provider</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 sm:h-7 sm:w-7"
-                  aria-label={
-                    item.is_system
-                      ? "System providers cannot be deleted"
-                      : `Delete ${item.name}`
-                  }
-                  disabled={item.is_system}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setPendingDelete(true);
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              {item.is_system
-                ? "System providers cannot be deleted"
-                : "Delete provider"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </TooltipProvider>
+      <div onClick={(event) => event.stopPropagation()}>
+        <PencilTapButton
+          variant="transparent"
+          ariaLabel={`Edit ${item.name}`}
+          tooltip="Edit provider"
+          onClick={() => onEdit(item)}
+        />
+        <TrashTapButton
+          variant="solid"
+          bgColor="bg-destructive/10"
+          iconColor="text-destructive"
+          hoverBgColor="hover:bg-destructive/20"
+          activeBgColor="active:bg-destructive/25"
+          ariaLabel={
+            item.is_system
+              ? "System providers cannot be deleted"
+              : `Delete ${item.name}`
+          }
+          tooltip={
+            item.is_system ? "System providers cannot be deleted" : "Delete provider"
+          }
+          disabled={item.is_system}
+          onClick={() => setPendingDelete(true)}
+        />
+      </div>
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>

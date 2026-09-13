@@ -48,6 +48,8 @@ const SCHEMA_BRANCHES = [
 const SCHEMA_MAPS = ["properties", "$defs", "definitions", "patternProperties"] as const;
 
 /** Depth cap: a schema that recurses forever must not hang a render. */
+// KNOB MIRROR of platform.feature_knob "tool_call_visualization" "schema_label_max_depth" — a synchronous recursion guard.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const MAX_DEPTH = 12;
 
 /**

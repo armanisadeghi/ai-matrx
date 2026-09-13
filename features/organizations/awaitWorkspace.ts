@@ -35,6 +35,7 @@ import {
   waitForOrganizationAdmission,
   type OrganizationAdmission,
 } from "@/lib/api/organization-admission";
+import { knobInt } from "@/lib/knobs/featureKnobs";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
@@ -48,13 +49,14 @@ export type WorkspaceResolution =
   | { status: "unavailable"; reason: string };
 
 /**
- * How long an ACTION waits. `waitForOrganizationAdmission` bounds itself at 8
- * seconds, which is right for a background transport and far too long for a
- * person watching a button. The wait that actually matters is the rehydrate
- * plus cookie restore, which lands in milliseconds; past this cap the honest
- * answer is that the workspace is not coming without help.
+ * How long an ACTION waits — the `organizations.workspace action_wait_ms` knob.
+ * `waitForOrganizationAdmission` bounds itself at 8 seconds, which is right
+ * for a background transport and far too long for a person watching a button.
+ * The wait that actually matters is the rehydrate plus cookie restore, which
+ * lands in milliseconds; past this cap the honest answer is that the workspace
+ * is not coming without help.
  */
-const ACTION_WAIT_MS = 4_000;
+const WORKSPACE_KNOB_FEATURE = "organizations.workspace";
 
 const NO_WORKSPACE =
   "We could not tell which workspace to file this in. Pick one from the menu under your avatar, then press the button again — nothing was created.";
@@ -79,10 +81,11 @@ export async function awaitEffectiveOrganizationId(): Promise<WorkspaceResolutio
   const immediate = peekEffectiveOrganizationId();
   if (immediate) return { status: "ready", organizationId: immediate };
 
+  const actionWaitMs = await knobInt(WORKSPACE_KNOB_FEATURE, "action_wait_ms");
   await Promise.race([
     waitForOrganizationAdmission(),
     new Promise<OrganizationAdmission>((resolve) =>
-      setTimeout(() => resolve("timed-out"), ACTION_WAIT_MS),
+      setTimeout(() => resolve("timed-out"), actionWaitMs),
     ),
   ]);
 

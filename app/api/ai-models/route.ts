@@ -17,7 +17,17 @@ export async function GET() {
             supabase
                 .schema("ai")
                 .from("model_definition")
-                .select("*")
+                // The columns `anon` may read on ai.model_definition — this route
+                // uses the PUBLISHABLE key (getScriptSupabaseClient), so it runs as
+                // `anon` and `*` is refused (42501). It also CDN-caches its answer
+                // for 12 hours to the public internet, which is exactly why
+                // created_by / updated_by / organization_id / metadata / version are
+                // not in this list. Register: lib/security/public-exposure.ts
+                // #ANON_COLUMN_SURFACE, kept true to the live grants by
+                // `pnpm check:anon-column-surface` (DD-186).
+                .select(
+                    "id,name,common_name,context_window,max_tokens,capabilities,provider_id,is_deprecated,is_primary,is_premium,mid_fallback_id,guest_fallback_id,visibility,deleted_at,created_at,updated_at,release_date,description,cost_rating,speed_rating,retry_fallback_id,retry_max_attempts,retired_at,successor_id",
+                )
                 .is("deleted_at", null)
                 .eq("is_deprecated", false)
                 .order("common_name", { ascending: true }),

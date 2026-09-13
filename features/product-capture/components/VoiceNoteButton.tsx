@@ -12,6 +12,7 @@
  */
 
 import React, { useEffect } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Mic, Square } from "lucide-react";
 
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
@@ -24,12 +25,6 @@ interface VoiceNoteButtonProps {
    *  (one live capture app-wide — the video recorder shares the lock). */
   onActiveChange?: (active: boolean) => void;
   disabled?: boolean;
-}
-
-function formatSeconds(total: number): string {
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export function VoiceNoteButton({
@@ -75,7 +70,7 @@ export function VoiceNoteButton({
         <>
           <Square className="h-4 w-4 fill-current" />
           <span className="tabular-nums">
-            {formatSeconds(recorder.duration)}
+            {formatDurationSeconds(recorder.duration, { style: "clock" })}
           </span>
           <span
             className="ml-0.5 h-2 w-2 animate-pulse rounded-full bg-white"

@@ -1,4 +1,5 @@
 import reducer, {
+  acknowledgeRetiredEc2ApiSelectionNotice,
   clearServiceOverrides,
   selectApiServiceTargets,
   selectResolvedBaseUrl,
@@ -80,6 +81,128 @@ describe("multi-service API environment selection", () => {
         .activeServer,
     ).toBe("localhost");
 
+    window.localStorage.removeItem("matrx.apiConfig.v1");
+  });
+
+  it("migrates a persisted retired EC2 AI API selection to production with a durable notice", () => {
+    window.localStorage.setItem(
+      "matrx.apiConfig.v1",
+      JSON.stringify({
+        activeServer: "ec2",
+        customUrl: "https://unrelated-custom.example",
+        serviceOverrides: { scraper: "production" },
+        apiVersion: "v2",
+        pathOverrides: { "/ai/manual": "/v2/ai/manual" },
+        aiApiVersionOverride: "v2",
+      }),
+    );
+
+    let state = reducer(undefined, { type: "test/init" });
+    state = reducer(state, setLoopbackAccess());
+
+    expect(state.activeServer).toBe("production");
+    expect(state.retiredEc2ApiSelectionNotice).toBe(true);
+    expect(state.customUrl).toBe("https://unrelated-custom.example");
+    expect(state.serviceOverrides.scraper).toBe("production");
+    expect(state.apiVersion).toBe("v2");
+    expect(state.pathOverrides).toEqual({ "/ai/manual": "/v2/ai/manual" });
+    expect(selectResolvedBaseUrl(rootState(state))).toBe(
+      "https://server.app.matrxserver.com",
+    );
+    expect(state.health.production).toBeDefined();
+
+    state = reducer(state, acknowledgeRetiredEc2ApiSelectionNotice());
+    expect(state.retiredEc2ApiSelectionNotice).toBe(false);
+    expect(
+      JSON.parse(window.localStorage.getItem("matrx.apiConfig.v1") ?? "{}"),
+    ).toMatchObject({
+      activeServer: "production",
+      retiredEc2ApiSelectionNotice: false,
+    });
+    window.localStorage.removeItem("matrx.apiConfig.v1");
+  });
+
+  it("acknowledges a retired selection without erasing anonymous-sanitized loopback choices", async () => {
+    jest.replaceProperty(process.env, "NODE_ENV", "production");
+    const persisted = {
+      activeServer: "ec2",
+      customUrl: "http://127.0.0.1:8000",
+      serviceOverrides: { scraper: "localhost" },
+      apiVersion: "v2",
+      pathOverrides: { "/ai/manual": "/v2/ai/manual" },
+      aiApiVersionOverride: "v2",
+    };
+    window.localStorage.setItem("matrx.apiConfig.v1", JSON.stringify(persisted));
+
+    // A fresh module import is the real production browser boot boundary: the
+    // slice reads localStorage before any provider can acknowledge its notice.
+    jest.resetModules();
+    const apiConfig = await import("./apiConfigSlice");
+    const serviceRouting = await import("@/lib/api/service-routing");
+    let state = apiConfig.default(undefined, { type: "test/init" });
+    expect(state.activeServer).toBe("production");
+    expect(state.customUrl).toBeNull();
+    expect(state.serviceOverrides.scraper).toBeUndefined();
+    expect(state.retiredEc2ApiSelectionNotice).toBe(true);
+
+    state = apiConfig.default(
+      state,
+      apiConfig.acknowledgeRetiredEc2ApiSelectionNotice(),
+    );
+    expect(JSON.parse(window.localStorage.getItem("matrx.apiConfig.v1") ?? "{}"))
+      .toMatchObject({
+        ...persisted,
+        activeServer: "production",
+        retiredEc2ApiSelectionNotice: false,
+      });
+
+    serviceRouting.setLoopbackApiTargetsAdminUnlock(true);
+    state = apiConfig.default(state, apiConfig.setLoopbackAccess());
+    expect(state.customUrl).toBe(persisted.customUrl);
+    expect(state.serviceOverrides.scraper).toBe("localhost");
+    expect(state.apiVersion).toBe("v2");
+    expect(state.pathOverrides).toEqual(persisted.pathOverrides);
+    expect(state.aiApiVersionOverride).toBe("v2");
+    window.localStorage.removeItem("matrx.apiConfig.v1");
+  });
+
+  it("does not overwrite a valid selection made after boot and before acknowledgement", async () => {
+    jest.replaceProperty(process.env, "NODE_ENV", "production");
+    const retired = {
+      activeServer: "ec2",
+      customUrl: "http://127.0.0.1:8000",
+      serviceOverrides: { scraper: "localhost" },
+      apiVersion: "v2",
+      pathOverrides: { "/ai/manual": "/v2/ai/manual" },
+      aiApiVersionOverride: "v2",
+    };
+    window.localStorage.setItem("matrx.apiConfig.v1", JSON.stringify(retired));
+
+    jest.resetModules();
+    const apiConfig = await import("./apiConfigSlice");
+    let state = apiConfig.default(undefined, { type: "test/init" });
+    expect(state.retiredEc2ApiSelectionNotice).toBe(true);
+
+    const concurrentChoice = {
+      ...retired,
+      activeServer: "custom",
+      customUrl: "https://preview.example.test",
+      retiredEc2ApiSelectionNotice: true,
+    };
+    window.localStorage.setItem(
+      "matrx.apiConfig.v1",
+      JSON.stringify(concurrentChoice),
+    );
+
+    state = apiConfig.default(
+      state,
+      apiConfig.acknowledgeRetiredEc2ApiSelectionNotice(),
+    );
+    expect(JSON.parse(window.localStorage.getItem("matrx.apiConfig.v1") ?? "{}"))
+      .toMatchObject({
+        ...concurrentChoice,
+        retiredEc2ApiSelectionNotice: false,
+      });
     window.localStorage.removeItem("matrx.apiConfig.v1");
   });
 

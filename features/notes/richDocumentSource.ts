@@ -1,0 +1,220 @@
+import type {
+  ContentSource,
+  NoteDisplayedPhysicalSnapshot,
+  NoteEditableContentSource,
+  NoteIdentityContentSource,
+} from "@/features/rich-document/types";
+import type { Note } from "./types";
+import type { NoteSaveReceipt } from "./service/noteSaveErrors";
+import type { NoteRecord } from "./redux/notes.types";
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function validVersion(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function validUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID_PATTERN.test(value);
+}
+
+function validOpaqueId(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isSerializableJson(value: unknown, seen = new Set<object>()): boolean {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) {
+    if (seen.has(value)) return false;
+    seen.add(value);
+    return Object.keys(value).length === value.length && value.every((item) => isSerializableJson(item, seen));
+  }
+  if (typeof value !== "object") return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]") return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  return Object.values(value).every((item) => isSerializableJson(item, seen));
+}
+
+function freezeSerializable<T>(value: T): T {
+  const copy = structuredClone(value);
+  if (!isSerializableJson(copy)) {
+    throw new Error("A Notes edit source must contain only serializable physical fields.");
+  }
+  const freeze = (item: unknown): void => {
+    if (!item || typeof item !== "object" || Object.isFrozen(item)) return;
+    for (const child of Object.values(item)) freeze(child);
+    Object.freeze(item);
+  };
+  freeze(copy);
+  return copy;
+}
+
+function displayedPhysicalSnapshot(note: Note): NoteDisplayedPhysicalSnapshot {
+  return {
+    id: note.id,
+    organization_id: note.organization_id,
+    version: note.version,
+    content: note.content ?? "",
+    label: note.label,
+    folder_name: note.folder_name,
+    folder_id: note.folder_id,
+    tags: freezeSerializable(note.tags),
+    metadata: freezeSerializable(note.metadata),
+    visibility: note.visibility,
+    position: note.position,
+    project_id: note.project_id,
+    task_id: note.task_id,
+  };
+}
+
+/**
+ * The Redux editor must obtain its base from a separately retained full
+ * acknowledgement. `_fieldHistory` and the displayed record are never bases.
+ */
+export function captureNoteEditSourceFromRecord(args: {
+  record: NoteRecord;
+  displayedNote: Note;
+  actorId: string;
+  sourceId: string;
+  snapshotId: string;
+  actingSelection?: string;
+}): NoteEditableContentSource {
+  if (!args.record._acknowledgedPhysicalSnapshot) {
+    throw new Error("This note has no acknowledged full snapshot. Reload it before editing.");
+  }
+  // `record.version` is the newest observed server revision. A dirty editor's
+  // CAS base is instead the retained acknowledged row; preserve every
+  // displayed draft field but project its revision onto that retained base.
+  // This prevents a realtime observation from silently rebasing dirty text.
+  const acknowledgedNote = args.record._acknowledgedPhysicalSnapshot;
+  const displayedNote = { ...args.displayedNote, version: acknowledgedNote.version };
+  return captureNoteEditSource({
+    acknowledgedNote,
+    displayedNote,
+    actorId: args.actorId,
+    sourceId: args.sourceId,
+    snapshotId: args.snapshotId,
+    ...(args.actingSelection === undefined ? {} : { actingSelection: args.actingSelection }),
+  });
+}
+
+/** Identity-only triggers must be prepared through an authorized full-row read. */
+export function noteIdentityContentSource(noteId: string, sourceId = `note:${noteId}`): NoteIdentityContentSource {
+  if (!validUuid(noteId) || !validOpaqueId(sourceId)) throw new Error("A Notes identity source requires a UUID note and nonempty source ID.");
+  return { type: "note", mode: "identity", noteId, sourceId };
+}
+
+/** Creates an editable source only when the displayed row and CAS base agree. */
+export function captureNoteEditSource(args: {
+  /** The exact acknowledged row/revision; never replace this with dirty text. */
+  acknowledgedNote: Note;
+  /** The complete physical fields currently displayed by this editor. */
+  displayedNote: Note;
+  actorId: string;
+  sourceId: string;
+  snapshotId: string;
+  actingSelection?: string;
+}): NoteEditableContentSource {
+  const { acknowledgedNote, displayedNote, actorId, sourceId, snapshotId, actingSelection } = args;
+  if (
+    !validUuid(acknowledgedNote.id) ||
+    !validUuid(acknowledgedNote.organization_id) ||
+    !validUuid(displayedNote.id) ||
+    !validUuid(displayedNote.organization_id) ||
+    acknowledgedNote.id !== displayedNote.id ||
+    acknowledgedNote.organization_id !== displayedNote.organization_id ||
+    !validUuid(actorId) || !validOpaqueId(sourceId) || !validOpaqueId(snapshotId) ||
+    !validVersion(acknowledgedNote.version) || !validVersion(displayedNote.version) ||
+    acknowledgedNote.version !== displayedNote.version
+  ) {
+    throw new Error("A Notes editable source requires an acknowledged note, actor, source, and revision.");
+  }
+  return freezeSerializable({
+    type: "note",
+    mode: "editable",
+    noteId: acknowledgedNote.id,
+    sourceId,
+    snapshotId,
+    editBase: {
+      noteId: acknowledgedNote.id,
+      organizationId: acknowledgedNote.organization_id,
+      version: acknowledgedNote.version,
+      actorId,
+    },
+    acknowledgedPhysicalSnapshot: displayedPhysicalSnapshot(acknowledgedNote),
+    displayedPhysicalSnapshot: displayedPhysicalSnapshot(displayedNote),
+    ...(actingSelection === undefined ? {} : { actingSelection }),
+  });
+}
+
+/** Compatibility name for callers that currently display their acknowledged row. */
+export function noteEditableContentSource(args: {
+  note: Note;
+  actorId: string;
+  sourceId: string;
+  snapshotId: string;
+  actingSelection?: string;
+}): NoteEditableContentSource {
+  return captureNoteEditSource({
+    acknowledgedNote: args.note,
+    displayedNote: args.note,
+    actorId: args.actorId,
+    sourceId: args.sourceId,
+    snapshotId: args.snapshotId,
+    ...(args.actingSelection === undefined ? {} : { actingSelection: args.actingSelection }),
+  });
+}
+
+export function isPreparedEditableNoteSource(source: ContentSource): source is NoteEditableContentSource {
+  if (!source || typeof source !== "object" || source.type !== "note" || source.mode !== "editable") return false;
+  const { editBase, displayedPhysicalSnapshot, acknowledgedPhysicalSnapshot } = source;
+  if (
+    !editBase || typeof editBase !== "object" ||
+    !displayedPhysicalSnapshot || typeof displayedPhysicalSnapshot !== "object" ||
+    !acknowledgedPhysicalSnapshot || typeof acknowledgedPhysicalSnapshot !== "object"
+  ) return false;
+  return (
+    validUuid(source.noteId) && validOpaqueId(source.sourceId) && validOpaqueId(source.snapshotId) &&
+    validUuid(editBase.noteId) && validUuid(editBase.organizationId) && validUuid(editBase.actorId) &&
+    validUuid(displayedPhysicalSnapshot.id) && validUuid(displayedPhysicalSnapshot.organization_id) &&
+    validUuid(acknowledgedPhysicalSnapshot.id) && validUuid(acknowledgedPhysicalSnapshot.organization_id) &&
+    editBase.noteId === source.noteId &&
+    editBase.noteId === displayedPhysicalSnapshot.id &&
+    editBase.organizationId === displayedPhysicalSnapshot.organization_id &&
+    editBase.noteId === acknowledgedPhysicalSnapshot.id &&
+    editBase.organizationId === acknowledgedPhysicalSnapshot.organization_id &&
+    editBase.version === acknowledgedPhysicalSnapshot.version &&
+    editBase.version === displayedPhysicalSnapshot.version &&
+    isSerializableJson(acknowledgedPhysicalSnapshot.tags) &&
+    isSerializableJson(acknowledgedPhysicalSnapshot.metadata) &&
+    isSerializableJson(source.displayedPhysicalSnapshot.tags) &&
+    isSerializableJson(source.displayedPhysicalSnapshot.metadata) &&
+    validVersion(editBase.version)
+  );
+}
+
+/** Advances only the callback owner's immutable prepared base after a receipt. */
+export function advancePreparedNoteSource(
+  source: NoteEditableContentSource,
+  receipt: NoteSaveReceipt,
+  submittedContent: string,
+): NoteEditableContentSource {
+  const note = receipt.note;
+  if (
+    note.id !== source.noteId ||
+    note.organization_id !== source.editBase.organizationId ||
+    !validVersion(note.version)
+    || (typeof submittedContent !== "string" || note.content !== submittedContent)
+  ) {
+    throw new Error("The acknowledged note receipt does not match this editor source.");
+  }
+  return captureNoteEditSource({
+    acknowledgedNote: note,
+    displayedNote: note,
+    actorId: source.editBase.actorId,
+    sourceId: source.sourceId,
+    snapshotId: `${source.snapshotId}:${note.version}`,
+  });
+}

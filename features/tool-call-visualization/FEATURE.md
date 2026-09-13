@@ -82,6 +82,12 @@ features/tool-call-visualization/
 │   ├── dataset/                ← `dataset` / `usertable_create` — UserTableViewer + /data/[id]
 │   ├── workbook/               ← `workbook` tool — values grid + /workbooks/[id] (full Univer editor on route)
 │   ├── dictionary/             ← `dictionary` tool — terminology entries list
+│   ├── shell/                  ← `shell_execute` / `shell_python` / `code_execute_python` — ONE renderer for
+│   │                              aidream's ONE `shell_execution` shape: command headline, exit-code chip
+│   │                              (red when nonzero — a failed run is a RESULT, not a transport error),
+│   │                              tail-first stdout/stderr, and the BACKEND always named. `backend ==
+│   │                              "durable_vfs"` gets a loud red alert: the command ran in the coreutils
+│   │                              emulator, not the bound container ("not your sandbox — binding was lost").
 │   ├── deep-research/          ← research_web / core_web_search_and_read (Wave 3)
 │   └── get-user-lists/
 ├── dynamic/                   ← DB-stored renderer pipeline
@@ -302,6 +308,8 @@ The consolidation (Phases 1–10) eliminated six legacy homes for tool UI:
 Historical planning and analysis docs from the pre-consolidation era have been archived at `docs/archive/tool-call-legacy/`.
 
 ## Change log
+
+- `2026-09-13` — claude: **process execution stopped rendering as a key/value dump.** `shell_execute`, `shell_python` and `code_execute_python` had glyphs in `TOOL_GLYPHS` but no registry entry, so every command an agent ran reached the reader through `GenericRenderer` — six equal-weight rows in which "did it work?" was the hardest fact to find. This is the `fs_*` "OUCH" fix applied to the one family that still had it. New `renderers/shell/ShellInline.tsx` (above), registered for all three names. The `durable_vfs` alert is the load-bearing part: a routing defect has silently sent a sandbox-bound conversation to the in-process emulator (no git, no loops, no redirection) and neither the agent nor the operator could tell from the output. Guards: `features/agents/components/chat/sandbox-insight/__tests__/chat-sandbox-panel.test.tsx`, proven failing before passing.
 
 - `2026-09-11` — Nested Markdown census found literal-output bypasses in scalar lists, long table text, and short table-list chips. All now reuse the existing Markdown detector/renderer, with conservative emphasis, strikethrough, and tilde-fence detection; DOM guards cover both densities, object/table nesting, expansion, scalar preservation, and inert fenced artifact payloads.
 

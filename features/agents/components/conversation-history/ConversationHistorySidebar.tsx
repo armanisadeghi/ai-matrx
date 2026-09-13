@@ -84,6 +84,7 @@ import {
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
+import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "@/lib/toast";
 import {
@@ -740,6 +741,10 @@ const DenseView: React.FC<
           </div>
         )}
       </div>
+
+      {/* DD-179 — a deleted conversation is in the trash, not gone. Closed by
+          default; one click to open; Restore on every row. */}
+      <ConversationTrashSection variant="dense" />
     </div>
   );
 };
@@ -949,6 +954,9 @@ const ConsumerView: React.FC<
           </div>
         )}
       </div>
+
+      {/* DD-179 — the same trash the dense view carries, same component. */}
+      <ConversationTrashSection variant="consumer" />
     </div>
   );
 };

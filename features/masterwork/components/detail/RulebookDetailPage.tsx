@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -85,8 +86,9 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
-import { useTriageDialogSession } from "../../triage/triageSession";
+import { useRulebookDialogSession } from "../../durable-run/rulebookDialogSession";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
+import { RuleMove, ruleMoveIsEmpty } from "./RuleMove";
 import { RuleHistory } from "./RuleHistory";
 import {
   RuleKeptExpressions,
@@ -97,6 +99,7 @@ import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { IngestTimelineDialog } from "./IngestTimelineDialog";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
 import {
   fetchDistillationApproaches,
@@ -204,11 +207,7 @@ function formatPages(pages: number[]): string {
  */
 /** Seconds → "12:34" (or "1:02:34" past an hour) for recording time anchors. */
 function formatClock(seconds: number): string {
-  const s = Math.max(0, Math.round(seconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = String(s % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+  return formatDurationSeconds(seconds, { style: "clock" });
 }
 
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
@@ -481,8 +480,15 @@ export function RuleRow({
       ) : null}
       {openRow ? (
         <div className="space-y-2 border-t border-border px-9 py-2 text-sm">
-          {/* 🚨 THE DECISION HALF first — for a policy rule it IS the rule. */}
+          {/* 🚨 THE DECISION HALF first — for a policy rule it IS the rule.
+              THE MOVE sits immediately under it: same judgment, broken into
+              the parts a machine can rank (what was still unknown, what the
+              next step buys, what it costs on the 1-5 ladder). ONE place a
+              rule's "when → next" lives, at two depths — never two competing
+              renderers of the same fields. Renders nothing for a rule that
+              carries neither. */}
           <RuleDecision rule={rule} />
+          {ruleMoveIsEmpty(rule) ? null : <RuleMove rule={rule} />}
           {rule.rationale ? (
             <div>
               <div className="text-xs font-medium text-muted-foreground">
@@ -619,8 +625,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // instance is REUSED across Rulebooks. A bare `useState(false)` left the sort
   // dialog on screen after navigating, holding the purpose typed for the
   // Rulebook she left. Story + why the dialog is also remounted per Rulebook:
-  // `../../triage/triageSession.ts`.
-  const triage = useTriageDialogSession(rulebook?.id ?? null);
+  // `../../durable-run/rulebookDialogSession.ts`.
+  const triage = useRulebookDialogSession(rulebook?.id ?? null);
   const triageOpen = triage.open;
   const setTriageOpen = triage.setOpen;
   const [feedbackTarget, setFeedbackTarget] = useState<{
@@ -720,6 +726,30 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [chatImportOpen, setChatImportOpen] = useState(
     searchParams.get("chatImport") === "1",
   );
+  // The TIMELINE Approach ("a case that unfolded") lands here with
+  // ?intake=timeline — the unfolding dialog IS the next step. The registry row
+  // carries the same `{"intake":"timeline"}` in its `intake_query`, so the
+  // deep link and the in-page picker can never drift apart.
+  //
+  // 🚨 AN UNFOLDING SESSION BELONGS TO ONE RULEBOOK (Bugbot HIGH, 2026-09-13),
+  // the same rule triage and ingest already live by — and the sharpest case of
+  // the three. This was a bare `useState`, and this page instance is REUSED
+  // across Rulebooks, so an open unfolding session stayed on screen after
+  // navigating: the form fields, the durable-run pointer, and a teaching
+  // case's RESOLUTION, all belonging to the Rulebook she left, while the run
+  // actually going on the one she arrived at stayed invisible. The deep link
+  // still opens it, now bound to the Rulebook that was on screen when it was
+  // read. Second half at the call site: `key={rulebook.id}` on the dialog.
+  const timelineSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const timelineOpen = timelineSession.open;
+  const setTimelineOpen = timelineSession.setOpen;
+  const timelineDeepLink = searchParams.get("intake") === "timeline";
+  const timelineDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!timelineDeepLink || timelineDeepLinkRef.current || !rulebook?.id) return;
+    timelineDeepLinkRef.current = true;
+    setTimelineOpen(true);
+  }, [timelineDeepLink, rulebook?.id, setTimelineOpen]);
 
   /**
    * THE ONE MAP from a `platform.approach` row to the lane it opens on this
@@ -771,6 +801,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           return;
         case "conduct":
           setConductorOpen(true);
+          return;
+        // Trial 7's UNFOLDING-CASE door — the dialog that can also SEAL a case
+        // as a held-out exam, which the `timeline` ingest lane has no notion
+        // of. A registry row reaches it with `intake_query.intake="timeline"`.
+        case "unfolding":
+          setTimelineOpen(true);
           return;
       }
     },
@@ -2069,6 +2105,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     rulebookId={rulebook.id}
                     understudy={understudy}
                     approvedCount={approvedCount}
+                    rulebookVersion={rulebook.version}
                     canEdit={canEdit}
                     onCreated={reloadMasterworks}
                   />
@@ -2109,6 +2146,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 rulebookId={rulebook.id}
                 understudy={understudy}
                 approvedCount={approvedCount}
+                rulebookVersion={rulebook.version}
                 canEdit={canEdit}
                 onCreated={reloadMasterworks}
               />
@@ -2531,6 +2569,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <BodyOfWorkDialog
             open={corpusOpen}
             onOpenChange={setCorpusOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+          />
+          <IngestTimelineDialog
+            // The unfolding session, its form and its run pointer all belong to
+            // THIS Rulebook — see `durable-run/rulebookDialogSession.ts`.
+            key={rulebook.id}
+            open={timelineOpen}
+            onOpenChange={setTimelineOpen}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
           />

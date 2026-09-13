@@ -14,17 +14,11 @@ import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StreamingAudioPlayer } from "@/features/audio/streamingPcmPlayer";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 interface LiveAudioPlayerProps {
   player: StreamingAudioPlayer;
   title?: string;
-}
-
-function formatTime(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function readPlayer(player: StreamingAudioPlayer) {
@@ -118,9 +112,9 @@ export function LiveAudioPlayer({ player, title }: LiveAudioPlayerProps) {
             )}
           </div>
           <div className="mt-1.5 flex justify-between text-xs tabular-nums text-muted-foreground">
-            <span>{formatTime(positionMs)}</span>
+            <span>{formatDurationMs(positionMs, { style: "clock" })}</span>
             <span>
-              {formatTime(bufferedMs)}
+              {formatDurationMs(bufferedMs, { style: "clock" })}
               {!ended && (
                 <span className="ml-1 text-muted-foreground/60">rendered</span>
               )}

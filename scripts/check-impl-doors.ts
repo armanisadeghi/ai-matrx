@@ -37,6 +37,19 @@
  *       is not also declared in `platform.client_callable_door`. A grandfather
  *       row is "the guard stands down here" — it belongs only on a function
  *       somebody has actually declared safe for clients.
+ *   D2b No `platform.definer_client_grant_grandfather` row names a function that
+ *       ALSO has a `platform.client_callable_door` row. D2 counts only rows with
+ *       NO door, so a row beside a declared door was invisible to it — measured,
+ *       not guessed (B-63 inserted one for `public.update_scope` and the gate
+ *       stayed green). ABSOLUTE: DD-169 batch 2 deleted the 33 that existed.
+ *   D2c Every surviving grandfather row outside `pgsodium` names its REASON and
+ *       its OWNER in `scripts/impl-doors/grandfather-allowlist.json`. A count
+ *       baseline caps how many stand-downs exist; it says nothing about WHICH, so
+ *       the population could rotate underneath it. ABSOLUTE.
+ *   D2d Every allowlist entry still matches a live grandfather row. A stale entry
+ *       pre-authorizes a stand-down that has not happened — that is how a deleted
+ *       row comes back unnoticed. ABSOLUTE; the file may only shrink.
+ *
  *   D3  `anon` holds NO table privilege on `workbench.schema_templates`. That
  *       table has RLS OFF, zero policies and no owner column, so a table GRANT
  *       to `anon` IS the access decision: with `workbench` in `pgrst.db_schemas`
@@ -84,6 +97,30 @@
  *       SECURITY DEFINER owned by `postgres`, granted to `anon`, and ran
  *       `execute format('alter table …')` with no gate — proven live as `anon`,
  *       whose call entered the body. Absolute: no baseline, no allowlist.
+ *
+ *   D9  No SECURITY INVOKER, non-trigger function in a PostgREST-exposed schema
+ *       whose body WRITES may be executed by `anon`, unless a
+ *       `platform.client_callable_door` row declares it with an ANONYMOUS
+ *       purpose. DD-197 (2026-09-13): 66 of them could be, and not one held a
+ *       door row. An invoker function runs AS THE CALLER, so `anon`'s empty
+ *       privileges applied inside — which is why the refusals came from deep in
+ *       the body and told the truth about nothing. Proven live over HTTPS with
+ *       the published key and no JWT, before the DD-197 migration:
+ *         rpc/cx_canvas_toggle_favorite -> 42501 "permission denied for table
+ *                 canvas_items", hint "GRANT UPDATE ON canvas.canvas_items TO anon;"
+ *         rpc/wsp_upsert_system_task    -> 42501 "permission denied for FUNCTION
+ *                 ensure_personal_organization" — an internal helper the caller
+ *                 never named, and an accidental reason
+ *         rpc/reorder_keywords          -> 204 NO CONTENT. It RAN, and returned
+ *                 success, because the body's first branch returns before it
+ *                 touches a table. Nothing recorded that anon had been inside.
+ *       An invoker writer is not a door at any width: a door is SECURITY DEFINER
+ *       with a gate and a declared row. Reach is measured with
+ *       `has_function_privilege`, never by reading role names out of `proacl` —
+ *       28 of the 66 were reachable through PostgreSQL's own default (a function
+ *       created with no GRANT has `proacl = null`, i.e. EXECUTE for PUBLIC), and
+ *       a grant-name census cannot see one of those. ABSOLUTE: no baseline, no
+ *       allowlist. The population is zero and zero is the only correct number.
  *
  *   pnpm check:impl-doors            # loud, non-blocking (exit 0)
  *   pnpm check:impl-doors:strict     # exit 1 on any finding
@@ -199,6 +236,72 @@ const UNDECLARED_GRANDFATHER_QUERY = `
 interface GrandfatherRow {
   fn: string;
   args: string;
+}
+
+// ─── D2b/D2c/D2d: the grandfather table names its reasons, or it is empty ────
+//
+// DD-169 batch 2 (B-64, 2026-09-13). D2 above counts grandfather rows whose
+// function has NO door row, against a shrink-only baseline. B-63 reported the
+// hole that leaves, and it was measured, not guessed: a grandfather row on a
+// function that ALSO has a door row is invisible to D2, so one can be inserted
+// with the gate staying green (proven by inserting one for public.update_scope).
+// It is redundant rather than dangerous — the door row is the decision either
+// way — but a rule the guard cannot see is not a rule.
+//
+// D2b closes it as an ABSOLUTE: no grandfather row may duplicate a declared
+// door. B-64 deleted the 33 that existed, so the only correct number is zero.
+const DUPE_DOOR_GRANDFATHER_QUERY = `
+  select g.schema_name || '.' || g.function_name as fn,
+         g.identity_args as args
+  from platform.definer_client_grant_grandfather g
+  where exists (
+    select 1 from platform.client_callable_door d
+    where d.schema_name = g.schema_name
+      and d.function_name = g.function_name
+      and d.identity_args = g.identity_args
+  )
+  order by 1, 2
+`;
+
+// D2c/D2d are the other half. A count baseline says "no more than this many
+// stand-downs"; it says nothing about WHICH, so the population could rotate
+// underneath it. Every surviving row outside `pgsodium` must therefore appear in
+// `scripts/impl-doors/grandfather-allowlist.json` WITH a reason and an owner
+// (D2c), and every allowlist entry must still correspond to a live row (D2d) so
+// the file can never pre-authorize a stand-down that has not happened yet.
+// pgsodium is excluded for the same reason it is excluded everywhere else: the
+// extension owns those functions, this role cannot revoke on them, and the
+// schema is absent from `pgrst.db_schemas`.
+const ALL_GRANDFATHER_QUERY = `
+  select g.schema_name || '.' || g.function_name as fn,
+         g.identity_args as args
+  from platform.definer_client_grant_grandfather g
+  where g.schema_name <> 'pgsodium'
+  order by 1, 2
+`;
+
+interface AllowlistEntry {
+  fn: string;
+  args: string;
+  reason: string;
+  owner: string;
+}
+
+interface GrandfatherAllowlist {
+  why: string;
+  generatedAt: string;
+  generatedBy: string;
+  entries: AllowlistEntry[];
+}
+
+function loadGrandfatherAllowlist(): GrandfatherAllowlist | null {
+  const p = resolve(ROOT, "scripts/impl-doors/grandfather-allowlist.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as GrandfatherAllowlist;
+  } catch {
+    return null;
+  }
 }
 
 // ─── D3: anon has nothing on workbench.schema_templates ──────────────────────
@@ -343,7 +446,7 @@ interface AnonDefinerRow {
 // all of them every run is a gate nobody reads. It fails on GROWTH.
 const UNGATED_ANON_DOOR_QUERY = `
   with doors as (
-    select d.schema_name, d.function_name, d.identity_args,
+    select d.schema_name, d.function_name, d.identity_args, d.gate_predicate,
            pg_get_functiondef(p.oid) as def,
            -- The function's OWN search_path, so an unqualified table name in its
            -- body can be resolved the way Postgres resolves it.
@@ -382,14 +485,29 @@ const UNGATED_ANON_DOOR_QUERY = `
   select d.schema_name || '.' || d.function_name as fn,
          d.identity_args as args
   from doors d cross join gate_rx g
-  where exists (
-      select 1 from vis_tables v
-      where d.def ~* ('\\m' || replace(v.sch || '.' || v.tbl, '.', '\\.') || '\\M')
-         or (v.sch = any(d.spath) and d.def ~* ('\\m' || v.tbl || '\\M'))
+  where (
+      -- DD-173 / B-74: where a door has DECLARED its own gate predicate
+      -- (platform.client_callable_door.gate_predicate), that declaration is the whole
+      -- check — RED only if the literal text is absent from the door's live body. This
+      -- replaces vocabulary-guessing for every door that has been censused, and is why
+      -- billing.public_plans() (predicate is_public) no longer depends on a fixed
+      -- word list that never anticipated a plain column-name gate.
+      (d.gate_predicate is not null and strpos(lower(d.def), lower(d.gate_predicate)) = 0)
+      or (
+        -- Fallback for every door NOT yet censused with a gate_predicate: the original
+        -- vis-table + vocabulary heuristic, unchanged, so this migration can only make
+        -- checked doors more precise — it cannot turn any other door's check off.
+        d.gate_predicate is null
+        and exists (
+          select 1 from vis_tables v
+          where d.def ~* ('\\m' || replace(v.sch || '.' || v.tbl, '.', '\\.') || '\\M')
+             or (v.sch = any(d.spath) and d.def ~* ('\\m' || v.tbl || '\\M'))
+        )
+        and d.def !~* g.rx
+        and d.identity_args !~* '(secret|token|code|pin|password|passcode|session)'
+        and d.def !~* 'auth\\.uid\\(\\)'
+      )
     )
-    and d.def !~* g.rx
-    and d.identity_args !~* '(secret|token|code|pin|password|passcode|session)'
-    and d.def !~* 'auth\\.uid\\(\\)'
   order by 1, 2
 `;
 
@@ -481,6 +599,206 @@ interface DefinerDdlRow {
   public_x: boolean;
 }
 
+// ─── D8: no container-authority caller compares a role that can be NULL ──────
+//
+// DD-191 / B-85 (2026-09-13). `iam._container_authz` answers with the actor's
+// membership role in a container, and for a NON-MEMBER that role is NULL.
+// Three callers compared it with `not in`:
+//
+//     if v_personal or v_actor_role not in ('owner', 'admin') then raise ...
+//
+// `NULL not in (...)` is NULL, `false or NULL` is NULL, the `if` never fires,
+// and the refusal is dead code for exactly the population it exists to stop.
+// Measured live over HTTPS as `test@test.com`, a member of NEITHER organization:
+// `inv_list` returned AI Matrx's pending invitation WITH its acceptance token,
+// `inv_get_managed` returned the whole row, and `inv_create` minted an ADMIN
+// invitation into that organization (rolled back, 0 rows persisted).
+//
+// The structural fix is in the helper — it now raises 42501 before any caller
+// can compare anything. D8 is the second half, the belt to that brace: no
+// caller may reach a role comparison that a NULL can walk through, so the
+// guard still holds if a future edit opts a caller out of the strict helper.
+//
+// THE RULE. In any function whose body calls `iam._container_authz`, every
+// comparison of an `actor_role` variable must be wrapped in `coalesce(...)`.
+// The query strips the coalesce-wrapped uses first, then looks for any bare
+// `actor_role` still standing next to `in (`, `not in (`, `=`, `<>` or
+// `is distinct from`. Assignments and `select ... into` are not comparisons and
+// do not match. Like D1/D3/D4/D7 this is an ABSOLUTE — the population is zero.
+//
+// Proven failing-then-passing 2026-09-13 against the live database: with the
+// pre-fix `public.inv_list` body restored inside a rolled-back transaction the
+// query returns that one row; against the shipped bodies it returns none.
+const NULL_UNSAFE_ROLE_TEST_QUERY = `
+  with bodies as (
+    select n.nspname || '.' || p.proname as fn,
+           pg_get_function_identity_arguments(p.oid) as args,
+           regexp_replace(
+             p.prosrc,
+             'coalesce\\s*\\(\\s*[a-z_]*\\.?[a-z_]*actor_role\\b[^)]*\\)',
+             'ROLE_SAFE', 'gi') as src
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where p.prosrc like '%_container_authz%'
+      and p.proname <> '_container_authz'
+  )
+  select fn, args
+  from bodies
+  where src ~* '[a-z_]*\\.?[a-z_]*actor_role\\s*(not\\s+in\\s*\\(|in\\s*\\(|=|<>|is\\s+distinct\\s+from)'
+  order by 1
+`;
+
+interface NullUnsafeRoleRow {
+  fn: string;
+  args: string;
+}
+
+// ─── D9: no SECURITY INVOKER writer is reachable by a signed-out caller ──────
+//
+// DD-197 / B-89 (2026-09-13). D5 asks whether an anon-callable SECURITY DEFINER
+// declared itself a door. D9 asks the question D5 cannot: what about the
+// functions that are NOT definers? An invoker runs as the caller, so it was
+// treated as harmless — and B-75's "the declared doors hold no anon" was read as
+// if it covered the whole anonymous EXECUTE surface. It did not: it bounded the
+// 471 functions somebody had registered, and said nothing about the 66 nobody had.
+//
+// THE RULE. A SECURITY INVOKER, non-trigger function in a PostgREST-exposed
+// schema whose body writes may not be executable by `anon` unless a
+// `platform.client_callable_door` row declares it AND that row says out loud that
+// the caller may have no account. The door register's own wording is the test —
+// every anonymous door on this database says "ANONYMOUS door", "signed-out",
+// "guest", "kiosk" or "outsider" in its reason — because a door row that does not
+// mention the anonymous caller is a declaration about signed-in callers, and
+// silently reading it as permission for a stranger is the drift this closes.
+const ANON_INVOKER_WRITER_QUERY = `
+  select n.nspname || '.' || p.proname as fn,
+         pg_get_function_identity_arguments(p.oid) as args,
+         (p.proacl is null) as via_public_default,
+         (select count(*) from platform.client_callable_door d
+           where d.schema_name = n.nspname and d.function_name = p.proname)::int as door_rows
+  from pg_catalog.pg_proc p
+  join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+  where not p.prosecdef
+    and p.prokind = 'f'
+    and p.prorettype <> 'trigger'::regtype
+    and has_function_privilege('anon', p.oid, 'EXECUTE')
+    and p.prosrc ~* '(^|[^a-z_.])(insert into|update |delete from|merge into)'
+    and n.nspname = any (array[
+      'api','public','rag','scraper','workflow','files','legal','knowledge','agent','ai','app',
+      'chat','context','skill','tool','workspace','work','admin','billing','browser','canvas',
+      'code','communication','content_ir','crm','dictionary','docproc','education','extend',
+      'graveyard','growth','hindsight','history','iam','interview','marketing','meta','ops','pdf',
+      'plan','platform','podcast','research','runtime','scheduler','seo','transcripts','ui',
+      'users','web','workbench','assignment','audit','batch','mandate','commerce'])
+    and not exists (
+      select 1 from platform.client_callable_door d
+      where d.schema_name = n.nspname
+        and d.function_name = p.proname
+        and d.reason ~* '(anonymous|signed[- ]out|guest|kiosk|outsider)'
+    )
+  order by 1, 2
+`;
+
+interface AnonInvokerWriterRow {
+  fn: string;
+  args: string;
+  via_public_default: boolean;
+  door_rows: number;
+}
+
+// ─── D10: no membership-role reader lets a NULL past a comparison ────────────
+//
+// DD-199 / B-91 (2026-09-13), the generalisation of D8. D8 guards ONE family —
+// callers of `iam._container_authz` and their `actor_role`. V-54 proved the same
+// class open one helper family over: `hr._l1_org_role(user, org)` is a plain
+// `select m.role from iam.memberships …`, NULL for a non-member, and two of its
+// fourteen callers decided privilege from it with a bare `not in` / `in`:
+//
+//   public.hr_module_set_enabled('5dc930e9-… AI Matrx', true) as test@test.com,
+//     a member of neither organization → {"ok": true, "module_enabled": true}.
+//     A stranger switched another organization's HR module ON (rolled back).
+//   POST /rest/v1/rpc/hr_knob_index {"p_organization_id":"5dc930e9-…"} → HTTP 200,
+//     the whole knob index of an organization the caller does not belong to.
+//
+// THE RULE, and it is an ABSOLUTE (population zero). In any function that reads
+// an organization membership role — either by calling `hr._l1_org_role` or with
+// `select … role into <var>` from `iam.memberships` / `iam.organization_member` —
+// every comparison of that role must be NULL-safe: wrapped in `coalesce(...)`, or
+// written as `is null` / `is not null` / `is [not] distinct from`. A bare `in (`,
+// `not in (`, `=` or `<>` on a value a NULL can reach is a finding, because
+// `NULL not in (…)` is NULL and the `if` that refuses never fires.
+//
+// The query has two halves: tainted VARIABLES (assigned from the helper or from
+// a `role into` select) and INLINE call sites compared in place. Both were proven
+// failing-then-passing 2026-09-13 against the live database, with the pre-fix
+// `public.hr_module_set_enabled` body (variable half) and the pre-fix
+// `public.hr_knob_index` body (inline half) restored inside rolled-back
+// transactions: one row each while restored, zero rows after the rollback. No
+// file on disk was weakened to produce either RED.
+const NULL_UNSAFE_ROLE_HELPER_QUERY = `
+  with cand as (
+    select n.nspname || '.' || p.proname as fn,
+           pg_get_function_identity_arguments(p.oid) as args,
+           p.prosrc as raw
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname not in ('pg_catalog','information_schema','pg_toast','extensions',
+                            'graphql','graphql_public','pgbouncer','vault','realtime','storage',
+                            'supabase_functions','net','cron','auth','pgsodium','pgsodium_masks')
+      and p.proname <> '_l1_org_role'
+      and (p.prosrc ~ 'hr[.]_l1_org_role'
+           or p.prosrc ~* '[^a-z_]role[[:space:]]+into[[:space:]]+[a-z_]+'
+           or p.prosrc ~* '[.]role[[:space:]]+into[[:space:]]+[a-z_]+')
+  ),
+  names as (
+    select c.fn, c.args, c.raw, z.nm
+    from cand c
+    cross join lateral (
+      select m[1] as nm from regexp_matches(c.raw, '([a-z_]+)[[:space:]]*:=[[:space:]]*hr[.]_l1_org_role', 'gi') m
+      union
+      select m[1] from regexp_matches(c.raw, '[^a-z_.]role[[:space:]]+into[[:space:]]+([a-z_]+)', 'gi') m
+      union
+      select m[1] from regexp_matches(c.raw, '[.]role[[:space:]]+into[[:space:]]+([a-z_]+)', 'gi') m
+    ) z
+  ),
+  var_unsafe as (
+    select fn, args, nm as site
+    from (
+      select fn, args, nm,
+             regexp_replace(
+               regexp_replace(raw,
+                 'coalesce[[:space:]]*\\([[:space:]]*' || nm || '\\M[^)]*\\)', 'ROLE_SAFE', 'gi'),
+               nm || '\\M[[:space:]]+is[[:space:]]+(not[[:space:]]+)?(null|distinct[[:space:]]+from)',
+               'ROLE_SAFE', 'gi') as s
+      from names
+    ) z
+    where s ~ ('(^|[^a-z_.])' || nm ||
+               '\\M[[:space:]]*(not[[:space:]]+in[[:space:]]*\\(|in[[:space:]]*\\(|=[^=]|<>)')
+  ),
+  call_unsafe as (
+    select fn, args, 'hr._l1_org_role(...)' as site
+    from (
+      select fn, args,
+             regexp_replace(raw,
+               'coalesce[[:space:]]*\\([[:space:]]*hr[.]_l1_org_role[[:space:]]*\\([^()]*\\)[^)]*\\)',
+               'ROLE_SAFE', 'gi') as s
+      from cand
+      where raw ~ 'hr[.]_l1_org_role'
+    ) z
+    where s ~* 'hr[.]_l1_org_role[[:space:]]*\\([^()]*\\)[[:space:]]*(not[[:space:]]+in[[:space:]]*\\(|in[[:space:]]*\\(|=[^=]|<>)'
+  )
+  select fn, args, site from var_unsafe
+  union all
+  select fn, args, site from call_unsafe
+  order by 1, 3
+`;
+
+interface NullUnsafeRoleHelperRow {
+  fn: string;
+  args: string;
+  site: string;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -537,16 +855,29 @@ async function main(): Promise<number> {
 
   let openImpls: OpenImplRow[];
   let undeclared: GrandfatherRow[];
+  let dupeDoorGrandfathers: GrandfatherRow[];
+  let allGrandfathers: GrandfatherRow[];
   let anonPrivs: PrivRow[];
   let clientWrites: ClientWriteRow[];
   let anonDefiners: AnonDefinerRow[];
   let ungatedDoors: UngatedDoorRow[];
   let definerDdl: DefinerDdlRow[];
+  let nullUnsafeRoles: NullUnsafeRoleRow[];
+  let nullUnsafeHelpers: NullUnsafeRoleHelperRow[];
+  let anonInvokerWriters: AnonInvokerWriterRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
       UNDECLARED_GRANDFATHER_QUERY,
       "D2 undeclared grandfather rows",
+    );
+    dupeDoorGrandfathers = await q<GrandfatherRow>(
+      DUPE_DOOR_GRANDFATHER_QUERY,
+      "D2b grandfather rows duplicating a declared door",
+    );
+    allGrandfathers = await q<GrandfatherRow>(
+      ALL_GRANDFATHER_QUERY,
+      "D2c grandfather rows outside pgsodium",
     );
     anonPrivs = await q<PrivRow>(
       ANON_TEMPLATE_GRANTS_QUERY,
@@ -567,6 +898,18 @@ async function main(): Promise<number> {
     definerDdl = await q<DefinerDdlRow>(
       CLIENT_DEFINER_DDL_QUERY,
       "D7 client-executable SECURITY DEFINER functions that run DDL",
+    );
+    nullUnsafeRoles = await q<NullUnsafeRoleRow>(
+      NULL_UNSAFE_ROLE_TEST_QUERY,
+      "D8 container-authority callers with a NULL-unsafe role test",
+    );
+    nullUnsafeHelpers = await q<NullUnsafeRoleHelperRow>(
+      NULL_UNSAFE_ROLE_HELPER_QUERY,
+      "D10 membership-role readers with a NULL-unsafe comparison",
+    );
+    anonInvokerWriters = await q<AnonInvokerWriterRow>(
+      ANON_INVOKER_WRITER_QUERY,
+      "D9 anon-executable SECURITY INVOKER functions that write",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -648,6 +991,116 @@ async function main(): Promise<number> {
     if (shrank > 0) {
       console.log(
         `${C.dim}       Lower the baseline to ${n} in scripts/impl-doors/grandfather-baseline.json so the win is held.${C.reset}`,
+      );
+    }
+  }
+
+  // ── D2b: no grandfather row duplicates a declared door (ABSOLUTE) ─────────
+  if (dupeDoorGrandfathers.length === 0) {
+    console.log(
+      `${TAG.ok}D2b no grandfather row duplicates a declared client_callable_door`,
+    );
+  } else {
+    findings += dupeDoorGrandfathers.length;
+    console.log(
+      `${TAG.fail}D2b ${dupeDoorGrandfathers.length} grandfather row(s) duplicate a DECLARED door`,
+    );
+    for (const r of dupeDoorGrandfathers.slice(0, 20)) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       The door row IS the decision. A grandfather row beside it is a second, silent${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       one that D2 cannot see (it counts only rows with NO door), so it is the one way${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       a stand-down can be re-inserted past this gate. Fix: delete the grandfather row.${C.reset}`,
+    );
+  }
+
+  // ── D2c / D2d: every surviving grandfather row names a reason and an owner ─
+  const gfAllow = loadGrandfatherAllowlist();
+  if (!gfAllow) {
+    findings += 1;
+    console.log(
+      `${TAG.fail}D2c scripts/impl-doors/grandfather-allowlist.json is missing or unreadable — UNMEASURED`,
+    );
+    console.log(
+      `${C.dim}       Every grandfather row outside pgsodium must name its reason and owner there.${C.reset}`,
+    );
+  } else {
+    const keyOf = (fn: string, args: string) => `${fn}(${args})`;
+    const allowed = new Map(
+      gfAllow.entries.map((e) => [keyOf(e.fn, e.args), e]),
+    );
+    const live = new Set(
+      allGrandfathers.map((r) => keyOf(r.fn, r.args)),
+    );
+
+    const undeclaredRows = allGrandfathers.filter(
+      (r) => !allowed.has(keyOf(r.fn, r.args)),
+    );
+    const unnamed = gfAllow.entries.filter(
+      (e) =>
+        live.has(keyOf(e.fn, e.args)) &&
+        (!e.reason?.trim() || !e.owner?.trim()),
+    );
+    const stale = gfAllow.entries.filter((e) => !live.has(keyOf(e.fn, e.args)));
+
+    if (undeclaredRows.length === 0 && unnamed.length === 0) {
+      console.log(
+        `${TAG.ok}D2c all ${allGrandfathers.length} grandfather row(s) outside pgsodium name a reason and an owner`,
+      );
+    } else {
+      findings += undeclaredRows.length + unnamed.length;
+      if (undeclaredRows.length > 0) {
+        console.log(
+          `${TAG.fail}D2c ${undeclaredRows.length} grandfather row(s) are in NO declared allowlist entry`,
+        );
+        for (const r of undeclaredRows.slice(0, 20)) {
+          console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+        }
+        console.log(
+          `${C.dim}       A grandfather row is "the §6d-4 guard stands down here". Somebody must write${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       down WHY and WHO owns the decision in scripts/impl-doors/grandfather-allowlist.json,${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       or delete the row. Never add an entry just to clear this line.${C.reset}`,
+        );
+      }
+      if (unnamed.length > 0) {
+        console.log(
+          `${TAG.fail}D2c ${unnamed.length} allowlist entr(y/ies) carry an empty reason or owner`,
+        );
+        for (const e of unnamed.slice(0, 20)) {
+          console.log(`  ${C.white}- ${e.fn}(${e.args})${C.reset}`);
+        }
+      }
+    }
+
+    if (stale.length === 0) {
+      console.log(
+        `${TAG.ok}D2d no stale allowlist entries ${C.dim}(${gfAllow.entries.length} entries, all still live — the file may only shrink)${C.reset}`,
+      );
+    } else {
+      findings += stale.length;
+      console.log(
+        `${TAG.fail}D2d ${stale.length} allowlist entr(y/ies) name a grandfather row that no longer exists`,
+      );
+      for (const e of stale.slice(0, 20)) {
+        console.log(`  ${C.white}- ${e.fn}(${e.args})${C.reset}`);
+      }
+      console.log(
+        `${C.dim}       A stale entry pre-authorizes a stand-down that has not happened, which is how${C.reset}`,
+      );
+      console.log(
+        `${C.dim}       a deleted grandfather row comes back unnoticed. Delete the entry — the win is${C.reset}`,
+      );
+      console.log(
+        `${C.dim}       held by removing it, never by leaving room for the row to return.${C.reset}`,
       );
     }
   }
@@ -865,6 +1318,126 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       before the first DDL statement and raise 42501 with a sentence when it fails.${C.reset}`,
+    );
+  }
+
+  // ── D8 ────────────────────────────────────────────────────────────────────
+  if (nullUnsafeRoles.length === 0) {
+    console.log(
+      `${TAG.ok}D8 no iam._container_authz caller compares a role a NULL can pass ${C.dim}(DD-191)${C.reset}`,
+    );
+  } else {
+    findings += nullUnsafeRoles.length;
+    console.log(
+      `${TAG.fail}D8 ${nullUnsafeRoles.length} caller(s) of ${C.white}iam._container_authz${C.reset} compare a role that can be NULL:`,
+    );
+    for (const r of nullUnsafeRoles) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       A non-member's actor_role is NULL. \`NULL not in ('owner','admin')\` is NULL,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       so the guard never fires for exactly the people it exists to stop. DD-191:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       inv_list handed a stranger AI Matrx's invitation token, and inv_create minted${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       them an ADMIN invitation. Fix: wrap every comparison — coalesce(v_actor_role,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       'none') — and keep the strict form of the helper, which refuses first.${C.reset}`,
+    );
+  }
+
+  // ── D9 ────────────────────────────────────────────────────────────────────
+  if (anonInvokerWriters.length === 0) {
+    console.log(
+      `${TAG.ok}D9 no SECURITY INVOKER function that writes is executable by anon ${C.dim}(DD-197)${C.reset}`,
+    );
+  } else {
+    findings += anonInvokerWriters.length;
+    console.log(
+      `${TAG.fail}D9 ${anonInvokerWriters.length} SECURITY INVOKER function(s) that WRITE can be executed by a signed-out caller:`,
+    );
+    for (const r of anonInvokerWriters) {
+      const how = r.via_public_default
+        ? "reachable through PUBLIC (proacl is null — PostgreSQL's own default)"
+        : "explicit anon grant";
+      const door = r.door_rows > 0 ? ", has a door row but it never mentions an anonymous caller" : "";
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${how}${door}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       An invoker runs AS THE CALLER, so anon's empty privileges apply inside and the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       refusal arrives deep in the body — naming an internal table with the GRANT that${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       would open it, or an internal helper nobody called, or not arriving at all:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       DD-197 measured rpc/reorder_keywords returning 204 to an anonymous caller. An${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       invoker writer is not a door at any width. Fix:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       revoke execute on function <fn>(<args>) from anon, public;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       grant execute on function <fn>(<args>) to authenticated, service_role;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Revoke from PUBLIC too — a function created with no GRANT has proacl = null,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       which is EXECUTE for PUBLIC, so revoking "from anon" alone is a no-op that reads${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       like a fix. If a signed-out caller genuinely must reach it, it becomes a${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       SECURITY DEFINER door with a gate and a platform.client_callable_door row whose${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       reason says the caller may have no account (the record_guest_execution pattern).${C.reset}`,
+    );
+  }
+
+  // ── D10 ───────────────────────────────────────────────────────────────────
+  if (nullUnsafeHelpers.length === 0) {
+    console.log(
+      `${TAG.ok}D10 no membership-role reader compares a role a NULL can pass ${C.dim}(DD-199)${C.reset}`,
+    );
+  } else {
+    findings += nullUnsafeHelpers.length;
+    console.log(
+      `${TAG.fail}D10 ${nullUnsafeHelpers.length} site(s) compare an organization membership role that can be NULL:`,
+    );
+    for (const r of nullUnsafeHelpers) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${r.site}${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A non-member has NO role, so the value is NULL. \`NULL not in ('owner','admin')\`${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       is NULL, \`not (false or NULL)\` is NULL, and the refusal never fires for exactly${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       the people it exists to stop. DD-199: hr_module_set_enabled let a stranger switch${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       AI Matrx's HR module ON, and hr_knob_index served them its whole settings index.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Fix: coalesce(<role>, 'none') around every comparison, and call the STRICT form${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       of hr._l1_org_role (the default) wherever the role alone decides privilege.${C.reset}`,
     );
   }
 

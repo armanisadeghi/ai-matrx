@@ -78,6 +78,19 @@ describe("task lifecycle responsive contract", () => {
     expect(listPane).toContain("order-last flex basis-full gap-1 min-w-0");
   });
 
+  it("gives both desktop task-table hosts the one delegated task menu", () => {
+    const listPane = source("TaskListPane.tsx");
+    const workbench = source("TasksWorkbenchHome.tsx");
+    const menu = source("TasksListContextMenu.tsx");
+
+    expect(listPane).toContain("<TasksListContextMenu");
+    expect(workbench).toContain("<TasksListContextMenu");
+    expect(menu).toContain("<NonEditableContextMenu");
+    expect(menu).toContain("resolveContextOnOpen={resolveMenuTarget}");
+    expect(menu).toContain("createTasksExtraSections(");
+    expect(menu).toContain("TASK_ROW_DOM_ATTR");
+  });
+
   it("keeps project-task metadata fixed while long titles truncate", () => {
     const projectTasks = projectSource("ProjectTaskList.tsx");
 
@@ -102,6 +115,9 @@ describe("task lifecycle responsive contract", () => {
     const mobileList = source("mobile/MobileTasksList.tsx");
 
     expect(mobileList).toContain("after:-inset-[15px]");
+    expect(mobileList).toContain(
+      'className="flex-1 overflow-y-auto overscroll-contain pb-20"',
+    );
     expect(mobileList).not.toContain(
       'className="flex min-h-11 min-w-11 items-center justify-center"',
     );

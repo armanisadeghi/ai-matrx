@@ -3,6 +3,7 @@
  * every colour here is declared for both themes.
  */
 import { Globe, Network, StepForward, Webhook, Workflow, Wrench } from "lucide-react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 import type { Lever, SubjectKind, Verdict } from "../types";
 
@@ -90,7 +91,5 @@ export function fmtCost(value: number | null | undefined): string {
 }
 
 export function fmtElapsed(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  return formatDurationSeconds(seconds, { style: "clock" });
 }

@@ -32,6 +32,7 @@
  */
 
 import { useState, useTransition, type ReactNode } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
   AudioLines,
   Camera,
@@ -583,7 +584,7 @@ function ActiveRecording() {
             </p>
           </div>
           <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-            {formatElapsed(durationSec)}
+            {formatDurationSeconds(durationSec, { style: "clock" })}
           </span>
           {canStop && (
             <button
@@ -785,15 +786,6 @@ function EmptyState({ icon, text }: { icon: ReactNode; text: string }) {
 }
 
 // ─── Utils ─────────────────────────────────────────────────────────────────────
-
-function formatElapsed(totalSeconds: number): string {
-  const safe = Number.isFinite(totalSeconds) ? Math.max(0, totalSeconds) : 0;
-  const mins = Math.floor(safe / 60);
-  const secs = Math.floor(safe % 60);
-  return `${mins.toString().padStart(2, "0")}:${secs
-    .toString()
-    .padStart(2, "0")}`;
-}
 
 /** Small chip marking a VIDEO session in the shared (audio-styled) lists. */
 /**

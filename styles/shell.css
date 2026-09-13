@@ -24,6 +24,10 @@
   --shell-panel-w: 17.5rem; /* 280px — secondary sidebar width */
   --shell-safe-area-top: env(safe-area-inset-top, 0px);
   --shell-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* Set only while SystemScheduleAlarmBanner is visible. The shell scroll
+     owner consumes it so a fixed operational notice cannot cover final page
+     actions or the shared toast viewport. */
+  --shell-fixed-alert-clearance: 0px;
   /* Panel sidebar background — matches bg-textured (zinc-100 + subtle grid) */
   --shell-panel-bg: rgb(244 244 245);
   --shell-panel-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' viewBox='0 0 2 2'%3E%3Cpath fill='%23999' fill-opacity='0.07' d='M1 1h0.5v0.5H1V1z'%3E%3C/path%3E%3C/svg%3E");
@@ -1470,23 +1474,39 @@ button.shell-nav-flyout-item {
      Routes that need space below the header add their own top padding/offset.
      No shell-level padding-top: routes own their own internal top spacing. */
   margin-top: calc(-1 * var(--shell-header-h));
+  scroll-padding-bottom: var(--shell-fixed-alert-clearance);
 }
 
-/* ---------------------------------------------------------------------------
-   NO GLOBAL BANNER CLEARANCE — DELIBERATELY.
+/* Padding on an overflow owner is absorbed by border-box sizing when a route
+   child is min-height:100%, so it does not reliably create scroll range. A
+   real final flow item does: even full-viewport route children can scroll
+   completely above the fixed alarm instead of leaving their last control
+   underneath it. */
+:root[data-schedule-alarm] .shell-main::after {
+  content: "";
+  display: block;
+  height: var(--shell-fixed-alert-clearance);
+  pointer-events: none;
+}
 
-   A `--shell-alarm-h` reservation used to live here: the global schedule alarm
-   measured itself and every shell scroll container gave up that many pixels of
-   padding. It was removed on Arman's ruling (2026-09-12): AN INTERNAL NOTICE
-   NEVER MODIFIES THE PAGE UNDERNEATH IT. A super-admin-only alarm that shifts
-   the layout means the person responsible for the product sees a different
-   product than everyone else, permanently, with no way to put it away.
+/* Global fixed notices are route-independent. Their singleton publishes only
+   a semantic compact/expanded state; CSS owns the responsive runway. This is
+   intentionally not a measured height, so no observer can feed layout back
+   into the fixed card. The compact pill clears one touch target; an expanded
+   alarm clears its action row on phones and its card on desktop. */
+:root[data-schedule-alarm="compact"] {
+  --shell-fixed-alert-clearance: max(4.5rem, env(safe-area-inset-bottom, 0px));
+}
 
-   Global notices FLOAT instead — fixed, movable by the person
-   (`hooks/useDraggableFloat`), closable, and snoozable — and they anchor away
-   from page headers rather than asking routes to make room. Do not re-add a
-   layout reservation for an overlay here; make the overlay movable.
-   --------------------------------------------------------------------------- */
+:root[data-schedule-alarm="expanded"] {
+  --shell-fixed-alert-clearance: max(14rem, 36dvh, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 640px) {
+  :root[data-schedule-alarm="expanded"] {
+    --shell-fixed-alert-clearance: max(10rem, 24dvh, env(safe-area-inset-bottom, 0px));
+  }
+}
 
 /* Natural-height reading/list surfaces keep a generous final runway so fixed
    page affordances never cover the last content. The pseudo-element adds
@@ -1616,13 +1636,17 @@ button.shell-nav-flyout-item {
 
   /* Mobile dock is opt-in — no bottom padding unless a route requests it. */
   .shell-main {
-    padding-bottom: 0;
+    padding-bottom: var(--shell-fixed-alert-clearance);
+    scroll-padding-bottom: var(--shell-fixed-alert-clearance);
   }
 
   body:has(.shell-show-dock) .shell-main {
-    padding-bottom: calc(
-      var(--shell-dock-h) + var(--shell-dock-bottom) + 1rem +
-        var(--shell-safe-area-bottom)
+    padding-bottom: max(
+      var(--shell-fixed-alert-clearance),
+      calc(
+        var(--shell-dock-h) + var(--shell-dock-bottom) + 1rem +
+          var(--shell-safe-area-bottom)
+      )
     );
   }
 

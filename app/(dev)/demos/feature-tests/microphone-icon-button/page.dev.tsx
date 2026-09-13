@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { MicrophoneIconButton, MicVariant } from '@/features/audio/components/MicrophoneIconButton';
 import { VoiceTextarea } from '@/components/official/VoiceTextarea';
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
@@ -109,7 +110,7 @@ function RawHookDemo() {
     streaming: true,
   });
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const formatTime = (s: number) => formatDurationSeconds(s, { style: 'clock' });
 
   return (
     <Section title="useRecordAndTranscribe — raw hook, all controls exposed">

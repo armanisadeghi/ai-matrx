@@ -15,6 +15,72 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D317 — the `shell_execution` KIND is still inactive and routed to the generic floor
+
+`ShellInline` (2026-09-13) fixed the TOOL layer: a `shell_execute` / `shell_python` /
+`code_execute_python` tool CALL now renders as a real terminal card in the thread. The parallel
+CONTENT-IR layer is untouched and still wrong. Live DB (`brsgrqvjdzwihsvnfqkf`,
+`content_ir.evaluate_kind_activation`, read 2026-09-13):
+
+```
+kind shell_execution  is_active=false  component_key=generic_structured (bundled, active)
+reason: "render: the only active role='output' component is 'generic_structured' — that IS the
+generic viewer, i.e. no component. A reader would get a key/value dump. Author a real source='db'
+component (or register a compiled one), then retire the generic row."
+```
+
+So anywhere a `shell_execution` payload arrives as a `__kind` REGION rather than as a tool call
+(an agent embedding one in markdown, a persisted artifact, a workflow emission), the reader still
+gets the key/value dump — and the kind is inactive, so it reaches them by the SILENT
+`routeToGeneric` fallback the tool-result-kind-routes suite exists to forbid.
+
+**The fix** is a thin block wrapper over the presentation `ShellInline` already implements,
+registered in `components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx` and in
+the compiled floor the content-IR resolver reads
+(`features/content-ir/registry/component-registry.ts` → `getSystemComponentEntries`), so
+`resolveComponent("shell_execution", "web", "output")` answers with something real.
+
+🚨 **CORRECTION (aidream lane, 2026-09-13, while repairing the `shell_execution` schema drift): this
+is NOT blocked on a migration or on a permission rule, and it is not a database problem at all.**
+
+- `content_ir.kind_component` is a DATA table with canonical writers (the `kindcomp_*` tools for
+  `source='db'` rows, the compiled floor for `source='bundled'` ones), and activation already rides
+  the `content_ir.set_kind_activation` RPC — `scripts/publish_kind_catalog.py` calls it on every
+  publish. Writing the row and flipping the flag needs no DDL and no `pnpm db:apply`.
+- The reason the flag is false is that **no real component exists to point at**. `ShellInline` is
+  registered in `features/tool-call-visualization/registry/registry.tsx` keyed by TOOL NAME
+  (`shell_execute`, `shell_python`) — a different resolver that never consults `kind_component` or
+  `is_active`. Grep confirms: `shell_execution` appears nowhere in the content-IR kind registry.
+  The activation gate is doing exactly its job (the fallback-is-not-a-component law); a
+  `kind_component` row pointing at a key the web registry cannot resolve would be a lie that renders
+  as the same key/value dump.
+
+So the ordering is: build the block wrapper + registry entry (this repo, code), THEN the aidream lane
+publishes the `kind_component` row and reactivates in one data step. Whoever does the first half,
+say so and the second half takes minutes.
+### D318 — Three live-registry/live-DB guards are red on `main`, and their names make triage read them as UNMEASURED
+
+All three run in CI **with credentials present** and return real verdicts, but each is named `… (UNMEASURED without the secret)` — the failure mode, not the finding. Triaging by check title (I did) reads a real measurement as a missing secret. Seen red on `claude/trial-7` head `acbfc27f` and, by construction, on `main`: all three read the live database plus files byte-identical to `main`.
+
+- **`pnpm check:kind-types`** — `features/content-ir/kinds/generated/kinds.generated.ts` is STALE vs the live registry (517 active kinds). Fix: `pnpm shape:types`, commit. Needs live-registry access; cannot be run or verified from a container without credentials. Will need re-running after trial 7's new kinds are published.
+- **`pnpm check:soft-delete-unique-index`** (`no new unique index counts removed rows`) — a unique index counts soft-deleted rows, so a removed row keeps holding its name and nobody can reuse it. Fix: `WHERE deleted_at IS NULL` in a migration (pattern: `migrations/soft_delete_partial_unique_indexes_context.sql`). 🚨 The guard is explicit that the baseline must NOT be grown to clear this.
+- 🚨 **`pnpm check:hr-punch-write-path:strict`** — "A client-direct insert path into `hr.punch` may now exist… a punch row can be manufactured without passing a single invariant `hr.punch_record` enforces." `hr.punch` is a component table, so its RLS write policy admits anyone holding editor on the parent — RLS will NOT stop this. **This is a live security finding and belongs to the HR lane's owner now**, not to a PR thread.
+
+**Who decides / what is uncertain.** Nothing here is decidable from the code alone: each needs live-database access to reproduce and to verify a fix. Filed rather than fixed for exactly that reason, not parked. The naming problem is the fourth defect and the cheapest to fix: a guard that CAN measure should not carry its unmeasured-mode caveat as its check title, or every triage pass discounts it.
+
+### D316 — TWO hooks now enforce the fire-once law for a masterwork run, and the merge had to pick one
+
+Two trials independently fixed the same defect — a run's completion callback firing again on every re-render — with two different primitives, and BOTH survived the 2026-09-13 merge into `claude/trial-7`:
+
+- `features/masterwork/durable-run/useRunResultOnce.ts` (trial 7), consumed by the timeline, source, chat-import and body-of-work ingest dialogs — four callers.
+- `features/masterwork/durable-run/useRunOutcome.ts` (trial 8), consumed by the triage dialog — one caller, and the only user of its `when` filter.
+
+`IngestSourceDialog.tsx` was the one file where both sides' calls landed together; calling both would have fired `onIngested` TWICE, which is the very defect they each exist to stop. The merge kept `useRunResultOnce` there **by consumer count, not by a ruling** — worth stating plainly, because `main`'s own change log entry says it "KEPT `useRunOutcome`", so the two halves of the repo currently disagree about which primitive is canonical.
+
+**This is the W77 class again** (two trials, one concept, two implementations) and it is NOT resolved by the merge — the merge only stopped the double-fire in one file. Collapsing it means choosing one primitive, porting `when` onto it if that is the survivor, and repointing all five consumers. Left standing deliberately rather than decided under time pressure by whoever merged last; the unfinished-work alarm applies — neither hook is dead, and neither may be deleted on an agent's own authority.
+
+Two smaller things the same merge surfaced, both fixed in it: `RULE_ACTION_KINDS` converged to nine values while `RULE_ACTION_KIND_HINTS` still held six, so three kinds would have rendered a blank hint in the picker; and `EXPECTED_MS` carried a duplicate `timeline` key (an estimate and a measurement), where the measurement won. Still open and NOT fixed: the `rule_draft` write-target description in `agent-context/ruleDraftInput.ts` still tells agents the six old action kinds while nine are accepted.
+
 ### D314 — Tier-blind `seo.keyword_topic` readers remain beside the fixed Offering read (census 2026-09-12)
 
 `seo.gsc_keyword_topics_for` was fixed on 2026-09-12 to take its candidates from

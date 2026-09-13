@@ -81,6 +81,8 @@ import { muteOutage, readMuteMap, type MuteMap } from "./outage-mute";
  * minute per open super-admin tab. The server closes the row when calls
  * succeed, so this is also how fast the notice disappears on its own.
  */
+// KNOB MIRROR of platform.feature_knob "platform.system_errors" "outage_poll_ms" — a React Query
+// refetchInterval on a render path. Change the row, then re-mirror this literal.
 const OUTAGE_POLL_MS = 60_000;
 
 const POSITION_KEY = "matrx.platform-outage.position";

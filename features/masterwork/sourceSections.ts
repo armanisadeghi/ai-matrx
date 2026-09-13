@@ -69,6 +69,8 @@ export function entitySourceKey(token: string, id: string): string {
 /** Same threshold as the server's second pass — see the header. */
 const THIN_FRACTION = 0.5;
 /** Below this a part is too short for its rate to mean anything. */
+// KNOB MIRROR of platform.feature_knob "masterwork_distillation" "thin_part_min_words" — a synchronous pure function.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const MIN_WORDS = 800;
 
 /**

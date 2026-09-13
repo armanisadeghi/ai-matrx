@@ -34,6 +34,7 @@ import {
   ShieldOff,
   AlertTriangle,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -68,12 +69,31 @@ import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-sy
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
+import type { McpServerState } from "@/features/agents/hooks/useMcpTools";
+import { MCP_STATE_LABEL } from "@/features/connectors/connection-state";
+import {
+  indexRunMcpAttachments,
+  mcpChipPresentation,
+  readRunMcpAttachments,
+  type RunMcpAttachment,
+} from "@/features/connectors/run-attachments";
+import { useConnectMcpServer } from "@/features/connectors/useConnectMcpServer";
+import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 
 export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
   const tools = useAppSelector(selectAllTools);
   const status = useAppSelector(selectToolsStatus);
-  const { connectedServers } = useMcpCatalog();
+  const { serverStates, availabilityStatus } = useMcpCatalog();
+  const { connect: connectMcp, connectingSlug } = useConnectMcpServer();
+  // What the LAST run actually got. A chip claims nothing the run denies.
+  const primaryRequest = useAppSelector(selectPrimaryRequest(conversationId));
+  const runAttachments = indexRunMcpAttachments(
+    readRunMcpAttachments(
+      primaryRequest?.infoEvents,
+      primaryRequest?.warnings,
+    ),
+  );
 
   // The agent that owns this conversation — the source of the REAL tool set.
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
@@ -136,6 +156,9 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   // The agent's configured set is read-only reference — collapsed by default
   // so the actionable add-list owns the vertical space.
   const [agentSectionOpen, setAgentSectionOpen] = useState(false);
+  // The public no-auth servers stay one click away rather than crowding out
+  // the ones this person connected.
+  const [showAllMcp, setShowAllMcp] = useState(false);
 
   // The registry catalog — needed to resolve the agent's tool UUIDs to names
   // AND to drive the add-picker. Load it once.
@@ -178,6 +201,24 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
         },
       }),
     );
+
+  // Two tiers, because "usable" is far wider than "yours": dozens of public
+  // no-auth servers are reachable by everyone, and dumping all of them here
+  // would bury the handful this person actually set up. Tier one is the
+  // user's own set — a connection on file, attached to this chat, or wanting
+  // attention (an attached server must NEVER disappear because it broke).
+  // Tier two is everything else that is genuinely usable, one click away.
+  const myServers = serverStates.filter(
+    (s) =>
+      s.entry.connectionId !== null ||
+      s.truth.state === "needs_reauth" ||
+      addedMcp.has(s.entry.slug) ||
+      Boolean(runAttachments[s.entry.slug]),
+  );
+  const otherServers = serverStates.filter(
+    (s) => !myServers.includes(s) && s.truth.state === "connected",
+  );
+  const relevantServers = showAllMcp ? [...myServers, ...otherServers] : myServers;
 
   // No useMemo — React Compiler memoizes (CLAUDE.md core invariant).
   const list = tools ?? [];
@@ -279,14 +320,35 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
                     sub={t.description ?? "custom"}
                   />
                 ))}
-                {mcpList.map((id) => (
-                  <AgentToolBadge
-                    key={id}
-                    icon={<Server className="h-3 w-3" />}
-                    label={id}
-                    sub="MCP"
-                  />
-                ))}
+                {/* The agent's own MCP servers ride EVERY run, so their real
+                    state belongs here too — a slug alone told the user
+                    nothing about whether the agent can actually reach it. */}
+                {mcpList.map((id) => {
+                  const server = serverStates.find((s) => s.entry.slug === id);
+                  const attachment = runAttachments[id];
+                  const state = attachment?.state ?? server?.truth.state;
+                  return (
+                    <AgentToolBadge
+                      key={id}
+                      icon={<Server className="h-3 w-3" />}
+                      label={server?.entry.name ?? id}
+                      sub={
+                        state === undefined
+                          ? "MCP"
+                          : state === "connected"
+                            ? attachment?.toolCount != null
+                              ? `MCP · ${attachment.toolCount} tools`
+                              : "MCP · connected"
+                            : `MCP · ${MCP_STATE_LABEL[state]}`
+                      }
+                      tone={
+                        state === undefined || state === "connected"
+                          ? "muted"
+                          : "warning"
+                      }
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -306,44 +368,58 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
         )}
       </div>
 
-      {/* ── Connected MCP servers, explicitly enabled for this chat ─────── */}
-      {connectedServers.length > 0 && (
+      {/* ── MCP servers for this chat — three honest states ────────────── */}
+      {/* Every chip says what is actually true: Connected (usable now),
+          Needs re-auth (with the door that fixes it), or Not connected. The
+          Check icon means "attached to this chat AND connected" and nothing
+          else — a checkmark over a dead connection is exactly what made the
+          screen lie (Arman, 2026-09-13). Servers the user has no relationship
+          with stay out of this list; the full catalog lives in Connections. */}
+      {(relevantServers.length > 0 || otherServers.length > 0) && (
         <div className="shrink-0 border-b border-border px-2.5 py-2">
           <div className="mb-1 flex items-center gap-1.5">
             <Server className="h-3.5 w-3.5 text-primary" />
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Connected services for this chat
+              Services for this chat
             </span>
           </div>
           <p className="mb-1.5 text-[11px] leading-tight text-muted-foreground">
             Add a connected MCP server to this conversation without changing
             the agent&apos;s saved definition.
           </p>
-          <div className="flex flex-wrap gap-1">
-            {connectedServers.map((server) => {
-              const enabled = addedMcp.has(server.slug);
-              return (
-                <button
-                  key={server.serverId}
-                  type="button"
-                  onClick={() => toggleMcp(server.slug)}
-                  aria-pressed={enabled}
-                  className={cn(
-                    "flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] transition-colors",
-                    enabled
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border text-foreground hover:bg-accent",
-                  )}
-                >
-                  {enabled ? (
-                    <Check className="h-3 w-3" />
-                  ) : (
-                    <Plus className="h-3 w-3" />
-                  )}
-                  {server.name}
-                </button>
-              );
-            })}
+          {/* A stand-in announces itself: when the health check cannot be
+              reached these states come from saved connection rows alone, and
+              that is said out loud rather than passed off as the truth. */}
+          {availabilityStatus === "failed" && (
+            <p className="mb-1.5 flex items-start gap-1 text-[11px] leading-tight text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+              Live connection health is unavailable right now — the states
+              below come from your saved connections and may be out of date.
+            </p>
+          )}
+          <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">
+            {relevantServers.map((server) => (
+              <McpServerChip
+                key={server.entry.serverId}
+                server={server}
+                attached={addedMcp.has(server.entry.slug)}
+                runAttachment={runAttachments[server.entry.slug]}
+                connecting={connectingSlug === server.entry.slug}
+                onToggle={() => toggleMcp(server.entry.slug)}
+                onReconnect={() => void connectMcp(server.entry)}
+              />
+            ))}
+            {otherServers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAllMcp(!showAllMcp)}
+                className="flex h-7 items-center gap-1 rounded-md border border-dashed border-border px-2 text-[11px] text-muted-foreground hover:bg-accent"
+              >
+                {showAllMcp
+                  ? "Show fewer"
+                  : `${otherServers.length} more available`}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -439,10 +515,13 @@ function AgentToolBadge({
   icon,
   label,
   sub,
+  tone = "muted",
 }: {
   icon: React.ReactNode;
   label: string;
   sub?: string;
+  /** `warning` marks a row whose backing connection is not usable right now. */
+  tone?: "muted" | "warning";
 }) {
   return (
     <div className="flex items-baseline gap-1.5 rounded bg-muted/40 px-1.5 py-0.5 text-[11px]">
@@ -451,7 +530,14 @@ function AgentToolBadge({
         {label}
       </span>
       {sub && (
-        <span className="shrink-0 truncate text-[11px] text-muted-foreground/60">
+        <span
+          className={cn(
+            "shrink-0 truncate text-[11px]",
+            tone === "warning"
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-muted-foreground/60",
+          )}
+        >
           {sub}
         </span>
       )}
@@ -532,5 +618,93 @@ function ToolRow({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * One MCP server, told truthfully.
+ *
+ * Three states, three distinct renderings, and never a dead control: a server
+ * that needs re-authorization carries the Reconnect door, and a server that
+ * failed THIS run wears its own error text in red rather than a checkmark.
+ */
+function McpServerChip({
+  server,
+  attached,
+  runAttachment,
+  connecting,
+  onToggle,
+  onReconnect,
+}: {
+  server: McpServerState;
+  attached: boolean;
+  runAttachment: RunMcpAttachment | undefined;
+  connecting: boolean;
+  onToggle: () => void;
+  onReconnect: () => void;
+}) {
+  const chip = mcpChipPresentation(
+    server.truth.state,
+    server.truth.reason,
+    attached,
+    runAttachment,
+  );
+
+  if (chip.kind !== "broken") {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={attached}
+        title={
+          chip.toolCount !== null
+            ? `${server.entry.name} gave this chat ${chip.toolCount} tool${chip.toolCount === 1 ? "" : "s"}`
+            : `${server.entry.name} — connected`
+        }
+        className={cn(
+          "flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] transition-colors",
+          attached
+            ? "border-primary/40 bg-primary/10 text-primary"
+            : "border-border text-foreground hover:bg-accent",
+        )}
+      >
+        {chip.kind === "check" ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <Plus className="h-3 w-3" />
+        )}
+        {server.entry.name}
+        {chip.toolCount !== null && (
+          <span className="text-[10px] opacity-70">{chip.toolCount}</span>
+        )}
+      </button>
+    );
+  }
+
+  const severe = chip.status !== "needs re-auth";
+  return (
+    <button
+      type="button"
+      onClick={onReconnect}
+      disabled={connecting}
+      title={chip.reason ?? undefined}
+      className={cn(
+        "flex h-7 max-w-full items-center gap-1 rounded-md border px-2 text-[11px] transition-colors disabled:opacity-60",
+        severe
+          ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+          : "border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300",
+      )}
+    >
+      {connecting ? (
+        <RefreshCw className="h-3 w-3 animate-spin" />
+      ) : (
+        <AlertTriangle className="h-3 w-3 shrink-0" />
+      )}
+      <span className="truncate">{server.entry.name}</span>
+      <span className="shrink-0 opacity-80">{chip.status}</span>
+      <span className="shrink-0 underline underline-offset-2">
+        {connecting ? "Connecting…" : "Reconnect"}
+      </span>
+    </button>
   );
 }

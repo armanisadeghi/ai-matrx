@@ -152,7 +152,7 @@ const STUDIO_TILES: Tile[] = [
 
 export function ImagesLandingHero() {
   return (
-    <div className="h-full overflow-y-auto overscroll-contain">
+    <div className="h-full overflow-y-auto overscroll-contain pb-20">
       <div className="space-y-3 px-3 pb-3 pt-3 md:hidden">
         <MobileTileSection
           title="Manager"

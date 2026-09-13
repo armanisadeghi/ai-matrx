@@ -21,6 +21,46 @@ interface DaemonEntry {
   target?: string | null;
 }
 
+interface SandboxWatchCredential {
+  token: string;
+  wsBase: URL;
+  sandbox_id: string;
+}
+
+interface RawSandboxWatchCredential {
+  token: string;
+  ws_base: string;
+  sandbox_id: string;
+}
+
+const WATCH_RECONNECT_MS = 1500;
+const TRANSIENT_WATCH_MINT_STATUSES = new Set([502, 503, 504]);
+
+function parseWatchCredential(
+  value: unknown,
+): SandboxWatchCredential | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const credential = value as Partial<RawSandboxWatchCredential>;
+  if (
+    typeof credential.token !== "string" || !credential.token ||
+    typeof credential.ws_base !== "string" || !credential.ws_base ||
+    typeof credential.sandbox_id !== "string" || !credential.sandbox_id
+  ) {
+    return null;
+  }
+  try {
+    const url = new URL(credential.ws_base);
+    if (url.protocol !== "ws:" && url.protocol !== "wss:") return null;
+  } catch {
+    return null;
+  }
+  return {
+    token: credential.token,
+    wsBase: new URL(credential.ws_base),
+    sandbox_id: credential.sandbox_id,
+  };
+}
+
 /**
  * Adapter that talks to the orchestrator's structured filesystem API via
  * /api/sandbox/[id]/fs/* (which forwards into the in-container matrx_agent
@@ -253,21 +293,116 @@ export class SandboxFilesystemAdapter implements FilesystemAdapter {
     if (typeof window === "undefined") {
       return () => {};
     }
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${proto}//${window.location.host}/api/sandbox/${this.instanceId}/fs/watch?path=${encodeURIComponent(path)}&recursive=true`;
     let socket: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let mintController: AbortController | null = null;
     let closed = false;
+    let generation = 0;
+    let unavailableReported = false;
 
-    const connect = () => {
+    const emit = (event: FilesystemWatchEvent) => {
+      try {
+        cb(event);
+      } catch (error) {
+        // A consumer bug must not be mistaken for a malformed daemon frame or
+        // tear down the healthy socket it subscribed through.
+        console.error("[sandbox-fs-watch] callback failed", error);
+      }
+    };
+
+    const scheduleReconnect = () => {
+      if (closed || reconnectTimer !== null) return;
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        void connect();
+      }, WATCH_RECONNECT_MS);
+    };
+
+    const reportUnavailable = (reason: string) => {
+      if (unavailableReported || closed) return;
+      unavailableReported = true;
+      console.error(
+        `[sandbox-fs-watch] Live file updates unavailable: ${reason}. Refresh or reopen Explorer after the sandbox is available.`,
+      );
+    };
+
+    const connect = async () => {
       if (closed) return;
-      socket = new WebSocket(url);
-      socket.onmessage = (event) => {
+      const currentGeneration = ++generation;
+      const controller = new AbortController();
+      mintController = controller;
+      let credentialResponse: Response;
+      try {
+        credentialResponse = await fetch(
+          `/api/sandbox/${encodeURIComponent(this.instanceId)}/access-tokens`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // Watches reconnect after normal restarts/token expiry, so their
+            // scoped credentials must remain reusable.
+            body: JSON.stringify({ scopes: ["fs.watch"], single_use: false }),
+            signal: controller.signal,
+          },
+        );
+      } catch {
+        if (!closed && currentGeneration === generation) scheduleReconnect();
+        return;
+      } finally {
+        if (mintController === controller) mintController = null;
+      }
+      if (closed || currentGeneration !== generation) return;
+      if (!credentialResponse.ok) {
+        if (TRANSIENT_WATCH_MINT_STATUSES.has(credentialResponse.status)) {
+          scheduleReconnect();
+        } else {
+          reportUnavailable(`credential mint was refused (${credentialResponse.status})`);
+        }
+        return;
+      }
+
+      const credential = parseWatchCredential(
+        await credentialResponse.json().catch(() => null),
+      );
+      if (closed || currentGeneration !== generation) return;
+      if (!credential) {
+        reportUnavailable("credential mint returned an invalid watch endpoint");
+        return;
+      }
+      const params = new URLSearchParams({
+        path,
+        recursive: "true",
+        access_token: credential.token,
+      });
+      if (window.location.protocol === "https:" && credential.wsBase.protocol !== "wss:") {
+        reportUnavailable("the watch endpoint is not TLS-enabled");
+        return;
+      }
+      const url = `${credential.wsBase.toString().replace(/\/$/, "")}/sandboxes/${encodeURIComponent(credential.sandbox_id)}/fs/watch?${params.toString()}`;
+
+      let nextSocket: WebSocket;
+      try {
+        nextSocket = new WebSocket(url);
+      } catch {
+        scheduleReconnect();
+        return;
+      }
+      if (closed || currentGeneration !== generation) {
+        nextSocket.close();
+        return;
+      }
+      socket = nextSocket;
+      nextSocket.onopen = () => {
+        if (closed || currentGeneration !== generation || socket !== nextSocket) return;
+        emit({ type: "resync", path });
+      };
+      nextSocket.onmessage = (event) => {
+        if (closed || currentGeneration !== generation || socket !== nextSocket) return;
         try {
           const msg = JSON.parse(
             typeof event.data === "string" ? event.data : "{}",
           );
           if (msg && msg.type && msg.path) {
-            cb({
+            emit({
               type: msg.type,
               path: msg.path,
               fromPath: msg.from_path ?? msg.fromPath,
@@ -277,20 +412,30 @@ export class SandboxFilesystemAdapter implements FilesystemAdapter {
           // Ignore malformed frames — daemon should only send JSON.
         }
       };
-      socket.onclose = () => {
-        if (closed) return;
-        // Light reconnect backoff — most disconnects are sandbox restarts.
-        setTimeout(connect, 1500);
+      nextSocket.onclose = () => {
+        if (closed || currentGeneration !== generation || socket !== nextSocket) return;
+        socket = null;
+        // A reconnect always mints a new scoped token; servers may close on
+        // its normal expiry while the Explorer remains open.
+        scheduleReconnect();
       };
-      socket.onerror = () => {
-        socket?.close();
+      nextSocket.onerror = () => {
+        if (currentGeneration === generation && socket === nextSocket) {
+          nextSocket.close();
+        }
       };
     };
-    connect();
+    void connect();
 
     return () => {
       closed = true;
+      generation += 1;
+      mintController?.abort();
+      mintController = null;
+      if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+      reconnectTimer = null;
       socket?.close();
+      socket = null;
     };
   }
 

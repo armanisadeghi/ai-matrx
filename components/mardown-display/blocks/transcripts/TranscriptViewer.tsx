@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@ai-matrx/design-system';
 import { Separator } from '@/components/ui/separator';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 
 import { 
   Search, 
@@ -153,13 +154,7 @@ const TranscriptViewer = ({
         
         const totalSeconds = hours * 3600 + minutes * 60 + seconds;
         
-        // Format timecode string based on presence of hours
-        let timecodeStr = '';
-        if (hours > 0) {
-          timecodeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } else {
-          timecodeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+        const timecodeStr = formatDurationSeconds(totalSeconds, { style: 'clock' });
         
         // Start a new segment
         currentSegment = {
@@ -293,19 +288,6 @@ const TranscriptViewer = ({
     );
   };
   
-  // Format time for display
-  const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
   return (
     <TooltipProvider>
       <Card className="w-full">
@@ -390,7 +372,7 @@ const TranscriptViewer = ({
                   <TooltipTrigger asChild>
                     <div className="flex items-center">
                       <Clock className="h-3.5 w-3.5" />
-                      <span>{formatTime(stats.totalDuration)}</span>
+                      <span>{formatDurationSeconds(stats.totalDuration, { style: 'clock' })}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>Total duration</TooltipContent>

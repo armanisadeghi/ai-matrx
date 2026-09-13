@@ -12,17 +12,11 @@
  * model only supplies timestamps, never a session id.
  */
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { requestScribeAudioSeek } from "@/features/transcript-studio/state/scribeAudioBus";
 import type { RootState } from "@/lib/redux/store";
 import type { ScribeToolHandler, ScribeToolResultBase } from "./types";
 import type { ScribePlayAudioArgs } from "../tools/schemas";
-
-function formatClock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 /** Find the studio session bound to this assistant conversation, if any. */
 function resolveSessionIdForConversation(
@@ -83,8 +77,8 @@ export const playAudioHandler: ScribeToolHandler<
       ok: true,
       message:
         end != null
-          ? `Playing the clip from ${formatClock(start)} to ${formatClock(end)}.`
-          : `Playing from ${formatClock(start)}.`,
+          ? `Playing the clip from ${formatDurationSeconds(start, { style: "clock" })} to ${formatDurationSeconds(end, { style: "clock" })}.`
+          : `Playing from ${formatDurationSeconds(start, { style: "clock" })}.`,
       start_seconds: start,
       end_seconds: end ?? null,
     };

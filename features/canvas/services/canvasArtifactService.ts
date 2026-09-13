@@ -65,6 +65,17 @@ const CANVAS_TYPE_TO_ARTIFACT_TYPE: Partial<Record<string, ArtifactTypeEnum>> =
  * Resolve a canvasType to its cx_artifact artifact_type enum value.
  * Returns null for types not yet in the enum — callers must skip the write.
  */
+
+/**
+ * The columns `anon` may read on `canvas.canvas_items`. Both reads below resolve
+ * a SHARED artifact, so they run for signed-out visitors on the public canvas and
+ * share routes — where `*` is refused (42501) and `user_id` / `organization_id` /
+ * `metadata` are not readable at all. Register:
+ * lib/security/public-exposure.ts#ANON_COLUMN_SURFACE (DD-186).
+ */
+const ANON_CANVAS_ITEM_COLUMNS =
+  "id,type,content,title,description,is_favorited,is_archived,tags,session_id,source_message_id,task_id,is_public,created_at,updated_at,last_accessed_at,content_hash,project_id,conversation_id,artifact_index,parent_canvas_id,source_type,external_system,external_id,deleted_at,visibility,source_system,source_id,version";
+
 export function canvasTypeToArtifactType(
   canvasType: string,
 ): ArtifactTypeEnum | null {
@@ -116,7 +127,13 @@ export interface ArtifactVersionInput {
 
 export interface CanvasArtifactRow {
   id: string;
-  user_id: string;
+  /**
+   * OPTIONAL, and that is the honest shape: `anon` cannot read
+   * `canvas_items.user_id` at all (DD-186), so the two SHARED-VIEW reads
+   * (`getById`, `getBySource` — reachable signed-out on /s/[token] and
+   * /canvas/shared) never carry it. No consumer reads it; the owner lane is RLS.
+   */
+  user_id?: string;
   type: string;
   title: string | null;
   content: any;
@@ -313,7 +330,7 @@ export const canvasArtifactService = {
       const { data, error } = await supabase
         .schema("canvas")
         .from("canvas_items")
-        .select("*")
+        .select(ANON_CANVAS_ITEM_COLUMNS)
         .eq("source_system", source.system)
         .eq("source_id", source.id)
         .is("deleted_at", null)
@@ -421,7 +438,7 @@ export const canvasArtifactService = {
       const { data, error } = await supabase
         .schema("canvas")
         .from("canvas_items")
-        .select("*")
+        .select(ANON_CANVAS_ITEM_COLUMNS)
         .is("deleted_at", null)
         .eq("id", canvasId)
         .maybeSingle();

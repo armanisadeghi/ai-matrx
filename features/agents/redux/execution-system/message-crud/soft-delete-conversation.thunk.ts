@@ -20,7 +20,10 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { clearMessages } from "../messages/messages.slice";
 import { clearForConversation as clearObservabilityForConversation } from "../observability/observability.slice";
-import { removeConversation as removeFromConversationList } from "../../conversation-list/conversation-list.slice";
+import {
+  removeConversation as removeFromConversationList,
+  addToTrash,
+} from "../../conversation-list/conversation-list.slice";
 import { removeConversationFromScopes } from "../../conversation-history/slice";
 import { clearCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
@@ -46,7 +49,12 @@ export const softDeleteConversation = createAsyncThunk<
   ThunkApi
 >(
   "conversations/softDelete",
-  async ({ conversationId }, { dispatch, rejectWithValue }) => {
+  async ({ conversationId }, { dispatch, getState, rejectWithValue }) => {
+    // Snapshot BEFORE the purge below wipes every slice that holds the row —
+    // the trash disclosure needs a title to offer Restore on without a refetch.
+    const snapshot =
+      getState().conversationList.byConversationId[conversationId] ?? null;
+
     const { data, error } = await supabase.rpc("cx_soft_delete_conversation", {
       p_conversation_id: conversationId,
     });
@@ -81,6 +89,10 @@ export const softDeleteConversation = createAsyncThunk<
     // ConversationHistorySidebar across /chat, /code, builder panels, and
     // floating windows). Without the scope removal, deletions would leave
     // ghost rows in those surfaces until the user navigated or refreshed.
+    // The row is not gone, it is in the trash (DD-179): `cx_soft_delete_conversation`
+    // only stamps `deleted_at`, and `cx_restore_conversation` un-stamps it. Seed
+    // the trash so Restore is reachable in the same breath as the delete.
+    if (snapshot) dispatch(addToTrash(snapshot));
     dispatch(removeFromConversationList(conversationId));
     dispatch(removeConversationFromScopes({ conversationId }));
     dispatch(clearMessages(conversationId));

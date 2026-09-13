@@ -23,6 +23,22 @@ export type DirectiveConfirmRequest =
 export type DirectiveConfirmResult =
   components["schemas"]["DirectiveConfirmResult"];
 
+/** DD-144 — the apply-state read door's request/response (generated contract). */
+export type DirectiveApplyStateRequest =
+  components["schemas"]["DirectiveApplyStateRequest"];
+export type DirectiveApplyStateResult =
+  components["schemas"]["DirectiveApplyStateResult"];
+export type DirectiveShellState = components["schemas"]["DirectiveShellState"];
+
+/** Runtime guard for the apply-state response. */
+export function isDirectiveApplyStateResult(
+  value: unknown,
+): value is DirectiveApplyStateResult {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.conversation_id === "string" && Array.isArray(v.shells);
+}
+
 /** One confirm-receipt item — applied or failed (OpenAPI union). */
 export type DirectiveConfirmReceipt =
   | components["schemas"]["DirectiveItemApplied"]

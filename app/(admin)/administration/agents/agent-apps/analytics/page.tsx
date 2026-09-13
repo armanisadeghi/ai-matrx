@@ -45,7 +45,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
-import { UNKNOWN_DISPLAY, formatCount, formatPercentFromFraction, formatUsd, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
+import { UNKNOWN_DISPLAY, formatCount, formatDurationMs, formatPercentFromFraction, formatUsd, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
@@ -411,11 +411,10 @@ export default function AgentAppsAnalyticsPage() {
                             <Stat
                               icon={<Clock className="w-3 h-3" />}
                               label="Avg Time"
-                              value={
-                                isKnownNumber(app.avg_execution_time_ms)
-                                  ? `${app.avg_execution_time_ms}ms`
-                                  : UNKNOWN_DISPLAY
-                              }
+                              value={formatDurationMs(app.avg_execution_time_ms, {
+                                style: "compact",
+                                fallback: UNKNOWN_DISPLAY,
+                              })}
                             />
                             <Stat
                               icon={<DollarSign className="w-3 h-3" />}

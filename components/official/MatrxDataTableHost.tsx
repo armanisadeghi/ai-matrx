@@ -13,6 +13,7 @@ import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { toast } from "@/lib/toast";
 import { TableSavedViews } from "./TableSavedViews";
+import { TableToolbarAction } from "./TableToolbarAction";
 
 const WindowPanel = dynamic(() => import("@/features/window-panels/WindowPanel").then((module) => module.WindowPanel), { ssr: false });
 
@@ -35,6 +36,7 @@ function TableWindowPanel(props: TableWindowPanelProps) {
 const ports: TableHost = {
   Link,
   CopyControls: CopyButtons,
+  ToolbarAction: TableToolbarAction,
   SavedViews: TableSavedViews,
   EntityRef,
   SidePanelSurface,

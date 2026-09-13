@@ -181,6 +181,21 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
   const recordClass =
     RECORD_CLASS_FILTER_VALUE[f.record_class ?? DEFAULT_RECORD_CLASS_FILTER];
   if (recordClass) q = q.eq("record_class", recordClass);
+  // WHO WROTE IT (DD-131 slice 3). `anyone` is no predicate: the two kinds of
+  // contact share one grid until somebody asks.
+  //
+  // `agent` is created_by_tier = 'ai' — an AI DECIDED to save this person.
+  // `code` is deliberately NOT included: the discovered-party pipelines (the
+  // social fold, expert promotion, the SEO domain sweep) are machinery, and
+  // the list already has a control for what they produce — the Record column's
+  // "Found by the platform". Folding them in here would give a user two chips
+  // that answer the same question differently.
+  //
+  // `agent_edited` adds the second fact on top of the first: a person has since
+  // touched the row. It is the same chip, not a third kind of record.
+  if (f.written_by === "agent") q = q.eq("created_by_tier", "ai");
+  else if (f.written_by === "agent_edited")
+    q = q.eq("created_by_tier", "ai").eq("updated_by_tier", "human");
   if (f.updated_at) q = q.gte("updated_at", bucketSince(f.updated_at));
   if (f.created_at) q = q.gte("created_at", bucketSince(f.created_at));
 

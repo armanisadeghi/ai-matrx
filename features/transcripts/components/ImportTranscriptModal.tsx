@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@ai-matrx/design-system';
@@ -143,8 +144,7 @@ export function ImportTranscriptModal({
                                         <div className="flex justify-between">
                                             <span className="text-gray-600 dark:text-gray-400">Duration:</span>
                                             <span className="font-medium">
-                                                {Math.floor(segments[segments.length - 1].seconds / 60)}:
-                                                {(segments[segments.length - 1].seconds % 60).toString().padStart(2, '0')}
+                                                {formatDurationSeconds(segments[segments.length - 1].seconds, { style: "clock" })}
                                             </span>
                                         </div>
                                     )}

@@ -16,14 +16,19 @@
 // Outside the provider the value is empty and not loading, so a tab rendered
 // somewhere unexpected degrades to "no configuration here" and says so.
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { fetchFeatureKnobs } from "@/features/admin/limits/service";
 import type { FeatureKnob } from "@/features/admin/limits/types";
-import { fetchKnobIndex, type KnobScopeRef } from "@/lib/scoped-config/service";
+import {
+  fetchKnobIndex,
+  fetchKnobRungOverrides,
+  type KnobRungOverrideRow,
+  type KnobScopeRef,
+} from "@/lib/scoped-config/service";
 import { getWebDeviceId } from "@/lib/scoped-config/deviceId";
 import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { invalidateFeatureKnobs } from "@/lib/knobs/featureKnobs";
@@ -31,6 +36,7 @@ import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegis
 import type { KnobUiHints, ScopedKnob } from "@/lib/scoped-config/types";
 import { isJsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
+import { pickableRungsFor } from "./scopeRows";
 import {
   fetchTaxonomyIndex,
   resolveKnobTaxonomy,
@@ -95,6 +101,24 @@ export function resolverRequestForTarget({
   };
 }
 
+/**
+ * The standing overrides ONE key holds at its picked rungs (table / agent /
+ * sub-organization), as this surface knows them.
+ *
+ * Loaded PER KNOB and ON DEMAND. Until DD-183 this surface held exactly one
+ * scope per section — the organization or the person it was standing in — so a
+ * key that is overridable "per table" had nowhere to say WHICH tables have
+ * their own value. That list is a different shape from a rung: there are many
+ * rows at one rung, they are discovered rather than supplied by the host, and
+ * reading them for all ~600 registered keys on every page load would be a
+ * catalogue read nobody asked for. So the state is a cache keyed by full key,
+ * filled when a person opens that key's exceptions.
+ */
+export type RungOverridesState =
+  | { status: "loading" }
+  | { status: "ready"; rows: KnobRungOverrideRow[] }
+  | { status: "error"; message: string };
+
 export type UniversalSettingsValue = {
   editingContext: "user" | "organization" | "system";
   canManageSystem: boolean;
@@ -120,6 +144,12 @@ export type UniversalSettingsValue = {
   error: string | null;
   /** Keys the resolver could not value at all — rendered as errors, never blanks. */
   missing: ScopedKnob[];
+  /** Per-knob standing overrides at the picked rungs, by full key. */
+  rungOverrides: Readonly<Record<string, RungOverridesState>>;
+  /** Read this key's picked-rung overrides once; a no-op while one is in flight. */
+  loadRungOverrides: (knob: ScopedKnob) => void;
+  /** Re-read them after a write at one of those rungs. */
+  reloadRungOverrides: (knob: ScopedKnob) => void;
   refresh: () => void;
 };
 
@@ -141,6 +171,9 @@ const EMPTY: UniversalSettingsValue = {
   isLoading: false,
   error: null,
   missing: [],
+  rungOverrides: {},
+  loadRungOverrides: () => {},
+  reloadRungOverrides: () => {},
   refresh: () => {},
 };
 
@@ -304,6 +337,53 @@ export function UniversalSettingsProvider({
   const [generation, setGeneration] = useState(0);
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
+  // ── per-knob rung overrides (DD-183) ──────────────────────────────────────
+  const [rungOverrides, setRungOverrides] = useState<Record<string, RungOverridesState>>({});
+  // Which keys have been asked for, so an open/close/open does not re-read and
+  // a render loop cannot become a request loop. Cleared whenever the
+  // destination changes, because an override list belongs to ONE organization.
+  const requested = useRef(new Set<string>());
+  const readRungOverrides = useCallback(
+    (knob: ScopedKnob, force: boolean) => {
+      if (!organizationId) return;
+      const kinds = pickableRungsFor(knob.overridable_by);
+      if (kinds.length === 0) return;
+      if (!force && requested.current.has(knob.full_key)) return;
+      requested.current.add(knob.full_key);
+      setRungOverrides((prior) => ({ ...prior, [knob.full_key]: { status: "loading" } }));
+      void fetchKnobRungOverrides({
+        feature: knob.feature,
+        key: knob.key,
+        organizationId,
+        kinds,
+      })
+        .then((rows) => {
+          setRungOverrides((prior) => ({
+            ...prior,
+            [knob.full_key]: { status: "ready", rows },
+          }));
+        })
+        .catch((err: unknown) => {
+          // A failed read is never an empty list: an empty list says "no table
+          // has its own value here", which is a claim we did not earn.
+          requested.current.delete(knob.full_key);
+          setRungOverrides((prior) => ({
+            ...prior,
+            [knob.full_key]: { status: "error", message: extractErrorMessage(err) },
+          }));
+        });
+    },
+    [organizationId],
+  );
+  const loadRungOverrides = useCallback(
+    (knob: ScopedKnob) => readRungOverrides(knob, false),
+    [readRungOverrides],
+  );
+  const reloadRungOverrides = useCallback(
+    (knob: ScopedKnob) => readRungOverrides(knob, true),
+    [readRungOverrides],
+  );
+
   // THE PLATFORM DIRECTIVE CHANNEL (Lane E): an `instant` key changed in
   // another tab, by another admin, or on the server. The platform subscriber
   // is mounted once at the app root; this only registers a handler on it —
@@ -330,6 +410,14 @@ export function UniversalSettingsProvider({
   // Auth identity is always part of the key, including org/system reads where
   // the RPC must not receive a personal rung but must still mask old results.
   const requestKey = `${target}|${organizationId ?? ""}|auth:${userId ?? ""}|rung:${resolverUserId ?? ""}|${resolverDeviceId ?? ""}|${scopesKey}`;
+
+  // An override list belongs to ONE organization and ONE registry read. When
+  // the destination or the generation changes, everything cached here is about
+  // somewhere else — drop it rather than show another organization's policy.
+  useEffect(() => {
+    requested.current.clear();
+    setRungOverrides({});
+  }, [requestKey, generation]);
 
   const [state, setState] = useState<{
     requestKey: string;
@@ -462,6 +550,9 @@ export function UniversalSettingsProvider({
       : Boolean(organizationId && userId) && !current,
     error: editingContext === "system" ? system?.error ?? null : current?.error ?? taxonomyStateForRequest?.error ?? null,
     missing: destinationKnobs.filter((knob) => knob.origin === "missing"),
+    rungOverrides,
+    loadRungOverrides,
+    reloadRungOverrides,
     refresh,
   };
 

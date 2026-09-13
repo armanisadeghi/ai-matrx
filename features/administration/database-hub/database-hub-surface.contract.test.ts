@@ -40,6 +40,14 @@ describe("database admin surface contract", () => {
     expect(layout).not.toContain("inline-flex min-h-10");
   });
 
+  it("reserves room to scroll the final database tab clear of its fade", () => {
+    const layout = source(
+      "app/(admin)/administration/database/DatabaseAdminLayoutClient.tsx",
+    );
+
+    expect(layout.match(/overflow-x-auto[^"`]*pr-12/g)).toHaveLength(2);
+  });
+
   it("does not repeat the shell-owned route title in a body hero", () => {
     const hub = source(
       "features/administration/database-hub/DatabaseHubLanding.tsx",

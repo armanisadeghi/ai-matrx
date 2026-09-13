@@ -48,7 +48,7 @@ This doc is the current-state reference for the `/code` (VSCode‑style) workspa
 | Editor → agent context‑bag bridge                                                                                 | ✅ Shipped               | `features/code/agent-context/`, auto‑mounted in `ChatPanelSlot`. ctx_get keys: `editor.tabs`, `editor.tab.<id>`, `editor.selection.<id>`. See §4.                                           |
 | Source Control activity view                                                                                      | ✅ Shipped               | `features/code/views/source-control/` over `SandboxGitAdapter`. Status panel, diff tab (`git-diff:` prefix), commit/push, credentials modal.                                                |
 | Server‑side search (ripgrep) + fuzzy path search                                                                  | ✅ Shipped               | `SearchPanel` consumes `searchContent` / `searchPaths`; falls back to client walker when adapter lacks them.                                                                                |
-| File watcher → live tree                                                                                          | ✅ Shipped               | `FileTree` subscribes to `filesystem.watch()`; node tree updates in Redux on `created` / `modified` / `deleted` / `moved`.                                                                  |
+| File watcher → live tree                                                                                          | ✅ Shipped               | `FileTree` subscribes to direct, scoped `filesystem.watch()` WSS; normal events update parents and reconnect emits a transport `resync` that reloads root + mounted directories.             |
 | Tier + template picker                                                                                            | ✅ Shipped               | "New sandbox" modal pulls `GET /api/templates?tier=…`; last tier persisted in `userPreferences.coding.lastSandboxTier`.                                                                     |
 | Ports bottom panel                                                                                                | ✅ Shipped               | Polls `/api/sandbox/[id]/ports` every 5s; click‑to‑copy host:port.                                                                                                                          |
 | Heartbeat + extend                                                                                                | ✅ Shipped               | `useSandboxHeartbeat` mounted in `CodeWorkspace` gated on `activeSandboxId`; `extendSandbox` switched to `POST /api/sandbox/[id]/extend`.                                                   |
@@ -153,6 +153,18 @@ being erased during listener handoff. An HTTPS page rejects a `ws://`
 endpoint immediately with an actionable TLS notice. Streaming exec
 also treats HTTP 200 + zero SSE events as failure and runs the buffered `/exec`
 path visibly; that exact regression is unit-tested.
+
+**Explorer watch transport rule:** file watches follow the same direct pattern
+with a reusable, narrow `fs.watch` credential. `SandboxFilesystemAdapter`
+mints through the ownership-checking route for each connection attempt and
+dials `{ws_base}/sandboxes/{sandbox_id}/fs/watch` directly. A successful open
+emits a `resync` transport event, not a guessed file mutation; `FileTreeWatcher`
+reloads the root and every mounted nested directory so restart-window changes
+cannot stay latched in an expanded Explorer branch. Disposal cancels a pending
+mint, timer, and socket; stale socket generations cannot revive the watcher.
+Only transient mint transport statuses retry. A refused, malformed, or
+insecure watch credential leaves the existing tree visible and reports the
+refresh/reopen remedy once; credentials and watch URLs never enter that report.
 
 ### 1.6 Adapters (the data plane)
 

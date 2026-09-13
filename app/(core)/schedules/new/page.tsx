@@ -43,7 +43,7 @@ export default function NewSchedulePage() {
           </>
         }
       />
-      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+1rem)]">
+      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-20 sm:pb-16 pt-[calc(var(--shell-header-h)+1rem)]">
         <div className="max-w-3xl mx-auto">
           <Suspense fallback={null}>
             <NewScheduleContent />

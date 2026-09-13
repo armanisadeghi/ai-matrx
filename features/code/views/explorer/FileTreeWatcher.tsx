@@ -35,6 +35,24 @@ interface InvalidationCtx {
 
 const Ctx = createContext<InvalidationCtx | null>(null);
 
+/**
+ * A transport recovery has no trustworthy individual changed path. Refresh
+ * the root plus every mounted directory subscriber so a restart-window change
+ * cannot leave an already-expanded nested branch stale.
+ */
+export function invalidationPathsForWatchEvent(
+  event: FilesystemWatchEvent,
+  rootPath: string,
+  subscribedPaths: Iterable<string>,
+): string[] {
+  if (event.type === "resync") {
+    return [...new Set([rootPath, ...subscribedPaths])];
+  }
+  const targetParent = parentOf(event.path);
+  const fromParent = event.fromPath ? parentOf(event.fromPath) : null;
+  return [...new Set([targetParent, fromParent].filter((path): path is string => !!path))];
+}
+
 export const FileTreeWatcherProvider: React.FC<{
   rootPath: string;
   children: React.ReactNode;
@@ -78,13 +96,13 @@ export const FileTreeWatcherProvider: React.FC<{
   useEffect(() => {
     if (!filesystem.watch) return undefined;
     const handler = (ev: FilesystemWatchEvent) => {
-      // Invalidate the parent directory of the affected path so the
-      // matching <FileTreeNode> reloads its children. For renames we
-      // also invalidate the source's parent so the old entry disappears.
-      const targetParent = parentOf(ev.path);
-      if (targetParent) invalidate(targetParent);
-      const fromParent = ev.fromPath ? parentOf(ev.fromPath) : null;
-      if (fromParent && fromParent !== targetParent) invalidate(fromParent);
+      for (const path of invalidationPathsForWatchEvent(
+        ev,
+        rootPath,
+        listenersRef.current.keys(),
+      )) {
+        invalidate(path);
+      }
     };
     const dispose = filesystem.watch(rootPath, handler);
     return () => {

@@ -54,6 +54,8 @@ type FullScreenEditorCommandHandler =
   | { onSave: AsyncSaveHandler; onAction?: never }
   | { onSave?: never; onAction: AsyncActionHandler };
 
+const retainedSaveGroups = new Set<string>();
+
 export type FullScreenEditorHandlers = FullScreenEditorCommandHandler & {
   /** Called when the user saves. Receives the edited content. */
   /**
@@ -63,6 +65,8 @@ export type FullScreenEditorHandlers = FullScreenEditorCommandHandler & {
    */
   /** Catch-all for any emitted event. */
   onEvent?: (event: FullScreenEditorEvent) => void | Promise<void>;
+  /** The owner remains open and needs later saves to use its acknowledged base. */
+  retainAfterSuccess?: boolean;
 };
 
 // ─── Group creation / disposal ───────────────────────────────────────────────
@@ -74,6 +78,7 @@ export function createFullScreenEditorCallbackGroup(
     throw new Error("A full-screen editor callback group requires exactly one save owner");
   }
   const callbackGroupId = callbackManager.createGroup();
+  if (handlers.retainAfterSuccess) retainedSaveGroups.add(callbackGroupId);
 
   const requireThenable = (value: unknown): Promise<void> => {
     if (
@@ -121,7 +126,10 @@ export function createFullScreenEditorCallbackGroup(
 
 /** One terminal cleanup primitive for bridges and imperative opener handles. */
 export function disposeFullScreenEditorCallbackGroup(callbackGroupId: string | null | undefined): void {
-  if (callbackGroupId) callbackManager.removeGroup(callbackGroupId);
+  if (callbackGroupId) {
+    retainedSaveGroups.delete(callbackGroupId);
+    callbackManager.removeGroup(callbackGroupId);
+  }
 }
 
 /**
@@ -144,5 +152,6 @@ export function emitFullScreenEditorSave(
   return callbackManager.triggerGroupCommand<FullScreenEditorEvent>(
     callbackGroupId,
     { type: "save", content, action },
+    { removeAfterSuccess: !retainedSaveGroups.has(callbackGroupId) },
   );
 }

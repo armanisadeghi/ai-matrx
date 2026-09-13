@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
+import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import type { EditorMode as SurfaceEditorMode } from "./NoteEditorCore";
 import {
   buildNotesEditorContextData,
@@ -129,12 +130,15 @@ export function NoteEditor({
   // what the user is acting on (matches NotesDemoPanel's selection sync).
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
+  const editingActorId = useAppSelector((state) => state.userAuth.id);
   const tuiEditorRef = useRef<TuiEditorContentRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toast = useToastManager("notes");
+
   const { refreshNotes, setActiveNoteDirty, openTabs, moveNoteToNewFolder } = useNotesRedux();
   const notesMap = useAppSelector(selectNotesMap);
+  const acknowledgedRecord = note?.id ? notesMap[note.id] : undefined;
 
   // Use refs to avoid callback dependencies
   const localContentRef = useRef(localContent);
@@ -258,10 +262,11 @@ export function NoteEditor({
   // rich-document Export / Convert actions (HTML preview save-back, Convert→
   // Task linking) resolve the note adapter instead of the save-less `raw`
   // default (D33). Phantom (unsaved) notes stay raw — there is no row to save.
-  const menuContentSource: ContentSource | undefined =
-    note?.id && note.id !== "__phantom__"
-      ? { type: "note", noteId: note.id }
-      : undefined;
+  const menuContentSource = usePreparedNoteContentSource(
+    note?.id && note.id !== "__phantom__" && acknowledgedRecord?._acknowledgedPhysicalSnapshot && editingActorId
+      ? { record: acknowledgedRecord, displayedNote: { ...note, content: localContent, label: localLabel, folder_name: localFolder, tags: localTags }, actorId: editingActorId, hasLocalEdits: isDirty || acknowledgedRecord._dirty || localContent !== (acknowledgedRecord.content || "") || localLabel !== (acknowledgedRecord.label || "") || localFolder !== (acknowledgedRecord.folder_name || "Draft") || JSON.stringify(localTags) !== JSON.stringify(acknowledgedRecord.tags || []) }
+      : null,
+  );
 
   // Same phantom-note guard as `menuContentSource` — an unsaved note has no
   // row for Attach To / Share to point at.
@@ -948,7 +953,7 @@ export function NoteEditor({
                     content={localContent}
                     source={
                       note?.id && note.id !== "__phantom__"
-                        ? ({ type: "note", noteId: note.id } as ContentSource)
+                        ? menuContentSource ?? { type: "raw" }
                         : ({ type: "raw" } as ContentSource)
                     }
                     actionsVariant="bar"

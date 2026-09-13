@@ -22,7 +22,7 @@ export interface Bitmap {
 
 /** Read an 8-bit, non-interlaced RGB/RGBA PNG. Throws by name otherwise. */
 export function readPng(file: string): Bitmap {
-    const buf = readFileSync(file);
+    const buf = readFileSync(/* turbopackIgnore: true */ file);
     let off = 8;
     let w = 0;
     let h = 0;

@@ -1,13 +1,12 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
   Calendar,
   CircleDashed,
   CheckCircle2,
-  Copy,
   Folder,
   LayoutGrid,
   List,
@@ -34,7 +33,6 @@ import { getTaskGroupByBanner } from "@/features/tasks/constants/groupBy";
 import { makeSelectScopeNameMapForOrg } from "@/features/scopes/redux/selectors/tree";
 import {
   createTaskThunk,
-  deleteTaskThunk,
   toggleTaskCompleteThunk,
 } from "@/features/tasks/redux/thunks";
 import {
@@ -68,22 +66,11 @@ import {
   type LegacyListViewImport,
 } from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
-  CONTEXT_MENU_ENTITY_KEY,
-  type ContextMenuExtraSection,
-} from "@/features/context-menu-v3/types";
-import {
-  TASKS_CONTEXT_MENU_PROPS,
-  buildTasksListContextData,
-  createTasksExtraSections,
-} from "@/features/tasks/agent-context/buildTasksContextData";
+  TASK_ROW_DOM_ATTR,
+  TasksListContextMenu,
+} from "@/features/tasks/components/TasksListContextMenu";
 import { toast } from "@/lib/toast";
-
-/** DOM anchor the delegated menu reads to find the right-clicked row —
- * mirrors the pattern in `features/user-lists/dom-anchors.ts`. */
-const TASK_ROW_DOM_ATTR = "data-task-row-id";
 
 /**
  * Style prefs for this pane (synced across devices via `userPreferences`).
@@ -231,112 +218,6 @@ export default function TaskListPane() {
     }
   };
 
-  const handleDeleteTask = async (task: TaskWithProject) => {
-    try {
-      await dispatch(
-        deleteTaskThunk({ taskId: task.id, projectId: task.projectId }),
-      ).unwrap();
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      toast.error("Could not delete task");
-    }
-  };
-
-  // ── The ONE context menu for this pane ──────────────────────────────────
-  //
-  // Single-instance delegation, same shape as `ListDetailClient`: one
-  // `NonEditableContextMenu` wraps the whole scroll region and
-  // `resolveContextOnOpen` reads the right-clicked row's `data-task-row-id`
-  // off the DOM, so Complete/Reopen/Duplicate bind to the SAME thunks the
-  // row's own controls already call — never a second action set (the sibling
-  // `TaskEditorBody.tsx` owns the canonical `createTasksExtraSections`).
-  const menuTargetRef = useRef<TaskWithProject | null>(null);
-  const [menuTarget, setMenuTarget] = useState<TaskWithProject | null>(null);
-
-  const findTaskById = (taskId: string): TaskWithProject | null =>
-    allVisibleTasks.find((t) => t.id === taskId) ?? null;
-
-  const resolveMenuTarget = (target: HTMLElement | null) => {
-    const taskId =
-      target
-        ?.closest?.(`[${TASK_ROW_DOM_ATTR}]`)
-        ?.getAttribute(TASK_ROW_DOM_ATTR) ?? null;
-    const next = taskId ? findTaskById(taskId) : null;
-    menuTargetRef.current = next;
-    setMenuTarget(next);
-    if (!next) return null;
-    return {
-      [CONTEXT_MENU_ENTITY_KEY]: {
-        type: "task" as const,
-        id: next.id,
-        title: next.title || "Untitled task",
-        resourceType: "task" as const,
-      },
-    };
-  };
-
-  const handleDuplicateTask = async (task: TaskWithProject) => {
-    try {
-      const newId = await dispatch(
-        createTaskThunk({
-          title: `${task.title} (copy)`,
-          description: task.description ?? null,
-          dueDate: task.dueDate ?? null,
-          projectId:
-            task.projectId && task.projectId !== "__unassigned__"
-              ? task.projectId
-              : null,
-          priority: task.priority ?? null,
-          organizationId: orgId,
-        }),
-      ).unwrap();
-      if (!newId) throw new Error("The duplicated task was not created.");
-      dispatch(setSelectedTaskId(newId));
-    } catch (error) {
-      console.error("Error duplicating task:", error);
-      toast.error("Could not duplicate task");
-    }
-  };
-
-  const menuSections: ContextMenuExtraSection[] = menuTarget
-    ? createTasksExtraSections({
-        completed: menuTarget.completed,
-        onToggleComplete: () => void handleToggleTask(menuTarget.id),
-        onDelete: () => void handleDeleteTask(menuTarget),
-      }).map((section) => {
-        // Same "task-ops" section `TaskEditorBody` defines — drop "Save"
-        // (no editor buffer in the list pane) and add "Duplicate" right
-        // after Complete/Reopen, ahead of the destructive Delete row.
-        const withoutSave = section.items.filter(
-          (item) => !("id" in item) || item.id !== "save",
-        );
-        const toggleIdx = withoutSave.findIndex(
-          (item) => "id" in item && item.id === "toggle-complete",
-        );
-        const duplicateItem: ContextMenuExtraSection["items"][number] = {
-          kind: "item",
-          id: "duplicate",
-          label: "Duplicate task",
-          icon: Copy,
-          onSelect: () => void handleDuplicateTask(menuTarget),
-        };
-        const items = [...withoutSave];
-        items.splice(toggleIdx + 1, 0, duplicateItem);
-        return { ...section, items };
-      })
-    : [];
-
-  const getMenuApplicationScope = () =>
-    buildApplicationScopeFromMenuContext({
-      selectedText: window.getSelection?.()?.toString() ?? "",
-      selectionRange: null,
-      contextData: buildTasksListContextData({
-        tasks: allVisibleTasks,
-        projects,
-        searchQuery: typeof searchQuery === "string" ? searchQuery : "",
-      }),
-    });
-
   const toggleGroup = (key: string) => {
     setCollapsedOverride((prev) => {
       const base =
@@ -453,12 +334,10 @@ export default function TaskListPane() {
       {/* The ONE menu for the list pane covers rows, table rows, loading,
           empty space, and the empty state. Both row renderers publish the
           same data-task-row-id anchor for delegated task identity. */}
-      <NonEditableContextMenu
-        sourceFeature={TASKS_CONTEXT_MENU_PROPS.sourceFeature}
-        surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
-        getApplicationScope={getMenuApplicationScope}
-        resolveContextOnOpen={resolveMenuTarget}
-        extraSections={menuSections}
+      <TasksListContextMenu
+        tasks={allVisibleTasks}
+        projects={projects}
+        searchQuery={typeof searchQuery === "string" ? searchQuery : ""}
       >
         <div className="flex-1 overflow-y-auto min-h-0">
           {isTableView ? (
@@ -537,7 +416,7 @@ export default function TaskListPane() {
             </div>
           )}
         </div>
-      </NonEditableContextMenu>
+      </TasksListContextMenu>
     </div>
   );
 }

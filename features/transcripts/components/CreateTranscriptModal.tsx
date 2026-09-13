@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
 import {
   Dialog,
   DialogContent,
@@ -68,12 +68,6 @@ type Step =
   | "details"
   | "process"
   | "preview";
-
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-};
 
 export function CreateTranscriptModal({
   isOpen,
@@ -228,7 +222,7 @@ export function CreateTranscriptModal({
       const segments: TranscriptSegment[] = (result.segments || []).map(
         (s: any) => ({
           id: s.id?.toString() || crypto.randomUUID(),
-          timecode: formatTime(s.start || 0),
+          timecode: formatDurationSeconds(s.start || 0, { style: "clock" }),
           seconds: s.start || 0,
           text: s.text || "",
           speaker: "Speaker",
@@ -384,7 +378,7 @@ export function CreateTranscriptModal({
         description: description.trim(),
         segments: (result.segments || []).map((s: any) => ({
           id: s.id?.toString() || crypto.randomUUID(),
-          timecode: formatTime(s.start || 0),
+          timecode: formatDurationSeconds(s.start || 0, { style: "clock" }),
           seconds: s.start || 0,
           text: s.text || "",
           speaker: "Unknown",

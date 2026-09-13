@@ -539,7 +539,6 @@ export const AIDREAM_PRODUCTION_URL: string =
  * Environment variables:
  *   NEXT_PUBLIC_BACKEND_URL_PROD     → production server (default above)
  *   NEXT_PUBLIC_BACKEND_URL_DEV      → development/feature-branch server
- *   NEXT_PUBLIC_BACKEND_URL_EC2      → EC2 server
  *   NEXT_PUBLIC_BACKEND_URL_STAGING  → staging server
  *   NEXT_PUBLIC_BACKEND_URL_LOCAL    → local dev (default: http://localhost:8000)
  *   NEXT_PUBLIC_BACKEND_URL_GPU      → dedicated GPU inference server
@@ -554,7 +553,6 @@ export const AIDREAM_PRODUCTION_URL: string =
 export const BACKEND_URLS: Record<string, string | undefined> = {
   production: AIDREAM_PRODUCTION_URL,
   development: process.env.NEXT_PUBLIC_BACKEND_URL_DEV,
-  ec2: process.env.NEXT_PUBLIC_BACKEND_URL_EC2,
   staging: process.env.NEXT_PUBLIC_BACKEND_URL_STAGING,
   localhost:
     process.env.NEXT_PUBLIC_BACKEND_URL_LOCAL ?? "http://localhost:8000",

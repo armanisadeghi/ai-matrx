@@ -25,6 +25,7 @@ import {
 } from "./noteContextAssociations";
 import {
   NoteContextPartialSaveError,
+  NotePostAcknowledgementError,
   type NoteSaveReceipt,
   NoteUpdateConflictError,
 } from "./noteSaveErrors";
@@ -443,9 +444,12 @@ export async function persistNoteUpdate(
   }
   if (
     options?.expectedVersion !== undefined &&
-    (!Number.isSafeInteger(options.expectedVersion) || options.expectedVersion < 1)
+    (!Number.isSafeInteger(options.expectedVersion) || options.expectedVersion < 0)
   ) {
-    throw new Error("The note revision must be a positive integer.");
+    throw new Error("The note revision must be a nonnegative safe integer.");
+  }
+  if (options?.expectedActorId !== undefined) {
+    await assertInitiatingNotesUser(options.expectedActorId);
   }
   if (options?.expectedOrganizationId !== undefined) {
     requireOrganizationContext(options.expectedOrganizationId);
@@ -592,6 +596,30 @@ export async function persistNoteUpdate(
     databaseWrite,
     ...contextSettlement,
   };
+  if (options?.expectedActorId !== undefined) {
+    try {
+      await assertInitiatingNotesUser(options.expectedActorId);
+    } catch (cause) {
+      throw new NotePostAcknowledgementError({
+        receipt,
+        actorId: options.expectedActorId,
+        kind: "actor-changed-after-ack",
+        sourceId: options.expectedSourceId,
+        snapshotId: options.expectedSnapshotId,
+        cause: cause instanceof Error ? cause : new Error("The sign-in changed."),
+      });
+    }
+  }
+  if (receipt.postSaveRecoveryError && options?.expectedActorId !== undefined) {
+    throw new NotePostAcknowledgementError({
+      receipt,
+      actorId: options.expectedActorId,
+      kind: "post-save-recovery",
+      sourceId: options.expectedSourceId,
+      snapshotId: options.expectedSnapshotId,
+      cause: receipt.postSaveRecoveryError,
+    });
+  }
   if (receipt.failedFields.length > 0) {
     throw new NoteContextPartialSaveError(receipt);
   }

@@ -1,33 +1,17 @@
 import { parseOnePuxData } from "./onepux";
 import { readOnePuxArchive } from "./onepux-archive";
-import type { CsvImportLimits } from "./csv-import";
-import type { StructuredImportRecord } from "./structured-import";
+import type {
+  StructuredImportWorkerRequest,
+  StructuredImportWorkerResponse,
+} from "./structured-import-worker-protocol";
 
-export type OnePuxWorkerLimits = Pick<
-  CsvImportLimits,
-  "maxFileBytes" | "maxRecords" | "maxCellBytes"
-> & { maxJsonDepth: number };
-export type OnePuxWorkerRequest =
-  | {
-      type?: "parse";
-      requestId?: string;
-      file: Blob;
-      limits: OnePuxWorkerLimits;
-    }
-  | { type: "cancel"; requestId?: string };
-export type OnePuxWorkerResponse =
-  | {
-      ok: true;
-      requestId?: string;
-      records: StructuredImportRecord[];
-      binaryMemberCount: number;
-    }
-  | {
-      ok: false;
-      requestId?: string;
-      error: "The 1Password archive could not be read.";
-    };
-type ActiveOperation = { requestId?: string; controller: AbortController };
+export type OnePuxWorkerLimits = Extract<
+  StructuredImportWorkerRequest,
+  { type: "parse" }
+>["limits"];
+export type OnePuxWorkerRequest = StructuredImportWorkerRequest;
+export type OnePuxWorkerResponse = StructuredImportWorkerResponse;
+type ActiveOperation = { requestId: string; controller: AbortController };
 
 /** The production worker handler is exported so real ZIP integration tests use this exact path. */
 export function createOnePuxWorkerMessageHandler(
@@ -36,10 +20,7 @@ export function createOnePuxWorkerMessageHandler(
   let active: ActiveOperation | undefined;
   return async (request: OnePuxWorkerRequest): Promise<void> => {
     if (request.type === "cancel") {
-      if (
-        active &&
-        (!request.requestId || request.requestId === active.requestId)
-      ) {
+      if (active && request.requestId === active.requestId) {
         active.controller.abort();
         active = undefined;
       }
@@ -67,7 +48,15 @@ export function createOnePuxWorkerMessageHandler(
         ok: true,
         requestId: request.requestId,
         records,
-        binaryMemberCount: archive.binaryMemberCount,
+        fileNotices:
+          archive.attachmentMemberCount > 0
+            ? [
+                {
+                  code: "unsupported_archive_members",
+                  count: archive.attachmentMemberCount,
+                },
+              ]
+            : [],
       });
     } catch {
       if (active !== operation || operation.controller.signal.aborted) return;

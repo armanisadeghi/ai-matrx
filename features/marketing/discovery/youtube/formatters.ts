@@ -1,3 +1,4 @@
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { formatCompact } from "@/features/research/components/results/resultsShared";
 
 const ISO_DURATION =
@@ -13,14 +14,14 @@ export function formatYouTubeDuration(
   if (!value) return "—";
   const match = value.match(ISO_DURATION);
   if (!match) return value;
-  const days = Number(match[1] ?? 0);
-  const hours = Number(match[2] ?? 0) + days * 24;
-  const minutes = Number(match[3] ?? 0);
-  const seconds = Math.floor(Number(match[4] ?? 0));
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  // ISO-8601 → total seconds; the clock voice is the kit's. Days fold into
+  // hours (`P1DT1H1S` → `25:00:01`), exactly as YouTube renders them.
+  const totalSeconds =
+    Number(match[1] ?? 0) * 86_400 +
+    Number(match[2] ?? 0) * 3_600 +
+    Number(match[3] ?? 0) * 60 +
+    Math.floor(Number(match[4] ?? 0));
+  return formatDurationSeconds(totalSeconds, { style: "clock" });
 }
 
 export function formatYouTubeDate(value: string | null | undefined): string {

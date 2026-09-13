@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Check, RefreshCw, TriangleAlert } from 'lucide-react';
@@ -55,9 +56,7 @@ export default function ExtensionAuthPage() {
     const date = new Date(isoString);
     const now = new Date();
     const diff = Math.floor((date.getTime() - now.getTime()) / 1000);
-    const minutes = Math.floor(diff / 60);
-    const seconds = diff % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return formatDurationSeconds(diff, { style: 'clock' });
   };
 
   return (

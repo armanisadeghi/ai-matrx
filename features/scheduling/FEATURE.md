@@ -61,6 +61,9 @@ Execution happens on:
     calls `.from('sch_*')`. The full user schedule roster pages through
     `readAllRows` under a stable `updated_at, id` order; it never trusts
     PostgREST's 1,000-row cap as a complete list.
+    The roster request has a 20-second terminal boundary: a stalled Data API
+    read is aborted and becomes the list's visible, retryable error state
+    instead of leaving the page in an endless skeleton.
   - `lib/services/scheduling-admin-service.ts` — admin cross-user
     reads/writes using `is_super_admin()` RLS escape hatch. Stays on
     Supabase: `/scheduler/*` is RLS-scoped to the caller, so admins
@@ -216,6 +219,17 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-09-13** — Every user schedule route now reserves responsive bottom
+  clearance on its actual vertical scroll owner for the global fixed schedule
+  alarm. List, detail, edit, and new content can all scroll fully above the
+  control instead of letting the alarm cover their final meaningful row.
+
+- **2026-09-13** — The user schedule roster now aborts a stalled complete-list
+  read after 20 seconds and enters the existing visible Retry state. The
+  boundary preserves exact-count paging and stable ordering while preventing a
+  cold or unhealthy Data API request from leaving `/schedules` in an unbounded
+  loading skeleton.
 
 - `2026-09-12` — **Scheduling copy actions use one borderless dropdown trigger.** The
   route header, schedule rows, detail cards, and run history compose `CopyButtons`
@@ -555,6 +569,18 @@ ruling — a notification is never a chip; `scheduler_` is dispositioned
 `notification` and ambient presentation is off), the Notification System (the
 right destination once it has an in-app channel — today email/SMS only, server
 producers only), and the Error Inspector (client errors, no record door).
+
+**2026-09-13 — global fixed-alert runway.** The schedule alarm is still a
+movable, snoozable global operational door, but its bottom-right default may
+not cover an unrelated page's final action. While it is present it publishes a
+compact/expanded document state; `styles/shell.css` consumes that state on the
+actual `.shell-main` scroll owner with responsive bottom and scroll padding
+(phone expanded: at least `36dvh`; desktop: at least `24dvh`). The marker is
+removed on zero alarms, failed read recovery, snooze, and unmount. The shared
+toast viewport consumes the same clearance so a success/error toast cannot
+stack over the persistent alarm. Guard:
+`styles/__tests__/no-overlay-layout-reservation.test.ts` checks the semantic
+state, responsive runway, no measurement feedback loop, and toast separation.
 
 ## A system schedule's record page (2026-09-11)
 

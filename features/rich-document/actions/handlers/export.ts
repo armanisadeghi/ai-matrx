@@ -12,6 +12,7 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import { registerAction } from "../registry";
 import { getErrorMessage, serializeError } from "../utils";
+import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 
 registerAction({
   id: "html-preview",
@@ -22,9 +23,11 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 0,
-  run: (ctx) => {
+  run: async (ctx) => {
     const instanceId = ctx.instanceKey("html-preview");
     const canSave = Boolean(ctx.sourceAdapter.edit);
+    const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
+    let preparedSource = prepared.source;
 
     // Save is source-agnostic via the source adapter (chat → editMessage,
     // note → NotesAPI.update, …). Route it through the callback registry so
@@ -32,16 +35,16 @@ registerAction({
     // can't survive Redux; only the `callbackGroupId` string travels.
     const callbackGroupId = canSave
       ? createFullScreenEditorCallbackGroup({
+          retainAfterSuccess: true,
           onSave: async (newContent: string) => {
             try {
-              const edit = ctx.sourceAdapter.edit;
-              if (!edit) throw new Error("This content no longer has a save target");
-              await edit({
+              preparedSource = await savePreparedContentEdit({
+                ctx,
+                source: preparedSource,
                 newContent,
-                source: ctx.source,
-                dispatch: ctx.dispatch,
               });
             } catch (err) {
+              preparedSource = acknowledgedPreparedSource(preparedSource, err, newContent) ?? preparedSource;
               console.error(
                 "[html-preview] save failed",
                 serializeError(err),
@@ -58,21 +61,21 @@ registerAction({
         overlayId: "htmlPreview",
         instanceId,
         data: {
-          content: ctx.content,
+          content: prepared.content,
           messageId:
-            ctx.source.type === "chat-message"
-              ? ctx.source.messageId
+            preparedSource.type === "chat-message"
+              ? preparedSource.messageId
               : undefined,
           conversationId:
-            ctx.source.type === "chat-message"
-              ? ctx.source.conversationId
+            preparedSource.type === "chat-message"
+              ? preparedSource.conversationId
               : undefined,
           callbackGroupId,
           title: "HTML Preview & Publishing",
           description:
             "Edit markdown, preview HTML, and publish your content",
           showSaveButton: canSave,
-          isAgentSystem: ctx.source.type === "chat-message",
+          isAgentSystem: preparedSource.type === "chat-message",
         },
       }),
     );

@@ -3,6 +3,6 @@ export function createOnePuxWorker(): Worker {
 }
 
 /** Abort an in-flight parse before the caller terminates or replaces its worker. */
-export function cancelOnePuxWorker(worker: Worker, requestId?: string): void {
+export function cancelOnePuxWorker(worker: Worker, requestId: string): void {
   worker.postMessage({ type: "cancel", requestId });
 }

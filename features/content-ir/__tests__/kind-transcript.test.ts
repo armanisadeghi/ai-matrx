@@ -289,7 +289,7 @@ describe("transcript_legacy_text strategy — wraps the REAL fence parser", () =
     if (!Array.isArray(segments)) throw new Error("segments not an array");
     expect(segments).toHaveLength(2);
     expect(segments[0]).toMatchObject({
-      timecode: "00:00 - 02:30",
+      timecode: "0:00 - 2:30",
       seconds: 0,
       text: "Introduction and opening remarks.",
     });

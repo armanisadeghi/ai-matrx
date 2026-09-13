@@ -44,16 +44,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // The caller must be the GUARDIAN on an ACTIVE link to this student. RLS lets
-    // a guardian read their own links; this both authorizes and fetches link_id.
-    const { data: link } = await supabase
-      .schema("education")
-      .from("guardian_link")
-      .select("id, verified_at")
-      .eq("guardian_user_id", user.id)
-      .eq("student_user_id", body.studentUserId)
-      .eq("status", "active")
-      .maybeSingle();
+    // The caller must be the GUARDIAN on an ACTIVE link to this student.
+    //
+    // This reads the link through `guardian_list_links()` — the DECLARED door
+    // (platform.client_callable_door), which returns exactly the caller's own
+    // links from either side and nothing else. It used to read
+    // education.guardian_link directly and lean on a second, hand-written table
+    // policy for the same answer. DD-173 (B-83) closed that second path: the
+    // table is `restricted` now, because a two-party link is a lane no canonical
+    // RLS variant can express — `entity` keys on one `created_by`, `personal` on
+    // one `user_id`, and this row has a guardian AND a student. One declared
+    // door, not a door beside a door.
+    const { data: links, error: linksError } =
+      await supabase.rpc("guardian_list_links");
+    if (linksError) {
+      return NextResponse.json(
+        {
+          error:
+            "Could not read your guardian links. Nothing was charged. Please try again, and tell support if it keeps happening.",
+        },
+        { status: 502 },
+      );
+    }
+    const link =
+      (links ?? []).find(
+        (row) =>
+          row.role === "guardian" &&
+          row.counterpart_user_id === body.studentUserId &&
+          row.status === "active",
+      ) ?? null;
     if (!link) {
       return NextResponse.json(
         { error: "No active guardian link to this student" },

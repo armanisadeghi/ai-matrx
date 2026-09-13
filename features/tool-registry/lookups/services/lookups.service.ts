@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 type UiTables = Database["ui"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -75,17 +76,29 @@ export async function dependentSurfaceCount(clientName: string): Promise<number>
   return count ?? 0;
 }
 
-export async function upsertUiClient(row: UiClientUpsert): Promise<UiClientRow> {
-  const { data, error } = await sb()
+export async function upsertUiClient(
+  row: Omit<UiClientUpsert, "organization_id" | "visibility">,
+): Promise<UiClientRow> {
+  const client = sb();
+  const { data, error } = await client
     .schema("ui").from("ui_client")
-    .upsert(row, { onConflict: "name" })
+    .upsert(
+      {
+        ...row,
+        organization_id: await resolveSystemOrgId(client),
+        visibility: "public",
+      },
+      { onConflict: "name" },
+    )
     .select()
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function upsertUiSurface(row: UiSurfaceUpsert): Promise<UiSurfaceRow> {
+export async function upsertUiSurface(
+  row: UiSurfaceUpsert,
+): Promise<UiSurfaceRow> {
   const { data, error } = await sb()
     .schema("ui").from("ui_surface")
     .upsert(row, { onConflict: "name" })
@@ -96,11 +109,19 @@ export async function upsertUiSurface(row: UiSurfaceUpsert): Promise<UiSurfaceRo
 }
 
 export async function upsertToolExecutor(
-  row: ToolExecutorUpsert,
+  row: Omit<ToolExecutorUpsert, "organization_id" | "visibility">,
 ): Promise<ToolExecutorRow> {
-  const { data, error } = await sb()
+  const client = sb();
+  const { data, error } = await client
     .schema("tool").from("executor")
-    .upsert(row, { onConflict: "name" })
+    .upsert(
+      {
+        ...row,
+        organization_id: await resolveSystemOrgId(client),
+        visibility: "public",
+      },
+      { onConflict: "name" },
+    )
     .select()
     .single();
   if (error) throw error;

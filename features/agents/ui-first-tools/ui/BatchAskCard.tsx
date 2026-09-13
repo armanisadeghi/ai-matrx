@@ -13,18 +13,26 @@
  *     and auto-advances to the next question as a convenience.
  *   - Back / Next controls are always shown whenever a prior / next question
  *     exists; progress dots let the user jump to any question directly.
- *   - Nothing is sent to the agent until every question has a recorded answer
- *     and the user hits "Submit". Skip cancels the whole batch; "Write message
- *     instead" resolves the whole batch as a freeform reply.
+ *   - NOBODY IS EVER FORCED TO ANSWER. Every question's primary button is live:
+ *     "Next" with an answer, "Skip" without (records `{cancelled: true}` for
+ *     that one question and advances). On the LAST question the same button
+ *     reads "Send answers" / "Skip & send" and sends the whole batch — the last
+ *     Next IS the submit; there is no extra Submit click after it. Questions the
+ *     user never reached go out as skipped. The × dismiss skips the whole batch;
+ *     "Write message instead" resolves the whole batch as a freeform reply.
+ *   - Every recorded answer (and every body's in-progress answer) is mirrored to
+ *     `ask-draft-registry`, so a submit from the chat composer sends what the
+ *     user already answered instead of dropping it.
  *
  * Resolution model: the handler (`user.handler.ts#runBatched`) enqueues all N
  * questions up front and awaits all N resolvers via `Promise.all`. This card
- * resolves them together — so the agent's batch result is identical to the old
- * sequential flow; only the UX changed.
+ * resolves them together. A skipped question is `cancelled: true` on its own
+ * envelope; the batch-level `cancelled` is true only when EVERY question was
+ * skipped (the user dismissed the batch).
  */
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -40,9 +48,22 @@ import {
 } from "../redux/ask-resolver-registry";
 import type { AskUserResponse } from "../tools/schemas";
 import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
+import { getAskDraft, setAskDraft } from "../redux/ask-draft-registry";
 import { AskCardCountdown } from "./AskCardCountdown";
 import { AgentCardShell } from "./AgentCardShell";
-import { AskBody, WriteInsteadBody, presentation } from "./AskCard";
+import {
+  AskBody,
+  WriteInsteadBody,
+  presentation,
+  type AskActionLabels,
+} from "./AskCard";
+
+const STEP_LABELS: AskActionLabels = { send: "Next", skip: "Skip" };
+const FINAL_LABELS: AskActionLabels = {
+  send: "Send answers",
+  skip: "Skip & send",
+};
+const SKIPPED: AskUserResponse = { ...EMPTY_ASK_RESPONSE, cancelled: true };
 
 interface BatchAskCardProps {
   /** All questions in the batch (any order — sorted by batchIndex here). */
@@ -61,25 +82,47 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
   const [active, setActive] = useState(0);
   // Drafts keyed by callId (not positional index) so answers stay correct even
   // if the batch shrinks mid-session — e.g. a per-question timeout resolves one.
-  const [answers, setAnswers] = useState<Record<string, AskUserResponse>>({});
+  // Seeded from the draft registry so a remount keeps every recorded answer.
+  const [answers, setAnswers] = useState<Record<string, AskUserResponse>>(
+    () => {
+      const seeded: Record<string, AskUserResponse> = {};
+      for (const a of asks) {
+        const d = getAskDraft(a.callId);
+        if (d) seeded[a.callId] = d;
+      }
+      return seeded;
+    },
+  );
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [writeMode, setWriteMode] = useState(false);
   const [writeText, setWriteText] = useState("");
 
   const clampedActive = Math.min(active, total - 1);
   const activeAsk = ordered[clampedActive];
-  const answeredCount = ordered.filter((a) => answers[a.callId]).length;
-  const allAnswered = answeredCount === total;
+  const isFinal = clampedActive === total - 1;
+  const answeredCount = ordered.filter(
+    (a) => answers[a.callId] && !answers[a.callId].cancelled,
+  ).length;
   const pending = activeAsk.status !== "pending";
 
+  /**
+   * Record one question's answer (or its skip). On every question but the last
+   * this advances; on the LAST question it sends the whole batch immediately —
+   * the last "Next" is the submit, never a separate click.
+   */
   function recordAnswer(
     index: number,
     callId: string,
     response: AskUserResponse,
   ) {
-    setAnswers((prev) => ({ ...prev, [callId]: response }));
-    // Convenience auto-advance; the user can still freely go back to edit.
-    setActive((cur) => (index < total - 1 ? index + 1 : cur));
+    const next = { ...answers, [callId]: response };
+    setAnswers(next);
+    setAskDraft(callId, response.cancelled ? null : response);
+    if (index === total - 1) {
+      submitAll(next);
+      return;
+    }
+    setActive(index + 1);
   }
 
   function resolveEach(
@@ -96,11 +139,15 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
     });
   }
 
-  function submitAll() {
-    if (!allAnswered) return;
+  /**
+   * Send every question: its recorded answer, else the body's live draft (the
+   * user typed/picked but never pressed Next), else skipped. Always possible —
+   * unanswered questions never block the send.
+   */
+  function submitAll(recorded: Record<string, AskUserResponse>) {
     const note = additionalInstructions.trim();
     resolveEach((ask, index) => {
-      const resp = answers[ask.callId]!;
+      const resp = recorded[ask.callId] ?? getAskDraft(ask.callId) ?? SKIPPED;
       // The batch note rides on the final answer (handler reads it back up).
       return note && index === total - 1
         ? { ...resp, additional_instructions: note }
@@ -159,6 +206,7 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
           value={writeText}
           onChange={setWriteText}
           onSend={sendWriteInstead}
+          onSkip={skipAll}
           onBack={() => {
             setWriteMode(false);
             setWriteText("");
@@ -175,8 +223,10 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
             >
               <AskBody
                 ask={ask}
-                isLast={false}
                 onAnswer={(r) => recordAnswer(index, ask.callId, r)}
+                onSkip={() => recordAnswer(index, ask.callId, SKIPPED)}
+                onDraft={(r) => setAskDraft(ask.callId, r)}
+                labels={index === total - 1 ? FINAL_LABELS : STEP_LABELS}
               />
             </div>
           ))}
@@ -204,11 +254,19 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
                   key={ask.callId}
                   type="button"
                   onClick={() => setActive(index)}
-                  aria-label={`Go to question ${index + 1}${answers[ask.callId] ? " (answered)" : ""}`}
+                  aria-label={`Go to question ${index + 1}${
+                    answers[ask.callId]
+                      ? answers[ask.callId].cancelled
+                        ? " (skipped)"
+                        : " (answered)"
+                      : ""
+                  }`}
                   aria-current={index === clampedActive}
                   className={cn(
                     "size-2 rounded-full transition-colors",
-                    answers[ask.callId] ? "bg-primary" : "bg-border",
+                    answers[ask.callId] && !answers[ask.callId].cancelled
+                      ? "bg-primary"
+                      : "bg-border",
                     index === clampedActive &&
                       "ring-2 ring-primary/40 ring-offset-1 ring-offset-card",
                   )}
@@ -216,7 +274,7 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
               ))}
             </div>
 
-            {clampedActive < total - 1 ? (
+            {!isFinal ? (
               <Button
                 size="sm"
                 variant="ghost"
@@ -231,33 +289,27 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
             )}
           </div>
 
-          {/* Optional batch-level note. */}
-          <div className="flex flex-col gap-1.5">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Anything else? (optional)
+          {/* Optional batch-level note — on the final question only, where the
+              send happens (the contract: the note rides on the last card). */}
+          {isFinal && (
+            <div className="flex flex-col gap-1.5">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Anything else? (optional)
+              </div>
+              <Textarea
+                value={additionalInstructions}
+                onChange={(e) => setAdditionalInstructions(e.target.value)}
+                placeholder="Add a note for the agent…"
+                rows={2}
+                className="text-base"
+              />
             </div>
-            <Textarea
-              value={additionalInstructions}
-              onChange={(e) => setAdditionalInstructions(e.target.value)}
-              placeholder="Add a note for the agent…"
-              rows={2}
-              className="text-base"
-            />
-          </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={submitAll}
-              disabled={!allAnswered}
-              className="gap-1.5"
-            >
-              <Send className="size-3.5" />
-              Submit {total} answers
-            </Button>
             <span className="text-[11px] text-muted-foreground">
-              {allAnswered
-                ? "All answered — ready to send"
+              {isFinal
+                ? `${answeredCount} of ${total} answered — sending on the button above`
                 : `${answeredCount} of ${total} answered`}
             </span>
             <button

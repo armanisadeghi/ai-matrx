@@ -66,7 +66,15 @@ export type ApproachLane =
   /** The Sources panel's dump staging area. */
   | { kind: "dump" }
   /** The Conductor conversation. */
-  | { kind: "conduct" };
+  | { kind: "conduct" }
+  /**
+   * Trial 7's UNFOLDING-CASE dialog — the one door that can SEAL a case as a
+   * held-out exam (`role: "heldout"`), which the `timeline` ingest lane has no
+   * notion of. Reached by `intake_query.intake = "timeline"`; the live
+   * `timeline` registry row carries `{"ingest":"timeline"}` and still goes to
+   * the ingest dialog, so the two doors never fight over one row.
+   */
+  | { kind: "unfolding" };
 
 /**
  * Resolve a registry row to the lane it opens, or `null` when the product has
@@ -86,6 +94,7 @@ export function resolveApproachLane(
     return { kind: "chatImport", tab: q.tab === "matrx" ? "matrx" : "upload" };
   if (q.dump === "1") return { kind: "dump" };
   if (q.conduct === "1") return { kind: "conduct" };
+  if (q.intake === "timeline") return { kind: "unfolding" };
   return null;
 }
 

@@ -184,6 +184,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 - **Cloud-file image URLs resolve through the universal handler.** Use `resolveCloudFileUrl()` (or `fileHandler.use(source).as({ kind: "html_src" })` directly), never a hand-built file endpoint. The resolver returns the durable URL string; authorization recovery refreshes `mx_files_session`, never the URL.
 - **Cloud-file thumbnails pass only the durable `file_id` to `MediaThumbnail`.** Never pass stored `thumbnailUrl` metadata alongside a durable ref; stale foreign/object URLs bypass the canonical resolver and can emit terminal media failures instead of recovering through the file client.
 - **Zero-byte image rows are metadata-only, not renderable media.** The shared `CloudImageThumbnail` boundary renders an explicit unavailable glyph and disables preview for `fileSize === 0`; grid and list callers must not invoke `MediaThumbnail` or the viewer for bytes that do not exist.
+- **Cloud-tree loading has a terminal boundary.** `loadUserFileTree` aborts its shared RPC after `FILE_TREE_LOAD_TIMEOUT_MS`, records a recoverable error, and releases its in-flight promise so My Cloud's retry is a new request rather than an endless loader.
 - **Gallery filters are one pure projection.** `selectVisibleCloudImages()` drives both rendering and filter-change selection pruning; pruning against the old visible set lets hidden image IDs reappear when a filter is broadened.
 - **Asset-envelope GETs survive one dropped connection.** The canonical `python-client.getJson()` transport retries one `TypeError` network rejection before capture, so a transient read failure does not blank a tile or enter the repair queue; HTTP failures and caller aborts still fail immediately.
 
@@ -210,6 +211,11 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-09-13` — codex: **The Images hub now clears global fixed controls at its
+  terminal scroll position.** The landing surface's single scroll owner reserves
+  bottom space so its final Library card can move fully above alarms and page
+  assistants on desktop and mobile.
+- `2026-09-13` — codex: **My Cloud now exits a stalled initial load honestly.** The shared cloud-tree producer aborts a transport that exceeds its explicit terminal boundary, surfaces the existing recoverable library error, and clears its dedupe promise so Try again starts a new request. Focused timeout regressions cover both abort and successful cleanup.
 - `2026-08-31` — codex: **Zero-byte cloud-image rows now terminate honestly without media errors.** A real `0 B` PNG in `/images/my-cloud` exposed that loading metadata-only rows through `MediaThumbnail` creates an unrecoverable object URL and a red Error Inspector event. The shared grid/list boundary now renders an accessible unavailable state, disables preview, and has a regression proving the media renderer is never invoked for empty bytes.
 - `2026-08-31` — codex: **Cloud upload folder resolution has one terminal lifecycle.** Pre-resolved destinations initialize directly; path resolution transitions asynchronously to resolved or error once, so React effects do not cascade state or retry a failed folder lookup forever.
 - `2026-08-31` — codex: **Image-manager resolution now exposes only the durable URL string.** Removed the retired resolver object/expiry shape, migrated every caller, and added a structural S15 guard so viewer payloads cannot regress to object URLs or signed-URL re-minting.

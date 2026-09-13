@@ -60,6 +60,7 @@ import {
 } from "../helper-audio/generateHelperAudio.thunk";
 import { FastFireSetPicker } from "./FastFireSetPicker";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
+import { loadFastFireSets } from "./fastfire-initial-load";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
@@ -77,6 +78,7 @@ export function FastFireSetup() {
 
   const [sets, setSets] = useState<FcSetRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [setsAttempt, setSetsAttempt] = useState(0);
   // Device-check gate (Zoom/Meet style): confirm + test mic/speaker BEFORE the
   // drill. Open by default so the learner sees it; reuses the shared
   // MediaDevicesPanel (the same component the avatar-menu window opens).
@@ -207,8 +209,12 @@ export function FastFireSetup() {
 
   useEffect(() => {
     let cancelled = false;
+    setLoadError(null);
+    setSets(null);
     void (async () => {
-      const res = await fcService.listSets();
+      const res = await loadFastFireSets((signal) =>
+        fcService.listSets({ signal }),
+      );
       if (cancelled) return;
       if (res.error) {
         setLoadError(res.error);
@@ -220,7 +226,7 @@ export function FastFireSetup() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setsAttempt]);
 
   const selectedSet = sets?.find((s) => s.id === config.setId) ?? null;
 
@@ -240,9 +246,22 @@ export function FastFireSetup() {
               />
             </div>
           ) : loadError ? (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground">
-              <AlertCircle className="h-4 w-4" />
-              {loadError}
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {loadError}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSetsAttempt((attempt) => attempt + 1)}
+              >
+                Retry
+              </Button>
             </div>
           ) : sets.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border bg-background px-3 py-8 text-center text-xs text-muted-foreground">

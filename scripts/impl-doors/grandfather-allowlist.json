@@ -1,0 +1,6 @@
+{
+  "why": "THE DECLARED ALLOWLIST for platform.definer_client_grant_grandfather. A grandfather row means \"the §6d-4 event trigger stands down for this function\" — the absence of a decision, not a decision. DD-169 batch 2 (B-64, 2026-09-13) took the table from 1,437 rows to 633 by deciding every anon-executable definer and deleting every row that was provably inert (trigger and SECURITY INVOKER functions the guard skips, rows for functions that no longer exist, rows duplicating a declared door, and rows on functions holding no client grant at all). What remains outside pgsodium is listed here, and every row NAMES ITS REASON AND ITS OWNER. The guard (D2c) refuses any grandfather row that is not in this file, so a new stand-down cannot be inserted in silence — somebody has to write down why and who. This file may only SHRINK: an entry whose grandfather row is gone is a stale entry and fails too (D2d).",
+  "generatedAt": "2026-09-13",
+  "generatedBy": "DD-169 batch 3 / B-75 (all schemas closed out)",
+  "entries": []
+}

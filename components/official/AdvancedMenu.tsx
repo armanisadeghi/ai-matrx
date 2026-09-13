@@ -112,6 +112,8 @@ interface MenuItemsContentProps {
  * 600px desktop panel on a 768px-tall viewport, so anything past that is
  * invisible unless the user guesses to scroll.
  */
+// KNOB MIRROR of platform.feature_knob "surfaces.menus" "auto_collapse_threshold" — buildRootItems is a synchronous render path.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 export const AUTO_COLLAPSE_THRESHOLD = 20;
 
 /** Build the root row list, collapsing overflow categories into submenus. */

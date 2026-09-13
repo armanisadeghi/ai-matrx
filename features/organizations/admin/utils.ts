@@ -2,7 +2,10 @@
  * Formatting helpers for org-admin metrics. Pure, no side effects.
  */
 
-import { formatRelativeTime as kitFormatRelativeTime } from "@ai-matrx/kit/format";
+import {
+  formatRelativeTime as kitFormatRelativeTime,
+  formatUsd,
+} from "@ai-matrx/kit/format";
 
 /**
  * Compact relative-time label, e.g. "3d ago", "Never". The formatting is the
@@ -21,13 +24,24 @@ export function formatRelativeTime(iso: string | null | undefined): string {
 // `formatFileSize` from "@ai-matrx/kit/format" under its own name now.
 // (The display: a size at or above 10 in its unit reads `50 KB`, not `50.0 KB`.)
 
-/** Milli-cents → USD string. 3996 mcents = $0.04. */
+/** Milli-cents in the DB → the fleet's one USD string. 3996 mcents = $0.04. */
+const MCENTS_PER_USD = 100_000;
+
+/**
+ * THE LOCALE WAS THE TWIN (2026-09-12). This re-implemented `formatUsd` —
+ * dollar sign, two fixed digits, grouped thousands — with `toLocaleString`
+ * called on `undefined`, which means THE VIEWER'S locale, while the package
+ * pins `"en-US"`. On a de-DE or fr-FR browser that renders "$0,04" beside the
+ * "$0.04" every other spend figure on the same screen prints: one number, two
+ * decimal separators, and no way for a reader to tell which is the real one.
+ *
+ * Only the UNIT stays local — millicents is this schema's storage unit, not a
+ * capability — so the conversion is one named constant and the rendering is
+ * the package's.
+ */
 export function formatMcents(mcents: number | null | undefined): string {
   if (mcents == null) return "—";
-  return `$${(mcents / 100000).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return formatUsd(mcents / MCENTS_PER_USD);
 }
 
 /** USD → milli-cents for storing a budget. Returns null for empty input. */

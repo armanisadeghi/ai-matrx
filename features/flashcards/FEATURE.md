@@ -168,6 +168,13 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-13` — **FastFire initial loading has an explicit terminal boundary.**
+  The client chunk reaches a visible retry state after 20 seconds, while the
+  setup deck read uses the same boundary to abort its direct Supabase request
+  and offers Retry. A late chunk or read cannot leave the initial skeleton on
+  screen indefinitely; the shared helper's forcing tests cover timeout and
+  successful cleanup.
+
 - `2026-09-12` — **FastFire owns header clearance once.** The education layout is the
   single owner of shell-header offset; the FastFire page no longer adds a second top
   offset, eliminating the large blank runway before set selection. Card controls keep

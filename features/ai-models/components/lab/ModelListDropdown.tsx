@@ -62,6 +62,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  selectTriggerVariants,
 } from "@ai-matrx/design-system";
 import { useDialogContainer } from "@/components/ui/dialog";
 import {
@@ -212,6 +213,8 @@ interface ModelListDropdownProps {
    */
   onOfferingPinChange?: (offeringId: string | undefined) => void;
   className?: string;
+  /** Settings rows use the same standard select trigger as other setting controls. */
+  triggerVariant?: "default" | "settings";
   /** DOM id for the picker trigger. */
   id?: string;
   /** When true, renders the current value read-only — no picker opens. */
@@ -1423,6 +1426,7 @@ export function ModelListDropdown({
   pinnedOfferingId,
   onOfferingPinChange,
   className,
+  triggerVariant = "default",
   id,
   disabled = false,
   disabledTitle,
@@ -1794,12 +1798,19 @@ export function ModelListDropdown({
       aria-labelledby={ariaLabelledBy}
       aria-disabled={disabled || undefined}
       className={cn(
-        "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
+        triggerVariant === "settings"
+          ? selectTriggerVariants({
+              size: "default",
+              className:
+                "h-auto min-h-9 w-full min-w-0 max-w-full whitespace-normal text-left font-medium text-foreground",
+            })
+          : "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
         disabled && "cursor-not-allowed opacity-50 hover:text-foreground/80",
         className,
       )}
     >
-      <span className="flex min-w-0 flex-1 items-center gap-1.5">
+      {triggerVariant === "settings" ? (
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
         {selected ? (
           <>
             <MakerBrandGlyph
@@ -1807,10 +1818,12 @@ export function ModelListDropdown({
               colored
               className="h-3.5 w-3.5 shrink-0"
             />
-            <span className="min-w-0 truncate">{selected.name}</span>
+            <span className="min-w-0 whitespace-normal text-left leading-tight">
+              {selected.name}
+            </span>
           </>
         ) : (
-          <span className="min-w-0 truncate text-muted-foreground">
+          <span className="min-w-0 whitespace-normal text-left leading-tight text-muted-foreground">
             {isLoading
               ? "Loading models…"
               : emptyOptionLabel && !value
@@ -1818,8 +1831,30 @@ export function ModelListDropdown({
                 : placeholder}
           </span>
         )}
-      </span>
-      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+      </div>
+      ) : (
+        <span className="flex min-w-0 flex-1 items-center gap-1.5">
+          {selected ? (
+            <>
+              <MakerBrandGlyph
+                maker={selected.maker}
+                colored
+                className="h-3.5 w-3.5 shrink-0"
+              />
+              <span className="min-w-0 truncate">{selected.name}</span>
+            </>
+          ) : (
+            <span className="min-w-0 truncate text-muted-foreground">
+              {isLoading
+                ? "Loading models…"
+                : emptyOptionLabel && !value
+                  ? emptyOptionLabel
+                  : placeholder}
+            </span>
+          )}
+        </span>
+      )}
+      <ChevronDown className={cn("shrink-0 text-muted-foreground/60", triggerVariant === "settings" ? "h-4 w-4" : "h-3 w-3")} />
     </button>
   );
 

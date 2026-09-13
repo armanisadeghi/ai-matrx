@@ -25,19 +25,21 @@
 //   secret    → state only, from `knob.secret`; the value never comes here
 //               and is never asked for here (see the note on the case below).
 
-import { useState } from "react";
-import { Loader2, Play, ShieldCheck, ShieldOff, Square } from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, ChevronDown, Loader2, Play, ShieldCheck, ShieldOff, Square } from "lucide-react";
 import Link from "next/link";
-import { SegmentedControl, Slider, Switch } from "@ai-matrx/design-system";
+import {
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  SegmentedControl,
+  selectTriggerVariants,
+  Slider,
+  Switch,
+} from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { useCartesia } from "@/hooks/tts/useCartesia";
 import { VoiceSpeed } from "@/lib/cartesia/cartesia.types";
@@ -346,7 +348,8 @@ function ModelField({
       outputModalities={["text"]}
       placeholder="Choose a model"
       disabled={disabled}
-      className="w-56 max-w-full min-w-0 justify-between"
+      triggerVariant="settings"
+      className="w-full min-w-0 justify-between"
     />
   );
 }
@@ -370,84 +373,164 @@ function VoiceField({
   labelId,
 }: KnobFieldControlProps) {
   const current = typeof ladder.value === "string" ? ladder.value : "";
-  const { sendMessage, stopPlayback, isConnected, error } = useCartesia();
-  const [playing, setPlaying] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const selected = availableVoices.find((voice) => voice.id === current);
+  const selectedLabel = selected
+    ? selected.name
+    : current
+      ? `Unknown voice: ${current}`
+      : "Choose a voice";
+  const handleSelect = (voiceId: string) => {
+    void Promise.resolve(onCommit(voiceId))
+      .then((result) => {
+        if (result !== false) setOpen(false);
+      })
+      .catch(() => undefined);
+  };
 
-  const play = async () => {
-    if (playing) {
-      void stopPlayback();
-      setPlaying(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={inputId}
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          aria-label={labelId ? undefined : knob.label}
+          aria-labelledby={labelId}
+          className={selectTriggerVariants({
+            size: "default",
+            className:
+              "h-auto min-h-9 w-full min-w-0 max-w-full whitespace-normal text-left [&>span]:line-clamp-none",
+          })}
+        >
+          <div className="min-w-0 flex-1 whitespace-normal break-words leading-tight">
+            {selectedLabel}
+          </div>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      {open && (
+        <PopoverContent
+          align="start"
+          className="w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
+        >
+          <VoiceChooser
+            current={current}
+            disabled={disabled}
+            onSelect={handleSelect}
+          />
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+}
+
+/** Mounted only while the chooser is open, so settings-page load opens no TTS socket. */
+function VoiceChooser({
+  current,
+  disabled,
+  onSelect,
+}: {
+  current: string;
+  disabled?: boolean;
+  onSelect: (voiceId: string) => void;
+}) {
+  const { sendMessage, stopPlayback, isConnected, error } = useCartesia();
+  const [query, setQuery] = useState("");
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const playRequestId = useRef(0);
+  const matchingVoices = availableVoices.filter((voice) => {
+    const search = query.trim().toLocaleLowerCase();
+    return (
+      search === "" ||
+      voice.name.toLocaleLowerCase().includes(search) ||
+      voice.description.toLocaleLowerCase().includes(search)
+    );
+  });
+
+  const play = async (voiceId: string) => {
+    const requestId = ++playRequestId.current;
+    if (playingVoiceId === voiceId) {
+      await stopPlayback();
+      if (requestId === playRequestId.current) setPlayingVoiceId(null);
       return;
     }
-    if (!current) {
-      setFailure("Pick a voice first, then it will speak.");
-      return;
-    }
+    if (playingVoiceId) await stopPlayback();
+    if (requestId !== playRequestId.current) return;
     setFailure(null);
-    setPlaying(true);
+    setPlayingVoiceId(voiceId);
     try {
       await sendMessage(VOICE_SAMPLE_LINE, VoiceSpeed.NORMAL, {
         mode: "id",
-        id: current,
+        id: voiceId,
       });
     } catch (err) {
       setFailure(extractErrorMessage(err));
     } finally {
-      setPlaying(false);
+      if (requestId === playRequestId.current) setPlayingVoiceId(null);
     }
   };
 
   return (
-    <div className="w-64 max-w-full min-w-0 space-y-1.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={current || undefined}
-          disabled={disabled}
-          onValueChange={(next) => void onCommit(next)}
-        >
-          <SelectTrigger
-            id={inputId}
-            aria-label={labelId ? undefined : knob.label}
-            aria-labelledby={labelId}
-            className="h-9 min-w-0 flex-1"
-          >
-            <SelectValue placeholder="Choose a voice" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableVoices.map((voice) => (
-              <SelectItem key={voice.id} value={voice.id}>
-                {voice.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-9 shrink-0 gap-1.5"
-          disabled={disabled || !isConnected}
-          onClick={() => void play()}
-        >
-          {playing ? (
-            <Square className="h-3.5 w-3.5" />
-          ) : !isConnected ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Play className="h-3.5 w-3.5" />
-          )}
-          {playing ? "Stop" : "Play sample"}
-        </Button>
+    <div className="flex min-h-0 max-h-[min(32rem,var(--radix-popover-content-available-height))] flex-col">
+      <div className="shrink-0 border-b p-2">
+        <Input
+          autoFocus
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search voices"
+          aria-label="Search voices"
+          className="h-8"
+        />
       </div>
-      {/* Nothing fails silently: a speech service that did not connect says so
-          instead of leaving a button that does nothing when pressed. */}
+      <div className="min-h-0 flex-auto overflow-y-auto">
+        {matchingVoices.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-muted-foreground">
+            No voices match “{query}”.
+          </p>
+        ) : matchingVoices.map((voice) => (
+          <div
+            key={voice.id}
+            className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
+              disabled={disabled}
+              onClick={() => onSelect(voice.id)}
+            >
+              <span className="min-w-0 flex-1 break-words">{voice.name}</span>
+              {voice.id === current && <Check className="h-4 w-4 shrink-0" />}
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              aria-label={playingVoiceId === voice.id ? "Stop voice sample" : `Play sample for ${voice.name}`}
+              disabled={disabled || !isConnected}
+              onClick={() => void play(voice.id)}
+            >
+              {playingVoiceId === voice.id ? (
+                <Square className="h-3.5 w-3.5" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+        ))}
+      </div>
       {!isConnected && !error && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="flex shrink-0 items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Connecting to the speech service…
         </p>
       )}
       {(error || failure) && (
-        <p className="text-[11px] text-destructive">
+        <p className="shrink-0 px-2 py-1 text-[11px] text-destructive">
           {failure ?? `The sample could not play: ${error?.message}`}
         </p>
       )}

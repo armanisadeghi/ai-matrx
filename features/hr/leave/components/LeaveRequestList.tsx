@@ -181,7 +181,7 @@ export function LeaveRequestList({ requests, onChanged }: LeaveRequestListProps)
                   type="button"
                   onClick={() => setOpenId(open ? null : req.id)}
                   aria-expanded={open}
-                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  className="flex min-h-11 min-w-0 flex-1 items-center gap-2 py-2 text-left md:min-h-0 md:py-0"
                 >
                   {open ? (
                     <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -209,6 +209,7 @@ export function LeaveRequestList({ requests, onChanged }: LeaveRequestListProps)
                     type="button"
                     size="sm"
                     variant="outline"
+                    className="h-11 px-3 md:h-8 md:px-3"
                     onClick={() => setPending(req)}
                   >
                     {act.label}

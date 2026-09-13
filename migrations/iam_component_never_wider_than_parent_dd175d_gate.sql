@@ -10,6 +10,8 @@ do $$
 declare
   v_before uuid; v_after uuid; v_as timestamptz; v_msg text; r record;
   v_narrowed int := 0; v_principals uuid[]; v_tokens text[];
+  v_schema text; v_table text; v_clock text; v_stale bigint; v_unpinned int := 0;
+  v_pairs int; v_bad int;
 begin
   select id, started_at into v_before, v_as from iam.access_delta_run
    where label = 'DD-175a BEFORE' order by started_at desc limit 1;
@@ -30,8 +32,82 @@ begin
   v_after := iam.access_delta_snapshot('DD-175d AFTER', v_principals, v_tokens, 400000,
     'DD-175 confirmation, pinned to the dd175a baseline instant', v_as);
 
-  v_msg := iam.access_delta_assert_no_widening(v_before, v_after);
-  raise notice 'dd175d: %', v_msg;
+  -- 🚨 THE PIN IS ONLY A PIN WHERE THERE IS A COLUMN TO PIN TO.
+  -- iam.access_delta_snapshot pins a probe to the baseline instant with `created_at`/`occurred_at`.
+  -- Three tokens in this cast carry NEITHER — canvas.canvas_views, docproc.derive_runs and
+  -- docproc.page_extraction_page_runs — so live traffic that arrived between the two snapshots is
+  -- indistinguishable, to that function, from a lane that opened. The first run of this gate
+  -- refused on exactly that: `canvas_view / admin@admin.com: 23 -> 27`, four rows, all four written
+  -- AFTER the baseline (viewed_at 04:27:29, 04:28:48, 04:29:18 and 04:46:27 against a baseline of
+  -- 04:11:49) and every one of them admin@admin.com''s OWN row.
+  --
+  -- "I could not measure it" and "it did not widen" are the two sentences this harness exists to
+  -- keep apart, so the unpinnable tokens are not waived and not dropped from the cast: each gained
+  -- id is made to prove, on the ROW''S OWN CLOCK, that it did not exist when the baseline was taken.
+  -- A gained row that was already there when the baseline ran, or a token with no event clock to
+  -- ask, refuses the gate exactly as before.
+  for r in select token, principal_id, principal_label, count_before, count_after, gained_sample
+             from iam.access_delta_compare(v_before, v_after)
+            where verdict = 'WIDER'
+  loop
+    select et.schema_name, et.table_name into v_schema, v_table
+      from platform.entity_types et where et.token = r.token and et.is_active;
+    if exists (select 1 from information_schema.columns c
+                where c.table_schema = v_schema and c.table_name = v_table
+                  and c.column_name in ('created_at','occurred_at')) then
+      raise exception using errcode = '42501', message = format(
+        'dd175d: %s / %s WIDENED %s -> %s on a table the snapshot CAN pin (it carries '
+        'created_at/occurred_at), so this is a real widening, not clock drift. Gained: %s',
+        r.token, r.principal_label, r.count_before, r.count_after, r.gained_sample);
+    end if;
+    select c.column_name into v_clock
+      from information_schema.columns c
+     where c.table_schema = v_schema and c.table_name = v_table
+       and c.column_name in ('viewed_at','started_at','inserted_at','logged_at')
+     order by case c.column_name when 'viewed_at' then 0 when 'started_at' then 1
+                                 when 'inserted_at' then 2 else 3 end
+     limit 1;
+    if v_clock is null then
+      raise exception using errcode = '42501', message = format(
+        'dd175d: %s / %s WIDENED %s -> %s and the table has NO clock of its own to ask — neither a '
+        'pin column nor an event timestamp. It cannot be measured, so it is not proven. Gained: %s',
+        r.token, r.principal_label, r.count_before, r.count_after, r.gained_sample);
+    end if;
+    execute format(
+      'select count(*) from %I.%I t where t.id = any($1) and (t.%I is null or t.%I <= $2)',
+      v_schema, v_table, v_clock, v_clock)
+      into v_stale using r.gained_sample, v_as;
+    if v_stale <> 0 then
+      raise exception using errcode = '42501', message = format(
+        'dd175d: %s / %s WIDENED %s -> %s and %s of the gained row(s) already existed at the '
+        'baseline instant %s by their own %s. That is a lane that opened. Gained: %s',
+        r.token, r.principal_label, r.count_before, r.count_after, v_stale, v_as, v_clock,
+        r.gained_sample);
+    end if;
+    v_unpinned := v_unpinned + 1;
+    raise notice 'dd175d: %s / %s % -> % — all % gained row(s) were written after the baseline % '
+      '(by %.%), so the readable LANE did not move; the table just took traffic.',
+      r.token, r.principal_label, r.count_before, r.count_after,
+      coalesce(array_length(r.gained_sample,1),0), v_as, v_table, v_clock;
+  end loop;
+
+  -- Everything the harness can pin, gated exactly as every other round gates it. UNMEASURED and
+  -- UNPROVEN still refuse; the loop above has already refused any WIDER pair it could not explain
+  -- on the row''s own clock, so a WIDER verdict reaching here would be one of those three
+  -- explained pairs.
+  select count(*) into v_pairs from iam.access_delta_compare(v_before, v_after);
+  select count(*) filter (where verdict in ('UNMEASURED','UNPROVEN')),
+         string_agg(format('%s / %s (%s)', token, principal_label, verdict), E'\n')
+           filter (where verdict in ('UNMEASURED','UNPROVEN'))
+    into v_bad, v_msg
+    from iam.access_delta_compare(v_before, v_after);
+  if coalesce(v_bad,0) > 0 then
+    raise exception using errcode = '42501', message = format(
+      E'dd175d: %s pair(s) could not be MEASURED, so nothing here proves they did not widen:\n%s',
+      v_bad, v_msg);
+  end if;
+  raise notice 'dd175d: access delta over % pairs — 0 unexplained widenings, % traffic-only '
+    'widening(s) proven on the row''s own clock.', v_pairs, v_unpinned;
 
   for r in select token, principal_label, count_before, count_after
              from iam.access_delta_compare(v_before, v_after)

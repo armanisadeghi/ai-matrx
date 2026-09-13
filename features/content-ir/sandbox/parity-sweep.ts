@@ -40,7 +40,7 @@ import { readPng, bestAlignedDiff } from "./parity/png";
 const DEBUG = process.argv.includes("--debug");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, "../../..");
+const ROOT = resolve(/* turbopackIgnore: true */ __dirname, "../../..");
 const OUT_DIR = resolve(ROOT, ".kind-sandbox-parity");
 const BASELINE = resolve(__dirname, "generated/parity-baseline.json");
 
@@ -55,6 +55,8 @@ const PAGE_WIDTH = 1400;
  * no size at all; with the batch inside the viewport every case reports.
  */
 const PAGE_HEIGHT = 6000;
+// KNOB MIRROR of platform.feature_knob "content_ir.parity_sweep" "batch_size" — a Node-side harness with no browser knob client.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const BATCH_SIZE = 4;
 
 /**

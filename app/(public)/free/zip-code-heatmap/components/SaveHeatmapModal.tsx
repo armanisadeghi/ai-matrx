@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Share2, Loader2, Copy, Check, Globe2, Lock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Share2, Loader2, Copy, Check, Globe2, Lock, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
@@ -15,8 +16,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { supabase } from '@/utils/supabase/client';
+import { useLoginHref } from '@/hooks/auth/useLoginHref';
 import { ensureOrgId } from '@/lib/organizations/personalOrg';
-import { resolveSystemOrgId } from '@/lib/organizations/systemOrg';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ZipCodeData } from '../page';
 import type { ColorScaleOptions } from './ColorScaleSelector';
@@ -46,6 +47,23 @@ export default function SaveHeatmapModal({
   const [error, setError] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // `null` = we have not asked yet. The dialog never shows a Save button whose
+  // outcome we cannot predict (DD-193): saving a heatmap is a signed-in action,
+  // because `workbench.heatmap_saves` admits a row only through its `std_insert`
+  // policy, which is `TO authenticated` and matches `created_by = auth.uid()`.
+  const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
+  const loginHref = useLoginHref();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled) setIsSignedIn(Boolean(data.user?.id));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -67,18 +85,25 @@ export default function SaveHeatmapModal({
         data: { user },
       } = await supabase.auth.getUser();
 
-      // Public tool: a signed-in user's save lives in their org; an anonymous
-      // save (no session) has no personal org, so it lands in the global system
-      // org (heatmap_saves.organization_id is NOT NULL).
-      const organizationId = user?.id
-        ? await ensureOrgId(undefined)
-        : await resolveSystemOrgId();
+      if (!user?.id) {
+        // This used to try the insert anyway, for a signed-out visitor, and the
+        // database refused it every time — the screen offered something it could
+        // not do and then printed a raw Postgres sentence. It now says the true
+        // thing, and the dialog itself offers the sign-in link (DD-193).
+        setIsSignedIn(false);
+        setError('Saving a heatmap needs an account, so the link stays yours. Sign in and your data and settings will still be here.');
+        return;
+      }
+
+      // A signed-in user's save lives in their personal organization
+      // (heatmap_saves.organization_id is NOT NULL).
+      const organizationId = await ensureOrgId(undefined);
 
       // Insert heatmap save
       const { data: savedHeatmap, error: insertError } = await supabase
         .schema('workbench').from('heatmap_saves')
         .insert({
-          user_id: user?.id || null,
+          user_id: user.id,
           organization_id: organizationId,
           title: title.trim(),
           description: description.trim() || null,
@@ -104,8 +129,13 @@ export default function SaveHeatmapModal({
       const url = `${baseUrl}/free/zip-code-heatmap/${savedHeatmap.id}`;
       setShareUrl(url);
     } catch (err) {
+      // A screen never prints a database sentence at a person. Whatever went wrong,
+      // the visitor is told what happened to their work (nothing — it is still on the
+      // page) and what to do next; the real error goes to the console for us.
       console.error('Error saving heatmap:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save heatmap');
+      setError(
+        'We could not save this heatmap just now. Nothing was lost — your data and view settings are still on the page, so try Save again in a moment.',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -152,6 +182,16 @@ export default function SaveHeatmapModal({
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription className="text-sm">{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {isSignedIn === false && !error && (
+                <Alert>
+                  <LogIn className="w-4 h-4" />
+                  <AlertDescription className="text-sm">
+                    Saving a heatmap needs an account, so the link stays yours. Your data and
+                    settings stay exactly as they are while you sign in.
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -211,19 +251,28 @@ export default function SaveHeatmapModal({
               <Button variant="outline" onClick={onClose} disabled={isSaving}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={isSaving || !title.trim()}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Save & Get Link
-                  </>
-                )}
-              </Button>
+              {isSignedIn === false ? (
+                <Button asChild>
+                  <Link href={loginHref}>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign in to save
+                  </Link>
+                </Button>
+              ) : (
+                <Button onClick={handleSave} disabled={isSaving || isSignedIn === null || !title.trim()}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Save & Get Link
+                    </>
+                  )}
+                </Button>
+              )}
             </DialogFooter>
           </>
         ) : (

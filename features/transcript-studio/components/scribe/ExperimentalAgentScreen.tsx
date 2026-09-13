@@ -39,6 +39,7 @@ import {
 import { ingestExternalRecordingThunk } from "../../redux/thunks";
 import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 interface ExperimentalAgentScreenProps {
   sessionId: string;
@@ -63,13 +64,6 @@ interface PendingRecordingResult {
 }
 
 const STANDALONE_LABEL_PREFIX = "scribe-agent:";
-
-function formatClock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 export function ExperimentalAgentScreen({
   sessionId,
@@ -360,7 +354,7 @@ export function ExperimentalAgentScreen({
               />
             </span>
             <span className="font-mono tabular-nums text-foreground">
-              {formatClock(isRecording ? durationSec : 0)}
+              {formatDurationSeconds(isRecording ? durationSec : 0, { style: "clock" })}
             </span>
             <span className="text-muted-foreground">
               {isRecording ? "Recording" : "Tap to record a turn"}

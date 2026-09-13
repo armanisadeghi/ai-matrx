@@ -97,11 +97,24 @@ async function resolveAgentUserId(
     });
     const accountId = data?.[0]?.user_id;
     if (error || !accountId) {
-      throw new Error(
-        `agent feedback cannot be attributed: ${agentId ?? "no agent id"} is not a Matrx user and ` +
-          // access-errors: ok — developer/agent-facing MCP-surface error; the canonical definer resolver on the service-role client returned no user, so the absence is verified, not guessed
-          `the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL} was not found`,
-      );
+      // Name WHICH lookup failed and HOW. "was not found" used to swallow the
+      // difference between "no such user" and "the RPC refused this caller" —
+      // on 2026-09-13 a new `auth.uid() is null` gate on lookup_user_by_email
+      // refused the admin client (42501) and every agent read it as a missing
+      // account (fixed in migrations/dd169_batch3_trusted_backend_callers.sql).
+      const who = agentId
+        ? `agent id ${agentId} has no users.profiles row`
+        : "no agent id was supplied";
+      // access-errors: ok — developer/agent-facing MCP-surface error; the canonical definer resolver on the service-role client answered, so the outcome is verified, not guessed
+      const why = error
+        ? `and the canonical lookup public.lookup_user_by_email(${AGENT_SERVICE_ACCOUNT_EMAIL}) failed: ` +
+          `${error.message}${error.code ? ` [${error.code}]` : ""}` +
+          (error.code === "42501"
+            ? " — a 42501 here is the RPC refusing THE SERVER, not a missing account: " +
+              "the admin client has no auth.uid(), so the gate needs `and not iam.is_trusted_backend()`"
+            : "")
+        : `and the canonical lookup public.lookup_user_by_email returned no row for the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL}`;
+      throw new Error(`agent feedback cannot be attributed: ${who}, ${why}`);
     }
     cachedAgentUserId = accountId;
   }

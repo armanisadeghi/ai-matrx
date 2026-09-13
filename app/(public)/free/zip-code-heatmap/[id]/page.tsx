@@ -49,9 +49,15 @@ export default function SharedHeatmapPage() {
       setLoading(true);
       setError(null);
 
+      // This page is PUBLIC, so this read can run as `anon`, which may read only
+      // the columns workbench.heatmap_saves declares to it — `*` is refused
+      // (42501) and `user_id` is not in the list at all. Register:
+      // lib/security/public-exposure.ts#ANON_COLUMN_SURFACE (DD-186).
       const { data, error: fetchError } = await supabase
         .schema('workbench').from('heatmap_saves')
-        .select('*')
+        .select(
+          'id,title,description,data,view_settings,created_at,updated_at,deleted_at,visibility',
+        )
         .is('deleted_at', null)
         .eq('id', heatmapId)
         .single();
@@ -72,7 +78,12 @@ export default function SharedHeatmapPage() {
         return;
       }
 
-      // Check if user has access
+      // Check if user has access. A non-public row can only have been returned
+      // to a SIGNED-IN caller in the first place (RLS hands `anon` public rows
+      // only), and `user_id` is readable to `authenticated` alone — so the owner
+      // check asks for it in its own second read rather than putting a column
+      // `anon` cannot select into the request above, which would fail the whole
+      // request for every signed-out visitor (DD-186).
       if (data.visibility !== "public") {
         const {
           data: { user },
@@ -81,7 +92,12 @@ export default function SharedHeatmapPage() {
           setError('Sign in to open this heatmap.');
           return;
         }
-        if (user.id !== data.user_id) {
+        const { data: owner } = await supabase
+          .schema('workbench').from('heatmap_saves')
+          .select('user_id')
+          .eq('id', heatmapId)
+          .maybeSingle();
+        if (!owner || user.id !== owner.user_id) {
           // access-errors: ok — verified denial: the row was read, its visibility is not public, and the signed-in caller is not its owner
           setError("You don't have access to this heatmap.");
           return;

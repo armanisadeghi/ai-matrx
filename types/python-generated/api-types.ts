@@ -44,6 +44,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/session/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exchange Session Handoff
+         * @description Trade the one-time handoff code from ``/auth/callback`` for the token.
+         *
+         *     THE reason this endpoint exists: the access token must never ride a query
+         *     string (feedback 08b3fdc0). ``/auth/callback`` redirects the SPA with an
+         *     unguessable, single-use, 120-second code; the token itself comes back here,
+         *     in a response body. Unauthenticated by design — the code IS the credential,
+         *     and it is burned on first use.
+         */
+        post: operations["exchange_session_handoff_auth_session_exchange_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/session/oauth-incident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Oauth Incident
+         * @description A client refused a URL carrying a token; file the ``oauth_token_in_query``.
+         *
+         *     Nothing we ship emits that shape any more, so a report here means a stale
+         *     build or a forged link is live somewhere and someone must delete it. The
+         *     client has already refused the token — this is the scream, not the defence.
+         */
+        post: operations["report_oauth_incident_auth_session_oauth_incident_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/whoami": {
         parameters: {
             query?: never;
@@ -5747,6 +5797,45 @@ export interface paths {
         post?: never;
         /** Disconnect */
         delete: operations["disconnect_mcp_connections__server_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Availability
+         * @description Availability for every server the caller has a relationship with
+         *     (no-auth servers, GitHub, and every server they hold a connection for),
+         *     plus any extra comma-separated `slugs`.
+         */
+        get: operations["availability_mcp_connections_availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/availability/{server_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Availability For Slug */
+        get: operations["availability_for_slug_mcp_connections_availability__server_slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -22824,6 +22913,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/system-errors/open-outages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open Outages
+         * @description Every provider currently refusing every call — the OPEN rows THE
+         *     PROVIDER-OUTAGE ALARM keeps (``kind='provider_outage'``,
+         *     ``resolved_at IS NULL``).
+         *
+         *     This is the "is the platform's AI actually working right now" call: an empty
+         *     list means every provider that has been dialled is answering. A row closes
+         *     by itself the moment that provider answers again
+         *     (``aidream/services/provider_outage/detector.py``), so nothing here has to
+         *     be cleared by hand.
+         *
+         *     Declared BEFORE ``/{error_id}`` on purpose — FastAPI matches in declaration
+         *     order and the catch-all would otherwise swallow this path.
+         */
+        get: operations["open_outages_admin_system_errors_open_outages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/system-errors/{error_id}": {
         parameters: {
             query?: never;
@@ -24207,6 +24327,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/ingest-unfolding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Unfolding
+         * @description The UNFOLDING-CASE lane of the `timeline` Approach: a narrative that
+         *     unfolds in TIME — a case report, an incident post-mortem, a negotiation log
+         *     — unfolded into the `serial_observation_timeline` kind, then either
+         *     distilled window by window (`role="teaching"`) or SEALED as an exam case
+         *     (`role="heldout"`, no rules are ever written from it).
+         *
+         *     🚨 A SECOND DOOR ONTO ONE APPROACH, not a rename of `/ingest-timeline`.
+         *     Trial 7 and trial 8 built a timeline lane the same night and both claimed
+         *     this path; trial 8's is merged, live and keeps it. Only THIS lane can seal a
+         *     held-out exam case, so it keeps its own path rather than losing that half.
+         *     Converging the two pipelines is open work — `distillation/FEATURE.md`.
+         */
+        post: operations["ingest_rulebook_unfolding_masterworks_ingest_unfolding_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/ingest-corpus": {
         parameters: {
             query?: never;
@@ -24350,7 +24500,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Audition Masterwork Endpoint */
+        /**
+         * Audition Masterwork Endpoint
+         * @description Three modes, one endpoint (`AuditionCompareRequest.mode`): `reference` —
+         *     our output vs the Expert's real exemplar; `unfolding` — the sealed-case
+         *     benchmark, where the desks actually RUN against held-out cases;
+         *     `elicitation` — the first-move benchmark, where the desks actually TALK to a
+         *     sealed, reactive counterparty.
+         */
         post: operations["audition_masterwork_endpoint_masterworks_audition_post"];
         delete?: never;
         options?: never;
@@ -25560,6 +25717,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -34953,6 +35134,10 @@ export interface paths {
          *     raises the ``user_requested`` handoff itself when the agent has not paused for a
          *     person (Arman 2026-08-21). Supersedes the old bare ``claim-control`` route,
          *     which could only be called inside an agent-initiated handoff window.
+         *
+         *     ``immediate`` (the panel's "Take over immediately") moves control without
+         *     waiting for the agent's in-flight browser step; omitted or false keeps the
+         *     non-disruptive default.
          */
         post: operations["take_over_browser_manager_runs__run_id__takeover_post"];
         delete?: never;
@@ -37192,6 +37377,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/directives/apply_state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read Directive Apply State
+         * @description Has this proposed directive already been applied? (DD-144.)
+         *
+         *     A READ. Nothing here writes, and this is deliberately NOT a second way to
+         *     apply anything — it is how a reloaded conversation can render an agent's
+         *     proposal honestly. The client sends back the two-key shells it found in the
+         *     stored assistant messages; the server computes the SAME per-item content key
+         *     the dispatcher would (frozen `content_key`, derived ledger type, the
+         *     conversation as namespace), reads `platform.matrx_action_ledger`, and answers
+         *     `not_applied` / `in_flight` / `applied` per item — the last carrying the
+         *     ledger row's own sentence and resource ids.
+         *
+         *     Why the client cannot do this itself: the key hashes the VALIDATED item model,
+         *     so no client can reproduce it, and a client that guessed would offer an
+         *     Approve button beside that proposal's own receipt.
+         */
+        post: operations["read_directive_apply_state_directives_apply_state_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/{file_id}/analysis": {
         parameters: {
             query?: never;
@@ -38829,6 +39047,11 @@ export interface components {
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /**
+             * Allow Empty Structured Output
+             * @description Allow an item's answer to come back with every declared field empty. Omit to follow the organization's setting (refuse by default).
+             */
+            allow_empty_structured_output?: boolean | null;
             /**
              * Organization Id
              * @description Organization context for the request; omitted to use the authenticated context.
@@ -42681,9 +42904,28 @@ export interface components {
         };
         /**
          * AuditionCompareRequest
-         * @description Judge a Masterwork's output against the real published exemplar (the R2
-         *     outcome signal). Comparison verdict cites rulebook rule ids; gaps the
-         *     reference exposes optionally land as DRAFT rules (never auto-activated).
+         * @description Judge a Masterwork against a reference. TWO modes, one endpoint.
+         *
+         *     ``mode="reference"`` (the default, and the only shape that existed before
+         *     2026-09-12): our Masterwork's output vs the Expert's real published exemplar
+         *     for the same inputs — comparison verdict citing rulebook rule ids, gaps
+         *     optionally landing as DRAFT rules. Every request written for that mode stays
+         *     valid byte-for-byte.
+         *
+         *     ``mode="elicitation"``: the FIRST-MOVE benchmark (trial 12, item 4) — one or
+         *     two Masterwork DESKS each hold a real conversation with a sealed, reactive
+         *     counterparty while a vanilla model is handed that person's opening line and
+         *     answers it. Mechanical throughout: decisive facts surfaced, turns to frame,
+         *     premature-advice events, lockouts caused and frame-order distance from the
+         *     source protocol. Nothing is pasted; the desks run for real and the profile
+         *     is read server-side from the sealed row.
+         *
+         *     ``mode="unfolding"``: the sealed-case benchmark
+         *     (``common-docs/systems/masterwork/unfolding-case-contract.md`` §4) — one or
+         *     two Masterwork DESKS each walk a held-out case through the case oracle while
+         *     a vanilla model is told every step's facts at once, and one judge ranks each
+         *     arm against the case's sealed outcome. Nothing is pasted: the desks run for
+         *     real and the reference is read server-side from the sealed row.
          */
         AuditionCompareRequest: {
             /**
@@ -42704,15 +42946,37 @@ export interface components {
             /** Rulebook Id */
             rulebook_id: string;
             /**
-             * Candidate Text
-             * @description Our Masterwork's output for the shared inputs.
+             * Mode
+             * @description reference: candidate vs pasted exemplar. unfolding: sealed-case benchmark. elicitation: sealed-counterparty first-move benchmark.
+             * @default reference
+             * @enum {string}
              */
-            candidate_text: string;
+            mode?: "elicitation" | "reference" | "unfolding";
+            /**
+             * Candidate Text
+             * @description reference mode: our Masterwork's output for the shared inputs.
+             */
+            candidate_text?: string | null;
             /**
              * Reference Text
-             * @description The real published work for the same inputs.
+             * @description reference mode: the real published work for the same inputs.
              */
-            reference_text: string;
+            reference_text?: string | null;
+            /**
+             * Masterwork Ids
+             * @description unfolding mode: the one or two desks to audition.
+             */
+            masterwork_ids?: string[];
+            /**
+             * Case Item Ids
+             * @description unfolding mode: the sealed held-out `platform.masterwork_corpus_item` rows to run against. Their content is read server-side only.
+             */
+            case_item_ids?: string[];
+            /**
+             * Profile Item Ids
+             * @description elicitation mode: the sealed `platform.masterwork_corpus_item` counterparty profiles to talk to. Their facts are read server-side only.
+             */
+            profile_item_ids?: string[];
             /**
              * Context Note
              * @description What the shared inputs were ('the Aug 14 newswire').
@@ -46667,6 +46931,8 @@ export interface components {
              * @default 5
              */
             variant_count?: number;
+            /** @description Optional. The facts that must be known before this Masterwork produces. Absent = it always produces (today's behaviour). */
+            refuse_until?: components["schemas"]["RefuseUntil"] | null;
         };
         /**
          * BuilderIoServiceStatus
@@ -57710,6 +57976,33 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /**
          * DevtoServiceStatus
          * @description Safe aggregate status projection for Devto's fixed status page.
@@ -58174,6 +58467,47 @@ export interface components {
             receipts: components["schemas"]["DirectiveReceipt"][];
         };
         /**
+         * DirectiveApplyStateRequest
+         * @description The shells a client read out of one conversation's stored messages.
+         *
+         *     Batched on purpose: a reloaded conversation asks about every shell it found in
+         *     ONE round trip, so hydrating a long chat is one request and not one per
+         *     message. ``conversation_id`` is REQUIRED and is not decoration — it is the
+         *     idempotency NAMESPACE (`dispatcher.apply_directive_items`), so a state read
+         *     that omitted it would compute different keys from the apply it is asking
+         *     about and confidently answer "not applied" about work that was done.
+         */
+        DirectiveApplyStateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Shells */
+            shells?: {
+                [key: string]: unknown;
+            }[];
+            /** Conversation Id */
+            conversation_id: string;
+        };
+        /** DirectiveApplyStateResult */
+        DirectiveApplyStateResult: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Shells */
+            shells: components["schemas"]["DirectiveShellState"][];
+        };
+        /**
          * DirectiveCatalog
          * @description The whole grid: class axis + noun rows + Kind Actions.
          *
@@ -58322,6 +58656,17 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** DirectiveItemState */
+        DirectiveItemState: {
+            /** Index */
+            index: number;
+            /** State */
+            state: string;
+            /** Message */
+            message?: string | null;
+            /** Resource Ids */
+            resource_ids?: string[];
+        };
         /**
          * DirectivePublishReport
          * @description What happened to one directive publish. Never raised; always returned
@@ -58366,6 +58711,27 @@ export interface components {
             detail?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** DirectiveShellState */
+        DirectiveShellState: {
+            /** Directive */
+            directive: string;
+            /** Proposal Id */
+            proposal_id: string;
+            /** Directive Class */
+            directive_class: string;
+            /** Noun */
+            noun: string;
+            /** Item Count */
+            item_count: number;
+            /** Message */
+            message: string;
+            /** Items */
+            items: components["schemas"]["DirectiveItemState"][];
+            /** Approvable */
+            approvable: boolean;
+            /** Unreadable */
+            unreadable?: string | null;
         };
         /** DirectusServiceStatus */
         DirectusServiceStatus: {
@@ -70477,6 +70843,80 @@ export interface components {
             redistill?: "refuse" | "replace";
         };
         /**
+         * IngestUnfoldingRequest
+         * @description Read a narrative that UNFOLDS IN TIME as a serial-observation timeline.
+         *
+         *     🚨 The request of `unfolding_ingest.py` (`POST /masterworks/ingest-unfolding`),
+         *     NOT of `timeline_ingest.py` (`IngestTimelineRequest`, the incumbent
+         *     `/masterworks/ingest-timeline`). Two lanes, one `timeline` Approach — see
+         *     `unfolding_ingest.py`'s header for why both exist.
+         *
+         *     The gap (W57): the paste / link / file lanes flatten a narrative into
+         *     findings, so a case report, an incident post-mortem, a negotiation log or a
+         *     sales cycle loses the one thing it was carrying — WHICH FACT WAS KNOWN AT
+         *     WHICH MOMENT, and what the practitioner chose to find out next. This lane
+         *     unfolds the narrative into the `serial_observation_timeline` kind first,
+         *     then chunks BY TIME rather than by paragraph.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestUnfoldingRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Text
+             * @description The narrative, verbatim — the case as it was written.
+             */
+            text: string;
+            /**
+             * Title
+             * @description What this case is called, in the Expert's words.
+             */
+            title: string;
+            /**
+             * Domain
+             * @description What KIND of unfolding this is — clinical, incident, negotiation, sales, legal… Optional: the unfolder infers it from the narrative when the Expert does not say. Deliberately an open string; the platform does not own the list of human activities that happen in a sequence.
+             * @default
+             */
+            domain?: string;
+            /**
+             * Role
+             * @description teaching = unfold and distil rules from it; heldout = unfold and SEAL it as an exam case — no rules are ever written from a held-out case, and only the case oracle and the unfolding judge ever read past its opening.
+             * @default teaching
+             * @enum {string}
+             */
+            role?: "heldout" | "teaching";
+            /** @description Licence, link, publication date and external id of the case. */
+            source_meta?: components["schemas"]["TimelineSourceMeta"] | null;
+            /**
+             * Source Note
+             * @description Where this came from, in the Expert's words.
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
          * InitialIterationRequest
          * @description Turn 1 — the user's first message in either mode.
          */
@@ -77417,6 +77857,41 @@ export interface components {
             status_page?: "https://status.maze.co/";
         };
         /**
+         * McpAvailability
+         * @description The ONE truthful answer to "can this user use this MCP right now?".
+         *
+         *     Emitted to the browser (``GET /api/mcp-connections/availability``) and to
+         *     the run timeline (``mcp_attachments`` info event) so no surface has to
+         *     guess a connection's health from ``tool.mcp_user_conn.status`` alone — a
+         *     row that says ``connected`` while its access token expired days ago is
+         *     exactly the lie a user saw as a green checkmark next to an MCP the model
+         *     could not reach (Arman, 2026-09-13).
+         *
+         *     ``state`` is one of:
+         *
+         *     * ``connected``    — usable on the next run (token valid, refreshable, or
+         *       the server needs no auth at all).
+         *     * ``needs_reauth`` — a connection exists but the user must re-authorize
+         *       (expired with no stored refresh token, ``refresh_failed``, ``error``).
+         *     * ``not_connected``— no usable connection on file, or the server itself is
+         *       not active. ``reason`` always names why.
+         */
+        McpAvailability: {
+            /** Slug */
+            slug: string;
+            /** Server Id */
+            server_id?: string | null;
+            /** State */
+            state: string;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Tool Count
+             * @default 0
+             */
+            tool_count?: number;
+        };
+        /**
          * McpCatalogRefreshResult
          * @description Admin-triggered server catalog reconciliation without user credentials.
          */
@@ -80988,6 +81463,13 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** OAuthIncidentRequest */
+        OAuthIncidentRequest: {
+            /** Params */
+            params: string[];
+            /** Where */
+            where: string;
+        };
         /**
          * OAuthTokenPersistRequest
          * @description The FE OAuth callback's hand-off: the raw token-endpoint response plus
@@ -81967,6 +82449,35 @@ export interface components {
             upload_date: string;
             /** License */
             license: string;
+        };
+        /** OpenOutageListResponse */
+        OpenOutageListResponse: {
+            /** Outages */
+            outages: components["schemas"]["OpenOutageRecord"][];
+        };
+        /**
+         * OpenOutageRecord
+         * @description One provider that is refusing every call, right now.
+         */
+        OpenOutageRecord: {
+            /** Id */
+            id: string;
+            /** Provider */
+            provider?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Text */
+            error_text?: string | null;
+            /** First Seen At */
+            first_seen_at?: string | null;
+            /** Consecutive Failures */
+            consecutive_failures?: number | null;
+            /** Models Affected */
+            models_affected?: string[];
+            /** Rerouted To */
+            rerouted_to?: string[];
+            /** Occurred At */
+            occurred_at?: string | null;
         };
         /**
          * OpenProjectRootResult
@@ -92514,6 +93025,31 @@ export interface components {
             /** Interval Hours */
             interval_hours?: number | null;
         };
+        /**
+         * RefuseUntil
+         * @description The declared condition: what must hold before this desk produces.
+         *
+         *     Authored with the Masterwork, carried on its workflow metadata, read at run
+         *     time. Every field except ``required_facts`` is presentation — they are the
+         *     words the refusal is written in, chosen by the desk's author rather than
+         *     improvised by a model in the moment.
+         */
+        RefuseUntil: {
+            /** Required Facts */
+            required_facts?: components["schemas"]["RequiredFact"][];
+            /**
+             * Protocol Frame
+             * @default
+             */
+            protocol_frame?: string;
+            /** Provenance */
+            provenance?: string[];
+            /**
+             * Headline
+             * @default
+             */
+            headline?: string;
+        };
         /** RegenerateAssetRequest */
         RegenerateAssetRequest: {
             /**
@@ -93827,6 +94363,36 @@ export interface components {
             conversation_id?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * RequiredFact
+         * @description One fact the frame requires before the desk may produce.
+         *
+         *     The three human halves are the same three a ``MissingFact`` renders, because
+         *     a refusal is just the unmet part of this condition made readable — declaring
+         *     them once here means the desk never has to invent the reason at run time.
+         */
+        RequiredFact: {
+            /**
+             * Fact
+             * @description What must be known, in one plain phrase.
+             */
+            fact: string;
+            /**
+             * Key
+             * @default
+             */
+            key?: string;
+            /**
+             * Why It Matters
+             * @default
+             */
+            why_it_matters?: string;
+            /**
+             * How To Get It
+             * @default
+             */
+            how_to_get_it?: string;
         };
         /** RerunFromRequest */
         RerunFromRequest: {
@@ -98365,6 +98931,18 @@ export interface components {
              * @default
              */
             why?: string;
+        };
+        /** SessionExchangeRequest */
+        SessionExchangeRequest: {
+            /** Handoff */
+            handoff: string;
+        };
+        /** SessionExchangeResponse */
+        SessionExchangeResponse: {
+            /** Access Token */
+            access_token: string;
+            /** Token Type */
+            token_type: string;
         };
         /** SessionPayload */
         SessionPayload: {
@@ -104785,6 +105363,18 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /**
+         * TakeoverRequest
+         * @description Optional body. ``immediate`` is the panel's "Take over immediately":
+         *     control moves without waiting for the agent's in-flight browser step.
+         */
+        TakeoverRequest: {
+            /**
+             * Immediate
+             * @default false
+             */
+            immediate?: boolean;
+        };
         /** TakeoverResponse */
         TakeoverResponse: {
             /** Run Id */
@@ -106087,6 +106677,25 @@ export interface components {
             utc_offset_seconds: number;
         };
         /**
+         * TimelineSourceMeta
+         * @description Where this case came from, and under what licence we may hold it.
+         *
+         *     Every field is optional because a person pasting their OWN incident
+         *     post-mortem has no licence, URL or external id — but a published case
+         *     report does, and a corpus of held-out cases with no provenance is a corpus
+         *     nobody can publish a result from.
+         */
+        TimelineSourceMeta: {
+            /** Licence */
+            licence?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Published */
+            published?: string | null;
+            /** External Id */
+            external_id?: string | null;
+        };
+        /**
          * TimelyServiceStatus
          * @description Safe aggregate status projection for Timely's fixed status page.
          */
@@ -107156,11 +107765,8 @@ export interface components {
              * Format: date-time
              */
             ts: string;
-            /**
-             * Event
-             * @enum {string}
-             */
-            event: "FAIL" | "LOOP_BLOCK" | "NO_EXECUTOR" | "OK" | "SURFACE_REJECT";
+            /** Event */
+            event: string;
             /** Tool Name */
             tool_name: string;
             /** Kind */
@@ -113386,7 +113992,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "access_revoked" | "already_bootstrapped" | "audience_mismatch" | "browser_controlled_by_human" | "browser_crashed" | "capture_target_missing" | "capture_upload_failed" | "checkpoint_failed" | "checkpoint_in_progress" | "chromium_unclean_exit" | "command_deadline_exceeded" | "command_not_supported" | "controller_transition_conflict" | "credential_expired" | "credential_replayed" | "eval_js_not_permitted" | "illegal_controller_transition" | "invalid_command_arguments" | "lease_expired" | "not_bootstrapped" | "parameter_not_available_on_persistent_run" | "profile_locked_locally" | "profile_mismatch" | "queue_draining" | "reopen_required" | "run_mismatch" | "sequence_conflict" | "sequence_not_permitted" | "sequence_out_of_order" | "sequence_required" | "sequence_too_old" | "stale_fencing_token" | "unauthorized_worker_call" | "unknown_dialog" | "unknown_fencing_revision" | "unknown_page" | "worker_degraded" | "worker_shutting_down";
+            code: "access_revoked" | "already_bootstrapped" | "audience_mismatch" | "bootstrap_in_progress" | "browser_controlled_by_human" | "browser_crashed" | "capture_target_missing" | "capture_upload_failed" | "checkpoint_failed" | "checkpoint_in_progress" | "chromium_unclean_exit" | "command_deadline_exceeded" | "command_not_supported" | "controller_transition_conflict" | "credential_expired" | "credential_replayed" | "eval_js_not_permitted" | "illegal_controller_transition" | "invalid_command_arguments" | "lease_expired" | "not_bootstrapped" | "parameter_not_available_on_persistent_run" | "profile_locked_locally" | "profile_mismatch" | "queue_draining" | "reopen_required" | "run_mismatch" | "sequence_conflict" | "sequence_not_permitted" | "sequence_out_of_order" | "sequence_required" | "sequence_too_old" | "stale_fencing_token" | "unauthorized_worker_call" | "unknown_dialog" | "unknown_fencing_revision" | "unknown_page" | "worker_degraded" | "worker_shutting_down";
             /** Message */
             message: string;
             /** Retryable */
@@ -115187,6 +115793,7 @@ export interface components {
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
             user?: components["schemas"]["UserOverrides"] | null;
+            sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
              * Context
              * @default {}
@@ -117442,6 +118049,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_session_handoff_auth_session_exchange_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionExchangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionExchangeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_oauth_incident_auth_session_oauth_incident_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OAuthIncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -127191,6 +127866,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectionSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    availability_mcp_connections_availability_get: {
+        parameters: {
+            query?: {
+                slugs?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpAvailability"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    availability_for_slug_mcp_connections_availability__server_slug__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpAvailability"];
                 };
             };
             /** @description Validation Error */
@@ -151077,7 +151814,7 @@ export interface operations {
                 /** @description ISO-8601 lower bound on ts. Defaults to 1 hour ago. */
                 since?: string | null;
                 limit?: number;
-                /** @description Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK). */
+                /** @description Optional event filter (OK|FAIL|DELEGATED|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK|VARIANT_RECOVERED|ALIAS_RECOVERED|INFERRED|COERCED). */
                 event?: string | null;
                 /** @description Optional tool name filter. */
                 tool_name?: string | null;
@@ -151248,6 +151985,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_outages_admin_system_errors_open_outages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenOutageListResponse"];
                 };
             };
         };
@@ -153488,6 +154245,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["IngestFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_unfolding_masterworks_ingest_unfolding_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestUnfoldingRequest"];
             };
         };
         responses: {
@@ -155862,6 +156652,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -172356,7 +173181,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TakeoverRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -176089,6 +176918,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DirectiveConfirmResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_directive_apply_state_directives_apply_state_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectiveApplyStateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectiveApplyStateResult"];
                 };
             };
             /** @description Validation Error */

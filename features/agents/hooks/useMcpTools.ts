@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  fetchAvailability,
   fetchCatalog,
   discoverServerTools,
   selectMcpCatalog,
@@ -12,7 +13,16 @@ import {
   selectMcpServerTools,
   selectAllDiscoveredMcpTools,
   selectMcpDiscoveries,
+  selectMcpAvailabilityForOrganization,
+  selectMcpAvailabilityStatusForOrganization,
 } from "@/features/agents/redux/mcp/mcp.slice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  deriveMcpConnectionState,
+  type McpConnectionTruth,
+} from "@/features/connectors/connection-state";
+import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
+import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 import { invokeMcpServerTool } from "@/features/agents/services/mcp-connections.service";
 
@@ -28,6 +38,7 @@ export function useMcpCatalog() {
   const dispatch = useAppDispatch();
   const catalog = useAppSelector(selectMcpCatalog);
   const status = useAppSelector(selectMcpCatalogStatus);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
     if (status === "idle") {
@@ -35,12 +46,81 @@ export function useMcpCatalog() {
     }
   }, [dispatch, status]);
 
-  const connectedServers = useMemo(
-    () => catalog.filter((s) => s.connectionStatus === "connected"),
-    [catalog],
+  const availability = useAppSelector((state) =>
+    selectMcpAvailabilityForOrganization(state, organizationId),
+  );
+  const availabilityStatus = useAppSelector((state) =>
+    selectMcpAvailabilityStatusForOrganization(state, organizationId),
   );
 
-  return { catalog, connectedServers, status };
+  // The catalog row alone cannot tell Connected from Needs re-auth, so the
+  // server's answer is fetched alongside it — one request, once per mount.
+  useEffect(() => {
+    if (organizationId && availabilityStatus === "idle") {
+      dispatch(fetchAvailability({ organizationId }));
+    }
+  }, [dispatch, organizationId, availabilityStatus]);
+
+  /** Every catalog entry with its ONE truthful state. */
+  const serverStates = useMemo<McpServerState[]>(
+    () =>
+      catalog.map((entry) => ({
+        entry,
+        truth: deriveMcpConnectionState(entry, {
+          availability: availability[entry.slug] ?? null,
+          hasFirstPartyPath: mcpConnectionRouteFor(entry) === "github",
+          firstPartyStatus: undefined,
+        }),
+        toolCount: availability[entry.slug]?.tool_count ?? null,
+      })),
+    [catalog, availability],
+  );
+
+  /**
+   * Servers a run can actually use right now. NOT "the connection row says
+   * connected" — that row lied for every expired token and for GitHub
+   * (Arman, 2026-09-13).
+   */
+  const connectedServers = useMemo(
+    () =>
+      serverStates
+        .filter((s) => s.truth.state === "connected")
+        .map((s) => s.entry),
+    [serverStates],
+  );
+
+  /** Servers the user has a connection to that only they can restore. */
+  const reauthServers = useMemo(
+    () => serverStates.filter((s) => s.truth.state === "needs_reauth"),
+    [serverStates],
+  );
+
+  const refreshAvailability = useCallback(
+    (slugs?: string[]) => {
+      if (organizationId) {
+        dispatch(fetchAvailability({ organizationId, slugs }));
+      }
+    },
+    [dispatch, organizationId],
+  );
+
+  return {
+    catalog,
+    connectedServers,
+    serverStates,
+    reauthServers,
+    availabilityStatus,
+    refreshAvailability,
+    status,
+  };
+}
+
+/** One catalog entry plus the truth about it. */
+export interface McpServerState {
+  entry: McpCatalogEntry;
+  truth: McpConnectionTruth;
+  /** Tools this server contributes, once aidream has said. */
+  toolCount: number | null;
 }
 
 // ─── useMcpServerTools ───────────────────────────────────────────────────────
@@ -180,4 +260,57 @@ export function useDiscoverAgentMcpTools(serverIds: string[]) {
   );
 
   return { agentTools, isLoading };
+}
+
+// ─── useMcpServerTruth ───────────────────────────────────────────────────────
+
+/**
+ * The ONE truthful state for a single catalog entry, for surfaces that render
+ * a card at a time. Same derivation as `useMcpCatalog().serverStates` — never
+ * a second opinion.
+ */
+export function useMcpServerTruth(
+  entry: Pick<
+    McpCatalogEntry,
+    | "slug"
+    | "authStrategy"
+    | "connectionStatus"
+    | "tokenExpiresAt"
+    | "serverStatus"
+  >,
+): McpConnectionTruth {
+  const organizationId = useAppSelector(selectOrganizationId);
+  const availability = useAppSelector((state) =>
+    selectMcpAvailabilityForOrganization(state, organizationId),
+  );
+  return useMemo(
+    () =>
+      deriveMcpConnectionState(entry, {
+        availability: availability[entry.slug] ?? null,
+        hasFirstPartyPath:
+          mcpConnectionRouteFor({
+            slug: entry.slug,
+            authStrategy: entry.authStrategy,
+          }) === "github",
+        firstPartyStatus: undefined,
+      }),
+    [
+      availability,
+      entry.slug,
+      entry.authStrategy,
+      entry.connectionStatus,
+      entry.tokenExpiresAt,
+      entry.serverStatus,
+    ],
+  );
+}
+
+/** Tools in a server's catalog right now; null when none are known yet (a
+ * zero is never rendered — the lister can still discover live). */
+export function useMcpServerToolCount(slug: string): number | null {
+  const organizationId = useAppSelector(selectOrganizationId);
+  const availability = useAppSelector((state) =>
+    selectMcpAvailabilityForOrganization(state, organizationId),
+  );
+  return availability[slug]?.tool_count ?? null;
 }

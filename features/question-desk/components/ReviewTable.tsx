@@ -16,7 +16,10 @@
 // reaches him is exactly the failure this whole surface exists to end.
 
 import { useMemo, useState } from "react";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { cn } from "@/lib/utils";
+import { questionRecordingOrigin } from "../hooks/useDictationAudio";
 import {
   REVIEW_KIND_LABEL,
   REVIEW_KIND_ORDER,
@@ -24,15 +27,21 @@ import {
 } from "../types";
 
 export interface ReviewTableProps {
+  interviewId: string;
   questions: DecisionQuestionRow[];
   onConfirm: (question: DecisionQuestionRow) => void;
-  onOverturn: (question: DecisionQuestionRow, words: string) => void;
+  onOverturn: (
+    question: DecisionQuestionRow,
+    words: string,
+    spoken: boolean,
+  ) => void;
   /** Per-row line under the buttons: what just happened, or why it did not. */
   lines: Record<string, { tone: "ok" | "warn"; text: string } | undefined>;
   busyId: string | null;
 }
 
 export function ReviewTable({
+  interviewId,
   questions,
   onConfirm,
   onOverturn,
@@ -42,6 +51,7 @@ export function ReviewTable({
   const [openWhy, setOpenWhy] = useState<Record<string, boolean>>({});
   const [overturning, setOverturning] = useState<string | null>(null);
   const [words, setWords] = useState("");
+  const [spoken, setSpoken] = useState(false);
   const [wordsError, setWordsError] = useState<string | null>(null);
 
   const groups = useMemo(() => {
@@ -157,6 +167,7 @@ export function ReviewTable({
                             onClick={() => {
                               setOverturning(row.id);
                               setWords(row.answer_text ?? "");
+                              setSpoken(false);
                               setWordsError(null);
                             }}
                             busy={busyId === row.id}
@@ -166,13 +177,30 @@ export function ReviewTable({
                         </div>
                         {overturning === row.id ? (
                           <div className="mt-2">
-                            <textarea
-                              autoFocus
-                              value={words}
-                              onChange={(event) => setWords(event.target.value)}
-                              placeholder="What should happen instead? Recorded exactly as you write it."
-                              className="min-h-[70px] w-full min-w-[220px] resize-y rounded-md border border-input bg-background px-2.5 py-2 text-base text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                            />
+                            {/* The platform field: the same mic, live
+                                transcription, cleanup and right-click menu as
+                                every other text box on this surface. */}
+                            <RecordingOriginProvider
+                              origin={questionRecordingOrigin(
+                                interviewId,
+                                row.id,
+                                row.title,
+                              )}
+                            >
+                              <ProTextarea
+                                autoFocus
+                                value={words}
+                                onChange={(event) =>
+                                  setWords(event.target.value)
+                                }
+                                onTranscriptionComplete={() => setSpoken(true)}
+                                placeholder="What should happen instead? Typed or spoken, recorded exactly as you give it."
+                                autoGrow
+                                minHeight={70}
+                                maxHeight={220}
+                                wrapperClassName="w-[320px] max-w-[70vw]"
+                              />
+                            </RecordingOriginProvider>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
                               <Mini
                                 tone="warn"
@@ -186,7 +214,8 @@ export function ReviewTable({
                                   }
                                   setWordsError(null);
                                   setOverturning(null);
-                                  onOverturn(row, words);
+                                  onOverturn(row, words, spoken);
+                                  setSpoken(false);
                                 }}
                               >
                                 Send it back
@@ -195,6 +224,7 @@ export function ReviewTable({
                                 busy={false}
                                 onClick={() => {
                                   setOverturning(null);
+                                  setSpoken(false);
                                   setWordsError(null);
                                 }}
                               >

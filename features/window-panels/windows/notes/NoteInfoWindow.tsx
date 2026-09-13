@@ -25,6 +25,7 @@ import { NoteInfoPanel } from "@/features/notes/components/NoteInfoPanel";
 import { noteFolderReference } from "@/features/notes/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContentSource } from "@/features/rich-document/types";
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import {
   buildNoteContextSections,
   displayLabel,
@@ -122,7 +123,7 @@ function NoteInfoWindowInner({
       <NonEditableContextMenu
         sourceFeature="notes"
         contextData={{ content: content ?? "" }}
-        contentSource={{ type: "note", noteId } satisfies ContentSource}
+        contentSource={noteIdentityContentSource(noteId, `note-info:${noteId}`)}
         entity={{
           type: "note",
           id: noteId,

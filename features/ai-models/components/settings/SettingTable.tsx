@@ -23,7 +23,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Lock, Pencil, SlidersHorizontal, Trash2 } from "lucide-react";
+import {
+  PencilTapButton,
+  TrashTapButton,
+} from "@ai-matrx/tap-target/buttons";
+import { Lock, SlidersHorizontal } from "lucide-react";
 import type { AiSetting } from "../../types";
 
 function CompactRange({
@@ -76,55 +80,29 @@ function RowActions({
   const isSystem = item.is_system ?? false;
   return (
     <>
-      <TooltipProvider delayDuration={200}>
-        <div className="flex items-center gap-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 sm:h-7 sm:w-7"
-                aria-label={`Edit ${item.key}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onEdit(item);
-                }}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit setting</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 sm:h-7 sm:w-7"
-                  aria-label={
-                    isSystem
-                      ? "System settings cannot be deleted"
-                      : `Delete ${item.key}`
-                  }
-                  disabled={isSystem}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setPendingDelete(true);
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              {isSystem
-                ? "System settings cannot be deleted"
-                : "Delete setting"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </TooltipProvider>
+      <PencilTapButton
+        variant="transparent"
+        ariaLabel={`Edit ${item.key}`}
+        tooltip="Edit setting"
+        onClick={() => onEdit(item)}
+      />
+      <TrashTapButton
+        variant="solid"
+        bgColor="bg-destructive/10"
+        iconColor="text-destructive"
+        hoverBgColor="hover:bg-destructive/20"
+        activeBgColor="active:bg-destructive/25"
+        ariaLabel={
+          isSystem
+            ? "System settings cannot be deleted"
+            : `Delete ${item.key}`
+        }
+        tooltip={
+          isSystem ? "System settings cannot be deleted" : "Delete setting"
+        }
+        disabled={isSystem}
+        onClick={() => setPendingDelete(true)}
+      />
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -180,10 +158,11 @@ export default function SettingTable({
       accessorKey: "key",
       header: "Key",
       sortable: true,
+      width: "17rem",
       cell: (item) => (
         <TruncatedText
           value={item.key}
-          className="block max-w-[210px] truncate font-mono text-xs font-medium"
+          className="block w-full truncate font-mono text-xs font-medium sm:!whitespace-nowrap sm:!break-normal sm:![overflow-wrap:normal]"
         />
       ),
     },
@@ -191,6 +170,7 @@ export default function SettingTable({
       accessorKey: "value_type",
       header: "Value Type",
       sortable: true,
+      width: "9rem",
       cell: (item) => (
         <Badge variant="outline" className="font-mono text-xs">
           {item.value_type}
@@ -200,6 +180,7 @@ export default function SettingTable({
     {
       id: "range",
       header: "Min – Max",
+      width: "8rem",
       cell: (item) => (
         <CompactRange min={item.canonical_min} max={item.canonical_max} />
       ),
@@ -208,6 +189,7 @@ export default function SettingTable({
       accessorKey: "is_system",
       header: "Origin",
       sortable: true,
+      width: "7rem",
       cell: (item) =>
         item.is_system ? (
           <Badge

@@ -36,6 +36,10 @@ const initialState: ConversationListState = {
   globalLastFetchedAt: null,
   globalHasMore: false,
   agentCaches: {},
+  trashConversationIds: [],
+  trashByConversationId: {},
+  trashStatus: "idle",
+  trashError: null,
   pendingOperations: [],
 };
 
@@ -99,6 +103,50 @@ const conversationListSlice = createSlice({
     setGlobalListError(state, action: PayloadAction<string>) {
       state.globalStatus = "failed";
       state.globalError = action.payload;
+    },
+
+    // ── The trash (soft-deleted rows) ────────────────────────────────────────
+
+    setTrashLoading(state) {
+      state.trashStatus = "loading";
+      state.trashError = null;
+    },
+
+    setTrashSuccess(
+      state,
+      action: PayloadAction<{ items: ConversationListItem[] }>,
+    ) {
+      const { items } = action.payload;
+      // Trashed rows are held apart from `byConversationId`: that store feeds
+      // every live list, and a deleted row must never be reachable from one.
+      state.trashConversationIds = items.map((i) => i.conversationId);
+      for (const item of items) {
+        state.trashByConversationId[item.conversationId] = item;
+      }
+      state.trashStatus = "succeeded";
+      state.trashError = null;
+    },
+
+    setTrashError(state, action: PayloadAction<string>) {
+      state.trashStatus = "failed";
+      state.trashError = action.payload;
+    },
+
+    /** A row left the trash (restored). */
+    removeFromTrash(state, action: PayloadAction<string>) {
+      const conversationId = action.payload;
+      const idx = state.trashConversationIds.indexOf(conversationId);
+      if (idx >= 0) state.trashConversationIds.splice(idx, 1);
+      delete state.trashByConversationId[conversationId];
+    },
+
+    /** A row entered the trash (deleted) — keeps the trash honest without a refetch. */
+    addToTrash(state, action: PayloadAction<ConversationListItem>) {
+      const item = action.payload;
+      state.trashByConversationId[item.conversationId] = item;
+      if (!state.trashConversationIds.includes(item.conversationId)) {
+        state.trashConversationIds.unshift(item.conversationId);
+      }
     },
 
     // ── Entity management ────────────────────────────────────────────────────
@@ -340,6 +388,11 @@ export const {
   setGlobalListLoading,
   setGlobalListSuccess,
   setGlobalListError,
+  setTrashLoading,
+  setTrashSuccess,
+  setTrashError,
+  removeFromTrash,
+  addToTrash,
   upsertConversation,
   patchConversation,
   prependConversation,

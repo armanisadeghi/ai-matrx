@@ -7,12 +7,14 @@ import {
 import type { UpsertConnectionParams } from "@/features/agents/services/mcp.service";
 import {
   disconnectMcpConnection,
+  fetchMcpAvailability,
   discoverMcpServerTools,
   persistMcpManualCredentials,
   refreshMcpConnection,
   type ManualAuthMethod,
 } from "@/features/agents/services/mcp-connections.service";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
+import type { McpAvailability } from "@/features/connectors/connection-state";
 
 // ---------------------------------------------------------------------------
 // State
@@ -40,6 +42,17 @@ interface McpSliceState {
   connectingServerId: string | null;
   /** Per-server discovered capabilities, keyed by serverId */
   discoveries: Record<string, McpServerDiscovery>;
+  /**
+   * aidream's truthful per-user availability, keyed by server SLUG. The
+   * catalog row alone cannot tell Connected from Needs re-auth (an expired
+   * token may still be renewable; GitHub's bearer is not an MCP grant at
+   * all), so this is what every indicator prefers once it arrives.
+   */
+  availability: Record<string, McpAvailability>;
+  /** The explicit organization that owns the availability currently in state. */
+  availabilityOrganizationId: string | null;
+  availabilityStatus: "idle" | "loading" | "succeeded" | "failed";
+  availabilityError: string | null;
 }
 
 const initialState: McpSliceState = {
@@ -48,7 +61,13 @@ const initialState: McpSliceState = {
   error: null,
   connectingServerId: null,
   discoveries: {},
+  availability: {},
+  availabilityOrganizationId: null,
+  availabilityStatus: "idle",
+  availabilityError: null,
 };
+
+const EMPTY_MCP_AVAILABILITY: Record<string, McpAvailability> = {};
 
 // ---------------------------------------------------------------------------
 // Thunks
@@ -57,6 +76,17 @@ const initialState: McpSliceState = {
 export const fetchCatalog = createAsyncThunk("mcp/fetchCatalog", async () => {
   return fetchMcpCatalog();
 });
+
+export interface FetchMcpAvailabilityArgs {
+  organizationId: string;
+  slugs?: string[];
+}
+
+export const fetchAvailability = createAsyncThunk(
+  "mcp/fetchAvailability",
+  async ({ organizationId, slugs }: FetchMcpAvailabilityArgs) =>
+    fetchMcpAvailability(organizationId, slugs),
+);
 
 export const connectServer = createAsyncThunk(
   "mcp/connectServer",
@@ -181,6 +211,32 @@ const mcpSlice = createSlice({
       .addCase(fetchCatalog.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message ?? "Failed to fetch MCP catalog";
+      })
+      .addCase(fetchAvailability.pending, (state, action) => {
+        // Availability is organization-scoped. Clearing on a switch prevents
+        // the old workspace's connection truth from rendering during the new
+        // request, and the reducer guards below reject its late completion.
+        state.availabilityOrganizationId = action.meta.arg.organizationId;
+        state.availability = {};
+        state.availabilityStatus = "loading";
+        state.availabilityError = null;
+      })
+      .addCase(fetchAvailability.fulfilled, (state, action) => {
+        if (state.availabilityOrganizationId !== action.meta.arg.organizationId)
+          return;
+        state.availabilityStatus = "succeeded";
+        for (const row of action.payload) {
+          state.availability[row.slug] = row;
+        }
+      })
+      .addCase(fetchAvailability.rejected, (state, action) => {
+        if (state.availabilityOrganizationId !== action.meta.arg.organizationId)
+          return;
+        state.availabilityStatus = "failed";
+        // A screen that cannot reach the server says so; it must never fall
+        // back to painting the optimistic connection row as the truth.
+        state.availabilityError =
+          action.error.message ?? "Could not check MCP connection health";
       })
       .addCase(connectServer.pending, (state, action) => {
         state.connectingServerId = action.meta.arg.serverId;
@@ -325,3 +381,30 @@ export const selectAllDiscoveredMcpTools = (state: WithMcp) => {
 
   return allTools;
 };
+
+export const selectMcpAvailability = (state: WithMcp) =>
+  selectMcpState(state).availability;
+
+export const selectMcpAvailabilityForOrganization = (
+  state: WithMcp,
+  organizationId: string | null,
+) =>
+  organizationId &&
+  selectMcpState(state).availabilityOrganizationId === organizationId
+    ? selectMcpState(state).availability
+    : EMPTY_MCP_AVAILABILITY;
+
+export const selectMcpAvailabilityStatus = (state: WithMcp) =>
+  selectMcpState(state).availabilityStatus;
+
+export const selectMcpAvailabilityStatusForOrganization = (
+  state: WithMcp,
+  organizationId: string | null,
+) =>
+  organizationId &&
+  selectMcpState(state).availabilityOrganizationId === organizationId
+    ? selectMcpState(state).availabilityStatus
+    : "idle";
+
+export const selectMcpAvailabilityError = (state: WithMcp) =>
+  selectMcpState(state).availabilityError;
