@@ -73,7 +73,7 @@ export default function SchedulesPage() {
           </>
         }
       />
-      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)]">
+      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-20 sm:pb-16 pt-[calc(var(--shell-header-h)+0.5rem)]">
         <ScheduleList />
       </div>
     </>
