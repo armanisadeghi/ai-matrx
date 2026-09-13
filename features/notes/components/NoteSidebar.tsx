@@ -1410,36 +1410,35 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
 
               const folderHeaderButton = (
                 <div
-                  role="button"
-                  tabIndex={0}
                   className={cn(
                     "group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
                     isFolderMode &&
                       dropTargetFolder === groupKey &&
                       "bg-primary/10 border-l-2 border-primary",
                   )}
-                  onClick={() => toggleFolder(groupKey)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      toggleFolder(groupKey);
-                    }
-                  }}
                 >
-                  {isExpanded ? (
-                    <ChevronDown className="opacity-60" />
-                  ) : (
-                    <ChevronRight className="opacity-60" />
-                  )}
-                  {isExpanded ? (
-                    <FolderOpen className={cn("opacity-70", iconColor)} />
-                  ) : (
-                    <FolderIcon className={cn("opacity-70", iconColor)} />
-                  )}
-                  <span className="flex-1 text-left truncate">{label}</span>
-                  <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
-                    {count}
-                  </span>
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? "Collapse" : "Expand"} ${label}`}
+                    className="flex min-w-0 flex-1 items-center gap-1 text-left"
+                    onClick={() => toggleFolder(groupKey)}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="opacity-60" />
+                    ) : (
+                      <ChevronRight className="opacity-60" />
+                    )}
+                    {isExpanded ? (
+                      <FolderOpen className={cn("opacity-70", iconColor)} />
+                    ) : (
+                      <FolderIcon className={cn("opacity-70", iconColor)} />
+                    )}
+                    <span className="flex-1 truncate">{label}</span>
+                    <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+                      {count}
+                    </span>
+                  </button>
                   {isFolderMode && (
                     <button
                       type="button"
