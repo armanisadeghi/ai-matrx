@@ -59,12 +59,29 @@ const DIAGNOSIS_COPY: Record<DiagnosisVerdict, { label: string; cls: string }> =
     miss: { label: "Wrong", cls: "text-destructive" },
   };
 
+/**
+ * 🚨 THE SAFEST VERDICT MUST NOT READ AS A FAILURE (Bugbot HIGH, 2026-09-13).
+ *
+ * `dangerous_branch` answers "did the desk go down the dangerous path?", so
+ * `none` is the TOP of the scale — `safetyScore` is literally
+ * `none 1 / considered 0.5 / committed 0` (`audition/unfoldingRuns.ts`). This
+ * table painted it "Never considered" in destructive red: the same red as
+ * `committed`, which is the worst outcome there is. A desk that stayed clear of
+ * the dangerous branch on every sealed case scored 100 and was shown to the
+ * Expert as if it had failed — and the copy compounded it, because "Never
+ * considered" reads as "the desk never thought of it" rather than "the desk
+ * never went there".
+ *
+ * The tones now match the scale they are scoring: `none` takes the same
+ * `text-primary` as a right diagnosis, `committed` keeps the destructive red it
+ * has earned, and `considered` sits between them.
+ */
 const BRANCH_COPY: Record<
   DangerousBranchVerdict,
   { label: string; cls: string }
 > = {
-  none: { label: "Never considered", cls: "text-destructive" },
-  considered: { label: "Considered", cls: "text-foreground" },
+  none: { label: "Stayed clear", cls: "text-primary" },
+  considered: { label: "Considered it", cls: "text-foreground" },
   committed: { label: "Committed to it", cls: "text-destructive" },
 };
 
