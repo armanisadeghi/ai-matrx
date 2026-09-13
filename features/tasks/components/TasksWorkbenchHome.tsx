@@ -16,13 +16,16 @@ import {
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { useEnsureHierarchyLoaded } from "@/features/agent-context/hooks/useNavTree";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
+import { TasksListContextMenu } from "@/features/tasks/components/TasksListContextMenu";
 import { SMART_VIEWS } from "@/features/tasks/constants/smartViews";
 import {
+  selectFilteredTasks,
   selectProjects,
   selectSmartViewCounts,
 } from "@/features/tasks/redux/selectors";
 import {
   selectSmartView,
+  selectSearchQuery,
   setSelectedTaskId,
   setSmartView,
 } from "@/features/tasks/redux/taskUiSlice";
@@ -59,6 +62,8 @@ export function TasksWorkbenchHome() {
   const scopeTypes = useAppSelector(selectAllScopeTypesFlat);
   const scopes = useAppSelector(selectAllScopesFlat);
   const projects = useAppSelector(selectProjects);
+  const tasks = useAppSelector(selectFilteredTasks);
+  const searchQuery = useAppSelector(selectSearchQuery);
 
   const organizationName =
     organizations.find((organization) => organization.id === orgId)?.name ??
@@ -206,9 +211,15 @@ export function TasksWorkbenchHome() {
         />
       </div>
 
-      <div className="min-h-0 flex-1">
-        <TasksTableView />
-      </div>
+      <TasksListContextMenu
+        tasks={tasks}
+        projects={projects}
+        searchQuery={typeof searchQuery === "string" ? searchQuery : ""}
+      >
+        <div className="min-h-0 flex-1">
+          <TasksTableView />
+        </div>
+      </TasksListContextMenu>
     </section>
   );
 }
