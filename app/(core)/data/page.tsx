@@ -55,7 +55,7 @@ export default function UserGeneratedDataPage() {
       </PageHeader>
 
       <div className="h-full overflow-hidden">
-        <div className="h-full overflow-y-auto scrollbar-none pt-[var(--shell-header-h)] p-4">
+        <div className="scroll-page-end-space h-full overflow-y-auto scrollbar-none pt-[var(--shell-header-h)] p-4">
           <TableCards />
         </div>
       </div>

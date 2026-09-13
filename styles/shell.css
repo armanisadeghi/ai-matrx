@@ -1531,6 +1531,8 @@ button.shell-nav-flyout-item {
    leaf owns the actual scroll. Give exactly ONE of them the runway: the leaf
    when present, otherwise the route boundary itself. This keeps new education
    tools covered by the shared layout without a per-page padding sweep. */
+.education-scroll-boundary:has(> .overflow-y-auto),
+.education-scroll-boundary:has(> .overflow-auto),
 .education-scroll-boundary:has(.scroll-page-end-space) {
   padding-block-end: 0;
   scroll-padding-bottom: 0;

@@ -1,12 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ScrollAssistantLauncherImplProps } from "./ScrollAssistantLauncherImpl";
 
 export interface ScrollAssistantLauncherProps {
   inputVariant?: "single-line" | "multiline" | "text-voice";
+  /** Exact routes whose natural-height content can safely host the dock. */
+  includePathnames?: readonly string[];
 }
 
 const ScrollAssistantLauncherImpl = dynamic<ScrollAssistantLauncherImplProps>(
@@ -35,12 +38,16 @@ const ScrollVoiceAssistantLauncherImpl = dynamic(
  */
 export function ScrollAssistantLauncher({
   inputVariant = "single-line",
+  includePathnames,
 }: ScrollAssistantLauncherProps) {
+  const pathname = usePathname();
   const isMobile = useIsMobile();
   const [revealed, setRevealed] = useState(false);
+  const isIncludedPath =
+    !includePathnames || includePathnames.includes(pathname);
 
   useEffect(() => {
-    if (isMobile || revealed) return undefined;
+    if (!isIncludedPath || isMobile || revealed) return undefined;
 
     let bottomIntentTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -118,9 +125,9 @@ export function ScrollAssistantLauncher({
       );
       window.removeEventListener("blur", clearBottomIntent);
     };
-  }, [isMobile, revealed]);
+  }, [isIncludedPath, isMobile, revealed]);
 
-  if (isMobile || !revealed) return null;
+  if (!isIncludedPath || isMobile || !revealed) return null;
   if (inputVariant === "text-voice") {
     return <ScrollVoiceAssistantLauncherImpl />;
   }

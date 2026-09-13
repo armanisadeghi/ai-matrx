@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-09-13`
 
 ---
 
@@ -370,6 +370,7 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
   the bulk pass in `UserTableViewer` run the SAME operation set, so they can never disagree about
   what "clean" means. A new kind of damage is a new operation in that registry — never a helper
   in this feature. The bulk pass scans **every** row (`loadAllRowsForCleanup`), not the page.
+- **Ambient assistant runway lives on the real natural-height scroller.** `/data` and `/data/create` put `scroll-page-end-space` on their inner scrolling leaf. The shared Data route wrapper is a clipped full-height host and must never own that padding: doing so subtracts the runway from every child's usable height. `ScrollAssistantLauncher.includePathnames` limits the single-line dock to those two natural-height routes; `/data/[id]` is a full-height editor and deliberately has no floating composer.
 - **`/data/[id]` renders the viewer in `fillHeight` mode.** Three bands — chrome, grid, pagination
   — where only the grid scrolls. Embedded surfaces (windows, sheets, chat artifacts, pickers)
   leave it off and keep the content-sized `70dvh` cap. There is no in-body table selector any
@@ -723,6 +724,8 @@ blob must not also discard the column layout someone arranged. Bump
 older shapes.
 
 ## Change log
+
+- `2026-09-13` — **Data's ambient assistant no longer shrinks list pages or covers the full-height table editor.** The route wrapper is padding-free and clipped; `/data` and `/data/create` now own their runway on the actual scrolling leaf. The launcher is exact-route limited so `/data/[id]` preserves its grid and pagination viewport. A forcing source-contract test locks the ownership and route boundary.
 
 - `2026-09-11` — **Every user-data-table RPC guard now asks the grant the RLS
   policy asks, instead of re-implementing it.** On a table shared read-only the
