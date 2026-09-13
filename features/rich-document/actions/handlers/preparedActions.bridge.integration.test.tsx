@@ -34,7 +34,7 @@ import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Note } from "@/features/notes/types";
 import { persistNoteUpdate } from "@/features/notes/service/notesService";
-import { NoteContextPartialSaveError } from "@/features/notes/service/noteSaveErrors";
+import { NoteContextPartialSaveError, NotePostAcknowledgementError } from "@/features/notes/service/noteSaveErrors";
 import type { RichDocumentActionContext } from "../../types";
 import { captureNoteEditSource, noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { noteAdapter } from "../sources/note";
@@ -58,6 +58,31 @@ function query(result: unknown) {
   const chain = { select: jest.fn(), eq: jest.fn(), is: jest.fn(), maybeSingle: jest.fn(), update: jest.fn() };
   chain.select.mockReturnValue(chain); chain.eq.mockReturnValue(chain); chain.is.mockReturnValue(chain); chain.update.mockReturnValue(chain); chain.maybeSingle.mockResolvedValue(result); return chain;
 }
+function staleBaseTransport() {
+  let remote = note({ content: "remote version five", version: 5 });
+  const writes: Array<{ payload: Record<string, unknown>; filters: Map<string, unknown> }> = [];
+  const from = jest.fn(() => {
+    const filters = new Map<string, unknown>();
+    let payload: Record<string, unknown> | null = null;
+    const chain = {
+      select: jest.fn(), eq: jest.fn(), is: jest.fn(), maybeSingle: jest.fn(), update: jest.fn(),
+    };
+    chain.select.mockReturnValue(chain);
+    chain.eq.mockImplementation((field: string, value: unknown) => { filters.set(field, value); return chain; });
+    chain.is.mockReturnValue(chain);
+    chain.update.mockImplementation((next: Record<string, unknown>) => { payload = next; return chain; });
+    chain.maybeSingle.mockImplementation(async () => {
+      if (!payload) return { data: remote, error: null };
+      writes.push({ payload, filters });
+      if (filters.get("version") !== remote.version) return { data: null, error: null };
+      remote = { ...remote, ...payload } as Note;
+      return { data: remote, error: null };
+    });
+    return chain;
+  });
+  return { from, writes, remote: () => remote };
+}
+
 function makeStore() {
   const baseReducer = createSlimRootReducer();
   const reducer = (state: RootState | undefined, action: UnknownAction): RootState => {
@@ -164,6 +189,45 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     expect(store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"]).toBeUndefined();
   });
 
+  it("refuses a moved note before a prepared editor can write into another organization", async () => {
+    const movedOrganization = "99999999-9999-4999-8999-999999999999";
+    const movedRead = query({ data: note({ organization_id: movedOrganization, version: 5 }), error: null });
+    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValue(movedRead) });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ version: 4 }), displayedNote: note({ content: "dirty retained", version: 4 }), actorId: "user-1", sourceId: "moved", snapshotId: "moved:4" });
+    const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
+    await action.run(context(store, source));
+    const overlay = store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"];
+    if (!overlay || !isFullScreenOverlayData(overlay.data)) throw new Error("missing moved-note editor");
+    const overlayData = overlay.data;
+    await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
+    if (!editorProps) throw new Error("missing moved-note callback");
+    await expect(editorProps.onSave("attempted overwrite")).rejects.toThrow(/different organization/i);
+    expect(movedRead.update).not.toHaveBeenCalled();
+    expect(store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"]).toBeDefined();
+  });
+
+  it("keeps a stale dirty base when the remote revision advanced before save", async () => {
+    const transport = staleBaseTransport();
+    mockSchema.mockReturnValue({ from: transport.from });
+    const source = captureNoteEditSource({
+      acknowledgedNote: note({ content: "acknowledged at four", version: 4 }),
+      displayedNote: note({ content: "dirty retained", version: 4 }),
+      actorId: "user-1", sourceId: "stale-base", snapshotId: "stale-base:4",
+    });
+    const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
+    await action.run(context(store, source));
+    const overlay = store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"];
+    if (!overlay || !isFullScreenOverlayData(overlay.data)) throw new Error("missing stale-base editor");
+    const overlayData = overlay.data;
+    await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
+    if (!editorProps) throw new Error("missing stale-base callback");
+    await expect(editorProps.onSave("attempted stale overwrite")).rejects.toThrow(/changed elsewhere/i);
+    expect(transport.writes).toHaveLength(1);
+    expect(transport.writes[0]?.filters.get("version")).toBe(4);
+    expect(transport.remote()).toMatchObject({ version: 5, content: "remote version five" });
+    expect(store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"]).toBeDefined();
+  });
+
   it("labels injected unchanged association receipts as protocol faults without relabeling a content write", async () => {
     // This deliberately replaces only the adapter return with a separately
     // real context-only operation. The no-spy tests above cover the actual
@@ -196,17 +260,28 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     }
   });
 
-  it("keeps a valid physical acknowledgement private when an injected context partial rejects", async () => {
-    const contextExisting = query({ data: note({ content: "partial body", version: 4 }), error: null });
-    const contextRead = query({ data: note({ content: "partial body", version: 4 }), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(contextExisting).mockReturnValueOnce(contextRead) });
+  it("keeps a returned saved physical partial receipt as the callback-local retry base", async () => {
+    const partialExisting = query({ data: note({ content: "base", version: 4 }), error: null });
+    const partialWrite = query({ data: note({ content: "partial body", version: 5 }), error: null });
+    const retryExisting = query({ data: note({ content: "partial body", version: 5 }), error: null });
+    const retryWrite = query({ data: note({ content: "retry body", version: 6 }), error: null });
+    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(partialExisting).mockReturnValueOnce(partialWrite).mockReturnValueOnce(retryExisting).mockReturnValueOnce(retryWrite) });
     mockSetTargets.mockResolvedValueOnce({ ok: false, error: { message: "project denied" } });
     let partial: NoteContextPartialSaveError | null = null;
-    try { await persistNoteUpdate(ID, { project_id: "project-1" }); } catch (error) { partial = error as NoteContextPartialSaveError; }
+    try {
+      await persistNoteUpdate(ID, { content: "partial body", project_id: "project-1" }, {
+        expectedVersion: 4, expectedOrganizationId: ORG, expectedActorId: "user-1", expectedSourceId: "partial", expectedSnapshotId: "partial:4",
+      });
+    } catch (error) { partial = error as NoteContextPartialSaveError; }
     expect(partial).toBeInstanceOf(NoteContextPartialSaveError);
+    expect(partial?.receipt).toMatchObject({ databaseWrite: "saved", note: { version: 5, content: "partial body" } });
 
     const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty", version: 4 }), actorId: "user-1", sourceId: "partial", snapshotId: "partial:4" });
-    const adapterSpy = jest.spyOn(noteAdapter, "edit").mockImplementation(async (args) => { expect(args.source).toMatchObject({ mode: "editable", editBase: { version: 4 } }); throw partial!; });
+    const originalEdit = noteAdapter.edit!;
+    const adapterSpy = jest.spyOn(noteAdapter, "edit").mockImplementation(async (args) => {
+      if (adapterSpy.mock.calls.length === 1) return partial!.receipt;
+      return originalEdit(args);
+    });
     try {
       const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
       await action.run(context(store, source));
@@ -215,8 +290,41 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
       const overlayData = overlay.data;
       await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
       if (!editorProps) throw new Error("missing partial callback");
-      await expect(editorProps.onSave("partial body")).rejects.toBe(partial);
-      expect(adapterSpy).toHaveBeenCalledTimes(1);
+      await expect(editorProps.onSave("partial body")).rejects.toBeInstanceOf(NoteContextPartialSaveError);
+      await editorProps.onSave("retry body");
+      expect(adapterSpy.mock.calls[0]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 4 } });
+      expect(adapterSpy.mock.calls[1]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 5 } });
+      expect(retryWrite.eq).toHaveBeenCalledWith("version", 5);
+    } finally {
+      adapterSpy.mockRestore();
+    }
+  });
+
+  it("retains an acknowledged base after an actor changes after the physical write", async () => {
+    const existing = query({ data: note({ content: "base", version: 4 }), error: null });
+    const write = query({ data: note({ content: "saved before actor change", version: 5 }), error: null });
+    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(write) });
+    mockGetSession
+      .mockResolvedValueOnce({ data: { session: { user: { id: "user-1" } } }, error: null })
+      .mockResolvedValueOnce({ data: { session: { user: { id: "user-1" } } }, error: null })
+      .mockResolvedValueOnce({ data: { session: { user: { id: "user-2" } } }, error: null })
+      .mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty", version: 4 }), actorId: "user-1", sourceId: "actor-change", snapshotId: "actor-change:4" });
+    const originalEdit = noteAdapter.edit!;
+    const adapterSpy = jest.spyOn(noteAdapter, "edit").mockImplementation((args) => originalEdit(args));
+    try {
+      const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
+      await action.run(context(store, source));
+      const overlay = store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"];
+      if (!overlay || !isFullScreenOverlayData(overlay.data)) throw new Error("missing actor-change overlay");
+      const overlayData = overlay.data;
+      await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
+      if (!editorProps) throw new Error("missing actor-change callback");
+      await expect(editorProps.onSave("saved before actor change")).rejects.toBeInstanceOf(NotePostAcknowledgementError);
+      await expect(editorProps.onSave("retry after actor change")).rejects.toThrow(/sign-in changed/i);
+      expect(adapterSpy.mock.calls[0]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 4 } });
+      expect(adapterSpy.mock.calls[1]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 5 } });
+      expect(write.eq).toHaveBeenCalledWith("version", 4);
     } finally {
       adapterSpy.mockRestore();
     }

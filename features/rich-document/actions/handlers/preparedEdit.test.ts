@@ -36,6 +36,37 @@ describe("prepared Notes receipt settlement", () => {
     expect(acknowledgedPreparedSource(source(), postAck, "saved")).toMatchObject({ editBase: { version: 1 } });
   });
 
+  it("turns a returned partial receipt into a retained acknowledgement error", async () => {
+    const partialReceipt = receipt({ failedFields: ["task_id"], safeCauses: { task_id: "denied" } });
+    await expect(savePreparedContentEdit({
+      ctx: ctx(async () => partialReceipt), source: source(), newContent: "saved",
+    })).rejects.toBeInstanceOf(NoteContextPartialSaveError);
+    expect(acknowledgedPreparedSource(source(), new NoteContextPartialSaveError(partialReceipt), "saved")).toMatchObject({ editBase: { version: 1 } });
+  });
+
+  it("rejects sparse, overlapping, and unsafe context receipt records before advancing", async () => {
+    const sparse: Array<"project_id" | "task_id"> = [];
+    sparse[1] = "task_id";
+    const sparseWithExtra: Array<"project_id" | "task_id"> & { extra?: string } = [];
+    sparseWithExtra[1] = "task_id";
+    sparseWithExtra.extra = "compensates for the sparse slot";
+    const invalidReceipts = [
+      receipt({ failedFields: sparse }),
+      receipt({ failedFields: sparseWithExtra }),
+      receipt({ succeededFields: ["task_id"], failedFields: ["task_id"] }),
+      receipt({ failedFields: ["task_id"], safeCauses: { project_id: "wrong field" } }),
+      receipt({ safeCauses: [] as unknown as Partial<Record<"project_id" | "task_id", string>> }),
+    ];
+    for (const invalidReceipt of invalidReceipts) {
+      await expect(savePreparedContentEdit({ ctx: ctx(async () => invalidReceipt), source: source(), newContent: "saved" })).rejects.toThrow(/invalid context/i);
+    }
+  });
+
+  it("requires submitted content before inspecting an acknowledged error receipt", () => {
+    const partial = new NoteContextPartialSaveError(receipt({ failedFields: ["task_id"], safeCauses: { task_id: "denied" } }));
+    expect(() => acknowledgedPreparedSource(source(), partial, undefined as unknown as string)).toThrow(/requires the submitted content/i);
+  });
+
   it("does not advance an unacknowledged CAS error or accept a receipt for another org", () => {
     expect(acknowledgedPreparedSource(source(), new Error("CAS refused"), "saved")).toBeNull();
     expect(() => acknowledgedPreparedSource(source(), new NoteContextPartialSaveError(receipt({ note: note({ organization_id: "22222222-2222-4222-8222-222222222222", content: "saved", version: 1 }) })), "saved")).toThrow(/does not match/i);

@@ -34,6 +34,38 @@ export async function prepareContentEdit(
   return { source: ctx.source, content: ctx.content };
 }
 
+function validContextField(field: unknown): field is "project_id" | "task_id" {
+  return field === "project_id" || field === "task_id";
+}
+
+function isDenseUniqueContextFields(fields: unknown): fields is ("project_id" | "task_id")[] {
+  if (!Array.isArray(fields) || Object.getOwnPropertySymbols(fields).length > 0) return false;
+  const ownNames = Object.getOwnPropertyNames(fields);
+  if (!ownNames.every((name) => name === "length" || /^(0|[1-9]\d*)$/.test(name) && Number(name) < fields.length)) return false;
+  for (let index = 0; index < fields.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(fields, String(index));
+    if (!descriptor || !("value" in descriptor) || !validContextField(descriptor.value)) return false;
+  }
+  return new Set(fields).size === fields.length;
+}
+
+function isSafeCauseRecord(value: unknown, failedFields: readonly ("project_id" | "task_id")[]): value is Partial<Record<"project_id" | "task_id", string>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  const ownNames = Object.getOwnPropertyNames(value);
+  return Object.getOwnPropertySymbols(value).length === 0
+    && ownNames.every((field) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, field);
+      return descriptor !== undefined
+        && "value" in descriptor
+        && descriptor.enumerable
+        && validContextField(field)
+        && failedFields.includes(field as "project_id" | "task_id")
+        && typeof descriptor.value === "string";
+    });
+}
+
 function validateNoteReceipt(
   source: NoteEditableContentSource,
   result: void | NoteSaveReceipt,
@@ -45,20 +77,10 @@ function validateNoteReceipt(
   const receipt = result as NoteSaveReceipt;
   if (
     (receipt.databaseWrite !== "saved" && receipt.databaseWrite !== "unchanged") ||
-    !Array.isArray(receipt.succeededFields) ||
-    !Array.isArray(receipt.failedFields) ||
-    !receipt.safeCauses || typeof receipt.safeCauses !== "object"
-  ) {
-    throw new Error("The note save returned a malformed acknowledgement receipt.");
-  }
-  const validField = (field: unknown): field is "project_id" | "task_id" => field === "project_id" || field === "task_id";
-  if (
-    !receipt.succeededFields.every(validField) ||
-    !receipt.failedFields.every(validField) ||
-    new Set(receipt.succeededFields).size !== receipt.succeededFields.length ||
-    new Set(receipt.failedFields).size !== receipt.failedFields.length ||
+    !isDenseUniqueContextFields(receipt.succeededFields) ||
+    !isDenseUniqueContextFields(receipt.failedFields) ||
     receipt.succeededFields.some((field) => receipt.failedFields.includes(field)) ||
-    Object.entries(receipt.safeCauses).some(([field, cause]) => !validField(field) || typeof cause !== "string")
+    !isSafeCauseRecord(receipt.safeCauses, receipt.failedFields)
   ) {
     throw new Error("The note save returned an invalid context acknowledgement receipt.");
   }
@@ -72,11 +94,18 @@ function validateNoteReceipt(
   return receipt;
 }
 
+function requireSubmittedContent(submittedContent: unknown): asserts submittedContent is string {
+  if (typeof submittedContent !== "string") {
+    throw new Error("An acknowledged note receipt requires the submitted content.");
+  }
+}
+
 function advanceAcknowledgedErrorSource(
   source: NoteEditableContentSource,
   error: NoteContextPartialSaveError | NotePostAcknowledgementError,
-  submittedContent?: string,
+  submittedContent: string,
 ): NoteEditableContentSource {
+  requireSubmittedContent(submittedContent);
   if (error instanceof NotePostAcknowledgementError && (
     error.actorId !== source.editBase.actorId ||
     error.sourceId !== source.sourceId ||
@@ -84,7 +113,7 @@ function advanceAcknowledgedErrorSource(
   )) {
     throw new Error("The post-acknowledgement receipt belongs to a different Notes editor.");
   }
-  const receipt = validateNoteReceipt(source, error.receipt, submittedContent ?? error.receipt.note.content ?? "");
+  const receipt = validateNoteReceipt(source, error.receipt, submittedContent);
   return advancePreparedNoteSource(source, receipt, submittedContent);
 }
 
@@ -103,6 +132,9 @@ export async function savePreparedContentEdit(args: {
     if (source.type === "note") {
       if (!isPreparedEditableNoteSource(source)) throw new Error("The note save source was not prepared.");
       const receipt = validateNoteReceipt(source, result, newContent);
+      if (receipt.failedFields.length > 0) {
+        throw new NoteContextPartialSaveError(receipt);
+      }
       if (receipt.postSaveRecoveryError) {
         throw new NotePostAcknowledgementError({
           receipt,
@@ -133,8 +165,9 @@ export async function savePreparedContentEdit(args: {
 export function acknowledgedPreparedSource(
   source: ContentSource,
   error: unknown,
-  submittedContent?: string,
+  submittedContent: string,
 ): ContentSource | null {
+  requireSubmittedContent(submittedContent);
   if (
     source.type === "note" && isPreparedEditableNoteSource(source) &&
     (error instanceof NoteContextPartialSaveError || error instanceof NotePostAcknowledgementError)
