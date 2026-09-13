@@ -75,6 +75,8 @@ export type MasterworkRunSurface =
   | "chat"
   | "dump"
   | "corpus"
+  | "timeline"
+  | "triage"
   | "audition"
   // The BLIND PAIRWISE Audition (`/masterworks/audition-pairwise`) — two of the
   // Expert's own answers judged against each other with no reference. Its own
@@ -97,6 +99,15 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // (`/masterworks/ingest-corpus`) — its own surface + pointer for the same
   // reason, even though its terminal event type matches the ingest lanes'.
   corpus: "masterwork_ingest_complete",
+  // The `timeline` Approach (`/masterworks/ingest-timeline`) — a case that
+  // unfolds in time, chunked by STEP. Its own surface + pointer so a case never
+  // rejoins the single-source ingest dialog or vice versa, even though it lands
+  // the same terminal event.
+  timeline: "masterwork_ingest_complete",
+  // Sorting the DRAFT pile by what the Rulebook is FOR
+  // (`/masterworks/triage`, W59 + W61). Its own surface + pointer: a triage is
+  // not an ingest, and a reload must never rejoin one as the other.
+  triage: "masterwork_triage_complete",
   audition: "masterwork_audition_verdict",
   compare_two: "masterwork_pairwise_verdict",
   checkup: "masterwork_checkup_complete",
@@ -140,6 +151,10 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   compare_two: 60_000,
   checkup: 80_000,
   clean_corpus: 60_000,
+  // Trial 8, 2026-09-12: 56 timeline ingests (one case each) ran 31–103 s
+  // (median ~60 s); the two live triage passes of ~900 drafts took 89 s.
+  timeline: 90_000,
+  triage: 90_000,
 };
 
 /**

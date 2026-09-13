@@ -5,26 +5,31 @@ import { renderRulebookDocument } from "./rulebookDocument";
 import {
   ruleState,
   type Masterwork,
+  type RuleFieldValues,
   type Rulebook,
   type RulebookRule,
 } from "../types";
 
-export interface RulebookDraftSnapshot {
+/**
+ * The rule editor's live draft: the ONE form field set (`RuleFieldValues` —
+ * prose, classifications AND the W58 decision shape) plus which rule it is
+ * editing. Never re-list the fields here: a field added to `RuleFieldValues`
+ * must ride into the snapshot, the persisted draft and the surface scope
+ * automatically, which is exactly what the decision fields did not do.
+ */
+export type RulebookDraftSnapshot = RuleFieldValues & {
   mode: "new" | "edit";
   rule_id: string | null;
-  name: string;
-  statement: string;
-  rationale: string;
-  detection: string;
-  quote: string;
-  severity: RulebookRule["severity"];
-  section: string;
-}
+};
 
 export interface RulebookWorkspaceState {
   editor_open: boolean;
   interview_open: boolean;
   ingest_open: boolean;
+  /** The timeline lane (a case distilled BY STEP) — a live mutation, like ingest. */
+  timeline_open: boolean;
+  /** Draft triage (retire / rewrite by the Rulebook's purpose) — a live mutation. */
+  triage_open: boolean;
   corpus_open: boolean;
   chat_import_open: boolean;
   build_open: boolean;
@@ -45,6 +50,8 @@ export const CLOSED_RULEBOOK_WORKSPACE_STATE: RulebookWorkspaceState = {
   editor_open: false,
   interview_open: false,
   ingest_open: false,
+  timeline_open: false,
+  triage_open: false,
   corpus_open: false,
   chat_import_open: false,
   build_open: false,

@@ -10,6 +10,7 @@
 
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -18,16 +19,60 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { RulebookSections, RuleSeverity } from "../../types";
+import { GitBranch } from "lucide-react";
+import {
+  RULE_ACTION_KIND_HINTS,
+  RULE_ACTION_KIND_LABELS,
+  RULE_ACTION_KINDS,
+  RULE_POLICY_LEVEL_LABELS,
+  RULE_POLICY_LEVELS,
+  type RuleActionKind,
+  type RulePolicyLevel,
+  type RuleFieldValues,
+  type RulebookSections,
+  type RuleSeverity,
+} from "../../types";
 
-export interface RuleFieldValues {
-  name: string;
-  statement: string;
-  rationale: string;
-  detection: string;
-  quote: string;
-  severity: RuleSeverity;
-  section: string;
+// The form's field set is declared ONCE, in `../../types` — the editor's state,
+// its persisted draft and the context menu all derive from the same shape.
+// Re-exported here because this component is the form its consumers import.
+export type { RuleFieldValues } from "../../types";
+
+/** The decision fields as a rule stores them — the ONE mapping, so no consumer
+ * invents its own. Returns the three clearing `undefined`s for an ordinary
+ * rule, so turning the toggle back off actually removes the shape. */
+export function policyRulePatch(values: RuleFieldValues) {
+  if (!values.isPolicy) {
+    return {
+      kind: undefined,
+      precondition: undefined,
+      next_action: undefined,
+      action_kind: undefined,
+      cost: undefined,
+      risk: undefined,
+    } as const;
+  }
+  return {
+    kind: "policy",
+    precondition: values.precondition.trim() || undefined,
+    next_action: values.nextAction.trim() || undefined,
+    action_kind: values.actionKind,
+    cost: values.cost,
+    risk: values.risk,
+  } as const;
+}
+
+/**
+ * The form values as the improve / tidy Mandate reads them: every text field
+ * plus the decision shape under its STORED names (`kind`, `next_action`, …),
+ * because `useRuleImproveRun` enumerates `RULE_CONTENT_FIELDS`, not the form's
+ * camelCase keys. Handing it the raw form values sent a decision rule to the
+ * model with an empty kind and next action, so tidy polished the prose and
+ * dropped the judgment (Bugbot, 1d692d66). ONE derivation, on top of the ONE
+ * storage mapping — never a second spelling of the field names.
+ */
+export function improveFieldsFrom(values: RuleFieldValues) {
+  return { ...values, ...policyRulePatch(values) };
 }
 
 export function RuleFields({
@@ -138,6 +183,124 @@ export function RuleFields({
           </Select>
         </div>
       </div>
+      {omitted.has("isPolicy") ? null : (
+      <>
+      {/* 🚨 THE POLICY RULE (W58). Off by default and silent when off: most
+          rules genuinely ARE standing statements, and a form that demanded a
+          precondition for every one of them would push Experts to invent
+          conditions they do not hold. */}
+      <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Label
+              htmlFor={`${idPrefix}-is-policy`}
+              className="flex items-center gap-1.5"
+            >
+              <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+              This is a decision rule
+            </Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Turn this on when the rule is a judgment call — &ldquo;when I know
+              this much, here&rsquo;s the one thing I do next&rdquo; — rather
+              than something that is always true.
+            </p>
+          </div>
+          <Switch
+            id={`${idPrefix}-is-policy`}
+            checked={values.isPolicy}
+            onCheckedChange={(checked) => onChange({ isPolicy: checked })}
+          />
+        </div>
+        {values.isPolicy ? (
+          <div className="mt-3 space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-precondition`}>
+                What do you know at this point?
+              </Label>
+              <ProTextarea
+                id={`${idPrefix}-precondition`}
+                value={values.precondition}
+                onChange={(e) => onChange({ precondition: e.target.value })}
+                placeholder="Everything you'd know before making this call — and nothing you wouldn't."
+                rows={4}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-next-action`}>
+                What do you do next?
+              </Label>
+              <ProTextarea
+                id={`${idPrefix}-next-action`}
+                value={values.nextAction}
+                onChange={(e) => onChange({ nextAction: e.target.value })}
+                placeholder="The one next move — the question you ask, the check you run, what you do."
+                rows={4}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>What kind of move is it?</Label>
+              <Select
+                value={values.actionKind}
+                onValueChange={(v) =>
+                  onChange({ actionKind: v as RuleActionKind })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RULE_ACTION_KINDS.map((kind) => (
+                    <SelectItem key={kind} value={kind}>
+                      {RULE_ACTION_KIND_LABELS[kind]} —{" "}
+                      {RULE_ACTION_KIND_HINTS[kind]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>What does it cost to do?</Label>
+                <Select
+                  value={values.cost}
+                  onValueChange={(v) => onChange({ cost: v as RulePolicyLevel })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RULE_POLICY_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {RULE_POLICY_LEVEL_LABELS[level]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>How risky is doing it?</Label>
+                <Select
+                  value={values.risk}
+                  onValueChange={(v) => onChange({ risk: v as RulePolicyLevel })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RULE_POLICY_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {RULE_POLICY_LEVEL_LABELS[level]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+      </>
+      )}
       {omitted.has("quote") ? null : (
         <div className="space-y-1.5">
           <Label htmlFor={`${idPrefix}-quote`}>

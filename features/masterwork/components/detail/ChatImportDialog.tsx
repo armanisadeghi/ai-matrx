@@ -201,9 +201,22 @@ export function ChatImportDialog({
   // A run picked back up after a reload must be VISIBLE (same rule as the
   // source dialog) — rejoining behind a closed dialog reads as "nothing
   // happened", which is the defect durability exists to kill.
+  //
+  // 🚨 The latch is per RUN, not per mount (Bugbot, 2026-09-13). It used to be
+  // set on the first auto-open and never cleared, so the dialog rejoined
+  // exactly once in the life of the page: a second run — started in another
+  // tab, or on a fresh pointer after the last one was reset — stayed hidden
+  // with the Start button armed, and the same work could be paid for twice.
+  // Clearing it the moment the run is no longer running lets the NEXT live run
+  // reopen in its turn, while the `open` guard still keeps it from re-firing on
+  // the run that is already on screen.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (reopenedRef.current || open || !run.running) return;
+    if (!run.running) {
+      reopenedRef.current = false;
+      return;
+    }
+    if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
