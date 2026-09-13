@@ -1,5 +1,5 @@
 export type StructuredImportSource = {
-  id: "bitwarden_json" | "1password_1pux" | "proton_pass";
+  id: "bitwarden_json" | "1password_1pux" | "proton_pass" | "keepass_xml";
   accept: string;
   supportsDeleted: boolean;
   supportsArchived: boolean;
@@ -60,6 +60,22 @@ const sources: Record<StructuredImportSource["id"], StructuredImportSource> = {
       };
     },
   },
+  keepass_xml: {
+    id: "keepass_xml",
+    accept: ".xml,application/xml,text/xml",
+    supportsDeleted: true,
+    supportsArchived: false,
+    parseError: "The KeePass XML export could not be read.",
+    timeoutError:
+      "The KeePass XML export took too long to parse. Choose a smaller export and try again.",
+    loadWorker: async () => {
+      const client = await import("./keepass-xml-worker-client");
+      return {
+        create: client.createKeePassXmlWorker,
+        cancel: client.cancelKeePassXmlWorker,
+      };
+    },
+  },
 };
 
 export function structuredImportSource(
@@ -67,7 +83,8 @@ export function structuredImportSource(
 ): StructuredImportSource | undefined {
   return source === "bitwarden_json" ||
     source === "1password_1pux" ||
-    source === "proton_pass"
+    source === "proton_pass" ||
+    source === "keepass_xml"
     ? sources[source]
     : undefined;
 }

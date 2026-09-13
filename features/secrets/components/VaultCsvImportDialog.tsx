@@ -80,6 +80,7 @@ const SOURCE_URLS: Record<string, string> = {
   "1password": "https://support.1password.com/export/",
   "1password_1pux": "https://support.1password.com/export/",
   proton_pass: "https://proton.me/support/pass-export",
+  keepass_xml: "https://keepass.info/help/base/importexport.html",
   lastpass:
     "https://support.lastpass.com/s/document-item?language=en_US&bundleId=lastpass&topicId=LastPass/export-your-vault-data.html",
   apple: "https://support.apple.com/en-au/guide/passwords/mchl35b12625/mac",
@@ -331,6 +332,7 @@ export function VaultCsvImportDialog({
           );
         if (generation !== parseGeneration.current || cancelled.current) return;
         const workerClient = await descriptor.loadWorker();
+        if (generation !== parseGeneration.current || cancelled.current) return;
         const parser = workerClient.create();
         const requestId = crypto.randomUUID();
         jsonWorker.current = parser;
@@ -705,6 +707,9 @@ export function VaultCsvImportDialog({
                   </SelectItem>
                   <SelectItem value="proton_pass">
                     Proton Pass JSON or ZIP
+                  </SelectItem>
+                  <SelectItem value="keepass_xml">
+                    KeePass / KeePassXC XML
                   </SelectItem>
                 </SelectContent>
               </Select>

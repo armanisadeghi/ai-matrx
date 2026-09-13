@@ -14,7 +14,12 @@ import {
   fetchBitwardenJsonImportLimits,
   fetchCsvImportLimits,
 } from "../csv-import-limits";
+import type { StructuredImportSource } from "../structured-import-source-registry";
 import { createVaultItem, VaultImportTransportError } from "../vault-service";
+
+let mockDeferredKeePassLoadWorker:
+  | StructuredImportSource["loadWorker"]
+  | undefined;
 
 let mockAuthStateListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
@@ -108,6 +113,7 @@ type ControlledWorker = {
 };
 let workers: ControlledWorker[] = [];
 let onePuxWorkers: ControlledWorker[] = [];
+let keePassWorkers: ControlledWorker[] = [];
 jest.mock("../bitwarden-json-worker-client", () => ({
   createBitwardenJsonWorker: () => {
     const worker: ControlledWorker = {
@@ -142,6 +148,38 @@ jest.mock("../onepux-worker-client", () => ({
     return worker;
   },
   cancelOnePuxWorker: (worker: ControlledWorker, requestId?: string) =>
+    worker.postMessage({ type: "cancel", requestId }),
+}));
+jest.mock("../structured-import-source-registry", () => {
+  const actual = jest.requireActual(
+    "../structured-import-source-registry",
+  ) as typeof import("../structured-import-source-registry");
+  return {
+    ...actual,
+    structuredImportSource: (source: string) => {
+      const descriptor = actual.structuredImportSource(source);
+      return source === "keepass_xml" && mockDeferredKeePassLoadWorker && descriptor
+        ? { ...descriptor, loadWorker: mockDeferredKeePassLoadWorker }
+        : descriptor;
+    },
+  };
+});
+jest.mock("../keepass-xml-worker-client", () => ({
+  createKeePassXmlWorker: () => {
+    const worker: ControlledWorker = {
+      terminated: false,
+      onmessage: null,
+      onerror: null,
+      onmessageerror: null,
+      postMessage: jest.fn(),
+      terminate: jest.fn(() => {
+        worker.terminated = true;
+      }),
+    };
+    keePassWorkers.push(worker);
+    return worker;
+  },
+  cancelKeePassXmlWorker: (worker: ControlledWorker, requestId: string) =>
     worker.postMessage({ type: "cancel", requestId }),
 }));
 
@@ -271,6 +309,68 @@ async function chooseOnePux(): Promise<HTMLInputElement> {
   return input;
 }
 
+async function chooseKeePassXml(): Promise<HTMLInputElement> {
+  const trigger = [...document.querySelectorAll("button")].find(
+    (button) =>
+      button.textContent?.includes("CSV export") ||
+      button.textContent?.includes("KeePass / KeePassXC XML"),
+  );
+  if (!(trigger instanceof HTMLButtonElement))
+    throw new Error("source trigger missing");
+  await act(async () => trigger.click());
+  const option = [...document.querySelectorAll('[role="option"]')].find(
+    (node) => node.textContent?.includes("KeePass / KeePassXC XML"),
+  );
+  if (!(option instanceof HTMLElement))
+    throw new Error("KeePass XML source option missing");
+  await act(async () => option.click());
+  const input = document.body.querySelector('input[type="file"]');
+  if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+  if (!input.accept.includes("application/xml"))
+    throw new Error(`KeePass XML source was not selected: ${input.accept}`);
+  return input;
+}
+
+function deferKeePassWorkerLoad() {
+  const create = jest.fn();
+  let resolve: (
+    client: Awaited<ReturnType<StructuredImportSource["loadWorker"]>>,
+  ) => void;
+  const loadWorker = jest.fn(
+    () =>
+      new Promise<Awaited<ReturnType<StructuredImportSource["loadWorker"]>>>(
+        (next) => {
+          resolve = next;
+        },
+      ),
+  );
+  mockDeferredKeePassLoadWorker = loadWorker;
+  return {
+    create,
+    loadWorker,
+    resolve: () =>
+      resolve({
+        create: create as unknown as () => Worker,
+        cancel: jest.fn(),
+      }),
+  };
+}
+
+async function startDeferredKeePassLoad(
+  deferred: ReturnType<typeof deferKeePassWorkerLoad>,
+): Promise<void> {
+  const input = await chooseKeePassXml();
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: [jsonFile("<KeePassFile/>", 14)],
+  });
+  await act(async () => {
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((next) => setTimeout(next, 10));
+  });
+  expect(deferred.loadWorker).toHaveBeenCalledTimes(1);
+}
+
 describe("VaultCsvImportDialog", () => {
   let root: Root;
   let host: HTMLDivElement;
@@ -284,6 +384,8 @@ describe("VaultCsvImportDialog", () => {
     mockOrganizationId = "11111111-1111-4111-8111-111111111111";
     workers = [];
     onePuxWorkers = [];
+    keePassWorkers = [];
+    mockDeferredKeePassLoadWorker = undefined;
   });
 
   afterEach(() => {
@@ -1239,5 +1341,136 @@ describe("VaultCsvImportDialog", () => {
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing"); const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
     await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], fileNotices: [] } } as MessageEvent));
     expect(document.body.textContent).not.toContain("Include deleted source items"); expect(document.body.textContent).not.toContain("Include archived source items");
+  });
+
+  it("selects KeePass XML, terminates its worker on source change, and suppresses its late completion", async () => {
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    const input = await chooseKeePassXml();
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [jsonFile("<KeePassFile/>", 14)],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    const worker = keePassWorkers[0];
+    if (!worker) throw new Error("KeePass worker missing");
+    const requestId = (
+      worker.postMessage.mock.calls[0]?.[0] as { requestId: string }
+    ).requestId;
+    const trigger = [...document.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("KeePass / KeePassXC XML"),
+    );
+    if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+    await act(async () => trigger.click());
+    const replacement = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Bitwarden JSON"),
+    );
+    if (!(replacement instanceof HTMLElement)) throw new Error("replacement source missing");
+    await act(async () => replacement.click());
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: "cancel", requestId });
+    expect(worker.terminate).toHaveBeenCalled();
+    await act(async () =>
+      worker.onmessage?.({
+        data: {
+          ok: true,
+          requestId,
+          records: [jsonRecord({ title: "late KeePass record" })],
+          fileNotices: [{ code: "deleted_tombstones", count: 1 }],
+        },
+      } as MessageEvent),
+    );
+    expect(document.body.textContent).not.toContain("late KeePass record");
+  });
+
+  it("does not create or post to a deferred KeePass worker after dialog cancellation", async () => {
+    const deferred = deferKeePassWorkerLoad();
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    await startDeferredKeePassLoad(deferred);
+    await act(async () =>
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })),
+    );
+    deferred.resolve();
+    await act(async () => {
+      await new Promise((next) => setTimeout(next, 0));
+    });
+    expect(deferred.create).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("late deferred record");
+  });
+
+  it("does not create or post to a deferred KeePass worker after source change", async () => {
+    const deferred = deferKeePassWorkerLoad();
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    await startDeferredKeePassLoad(deferred);
+    const trigger = [...document.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("KeePass / KeePassXC XML"),
+    );
+    if (!(trigger instanceof HTMLButtonElement)) throw new Error("source trigger missing");
+    await act(async () => trigger.click());
+    const replacement = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Bitwarden JSON"),
+    );
+    if (!(replacement instanceof HTMLElement)) throw new Error("replacement source missing");
+    await act(async () => replacement.click());
+    deferred.resolve();
+    await act(async () => {
+      await new Promise((next) => setTimeout(next, 0));
+    });
+    expect(deferred.create).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("late deferred record");
+  });
+
+  it("does not create or post to a deferred KeePass worker after unmount", async () => {
+    const deferred = deferKeePassWorkerLoad();
+    await act(async () =>
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      ),
+    );
+    await startDeferredKeePassLoad(deferred);
+    await act(async () => root.unmount());
+    deferred.resolve();
+    await act(async () => {
+      await new Promise((next) => setTimeout(next, 0));
+    });
+    expect(deferred.create).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("late deferred record");
   });
 });
