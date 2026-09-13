@@ -517,3 +517,23 @@ lines by relocating trial-specific detail into the trial's register.
   was reported; and expect a merge that reconciles two data shapes to be exactly where a field falls out,
   because every test the merging lane runs will pass.
 - 2026-09-13 — (trial 7) **Read the CI LOG, never the check's NAME.** Three guards named "(UNMEASURED without the secret)" were red WITH the secret present and returning real verdicts — one of them a live security finding. Triaging by title, I told the pull request they carried no information. A guard named for its failure mode is a trap for whoever triages it. Also: when a failure COUNT moves, find out which item changed — assuming the set is still the known one is how a real regression walks through behind familiar noise.
+- 2026-09-13 — (trial 8) **A merged PR is not a working feature: check the ROWS, not the code.** THE PROVIDER-OUTAGE ALARM shipped whole — detector, endpoint, tests, all green — and could not fire, because the migration seeding its three knob rows wrote a `propagation` word the table's CHECK constraint has never allowed. The INSERT was refused with a bare 23514 naming the constraint but not the word, and the file sat unapplied for a day. Any feature configured by knob rows is OFF until you have read those rows back from the live table; "the PR merged" proves nothing about them.
+- 2026-09-13 — (trial 8) **A cloud session with no Postgres pooler still has the Supabase MCP.** I had been reporting three items as "only Arman can do this" on the belief that this container could not write to the database. The pooler port genuinely does not open and the service key in the environment is rejected, but the Supabase MCP works for reads AND data writes — which is aidream's declared migration mechanism anyway (`.sql` files are records, not mechanisms). Before handing anything to Arman as a database step, try that door: a whole class of "blocked" turned out to be one tool call.
+- 2026-09-13 — (trial 9) **Run every ARM of a comparison before you conclude anything from it.** The newsroom
+  exam judged the desk against the published piece twice and drew capability conclusions from it, while the
+  raw frontier model had never been handed the same bundle. A workflow's score against ground truth alone
+  cannot tell you whether the workflow is doing the work — Arman's benchmark brief names four arms (frontier,
+  small, workflow+small, workflow+frontier) plus ground truth for exactly this reason. Missing arms are
+  missing measurement, not a detail.
+- 2026-09-13 — (trial 9) **When an agent says "I am blocked by system policy", read the tool trace.** The same
+  Conductor claimed "all changes made now and live" twice having made no tool call at all, and then on the
+  third turn genuinely was refused by the database: its agent write declared an automated actor with no system
+  name, and a 120-second tool ceiling had already killed the slower attempt. Two lies and one true refusal
+  wearing the same words. The trace is the evidence; the agent's paraphrase turned a missing header into an
+  imaginary rule, and a non-technical Expert would have believed it.
+- 2026-09-13 — (trial 9) **A failure classified from text will read the user's own documents as its cause.**
+  A checkpoint write timed out; the cause ladder ran a regex for "guardian|age undeclared" over a technical
+  string that embedded the legal complaint, and the run box told the admin "this account needs an age check
+  before AI can run". Classify by exception CLASS first, and never let a classifier see argument payloads.
+   Its sibling: a resumable chat pause (the tool loop guard) reaching an unattended workflow step is a blind
+   failure — "no error detail recorded" while the guard knew the tool, the count and the error.
