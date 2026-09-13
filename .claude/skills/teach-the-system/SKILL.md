@@ -412,3 +412,8 @@ lines by relocating trial-specific detail into the trial's register.
   happened, the LIVE DATA decides who keeps the key names (here: 592 rules already carried the string form,
   zero carried the object), which makes it a correction you resolve, not a question for Arman. Abort a blind
   merge rather than resolve 22 semantic conflicts at speed.
+- 2026-09-13 — (trial 12) A local `pnpm type-check` on a SHARED checkout is not the verdict. After the merge
+  it reported 183 errors; 182 were `Cannot find module '@ai-matrx/*/content-transfer'` because the checkout's
+  installed packages lag what main's code imports, and 1 was main's own unpublished mandate key. CI installs
+  fresh and its type-check job passed on the same commit. Check the CI job before reporting a local type
+  failure as the branch's, and say which one you are quoting.
