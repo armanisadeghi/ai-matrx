@@ -114,15 +114,15 @@ export function OrganizationCard({
   return (
     <Card
       className={cn(
-        "p-5 transition-all duration-200 hover:shadow-md cursor-pointer group",
+        "@container/org-card p-4 transition-all duration-200 hover:shadow-md cursor-pointer group",
         isNavigating && "opacity-50 pointer-events-none",
       )}
       onClick={handleNavigate}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex min-w-0 flex-col gap-4 @[36rem]/org-card:flex-row @[36rem]/org-card:items-start @[36rem]/org-card:justify-between">
         {/* Left side - Org info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="min-w-0 w-full flex-1">
+          <div className="flex min-w-0 items-start gap-3 mb-2">
             {/* Icon */}
             <div
               className={cn(
@@ -150,8 +150,8 @@ export function OrganizationCard({
 
             {/* Name and Role */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                <h3 className="w-full min-w-0 text-base font-semibold text-gray-900 dark:text-gray-100 [overflow-wrap:anywhere]">
                   {organization.name}
                 </h3>
                 <OrganizationAbbreviation
@@ -160,7 +160,7 @@ export function OrganizationCard({
                 />
                 <Badge
                   className={cn(
-                    "flex items-center gap-1 text-xs",
+                    "inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs",
                     roleDisplay.color,
                   )}
                 >
@@ -169,7 +169,7 @@ export function OrganizationCard({
                 </Badge>
               </div>
               {organization.description && (
-                <p className="text-sm text-muted-foreground line-clamp-1">
+                <p className="text-sm text-muted-foreground line-clamp-2 [overflow-wrap:anywhere]">
                   {organization.description}
                 </p>
               )}
@@ -177,8 +177,8 @@ export function OrganizationCard({
           </div>
 
           {/* Meta info */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-3">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mt-3">
+            <div className="flex shrink-0 items-center gap-1">
               <Users className="h-4 w-4" />
               <span>
                 {organization.memberCount === 1
@@ -192,7 +192,7 @@ export function OrganizationCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                className="flex shrink-0 items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
                 <span>Website</span>
@@ -202,7 +202,7 @@ export function OrganizationCard({
         </div>
 
         {/* Right side - Actions */}
-        <div className="flex flex-col gap-2 items-end">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 @[36rem]/org-card:shrink-0 @[36rem]/org-card:flex-col @[36rem]/org-card:items-end">
           {/* The card itself navigates on click, so CopyButtons' default
               stopPropagation is what keeps copying from opening settings. */}
           <CopyButtons
