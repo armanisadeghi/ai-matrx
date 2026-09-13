@@ -66,12 +66,13 @@ describe("sanitized upstream 1PUX ordinary login shape", () => {
     ['fractional integer', data(item().replace('"favIndex":0', '"favIndex":1e-1'))],
   ])("rejects numeric rule: %s", (_name, exportData) => { const [record] = parseOnePuxData(attrs, exportData, limits); expect(record).toMatchObject({ status: "invalid" }); expect(record).not.toHaveProperty("sourceRecord"); });
   test.each([
-    ["unknown value", '"value":{"sshKey":"x"}'],
-    ["multiple values", '"value":{"string":"x","url":"x"}'],
-    ["bad traits", '"inputTraits":{"keyboard":"x"}'],
-  ])("refuses section field rule: %s", (_name, mutation) => {
+    ["unknown value", '"inputTraits":{"keyboard":"x","correction":"x","capitalization":"x"},"value":{"sshKey":"x"}', "unsupported"],
+    ["multiple values", '"inputTraits":{"keyboard":"x","correction":"x","capitalization":"x"},"value":{"string":"x","url":"x"}', "invalid"],
+    ["bad traits", '"inputTraits":{"keyboard":"x"},"value":{"string":"x"}', "invalid"],
+  ])("refuses section field rule: %s", (_name, replacement, status) => {
     const section = `"sections":[{"title":"x","fields":[{"title":"x","id":"x","guarded":false,"multiline":false,"dontGenerate":false,"inputTraits":{"keyboard":"x","correction":"x","capitalization":"x"},"value":{"string":"x"}}]}],`;
-    expect(() => parseOnePuxData(attrs, data(item().replace('"loginFields"', `${section}"loginFields"`).replace('"value":{"string":"x"}', mutation).replace('"inputTraits":{"keyboard":"x","correction":"x","capitalization":"x"}', mutation)), limits)).toThrow();
+    const [record] = parseOnePuxData(attrs, data(item().replace('"loginFields"', `${section}"loginFields"`).replace('"inputTraits":{"keyboard":"x","correction":"x","capitalization":"x"},"value":{"string":"x"}', replacement)), limits);
+    expect(record).toMatchObject({ status }); expect(record).not.toHaveProperty("sourceRecord");
   });
   test("rejects duplicate vault item identities", () => expect(() => parseOnePuxData(attrs, data(`${item("active", "same")},${item("active", "same")}`), limits)).toThrow("duplicate item IDs"));
   test.each([
