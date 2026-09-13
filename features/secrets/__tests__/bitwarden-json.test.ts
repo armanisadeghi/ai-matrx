@@ -8,7 +8,7 @@ const login = (extra = "") => `{\"id\":\"22222222-2222-4222-8222-222222222222\",
 describe("plain Bitwarden JSON", () => {
   test("preserves source strings exactly and pairs browser-fill host mode with the opt-in", () => {
     const [record] = parseBitwardenExport(source(login('"notes":"unicode ✓ and 900719925474099312345"')), limits);
-    if (!record) throw new Error("missing parsed record");
+    if (!record || record.status !== "supported") throw new Error("missing parsed record");
     const prepared = prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000001", browserFillEnabled: true, includeDeleted: false, includeArchived: false, limits });
     expect(prepared.status).toBe("ready");
     if (prepared.status !== "ready") throw new Error("missing command");
@@ -39,7 +39,7 @@ describe("plain Bitwarden JSON", () => {
 
   test("maps an ordinary SSH key without sandbox injection and exposes only its public key metadata", () => {
     const [record] = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"deploy","type":5,"sshKey":{"privateKey":"PRIVATE","publicKey":"PUBLIC","keyFingerprint":"SHA256:x"}}'), limits);
-    if (!record) throw new Error("missing SSH record");
+    if (!record || record.status !== "supported") throw new Error("missing SSH record");
     const prepared = prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "00000000-0000-4000-8000-000000000002", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits });
     expect(prepared.status).toBe("ready");
     if (prepared.status !== "ready") throw new Error("missing command");
@@ -82,5 +82,10 @@ describe("plain Bitwarden JSON", () => {
     expect(skipped).toMatchObject({ status: "skipped", reason: "possible_duplicate" });
     const create = prepareStructuredImportCommand({ record: note, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits, existingItems: [{ displayName: "Example", loginUrls: [] }], skipPossibleDuplicate: false });
     expect(create.status).toBe("ready");
+  });
+
+  test("does not return an oversized rejected title or any source payload", () => {
+    const [record] = parseBitwardenExport(source(`{"id":"33333333-3333-4333-8333-333333333333","name":"${"x".repeat(80)}","type":99}`), { ...limits, maxCellBytes: 40 });
+    expect(record).toEqual({ status: "unsupported", ordinal: 0, title: "Item 1", reason: "The item type is unsupported." });
   });
 });
