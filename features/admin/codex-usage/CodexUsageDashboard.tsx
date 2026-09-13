@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   CircleAlert,
@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
 
 type TimeRange = { start: string; end: string };
+type LoadMode = "selection" | "refresh" | "continue";
 
 const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const credits = new Intl.NumberFormat("en-US", {
@@ -96,16 +97,6 @@ function timestamp(value: string | null | undefined): string {
 
 function percentage(value: number | null | undefined): string {
   return value == null ? "Not available" : `${value.toFixed(0)}%`;
-}
-
-function allowanceLimit(allowance: CodexUsageAllowance | null) {
-  if (!allowance || allowance.status !== "available") return null;
-  return allowance.limits
-    .filter((limit) => limit.remaining_percent != null)
-    .sort(
-      (left, right) =>
-        (left.remaining_percent ?? 101) - (right.remaining_percent ?? 101),
-    )[0];
 }
 
 function labelFor(row: CodexUsageRow, fallback: string): string {
@@ -234,6 +225,10 @@ function optionalActivity(
       label: "Outbound peer messages",
       value: metrics.peer_message_invocations,
     },
+    {
+      label: "Internal collaboration messages",
+      value: metrics.collaboration_message_calls,
+    },
     { label: "Child-agent calls", value: metrics.child_invocations },
   ];
   return values.filter(
@@ -251,35 +246,61 @@ export function CodexUsageDashboard() {
   const [resumeRange, setResumeRange] = useState<TimeRange | null>(null);
   const [snapshot, setSnapshot] = useState<CodexUsageSnapshot | null>(null);
   const [allowance, setAllowance] = useState<CodexUsageAllowance | null>(null);
+  const [allowanceError, setAllowanceError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestGeneration = useRef(0);
+  const allowanceGeneration = useRef(0);
 
-  async function load(refresh = false) {
+  async function load(mode: LoadMode) {
+    const generation = ++requestGeneration.current;
     const computedRange =
       preset === "custom"
         ? dateRange(startDate, endDate)
         : rangeForPreset(preset);
-    const range = resumeRange ?? computedRange;
+    const range = mode === "continue" ? resumeRange : computedRange;
     if (!range) {
-      setError(
-        "Choose a date range whose end date is on or after its start date.",
-      );
-      setLoading(false);
+      if (generation === requestGeneration.current) {
+        setError(
+          "Choose a date range whose end date is on or after its start date.",
+        );
+        setLoading(false);
+      }
       return;
     }
+    const refresh = mode !== "selection";
     refresh ? setRefreshing(true) : setLoading(true);
+    const allowanceRequest = ++allowanceGeneration.current;
+    void readCodexUsageAllowance(presence)
+      .then((nextAllowance) => {
+        if (allowanceRequest === allowanceGeneration.current) {
+          setAllowance(nextAllowance);
+          setAllowanceError(
+            nextAllowance.status === "unavailable"
+              ? (nextAllowance.reason ?? null)
+              : null,
+          );
+        }
+      })
+      .catch((cause) => {
+        if (allowanceRequest === allowanceGeneration.current) {
+          setAllowance(null);
+          setAllowanceError(
+            cause instanceof Error
+              ? cause.message
+              : "Allowance is unavailable.",
+          );
+        }
+      });
     try {
-      const [next, nextAllowance] = await Promise.all([
-        readCodexUsage(presence, {
-          ...range,
-          grouping,
-          refresh,
-        }),
-        readCodexUsageAllowance(presence),
-      ]);
+      const next = await readCodexUsage(presence, {
+        ...range,
+        grouping: "model",
+        refresh,
+      });
+      if (generation !== requestGeneration.current) return;
       setSnapshot(next);
-      setAllowance(nextAllowance);
       if (next.coverage.can_resume === true) {
         setResumeRange({ start: next.range.start, end: next.range.end });
       } else {
@@ -287,15 +308,18 @@ export function CodexUsageDashboard() {
       }
       setError(null);
     } catch (cause) {
-      setSnapshot(null);
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Matrx Local could not provide usage right now.",
-      );
+      if (generation === requestGeneration.current) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Matrx Local could not provide usage right now.",
+        );
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (generation === requestGeneration.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }
 
@@ -303,12 +327,11 @@ export function CodexUsageDashboard() {
     // Defer the proxy read out of the effect commit. `load` changes local UI
     // state when a reply arrives; starting it synchronously here violates the
     // React effect contract and causes a needless cascading render.
-    const timer = window.setTimeout(() => void load(), 0);
+    const timer = window.setTimeout(() => void load("selection"), 0);
     return () => window.clearTimeout(timer);
   }, [preset, startDate, endDate, presence]);
 
   const activity = snapshot ? optionalActivity(snapshot.totals) : [];
-  const currentAllowance = allowanceLimit(allowance);
   const canResume = snapshot?.coverage.can_resume === true;
   const completedCandidates = snapshot?.coverage.completed_candidates;
   const totalCandidates = snapshot?.coverage.total_candidates;
@@ -382,7 +405,10 @@ export function CodexUsageDashboard() {
               key={value}
               variant={preset === value ? "default" : "outline"}
               size="sm"
-              onClick={() => setPreset(value)}
+              onClick={() => {
+                setResumeRange(null);
+                setPreset(value);
+              }}
             >
               {label}
             </Button>
@@ -400,7 +426,10 @@ export function CodexUsageDashboard() {
                 type="date"
                 value={startDate}
                 max={endDate}
-                onChange={(event) => setStartDate(event.target.value)}
+                onChange={(event) => {
+                  setResumeRange(null);
+                  setStartDate(event.target.value);
+                }}
                 className="h-8 rounded-md border bg-background px-2 text-xs"
               />
               <span className="text-xs text-muted-foreground">to</span>
@@ -409,7 +438,10 @@ export function CodexUsageDashboard() {
                 type="date"
                 value={endDate}
                 min={startDate}
-                onChange={(event) => setEndDate(event.target.value)}
+                onChange={(event) => {
+                  setResumeRange(null);
+                  setEndDate(event.target.value);
+                }}
                 className="h-8 rounded-md border bg-background px-2 text-xs"
               />
             </>
@@ -429,7 +461,7 @@ export function CodexUsageDashboard() {
             variant="outline"
             size="sm"
             disabled={refreshing}
-            onClick={() => void load(true)}
+            onClick={() => void load("refresh")}
           >
             {refreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -442,7 +474,7 @@ export function CodexUsageDashboard() {
             <Button
               size="sm"
               disabled={refreshing}
-              onClick={() => void load(true)}
+              onClick={() => void load("continue")}
             >
               Continue collection
             </Button>
@@ -457,8 +489,16 @@ export function CodexUsageDashboard() {
         >
           <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
           <div>
-            <p className="font-medium">Usage is unavailable</p>
+            <p className="font-medium">
+              {snapshot ? "Latest usage read failed" : "Usage is unavailable"}
+            </p>
             <p className="mt-1">{error}</p>
+            {snapshot ? (
+              <p className="mt-1 text-xs">
+                The displayed report remains {timestamp(snapshot.range.start)}{" "}
+                to {timestamp(snapshot.range.end)} (end exclusive).
+              </p>
+            ) : null}
             <p className="mt-1 text-xs">
               Start Matrx Local and make sure it is signed in, then refresh this
               page.
@@ -476,6 +516,17 @@ export function CodexUsageDashboard() {
 
       {snapshot ? (
         <>
+          {canResume && collectionProgress ? (
+            <section className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:text-amber-100">
+              <p className="font-medium">Collection is partial</p>
+              <p className="mt-1">
+                Processed {collectionProgress.completed} of{" "}
+                {collectionProgress.total} candidates. All shares, totals, and
+                rankings currently reflect only this collected subset and may
+                change when collection continues.
+              </p>
+            </section>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <CountCard
               label="Estimated standard credits"
@@ -488,17 +539,13 @@ export function CodexUsageDashboard() {
               detail="Captured responses in this range"
             />
             <CountCard
-              label="Account allowance"
+              label="Allowance windows"
               value={
-                currentAllowance
-                  ? percentage(currentAllowance.remaining_percent)
+                allowance?.status === "available"
+                  ? metric(allowance.limits.length)
                   : "Unavailable"
               }
-              detail={
-                currentAllowance
-                  ? "Remaining in the most constrained current window"
-                  : (allowance?.reason ?? "Codex did not expose an allowance")
-              }
+              detail="Read separately from the usage report"
             />
             <CountCard
               label="Conversations"
@@ -526,8 +573,8 @@ export function CodexUsageDashboard() {
                 </p>
               </div>
               <Badge variant="outline">
-                {currentAllowance
-                  ? `Allowance observed ${timestamp(allowance?.observed_at)}`
+                {allowance?.status === "available"
+                  ? `Allowance observed ${timestamp(allowance.observed_at)}`
                   : "Allowance unavailable"}
               </Badge>
             </div>
@@ -539,25 +586,40 @@ export function CodexUsageDashboard() {
             {collectionProgress ? (
               <p className="mt-2 text-xs text-muted-foreground">
                 {collectionProgress.completed} of {collectionProgress.total}{" "}
-                candidates collected ({collectionProgress.percent}% of collected
-                data).
+                candidates processed ({collectionProgress.percent}%).
                 {canResume
                   ? " Continue collection to keep this exact frozen range."
                   : ""}
               </p>
             ) : null}
-            {currentAllowance ? (
+            {allowance?.status === "available" ? (
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {allowance.limits.map((limit) => (
+                  <div
+                    key={`${limit.bucket}-${limit.window_minutes ?? "unknown"}`}
+                    className="rounded-md border bg-background p-3"
+                  >
+                    <p className="text-xs font-medium">{limit.bucket}</p>
+                    <p className="mt-1 text-lg font-semibold tabular-nums">
+                      {percentage(limit.remaining_percent)} remaining
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {limit.window_minutes != null
+                        ? `${number.format(limit.window_minutes)} minute window`
+                        : "Window duration unavailable"}
+                      {limit.resets_at != null
+                        ? ` · resets ${timestamp(new Date(limit.resets_at * 1000).toISOString())}`
+                        : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
               <p className="mt-2 text-xs text-muted-foreground">
-                Account-level allowance is read-only and is not attributed to
-                these responses or estimated standard credits.
-                {currentAllowance.window_minutes != null
-                  ? ` Window: ${number.format(currentAllowance.window_minutes)} minutes.`
-                  : ""}
-                {currentAllowance.resets_at != null
-                  ? ` Resets ${timestamp(new Date(currentAllowance.resets_at * 1000).toISOString())}.`
-                  : ""}
+                Allowance unavailable:{" "}
+                {allowanceError ?? "Codex did not expose it."}
               </p>
-            ) : null}
+            )}
           </section>
 
           {activity.length > 0 ? (

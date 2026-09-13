@@ -13,6 +13,7 @@ export interface CodexUsageMetrics {
   peer_message_invocations?: number;
   child_call_ids?: number;
   child_invocations?: number;
+  collaboration_message_calls?: number;
 }
 
 export interface CodexUsageRow extends CodexUsageMetrics {
@@ -60,6 +61,7 @@ export interface CodexUsageSnapshot {
 }
 
 export interface CodexAllowanceLimit {
+  bucket: string;
   used_percent: number | null;
   remaining_percent: number | null;
   window_minutes: number | null;
@@ -69,7 +71,6 @@ export interface CodexAllowanceLimit {
 export interface CodexUsageAllowance {
   status: "available" | "unavailable";
   observed_at: string;
-  account_hash?: string;
   reason?: string;
   limits: CodexAllowanceLimit[];
 }
@@ -123,6 +124,7 @@ function isUsageRow(value: unknown): value is CodexUsageRow {
     "peer_message_invocations",
     "child_call_ids",
     "child_invocations",
+    "collaboration_message_calls",
   ];
   return (
     metrics.every((metric) => isOptionalMetric(value[metric])) &&
@@ -181,6 +183,7 @@ function isAllowance(value: unknown): value is CodexUsageAllowance {
     value.limits.every(
       (limit) =>
         isRecord(limit) &&
+        typeof limit.bucket === "string" &&
         isNullableNonNegative(limit.used_percent) &&
         isNullableNonNegative(limit.remaining_percent) &&
         isNullableNonNegative(limit.window_minutes) &&
