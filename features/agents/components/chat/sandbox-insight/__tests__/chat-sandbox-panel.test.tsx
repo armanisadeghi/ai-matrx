@@ -291,6 +291,38 @@ describe("chat sandbox panel", () => {
     expect(exit?.className).toContain("text-red-600");
   });
 
+  it("becomes a bottom sheet, not a side column, on a phone", async () => {
+    // useIsMobile reads matchMedia; a phone matches the max-width query.
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({
+        matches: true,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }),
+    });
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: 390,
+    });
+    await renderSettled(
+      <ChatSandboxDock conversationId={CONVERSATION_ID} />,
+      makeStore({ bound: true }),
+    );
+    // The sheet portals out of `container`; the desktop <aside> would not.
+    expect(container.querySelector("aside")).toBe(null);
+    expect(
+      document.querySelector('[data-testid="chat-sandbox-panel"]'),
+    ).not.toBe(null);
+  });
+
   it("keeps non-sandbox tool calls out of the Activity feed", () => {
     const record = toolRecord({
       id: "row-web",
