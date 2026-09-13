@@ -136,10 +136,15 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    wrong, keep going — a wrong ruling costs visible rework; a parked lane costs the day. Agent-doable
    work never reaches the owner; **and the reverse holds: an agent never answers on the owner's
    behalf a question that is genuinely his** (vision, money, brand, legal, deleting real data). What
-   reaches him: finished work to see, genuine rulings packaged with context + one recommendation
-   in plain language (no jargon, doc references, or codenames), batched — and **at every close, the
-   exhaustive list of rulings made in his absence**, each with its cost if wrong. A ruling that
-   dies with the session was a decision made in secret.
+   reaches him: finished work to see, and genuine questions — each through the `ask-arman` homework
+   gate first (a fact? already ruled or delegated? a knob? champion-decidable? the *user's* question
+   rather than the boss's?), filed in the Question Ledger, and asked in the law-10 shape: plain
+   numbered chat, **one complex question per round — never a batch of hard ones**, each carrying the
+   five parts (his prior ruling quoted or "never ruled"; what the best do and why they are the
+   reference; what the system does today; the implications and their reach; one recommendation),
+   while the lane proceeds on its stated reversible default. **At every close, the exhaustive list
+   of rulings made in his absence**, each in that same five-part shape with its cost if wrong. A
+   ruling that dies with the session was a decision made in secret.
 7. **Survive on purpose.** Self-scheduled wake-ups as disconnect insurance. Recovery-first
    resumes: after any compaction or restart, trust the register + `git log` + origin content,
    never recollection — **re-dispatching finished work is the single costliest failure**, and a
@@ -160,9 +165,9 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
 | # | Phase | Exit criterion |
 |---|---|---|
 | 0 | **Mandate** (owner) | The mandate names the vision, the theory of past failure, the process shape, and the done-means-done law (Part 1 §1, §4). |
-| 1 | **Discovery** | Parallel recon agents (lanes named) have written to files: own-system conventions verified against live code/DB, best-in-class references chosen, capability scope IN/DEFERRED — and every load-bearing claim in them is verified, not asserted. |
+| 1 | **Discovery** | Parallel recon agents (lanes named) have written to files: own-system conventions verified against live code/DB, the champion for each discipline named with why it is the reference (`policies/champions.md` — parity is the floor), capability scope IN/DEFERRED — and every load-bearing claim in them is verified, not asserted. |
 | 2 | **Scope + attack** | A feature tree / scope list exists; a zero-authorship `plan-attack` has run; every finding adjudicated (FIX / REJECT with reason / OWNER-ONLY). The register is opened as the single tracking home; questions that are sharp-but-blocked are items, questions not yet phrasable stay named **fog** (never pre-sliced into fake items), and work past the destination is **out of scope** — closed with one line, never "deferred" back onto the frontier. |
-| 3 | **Interview + readiness** | Each lane's readiness doc front-loads its unknowns and resolves what it can itself; the coordinator merges the residue into ONE `grilling` interview; the frontier is empty (answered, decided-with-override, or deferred with a date). **After this, no lane ever stops to ask the owner** — a new unknown is a coordinator ruling. |
+| 3 | **Interview + readiness** | Each lane's readiness doc front-loads its unknowns and resolves what it can itself; the coordinator runs the residue through the `ask-arman` gate, then ONE `grilling` interview in rounds (one complex question per round; the rest wait in the Question Ledger). A question that exists only because the owner is also a customer of one organization is the user's, not the boss's — it becomes an onboarding step or a knob, never his question. Exit: the frontier is empty (answered, decided-with-override, or deferred with a date). **After this, no lane ever stops to ask the owner** — a new unknown is a coordinator ruling. |
 | 4 | **Freeze (G1)** | Specs, contracts, types/mocks, and fixtures are frozen and hashed; the core schema is certified. From here a contract change is an amendment (changelog + register note + regeneration), never a silent edit. |
 | 5 | **Core** (serial) | The single critical-path core lands and certifies in order — never parallelized. |
 | 6 | **Fan-out** (parallel) | Lanes dispatched with exclusive file/schema ownership and frozen interfaces; shared inputs verified to exist BEFORE parallel dispatch (a bad ref fails here, not inside six agents). |
@@ -177,11 +182,12 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
    the Part 1 §4 language verbatim.
 2. Tell the agent to run discovery first (own-system recon + market reference + scope), then
    bring the scope list — and order the hole-poking review on it (`plan-attack`).
-3. Answer the defaults-carrying interview (only un-defaultable items need words).
+3. Answer the defaults-carrying interview one round at a time (one complex question per round,
+   each with a recommendation; only un-defaultable items need words — skipping ships the default).
 4. Say the sentence that grants the chair: *"You own this end to end. Make yourself
    replaceable, keep everything in the register, and only bring me finished work and real
    decisions."* Approve the standing wake-up/schedule if offered.
-5. During the run: answer batches fast, teach principles not fixes, test with your own hands
+5. During the run: answer each round fast, teach principles not fixes, test with your own hands
    when asked (the owner's phone caught defects no agent could) — and let it run.
 
 ## Deliberately not adopted (benchmarked 2026-09-10 against mattpocock/skills and obra/superpowers)
@@ -194,6 +200,11 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
   taken; their model of who owns correctness was not.
 
 **Changelog**
+- 2026-09-13 (law alignment) — questions to the owner now route through the `ask-arman` gate and
+  the Question Ledger, one complex question per round in the five-part shape (law 10, Arman
+  2026-09-10/12) — "batched" wording removed from §6, gate 3, and Part 4; gate 1 names the champion
+  per discipline (law 9); gate 3 carries "ask the boss, never the user". Conformance to rulings
+  already proven in `grilling`/`ask-arman` evals — no new mechanism, no new proof run.
 - 2026-09-10 (benchmark rewrite) — Part 3 lifecycle with gate exit criteria added (from the HR
   execution plan that worked); adopted from the two benchmark frameworks: the closed four-item stop
   list ("rulings, not stalls"), the exhaustive rulings-at-close report, the post-compaction resume
