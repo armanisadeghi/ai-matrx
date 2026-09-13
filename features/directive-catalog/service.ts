@@ -13,6 +13,7 @@ import { supabase } from "@/utils/supabase/client";
 import { ENDPOINTS_DIRECTIVES } from "@/features/directive-catalog/endpoints";
 import {
   isDirectiveApplyResult,
+  isDirectiveApplyStateResult,
   isDirectiveCatalog,
   isDirectiveConfirmResult,
   type DirectiveApplyResult,
@@ -20,6 +21,8 @@ import {
   type DirectiveExecuteRequest,
   type DirectiveConfirmRequest,
   type DirectiveConfirmResult,
+  type DirectiveApplyStateRequest,
+  type DirectiveApplyStateResult,
 } from "@/features/directive-catalog/types";
 import { parseHttpError } from "@/lib/api/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
@@ -181,6 +184,56 @@ export async function confirmDirective(
   if (!isDirectiveConfirmResult(payload)) {
     throw new Error(
       `Confirm response was malformed (missing type / proposal_id / receipts) from ${url}`,
+    );
+  }
+  return payload;
+}
+
+
+/**
+ * DD-144 — ask the server whether these proposed directives have already been
+ * applied. A READ; nothing here writes.
+ *
+ * WHY IT IS A ROUND TRIP AT ALL. After a reload the two-key shell is still there
+ * (it IS the assistant message's stored text), but whether it was applied is
+ * decided by `content_key`, which aidream's `keys.py` declares FROZEN and which
+ * hashes the VALIDATED item model. A client cannot reproduce that, and a client
+ * that guessed would render an Approve button beside that proposal's own receipt.
+ * So the identity stays with its one author and we ask.
+ *
+ * `conversation_id` is REQUIRED and is not decoration: it is the idempotency
+ * NAMESPACE, so a state read without it would ask about different keys than the
+ * Approve button will run.
+ */
+export async function fetchDirectiveApplyState(
+  baseUrl: string | undefined,
+  body: DirectiveApplyStateRequest,
+): Promise<DirectiveApplyStateResult> {
+  if (!baseUrl) {
+    throw new Error(
+      "No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).",
+    );
+  }
+  const { data, error } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (error || !token) {
+    throw new Error(
+      "Not signed in — reading what this conversation's actions did needs an authenticated session.",
+    );
+  }
+  const url = `${trimRoot(baseUrl)}${ENDPOINTS_DIRECTIVES.applyState}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: authedDirectiveHeaders(token),
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw await parseHttpError(response);
+
+  const payload: unknown = await response.json();
+  if (!isDirectiveApplyStateResult(payload)) {
+    throw new Error(
+      `The apply-state response was malformed (missing conversation_id / shells) from ${url}`,
     );
   }
   return payload;

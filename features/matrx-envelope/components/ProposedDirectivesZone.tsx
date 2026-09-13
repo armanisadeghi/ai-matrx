@@ -41,7 +41,9 @@ import { directiveDisplay, isDirectiveClass } from "@ai-matrx/content-ir";
 import { matrxDirectiveNouns } from "@/features/matrx-envelope/directiveHost";
 import { confirmDirective } from "@/features/directive-catalog/service";
 import type { DirectiveConfirmRequest } from "@/features/directive-catalog/types";
+import { fetchConversationProposals } from "@/features/matrx-envelope/conversationProposals";
 import {
+  proposeDirective,
   removeProposal,
   resolveProposal,
   selectProposedDirectives,
@@ -79,6 +81,8 @@ export function ProposedDirectivesZone({
   const dispatch = useAppDispatch();
   const allProposals = useAppSelector(selectProposedDirectives(conversationId));
   const { receipts, loadError, refresh } = useConversationReceipts(conversationId);
+  const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  const hydrateError = useRehydratedProposals(conversationId, baseUrl);
 
   // THE RESIDUE OF DD-145, ON THE CLIENT. The server waits 45 s for a concurrent
   // holder and hands back the real receipt; a handler slower than the door
@@ -145,16 +149,22 @@ export function ProposedDirectivesZone({
     (p) => ((p.shell?.items as unknown[] | undefined)?.length ?? p.itemCount) > 0,
   );
 
-  if (proposals.length === 0 && receipts.length === 0 && !loadError) return null;
+  const errors = [loadError, hydrateError].filter(Boolean) as string[];
+  if (proposals.length === 0 && receipts.length === 0 && errors.length === 0) {
+    return null;
+  }
   return (
     <div className="flex flex-col gap-2">
       {/* NOTHING SILENT: "no receipts" and "we could not look" must not render
           the same. The sentence is the reader's, with the reason. */}
-      {loadError && (
-        <div className="rounded-lg border border-destructive/40 bg-card px-3 py-2 text-xs text-destructive">
-          {loadError}
+      {errors.map((message) => (
+        <div
+          key={message}
+          className="rounded-lg border border-destructive/40 bg-card px-3 py-2 text-xs text-destructive"
+        >
+          {message}
         </div>
-      )}
+      ))}
       {receipts.map((r) => (
         <DirectiveReceiptBlock
           key={r.ledgerKey}
@@ -168,6 +178,66 @@ export function ProposedDirectivesZone({
       ))}
     </div>
   );
+}
+
+/**
+ * THE PROPOSALS A RELOAD CAN STILL APPROVE (DD-144).
+ *
+ * The proposal card used to exist only for as long as the stream event that
+ * created it: refresh, and an action the agent had proposed could no longer be
+ * approved at all, with nothing on screen to say so (V-24). The shell was never
+ * lost — it IS the assistant message's stored text — so on mount this reads the
+ * conversation's messages back, asks the SERVER which of those shells are still
+ * approvable (`POST /directives/apply_state`; the apply key is frozen and hashes
+ * the validated item model, so this client must never compute it), and puts the
+ * still-open ones back in the inbox.
+ *
+ * `proposeDirective` is idempotent on `proposalId`, and the door mints the SAME
+ * id the live event did, so a rehydration that races a live proposal cannot
+ * double a card.
+ *
+ * Returns the sentence to show when it could not look, or a shell came back
+ * unreadable. NOTHING SILENT: a proposal quietly missing from a reloaded
+ * conversation is the defect this closes, so "there are none" and "we could not
+ * tell" never render the same.
+ */
+function useRehydratedProposals(
+  conversationId: string,
+  baseUrl: string | undefined,
+): string | null {
+  const dispatch = useAppDispatch();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setError(null);
+    if (!conversationId || !baseUrl) return;
+    void fetchConversationProposals(baseUrl, conversationId)
+      .then(({ proposals, unreadable }) => {
+        if (cancelled) return;
+        for (const proposal of proposals) dispatch(proposeDirective(proposal));
+        if (unreadable.length > 0) {
+          setError(
+            `This conversation has ${unreadable.length === 1 ? "an action" : `${unreadable.length} actions`} ` +
+              `we could not read, so ${unreadable.length === 1 ? "it is" : "they are"} not offered here: ` +
+              unreadable.join(" "),
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Could not check whether this conversation has actions waiting for you.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, baseUrl, dispatch]);
+
+  return error;
 }
 
 /**
