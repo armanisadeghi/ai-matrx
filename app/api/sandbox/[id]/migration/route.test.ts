@@ -10,7 +10,8 @@ jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
   orchestratorJsonHeaders: () => ({ "X-API-Key": "test-key" }),
 }));
 
-const params = { params: Promise.resolve({ id: "row-1" }) };
+const sandboxRowId = "11111111-1111-4111-8111-111111111111";
+const params = { params: Promise.resolve({ id: sandboxRowId }) };
 const operationId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 beforeEach(() => {
@@ -38,13 +39,16 @@ test("forwards an exact operation id through the owner-gated status proxy", asyn
 
   const response = await GET(
     new NextRequest(
-      `https://app.example.test/api/sandbox/row-1/migration?operation_id=${operationId}`,
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migration?operation_id=${operationId}`,
     ),
     params,
   );
 
   expect(response.status).toBe(200);
-  expect(await response.json()).toMatchObject({ outcome: "recovering" });
+  expect(await response.json()).toMatchObject({
+    sandbox_id: sandboxRowId,
+    outcome: "recovering",
+  });
   expect(fetch).toHaveBeenCalledWith(
     `https://hosted.example.test/sandboxes/sbx-1/migration?operation_id=${operationId}`,
     expect.objectContaining({ method: "GET" }),
@@ -66,12 +70,17 @@ test("without a saved id, exposes only the orchestrator's current live operation
   );
 
   const response = await GET(
-    new NextRequest("https://app.example.test/api/sandbox/row-1/migration"),
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migration`,
+    ),
     params,
   );
 
   expect(response.status).toBe(200);
-  expect(await response.json()).toMatchObject({ outcome: "in_progress" });
+  expect(await response.json()).toMatchObject({
+    sandbox_id: sandboxRowId,
+    outcome: "in_progress",
+  });
   expect(fetch).toHaveBeenCalledWith(
     "https://hosted.example.test/sandboxes/sbx-1/migration",
     expect.objectContaining({ method: "GET" }),
@@ -94,7 +103,32 @@ test("does not turn a mismatched terminal result into current success", async ()
 
   const response = await GET(
     new NextRequest(
-      `https://app.example.test/api/sandbox/row-1/migration?operation_id=${operationId}`,
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migration?operation_id=${operationId}`,
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toMatchObject({ status: "outcome_unknown" });
+});
+
+test("rejects another internal sandbox before projecting the row id", async () => {
+  jest.spyOn(global, "fetch").mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        sandbox_id: "sbx-other",
+        operation_id: operationId,
+        outcome: "migrated",
+        execution_state: "done",
+        phase: "cleanup_complete",
+      }),
+      { status: 200 },
+    ),
+  );
+
+  const response = await GET(
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migration?operation_id=${operationId}`,
     ),
     params,
   );
@@ -107,7 +141,7 @@ test("rejects a noncanonical requested operation before contacting the orchestra
   const upstream = jest.spyOn(global, "fetch");
   const response = await GET(
     new NextRequest(
-      "https://app.example.test/api/sandbox/row-1/migration?operation_id=not-a-canonical-operation",
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migration?operation_id=not-a-canonical-operation`,
     ),
     params,
   );

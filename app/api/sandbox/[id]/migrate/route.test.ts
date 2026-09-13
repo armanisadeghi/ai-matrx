@@ -10,7 +10,8 @@ jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
   orchestratorJsonHeaders: () => ({ "X-API-Key": "test-key" }),
 }));
 
-const params = { params: Promise.resolve({ id: "row-1" }) };
+const sandboxRowId = "11111111-1111-4111-8111-111111111111";
+const params = { params: Promise.resolve({ id: sandboxRowId }) };
 const busyResult = (reason: string) => ({
   detail: {
     status: "busy_deferred",
@@ -39,9 +40,12 @@ test.each([
     );
 
   const response = await POST(
-    new NextRequest("https://app.example.test/api/sandbox/row-1/migrate", {
-      method: "POST",
-    }),
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate`,
+      {
+        method: "POST",
+      },
+    ),
     params,
   );
 
@@ -51,7 +55,7 @@ test.each([
     status: "busy_deferred",
     details: {
       status: "busy_deferred",
-      sandbox_id: "sbx-1",
+      sandbox_id: sandboxRowId,
       reason,
     },
   });
@@ -66,9 +70,12 @@ test("keeps an unknown upstream failure on the existing error path", async () =>
     .mockResolvedValue(new Response(JSON.stringify(failure), { status: 502 }));
 
   const response = await POST(
-    new NextRequest("https://app.example.test/api/sandbox/row-1/migrate", {
-      method: "POST",
-    }),
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate`,
+      {
+        method: "POST",
+      },
+    ),
     params,
   );
 
@@ -96,13 +103,14 @@ test("forwards a confirmed attached-session interruption explicitly", async () =
 
   const response = await POST(
     new NextRequest(
-      "https://app.example.test/api/sandbox/row-1/migrate?interrupt_attached_sessions=true&operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?interrupt_attached_sessions=true&operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
       { method: "POST" },
     ),
     params,
   );
 
   expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ sandbox_id: sandboxRowId });
   expect(upstream).toHaveBeenCalledWith(
     expect.stringMatching(
       /^https:\/\/hosted\.example\.test\/sandboxes\/sbx-1\/migrate\?interrupt_attached_sessions=true&operation_id=[0-9a-f]{32}$/,
@@ -130,14 +138,17 @@ test("on a POST timeout reconnects to the exact live operation instead of report
 
   const response = await POST(
     new NextRequest(
-      "https://app.example.test/api/sandbox/row-1/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
       { method: "POST" },
     ),
     params,
   );
 
   expect(response.status).toBe(202);
-  expect(await response.json()).toMatchObject({ outcome: "in_progress" });
+  expect(await response.json()).toMatchObject({
+    sandbox_id: sandboxRowId,
+    outcome: "in_progress",
+  });
   expect(fetch).toHaveBeenLastCalledWith(
     "https://hosted.example.test/sandboxes/sbx-1/migration?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     expect.objectContaining({ method: "GET" }),
@@ -163,14 +174,17 @@ test("on a POST timeout returns exact committed status as success", async () => 
 
   const response = await POST(
     new NextRequest(
-      "https://app.example.test/api/sandbox/row-1/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
       { method: "POST" },
     ),
     params,
   );
 
   expect(response.status).toBe(200);
-  expect(await response.json()).toMatchObject({ outcome: "migrated" });
+  expect(await response.json()).toMatchObject({
+    sandbox_id: sandboxRowId,
+    outcome: "migrated",
+  });
 });
 
 test("on a POST timeout preserves a rolled-back result as actionable non-success", async () => {
@@ -193,7 +207,7 @@ test("on a POST timeout preserves a rolled-back result as actionable non-success
 
   const response = await POST(
     new NextRequest(
-      "https://app.example.test/api/sandbox/row-1/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
       { method: "POST" },
     ),
     params,
@@ -201,6 +215,7 @@ test("on a POST timeout preserves a rolled-back result as actionable non-success
 
   expect(response.status).toBe(409);
   expect(await response.json()).toMatchObject({
+    sandbox_id: sandboxRowId,
     outcome: "rolled_back",
     reason: "retained runtime restored",
   });
@@ -225,7 +240,7 @@ test("refuses a timeout status response for a different operation", async () => 
 
   const response = await POST(
     new NextRequest(
-      "https://app.example.test/api/sandbox/row-1/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
       { method: "POST" },
     ),
     params,
@@ -233,4 +248,32 @@ test("refuses a timeout status response for a different operation", async () => 
 
   expect(response.status).toBe(502);
   expect(await response.json()).toMatchObject({ status: "outcome_unknown" });
+});
+
+test("rejects an upstream success for another internal sandbox before projection", async () => {
+  jest.spyOn(global, "fetch").mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        sandbox_id: "sbx-other",
+        operation_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        outcome: "migrated",
+        execution_state: "done",
+        phase: "cleanup_complete",
+      }),
+      { status: 200 },
+    ),
+  );
+
+  const response = await POST(
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
+      { method: "POST" },
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toMatchObject({
+    error: "Sandbox manager returned an update result for a different sandbox.",
+  });
 });

@@ -93,18 +93,26 @@ async function exactMigrationStatus(
   }
 }
 
-function timeoutStatusResponse(status: MigrationStatus) {
+function browserMigrationStatus(
+  status: MigrationStatus,
+  sandboxRowId: string,
+): MigrationStatus {
+  return { ...status, sandbox_id: sandboxRowId };
+}
+
+function timeoutStatusResponse(status: MigrationStatus, sandboxRowId: string) {
+  const projected = browserMigrationStatus(status, sandboxRowId);
   if (status.outcome === "in_progress" || status.outcome === "recovering") {
-    return NextResponse.json(status, { status: 202 });
+    return NextResponse.json(projected, { status: 202 });
   }
   if (status.outcome === "migrated") {
-    return NextResponse.json(status, { status: 200 });
+    return NextResponse.json(projected, { status: 200 });
   }
   if (
     status.outcome === "rolled_back" ||
     status.outcome === "recovery_required"
   ) {
-    return NextResponse.json(status, { status: 409 });
+    return NextResponse.json(projected, { status: 409 });
   }
   return null;
 }
@@ -117,7 +125,8 @@ type BusyDeferredMigration = {
 
 function busyDeferredMigration(
   payload: unknown,
-  sandboxId: string,
+  upstreamSandboxId: string,
+  browserSandboxId: string,
 ): BusyDeferredMigration | null {
   if (
     typeof payload !== "object" ||
@@ -134,14 +143,14 @@ function busyDeferredMigration(
     !("sandbox_id" in detail) ||
     !("reason" in detail) ||
     detail.status !== "busy_deferred" ||
-    detail.sandbox_id !== sandboxId ||
+    detail.sandbox_id !== upstreamSandboxId ||
     typeof detail.reason !== "string"
   ) {
     return null;
   }
   return {
     status: "busy_deferred",
-    sandbox_id: sandboxId,
+    sandbox_id: browserSandboxId,
     reason: detail.reason,
   };
 }
@@ -193,7 +202,7 @@ export async function POST(
   } catch (error) {
     const status = await exactMigrationStatus(lookup, operationId);
     if (status) {
-      const recovered = timeoutStatusResponse(status);
+      const recovered = timeoutStatusResponse(status, id);
       if (recovered) return recovered;
     }
     return NextResponse.json(
@@ -225,7 +234,7 @@ export async function POST(
   }
   const busyDeferred =
     response.status === 409
-      ? busyDeferredMigration(payload, lookup.sandboxId)
+      ? busyDeferredMigration(payload, lookup.sandboxId, id)
       : null;
   if (busyDeferred) {
     return NextResponse.json(
@@ -280,7 +289,7 @@ export async function POST(
       { status: 502 },
     );
   }
-  const mappedStatus = timeoutStatusResponse(exactStatus);
+  const mappedStatus = timeoutStatusResponse(exactStatus, id);
   return (
     mappedStatus ??
     NextResponse.json(
