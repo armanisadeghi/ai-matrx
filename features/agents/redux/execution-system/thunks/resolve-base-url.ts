@@ -26,9 +26,9 @@ export type BackendChannel =
  * (`https://server.app.matrxserver.com`). The ECS service and sandbox fleet
  * are both in us-east-1; the retired EC2 aidream replica is not a valid target.
  * MUST be HTTPS (the app runs on https; http would be blocked as mixed content).
- * Deliberately a distinct var from `NEXT_PUBLIC_BACKEND_URL_EC2` (the admin
- * "ec2" server toggle, historically the orchestrator host) so the two concepts
- * never collide. Unset → EC2 conversations fall back to the global server.
+ * This is a sandbox-conversation setting, not a full-AI API selector; it
+ * remains deliberately separate so the two routing concerns never collide.
+ * Unset → EC2 conversations fall back to the global server.
  */
 const EC2_SANDBOX_SERVER_URL =
   process.env.NEXT_PUBLIC_EC2_SANDBOX_SERVER_URL || "";

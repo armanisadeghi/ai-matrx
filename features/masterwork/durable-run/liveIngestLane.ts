@@ -87,6 +87,8 @@ export function findLiveIngestLane(
  * owns the run — so the probe re-reads instead. Two cheap `localStorage` reads
  * on a five-second beat, only while the tab is visible.
  */
+// KNOB MIRROR of platform.feature_knob "masterwork.ingest" "live_lane_probe_interval_ms" — armed
+// synchronously in a timer. Change the row, then re-mirror this literal.
 const PROBE_INTERVAL_MS = 5_000;
 
 /**

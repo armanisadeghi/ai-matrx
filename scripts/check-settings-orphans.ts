@@ -110,6 +110,25 @@ async function ownerByFeature(): Promise<Map<string, string>> {
       left join platform.taxonomy_node d on d.id = f.parent_id`);
   const out = new Map<string, string>();
   for (const r of res.rows ?? []) if (!out.has(r.feature) || r.owner !== "(unfiled)") out.set(r.feature, r.owner);
+  // An UNFILED namespace still has an owner: the domain its siblings file under
+  // (`hr.domain_wide` sits with the other `hr.*` features in human-resources).
+  // Named `<domain>/(unfiled)` so the debt is attributed AND the filing gap shows.
+  const domainByPrefix = new Map<string, Map<string, number>>();
+  for (const [feature, owner] of out) {
+    if (owner === "(unfiled)") continue;
+    const prefix = feature.split(".")[0];
+    const tally = domainByPrefix.get(prefix) ?? new Map<string, number>();
+    const dom = owner.split("/")[0];
+    tally.set(dom, (tally.get(dom) ?? 0) + 1);
+    domainByPrefix.set(prefix, tally);
+  }
+  for (const [feature, owner] of out) {
+    if (owner !== "(unfiled)") continue;
+    const tally = domainByPrefix.get(feature.split(".")[0]);
+    if (!tally) continue;
+    const [dom] = [...tally].sort((a, b) => b[1] - a[1])[0];
+    out.set(feature, `${dom}/(unfiled)`);
+  }
   return out;
 }
 
