@@ -187,6 +187,18 @@ describe("OfferingTable", () => {
       "is_available",
       "usage_basis",
     ]);
+    for (const id of [
+      "priority",
+      "input_price",
+      "cached_input_price",
+      "output_price",
+    ]) {
+      expect(
+        tableProps.columns.find(
+          (column) => column.id === id || column.accessorKey === id,
+        )?.align,
+      ).toBe("right");
+    }
 
     const byId = (id: string) => {
       const column = tableProps?.columns.find((item) => item.id === id);
