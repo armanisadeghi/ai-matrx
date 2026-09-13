@@ -77,6 +77,141 @@ describe("Vault CSV import", () => {
     expect(hasAmbiguousCsvMapping(["url", "url", "keep"])).toBe(false);
   });
 
+  test.each([
+    [
+      "Google Password Manager",
+      ["name", "url", "username", "password", "note"],
+      ["title", "url", "username", "password", "notes"],
+    ],
+    [
+      "Apple Passwords",
+      ["Title", "URL", "Username", "Password", "Notes", "OTPAuth"],
+      ["title", "url", "username", "password", "notes", "otp"],
+    ],
+    [
+      "Firefox",
+      [
+        "url",
+        "username",
+        "password",
+        "httpRealm",
+        "formActionOrigin",
+        "guid",
+        "timeCreated",
+        "timeLastUsed",
+        "timePasswordChanged",
+      ],
+      [
+        "url",
+        "username",
+        "password",
+        "keep",
+        "keep",
+        "keep",
+        "keep",
+        "keep",
+        "keep",
+      ],
+    ],
+    [
+      "LastPass",
+      ["url", "username", "password", "extra", "name", "grouping", "fav"],
+      ["url", "username", "password", "notes", "title", "keep", "keep"],
+    ],
+    [
+      "RoboForm",
+      ["Name", "Url", "Login", "Pwd", "Note", "Folder"],
+      ["title", "url", "username", "password", "notes", "keep"],
+    ],
+    [
+      "Keeper",
+      [
+        "Folder",
+        "Title",
+        "Login",
+        "Password",
+        "Website Address",
+        "Notes",
+        "Shared Folder",
+        "Custom Fields",
+      ],
+      ["keep", "title", "username", "password", "url", "notes", "keep", "keep"],
+    ],
+  ])(
+    "maps %s official CSV headers only through exact aliases",
+    (_, headers, expected) => {
+      expect(suggestedCsvMapping(headers)).toEqual(expected);
+    },
+  );
+
+  test("normalizes declared aliases without classifying substrings or duplicate exclusive roles", () => {
+    expect(
+      suggestedCsvMapping([
+        " Login_URL ",
+        "Login",
+        "LOGIN-PASSWORD",
+        "one time code",
+        "timePasswordChanged",
+        "passwordStrength",
+        "passwordHistory",
+        "emailVerified",
+        "usernameField",
+        "urlMatchType",
+        "noteCount",
+      ]),
+    ).toEqual([
+      "url",
+      "username",
+      "password",
+      "otp",
+      "keep",
+      "keep",
+      "keep",
+      "keep",
+      "keep",
+      "keep",
+      "keep",
+    ]);
+    expect(
+      hasAmbiguousCsvMapping(suggestedCsvMapping(["username", "login"])),
+    ).toBe(true);
+  });
+
+  test("keeps unknown Firefox values in encrypted provenance while retaining multiple URLs and fill opt-in", () => {
+    const preview = parseCsvText(
+      "url,login_url,username,password,timePasswordChanged\nhttps://example.test/a,https://example.test/b,user,secret,2026-09-13",
+      limits,
+    );
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    const command = toCsvImportCommand({
+      source: "firefox",
+      preview,
+      row,
+      mapping: suggestedCsvMapping(preview.headers),
+      principal: { type: "user" },
+      expectedActor: actor,
+      rowId: "00000000-0000-4000-8000-000000000006",
+      limits,
+    });
+    expect(command?.body).toMatchObject({
+      login_urls: ["https://example.test", "https://example.test"],
+      browser_fill_enabled: false,
+    });
+    expect(command?.body.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field_key: "import_column_5",
+          value: "2026-09-13",
+        }),
+        expect.objectContaining({
+          field_key: "import_source_record",
+          value: expect.stringContaining('"header":"timePasswordChanged"'),
+        }),
+      ]),
+    );
+  });
+
   test("strips query and fragment metadata and refuses URL credentials", () => {
     expect(
       safeDestination("https://example.test/a?token=secret#fragment"),
