@@ -3,7 +3,7 @@ type: Reference
 title: "agent-review-queue — review, claim, and repair"
 description: "Browser isolation, the one-item-per-run review worker, atomic claim and ownership handoff SQL, and PASS/FAIL/repair evidence; the skill sends you here before reviewing, claiming, verifying, or repairing a review-queue row. Companion to the agent-review-queue skill."
 tags: [agent-review-queue, skills, review-worker]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-13T00:00:00Z
 ---
 
 # agent-review-queue — review, claim, and repair
@@ -16,12 +16,21 @@ timestamp: 2026-09-10T00:00:00Z
 
 ## Codex Browser isolation — mandatory for every automated review
 
-**Use an isolated browser first**, preferably Codex's built-in Browser with its own
-signed-in profile. Computer Use and other browser tools are allowed. If the isolated
-browser cannot complete the task (for example, a required account is signed in only
-in Arman's browser, or no isolated browser is available), use Arman's browser in a
-**new tab**. This fallback is pre-authorized; do not ask again just to switch browsers.
-Never navigate, control, or close a tab Arman is using. Close only your own tabs/groups.
+**Use an isolated browser for every review**, preferably Codex's built-in Browser with
+its own signed-in profile. Computer Use and other browser tools may control that
+isolated browser. Never use Arman's browser as a testing or availability fallback: a
+matching URL, signed-in session, unavailable isolated browser, or convenience is not
+authorization. Use another agent-owned harness or report the blocker.
+
+Arman's browser is reserved for work that must be done **ON ARMAN'S BEHALF** in his
+personal identity, such as reading his email or managing an account specifically as
+him. Before using it even then, check whether approved access can be completed in the
+isolated browser through AI Matrx Vault values, a brokered integration, or other
+agent-owned credentials; prefer that route. Use his browser only when the current
+request explicitly or inherently places his personal identity/session in scope.
+Otherwise ask before opening it. Permission never carries between tasks, accounts,
+browsers, or tabs. When authorized and unavoidable, open a new tab, never touch a tab
+he is using, and close only the tabs/groups you created.
 
 - Read the available browser tool's documentation and explicitly select its isolated
   browser where supported. No particular tool name, skill, or API is required.

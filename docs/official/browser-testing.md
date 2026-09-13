@@ -24,9 +24,13 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 
 ## THE ONE BROWSER LAW
 
-**Use your own isolated browser first**, preferably the provider's separate in-app Browser. Use the available tool's documented API; Computer Use is allowed, including for controlling the isolated browser. A missing older skill or API is not a reason to stop when another available tool can open it.
+**Use your own isolated browser for ordinary browsing and every application test**, preferably the provider's separate in-app Browser. Use the available tool's documented API; Computer Use is allowed when it controls the isolated browser. A missing older skill or API is not a reason to stop when another agent-owned browser harness is available.
 
-**If your isolated browser cannot complete the task, use the user's browser in a new tab.** This includes a required account signed in only there or an unavailable isolated browser. The fallback is pre-authorized; no additional permission is needed just to switch browsers. Never navigate, control, or close a tab the user is using. Close only the tabs/groups you create when finished; leave pre-existing tabs/groups untouched.
+**Never use the user's browser as a testing or availability fallback.** A matching URL, a signed-in user session, an unavailable isolated browser, or convenience is not authorization. If the isolated browser cannot complete a test, use another agent-owned harness or report the blocker. Matrx UI verification always uses the isolated browser with the authorized `admin@admin.com` test identity; it never borrows the user's Matrx session.
+
+**The user's browser is reserved for work that must be done ON THE USER'S BEHALF in the user's personal identity**, such as reading the user's email or managing an account specifically as the user. Before using it even then, check whether approved access can be completed in the isolated browser through AI Matrx Vault values, a brokered integration, or other agent-owned credentials; prefer that route. Use the user's browser only when the current request explicitly or inherently places that personal identity/session in scope. Otherwise ask before opening it. Permission never carries between tasks, accounts, browsers, or tabs.
+
+When behalf-only browser use is authorized and unavoidable, open a new tab. Never navigate, control, or close a tab the user is using. Close only the tabs/groups you create when finished; leave pre-existing tabs/groups untouched.
 
 **Claude mechanics below apply to the Claude Browser pane.** Codex agents use the available browser tool's own instructions; do not require a particular plugin name or Node-REPL bootstrap.
 
