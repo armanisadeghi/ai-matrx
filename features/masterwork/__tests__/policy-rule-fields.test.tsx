@@ -203,3 +203,48 @@ describe("a save never destroys the move fields the form does not own", () => {
     expect(out.move).toBeUndefined();
   });
 });
+
+/**
+ * THE SAME LAW, ONE LEVEL DOWN. `move.when` also carries a field no form field
+ * owns — `counterparty_state`, which `rulebookDocument` prints as "they are:" —
+ * and rebuilding `when` from the three the form DOES own dropped it. Found by
+ * review on the very commit that fixed the outer case: the fix is the class
+ * (carry every key the form does not own), not the key.
+ */
+describe("a save never destroys the WHEN fields the form does not own", () => {
+  const STATEFUL: RulebookRule = {
+    ...STATIC_RULE,
+    id: "R4",
+    move: {
+      when: {
+        summary: "first session, the client came because someone sent them",
+        known: ["referred by the court"],
+        counterparty_state: ["ambivalent", "not here by choice"],
+      },
+      next: { kind: "ask", target: "what would make this worth their time" },
+    },
+  };
+
+  it("keeps counterparty_state when the Expert edits the summary", () => {
+    const out = ruleMoveFromFields(
+      {
+        ...ruleMoveFieldsFromRule(STATEFUL),
+        preconditionSummary: "first session, court-referred",
+      },
+      STATEFUL.move,
+    );
+    expect(out.move?.when?.summary).toBe("first session, court-referred");
+    expect(out.move?.when?.counterparty_state).toEqual([
+      "ambivalent",
+      "not here by choice",
+    ]);
+  });
+
+  it("drops the whole when — counterparty_state included — when the summary is cleared", () => {
+    const out = ruleMoveFromFields(
+      { ...ruleMoveFieldsFromRule(STATEFUL), preconditionSummary: "" },
+      STATEFUL.move,
+    );
+    expect(out.move?.when).toBeUndefined();
+  });
+});

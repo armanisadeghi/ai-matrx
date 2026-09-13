@@ -516,10 +516,16 @@ export function ruleMoveFromFields(
     risk: values.nextActionRisk ? Number(values.nextActionRisk) : undefined,
     urgency: values.nextActionUrgency || undefined,
   });
-  const { when: _priorWhen, next: _priorNext, ...carried } = prior ?? {};
+  const { when: priorWhen, next: _priorNext, ...carried } = prior ?? {};
+  // The same law one level down: `when` carries `counterparty_state`, which no
+  // form field owns and the Rulebook document prints. Carry every key of the
+  // prior `when` the form does not own — but only onto a `when` that survives,
+  // so clearing the summary still deletes the whole half.
+  const { summary: _s, known: _k, unknown: _u, ...carriedWhen } =
+    priorWhen ?? {};
   const move: RuleMove = {
     ...carried,
-    ...(precondition ? { when: precondition } : {}),
+    ...(precondition ? { when: { ...carriedWhen, ...precondition } } : {}),
     ...(next_action ? { next: next_action } : {}),
   };
   return { move: Object.keys(move).length ? move : undefined };
