@@ -88,4 +88,9 @@ describe("plain Bitwarden JSON", () => {
     const [record] = parseBitwardenExport(source(`{"id":"33333333-3333-4333-8333-333333333333","name":"${"x".repeat(80)}","type":99}`), { ...limits, maxCellBytes: 40 });
     expect(record).toEqual({ status: "unsupported", ordinal: 0, title: "Item 1", reason: "The item type is unsupported." });
   });
+
+  test.each([undefined, "", 42])('refuses a malformed supported record without source (%p)', (sourceRecord) => {
+    const record = JSON.parse(JSON.stringify({ status: "supported", ordinal: 0, title: "Example", sourceState: "active", sourceRecord, hasOtp: false, kind: "custom" }));
+    expect(prepareStructuredImportCommand({ record, principal: { type: "user" }, expectedActor: { userId: "user", organizationId: "org" }, rowId: "id", browserFillEnabled: false, includeDeleted: false, includeArchived: false, limits })).toEqual({ status: "invalid", diagnostic: "The record has no source representation." });
+  });
 });
