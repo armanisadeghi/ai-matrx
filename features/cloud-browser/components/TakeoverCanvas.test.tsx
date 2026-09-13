@@ -50,6 +50,31 @@ async function render(ui: React.ReactElement) {
 }
 
 describe("TakeoverCanvas", () => {
+  it("open in another tab is its own recoverable state, with one button", async () => {
+    const onReconnect = jest.fn();
+    const v = await render(
+      <TakeoverCanvas
+        controller={ME_DRIVING}
+        ticket={null}
+        connecting={false}
+        openElsewhere
+        openError="This browser already has a live controller."
+        onReconnect={onReconnect}
+      />,
+    );
+    expect(v.hasSpinner()).toBe(false);
+    expect(v.text()).toContain("open in another tab or window");
+    // Not presented as a failure.
+    expect(v.text()).not.toContain("could not open");
+    const showHere = v.button("Show it here");
+    expect(showHere).toBeDefined();
+    await act(async () => {
+      showHere!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(onReconnect).toHaveBeenCalledTimes(1);
+    await v.unmount();
+  });
+
   it("shows the spinner only while it is actually connecting", async () => {
     const v = await render(
       <TakeoverCanvas controller={ME_DRIVING} ticket={null} connecting onReconnect={jest.fn()} />,
