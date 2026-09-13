@@ -108,6 +108,12 @@ weight; every closed row names its reason and its evidence.
 
 ## Step 3 — the interview
 
+The desk creates the interview and its researched questions over the AI Dream MCP tool
+`question_desk` (`create_interview`, then `add_question` per row, `update_question` as research
+lands, `mark_asked` when a row is put to him) instead of building a page — the admin surface
+already exists for this. Send Arman the admin URL it returns,
+`/administration/question-desk/<interview id>`, rather than a rendered page of your own.
+
 Open with one sentence: *"I have N questions to ask you and M things to tell you."* Then the
 "things to tell you" first, briefly — decisions the desk made in his name under delegation and
 rows closed because the answer already existed (he should see the laziness that was caught).
@@ -135,6 +141,12 @@ Completion: every researched row is `answered`, deferred with a date, or shipped
 
 ## Step 4 — record
 
+His answers are recorded on the `question_desk` question rows themselves — verdict plus
+verbatim `answer_text` — written either by him directly in the admin surface or, for an answer he
+gives you in chat, by your own call to `question_desk(action='record_answer')`. `record_answer` is
+only for answers given in chat; an answer he types or speaks in the admin surface is already on
+the row and needs no separate call.
+
 For each answer: write it into the row **verbatim**, dated, status `answered`. Then into the
 owning node's `DECISIONS.md` as a dated row (vision → `VISION.md`, quoted and attributed), so it
 is never re-asked. Run the intake sweep of [declared vs observed state](/policies/declared-vs-observed-state.md)
@@ -161,7 +173,15 @@ The row is not the terminal record; the asking agent must hear. In this order:
    asking skill knows how to pick it up from there.
 
 Mark the row `delivered — <how, when>`. A delivered, recorded row is deleted from the ledger in
-the same commit; a closed-by-desk row is deleted after fourteen days.
+the same commit; a closed-by-desk row is deleted after fourteen days. On the `question_desk` side,
+call `mark_delivered` (with `delivered_how` and `recorded_in`) right after the SendMessage /
+`claude --resume` step above — delivery to the ledger row and delivery on the question row happen
+together, not as two separate passes.
+
+A listening agent — one that filed a question and is waiting on it, not the desk itself — hears
+the answer through `question_desk(action='list_answers')` on resume, or the bounded
+`wait_for_answers` when it has nothing else to do; these are how it learns without the desk's
+SendMessage/resume step reaching it.
 
 Completion: every answered row is delivered or has a named hand-off line for Arman; the ledger
 holds only genuinely open rows.
@@ -184,3 +204,14 @@ the counts.
 - Pick a direction silently after "I don't know".
 - Leave an answered row undelivered, or a delivered row in the ledger.
 - Create a schedule for this duty.
+
+## Changelog
+
+- **2026-09-12 (in-app Question Desk)** — Step 3 now creates the interview and its questions over
+  the `question_desk` MCP tool and sends Arman the admin URL instead of a built page. Step 4 notes
+  his answers land on the question rows directly, with `record_answer` reserved for answers given
+  in chat. Step 5 adds `mark_delivered` alongside the SendMessage/resume step, and `list_answers` /
+  `wait_for_answers` as how a listening agent hears. See
+  [`/systems/platform/question-desk/STATE.md`](/systems/platform/question-desk/STATE.md) — the
+  admin route and the MCP tool are still building as of this date; the two HTML pages under
+  `operations/question-desk/` are not deleted until live verification passes.
