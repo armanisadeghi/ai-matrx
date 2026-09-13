@@ -14,7 +14,7 @@
  * (`useCloudBrowserTakeover`).
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
@@ -27,6 +27,29 @@ import {
   Zap,
 } from "lucide-react";
 import type { ControllerState } from "../types";
+
+/**
+ * How long a button that just CHANGED MEANING under the cursor ignores clicks.
+ *
+ * Found live 2026-09-13: in the steer flow the person's cursor is on "Take over
+ * immediately" at exactly the moment the agent reaches its boundary and control
+ * arrives — and "Return control" renders in that same spot. Their click did the
+ * OPPOSITE of what they meant (control went straight back to the agent). The
+ * same morph turns a double-click on "Take control" into a return. A short
+ * guard makes that click a no-op instead of a reversal.
+ */
+export const MORPH_GUARD_MS = 1200;
+
+function useGuardAfterChange(changeKey: string | null): boolean {
+  const [guarded, setGuarded] = useState(false);
+  useEffect(() => {
+    if (changeKey === null) return;
+    setGuarded(true);
+    const timer = window.setTimeout(() => setGuarded(false), MORPH_GUARD_MS);
+    return () => window.clearTimeout(timer);
+  }, [changeKey]);
+  return guarded;
+}
 
 export function ControllerBanner({
   controller,
@@ -50,6 +73,14 @@ export function ControllerBanner({
   busy?: boolean;
   className?: string;
 }) {
+  // Hooks before any early return. Keyed on the control revision so it fires
+  // each time control arrives with THIS person, not just on first mount.
+  const returnGuarded = useGuardAfterChange(
+    controller?.kind === "human" && controller.isMe
+      ? `me:${controller.controlRevision}`
+      : null,
+  );
+
   if (!controller) return null;
 
   const { kind, isMe, displayName, pendingRequestFrom } = controller;
@@ -125,7 +156,7 @@ export function ControllerBanner({
             size="sm"
             variant={pendingRequestFrom ? "default" : "outline"}
             onClick={onReturn}
-            disabled={busy}
+            disabled={busy || returnGuarded}
           >
             <LogOut className="mr-1.5 h-3.5 w-3.5" />
             Return control
