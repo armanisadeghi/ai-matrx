@@ -36,7 +36,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
-import { AlertTriangle, Lock, Plug, Save, Trash2, X } from "lucide-react";
+import { AlertTriangle, Lock, Plug, Save, X } from "lucide-react";
+import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -426,24 +427,27 @@ function RowActions<T extends EndpointApiRow>({
   const [pendingDelete, setPendingDelete] = useState(false);
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span tabIndex={row.is_system ? 0 : undefined} className="inline-flex">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7"
-              aria-label={row.is_system ? "System rows cannot be deleted" : `Delete ${deleteNoun}`}
-              disabled={row.is_system}
-              onClick={(event) => { event.stopPropagation(); setPendingDelete(true); }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>{row.is_system ? "System rows cannot be deleted" : `Delete ${deleteNoun}`}</TooltipContent>
-      </Tooltip>
+      <div onClick={(event) => event.stopPropagation()}>
+        <TrashTapButton
+          variant="solid"
+          bgColor="bg-destructive/10"
+          iconColor="text-destructive"
+          hoverBgColor="hover:bg-destructive/20"
+          activeBgColor="active:bg-destructive/25"
+          ariaLabel={
+            row.is_system
+              ? "System rows cannot be deleted"
+              : `Delete ${deleteNoun}`
+          }
+          tooltip={
+            row.is_system
+              ? "System rows cannot be deleted"
+              : `Delete ${deleteNoun}`
+          }
+          disabled={row.is_system}
+          onClick={() => setPendingDelete(true)}
+        />
+      </div>
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -11,7 +11,10 @@
 // ever leaving the keyboard should not have to page through eight screens.
 
 import { useState } from "react";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { cn } from "@/lib/utils";
+import { questionRecordingOrigin } from "../hooks/useDictationAudio";
 import {
   DOOR_LABEL,
   KIND_LABEL,
@@ -21,11 +24,16 @@ import {
 } from "../types";
 
 export interface AskTableProps {
+  interviewId: string;
   questions: DecisionQuestionRow[];
   onTakeRecommendation: (question: DecisionQuestionRow) => void;
   onSkip: (question: DecisionQuestionRow) => void;
   onHandBack: (question: DecisionQuestionRow) => void;
-  onWrite: (question: DecisionQuestionRow, words: string) => void;
+  onWrite: (
+    question: DecisionQuestionRow,
+    words: string,
+    spoken: boolean,
+  ) => void;
   /** Open this question on the one-per-screen view. */
   onOpen: (question: DecisionQuestionRow) => void;
   skipShipsRecommendation: boolean;
@@ -34,6 +42,7 @@ export interface AskTableProps {
 }
 
 export function AskTable({
+  interviewId,
   questions,
   onTakeRecommendation,
   onSkip,
@@ -46,6 +55,7 @@ export function AskTable({
 }: AskTableProps) {
   const [writingId, setWritingId] = useState<string | null>(null);
   const [words, setWords] = useState("");
+  const [spoken, setSpoken] = useState(false);
   const [wordsError, setWordsError] = useState<string | null>(null);
 
   return (
@@ -147,6 +157,7 @@ export function AskTable({
                       onClick={() => {
                         setWritingId(question.id);
                         setWords(question.answer_text ?? "");
+                        setSpoken(false);
                         setWordsError(null);
                       }}
                       title="Write an answer"
@@ -156,13 +167,28 @@ export function AskTable({
                   </div>
                   {writingId === question.id ? (
                     <div className="mt-2">
-                      <textarea
-                        autoFocus
-                        value={words}
-                        onChange={(event) => setWords(event.target.value)}
-                        placeholder="Recorded exactly as you write it."
-                        className="min-h-[70px] w-full min-w-[220px] resize-y rounded-md border border-input bg-background px-2.5 py-2 text-base text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                      />
+                      {/* The platform field, so this inline box gets the same
+                          mic, live transcription, cleanup and right-click menu
+                          as the full write box. */}
+                      <RecordingOriginProvider
+                        origin={questionRecordingOrigin(
+                          interviewId,
+                          question.id,
+                          question.title,
+                        )}
+                      >
+                        <ProTextarea
+                          autoFocus
+                          value={words}
+                          onChange={(event) => setWords(event.target.value)}
+                          onTranscriptionComplete={() => setSpoken(true)}
+                          placeholder="Typed or spoken. Recorded exactly as you give it."
+                          autoGrow
+                          minHeight={70}
+                          maxHeight={220}
+                          wrapperClassName="min-w-[240px]"
+                        />
+                      </RecordingOriginProvider>
                       <div className="mt-1.5 flex gap-1.5">
                         <Mini
                           busy={busyId === question.id}
@@ -175,7 +201,8 @@ export function AskTable({
                             }
                             setWordsError(null);
                             setWritingId(null);
-                            onWrite(question, words);
+                            onWrite(question, words, spoken);
+                            setSpoken(false);
                           }}
                         >
                           Save
@@ -184,6 +211,7 @@ export function AskTable({
                           busy={false}
                           onClick={() => {
                             setWritingId(null);
+                            setSpoken(false);
                             setWordsError(null);
                           }}
                         >

@@ -3,13 +3,24 @@
 // features/question-desk/components/AnswerBar.tsx
 //
 // The action bar: four ways to answer, each showing its key, plus the write
-// box, the voice panel, the saved line and the Undo.
+// box, the saved line and the Undo.
+//
+// 🚨 THE WRITE BOX IS `ProTextarea`, NEVER A RAW `<textarea>` (Arman,
+// 2026-09-12: *"you need to be using our protext area so that you automatically
+// get all of the recording features and the other things that come along with
+// it"*). Everything the mic used to need here — starting and stopping the
+// shared recorder, the live level, streaming transcription, the device menu,
+// the "you are still recording" protection before the box closes, the cleanup
+// agent, Copy, the right-click menu — is the platform field's, and arrives free.
+// This surface adds exactly two things ProTextarea cannot know: the origin
+// stamp that ties a recording to THIS question (a `RecordingOriginProvider`
+// around the box) and the fact that an answer came from the mic rather than the
+// keyboard (`onTranscriptionComplete`), which becomes `answer_source='voice'`.
 //
 // EVERY CONTROL WORKS OR IS ABSENT. There is no disabled-looking button here:
 // a control that cannot do its job is not rendered, and the reason is printed
-// where the button would have been. Two live examples — "Answer by voice"
-// disappears on a route with no recorder mounted and says so; the read-aloud
-// button disappears when the knob's parts hold no text on this question.
+// where the button would have been (the read-aloud button disappears when the
+// knob's parts hold no text on this question).
 //
 // WHAT THE SKIP BUTTON SAYS IS A KNOB. With
 // `question_desk.skip_ships_recommendation` true, skipping SHIPS the
@@ -18,9 +29,12 @@
 // must never be guessed.
 
 import type { RefObject } from "react";
-import { Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
+import { Mic, Volume2, VolumeX } from "lucide-react";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { cn } from "@/lib/utils";
-import type { VoiceAnswer } from "../hooks/useVoiceAnswer";
+import type { DictationAudio } from "../hooks/useDictationAudio";
+import { questionRecordingOrigin } from "../hooks/useDictationAudio";
 
 export interface SaveLine {
   tone: "ok" | "warn";
@@ -28,6 +42,9 @@ export interface SaveLine {
 }
 
 export interface AnswerBarProps {
+  interviewId: string;
+  questionId: string;
+  questionTitle: string;
   /** The recommendation's presence decides whether key 1 exists at all. */
   hasRecommendation: boolean;
   skipShipsRecommendation: boolean;
@@ -35,17 +52,17 @@ export interface AnswerBarProps {
   draftText: string;
   onDraftChange: (next: string) => void;
   draftStorageError: string | null;
+  /** True once the mic put words in the box — the save records that. */
+  draftFromVoice: boolean;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
+  onTranscriptionComplete: (text: string) => void;
+  audio: DictationAudio;
   onOpenWrite: () => void;
   onTakeRecommendation: () => void;
   onSkip: () => void;
   onHandBack: () => void;
   onSaveOwnWords: () => void;
-  voice: VoiceAnswer;
-  onStartVoice: () => void;
-  onStopVoice: () => void;
-  onSaveVoice: () => void;
-  onDiscardVoice: () => void;
+  onDiscardDraft: () => void;
   speaking: boolean;
   canReadAloud: boolean;
   onReadAloud: () => void;
@@ -59,23 +76,25 @@ export interface AnswerBarProps {
 
 export function AnswerBar(props: AnswerBarProps) {
   const {
+    interviewId,
+    questionId,
+    questionTitle,
     hasRecommendation,
     skipShipsRecommendation,
     writing,
     draftText,
     onDraftChange,
     draftStorageError,
+    draftFromVoice,
     textareaRef,
+    onTranscriptionComplete,
+    audio,
     onOpenWrite,
     onTakeRecommendation,
     onSkip,
     onHandBack,
     onSaveOwnWords,
-    voice,
-    onStartVoice,
-    onStopVoice,
-    onSaveVoice,
-    onDiscardVoice,
+    onDiscardDraft,
     speaking,
     canReadAloud,
     onReadAloud,
@@ -107,29 +126,10 @@ export function AnswerBar(props: AnswerBarProps) {
       </div>
 
       <div className="mb-2.5 flex flex-wrap gap-2">
-        {voice.available ? (
-          voice.phase === "listening" ? (
-            <Act keyCap="V" onClick={onStopVoice} busy={false}>
-              <Square className="size-3.5 text-destructive" aria-hidden />
-              Listening… stop
-            </Act>
-          ) : voice.phase === "transcribing" ? (
-            <Act keyCap="V" onClick={() => undefined} busy>
-              <Loader2 className="size-3.5 animate-spin" aria-hidden />
-              Writing down what you said…
-            </Act>
-          ) : (
-            <Act keyCap="V" onClick={onStartVoice} busy={busy}>
-              <Mic className="size-3.5" aria-hidden />
-              Answer by voice
-            </Act>
-          )
-        ) : (
-          <p className="self-center font-mono text-[10.5px] text-muted-foreground">
-            Voice answers need the recorder, which this page did not load.
-            Reload the page to answer out loud.
-          </p>
-        )}
+        <Act keyCap="V" onClick={onOpenWrite} busy={busy}>
+          <Mic className="size-3.5" aria-hidden />
+          Answer by voice
+        </Act>
 
         {canReadAloud ? (
           speaking ? (
@@ -150,47 +150,56 @@ export function AnswerBar(props: AnswerBarProps) {
         </Act>
       </div>
 
-      {voice.phase === "listening" ? (
-        <div className="mb-2.5 flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2">
-          <span className="font-mono text-[10.5px] tracking-[0.1em] uppercase text-destructive">
-            Listening…
-          </span>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-destructive transition-[width] duration-75"
-              style={{ width: `${Math.min(100, Math.max(2, voice.level))}%` }}
-            />
-          </div>
-          <span className="font-mono text-[10.5px] text-muted-foreground">
-            Esc cancels
-          </span>
-        </div>
-      ) : null}
-
-      {voice.phase === "transcript" ? (
-        <div className="mb-2.5 rounded-lg border border-border bg-card p-3">
-          <p className="mb-2 font-mono text-[10px] tracking-[0.1em] uppercase text-muted-foreground">
-            What you said — saved exactly like this
-          </p>
-          {voice.editing ? (
-            <textarea
+      {writing ? (
+        <div className="mb-2.5">
+          <RecordingOriginProvider
+            origin={questionRecordingOrigin(
+              interviewId,
+              questionId,
+              questionTitle,
+            )}
+          >
+            <ProTextarea
               ref={textareaRef}
-              value={voice.transcript}
-              onChange={(event) => voice.setTranscript(event.target.value)}
-              className="min-h-[84px] w-full resize-y rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              value={draftText}
+              onChange={(event) => onDraftChange(event.target.value)}
+              onTranscriptionComplete={onTranscriptionComplete}
+              placeholder="In your own words, typed or spoken. It is recorded exactly as you give it."
+              autoGrow
+              minHeight={96}
+              maxHeight={340}
+              enableTextStats
+              // The Send button is deliberately NOT wired: this surface owns
+              // the save so its own refusal sentence ("Write something first…")
+              // is what a person sees, and ProTextarea's submit gate would
+              // silently refuse a whitespace-only answer with no words at all.
             />
-          ) : (
-            <p className="qd-editorial m-0 text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
-              {voice.transcript}
+          </RecordingOriginProvider>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Act primary keyCap="⌘↵" onClick={onSaveOwnWords} busy={busy}>
+              Save this answer
+            </Act>
+            {draftText.length > 0 ? (
+              <Act keyCap="Esc" onClick={onDiscardDraft} busy={false}>
+                Discard
+              </Act>
+            ) : null}
+            <span className="font-mono text-[10.5px] text-muted-foreground">
+              To speak it, tap the microphone at the top-right of the box.
+            </span>
+          </div>
+          {draftFromVoice ? (
+            <p className="mt-1.5 font-mono text-[10.5px] text-muted-foreground">
+              Saved as a spoken answer, exactly as it was transcribed.
             </p>
-          )}
-          {voice.audioError ? (
-            <p className="mt-2 text-[12.5px] text-destructive">
-              {voice.audioError}
-              {voice.retryAudio ? (
+          ) : null}
+          {audio.error ? (
+            <p className="mt-1.5 text-[12.5px] text-destructive">
+              {audio.error}
+              {audio.retry ? (
                 <button
                   type="button"
-                  onClick={voice.retryAudio}
+                  onClick={audio.retry}
                   className="ml-2 underline underline-offset-2"
                 >
                   Try saving the recording again
@@ -198,39 +207,6 @@ export function AnswerBar(props: AnswerBarProps) {
               ) : null}
             </p>
           ) : null}
-          <div className="mt-2.5 flex flex-wrap gap-2">
-            <Act primary keyCap="↵" onClick={onSaveVoice} busy={busy}>
-              Save this answer
-            </Act>
-            {voice.editing ? null : (
-              <Act keyCap="E" onClick={voice.beginEditing} busy={false}>
-                Edit it first
-              </Act>
-            )}
-            <Act keyCap="Esc" onClick={onDiscardVoice} busy={false}>
-              Discard
-            </Act>
-          </div>
-        </div>
-      ) : null}
-
-      {writing ? (
-        <div className="mb-2.5">
-          <textarea
-            ref={textareaRef}
-            value={draftText}
-            onChange={(event) => onDraftChange(event.target.value)}
-            placeholder="In your own words. It is recorded exactly as you write it."
-            className="min-h-[84px] w-full resize-y rounded-md border border-input bg-background px-3 py-2.5 text-base text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          />
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Act primary keyCap="⌘↵" onClick={onSaveOwnWords} busy={busy}>
-              Save this answer
-            </Act>
-            <span className="font-mono text-[10.5px] text-muted-foreground">
-              Esc closes the box — your words are kept
-            </span>
-          </div>
           {draftStorageError ? (
             <p className="mt-2 text-[12.5px] text-warning">{draftStorageError}</p>
           ) : null}

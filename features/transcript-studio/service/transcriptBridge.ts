@@ -45,6 +45,7 @@ import {
   updateSession,
 } from "./studioService";
 import { supabase } from "@/utils/supabase/client";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
   DEFAULT_MODULE_ID,
   NEW_SESSION_DEFAULT_TITLE,
@@ -53,19 +54,6 @@ import type {
   RawSegment,
   StudioSession,
 } from "../types";
-
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function secondsToTimecode(sec: number): string {
-  if (!Number.isFinite(sec) || sec < 0) sec = 0;
-  const total = Math.floor(sec);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  if (m < 60) return `${m}:${s.toString().padStart(2, "0")}`;
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
-  return `${h}:${mm.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-}
 
 /**
  * Find the existing studio session for a transcript, if any. We look up
