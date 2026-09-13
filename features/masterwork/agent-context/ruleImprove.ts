@@ -1,5 +1,15 @@
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
-import type { RulebookRule, RulebookSections, RuleSeverity } from "../types";
+import {
+  mergeRuleFieldValues,
+  RULE_ACTION_KINDS,
+  RULE_POLICY_LEVELS,
+  type RuleActionKind,
+  type RulePolicyLevel,
+  type RuleFieldValues,
+  type RulebookRule,
+  type RulebookSections,
+  type RuleSeverity,
+} from "../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
@@ -30,6 +40,80 @@ export interface RuleImproveResult {
   detection: string;
   severity: RuleSeverity;
   section: string;
+  /**
+   * The decision shape (W58), when the rewrite carries one. A decision rule
+   * handed to the Mandate comes back WITH its precondition / next action /
+   * cost / risk — the rewrite is of the judgment, not only of the sentence
+   * describing it. Absent on an ordinary rule.
+   */
+  policy?: RuleImprovePolicy;
+}
+
+/** The decision fields of a rewritten rule — the same closed sets the editor offers. */
+export interface RuleImprovePolicy {
+  precondition: string;
+  next_action: string;
+  action_kind: RuleActionKind;
+  cost: RulePolicyLevel;
+  risk: RulePolicyLevel;
+}
+
+const POLICY_RESULT_KEYS = [
+  "precondition",
+  "next_action",
+  "action_kind",
+  "cost",
+  "risk",
+] as const;
+
+function isActionKind(value: unknown): value is RuleActionKind {
+  return (RULE_ACTION_KINDS as readonly unknown[]).includes(value);
+}
+
+function isPolicyLevel(value: unknown): value is RulePolicyLevel {
+  return (RULE_POLICY_LEVELS as readonly unknown[]).includes(value);
+}
+
+/**
+ * Read the decision fields off the Mandate's reply. `kind: "policy"` or any
+ * of the five decision keys present means the agent is returning a decision
+ * rule, and then every one of the five must be there and valid — a rewrite
+ * that names a precondition but drops the cost would land a half-judgment the
+ * Expert cannot review. Nothing present means an ordinary rule (`undefined`).
+ */
+function readPolicyResult(value: Record<string, unknown>): RuleImprovePolicy | undefined {
+  const declared = value.kind === "policy";
+  const present = POLICY_RESULT_KEYS.filter(
+    (key) => value[key] !== undefined && value[key] !== null && value[key] !== "",
+  );
+  if (!declared && present.length === 0) return undefined;
+  const missing = POLICY_RESULT_KEYS.filter((key) => !present.includes(key));
+  if (missing.length > 0) {
+    throw new Error(
+      `The AI returned a decision rule without its ${missing.join(", ")} field(s).`,
+    );
+  }
+  const precondition = value.precondition;
+  const nextAction = value.next_action;
+  if (typeof precondition !== "string" || typeof nextAction !== "string") {
+    throw new Error("The AI returned an invalid precondition or next_action field.");
+  }
+  if (!isActionKind(value.action_kind)) {
+    throw new Error("The AI returned an action_kind outside the allowed set.");
+  }
+  if (!isPolicyLevel(value.cost) || !isPolicyLevel(value.risk)) {
+    throw new Error("The AI returned a cost or risk outside low / medium / high.");
+  }
+  if (!precondition.trim() || !nextAction.trim()) {
+    throw new Error("The AI dropped the decision rule's precondition or next action.");
+  }
+  return {
+    precondition: precondition.trim(),
+    next_action: nextAction.trim(),
+    action_kind: value.action_kind,
+    cost: value.cost,
+    risk: value.risk,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -69,6 +153,7 @@ export function coerceRuleImproveResult(
     ? rawSection
     : opts.fallbackSection;
 
+  const policy = readPolicyResult(value);
   const result: RuleImproveResult = {
     name: requireString(value, "name"),
     statement: requireString(value, "statement"),
@@ -76,11 +161,45 @@ export function coerceRuleImproveResult(
     detection: requireString(value, "detection"),
     severity,
     section,
+    ...(policy ? { policy } : {}),
   };
   if (!result.name.trim() || !result.statement.trim()) {
     throw new Error("The AI dropped the rule name or the rule itself.");
   }
   return result;
+}
+
+/**
+ * The decision fields the rewrite lands with. The reply's decision shape wins
+ * when it carries one; a reply with none leaves a decision rule's stored
+ * judgment exactly as it was (a prose-only rewrite never demotes a decision
+ * rule to a statement), and an ordinary rule stays ordinary.
+ */
+function policyFieldsAfterImprove(
+  current: Pick<RulebookRule, "kind" | "precondition" | "next_action" | "action_kind" | "cost" | "risk">,
+  result: RuleImproveResult,
+): Pick<RulebookRule, "kind" | "precondition" | "next_action" | "action_kind" | "cost" | "risk"> {
+  if (result.policy) {
+    return {
+      kind: "policy",
+      precondition: result.policy.precondition,
+      next_action: result.policy.next_action,
+      action_kind: result.policy.action_kind,
+      cost: result.policy.cost,
+      risk: result.policy.risk,
+    };
+  }
+  if (current.kind === "policy") {
+    return {
+      kind: "policy",
+      precondition: current.precondition,
+      next_action: current.next_action,
+      action_kind: current.action_kind,
+      cost: current.cost,
+      risk: current.risk,
+    };
+  }
+  return {};
 }
 
 /**
@@ -101,6 +220,7 @@ export function applyRuleImprove(
     detection: result.detection.trim() || undefined,
     severity: result.severity,
     section: result.section,
+    ...policyFieldsAfterImprove(current, result),
     draft: true,
   };
   delete next.rejected;
@@ -126,10 +246,25 @@ export function applyRuleTidy(
     statement: result.statement.trim(),
     rationale: result.rationale.trim(),
     detection: result.detection.trim(),
+    // A decision rule's precondition and next action are prose too, so a tidy
+    // may polish them — but its action kind, cost and risk are the Expert's
+    // classifications and stay frozen exactly like severity and section. A
+    // tidy never adds or removes the decision shape.
+    ...(current.isPolicy && result.policy
+      ? {
+          precondition: result.policy.precondition,
+          nextAction: result.policy.next_action,
+        }
+      : {}),
   };
   if (!next.name || !next.statement) {
     throw new Error("AI cleanup removed the rule name or the rule statement.");
   }
+  // No second guard on the decision prose: a reply that CARRIES a decision
+  // shape has already been refused by `readPolicyResult` when either field is
+  // blank, and a reply that carries none leaves the form's own values exactly
+  // as they were — including the empty fields of a decision rule the Expert
+  // has only just toggled on and not yet written (Bugbot, round 6).
   return next;
 }
 
@@ -145,6 +280,13 @@ export function readRuleEditorDraft(
     rulebookVersion: number;
     mode: RulebookDraftSnapshot["mode"];
     ruleId: string | null;
+    /**
+     * The saved rule's form values. A draft carries only the keys it was
+     * written with, so anything it omits — the W58 decision fields on a draft
+     * written before they existed — reads from the live rule instead of being
+     * silently blanked.
+     */
+    fallback: RuleFieldValues;
   },
 ): {
   fields: RulebookDraftSnapshot;
@@ -174,16 +316,44 @@ export function readRuleEditorDraft(
     ) {
       return null;
     }
+    // The decision fields (W58) ride the same snapshot as the prose. Each is
+    // taken only when the stored value is one this form can actually produce;
+    // anything else falls back to the saved rule.
+    const policy: Partial<RuleFieldValues> = {};
+    if (typeof candidate.isPolicy === "boolean") {
+      policy.isPolicy = candidate.isPolicy;
+    }
+    if (typeof candidate.precondition === "string") {
+      policy.precondition = candidate.precondition;
+    }
+    if (typeof candidate.nextAction === "string") {
+      policy.nextAction = candidate.nextAction;
+    }
+    if (
+      isActionKind(candidate.actionKind)
+    ) {
+      policy.actionKind = candidate.actionKind;
+    }
+    if (isPolicyLevel(candidate.cost)) {
+      policy.cost = candidate.cost;
+    }
+    if (isPolicyLevel(candidate.risk)) {
+      policy.risk = candidate.risk;
+    }
+
     return {
       mode,
       rule_id: ruleId,
-      name: candidate.name,
-      statement: candidate.statement,
-      rationale: candidate.rationale,
-      detection: candidate.detection,
-      quote: candidate.quote,
-      severity,
-      section: candidate.section,
+      ...mergeRuleFieldValues(expected.fallback, {
+        name: candidate.name,
+        statement: candidate.statement,
+        rationale: candidate.rationale,
+        detection: candidate.detection,
+        quote: candidate.quote,
+        severity,
+        section: candidate.section,
+        ...policy,
+      }),
     };
   };
 
