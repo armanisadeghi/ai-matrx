@@ -19472,6 +19472,8 @@ export type Database = {
           created_by: string | null
           dataset_id: string
           id: string
+          metadata: Json
+          organization_id: string
           scope_id: string
           template_id: string
           template_version: number
@@ -19482,6 +19484,8 @@ export type Database = {
           created_by?: string | null
           dataset_id: string
           id?: string
+          metadata?: Json
+          organization_id: string
           scope_id: string
           template_id: string
           template_version: number
@@ -19492,6 +19496,8 @@ export type Database = {
           created_by?: string | null
           dataset_id?: string
           id?: string
+          metadata?: Json
+          organization_id?: string
           scope_id?: string
           template_id?: string
           template_version?: number
@@ -27700,6 +27706,7 @@ export type Database = {
           error: Json | null
           file_id: string
           id: string
+          metadata: Json
           organization_id: string
           scheduled_for: string
           skipped_reason: string | null
@@ -27716,6 +27723,7 @@ export type Database = {
           error?: Json | null
           file_id: string
           id?: string
+          metadata?: Json
           organization_id: string
           scheduled_for?: string
           skipped_reason?: string | null
@@ -27732,6 +27740,7 @@ export type Database = {
           error?: Json | null
           file_id?: string
           id?: string
+          metadata?: Json
           organization_id?: string
           scheduled_for?: string
           skipped_reason?: string | null
@@ -52256,6 +52265,7 @@ export type Database = {
           p_actor: string
           p_container_id: string
           p_container_type: string
+          p_require_role?: boolean
         }
         Returns: {
           actor_role: string
@@ -52613,6 +52623,14 @@ export type Database = {
             }
             Returns: string[]
           }
+      discovery_class_selftest: {
+        Args: never
+        Returns: {
+          check_name: string
+          detail: string
+          status: string
+        }[]
+      }
       drop_governance_guard: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -52832,7 +52850,10 @@ export type Database = {
         Args: { p_limit?: number; p_organization_id: string }
         Returns: Json
       }
-      org_readable: { Args: { p_org: string }; Returns: boolean }
+      org_readable: {
+        Args: { p_org: string; p_token: string }
+        Returns: boolean
+      }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
       platform_admin_read_prefix: { Args: { p_token: string }; Returns: string }
       privacy_wall_read_lane_parity: {
@@ -64880,6 +64901,14 @@ export type Database = {
           p_token: string
         }
         Returns: undefined
+      }
+      provisioner_selftest: {
+        Args: never
+        Returns: {
+          check_name: string
+          detail: string
+          status: string
+        }[]
       }
       purpose_for_unit: {
         Args: { p_position?: number; p_unit_id: string; p_unit_type: string }
@@ -90807,21 +90836,30 @@ export type Database = {
         Row: {
           created_at: string
           executor_name: string
+          id: string
           is_active: boolean
+          metadata: Json
+          organization_id: string
           tool_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           executor_name: string
+          id?: string
           is_active?: boolean
+          metadata?: Json
+          organization_id: string
           tool_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           executor_name?: string
+          id?: string
           is_active?: boolean
+          metadata?: Json
+          organization_id?: string
           tool_id?: string
           updated_at?: string
         }
