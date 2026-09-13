@@ -88,6 +88,7 @@ import {
 import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
 import { useTriageDialogSession } from "../../triage/triageSession";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
+import { RuleMove, ruleMoveIsEmpty } from "./RuleMove";
 import { RuleHistory } from "./RuleHistory";
 import {
   RuleKeptExpressions,
@@ -98,6 +99,7 @@ import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { IngestTimelineDialog } from "./IngestTimelineDialog";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
 import {
   fetchDistillationApproaches,
@@ -478,8 +480,15 @@ export function RuleRow({
       ) : null}
       {openRow ? (
         <div className="space-y-2 border-t border-border px-9 py-2 text-sm">
-          {/* 🚨 THE DECISION HALF first — for a policy rule it IS the rule. */}
+          {/* 🚨 THE DECISION HALF first — for a policy rule it IS the rule.
+              THE MOVE sits immediately under it: same judgment, broken into
+              the parts a machine can rank (what was still unknown, what the
+              next step buys, what it costs on the 1-5 ladder). ONE place a
+              rule's "when → next" lives, at two depths — never two competing
+              renderers of the same fields. Renders nothing for a rule that
+              carries neither. */}
           <RuleDecision rule={rule} />
+          {ruleMoveIsEmpty(rule) ? null : <RuleMove rule={rule} />}
           {rule.rationale ? (
             <div>
               <div className="text-xs font-medium text-muted-foreground">
@@ -717,6 +726,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [chatImportOpen, setChatImportOpen] = useState(
     searchParams.get("chatImport") === "1",
   );
+  // The TIMELINE Approach ("a case that unfolded") lands here with
+  // ?intake=timeline — the unfolding dialog IS the next step. The registry row
+  // carries the same `{"intake":"timeline"}` in its `intake_query`, so the
+  // deep link and the in-page picker can never drift apart.
+  const [timelineOpen, setTimelineOpen] = useState(
+    searchParams.get("intake") === "timeline",
+  );
 
   /**
    * THE ONE MAP from a `platform.approach` row to the lane it opens on this
@@ -768,6 +784,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           return;
         case "conduct":
           setConductorOpen(true);
+          return;
+        // Trial 7's UNFOLDING-CASE door — the dialog that can also SEAL a case
+        // as a held-out exam, which the `timeline` ingest lane has no notion
+        // of. A registry row reaches it with `intake_query.intake="timeline"`.
+        case "unfolding":
+          setTimelineOpen(true);
           return;
       }
     },
@@ -2066,6 +2088,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     rulebookId={rulebook.id}
                     understudy={understudy}
                     approvedCount={approvedCount}
+                    rulebookVersion={rulebook.version}
                     canEdit={canEdit}
                     onCreated={reloadMasterworks}
                   />
@@ -2106,6 +2129,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 rulebookId={rulebook.id}
                 understudy={understudy}
                 approvedCount={approvedCount}
+                rulebookVersion={rulebook.version}
                 canEdit={canEdit}
                 onCreated={reloadMasterworks}
               />
@@ -2528,6 +2552,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <BodyOfWorkDialog
             open={corpusOpen}
             onOpenChange={setCorpusOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+          />
+          <IngestTimelineDialog
+            open={timelineOpen}
+            onOpenChange={setTimelineOpen}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
           />

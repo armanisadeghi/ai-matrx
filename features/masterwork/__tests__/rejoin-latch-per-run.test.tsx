@@ -21,6 +21,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BodyOfWorkDialog } from "../components/detail/BodyOfWorkDialog";
 import { ChatImportDialog } from "../components/detail/ChatImportDialog";
 import { IngestSourceDialog } from "../components/detail/IngestSourceDialog";
+import { IngestTimelineDialog } from "../components/detail/IngestTimelineDialog";
 import { TriageDraftsDialog } from "../triage/TriageDraftsDialog";
 import type { Rulebook } from "../types";
 
@@ -177,6 +178,21 @@ const DIALOGS: {
     name: "ChatImportDialog",
     render: (open, onOpenChange) => (
       <ChatImportDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        rulebook={RULEBOOK}
+      />
+    ),
+  },
+  {
+    // The fifth, added 2026-09-13: this dialog was built after the other four
+    // were converted, so it reproduced the latch the class fix had just
+    // removed — which is exactly why the case list, not a per-file test, is
+    // the guard. Its unfold is also the most expensive of the five to pay for
+    // twice.
+    name: "IngestTimelineDialog",
+    render: (open, onOpenChange) => (
+      <IngestTimelineDialog
         open={open}
         onOpenChange={onOpenChange}
         rulebook={RULEBOOK}

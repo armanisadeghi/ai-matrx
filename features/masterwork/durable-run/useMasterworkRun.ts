@@ -76,8 +76,20 @@ export type MasterworkRunSurface =
   | "dump"
   | "corpus"
   | "timeline"
+  // The UNFOLDING lane (`/masterworks/ingest-unfolding`) — a SEPARATE
+  // surface from `timeline`, and the separation is load-bearing. Two
+  // trials built a case lane at the same time: trial 8's lives in the
+  // source dialog on `/masterworks/ingest-timeline`, trial 7's in its own
+  // dialog on `/masterworks/ingest-unfolding`, and they parse their
+  // results with DIFFERENT parsers. While both declared `timeline` they
+  // shared one pointer key (`${surface}:${rulebookId}`), so a reload could
+  // rejoin an unfolding run inside the source dialog — wrong parser, and
+  // no seal-and-strip on a HELD-OUT case, which is the one run whose
+  // resolution must never reach the screen (Bugbot, 2026-09-13).
+  | "unfolding"
   | "triage"
   | "audition"
+  | "audition_unfolding"
   // The BLIND PAIRWISE Audition (`/masterworks/audition-pairwise`) — two of the
   // Expert's own answers judged against each other with no reference. Its own
   // surface and pointer: it never rejoins the reference Audition's dialog.
@@ -99,16 +111,27 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // (`/masterworks/ingest-corpus`) — its own surface + pointer for the same
   // reason, even though its terminal event type matches the ingest lanes'.
   corpus: "masterwork_ingest_complete",
-  // The `timeline` Approach (`/masterworks/ingest-timeline`) — a case that
-  // unfolds in time, chunked by STEP. Its own surface + pointer so a case never
-  // rejoins the single-source ingest dialog or vice versa, even though it lands
-  // the same terminal event.
+  // The unfolding TIMELINE Approach (`/masterworks/ingest-timeline`) — a
+  // narrative unfolded into a `serial_observation_timeline`, chunked by STEP,
+  // and then either distilled (teaching) or sealed (held-out). Its own surface
+  // + pointer so a timeline never rejoins the single-source ingest dialog or
+  // vice versa, even though its terminal event type matches the other ingest
+  // lanes'.
   timeline: "masterwork_ingest_complete",
+  // The UNFOLDING lane (`/masterworks/ingest-unfolding`) — the same
+  // terminal event as the other ingest lanes, its own surface + pointer so
+  // it can never rejoin the source dialog's timeline lane.
+  unfolding: "masterwork_ingest_complete",
   // Sorting the DRAFT pile by what the Rulebook is FOR
   // (`/masterworks/triage`, W59 + W61). Its own surface + pointer: a triage is
   // not an ingest, and a reload must never rejoin one as the other.
   triage: "masterwork_triage_complete",
   audition: "masterwork_audition_verdict",
+  // The UNFOLDING audition (mode `unfolding`) — sealed cases worked under the
+  // case oracle. Its own surface and pointer: a desk-vs-vanilla case table is
+  // not the text-vs-reference verdict, and one dialog tab must never rejoin
+  // the other's run.
+  audition_unfolding: "masterwork_audition_unfolding_verdict",
   compare_two: "masterwork_pairwise_verdict",
   checkup: "masterwork_checkup_complete",
   // The manual "clean up what I said" pass (`/masterworks/clean-corpus`) — a
@@ -149,11 +172,24 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   // faithfulness mode makes TWO, so the promise is doubled rather than guessed
   // downward. Re-measure once this lane has runs of its own on the ledger.
   compare_two: 60_000,
+  // The unfolding audition walks a sealed case one disclosure at a time, so it
+  // is a multiple of the reference Audition's single judge call rather than a
+  // sibling of it. Re-measure once this lane has runs of its own on the ledger.
+  audition_unfolding: 120_000,
   checkup: 80_000,
   clean_corpus: 60_000,
-  // Trial 8, 2026-09-12: 56 timeline ingests (one case each) ran 31–103 s
-  // (median ~60 s); the two live triage passes of ~900 drafts took 89 s.
+  // The timeline lane unfolds the narrative and then distils it window by
+  // window — the same shape as `ingest`, plus the unfolding call. Estimated at
+  // 180 s until it had runs of its own; MEASURED since (Trial 8, 2026-09-12):
+  // 56 timeline ingests (one case each) ran 31–103 s, median ~60 s. The
+  // measurement wins, as the header of this table says it must.
   timeline: 90_000,
+  // The unfolding lane does the same work as `timeline` plus the sealing
+  // and window pass, and has no runs of its own on the ledger yet, so it
+  // inherits the measured timeline figure rather than a guess. Re-measure
+  // once it has runs of its own, as the header of this table requires.
+  unfolding: 90_000,
+  // Trial 8, 2026-09-12: the two live triage passes of ~900 drafts took 89 s.
   triage: 90_000,
 };
 

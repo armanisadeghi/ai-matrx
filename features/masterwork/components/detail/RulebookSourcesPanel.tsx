@@ -65,6 +65,7 @@ import {
   type SourceSectionYield,
 } from "../../sourceSections";
 import { writeDumpUrlSources } from "../../service";
+import { HeldOutCasesSection } from "./HeldOutCasesSection";
 import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
 import type { PastedSourceMetadata } from "../../record/pastedSource";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
@@ -758,6 +759,9 @@ export function RulebookSourcesPanel({
               />
             </div>
           ) : null}
+
+          {/* ── held-out cases (sealed) ──────────────────────────────── */}
+          <HeldOutCasesSection rulebookId={rulebook.id} />
 
           {/* ── the run ──────────────────────────────────────────────── */}
           {canEdit ? (

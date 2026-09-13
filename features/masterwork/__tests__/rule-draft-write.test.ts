@@ -178,7 +178,14 @@ describe("rule_draft → the Rulebook", () => {
 
     expect(() =>
       requireRuleDraftInput({ mode: "new", actionKind: "guess" }, rulebook),
-    ).toThrow("Rule draft actionKind must be one of ask, test, treat, refer, wait, commit.");
+      // The move vocabulary is ONE closed list since the 2026-09-13 convergence:
+      // the flat decision half's six and the structured `move` half's nine were
+      // declared separately, and the nine are a strict superset (`RULE_ACTION_KINDS`
+      // in `types.ts`), so a rule can never be readable through one half and not
+      // the other. This message enumerates that one list.
+    ).toThrow(
+      "Rule draft actionKind must be one of ask, examine, test, image, treat, observe, refer, wait, commit.",
+    );
     expect(() =>
       requireRuleDraftInput({ mode: "new", risk: "enormous" }, rulebook),
     ).toThrow("Rule draft risk must be one of low, medium, high");

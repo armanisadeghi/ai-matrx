@@ -32,12 +32,16 @@ import {
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { improveFieldsFrom, policyRulePatch, RuleFields } from "./RuleFields";
 import {
+  EMPTY_RULE_MOVE_FIELDS,
   mergeRuleFieldValues,
   ruleFieldForElementId,
   ruleFieldValues,
+  ruleMoveFieldsFromRule,
+  ruleMoveFromFields,
   type RuleFieldValues,
   type RulebookRule,
   type RulebookSections,
+  type RuleMoveFieldValues,
 } from "../../types";
 
 /**
@@ -156,9 +160,38 @@ function RuleEditorForm({
       }),
     [initial?.id, isNew, persistedEntry?.data, rulebookVersion, savedValues],
   );
-  const wasOpen = useRef(open);
+  /**
+   * WHAT A REMOUNT STARTS FROM. This form is REMOUNTED, not reopened, on every
+   * `draftRevision` bump and whenever the page mounts it already open — and
+   * `wasOpen` used to be seeded with `open`, so the restore effect below never
+   * ran on such a mount. The persisted draft was then ignored at first render
+   * AND at restore, the live rule's values took the screen, and the persist
+   * effect immediately wrote them over the Expert's saved draft (Bugbot on
+   * e1b62ed0). So the persisted draft is part of the INITIAL state, and
+   * `wasOpen` starts false so a mount that starts open restores like any other
+   * opening.
+   */
+  const wasOpen = useRef(false);
   const [values, setValues] = useState<RuleFieldValues>(() =>
-    mergeRuleFieldValues(savedValues, stagedDraft),
+    mergeRuleFieldValues(savedValues, stagedDraft ?? persistedDraft?.fields),
+  );
+  /**
+   * The policy half (contract §2) — held as plain form strings and converted
+   * once, at save, through `ruleMoveFromFields`. Not part of the staged
+   * agent draft (`RulebookDraftSnapshot` is the prose the Conductor writes);
+   * an edit that touches only these fields still saves, because
+   * `applyManualRuleEdit` merges the whole edited rule either way.
+   *
+   * It IS persisted, beside `fields`, in the wizard draft: until 2026-09-12
+   * (Bugbot, PR #222) it was written nowhere, so a reload — or the reopen path
+   * below, which restores name/statement/rationale from the persisted draft —
+   * silently threw away everything typed into "When:" and "Next:" and put the
+   * live rule's values back.
+   */
+  const [policy, setPolicy] = useState<RuleMoveFieldValues>(
+    () =>
+      persistedDraft?.policy ??
+      (initial ? ruleMoveFieldsFromRule(initial) : EMPTY_RULE_MOVE_FIELDS),
   );
   const [saving, setSaving] = useState(false);
   const [beforeTidy, setBeforeTidy] =
@@ -185,6 +218,7 @@ function RuleEditorForm({
           baseVersion: rulebookVersion,
           fields: draftSnapshot(),
           beforeTidy,
+          policy,
         },
       }),
     );
@@ -194,6 +228,7 @@ function RuleEditorForm({
     draftSnapshot,
     onDraftChange,
     open,
+    policy,
     rulebookVersion,
     wizardId,
   ]);
@@ -207,6 +242,14 @@ function RuleEditorForm({
         mergeRuleFieldValues(savedValues, stagedDraft ?? persistedDraft?.fields),
       );
       setBeforeTidy(persistedDraft?.beforeTidy ?? null);
+      // The restored policy wins over the live rule for the same reason the
+      // restored prose does: it is what the Expert typed and has not saved.
+      setPolicy(
+        persistedDraft?.policy ??
+          (initial
+            ? ruleMoveFieldsFromRule(initial)
+            : EMPTY_RULE_MOVE_FIELDS),
+      );
     }
     wasOpen.current = open;
   }, [open, persistedDraft, savedValues, stagedDraft]);
@@ -273,7 +316,17 @@ function RuleEditorForm({
           quote: quote.trim() || undefined,
           severity,
           section,
+          // The flat decision fields (`kind`, `precondition`, `next_action`,
+          // `action_kind`, `cost`, `risk`) through the ONE storage mapping,
+          // which clears each of them when the toggle is off — so an absent
+          // half is DELETED, never left behind as a stale policy the Expert
+          // thinks they cleared.
           ...policyRulePatch(values),
+          // The structured `move` half, which carries every field the form does
+          // not own (`ask`, `rules_in`, `rules_out`, `information_value`,
+          // `frame`, `order`, and `when.counterparty_state`) off the rule being
+          // edited — never a blind overwrite.
+          ...ruleMoveFromFields(policy, initial?.move),
         },
       });
       dispatch(clearWizardDraft(wizardId));
@@ -386,6 +439,10 @@ function RuleEditorForm({
             values={values}
             onChange={(patch) =>
               setValues((current) => mergeRuleFieldValues(current, patch))
+            }
+            move={policy}
+            onMoveChange={(patch) =>
+              setPolicy((current) => ({ ...current, ...patch }))
             }
             sections={sections}
           />

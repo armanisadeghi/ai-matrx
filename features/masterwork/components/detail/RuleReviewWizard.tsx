@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
+import { RuleMove } from "./RuleMove";
 import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import type { Rulebook, RulebookRule } from "../../types";
 import { ruleState, SEVERITY_LABELS } from "../../types";
@@ -228,8 +229,11 @@ export function RuleReviewWizard({
                       {rule.statement}
                     </p>
                   </div>
-                  {/* 🚨 THE DECISION HALF — never approve half a rule. */}
+                  {/* 🚨 THE DECISION HALF — never approve half a rule — and
+                      THE MOVE under it, the same judgment broken into parts.
+                      Both are part of what the Expert is approving. */}
                   <RuleDecision rule={rule} />
+                  <RuleMove rule={rule} />
                   {rule.quote ? (
                     <div className="pt-2">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
