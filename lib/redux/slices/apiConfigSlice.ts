@@ -176,7 +176,7 @@ interface ApiConfigState {
 const PERSIST_KEY = "matrx.apiConfig.v1";
 
 interface PersistedApiConfig {
-  activeServer: ServerEnvironment;
+  activeServer: string;
   /** Kept until the shared boot notice has actually been shown. */
   retiredEc2ApiSelectionNotice?: boolean;
   customUrl: string | null;
@@ -186,8 +186,12 @@ interface PersistedApiConfig {
   aiApiVersionOverride: AiApiVersion | null;
 }
 
-function loadPersistedServer(): PersistedApiConfig {
-  const fallback: PersistedApiConfig = {
+type LoadedPersistedApiConfig = Omit<PersistedApiConfig, "activeServer"> & {
+  activeServer: ServerEnvironment;
+};
+
+function loadPersistedServer(): LoadedPersistedApiConfig {
+  const fallback: LoadedPersistedApiConfig = {
     activeServer: "production",
     retiredEc2ApiSelectionNotice: false,
     customUrl: null,
@@ -214,9 +218,10 @@ function loadPersistedServer(): PersistedApiConfig {
     // orchestrator. A browser that explicitly selected it is deliberately
     // migrated to the canonical AI API and receives a durable visible notice.
     const retiredEc2ApiSelection = parsed.activeServer === "ec2";
-    const persistedActiveServer =
-      parsed.activeServer && valid.includes(parsed.activeServer)
-        ? parsed.activeServer
+    const persistedActiveServer: ServerEnvironment =
+      typeof parsed.activeServer === "string" &&
+      valid.includes(parsed.activeServer as ServerEnvironment)
+        ? (parsed.activeServer as ServerEnvironment)
         : "production";
     const persistedCustomUrl =
       typeof parsed.customUrl === "string" ? parsed.customUrl : null;
@@ -652,6 +657,7 @@ export const {
   setActiveServer,
   setLoopbackAccess,
   setCustomUrl,
+  acknowledgeRetiredEc2ApiSelectionNotice,
   setServiceOverride,
   clearServiceOverrides,
   setApiVersion,
