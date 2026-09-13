@@ -48,15 +48,15 @@ describe("plain Bitwarden JSON", () => {
 
   test("accounts for optional login members, schema variants, UTF-8 limits, and referenced folders", () => {
     const optional = parseBitwardenExport(source(login().replace('"username":"me","password":" p@ss ","totp":null,"uris":[{"uri":"https://example.com/login","match":0}]', "")), limits)[0];
-    expect(optional?.status).toBe("supported");
+    if (!optional || optional.status !== "supported") throw new Error("missing optional record");
     const secureNote = parseBitwardenExport(source('{"id":"33333333-3333-4333-8333-333333333333","name":"note","type":2,"secureNote":{"type":0}}'), limits)[0];
     expect(secureNote?.status).toBe("supported");
     const unknown = parseBitwardenExport(source(login('"unknown":"value"')), limits)[0];
     expect(unknown?.status).toBe("unsupported");
     const tiny = { ...limits, maxCellBytes: 100 };
     expect(parseBitwardenExport(source(login('"notes":"' + "✓".repeat(100) + '"')), tiny)[0]?.status).toBe("invalid");
-    expect(optional?.sourceRecord).toContain('"folders"');
-    expect(optional?.sourceRecord).toContain('"Personal"');
+    expect(optional.sourceRecord).toContain('"folders"');
+    expect(optional.sourceRecord).toContain('"Personal"');
   });
 
   test("prepares one destination and accounts for possible duplicates before confirmation", () => {
