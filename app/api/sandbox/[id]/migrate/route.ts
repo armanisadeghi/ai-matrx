@@ -308,6 +308,15 @@ export async function POST(
           { status: 502 },
         );
       }
+      return NextResponse.json(
+        {
+          error:
+            "Sandbox update outcome is unknown because its status could not be verified after the manager failed.",
+          status: "outcome_unknown",
+          operation_id: operationId,
+        },
+        { status: 502 },
+      );
     }
     return NextResponse.json(
       {

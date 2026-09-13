@@ -133,7 +133,7 @@ test("keeps an unknown upstream failure on the existing error path", async () =>
 
   const response = await POST(
     new NextRequest(
-      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate`,
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=${operationId}`,
       {
         method: "POST",
       },
@@ -143,9 +143,10 @@ test("keeps an unknown upstream failure on the existing error path", async () =>
 
   expect(response.status).toBe(502);
   expect(await response.json()).toEqual({
-    error: "Sandbox image update failed",
-    upstream_status: 502,
-    details: failure,
+    error:
+      "Sandbox update outcome is unknown because its status could not be verified after the manager failed.",
+    status: "outcome_unknown",
+    operation_id: operationId,
   });
 });
 
@@ -355,6 +356,33 @@ test("makes a 502 reconciliation mismatch loud rather than reusing stale success
 
   expect(response.status).toBe(502);
   expect(await response.json()).toMatchObject({ status: "outcome_unknown" });
+});
+
+test("keeps a 502 with unavailable exact status correlated as outcome unknown", async () => {
+  jest
+    .spyOn(global, "fetch")
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify({ detail: "failure" }), { status: 502 }),
+    )
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "status unavailable" }), {
+        status: 502,
+      }),
+    );
+
+  const response = await POST(
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=${operationId}`,
+      { method: "POST" },
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toMatchObject({
+    status: "outcome_unknown",
+    operation_id: operationId,
+  });
 });
 
 test("refuses a timeout status response for a different operation", async () => {

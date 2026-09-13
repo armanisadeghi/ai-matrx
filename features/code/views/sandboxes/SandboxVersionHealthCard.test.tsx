@@ -134,7 +134,7 @@ describe("SandboxVersionHealthCard migration reconnect", () => {
     jest.useRealTimers();
   });
 
-  test("aborts a settling POST after unmount without scheduling status or toast", async () => {
+  test("aborts a late in-progress POST after unmount without status work, timers, captures, or toast", async () => {
     let resolvePost: ((value: Response) => void) | undefined;
     const fetchMock = jest
       .spyOn(global, "fetch")
@@ -166,12 +166,16 @@ describe("SandboxVersionHealthCard migration reconnect", () => {
 
     await act(async () => root.unmount());
     expect((postCall?.[1] as RequestInit).signal?.aborted).toBe(true);
+    jest.useFakeTimers();
+    const timerSpy = jest.spyOn(global, "setTimeout");
+    const timersBeforeLatePost = timerSpy.mock.calls.length;
     resolvePost?.({
       ok: true,
       status: 200,
-      json: async () => status("migrated"),
+      json: async () => status("in_progress"),
     } as Response);
     await settle();
+    await act(async () => jest.advanceTimersByTime(20_000));
 
     expect(
       fetchMock.mock.calls.filter(([url]) =>
@@ -179,6 +183,43 @@ describe("SandboxVersionHealthCard migration reconnect", () => {
       ).length,
     ).toBe(0);
     expect(mockToast.success).not.toHaveBeenCalled();
+    expect(mockToastErrorAlreadyCaptured).not.toHaveBeenCalled();
+    expect(mockCaptureError).not.toHaveBeenCalled();
+    expect(timerSpy).toHaveBeenCalledTimes(timersBeforeLatePost);
+  });
+
+  test("ignores a rejected POST after unmount without emitting recovery work", async () => {
+    let rejectPost: ((reason: unknown) => void) | undefined;
+    const fetchMock = jest
+      .spyOn(global, "fetch")
+      .mockImplementation((input) => {
+        const url = String(input);
+        if (url.includes("version-health")) return response(health);
+        if (url.endsWith("/migration")) return response(status("idle"));
+        if (url.includes("/migrate?")) {
+          return new Promise<Response>((_resolve, reject) => {
+            rejectPost = reject;
+          });
+        }
+        throw new Error(`unexpected ${url}`);
+      });
+
+    await act(async () =>
+      root.render(<SandboxVersionHealthCard sandboxId={sandboxId} />),
+    );
+    await settle();
+    await act(async () => confirmUpdate(container));
+    await act(async () => root.unmount());
+    rejectPost?.(new Error("connection closed"));
+    await settle();
+
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).includes("migration?operation_id"),
+      ),
+    ).toBe(false);
+    expect(mockCaptureError).not.toHaveBeenCalled();
+    expect(mockToastErrorAlreadyCaptured).not.toHaveBeenCalled();
   });
 
   test("saved operation remounts into an exact poll and never posts again", async () => {
@@ -202,6 +243,13 @@ describe("SandboxVersionHealthCard migration reconnect", () => {
       `/api/sandbox/${sandboxId}/migration?operation_id=${operationId}`,
       expect.anything(),
     );
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await act(async () =>
+      root.render(<SandboxVersionHealthCard sandboxId={sandboxId} />),
+    );
+    await settle();
+    await act(async () => confirmUpdate(container));
     expect(
       fetchMock.mock.calls.some(([url]) => String(url).includes("/migrate?")),
     ).toBe(false);
@@ -258,8 +306,21 @@ describe("SandboxVersionHealthCard migration reconnect", () => {
     );
     await act(async () => jest.advanceTimersByTime(1_000));
     await settle();
-    expect(mockCaptureError).toHaveBeenCalledWith(
-      expect.objectContaining({ code: "rolled_back" }),
+    const terminalCaptures = mockCaptureError.mock.calls.filter(
+      ([captured]) => captured.code === "rolled_back",
+    );
+    expect(terminalCaptures).toHaveLength(1);
+    expect(terminalCaptures[0][0]).toEqual(
+      expect.objectContaining({
+        code: "rolled_back",
+        details: expect.stringContaining(operationId),
+        raw: expect.objectContaining({
+          operation_id: operationId,
+          outcome: "rolled_back",
+          phase: "cleanup_complete",
+          reason: "old box restored",
+        }),
+      }),
     );
   });
 });
