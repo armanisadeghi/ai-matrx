@@ -14739,6 +14739,102 @@
         }
       }
     },
+    "/mcp-connections/availability": {
+      "get": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Availability",
+        "description": "Availability for every server the caller has a relationship with\n(no-auth servers, GitHub, and every server they hold a connection for),\nplus any extra comma-separated `slugs`.",
+        "operationId": "availability_mcp_connections_availability_get",
+        "parameters": [
+          {
+            "name": "slugs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slugs"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/McpAvailability"
+                  },
+                  "title": "Response Availability Mcp Connections Availability Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp-connections/availability/{server_slug}": {
+      "get": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Availability For Slug",
+        "operationId": "availability_for_slug_mcp_connections_availability__server_slug__get",
+        "parameters": [
+          {
+            "name": "server_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpAvailability"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/tools": {
       "get": {
         "tags": [
@@ -156776,7 +156872,8 @@
           "model_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -156935,7 +157032,8 @@
         "properties": {
           "agent_ids": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             },
             "type": "array",
             "title": "Agent Ids"
@@ -175382,6 +175480,52 @@
           "indicator"
         ],
         "title": "MazeServiceStatus"
+      },
+      "McpAvailability": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "server_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "tool_count": {
+            "type": "integer",
+            "title": "Tool Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "state"
+        ],
+        "title": "McpAvailability",
+        "description": "The ONE truthful answer to \"can this user use this MCP right now?\".\n\nEmitted to the browser (``GET /api/mcp-connections/availability``) and to\nthe run timeline (``mcp_attachments`` info event) so no surface has to\nguess a connection's health from ``tool.mcp_user_conn.status`` alone — a\nrow that says ``connected`` while its access token expired days ago is\nexactly the lie a user saw as a green checkmark next to an MCP the model\ncould not reach (Arman, 2026-09-13).\n\n``state`` is one of:\n\n* ``connected``    — usable on the next run (token valid, refreshable, or\n  the server needs no auth at all).\n* ``needs_reauth`` — a connection exists but the user must re-authorize\n  (expired with no stored refresh token, ``refresh_failed``, ``error``).\n* ``not_connected``— no usable connection on file, or the server itself is\n  not active. ``reason`` always names why."
       },
       "McpCatalogRefreshResult": {
         "properties": {
