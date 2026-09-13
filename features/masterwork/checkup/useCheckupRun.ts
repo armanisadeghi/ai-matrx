@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { paths } from "@/types/python-generated/api-types";
+import type { DurableRunStatus } from "@/lib/durable-run/useDurableRun";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 import {
   parseCheckupResult,
@@ -31,7 +32,9 @@ export const CHECKUP_PATH = "/masterworks/checkup" satisfies keyof paths;
 const CHECKUP_FINDING_EVENT = "masterwork_checkup_finding";
 
 export interface CheckupRunHandle {
-  status: "idle" | "rejoining" | "running" | "done" | "error";
+  /** Passed straight through from the shared primitive — including
+   *  `stopped`, which a Checkup reaches when somebody stops it. */
+  status: DurableRunStatus;
   running: boolean;
   /** The server's own sentence for what it is doing right now. */
   stage: string | null;

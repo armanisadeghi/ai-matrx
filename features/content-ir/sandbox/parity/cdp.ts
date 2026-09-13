@@ -44,7 +44,9 @@ function chromeBinary(): string {
     const fromEnv = process.env.CHROME_PATH;
     if (fromEnv) return fromEnv;
     const { existsSync } = require("node:fs") as typeof import("node:fs");
-    const hit = CHROME_CANDIDATES.find((p) => existsSync(p));
+    const hit = CHROME_CANDIDATES.find((p) =>
+        existsSync(/* turbopackIgnore: true */ p),
+    );
     if (!hit) {
         throw new Error(
             "The rendering-parity sweep needs a local Chrome or Chromium and found none. " +
@@ -157,8 +159,13 @@ export async function launch(opts: {
             if (!res.result?.data) {
                 throw new Error("Chrome returned no screenshot bytes.");
             }
-            mkdirSync(file.replace(/\/[^/]+$/, ""), { recursive: true });
-            writeFileSync(file, Buffer.from(res.result.data, "base64"));
+            mkdirSync(/* turbopackIgnore: true */ file.replace(/\/[^/]+$/, ""), {
+                recursive: true,
+            });
+            writeFileSync(
+                /* turbopackIgnore: true */ file,
+                Buffer.from(res.result.data, "base64"),
+            );
             return file;
         },
         async close() {

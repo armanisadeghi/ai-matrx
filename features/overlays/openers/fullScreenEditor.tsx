@@ -22,19 +22,19 @@
  *     self-handles via `editMessage` (plain "Edit content").
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   createFullScreenEditorCallbackGroup,
+  disposeFullScreenEditorCallbackGroup,
   type FullScreenEditorHandlers,
 } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 
 const OVERLAY_ID = "fullScreenEditor" as const;
 
-export interface OpenFullScreenMarkdownEditorBridgeOptions
-  extends FullScreenEditorHandlers {
+interface OpenFullScreenMarkdownEditorBridgeOptionsBase {
   /** Optional stable instance id. Omit to spawn a fresh instance. */
   instanceId?: string;
   content?: string;
@@ -63,27 +63,22 @@ export interface OpenFullScreenMarkdownEditorBridgeOptions
   primaryActions?: EditorPrimaryAction[];
 }
 
+export type OpenFullScreenMarkdownEditorBridgeOptions =
+  | (OpenFullScreenMarkdownEditorBridgeOptionsBase & FullScreenEditorHandlers)
+  | (OpenFullScreenMarkdownEditorBridgeOptionsBase & {
+      onSave?: undefined;
+      onAction?: undefined;
+      onEvent?: undefined;
+    });
+
 export interface FullScreenMarkdownEditorBridgeHandle {
   instanceId: string;
   callbackGroupId: string | null;
   close: () => void;
 }
 
-type HandleRef = { dispose: () => void };
-
 export function useOpenFullScreenMarkdownEditorBridge() {
   const dispatch = useAppDispatch();
-  const handlesRef = useRef<Set<HandleRef>>(new Set());
-
-  // Dispose any still-open callback groups when the opener's owner unmounts,
-  // so we never leak a group whose handlers close over a dead component.
-  useEffect(() => {
-    const handles = handlesRef.current;
-    return () => {
-      for (const h of handles) h.dispose();
-      handles.clear();
-    };
-  }, []);
 
   return useCallback(
     (
@@ -97,49 +92,53 @@ export function useOpenFullScreenMarkdownEditorBridge() {
       // the save. Plain "edit content" callers pass conversationId+messageId
       // and let the bridge self-handle — no group needed.
       let callbackGroupId: string | null = null;
-      let dispose = () => {};
-      if (opts.onSave || opts.onEvent || opts.onAction) {
+      if (opts.onSave) {
         const group = createFullScreenEditorCallbackGroup({
           onSave: opts.onSave,
+          onEvent: opts.onEvent,
+        });
+        callbackGroupId = group.callbackGroupId;
+      } else if (opts.onAction) {
+        const group = createFullScreenEditorCallbackGroup({
           onAction: opts.onAction,
           onEvent: opts.onEvent,
         });
         callbackGroupId = group.callbackGroupId;
-        dispose = group.dispose;
       }
 
-      dispatch(
-        openOverlay({
-          overlayId: OVERLAY_ID,
-          instanceId,
-          data: {
-            content: opts.content,
-            mode: opts.mode,
-            conversationId: opts.conversationId,
-            messageId: opts.messageId,
-            callbackGroupId,
-            tabs: opts.tabs,
-            initialTab: opts.initialTab,
-            analysisData: opts.analysisData,
-            title: opts.title,
-            description: opts.description,
-            showSaveButton: opts.showSaveButton,
-            showCopyButton: opts.showCopyButton,
-            primaryActions: opts.primaryActions,
-          },
-        }),
-      );
-
-      const handleRef: HandleRef = { dispose };
-      handlesRef.current.add(handleRef);
+      try {
+        dispatch(
+          openOverlay({
+            overlayId: OVERLAY_ID,
+            instanceId,
+            data: {
+              content: opts.content,
+              mode: opts.mode,
+              conversationId: opts.conversationId,
+              messageId: opts.messageId,
+              callbackGroupId,
+              tabs: opts.tabs,
+              initialTab: opts.initialTab,
+              analysisData: opts.analysisData,
+              title: opts.title,
+              description: opts.description,
+              showSaveButton: opts.showSaveButton,
+              showCopyButton: opts.showCopyButton,
+              primaryActions: opts.primaryActions,
+            },
+          }),
+        );
+      } catch (error) {
+        disposeFullScreenEditorCallbackGroup(callbackGroupId);
+        throw error;
+      }
 
       return {
         instanceId,
         callbackGroupId,
         close: () => {
           dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId }));
-          dispose();
-          handlesRef.current.delete(handleRef);
+          disposeFullScreenEditorCallbackGroup(callbackGroupId);
         },
       };
     },

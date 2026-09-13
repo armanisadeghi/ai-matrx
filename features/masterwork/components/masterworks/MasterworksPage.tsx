@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -59,9 +60,11 @@ function runDuration(run: MasterworkRun): string | null {
       new Date(run.started_at).getTime()) /
     1000;
   if (!Number.isFinite(seconds) || seconds < 0) return null;
-  return seconds < 90
-    ? `${Math.round(seconds)}s`
-    : `${Math.round(seconds / 60)}m`;
+  // The local s/m split was collapsed onto the kit formatter (2026-09-12).
+  // Compact voice: a run duration is elapsed work, and compact stays honest at
+  // both ends — sub-minute keeps its seconds instead of flattening to "0m",
+  // and an hour-long run reads "1h 05m" instead of "65m".
+  return formatDurationSeconds(seconds, { style: "compact" });
 }
 
 function runWhen(run: MasterworkRun): string {

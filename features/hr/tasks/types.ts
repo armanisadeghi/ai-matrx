@@ -282,12 +282,22 @@ export type HrInbox = {
     waiting_on_others: HrWaitingRow[];
     failures_assigned_to_me: HrFailureRow[];
     recently_decided: HrDecidedRow[];
+    pagination: HrInboxPagination;
     bulk_max: number;
     default_sort: string;
     can_view_queue: boolean;
     employment_ids: string[];
     as_of: string;
 };
+
+export const HR_INBOX_SECTIONS = [
+    "needs_my_decision", "scope_rows", "auto_applying_soon", "waiting_on_others",
+    "failures_assigned_to_me", "recently_decided",
+] as const;
+export type HrInboxSection = (typeof HR_INBOX_SECTIONS)[number];
+export type HrInboxPage = { offset: number; limit: number; total: number };
+export type HrInboxPagination = Record<HrInboxSection, HrInboxPage>;
+export type HrInboxPageOffsets = Partial<Record<HrInboxSection, number>>;
 
 /**
  * 🚨 THE DECISION VOCABULARY IS PAST TENSE, AND IT IS THE SERVER'S, NOT OURS.

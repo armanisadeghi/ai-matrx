@@ -63,26 +63,42 @@ export async function downloadMermaidPng(
 
 async function rasterizeSvgToPng(svg: string, scale: number): Promise<Blob> {
   const dimensions = readSvgDimensions(svg);
-  const url = URL.createObjectURL(svgBlob(svg));
-  try {
-    const image = await loadImage(url);
-    const width = Math.max(1, Math.round((dimensions?.width ?? image.naturalWidth ?? 800) * scale));
-    const height = Math.max(1, Math.round((dimensions?.height ?? image.naturalHeight ?? 600) * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas 2D context unavailable");
-    ctx.drawImage(image, 0, 0, width, height);
-    return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("PNG encoding failed"))),
-        "image/png",
-      );
-    });
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  // A freshly-created blob: URL can be rejected by Image despite the same SVG
+  // rendering normally in the page (observed on the public shared viewer).
+  // Mermaid's HTML labels also emit XHTML <br> tags, which are not valid in
+  // the XML parser used for SVG image decoding. A base64 data URL containing
+  // XML-safe markup is self-contained and preserves Unicode SVG text.
+  const image = await loadImage(svgDataUrl(xmlSafeSvg(svg)));
+  const width = Math.max(1, Math.round((dimensions?.width ?? image.naturalWidth ?? 800) * scale));
+  const height = Math.max(1, Math.round((dimensions?.height ?? image.naturalHeight ?? 600) * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
+  ctx.drawImage(image, 0, 0, width, height);
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("PNG encoding failed"))),
+      "image/png",
+    );
+  });
+}
+
+function svgDataUrl(svg: string): string {
+  const utf8Bytes = encodeURIComponent(svg).replace(
+    /%([0-9A-F]{2})/g,
+    (_encodedByte, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)),
+  );
+  return `data:image/svg+xml;base64,${btoa(utf8Bytes)}`;
+}
+
+function xmlSafeSvg(svg: string): string {
+  return svg.replace(
+    /<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)(\b[^>]*)>/gi,
+    (match, tag: string, attributes: string) =>
+      attributes.trimEnd().endsWith("/") ? match : `<${tag}${attributes}/>`,
+  );
 }
 
 function readSvgDimensions(svg: string): { width: number; height: number } | null {

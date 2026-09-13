@@ -43,11 +43,18 @@ need; do not add a barrel or a page-local substitute.
 - `scripts/generate-static-settings-control-index.ts` catalogs only registry
   tabs and literal `Settings*` labels. Dynamic labels or group titles are
   excluded rather than guessed; regenerate after an authored static control changes.
-- Large controls stack below their label on narrow screens. Action targets are
-  at least 44px tall on touch layouts.
+- Every `SettingsRow` anchor is the named `settings` query container. **Wide
+  controls stack below their label until that row has 40rem available**; never
+  use a viewport breakpoint for a control inside a window or split pane.
+- Fixed-width controls are bounded by their row. Control/action groups wrap or
+  stack; labels, errors, status text and long values wrap rather than escape.
+  Action targets are at least 44px tall on touch layouts.
 
 ## Change Log
 
+- 2026-09-12: Made settings rows container-responsive, constrained typed
+  controls to their actual pane, and hardened navigation, grids and details
+  against long text in resizable windows.
 - 2026-09-12: Added flat navigation and shared search primitives for route and
   overlay menus, including stable unheaded root groups, exact-control result adapters,
   and work-on-import structural styling.

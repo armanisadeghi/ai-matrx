@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Transcript } from "../types";
-import { formatDuration, formatTranscriptAge } from "../utils/dateFormatting";
+import { formatDurationSeconds, formatTranscriptAge } from "../utils/dateFormatting";
 import { DraftIndicator } from "./DraftIndicator";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -322,7 +322,7 @@ export function TranscriptsSidebar({
                           {transcript.metadata?.duration && (
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {formatDuration(transcript.metadata.duration)}
+                              {formatDurationSeconds(transcript.metadata.duration)}
                             </span>
                           )}
                           {transcript.updated_at && (

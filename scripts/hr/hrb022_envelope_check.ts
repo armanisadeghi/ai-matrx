@@ -31,6 +31,11 @@ const LIVE_INBOX = {
     waiting_on_others: [],
     auto_applying_soon: [],
     failures_assigned_to_me: [],
+    pagination: {
+        needs_my_decision: { offset: 0, limit: 50, total: 0 }, scope_rows: { offset: 0, limit: 50, total: 0 },
+        auto_applying_soon: { offset: 0, limit: 50, total: 0 }, waiting_on_others: { offset: 0, limit: 50, total: 0 },
+        failures_assigned_to_me: { offset: 0, limit: 50, total: 0 }, recently_decided: { offset: 0, limit: 50, total: 0 },
+    },
 };
 
 /** The refusal shape `hr._governance_refusal` builds, captured from the same door. */
@@ -113,6 +118,7 @@ check("a real granted envelope parses", parsed.granted === true);
 if (parsed.granted) {
     const inbox = parsed.data;
     check("scope survives as a narrowed union", inbox.scope === "mine");
+    check("all six independently bounded sections carry pagination metadata", inbox.pagination.needs_my_decision.limit === 50 && inbox.pagination.recently_decided.total === 0);
     check("bulk_max is the live knob value, not a default", inbox.bulk_max === 50);
     check("default_sort is the live knob string", inbox.default_sort === "due_at asc");
     check("can_view_queue is the live boolean FALSE, not undefined", inbox.can_view_queue === false);
@@ -139,7 +145,7 @@ if (!refusal.granted) {
 
 const withRow = parseEnvelope(
     "hr_wf_inbox",
-    { ...LIVE_INBOX, needs_my_decision: [LIVE_RESTRICTED_ROW] },
+    { ...LIVE_INBOX, needs_my_decision: [LIVE_RESTRICTED_ROW], pagination: { ...LIVE_INBOX.pagination, needs_my_decision: { offset: 0, limit: 50, total: 1 } } },
     parseInbox,
 );
 if (withRow.granted) {
@@ -164,11 +170,11 @@ if (withRow.granted) {
     );
 }
 
-const scopeRow = parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, scope_rows: [LIVE_RESTRICTED_ROW] }, parseInbox);
+const scopeRow = parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, scope_rows: [LIVE_RESTRICTED_ROW], pagination: { ...LIVE_INBOX.pagination, scope_rows: { offset: 0, limit: 50, total: 1 } } }, parseInbox);
 if (scopeRow.granted) {
     const { notices, ...noNotices } = LIVE_RESTRICTED_ROW;
     void notices;
-    const bare = parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, scope_rows: [noNotices] }, parseInbox);
+    const bare = parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, scope_rows: [noNotices], pagination: { ...LIVE_INBOX.pagination, scope_rows: { offset: 0, limit: 50, total: 1 } } }, parseInbox);
     check(
         "a scope row carries no notices key, and it stays UNDEFINED rather than becoming []",
         bare.granted === true &&
@@ -186,6 +192,14 @@ refuses("a scope outside the union is refused", () =>
 refuses("a string where a number belongs is refused", () =>
     parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, bulk_max: "50" }, parseInbox),
 );
+refuses("missing section pagination is a loud contract break", () => {
+    const { recently_decided: _missing, ...pagination } = LIVE_INBOX.pagination;
+    return parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, pagination }, parseInbox);
+});
+refuses("fractional pagination metadata is refused", () => parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, pagination: { ...LIVE_INBOX.pagination, needs_my_decision: { offset: 0.5, limit: 50, total: 1 } } }, parseInbox));
+refuses("a section cannot return more rows than its page limit", () => parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, needs_my_decision: [LIVE_RESTRICTED_ROW, LIVE_RESTRICTED_ROW], pagination: { ...LIVE_INBOX.pagination, needs_my_decision: { offset: 0, limit: 1, total: 2 } } }, parseInbox));
+refuses("a section cannot return more rows than its declared total", () => parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, needs_my_decision: [LIVE_RESTRICTED_ROW], pagination: { ...LIVE_INBOX.pagination, needs_my_decision: { offset: 0, limit: 50, total: 0 } } }, parseInbox));
+refuses("a non-boundary page offset is refused", () => parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, pagination: { ...LIVE_INBOX.pagination, needs_my_decision: { offset: 1, limit: 50, total: 51 } } }, parseInbox));
 refuses("a row missing step_id is refused", () =>
     parseEnvelope("hr_wf_inbox", { ...LIVE_INBOX, needs_my_decision: [{ instance_id: "x" }] }, parseInbox),
 );

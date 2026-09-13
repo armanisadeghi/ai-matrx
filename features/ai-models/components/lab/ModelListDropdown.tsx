@@ -212,9 +212,18 @@ interface ModelListDropdownProps {
    */
   onOfferingPinChange?: (offeringId: string | undefined) => void;
   className?: string;
+  /** DOM id for the picker trigger. */
+  id?: string;
   /** When true, renders the current value read-only — no picker opens. */
   disabled?: boolean;
   disabledTitle?: string;
+  /**
+   * Accessible name of the trigger (a settings row passes its label). A
+   * hyphenated JSX prop is not type-checked, so without this declaration the
+   * name was silently dropped and the trigger read as its current value only.
+   */
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 }
 
 // ── Small presentational bits ────────────────────────────────────────────────
@@ -1414,8 +1423,11 @@ export function ModelListDropdown({
   pinnedOfferingId,
   onOfferingPinChange,
   className,
+  id,
   disabled = false,
   disabledTitle,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: ModelListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
@@ -1775,8 +1787,11 @@ export function ModelListDropdown({
   const trigger = (
     <button
       type="button"
+      id={id}
       disabled={disabled}
       title={disabled ? disabledTitle : undefined}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       aria-disabled={disabled || undefined}
       className={cn(
         "inline-flex h-7 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",

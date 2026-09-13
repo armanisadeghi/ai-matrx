@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -53,11 +53,9 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { formatDateOnly } from "@/utils/dateOnly";
-import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildTaskListPayload,
   buildTaskRowPayload,
-  taskCsvRows,
   taskListHuman,
   taskListKpis,
   taskRow,
@@ -109,6 +107,7 @@ const TASK_LIST_LEGACY_VIEW: LegacyListViewImport = {
 
 export default function TaskListPane() {
   const dispatch = useAppDispatch();
+  const copySourceId = useId();
   const groups = useAppSelector(selectGroupedFilteredTasks);
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
   const isCreatingTask = useAppSelector(selectIsCreatingTask);
@@ -417,7 +416,7 @@ export default function TaskListPane() {
         {allVisibleTasks.length > 0 && (
           <div className="flex shrink-0 items-center gap-0.5">
             <CopyButtons
-              sourceId={`task-list:${activeProject ?? "all"}:${JSON.stringify(listView)}`}
+              sourceId={`task-list:${copySourceId}`}
               size="xs"
               unified
               label="Task list"
@@ -436,13 +435,7 @@ export default function TaskListPane() {
               }
               export={{
                 sheetRows: () => allVisibleTasks.map(taskRow),
-                items: [
-                  jsonExportItem(() => allVisibleTasks.map(taskRow)),
-                  csvExportItem(
-                    () => taskCsvRows(allVisibleTasks),
-                    "CSV (every task in this view)",
-                  ),
-                ],
+                items: [],
               }}
             />
           </div>

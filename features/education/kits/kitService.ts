@@ -19,6 +19,7 @@
 
 "use client";
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   listGeneratedFrom,
@@ -204,8 +205,10 @@ function liveDetail(
   if (row.media_kind === "audio") {
     const secs = row.duration_seconds;
     if (secs != null && secs > 0) {
-      const mins = Math.max(1, Math.round(secs / 60));
-      return `${mins} min listen`;
+      // Collapsed onto the kit formatter (2026-09-12). Coarse voice: a listen
+      // length is glanceable and coarse already speaks the " min" this built
+      // by hand — and it stops a 90-minute kit reading as "90 min".
+      return `${formatDurationSeconds(secs, { style: "coarse" })} listen`;
     }
     return "Ready to play";
   }

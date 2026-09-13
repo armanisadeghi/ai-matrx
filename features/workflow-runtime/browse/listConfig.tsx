@@ -17,7 +17,7 @@ import type {
   EntityListController,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { WORKFLOW_BROWSE_COLUMNS } from "./columns";
 import {
@@ -196,7 +196,7 @@ export const workflowListConfig: EntityListConfig<WorkflowBrowseRow> = {
       `${row.name}${row.category ? ` (${row.category})` : ""} — ${row.step_count ?? 0} steps, ` +
       `${Number(row.run_count ?? 0)} runs, last run ${
         row.last_run_at
-          ? `${runStatusLabel(row.last_run_status)} ${relativeTime(row.last_run_at)}`
+          ? `${runStatusLabel(row.last_run_status)} ${formatRelativeTime(row.last_run_at)}`
           : "never"
       }`,
     // Row copy lives in the "…" menu; the toolbar strip would be a lone pair of

@@ -21,12 +21,6 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-loading-your-notification-events-loading"
   },
   {
-    "tabId": "general.personalConfig",
-    "label": "Organization",
-    "description": "A personal value applies within one organization.",
-    "controlId": "settings-control-personal-configuration-organization"
-  },
-  {
     "tabId": "general.language",
     "label": "Voice input",
     "description": "Speech-to-text recognition language.",
@@ -89,7 +83,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "appearance",
     "label": "Color mode",
-    "description": "Applies before first paint — synced across tabs.",
+    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
@@ -121,7 +115,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "appearance.theme",
     "label": "Color mode",
-    "description": "Applies before first paint — synced across tabs.",
+    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
@@ -153,7 +147,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "appearance.density",
     "label": "Color mode",
-    "description": "Applies before first paint — synced across tabs.",
+    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
@@ -185,7 +179,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "appearance.accent",
     "label": "Color mode",
-    "description": "Applies before first paint — synced across tabs.",
+    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
@@ -254,12 +248,12 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-actions-restore-all-windows"
   },
   {
-    "tabId": "appearance.site-workbench",
+    "tabId": "appearance.siteWorkbench",
     "label": "Saved bookmarks",
     "controlId": "settings-control-your-bookmarks-saved-bookmarks"
   },
   {
-    "tabId": "appearance.site-workbench",
+    "tabId": "appearance.siteWorkbench",
     "label": "Limit",
     "controlId": "settings-control-your-bookmarks-limit"
   },

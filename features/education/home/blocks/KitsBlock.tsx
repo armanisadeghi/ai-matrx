@@ -19,7 +19,7 @@
 import Link from "next/link";
 import { ArrowRight, Package, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { artifactTile, targetVisual } from "../../library/artifactVisuals";
 import { kitHref, type StudyKit } from "../../kits/kitService";
 import { missingFormatsFor } from "../nudges";
@@ -52,7 +52,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
             {present.length === 1 ? "study aid" : "study aid types"}
             {kit.artifacts.length !== present.length &&
               ` · ${kit.artifacts.length} total items`}{" "}
-            · {relativeTime(kit.createdAt)}
+            · {formatRelativeTime(kit.createdAt)}
           </span>
         </span>
         <ArrowRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />

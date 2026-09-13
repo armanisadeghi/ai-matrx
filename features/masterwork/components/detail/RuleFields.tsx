@@ -10,6 +10,7 @@
 
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -18,26 +19,64 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { GitBranch } from "lucide-react";
 import {
-  RULE_ACTION_KINDS,
+  RULE_ACTION_KIND_HINTS,
   RULE_ACTION_KIND_LABELS,
+  RULE_ACTION_KINDS,
   RULE_ACTION_URGENCIES,
   RULE_ACTION_URGENCY_LABELS,
+  RULE_POLICY_LEVEL_LABELS,
+  RULE_POLICY_LEVELS,
   type RuleActionKind,
   type RuleActionUrgency,
-  type RulebookSections,
+  type RulePolicyLevel,
+  type RuleFieldValues,
   type RuleMoveFieldValues,
+  type RulebookSections,
   type RuleSeverity,
 } from "../../types";
 
-export interface RuleFieldValues extends Partial<RuleMoveFieldValues> {
-  name: string;
-  statement: string;
-  rationale: string;
-  detection: string;
-  quote: string;
-  severity: RuleSeverity;
-  section: string;
+// The form's field set is declared ONCE, in `../../types` — the editor's state,
+// its persisted draft and the context menu all derive from the same shape.
+// Re-exported here because this component is the form its consumers import.
+export type { RuleFieldValues } from "../../types";
+
+/** The decision fields as a rule stores them — the ONE mapping, so no consumer
+ * invents its own. Returns the three clearing `undefined`s for an ordinary
+ * rule, so turning the toggle back off actually removes the shape. */
+export function policyRulePatch(values: RuleFieldValues) {
+  if (!values.isPolicy) {
+    return {
+      kind: undefined,
+      precondition: undefined,
+      next_action: undefined,
+      action_kind: undefined,
+      cost: undefined,
+      risk: undefined,
+    } as const;
+  }
+  return {
+    kind: "policy",
+    precondition: values.precondition.trim() || undefined,
+    next_action: values.nextAction.trim() || undefined,
+    action_kind: values.actionKind,
+    cost: values.cost,
+    risk: values.risk,
+  } as const;
+}
+
+/**
+ * The form values as the improve / tidy Mandate reads them: every text field
+ * plus the decision shape under its STORED names (`kind`, `next_action`, …),
+ * because `useRuleImproveRun` enumerates `RULE_CONTENT_FIELDS`, not the form's
+ * camelCase keys. Handing it the raw form values sent a decision rule to the
+ * model with an empty kind and next action, so tidy polished the prose and
+ * dropped the judgment (Bugbot, 1d692d66). ONE derivation, on top of the ONE
+ * storage mapping — never a second spelling of the field names.
+ */
+export function improveFieldsFrom(values: RuleFieldValues) {
+  return { ...values, ...policyRulePatch(values) };
 }
 
 /**
@@ -57,6 +96,8 @@ const SCALE = ["1", "2", "3", "4", "5"] as const;
 export function RuleFields({
   values,
   onChange,
+  move,
+  onMoveChange,
   sections,
   autoFocusName = true,
   idPrefix = "rule",
@@ -64,6 +105,16 @@ export function RuleFields({
 }: {
   values: RuleFieldValues;
   onChange: (patch: Partial<RuleFieldValues>) => void;
+  /**
+   * The MOVE half (contract §2) — the structured "when does it apply / what do
+   * you do next" group, held by the host as its own `RuleMoveFieldValues` set
+   * because it converts to and from the rule's `move` object rather than to the
+   * flat decision columns above. A host that has nowhere to put it (the Final
+   * Checkup's SUGGESTION shape) passes neither prop and the block is not
+   * rendered — never a fork of this form.
+   */
+  move?: RuleMoveFieldValues;
+  onMoveChange?: (patch: Partial<RuleMoveFieldValues>) => void;
   sections: RulebookSections;
   autoFocusName?: boolean;
   /** Field ids are `${idPrefix}-name` etc. — the editor's context-menu text
@@ -162,7 +213,125 @@ export function RuleFields({
           </Select>
         </div>
       </div>
-      {omitted.has("policy") ? null : (
+      {omitted.has("isPolicy") ? null : (
+      <>
+      {/* 🚨 THE POLICY RULE (W58). Off by default and silent when off: most
+          rules genuinely ARE standing statements, and a form that demanded a
+          precondition for every one of them would push Experts to invent
+          conditions they do not hold. */}
+      <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Label
+              htmlFor={`${idPrefix}-is-policy`}
+              className="flex items-center gap-1.5"
+            >
+              <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+              This is a decision rule
+            </Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Turn this on when the rule is a judgment call — &ldquo;when I know
+              this much, here&rsquo;s the one thing I do next&rdquo; — rather
+              than something that is always true.
+            </p>
+          </div>
+          <Switch
+            id={`${idPrefix}-is-policy`}
+            checked={values.isPolicy}
+            onCheckedChange={(checked) => onChange({ isPolicy: checked })}
+          />
+        </div>
+        {values.isPolicy ? (
+          <div className="mt-3 space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-precondition`}>
+                What do you know at this point?
+              </Label>
+              <ProTextarea
+                id={`${idPrefix}-precondition`}
+                value={values.precondition}
+                onChange={(e) => onChange({ precondition: e.target.value })}
+                placeholder="Everything you'd know before making this call — and nothing you wouldn't."
+                rows={4}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-next-action`}>
+                What do you do next?
+              </Label>
+              <ProTextarea
+                id={`${idPrefix}-next-action`}
+                value={values.nextAction}
+                onChange={(e) => onChange({ nextAction: e.target.value })}
+                placeholder="The one next move — the question you ask, the check you run, what you do."
+                rows={4}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>What kind of move is it?</Label>
+              <Select
+                value={values.actionKind}
+                onValueChange={(v) =>
+                  onChange({ actionKind: v as RuleActionKind })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RULE_ACTION_KINDS.map((kind) => (
+                    <SelectItem key={kind} value={kind}>
+                      {RULE_ACTION_KIND_LABELS[kind]} —{" "}
+                      {RULE_ACTION_KIND_HINTS[kind]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>What does it cost to do?</Label>
+                <Select
+                  value={values.cost}
+                  onValueChange={(v) => onChange({ cost: v as RulePolicyLevel })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RULE_POLICY_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {RULE_POLICY_LEVEL_LABELS[level]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>How risky is doing it?</Label>
+                <Select
+                  value={values.risk}
+                  onValueChange={(v) => onChange({ risk: v as RulePolicyLevel })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RULE_POLICY_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {RULE_POLICY_LEVEL_LABELS[level]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+      </>
+      )}
+      {!move || !onMoveChange || omitted.has("policy") ? null : (
         <details className="rounded-md border border-border bg-muted/20 p-3">
           <summary className="cursor-pointer text-sm font-medium text-foreground">
             When does it apply, and what do you do next? (optional)
@@ -179,9 +348,9 @@ export function RuleFields({
               </Label>
               <Input
                 id={`${idPrefix}-precondition-summary`}
-                value={values.preconditionSummary ?? ""}
+                value={move.preconditionSummary ?? ""}
                 onChange={(e) =>
-                  onChange({ preconditionSummary: e.target.value })
+                  onMoveChange({ preconditionSummary: e.target.value })
                 }
                 placeholder="e.g. adult with fever, headache and a stiff neck"
               />
@@ -193,9 +362,9 @@ export function RuleFields({
                 </Label>
                 <ProTextarea
                   id={`${idPrefix}-precondition-known`}
-                  value={values.preconditionKnown ?? ""}
+                  value={move.preconditionKnown ?? ""}
                   onChange={(e) =>
-                    onChange({ preconditionKnown: e.target.value })
+                    onMoveChange({ preconditionKnown: e.target.value })
                   }
                   placeholder={"fever\nheadache\nneck stiffness"}
                   rows={4}
@@ -207,9 +376,9 @@ export function RuleFields({
                 </Label>
                 <ProTextarea
                   id={`${idPrefix}-precondition-unknown`}
-                  value={values.preconditionUnknown ?? ""}
+                  value={move.preconditionUnknown ?? ""}
                   onChange={(e) =>
-                    onChange({ preconditionUnknown: e.target.value })
+                    onMoveChange({ preconditionUnknown: e.target.value })
                   }
                   placeholder={"whether the spinal fluid is infected"}
                   rows={4}
@@ -220,9 +389,9 @@ export function RuleFields({
               <div className="space-y-1.5">
                 <Label>What kind of step is next?</Label>
                 <Select
-                  value={values.nextActionKind || NO_ACTION_KIND}
+                  value={move.nextActionKind || NO_ACTION_KIND}
                   onValueChange={(v) =>
-                    onChange({
+                    onMoveChange({
                       nextActionKind:
                         v === NO_ACTION_KIND ? "" : (v as RuleActionKind),
                     })
@@ -249,9 +418,9 @@ export function RuleFields({
                 </Label>
                 <Input
                   id={`${idPrefix}-next-target`}
-                  value={values.nextActionTarget ?? ""}
+                  value={move.nextActionTarget ?? ""}
                   onChange={(e) =>
-                    onChange({ nextActionTarget: e.target.value })
+                    onMoveChange({ nextActionTarget: e.target.value })
                   }
                   placeholder="e.g. lumbar puncture (scan first if there are focal signs)"
                 />
@@ -263,8 +432,8 @@ export function RuleFields({
               </Label>
               <Input
                 id={`${idPrefix}-next-buys`}
-                value={values.nextActionBuys ?? ""}
-                onChange={(e) => onChange({ nextActionBuys: e.target.value })}
+                value={move.nextActionBuys ?? ""}
+                onChange={(e) => onMoveChange({ nextActionBuys: e.target.value })}
                 placeholder="e.g. rules out the worst thing first"
               />
             </div>
@@ -272,9 +441,9 @@ export function RuleFields({
               <div className="space-y-1.5">
                 <Label>How costly is it? (1–5)</Label>
                 <Select
-                  value={values.nextActionCost || NO_SCALE}
+                  value={move.nextActionCost || NO_SCALE}
                   onValueChange={(v) =>
-                    onChange({ nextActionCost: v === NO_SCALE ? "" : v })
+                    onMoveChange({ nextActionCost: v === NO_SCALE ? "" : v })
                   }
                 >
                   <SelectTrigger>
@@ -293,9 +462,9 @@ export function RuleFields({
               <div className="space-y-1.5">
                 <Label>How risky is it? (1–5)</Label>
                 <Select
-                  value={values.nextActionRisk || NO_SCALE}
+                  value={move.nextActionRisk || NO_SCALE}
                   onValueChange={(v) =>
-                    onChange({ nextActionRisk: v === NO_SCALE ? "" : v })
+                    onMoveChange({ nextActionRisk: v === NO_SCALE ? "" : v })
                   }
                 >
                   <SelectTrigger>
@@ -314,9 +483,9 @@ export function RuleFields({
               <div className="space-y-1.5">
                 <Label>How soon?</Label>
                 <Select
-                  value={values.nextActionUrgency || NO_URGENCY}
+                  value={move.nextActionUrgency || NO_URGENCY}
                   onValueChange={(v) =>
-                    onChange({
+                    onMoveChange({
                       nextActionUrgency:
                         v === NO_URGENCY ? "" : (v as RuleActionUrgency),
                     })

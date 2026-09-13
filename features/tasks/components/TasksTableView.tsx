@@ -32,12 +32,10 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import {
   TASKS_LOCATION,
   buildTaskListPayload,
-  taskCsvRows,
   taskListHuman,
   taskRow,
 } from "@/features/tasks/lib/copy";
@@ -358,6 +356,7 @@ export default function TasksTableView() {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector(selectFilteredTasks);
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
+  const copySourceId = React.useId();
 
   const [sortKey, setSortKey] = React.useState<SortKey>("updated");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
@@ -493,7 +492,7 @@ export default function TasksTableView() {
                   envelope names the active column filters so an agent is
                   never told a filtered set is the whole list. */}
               <CopyButtons
-                sourceId={`task-table:${JSON.stringify(columnFilters)}`}
+                sourceId={`task-table:${copySourceId}`}
                 size="xs"
                 unified
                 label="Task table"
@@ -529,13 +528,7 @@ export default function TasksTableView() {
                 ]}
                 export={{
                   sheetRows: () => sorted.map(taskRow),
-                  items: [
-                    jsonExportItem(() => sorted.map(taskRow)),
-                    csvExportItem(
-                      () => taskCsvRows(sorted),
-                      "CSV (every row in this table)",
-                    ),
-                  ],
+                  items: [],
                 }}
               />
             </>

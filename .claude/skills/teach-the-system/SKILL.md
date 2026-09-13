@@ -144,9 +144,21 @@ couple of little books".** Most expertise in a company never made it into a book
   you toward one of these as a wall.
 - **Cheat honestly.** A browser instead of an email tool, a pasted chapter instead of the whole
   PDF — allowed, logged as a cheat in the register with what the honest version would need.
-- **Sign in without typing a password.** Production browser pane signed out? Use the local preview
-  (`pnpm preview:start`, port 3001) with the single-use `.dev-login-nonce` handshake
-  (`matrx-frontend/app/api/dev-login/route.ts` explains it). Never type a credential into a field.
+- **Sign in without typing a password, ON YOUR OWN HOSTNAME.** Production browser pane signed out?
+  Use the local preview (`pnpm preview:start`, port 3001) and then `pnpm dev-login /<route>`, which
+  mints your session's single-use nonce and prints the URL to open. Never type a credential into a
+  field.
+- **🚨 Never open `localhost:3001` — open the hostname the harness prints.** Several trials run on
+  one machine at once, and cookies are scoped to a HOST and ignore the PORT: on 2026-09-12 five
+  sessions shared one cookie jar on `localhost`, so one agent's dev-login signed every other agent
+  in as somebody else mid-form and the page correctly paused itself with "Account Changed…". Each
+  session now gets its own `<label>.localhost` (printed by `pnpm preview:start` and
+  `pnpm preview:status`; set `MATRX_PREVIEW_SESSION=<name>` to claim a readable one), which gives it
+  its own cookie jar, storage and dev-login nonce on the SAME one server. Two more consequences for
+  a trial: the slot being "taken" by a server serving THIS checkout is no longer a refusal — take
+  the hostname it offers you — and your failed navigation can no longer burn another trial's nonce.
+  Mechanics and forcing proof: `matrx-frontend/docs/official/browser-testing.md`,
+  `pnpm check:preview-session`.
 - **Cost is a measured result.** Track model spend from `chat.request`; the comparison bar is a
   fresh vibe-code of the same source on cost, sturdiness, reliability, and reuse on source #2–#5.
 - **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
@@ -388,7 +400,60 @@ lines by relocating trial-specific detail into the trial's register.
   real miss: it accepted a false "I already told you" claim without checking the record, leaving a
   genuine gap uncaptured — worth watching across future trials before calling it a pattern. Test the
   hard persona, not just the easy one, before judging an interviewer's real quality.
-
+- 2026-09-12 — (trial 9, runs 3–6) A fix to a kind's MODEL is not live until its registry row is
+  republished; a CI amnesty list that "warns" on a fatally-enforced kind is a hole (W57). The
+  Conductor wires template paths blind to the upstream shape; nothing checks `$item.x` before money
+  is spent (W58). Four parallel agents deadlock on the secrets battery's per-generation UPDATE;
+  a transient SQLSTATE was never retried anywhere (W59). Each was the NEXT step after the previous
+  fix — run the desk again after every fix; the walls are sequential, not parallel.
+- 2026-09-12 — An empty-but-schema-valid answer passes kind validation and the run says "completed"
+  (W60: the audit, $2.24, three calls, every field blank). Read the deliverable's fields, not the
+  run status, before calling a run a success.
+- 2026-09-12 — Another agent's live migration can take the whole platform down under you (W61: a
+  `current_user = 'service_role'` test inside a SECURITY DEFINER body is never true — current_user
+  is the OWNER there). When the Conductor panel refuses with a mandate message, read the function
+  and `_schema_migrations` since the last time it worked before blaming the product.
+- 2026-09-12 — The exam judgment is the capability finding: the desk held 416 craft rules and the
+  writer obeyed few of the ones that matter, because NO step judges a Masterwork's output against
+  its own Rulebook and the Audition cannot do a gap analysis against a sealed reference. Feed the
+  editor's instructions back to the Conductor as rules and self-checks, not as a rewrite.
+- 2026-09-12 — Exam fairness: the published piece carried reporting the bundle lacked (interviews,
+  later cases). Tell the judge to score only what the record allows, or bundle what the newsroom
+  actually had; otherwise the verdict measures access, not craft.
+- 2026-09-12 — (trial 8, the unfolding case) A cloud session's environment can carry a STALE credential: the
+  Supabase publishable key in the container was not the project's live key (401 on every auth call). Read the
+  live publishable key through the Supabase MCP (it is public by design) and log the drift as a wall; never
+  spend an hour on "auth is broken".
+- 2026-09-12 — (trial 8) The honest headless path is THE SAME CALLS THE UI MAKES: a password grant for the
+  session, aidream `/api/...` with the bearer AND `X-Organization-Id` (the server never picks an org), PostgREST
+  for what the UI writes directly, a browser user agent (Cloudflare 1010 refuses the default Python one), and
+  the Rulebook rendered as the `rulebook_document` variable exactly as the client renders it. Log it as a cheat.
+- 2026-09-12 — (trial 8) Take every timestamp from the database clock (`select now()`), never from your own
+  sense of elapsed time: three register lines were 10–25 minutes ahead of the truth before the correction.
+- 2026-09-12 — (trial 8) The capability gate is the cheapest, sharpest evidence of the night: one real case
+  through the old lane, 74 seconds, $0.22, and the loss is visible in the rules themselves (every rule citing
+  `chunk: 1`, hindsight written as method). Do it first, quote the rules.
+- 2026-09-12 — (trial 8) Guidance texts distil into piles (336 drafts from 18k words; 83 from a back-pain
+  guideline) because the chunk distiller never sees the Rulebook's PURPOSE. Do not review a pile by hand and do
+  not "Approve all": the Expert says what the Rulebook is for, and the platform sorts the pile (the triage
+  primitive). Asking the Scout to "retire these classes" dies at its output ceiling with zero tool calls.
+- 2026-09-12 — (trial 8) When the AI Dream MCP refuses the account ("does not have full MCP access"), the
+  product's own agent service is the lawful route (`POST /api/agent-service/agents` is the same trained builder
+  the form calls; `PUT /api/mandates/{key}/binding` with `principal_type: global` binds the Holder). Declare the
+  mandate seedless in code; never insert an `agent.definition` row by hand. The builder picks its own model
+  (it chose Gemini Flash three times) — move judgment-heavy agents to the tier you meant; a model move is safe
+  by default.
+- 2026-09-12 — (trial 8) A cloud container reaches nothing but HTTPS: raw Postgres times out, so the "offline"
+  type emitter (which imports the app, which loads domain config from the database) cannot run, and any unit
+  test that touches the live pooler hangs forever. Expect both; log them as the generator's and the test's
+  defects, never hand-edit a generated file.
+- 2026-09-12 — (trial 8) Five parallel builders on one branch worked when each owned named files and the
+  cross-cutting names (the policy rule fields) were fixed in the briefs up front; the one collision was a
+  router hunk swept into a sibling's commit (shared-checkout normal) and one duplicated vocabulary, both caught
+  by guards the builders wrote. Add a census guard for every "each lane must declare X" rule the night creates.
+- 2026-09-12 — (trial 8) Review bots are free verifiers: Cursor Bugbot found five real defects in tonight's
+  frontend (state dropped on reopen, an effect loop, a hidden rejoined run) that no builder's tests caught.
+  Treat every bot finding as a bug report and fix the class before the morning report.
 - **2026-09-12 (trial 2 closed).** A disagreeing pair passed the defined test: same input, two opposite, defensible, book-faithful answers (Watson: the adults' regime and the clock; Montessori: the room and the adult's withdrawal). The cost was eleven runs, and every failure after the closed id vocabulary was the CHECKING, not the advice — hand-built gates (inert predicate, inverted predicate, empty-valid output). Lesson: the Expert verifies citations in the database after every run until the run-time canon nodes are in the Conductor's catalogue; never let the Conductor hand-build a citation gate; and an adviser built as a consultation (ask → pause → read → prescribe → speak) is judged on its questions first — Montessori's seven "Because —" questions were the best single output of the night.
 
 - **2026-09-12 — Arman's architecture brief (`OVERVIEW.md`) and the gap census.** The mandate is tacit,

@@ -11,7 +11,7 @@ import { FileAudio, MoreHorizontal } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import {
   formatDuration,
@@ -112,7 +112,7 @@ export function TranscriptBrowseCards({
                     className="tabular-nums"
                     title={new Date(row.updated_at).toLocaleString()}
                   >
-                    {relativeTime(row.updated_at)}
+                    {formatRelativeTime(row.updated_at)}
                   </span>
                   {showShared && row.owner_email && (
                     <span className="truncate">{row.owner_email}</span>

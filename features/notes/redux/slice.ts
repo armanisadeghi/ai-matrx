@@ -10,6 +10,9 @@ import {
   type NoteUndoableField,
   type NoteFetchStatus,
   type NoteFieldSnapshot,
+  type NoteConflictDecision,
+  type NoteConflictPhysicalSnapshot,
+  type NoteConflictResolutionReceipt,
   type NotesSliceState,
   type NoteScopeAssignment,
   type FindReplaceState,
@@ -42,6 +45,15 @@ function popNonEmpty<T>(stack: T[]): T {
     throw new Error("popNonEmpty called on an empty stack");
   }
   return entry;
+}
+
+/** A revision is a database CAS value, never a loosely parsed counter. */
+function isCanonicalNoteRevision(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function hasMalformedNoteRevision(value: unknown): boolean {
+  return value !== null && value !== undefined && !isCanonicalNoteRevision(value);
 }
 
 // ── Byte estimation ─────────────────────────────────────────────────────────
@@ -235,6 +247,27 @@ function applyFetchStatus(record: NoteRecord, status: NoteFetchStatus): void {
   }
 }
 
+function conflictPhysicalSnapshot(note: Note): NoteConflictPhysicalSnapshot {
+  return {
+    content: note.content,
+    label: note.label,
+    folder_name: note.folder_name,
+    folder_id: note.folder_id,
+    tags: note.tags,
+    metadata: note.metadata,
+    visibility: note.visibility,
+    position: note.position,
+    organization_id: note.organization_id,
+  };
+}
+
+function sameConflictSnapshot(
+  left: NoteConflictPhysicalSnapshot,
+  right: NoteConflictPhysicalSnapshot,
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 // ── Server upsert (shared by single + batch reducers) ───────────────────────
 
 export interface ServerNoteUpsert {
@@ -249,6 +282,9 @@ function applyServerNoteUpsert(
   notes: Record<string, NoteRecord>,
   { note, fetchStatus, sharedMeta }: ServerNoteUpsert,
 ): void {
+  // Partial list evidence may omit a revision, but a supplied malformed
+  // revision must never enter the record or become highest remote evidence.
+  if (hasMalformedNoteRevision(note.version)) return;
   const existing = notes[note.id];
 
   if (!existing) {
@@ -283,6 +319,25 @@ function applyServerNoteUpsert(
     return;
   }
 
+  const incomingVersion = isCanonicalNoteRevision(note.version) ? note.version : null;
+  const heldVersion = isCanonicalNoteRevision(existing.version) ? existing.version : null;
+  const isNewerVersion =
+    incomingVersion !== null && heldVersion !== null
+      ? incomingVersion > heldVersion
+      : false;
+  const incomingTimestamp = Date.parse(note.updated_at ?? "");
+  const heldTimestamp = Date.parse(existing.updated_at ?? "");
+  const isNewerTimestamp =
+    Number.isFinite(incomingTimestamp) &&
+    Number.isFinite(heldTimestamp) &&
+    incomingTimestamp > heldTimestamp;
+
+  // Version is authoritative when available. A newer timestamp on a lower
+  // revision is an out-of-order event and cannot regress a clean record.
+  if (incomingVersion !== null && heldVersion !== null && incomingVersion < heldVersion) {
+    return;
+  }
+
   // ── Monotonic updated_at guard ─────────────────────────────────────
   // Realtime echoes and list-fetch races can deliver payloads OLDER than
   // the state we already hold (our own save's echo lands after
@@ -314,30 +369,43 @@ function applyServerNoteUpsert(
     existing._sharedMeta = sharedMeta;
   }
 
-  // If user has local edits, don't overwrite — mark conflict if content changed
-  //
-  // "Changed" means changed by SOMEONE ELSE. A value this client itself wrote
-  // (`_lastWrittenValues`) is our own work coming back — our write's realtime
-  // echo lands 50–500ms after the REST response, so if the user kept typing in
-  // that window the echo no longer matches the live buffer. Comparing only
-  // against the live buffer asked "is this different from what I'm typing right
-  // now?" and answered yes for every own-echo-during-typing, which is exactly
-  // the recurring false "another device edited this note" report. Check the
-  // actual data we sent before telling the user anything.
-  if (existing._dirty) {
-    const written = existing._lastWrittenValues;
-    const serverContentChanged =
-      note.content !== undefined &&
-      note.content !== existing.content &&
-      note.content !== written?.content;
-    const serverLabelChanged =
-      note.label !== undefined &&
-      note.label !== existing.label &&
-      note.label !== written?.label;
-    if (serverContentChanged || serverLabelChanged) {
-      // Store server data but keep local edits — saveState handled by consumers
-      existing._error = "conflict";
+  // A dirty editor retains its acknowledged base and local fields. Realtime is
+  // only evidence: it cannot manufacture a conflict dialog or silently rebase
+  // a draft. A full CAS rejection is the sole source of a decision package.
+  const hasDirtyPhysicalField = Array.from(existing._dirtyFields).some(
+    (field) => field !== "project_id" && field !== "task_id",
+  );
+  if (existing._dirty && hasDirtyPhysicalField) {
+    const heldObservationVersion = existing._remoteObservation?.version ?? null;
+    if (heldObservationVersion !== null && !isCanonicalNoteRevision(heldObservationVersion)) {
+      return;
     }
+    const isNewerObservation =
+      incomingVersion !== null &&
+      (heldObservationVersion === null || incomingVersion > heldObservationVersion);
+    if (
+      isNewerObservation ||
+      (incomingVersion !== null &&
+        incomingVersion === heldObservationVersion &&
+        fetchStatus === "full" &&
+        existing._remoteObservation?.complete === false) ||
+      (incomingVersion === null && isNewerTimestamp)
+    ) {
+      existing._remoteObservation = {
+        version: incomingVersion,
+        updatedAt: note.updated_at ?? null,
+        complete: fetchStatus === "full",
+        note: { ...note },
+      };
+      if (
+        existing._conflictDecision &&
+        incomingVersion !== null &&
+        incomingVersion > (existing._conflictDecision.comparedVersion ?? -1)
+      ) {
+        existing._conflictDecision.stale = true;
+      }
+    }
+    return;
   }
 
   // Merge server fields (don't overwrite undoable fields if dirty).
@@ -390,6 +458,7 @@ const initialState: NotesSliceState & {
   contentLoadStatus: {},
   listStatus: "idle",
   listError: null,
+  conflictResolutionReceipts: {},
   instances: {},
   realtimeConnected: false,
   noteEditors: {},
@@ -566,6 +635,203 @@ const notesSlice = createSlice({
       };
     },
 
+    /** Store a full CAS miss before the thunk rejects so UI decisions have no
+     * second fetch, timestamp fallback, or inferred server row. */
+    recordNoteConflict(
+      state,
+      action: PayloadAction<{
+        id: string;
+        expectedVersion: number;
+        currentVersion: number;
+        currentRow: Note;
+        sentSnapshot: NoteFieldSnapshot;
+        actorId: string;
+        organizationId: string;
+        decisionId: string;
+        reviewId: string;
+      }>,
+    ) {
+      const record = state.notes[action.payload.id];
+      if (
+        !record ||
+        record.id !== action.payload.id ||
+        action.payload.currentRow.id !== action.payload.id ||
+        record.organization_id !== action.payload.organizationId ||
+        action.payload.currentRow.organization_id !== action.payload.organizationId ||
+        !isCanonicalNoteRevision(action.payload.expectedVersion) ||
+        !isCanonicalNoteRevision(action.payload.currentVersion) ||
+        !isCanonicalNoteRevision(action.payload.currentRow.version) ||
+        action.payload.currentVersion !== action.payload.currentRow.version
+      ) return;
+      const observedVersion = record._remoteObservation?.version ?? null;
+      if (observedVersion !== null && !isCanonicalNoteRevision(observedVersion)) return;
+      const decision: NoteConflictDecision = {
+        decisionId: action.payload.decisionId,
+        reviewId: action.payload.reviewId,
+        actorId: action.payload.actorId,
+        organizationId: action.payload.organizationId,
+        expectedVersion: action.payload.expectedVersion,
+        currentVersion: action.payload.currentVersion,
+        currentRow: action.payload.currentRow,
+        reviewedRemote: action.payload.currentRow,
+        sentSnapshot: action.payload.sentSnapshot,
+        reviewedLocal: conflictPhysicalSnapshot(record),
+        reviewedLiveContent: null,
+        comparedVersion: action.payload.currentVersion,
+        stale:
+          observedVersion !== null && observedVersion > action.payload.currentVersion,
+        dismissed: false,
+      };
+      record._conflictDecision = decision;
+      record._error = "conflict";
+      record._saving = false;
+      state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
+    },
+
+    captureNoteConflictLiveBuffer(
+      state,
+      action: PayloadAction<{ id: string; content: string }>,
+    ) {
+      const decision = state.notes[action.payload.id]?._conflictDecision;
+      if (decision && decision.reviewedLiveContent === null) {
+        decision.reviewedLiveContent = action.payload.content;
+      }
+    },
+
+    /** A refresh replaces only the reviewed server comparison. It intentionally
+     * leaves the editor base, dirty fields, and merge draft untouched. */
+    refreshNoteConflictComparison(
+      state,
+      action: PayloadAction<{ id: string; decisionId: string; reviewId: string; currentRow: Note; nextReviewId: string; requestId: string; liveContent: string }>,
+    ) {
+      const record = state.notes[action.payload.id];
+      const decision = record?._conflictDecision;
+      const refuse = (reason: string) => { state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason }; };
+      if (!record || !decision || decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh the note again."); return; }
+      if (
+        record.id !== action.payload.id ||
+        action.payload.currentRow.id !== action.payload.id ||
+        decision.organizationId !== record.organization_id ||
+        action.payload.currentRow.organization_id !== decision.organizationId ||
+        !isCanonicalNoteRevision(action.payload.currentRow.version) ||
+        !isCanonicalNoteRevision(decision.currentVersion) ||
+        action.payload.currentRow.version < decision.currentVersion
+      ) { refuse("This saved comparison is unavailable. Reopen the note before refreshing."); return; }
+      const observedVersion = record._remoteObservation?.version;
+      if (observedVersion !== null && observedVersion !== undefined && (!isCanonicalNoteRevision(observedVersion) || observedVersion > action.payload.currentRow.version)) {
+        refuse("A newer remote change arrived. Refresh this comparison again."); return;
+      }
+      decision.currentRow = action.payload.currentRow;
+      decision.reviewedRemote = action.payload.currentRow;
+      decision.reviewId = action.payload.nextReviewId;
+      decision.currentVersion = action.payload.currentRow.version;
+      decision.comparedVersion = action.payload.currentRow.version;
+      decision.stale = false;
+      decision.dismissed = false;
+      decision.reviewedLocal = conflictPhysicalSnapshot(record);
+      decision.reviewedLiveContent = action.payload.liveContent;
+      state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "mine", content: action.payload.liveContent };
+    },
+
+    dismissNoteConflict(state, action: PayloadAction<{ id: string }>) {
+      const decision = state.notes[action.payload.id]?._conflictDecision;
+      if (decision) decision.dismissed = true;
+    },
+
+    reopenNoteConflict(state, action: PayloadAction<{ id: string }>) {
+      const decision = state.notes[action.payload.id]?._conflictDecision;
+      if (decision) decision.dismissed = false;
+    },
+
+    applyNoteConflictResolution(
+      state,
+      action: PayloadAction<{
+        id: string;
+        decisionId: string;
+        reviewId: string;
+        requestId: string;
+        choice: "mine" | "theirs";
+        proposedContent: string;
+        reviewedLiveContent: string;
+      }>,
+    ) {
+      const record = state.notes[action.payload.id];
+      const decision = record?._conflictDecision;
+      const currentObserved = record?._remoteObservation?.version ?? null;
+      const refuse = (reason: string) => {
+        state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason };
+      };
+      if (!record || !decision || record.id !== action.payload.id) { refuse("This conflict is no longer available. Refresh the note."); return; }
+      if (decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh before applying a choice."); return; }
+      if (decision.organizationId !== record.organization_id || decision.currentRow.id !== action.payload.id || decision.reviewedRemote.id !== action.payload.id) { refuse("This note moved organizations. Reopen it before applying a choice."); return; }
+      if (
+        !isCanonicalNoteRevision(decision.expectedVersion) ||
+        !isCanonicalNoteRevision(decision.currentVersion) ||
+        !isCanonicalNoteRevision(decision.comparedVersion) ||
+        !isCanonicalNoteRevision(decision.currentRow.version) ||
+        !isCanonicalNoteRevision(decision.reviewedRemote.version) ||
+        (currentObserved !== null && !isCanonicalNoteRevision(currentObserved)) ||
+        decision.stale ||
+        (currentObserved !== null && currentObserved > decision.comparedVersion)
+      ) { refuse("A newer remote change arrived. Refresh before applying a choice."); return; }
+      if (decision.reviewedLiveContent !== action.payload.reviewedLiveContent) { refuse("Your editor buffer changed after this comparison. Refresh before applying a choice."); return; }
+      if (!sameConflictSnapshot(conflictPhysicalSnapshot(record), decision.reviewedLocal)) { refuse("Your note fields changed after this comparison. Refresh before applying a choice."); return; }
+      if (decision.reviewedRemote.id !== decision.currentRow.id || decision.reviewedRemote.version !== decision.currentRow.version || JSON.stringify(decision.reviewedRemote) !== JSON.stringify(decision.currentRow)) { refuse("The reviewed server package changed. Refresh before applying a choice."); return; }
+      const remote = decision.currentRow;
+      if (action.payload.choice === "mine") {
+        writeNoteField(record, "content", action.payload.proposedContent);
+        record._dirtyFields.add("content");
+        record._dirty = true;
+        record.updated_at = remote.updated_at;
+        record.version = remote.version;
+        record._error = null;
+        record._conflictDecision = null;
+        state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "mine", content: action.payload.proposedContent };
+        return;
+      }
+      // Physical row fields are replaced from the reviewed CAS row. Context
+      // links are separate association writes and intentionally survive.
+      for (const field of [
+        "label",
+        "content",
+        "folder_name",
+        "folder_id",
+        "tags",
+        "metadata",
+        "visibility",
+        "position",
+        "organization_id",
+        "updated_at",
+        "version",
+        "sync_version",
+        "content_hash",
+        "file_path",
+        "last_device_id",
+        "deleted_at",
+        "created_at",
+        "created_by",
+        "updated_by",
+      ] as const) {
+        writeNoteField(record, field, remote[field]);
+      }
+      for (const field of [
+        "content",
+        "label",
+        "folder_name",
+        "folder_id",
+        "tags",
+        "visibility",
+        "organization_id",
+      ] as const) {
+        record._dirtyFields.delete(field);
+        delete record._fieldHistory[field];
+      }
+      record._dirty = record._dirtyFields.size > 0;
+      record._error = null;
+      record._conflictDecision = null;
+      state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "theirs", content: remote.content ?? "" };
+    },
+
     markNoteSaving(state, action: PayloadAction<string>) {
       const record = state.notes[action.payload];
       if (record) record._saving = true;
@@ -595,7 +861,9 @@ const notesSlice = createSlice({
       const record = state.notes[action.payload.id];
       if (!record) return;
       record._saving = false;
-      record._error = null;
+      // A later acknowledgement may settle only its sent fields. Do not erase
+      // a CAS decision or remote evidence that arrived during the request.
+      if (!record._conflictDecision) record._error = null;
       // A save landed — the failure streak (and the blocking banner it drives)
       // ends here, not on the next edit.
       record._consecutiveSaveFailures = 0;
@@ -666,27 +934,8 @@ const notesSlice = createSlice({
       state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
     },
 
-    /** Resolve a save conflict without touching dirty state.
-     *  - Keep-mine: pass the server's `updatedAt` so the record adopts it and
-     *    the next autosave's optimistic lock (`WHERE updated_at =`) passes —
-     *    consciously overwriting the remote version. Local edits stay dirty
-     *    and flow through the normal autosave pipeline.
-     *  - Never use markNoteSaved for this: with no snapshot it wipes ALL dirty
-     *    fields, so the queued save bails on `!_dirty` and nothing is written
-     *    (the old "Keep mine is a silent no-op" bug). */
-    resolveNoteConflict(
-      state,
-      action: PayloadAction<{ id: string; updatedAt?: string; version?: number }>,
-    ) {
-      const record = state.notes[action.payload.id];
-      if (!record) return;
-      if (record._error === "conflict") record._error = null;
-      if (action.payload.updatedAt) {
-        record.updated_at = action.payload.updatedAt;
-      }
-      if (action.payload.version !== undefined) {
-        record.version = action.payload.version;
-      }
+    clearNoteConflictResolutionReceipt(state, action: PayloadAction<string>) {
+      delete state.conflictResolutionReceipts[action.payload];
     },
 
     clearSavingNoteId(state, action: PayloadAction<string>) {
@@ -921,14 +1170,17 @@ const notesSlice = createSlice({
       action: PayloadAction<{
         id: string;
         userId: string;
-        folder: string | FolderReference;
+        folder: FolderReference | null;
         organizationId: string;
         instanceId: string;
       }>,
     ) {
       const { id, userId, folder, organizationId, instanceId } = action.payload;
-      const folderName = typeof folder === "string" ? folder : folder.name;
-      const folderId = typeof folder === "string" ? null : folder.id;
+      if (folder && folder.organizationId !== organizationId) {
+        throw new Error("Autogenerated note folder organization does not match its captured organization.");
+      }
+      const folderName = folder?.name ?? null;
+      const folderId = folder?.id ?? null;
       state.notes[id] = createAutogeneratedNoteRecord(id, userId, folderName, organizationId, folderId);
       // Also add to instance tabs (at the front) and set active.
       const inst = state.instances[instanceId];
@@ -1273,7 +1525,13 @@ export const {
   clearNoteUndoHistory,
   upsertNoteFromServer,
   upsertNotesFromServer,
-  resolveNoteConflict,
+  recordNoteConflict,
+  refreshNoteConflictComparison,
+  dismissNoteConflict,
+  reopenNoteConflict,
+  applyNoteConflictResolution,
+  clearNoteConflictResolutionReceipt,
+  captureNoteConflictLiveBuffer,
   removeNote,
   recordNoteWriteAttempt,
   markNoteSaving,

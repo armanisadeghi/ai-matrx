@@ -19,7 +19,7 @@ import Link from "next/link";
 import { BookOpen, CalendarClock, Clock, MoreHorizontal } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import {
   artifactCount,
@@ -149,7 +149,7 @@ export function EducationLibraryCards({
                       {stats.lastStudiedAt && (
                         <>
                           {stats.accuracy != null && " · "}
-                          {relativeTime(stats.lastStudiedAt)}
+                          {formatRelativeTime(stats.lastStudiedAt)}
                         </>
                       )}
                     </>

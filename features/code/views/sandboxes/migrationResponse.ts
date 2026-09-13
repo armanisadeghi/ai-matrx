@@ -4,6 +4,49 @@ export interface SandboxMigrationFailure {
   code: string;
 }
 
+export type SandboxMigrationOutcome =
+  | "in_progress"
+  | "recovering"
+  | "migrated"
+  | "rolled_back"
+  | "recovery_required"
+  | "idle";
+
+export interface SandboxMigrationStatus {
+  sandbox_id: string;
+  operation_id: string | null;
+  outcome: SandboxMigrationOutcome;
+  execution_state: string;
+  phase: string;
+  reason?: string;
+}
+
+const CANONICAL_OPERATION_ID = /^[0-9a-f]{32}$/;
+
+export function isCanonicalMigrationOperationId(
+  value: unknown,
+): value is string {
+  return typeof value === "string" && CANONICAL_OPERATION_ID.test(value);
+}
+
+export function newMigrationOperationId(): string {
+  return crypto.randomUUID().replaceAll("-", "");
+}
+
+export function isLiveMigrationOutcome(
+  outcome: SandboxMigrationOutcome,
+): boolean {
+  return outcome === "in_progress" || outcome === "recovering";
+}
+
+/** The card uses both persisted state and an immediate ref to close double-click races. */
+export function canStartSandboxMigration(
+  activeOperationId: string | null,
+  startInFlightOperationId: string | null,
+): boolean {
+  return activeOperationId === null && startInFlightOperationId === null;
+}
+
 function recordOf(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null
     ? (value as Record<string, unknown>)
@@ -54,5 +97,52 @@ export function classifySandboxMigrationFailure(
         : "failure",
     message: sandboxMigrationMessage(payload, "Sandbox image update failed."),
     code: status ?? `http_${httpStatus}`,
+  };
+}
+
+/**
+ * Accept only the narrow status projection published by the orchestrator.  In
+ * particular, a response for another operation can never be used to claim the
+ * caller's migration completed.
+ */
+export function parseSandboxMigrationStatus(
+  value: unknown,
+  expected: { sandboxId: string; operationId?: string },
+): SandboxMigrationStatus | null {
+  const record = recordOf(value);
+  if (
+    !record ||
+    record.sandbox_id !== expected.sandboxId ||
+    ![
+      "in_progress",
+      "recovering",
+      "migrated",
+      "rolled_back",
+      "recovery_required",
+      "idle",
+    ].includes(String(record.outcome)) ||
+    typeof record.execution_state !== "string" ||
+    typeof record.phase !== "string" ||
+    (record.reason !== undefined && typeof record.reason !== "string")
+  ) {
+    return null;
+  }
+  const operationId = record.operation_id;
+  if (operationId !== null && !isCanonicalMigrationOperationId(operationId)) {
+    return null;
+  }
+  if (
+    expected.operationId !== undefined &&
+    operationId !== expected.operationId
+  ) {
+    return null;
+  }
+  return {
+    sandbox_id: expected.sandboxId,
+    operation_id: operationId,
+    outcome: record.outcome as SandboxMigrationOutcome,
+    execution_state: record.execution_state,
+    phase: record.phase,
+    ...(typeof record.reason === "string" ? { reason: record.reason } : {}),
   };
 }

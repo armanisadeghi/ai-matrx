@@ -164,6 +164,19 @@ describe("KeyValueGrid hydration", () => {
     expect(detailsButton).not.toBeNull();
     await act(async () => detailsButton?.click());
 
+    // `source_metadata` is an EMPTY object, so under the document's default
+    // optional-field policy (W61, `document-presentation.tsx`) it sits on the
+    // detail grid's "did not apply" line rather than as a row reading
+    // "Source metadata — None". It is still reachable, and the assertions
+    // below are unchanged: opening that line must show the field and nothing
+    // may vanish. THE REACHABILITY THIS GUARD PROTECTS IS INTACT — one more
+    // disclosure, never a drop.
+    const notApplicableButton = [
+      ...container.querySelectorAll<HTMLButtonElement>("button"),
+    ].find((button) => /did not apply/.test(button.textContent ?? ""));
+    expect(notApplicableButton).toBeDefined();
+    await act(async () => notApplicableButton?.click());
+
     expect(container.textContent).toContain("Content hash");
     expect(container.textContent).toContain("Source metadata");
     expect(container.textContent).toContain("Source offset start");

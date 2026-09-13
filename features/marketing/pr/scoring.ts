@@ -20,6 +20,7 @@
  * tune is a number they can no longer compare between angles.
  */
 
+import { formatDurationMinutes } from "@ai-matrx/kit/format";
 import { readLadder } from "@/features/marketing/pr/ladder";
 import type { SourceRequest, StoryAngle } from "@/features/marketing/pr/types";
 
@@ -195,16 +196,15 @@ export function deadlineState(
   };
 }
 
+/**
+ * The local m/h/d cascade was collapsed onto the kit formatter (2026-09-12).
+ * Kept as an ADAPTER because both embargo labels above call it. Coarse voice
+ * (a span read at a glance in a queue row) with round:"down", because an
+ * embargo countdown that rounds up promises the desk time it does not have.
+ * MINUTES in — the ladder counts in minutes, so nothing multiplies to seconds.
+ */
 function describeSpan(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    const rest = minutes % 60;
-    return rest ? `${hours}h ${rest}m` : `${hours}h`;
-  }
-  const days = Math.floor(hours / 24);
-  const restHours = hours % 24;
-  return restHours ? `${days}d ${restHours}h` : `${days}d`;
+  return formatDurationMinutes(minutes, { style: "coarse", round: "down" });
 }
 
 // ─── Queue ordering ─────────────────────────────────────────────────────────

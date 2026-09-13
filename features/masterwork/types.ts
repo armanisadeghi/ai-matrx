@@ -63,6 +63,25 @@ export interface RuleSourceRef {
   source?: string;
   /** Free-form pointer ("Chapter 6", timestamp for audio, etc.). */
   note?: string;
+  /**
+   * WHICH PART of the source this rule came from, when the source divides
+   * itself into parts (aidream `services/distillation/source_structure.py`,
+   * W42). 1-based in reading order, with the source's own heading as the
+   * label and the part's own word count.
+   *
+   * 🚨 Why it exists: a 31,311-word book was cut by a ruler into six equal
+   * chunks, its most prescriptive chapter contributed 3 rules against its
+   * siblings' 15–23, and no screen anywhere could show that. `section_rules`
+   * is how many rules that part produced in the run that wrote this rule, so
+   * the Sources panel can put a thin chapter in front of the Expert with a
+   * button that reads it again.
+   */
+  section_index?: number;
+  section_label?: string;
+  section_words?: number;
+  section_rules?: number;
+  /** This rule came from the automatic re-read of a part that came back thin. */
+  second_pass?: boolean;
   /** True when the source was reverse-engineered exemplar work. */
   exemplar?: boolean;
   /** The quote could not be machine-verified verbatim — needs a human look. */
@@ -269,6 +288,26 @@ export const RULE_ACTION_KIND_LABELS: Record<RuleActionKind, string> = {
   refer: "Refer",
   wait: "Wait",
   commit: "Commit to an answer",
+};
+
+/**
+ * The one-line explanation the Expert picks from in the rule form — the SAME
+ * vocabulary as `RULE_ACTION_KIND_LABELS`, keyed by the same values, never a
+ * second list of moves. A label names the move; a hint says what it means to
+ * someone who has never read our docs.
+ */
+export const RULE_ACTION_KIND_HINTS: Record<RuleActionKind, string> = {
+  ask: "get more information from the person",
+  // The three the merge of 2026-09-13 added: this map was written against the
+  // flat half's six moves, and the one closed list is the move half's nine.
+  examine: "look at it yourself, first-hand",
+  test: "run a check or a measurement",
+  image: "look inside it with a scan or a picture",
+  treat: "act on the situation itself",
+  observe: "keep watching it and re-look as it changes",
+  refer: "hand it to someone else",
+  wait: "deliberately do nothing yet, and re-look",
+  commit: "settle on the answer and proceed",
 };
 
 export const RULE_POLICY_LEVEL_LABELS: Record<RulePolicyLevel, string> = {
@@ -606,12 +645,19 @@ export interface RulebookRule {
   move?: RuleMove;
   /**
    * 🚨 THE DECISION HALF (W58, 2026-09-12) — see `RULE_POLICY_KIND` above.
-   * `"policy"` means this rule is a judgment made under uncertainty; the five
-   * fields below carry it. Absent on an ordinary rule, and absent on every rule
-   * written before 2026-09-12 — absence means "a standing commandment".
+   * `"policy"` means this rule is a judgment made under uncertainty, not a
+   * standing commandment: "given what is known at this point, do this ONE
+   * thing next, at this cost and this risk". The five fields below carry it.
+   * Absent on an ordinary rule, and absent on every rule written before
+   * 2026-09-12 — absence means "a standing commandment".
+   *
    * Deliberately NOT in `RULE_CONTENT_FIELDS`: that list is the prose fields a
    * manual edit compares, and these are set through the `rulebook` tool's
    * `update_rule`, one field at a time.
+   *
+   * The stored values are plain strings because the SERVER owns the
+   * vocabularies; read them through `ruleActionKind` / `rulePolicyLevel`,
+   * which return a value only when it is one the server would have kept.
    */
   kind?: string;
   /** What is known at the point this judgment applies — the "if". */
@@ -637,6 +683,153 @@ export interface RulebookRule {
    */
   settled_by?: string;
   settled_at?: string;
+}
+
+/**
+ * 🚨 THE ONE RULE-FORM FIELD SET (W58, 2026-09-12). Every field the rule form
+ * owns — the prose, the classifications, AND the decision shape — lives in this
+ * ONE shape, and every consumer (the editor's form state, its persisted draft,
+ * the Add-rule window, the context menu's text replacement) derives from it.
+ *
+ * The wall it closes: the decision fields were added beside the prose fields as
+ * a second, parallel set of state. They were absent from the draft snapshot,
+ * from the draft restore, and from the open/reset effect, so Cancel-then-reopen
+ * kept a cancelled toggle and a later Save silently converted or stripped a
+ * policy rule (Bugbot, c016fe96). A field that rides this set cannot be
+ * forgotten by one consumer and remembered by another.
+ *
+ * The decision fields speak the ONE vocabulary — `RuleActionKind` and
+ * `RulePolicyLevel`, mirrored from the server — never a second one.
+ */
+export interface RuleFieldValues {
+  name: string;
+  statement: string;
+  rationale: string;
+  detection: string;
+  quote: string;
+  severity: RuleSeverity;
+  section: string;
+  /** `true` reveals the decision fields; they are carried on the rule itself
+   * (`kind: "policy"`) — see `policyRulePatch`, the ONE storage mapping. */
+  isPolicy: boolean;
+  precondition: string;
+  nextAction: string;
+  actionKind: RuleActionKind;
+  cost: RulePolicyLevel;
+  risk: RulePolicyLevel;
+}
+
+/** Every key of the form set — the enumeration `mergeRuleFieldValues` walks, so
+ * a new field reaches every consumer by being added to `RuleFieldValues`. */
+export const RULE_FIELD_KEYS = [
+  "name",
+  "statement",
+  "rationale",
+  "detection",
+  "quote",
+  "severity",
+  "section",
+  "isPolicy",
+  "precondition",
+  "nextAction",
+  "actionKind",
+  "cost",
+  "risk",
+] as const satisfies ReadonlyArray<keyof RuleFieldValues>;
+
+/**
+ * The form's TEXT fields, keyed by the DOM id suffix `RuleFields` renders them
+ * under (`${idPrefix}-<suffix>`). The editor's context-menu replacement derives
+ * its accepted targets from here rather than hand-listing ids, so a new text
+ * field can never be replaceable in the form but unknown to the menu.
+ */
+export const RULE_FIELD_ELEMENT_IDS = {
+  name: "name",
+  statement: "statement",
+  rationale: "rationale",
+  detection: "detection",
+  quote: "quote",
+  precondition: "precondition",
+  "next-action": "nextAction",
+} as const satisfies Record<string, keyof RuleFieldValues>;
+
+export type RuleTextField = (typeof RULE_FIELD_ELEMENT_IDS)[keyof typeof RULE_FIELD_ELEMENT_IDS];
+
+/**
+ * Which form field a focused element edits, or null when the focus is not on
+ * one. `idPrefix` matches `RuleFields`' own prop.
+ */
+export function ruleFieldForElementId(
+  elementId: string | null | undefined,
+  idPrefix = "rule",
+): RuleTextField | null {
+  if (!elementId || !elementId.startsWith(`${idPrefix}-`)) return null;
+  const suffix = elementId.slice(idPrefix.length + 1);
+  return (
+    (RULE_FIELD_ELEMENT_IDS as Record<string, RuleTextField | undefined>)[
+      suffix
+    ] ?? null
+  );
+}
+
+/** The decision-field defaults of an ordinary (non-policy) rule. */
+export const POLICY_FIELD_DEFAULTS = {
+  isPolicy: false,
+  precondition: "",
+  nextAction: "",
+  actionKind: "ask",
+  cost: "low",
+  risk: "low",
+} as const satisfies Pick<
+  RuleFieldValues,
+  "isPolicy" | "precondition" | "nextAction" | "actionKind" | "cost" | "risk"
+>;
+
+/**
+ * THE ONE derivation of form values from a saved rule — what the editor shows
+ * when nothing is staged, and what a Cancel returns to. A rule with no policy
+ * shape reads as the ordinary defaults; a policy rule reads its own.
+ */
+export function ruleFieldValues(
+  rule: RulebookRule | undefined,
+  opts: { defaultSection: string },
+): RuleFieldValues {
+  return {
+    name: rule?.name ?? "",
+    statement: rule?.statement ?? "",
+    rationale: rule?.rationale ?? "",
+    detection: rule?.detection ?? "",
+    quote: rule?.quote ?? "",
+    severity: rule?.severity ?? "major",
+    section: rule?.section ?? opts.defaultSection,
+    isPolicy: rule ? isPolicyRule(rule) : false,
+    precondition: rule?.precondition ?? "",
+    nextAction: rule?.next_action ?? "",
+    actionKind:
+      (rule ? ruleActionKind(rule) : null) ?? POLICY_FIELD_DEFAULTS.actionKind,
+    cost: rulePolicyLevel(rule?.cost) ?? POLICY_FIELD_DEFAULTS.cost,
+    risk: rulePolicyLevel(rule?.risk) ?? POLICY_FIELD_DEFAULTS.risk,
+  };
+}
+
+/**
+ * Lay a staged or persisted draft over the saved values. Only keys the draft
+ * actually carries win — an older draft written before a field existed leaves
+ * that field on the saved rule instead of blanking it.
+ */
+export function mergeRuleFieldValues(
+  base: RuleFieldValues,
+  patch: Partial<RuleFieldValues> | null | undefined,
+): RuleFieldValues {
+  if (!patch) return { ...base };
+  const next = { ...base };
+  for (const key of RULE_FIELD_KEYS) {
+    const value = patch[key];
+    if (value === undefined) continue;
+    // Each key's value type is its own; the enumeration is the guarantee.
+    (next as Record<string, unknown>)[key] = value;
+  }
+  return next;
 }
 
 /**
@@ -745,6 +938,15 @@ export const RULE_CONTENT_FIELDS = [
   "quote",
   "severity",
   "section",
+  // The policy shape is CONTENT, not structure: changing the next action is
+  // changing the rule, so it resolves a rejection exactly like a statement
+  // edit does. (`relates_to` stays out — it is structural.)
+  "kind",
+  "precondition",
+  "next_action",
+  "action_kind",
+  "cost",
+  "risk",
 ] as const;
 
 function contentChanged(prev: RulebookRule, next: RulebookRule): boolean {
@@ -806,6 +1008,21 @@ export interface DumpUrlSource {
   url: string;
   title?: string;
   added_at: string;
+}
+
+/**
+ * What the Expert said this Rulebook is FOR, from her own intake answer
+ * (`metadata.intake.goal`). Tolerant read: an older Rulebook whose intake never
+ * asked, or was never answered, has none, and an empty string is the honest
+ * answer — never a placeholder sentence nobody said.
+ */
+export function intakeGoal(rulebook: Rulebook): string {
+  const meta = rulebook.metadata;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return "";
+  const intake = (meta as Record<string, unknown>).intake;
+  if (!intake || typeof intake !== "object" || Array.isArray(intake)) return "";
+  const goal = (intake as Record<string, unknown>).goal;
+  return typeof goal === "string" ? goal.trim() : "";
 }
 
 /** The staged dump URLs off a Rulebook's metadata (tolerant read). */

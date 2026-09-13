@@ -15,7 +15,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { apiPost } from "@/lib/api/typed-client";
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
@@ -905,7 +905,7 @@ export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
   // guard it fires SIX parallel 22P02 PostgREST errors (one per query below).
   // Resolve it to the same "missing" outcome as an empty read; the record
   // page's AccessGate says the rest.
-  if (!isUuid(partyId)) {
+  if (!isUuidShape(partyId)) {
     throw recordUnavailable({
       entity: "record",
       reason: "unknown",

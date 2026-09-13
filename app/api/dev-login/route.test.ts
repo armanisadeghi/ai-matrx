@@ -25,7 +25,13 @@ import type { NextRequest } from "next/server";
 // consume (the route deletes it) a real .dev-login-nonce another agent is
 // mid-handshake with in this shared checkout.
 const FAKE_CWD = mkdtempSync(join(tmpdir(), "dev-login-guard-"));
-const NONCE_FILE = join(FAKE_CWD, ".dev-login-nonce");
+// A nonce belongs to a HOST (W56c). One shared `.dev-login-nonce` meant any
+// agent's failed navigation consumed the nonce another agent had just minted.
+// Keyed by HOSTNAME, not host:port — ports never separate cookie jars either,
+// so the nonce boundary is deliberately the same boundary as the session's.
+const nonceFile = (hostname: string) =>
+  join(FAKE_CWD, `.dev-login-nonce.${hostname}`);
+const NONCE_FILE = nonceFile("localhost");
 
 const signInWithPassword = jest.fn(async () => ({ error: null }));
 jest.mock("@/utils/supabase/server", () => ({
@@ -41,13 +47,13 @@ jest.mock("@/utils/supabase/server", () => ({
 type Route = typeof import("./route");
 let GET: Route["GET"];
 
-function get(query: string) {
+function get(query: string, host = "localhost:3000") {
   // NextRequest is imported lazily for the same reason the route is: nothing
   // may load before process.cwd() is patched.
   const { NextRequest: Ctor } =
     require("next/server") as typeof import("next/server");
   return new Ctor(
-    `http://localhost:3000/api/dev-login${query}`,
+    `http://${host}/api/dev-login${query}`,
   ) as unknown as NextRequest;
 }
 
@@ -81,8 +87,7 @@ describe("dev-login accepts ONLY the nonce handshake", () => {
     expect(response.status).toBe(401);
     // Someone hitting the old door lands on the new one, not on a mystery.
     expect(message).toMatch(/leak/i);
-    expect(message).toContain("openssl rand -hex 16 > .dev-login-nonce");
-    expect(message).toContain("/api/dev-login?nonce=");
+    expect(message).toContain("pnpm dev-login");
   });
 
   it("accepts a valid ?nonce= and consumes the file", async () => {
@@ -104,7 +109,7 @@ describe("dev-login accepts ONLY the nonce handshake", () => {
     expect(existsSync(NONCE_FILE)).toBe(false);
   });
 
-  it("refuses a non-localhost host before anything else", async () => {
+  it("refuses a non-loopback host before anything else", async () => {
     const { NextRequest: Ctor } =
       require("next/server") as typeof import("next/server");
     const response = await GET(
@@ -113,6 +118,80 @@ describe("dev-login accepts ONLY the nonce handshake", () => {
       ) as unknown as NextRequest,
     );
     expect(response.status).toBe(403);
+  });
+});
+
+/**
+ * W56 — ONE MACHINE, MANY AGENTS, ONE COOKIE JAR.
+ *
+ * On 2026-09-12 five agent sessions drove this app on localhost at once.
+ * Cookies are scoped to a HOST and ignore the port, so every tab shared one
+ * jar: one session's dev-login signed every other session in as somebody else
+ * mid-form. The fix is a hostname per session — `<label>.localhost`, which is
+ * loopback by definition and is cookie-isolated by every browser.
+ *
+ * Run these against the pre-W56 route and every one of them fails: it 403s on
+ * any host that is not exactly `localhost`, and it reads ONE shared nonce file
+ * that any host could burn.
+ */
+describe("each agent session gets its own hostname and its own nonce", () => {
+  const HOST_A = "sa1b2c3d4.localhost";
+  const HOST_B = "sf9e8d7c6.localhost";
+  const PORT = ":3001";
+
+  it("accepts a *.localhost session host", async () => {
+    writeFileSync(nonceFile(HOST_A), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
+    const response = await GET(
+      get("?nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&next=/tasks", HOST_A + PORT),
+    );
+    expect(response.status).toBeGreaterThanOrEqual(300);
+    expect(response.status).toBeLessThan(400);
+  });
+
+  it("redirects back to the SAME host, never rewritten to localhost", async () => {
+    writeFileSync(nonceFile(HOST_A), "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n");
+    const response = await GET(
+      get("?nonce=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&next=/dashboard", HOST_A + PORT),
+    );
+    // A redirect to localhost would set the session cookie on a host the
+    // caller is not on: a sign-in that silently did nothing, and an eviction
+    // of whoever owned localhost.
+    expect(response.headers.get("location")).toBe(`http://${HOST_A}${PORT}/dashboard`);
+  });
+
+  it("host B cannot spend host A's nonce, and cannot burn its file", async () => {
+    writeFileSync(nonceFile(HOST_A), "cccccccccccccccccccccccccccccccc\n");
+    const stolen = await GET(
+      get("?nonce=cccccccccccccccccccccccccccccccc&next=/tasks", HOST_B + PORT),
+    );
+    expect(stolen.status).toBe(401);
+    // THE ACTUAL DEFECT: A's handshake must still be live afterwards.
+    expect(existsSync(nonceFile(HOST_A))).toBe(true);
+
+    const owner = await GET(
+      get("?nonce=cccccccccccccccccccccccccccccccc&next=/tasks", HOST_A + PORT),
+    );
+    expect(owner.status).toBeGreaterThanOrEqual(300);
+    expect(owner.status).toBeLessThan(400);
+    expect(existsSync(nonceFile(HOST_A))).toBe(false);
+  });
+
+  it("names the host and the per-host file when a nonce is missing", async () => {
+    const response = await GET(get("?nonce=dddddddddddddddddddddddddddddddd", HOST_B + PORT));
+    const body = (await response.json()) as { error?: string };
+    expect(response.status).toBe(401);
+    expect(body.error ?? "").toContain(`.dev-login-nonce.${HOST_B}`);
+    expect(body.error ?? "").toContain("pnpm dev-login");
+  });
+
+  it("never writes or reads outside the checkout, whatever the host looks like", () => {
+    const source = require("node:fs").readFileSync(
+      join(__dirname, "route.ts"),
+      "utf8",
+    ) as string;
+    // The host becomes part of a PATH; it is re-validated, not trusted.
+    expect(source).toContain('/^[a-z0-9.-]{1,253}$/');
+    expect(source).toContain('!hostname.includes("..")');
   });
 });
 

@@ -17,10 +17,10 @@
  * self-handle via `conversationId` + `messageId`.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
+import { createFullScreenEditorCallbackGroup, disposeFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 
 const OVERLAY_ID = "htmlPreview" as const;
 
@@ -38,7 +38,7 @@ export interface OpenHtmlPreviewBridgeOptions {
    * (unless `showSaveButton` explicitly overrides) and the caller owns the
    * save outcome, taking precedence over the chat-message self-handle path.
    */
-  onSave?: (markdownContent: string) => void | Promise<void>;
+  onSave?: (markdownContent: string) => Promise<void>;
   showSaveButton?: boolean;
   isAgentSystem?: boolean;
 }
@@ -50,58 +50,48 @@ export interface HtmlPreviewBridgeHandle {
 
 export function useOpenHtmlPreviewBridge() {
   const dispatch = useAppDispatch();
-  // Track live callback groups so a caller unmount can't leak them
-  // (the save path self-disposes via `removeAfterTrigger`; this covers
-  // close-without-save).
-  const disposersRef = useRef<Set<() => void>>(new Set());
-  useEffect(() => {
-    const disposers = disposersRef.current;
-    return () => {
-      for (const dispose of disposers) dispose();
-      disposers.clear();
-    };
-  }, []);
-
   return useCallback(
     (opts: OpenHtmlPreviewBridgeOptions): HtmlPreviewBridgeHandle => {
-      const instanceId = opts.instanceId ?? `htmlPreview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const instanceId =
+        opts.instanceId ??
+        `htmlPreview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       let callbackGroupId: string | null = null;
-      let dispose: (() => void) | null = null;
       if (opts.onSave) {
         const onSave = opts.onSave;
         const group = createFullScreenEditorCallbackGroup({
-          onSave: (content) => void onSave(content),
+          onSave,
         });
         callbackGroupId = group.callbackGroupId;
-        dispose = () => {
-          group.dispose();
-          if (dispose) disposersRef.current.delete(dispose);
-        };
-        disposersRef.current.add(dispose);
       }
 
-      dispatch(
-        openOverlay({
-          overlayId: OVERLAY_ID,
-          instanceId,
-          data: {
-            content: opts.content,
-            messageId: opts.messageId,
-            conversationId: opts.conversationId,
-            title: opts.title,
-            description: opts.description,
-            callbackGroupId,
-            showSaveButton: opts.showSaveButton ?? (opts.onSave ? true : undefined),
-            isAgentSystem: opts.isAgentSystem,
-          },
-        }),
-      );
+      try {
+        dispatch(
+          openOverlay({
+            overlayId: OVERLAY_ID,
+            instanceId,
+            data: {
+              content: opts.content,
+              messageId: opts.messageId,
+              conversationId: opts.conversationId,
+              title: opts.title,
+              description: opts.description,
+              callbackGroupId,
+              showSaveButton:
+                opts.showSaveButton ?? (opts.onSave ? true : undefined),
+              isAgentSystem: opts.isAgentSystem,
+            },
+          }),
+        );
+      } catch (error) {
+        disposeFullScreenEditorCallbackGroup(callbackGroupId);
+        throw error;
+      }
       return {
         instanceId,
         close: () => {
           dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId }));
-          dispose?.();
+          disposeFullScreenEditorCallbackGroup(callbackGroupId);
         },
       };
     },
@@ -114,11 +104,23 @@ export function useOpenHtmlPreviewBridge() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function HtmlPreviewBridgeController(props: OpenHtmlPreviewBridgeOptions): null {
+export function HtmlPreviewBridgeController(
+  props: OpenHtmlPreviewBridgeOptions,
+): null {
   const open = useOpenHtmlPreviewBridge();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.content, props.messageId, props.conversationId, props.title, props.description, props.onSave, props.showSaveButton, props.isAgentSystem]);
+  }, [
+    open,
+    props.content,
+    props.messageId,
+    props.conversationId,
+    props.title,
+    props.description,
+    props.onSave,
+    props.showSaveButton,
+    props.isAgentSystem,
+  ]);
   return null;
 }

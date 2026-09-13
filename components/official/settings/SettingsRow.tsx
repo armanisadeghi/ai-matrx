@@ -32,6 +32,10 @@ type SettingsRowProps = SettingsCommonProps & {
   last?: boolean;
   /** Wide controls stack below their label on narrow screens. */
   controlLayout?: "compact" | "wide";
+  /** Stable row anchor used by settings search and deep links. */
+  anchorId?: string;
+  /** Override the label target; pass null when the row exposes a labelled group. */
+  labelFor?: string | null;
 };
 
 const densityStyles: Record<SettingsRowDensity, string> = {
@@ -41,8 +45,7 @@ const densityStyles: Record<SettingsRowDensity, string> = {
 };
 
 const badgeStyles: Record<SettingsBadge["variant"], string> = {
-  default:
-    "bg-muted text-muted-foreground border border-border",
+  default: "bg-muted text-muted-foreground border border-border",
   new: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
   beta: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
   experimental:
@@ -90,6 +93,8 @@ export function SettingsRow({
   children,
   last,
   controlLayout = "compact",
+  anchorId,
+  labelFor,
 }: SettingsRowProps) {
   const { variant: designVariant } = useSettingsDesign();
   const sectionTitle = useSettingsSectionTitle();
@@ -97,11 +102,13 @@ export function SettingsRow({
   // Input ids are React-instance ids. Search/deep-link ids intentionally use
   // only the authored section + label, so they survive remounts and markup.
   const inputId = id ?? `settings-input-${reactId}`;
+  const labelId = `${inputId}-label`;
   const controlId = settingsControlSearchId(sectionTitle ?? "Settings", label);
+  const rowAnchorId = anchorId ?? controlId;
 
   const labelBlock = (
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         {modified && (
           <span
             aria-label="Modified from default"
@@ -111,18 +118,35 @@ export function SettingsRow({
         {Icon && (
           <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         )}
-        <label
-          htmlFor={inputId}
-          className={cn(
-            "text-sm font-medium text-foreground leading-snug",
-            disabled && "opacity-50",
-          )}
-        >
-          {label}
-        </label>
+        {labelFor === null ? (
+          <span
+            id={labelId}
+            className={cn(
+              "min-w-0 break-words text-sm font-medium leading-snug text-foreground",
+              disabled && "opacity-50",
+            )}
+          >
+            {label}
+          </span>
+        ) : (
+          <label
+            id={labelId}
+            htmlFor={labelFor ?? inputId}
+            className={cn(
+              "min-w-0 break-words text-sm font-medium leading-snug text-foreground",
+              disabled && "opacity-50",
+            )}
+          >
+            {label}
+          </label>
+        )}
         {badge && <BadgePill badge={badge} />}
         {designVariant === "compact" && (description || helpText) && (
-          <CompactHelpPopover label={label} description={description} helpText={helpText} />
+          <CompactHelpPopover
+            label={label}
+            description={description}
+            helpText={helpText}
+          />
         )}
         {helpText && designVariant !== "compact" && (
           <TooltipProvider delayDuration={150}>
@@ -144,20 +168,26 @@ export function SettingsRow({
         )}
       </div>
       {description ? (
-        <div className={cn("mt-0.5 text-xs leading-snug text-muted-foreground", designVariant === "compact" && "sm:truncate", disabled && "opacity-50")}>
+        <div
+          className={cn(
+            "mt-0.5 break-words text-xs leading-snug text-muted-foreground",
+            designVariant === "compact" && "@[40rem]/settings:truncate",
+            disabled && "opacity-50",
+          )}
+        >
           {description}
         </div>
       ) : null}
       {warning && (
         <div className="mt-1 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-          <span className="leading-snug">{warning}</span>
+          <span className="break-words leading-snug">{warning}</span>
         </div>
       )}
       {error && (
         <div className="mt-1 flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400">
           <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-          <span className="leading-snug">{error}</span>
+          <span className="break-words leading-snug">{error}</span>
         </div>
       )}
     </div>
@@ -165,13 +195,17 @@ export function SettingsRow({
 
   if (variant === "block") {
     return (
-      <SettingAnchor id={controlId}>
+      <SettingAnchor id={rowAnchorId}>
         <div
-        className={cn(
-          "px-4 border-b border-border/40",
-          densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
-          last && "border-b-0",
-        )}
+          className={cn(
+            "px-4 border-b border-border/40",
+            densityStyles[
+              designVariant === "compact" && density === "default"
+                ? "compact"
+                : density
+            ],
+            last && "border-b-0",
+          )}
         >
           {children}
         </div>
@@ -181,13 +215,17 @@ export function SettingsRow({
 
   if (variant === "stacked") {
     return (
-      <SettingAnchor id={controlId}>
+      <SettingAnchor id={rowAnchorId}>
         <div
-        className={cn(
-          "px-4 border-b border-border/40",
-          densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
-          last && "border-b-0",
-        )}
+          className={cn(
+            "px-4 border-b border-border/40",
+            densityStyles[
+              designVariant === "compact" && density === "default"
+                ? "compact"
+                : density
+            ],
+            last && "border-b-0",
+          )}
         >
           <div className="mb-2.5">{labelBlock}</div>
           <div className={cn(disabled && "opacity-50")}>{children}</div>
@@ -197,18 +235,31 @@ export function SettingsRow({
   }
 
   return (
-    <SettingAnchor id={controlId}>
+    <SettingAnchor id={rowAnchorId}>
       <div
-      className={cn(
-        controlLayout === "wide"
-          ? "flex flex-col items-stretch gap-2 px-4 sm:flex-row sm:items-center sm:gap-4 border-b border-border/40"
-          : "flex items-center gap-4 px-4 border-b border-border/40",
-        densityStyles[designVariant === "compact" && density === "default" ? "compact" : density],
-        last && "border-b-0",
-      )}
+        className={cn(
+          controlLayout === "wide"
+            ? "flex flex-col items-stretch gap-2 border-b border-border/40 px-4 @[40rem]/settings:flex-row @[40rem]/settings:items-center @[40rem]/settings:gap-4"
+            : "flex items-center gap-4 px-4 border-b border-border/40",
+          densityStyles[
+            designVariant === "compact" && density === "default"
+              ? "compact"
+              : density
+          ],
+          last && "border-b-0",
+        )}
       >
         {labelBlock}
-        <div className={cn("min-w-0 max-w-full shrink-0 [&_button]:max-w-full [&_input]:max-w-full sm:self-auto", disabled && "opacity-50")}>{children}</div>
+        <div
+          className={cn(
+            controlLayout === "wide"
+              ? "w-full min-w-0 max-w-full [&_button]:max-w-full [&_input]:max-w-full @[40rem]/settings:w-auto @[40rem]/settings:shrink-0"
+              : "w-auto min-w-0 max-w-full shrink-0 [&_button]:max-w-full [&_input]:max-w-full",
+            disabled && "opacity-50",
+          )}
+        >
+          {children}
+        </div>
       </div>
     </SettingAnchor>
   );
@@ -235,10 +286,12 @@ function CompactHelpPopover({
           side="bottom"
           align="start"
           sideOffset={6}
-          className="z-50 w-72 rounded-md border border-border bg-popover p-3 text-xs leading-snug text-popover-foreground shadow-md"
+          className="z-50 w-72 max-w-[calc(100vw-2rem)] break-words rounded-md border border-border bg-popover p-3 text-xs leading-snug text-popover-foreground shadow-md [overflow-wrap:anywhere]"
         >
           {description && <div>{description}</div>}
-          {helpText && <div className={cn(description && "mt-2")}>{helpText}</div>}
+          {helpText && (
+            <div className={cn(description && "mt-2")}>{helpText}</div>
+          )}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

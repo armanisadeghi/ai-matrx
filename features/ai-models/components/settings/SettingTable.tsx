@@ -18,13 +18,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Lock,
-  Pencil,
-  Plus,
-  RefreshCw,
-  SlidersHorizontal,
-  Trash2,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Lock, Pencil, SlidersHorizontal, Trash2 } from "lucide-react";
 import type { AiSetting } from "../../types";
 
 function CompactRange({
@@ -45,6 +44,25 @@ function CompactRange({
   );
 }
 
+function TruncatedText({
+  value,
+  className,
+}: {
+  value: string;
+  className: string;
+}) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={className}>{value}</span>
+        </TooltipTrigger>
+        <TooltipContent>{value}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function RowActions({
   item,
   onEdit,
@@ -58,40 +76,62 @@ function RowActions({
   const isSystem = item.is_system ?? false;
   return (
     <>
-      <div className="flex items-center gap-0.5">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-11 w-11 sm:h-7 sm:w-7"
-          title="Edit"
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit(item);
-          }}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 sm:h-7 sm:w-7"
-          title={isSystem ? "System settings cannot be deleted" : "Delete"}
-          disabled={isSystem}
-          onClick={(event) => {
-            event.stopPropagation();
-            setPendingDelete(true);
-          }}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
+      <TooltipProvider delayDuration={200}>
+        <div className="flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 sm:h-7 sm:w-7"
+                aria-label={`Edit ${item.key}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit(item);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit setting</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 sm:h-7 sm:w-7"
+                  aria-label={
+                    isSystem
+                      ? "System settings cannot be deleted"
+                      : `Delete ${item.key}`
+                  }
+                  disabled={isSystem}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setPendingDelete(true);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isSystem
+                ? "System settings cannot be deleted"
+                : "Delete setting"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete &quot;{item.key}&quot;?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove the setting &quot;{item.key}&quot;
-              from the active settings vocabulary.
+              This will remove the setting &quot;{item.key}&quot; from the
+              active settings vocabulary.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -139,22 +179,18 @@ export default function SettingTable({
     {
       accessorKey: "key",
       header: "Key",
-      sortable: false,
-      filter: false,
+      sortable: true,
       cell: (item) => (
-        <span
+        <TruncatedText
+          value={item.key}
           className="block max-w-[210px] truncate font-mono text-xs font-medium"
-          title={item.key}
-        >
-          {item.key}
-        </span>
+        />
       ),
     },
     {
       accessorKey: "value_type",
       header: "Value Type",
-      sortable: false,
-      filter: false,
+      sortable: true,
       cell: (item) => (
         <Badge variant="outline" className="font-mono text-xs">
           {item.value_type}
@@ -164,8 +200,6 @@ export default function SettingTable({
     {
       id: "range",
       header: "Min – Max",
-      sortable: false,
-      filter: false,
       cell: (item) => (
         <CompactRange min={item.canonical_min} max={item.canonical_max} />
       ),
@@ -173,8 +207,7 @@ export default function SettingTable({
     {
       accessorKey: "is_system",
       header: "Origin",
-      sortable: false,
-      filter: false,
+      sortable: true,
       cell: (item) =>
         item.is_system ? (
           <Badge
@@ -193,37 +226,36 @@ export default function SettingTable({
     {
       accessorKey: "description",
       header: "Description",
-      sortable: false,
-      filter: false,
       cell: (item) => (
-        <span
+        <TruncatedText
+          value={item.description || "—"}
           className="block max-w-[420px] truncate text-xs text-muted-foreground"
-          title={item.description ?? ""}
-        >
-          {item.description || "—"}
-        </span>
+        />
       ),
     },
   ];
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col px-3 pt-2">
+      {error && settings.length > 0 ? (
+        <div
+          role="alert"
+          className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+        >
+          <span className="min-w-0 flex-1">{error}</span>
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            Retry refresh
+          </Button>
+        </div>
+      ) : null}
       <MatrxDataTable<AiSetting>
         data={settings}
-        isLoading={isLoading}
+        isLoading={isLoading && settings.length === 0}
+        isFetching={isLoading && settings.length > 0}
         columns={columns}
         getRowId={(item) => item.id}
         pageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
         defaultSort={null}
-        processLocalRows={(rows, state) => {
-          const query = state.search.trim().toLowerCase();
-          if (!query) return rows;
-          return rows.filter((item) =>
-            [item.key, item.value_type, item.description ?? ""].some((value) =>
-              value.toLowerCase().includes(query),
-            ),
-          );
-        }}
         onRowOpen={onSelect}
         detail={{ enabled: false }}
         rowClassName={(item) =>
@@ -239,7 +271,6 @@ export default function SettingTable({
                 icon: <SlidersHorizontal className="h-8 w-8" />,
                 action: (
                   <Button size="sm" variant="outline" onClick={onRetry}>
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                     Retry
                   </Button>
                 ),
@@ -249,26 +280,12 @@ export default function SettingTable({
                 icon: <SlidersHorizontal className="h-8 w-8" />,
               }
         }
+        tableId="ai/settings"
         toolbar={{
-          searchPlaceholder: "Search by key…",
-          leading: (
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold">Settings Vocabulary</h2>
-              <Badge variant="outline" className="text-xs">
-                {settings.length}
-              </Badge>
-            </div>
-          ),
-          actions: (
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 px-2 text-xs"
-              onClick={onCreate}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New Setting
-            </Button>
-          ),
+          title: "Settings Vocabulary",
+          searchPlaceholder: "Search settings…",
+          refresh: { onRefresh: onRetry },
+          add: { onAdd: onCreate },
         }}
         rowActions={(item) => (
           <RowActions item={item} onEdit={onEdit} onDelete={onDelete} />

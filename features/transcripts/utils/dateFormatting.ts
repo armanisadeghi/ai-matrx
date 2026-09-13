@@ -77,4 +77,9 @@ export function formatReadableDateTime(dateString: string): string {
 }
 
 /** "1:23:45" / "12:34" from seconds — THE package clock formatter. */
-export { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";
+// The clock formatter is the package's `formatDurationSeconds`, imported
+// under its own name (2026-09-12): an alias of a collapsed export puts its
+// call sites outside the guards that judge that export, and THE UNIT LAW
+// puts the unit in the name — a bare `formatDuration` hides whether the
+// number is seconds or milliseconds at every call site.
+export { formatDurationSeconds } from "@ai-matrx/kit/format";

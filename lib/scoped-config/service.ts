@@ -19,6 +19,7 @@ import type {
   KnobScopeKindName,
   ScopedKnob,
 } from "./types";
+import { invalidateEffectiveKnob } from "./effectiveKnobs";
 
 export type KnobScopeRef = {
   kind: KnobScopeKindName;
@@ -73,6 +74,10 @@ export async function setKnobOverride(options: {
     p_note: options.note,
   });
   if (error) throw new Error(`knob_override_set failed: ${error.message}`);
+  // The runtime readers of this key (`lib/scoped-config/effectiveKnobs.ts`)
+  // forget their cached answer, so the feature that consumes the setting
+  // changes behaviour in THIS tab the moment the screen says "saved".
+  invalidateEffectiveKnob(`${options.feature}.${options.key}`);
   return data as KnobOverrideSetResult;
 }
 

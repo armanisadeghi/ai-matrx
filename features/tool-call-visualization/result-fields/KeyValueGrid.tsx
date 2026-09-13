@@ -19,6 +19,19 @@
  * UUID with an always-visible copy button.
  *
  * Every key is reachable: nothing is dropped, only deferred behind a toggle.
+ *
+ * FIELDS THAT DO NOT APPLY (wall W61, 2026-09-12) obey the document's optional
+ * -field policy (`document-presentation.tsx`), not the density. Before that,
+ * `inline` silently skipped them and `full` printed the word "None" — the same
+ * payload read two different ways, and the `full` reading put "Physician note:
+ * None" at the top of a page written for a parent. Under the default `omit`
+ * policy they leave the field list and are COUNTED on a quiet trailing line
+ * that opens them; under `note` they keep their row with a quiet "Not
+ * applicable"; under `show` the producer's value renders untouched.
+ *
+ * FIELD LABELS come from the producer's own JSON Schema `title` when the host
+ * supplied one, and from the key otherwise. The key is the machine's name for
+ * a field; the schema's title is the author's.
  */
 
 import React from "react";
@@ -32,6 +45,11 @@ import {
 } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 import { ShortId } from "./ShortId";
+import {
+  useResolvedOptionalFieldPolicy,
+  useStructuredDocumentPresentation,
+  type SchemaFieldLabel,
+} from "./document-presentation";
 
 export interface KeyValueGridProps {
   value: Record<string, unknown>;
@@ -155,6 +173,26 @@ function isInlineValue(key: string, val: unknown): boolean {
   );
 }
 
+/**
+ * A value that DOES NOT APPLY: nothing was recorded (null / undefined / blank
+ * / empty array / empty object), or a flag the producer turned off. A false
+ * flag is the absence of a fact, not a fact about absence — "Physician first:
+ * No" on a page that never mentions a physician is noise, and the omission
+ * line still says it is there.
+ */
+export function isNotApplicableValue(val: unknown): boolean {
+  if (val === false) return true;
+  return detectResultShape(val).kind === "empty";
+}
+
+/** The author's name for a field when a schema declared one, else the key's. */
+function fieldLabel(
+  key: string,
+  labels: Readonly<Record<string, SchemaFieldLabel>>,
+): SchemaFieldLabel {
+  return labels[key] ?? { label: humanizeKey(key) };
+}
+
 function renderFieldValue(
   key: string,
   val: unknown,
@@ -169,8 +207,14 @@ function renderFieldValue(
   // most prominent thing on the page, above the material the reader came for
   // (seen 2026-08-18 on the Study Pack readout). The roomy state still owns
   // the top level, where "this returned nothing" IS the whole answer.
+  //
+  // "Not applicable" rather than "None" (W61): a reader asked what the field
+  // says, and the honest answer is that it does not apply here — "None" reads
+  // as a recorded value of nothing.
   if (detectResultShape(val).kind === "empty") {
-    return <span className="text-sm text-muted-foreground/70">None</span>;
+    return (
+      <span className="text-sm text-muted-foreground/70">Not applicable</span>
+    );
   }
   if (typeof val === "string" && isIdentifierKey(key)) {
     return <ShortId value={val} variant="full" />;
@@ -233,6 +277,57 @@ const IdentifierListRow: React.FC<{ label: string; ids: string[] }> = ({
   );
 };
 
+/**
+ * THE OMISSION IS ANNOUNCED (law 4). Fields that did not apply left the
+ * reading; this quiet line says how many and opens every one of them in
+ * place. Never a silent drop, and never noise at the top of the document.
+ */
+const NotApplicableRow: React.FC<{
+  entries: Entry[];
+  labels: Readonly<Record<string, SchemaFieldLabel>>;
+  density: ResultDensity;
+  depth: number;
+  embedMedia: boolean;
+}> = ({ entries, labels, density, depth, embedMedia }) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="text-xs text-muted-foreground">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="font-medium hover:underline"
+      >
+        {`${entries.length} ${entries.length === 1 ? "field" : "fields"} did not apply`}
+        {open ? " — hide" : " — show"}
+      </button>
+      {open && (
+        <dl className="mt-1 grid grid-cols-[fit-content(40%)_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1">
+          {entries.map(([key, val]) => (
+            <React.Fragment key={key}>
+              <dt
+                className="truncate font-medium"
+                title={fieldLabel(key, labels).description ?? key}
+              >
+                {fieldLabel(key, labels).label}
+              </dt>
+              <dd className="min-w-0">
+                {val === false ? (
+                  <span className="text-muted-foreground/70">No</span>
+                ) : (
+                  renderFieldValue(key, val, density, depth, embedMedia)
+                )}
+              </dd>
+            </React.Fragment>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+};
+
 export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
   value,
   density = "inline",
@@ -241,6 +336,8 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
   className,
 }) => {
   const [showAll, setShowAll] = React.useState(false);
+  const policy = useResolvedOptionalFieldPolicy();
+  const { labels } = useStructuredDocumentPresentation();
   const entries = Object.entries(value);
 
   const cap =
@@ -253,12 +350,17 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
   const blocks: Entry[] = [];
   const ids: Array<[string, string]> = [];
   const idLists: Array<[string, string[]]> = [];
+  const notApplicable: Entry[] = [];
   for (const entry of shown) {
     const [key, val] = entry;
-    // INLINE DENSITY INTELLIGENCE (owner rules, 2026-07-15): empty values are
-    // NOISE in chat ("Category · No result returned") — skip them; full
-    // density + the Raw tab still carry every key.
-    if (density === "inline" && detectResultShape(val).kind === "empty") continue;
+    // FIELDS THAT DO NOT APPLY follow the document's policy, at EVERY density
+    // (W61). `omit` (the default) takes them out of the reading and counts
+    // them on the trailing line; `note` keeps the row with a quiet "Not
+    // applicable"; `show` renders exactly what the producer sent.
+    if (policy !== "show" && isNotApplicableValue(val)) {
+      notApplicable.push(entry);
+      if (policy === "omit") continue;
+    }
 
     // THE ID NEVER OUTRANKS THE NAME BESIDE IT. When the object also carries
     // the readable twin, the id leaves the field list entirely and rides
@@ -297,9 +399,9 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
             <React.Fragment key={key}>
               <dt
                 className="truncate text-xs font-medium text-muted-foreground"
-                title={key}
+                title={fieldLabel(key, labels).description ?? key}
               >
-                {humanizeKey(key)}
+                {fieldLabel(key, labels).label}
               </dt>
               <dd
                 className="min-w-0 text-sm"
@@ -320,7 +422,9 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
               className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs"
               title={key}
             >
-              <span className="text-muted-foreground">{humanizeKey(key)}</span>
+              <span className="text-muted-foreground">
+                {fieldLabel(key, labels).label}
+              </span>
               <span className="font-medium tabular-nums text-foreground">
                 {formatMetaNumber(val as number)}
               </span>
@@ -333,9 +437,9 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
         <div key={key} className="min-w-0">
           <div
             className="text-xs font-medium leading-none text-muted-foreground"
-            title={key}
+            title={fieldLabel(key, labels).description ?? key}
           >
-            {humanizeKey(key)}
+            {fieldLabel(key, labels).label}
           </div>
           <div
             className="mt-1 min-w-0"
@@ -347,18 +451,32 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
       ))}
 
       {idLists.map(([key, list]) => (
-        <IdentifierListRow key={key} label={humanizeKey(key)} ids={list} />
+        <IdentifierListRow
+          key={key}
+          label={fieldLabel(key, labels).label}
+          ids={list}
+        />
       ))}
 
       {ids.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {ids.map(([key, val]) => (
             <span key={key} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              {humanizeKey(key)}
+              {fieldLabel(key, labels).label}
               <ShortId value={val} />
             </span>
           ))}
         </div>
+      )}
+
+      {policy === "omit" && notApplicable.length > 0 && (
+        <NotApplicableRow
+          entries={notApplicable}
+          labels={labels}
+          density={density}
+          depth={depth}
+          embedMedia={embedMedia}
+        />
       )}
 
       {remaining > 0 && (

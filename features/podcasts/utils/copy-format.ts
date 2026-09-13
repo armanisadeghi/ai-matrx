@@ -19,14 +19,24 @@
  *    The single-episode record keeps it: that is what the user is looking at.
  */
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import type { PcEpisodeWithShow, PcShow } from "@/features/podcasts/types";
 import { mediaSafe } from "@/lib/media/agent-payload";
 
+/**
+ * The local m/s split was collapsed onto the kit formatter (2026-09-12). Kept
+ * as an ADAPTER because three copy shapes call it and the `null` for an absent
+ * duration is a payload decision — an agent must not be handed "0:00" for a
+ * duration nobody measured.
+ *
+ * COMPACT, not clock. What this printed was `44m 07s`: unit-suffixed minutes
+ * with zero-padded seconds, which is compact's exact shape. Clock would have
+ * rendered `44:07` and silently changed every copied episode summary an agent
+ * or a person has ever pasted.
+ */
 function durationLabel(seconds: number | null): string | null {
   if (seconds == null) return null;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}m ${String(secs).padStart(2, "0")}s`;
+  return formatDurationSeconds(seconds, { style: "compact" });
 }
 
 // ── Shows ────────────────────────────────────────────────────────────────

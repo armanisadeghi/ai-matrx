@@ -165,15 +165,14 @@ export function UserActionBar({
   // drift. Fires on the callback group when the user picks a footer button;
   // no follow-up confirmation dialog.
   const handleEditAction = useCallback(
-    (actionId: string, newContent: string) => {
-      void routeUserEditAction(dispatch, {
+    (actionId: string, newContent: string) =>
+      routeUserEditAction(dispatch, {
         actionId,
         conversationId,
         messageId,
         newContent,
         surfaceKey,
-      });
-    },
+      }),
     [dispatch, conversationId, messageId, surfaceKey],
   );
 

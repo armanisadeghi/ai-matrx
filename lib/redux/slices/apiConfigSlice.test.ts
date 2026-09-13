@@ -1,4 +1,5 @@
 import reducer, {
+  acknowledgeRetiredEc2ApiSelectionNotice,
   clearServiceOverrides,
   selectApiServiceTargets,
   selectResolvedBaseUrl,
@@ -80,6 +81,44 @@ describe("multi-service API environment selection", () => {
         .activeServer,
     ).toBe("localhost");
 
+    window.localStorage.removeItem("matrx.apiConfig.v1");
+  });
+
+  it("migrates a persisted retired EC2 AI API selection to production with a durable notice", () => {
+    window.localStorage.setItem(
+      "matrx.apiConfig.v1",
+      JSON.stringify({
+        activeServer: "ec2",
+        customUrl: "https://unrelated-custom.example",
+        serviceOverrides: { scraper: "production" },
+        apiVersion: "v2",
+        pathOverrides: { "/ai/manual": "/v2/ai/manual" },
+        aiApiVersionOverride: "v2",
+      }),
+    );
+
+    let state = reducer(undefined, { type: "test/init" });
+    state = reducer(state, setLoopbackAccess());
+
+    expect(state.activeServer).toBe("production");
+    expect(state.retiredEc2ApiSelectionNotice).toBe(true);
+    expect(state.customUrl).toBe("https://unrelated-custom.example");
+    expect(state.serviceOverrides.scraper).toBe("production");
+    expect(state.apiVersion).toBe("v2");
+    expect(state.pathOverrides).toEqual({ "/ai/manual": "/v2/ai/manual" });
+    expect(selectResolvedBaseUrl(rootState(state))).toBe(
+      "https://server.app.matrxserver.com",
+    );
+    expect(state.health.production).toBeDefined();
+
+    state = reducer(state, acknowledgeRetiredEc2ApiSelectionNotice());
+    expect(state.retiredEc2ApiSelectionNotice).toBe(false);
+    expect(
+      JSON.parse(window.localStorage.getItem("matrx.apiConfig.v1") ?? "{}"),
+    ).toMatchObject({
+      activeServer: "production",
+      retiredEc2ApiSelectionNotice: false,
+    });
     window.localStorage.removeItem("matrx.apiConfig.v1");
   });
 

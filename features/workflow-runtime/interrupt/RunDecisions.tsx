@@ -24,7 +24,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
 import { selectRunDecisions } from "../redux/workflow-runs.selectors";
-import { decisionLine, type SettledDecision } from "./interrupt-view";
+import { answerText, decisionLine, type SettledDecision } from "./interrupt-view";
 
 export function RunDecisions({
   runId,
@@ -56,6 +56,7 @@ function DecisionRow({
   decision: SettledDecision;
   label: string | null;
 }) {
+  const answer = answerText(decision);
   const escalated = decision.provenance?.authority !== "human";
   const unrecorded = decision.provenance === null;
   return (
@@ -86,6 +87,11 @@ function DecisionRow({
       {decision.note ? (
         <p className="mt-0.5 break-words text-[11px] text-foreground/80">
           “{decision.note}”
+        </p>
+      ) : null}
+      {answer ? (
+        <p className="mt-0.5 whitespace-pre-wrap break-words text-[11px] text-foreground/80">
+          “{answer}”
         </p>
       ) : null}
     </li>

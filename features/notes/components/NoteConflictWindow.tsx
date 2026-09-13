@@ -12,7 +12,6 @@ import {
   GitMerge,
   FileText,
   Globe,
-  Bug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DiffViewer } from "@ai-matrx/diff/react";
@@ -26,12 +25,21 @@ export interface NoteConflictWindowProps {
   localContent: string;
   remoteContent: string;
   analysis: DiffAnalysis;
+  /** Reviewed physical-row details beyond the document body. */
+  remoteDetails: Array<{ label: string; yours: string; saved: string; metadata?: { yours: unknown; saved: unknown } }>;
+  mergeDraft: string;
+  onMergeDraftChange: (content: string) => void;
   /** Called with the content from the (possibly edited) "Your Version" tab */
   onKeepMine: (content: string) => void;
   /** Adopt the remote/server version */
   onAcceptChanges: () => void;
   /** Dismiss without action — keep local edits as dirty */
   onCancel: () => void;
+  /** A newer remote observation invalidated this comparison. */
+  stale: boolean;
+  /** Re-read the canonical row while preserving the local merge draft. */
+  onRefresh: () => Promise<void>;
+  decisionError?: string | null;
 }
 
 type Tab = "diff" | "merge" | "local" | "remote";
@@ -43,14 +51,20 @@ export function NoteConflictWindow({
   localContent,
   remoteContent,
   analysis,
+  remoteDetails,
+  mergeDraft,
+  onMergeDraftChange,
   onKeepMine,
   onAcceptChanges,
   onCancel,
+  stale,
+  onRefresh,
+  decisionError,
 }: NoteConflictWindowProps) {
   const [activeTab, setActiveTab] = useState<Tab>("diff");
-  const [editableContent, setEditableContent] = useState(localContent);
-  const [reporting, setReporting] = useState(false);
-  const [reported, setReported] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [inspectMetadata, setInspectMetadata] = useState(false);
 
   // Drag state
   const [pos, setPos] = useState({ x: -1, y: -1 });
@@ -90,34 +104,16 @@ export function NoteConflictWindow({
     [pos],
   );
 
-  const handleReport = useCallback(async () => {
-    setReporting(true);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
     try {
-      await fetch("/api/agent/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "submit",
-          feedback_type: "bug",
-          route: window.location.pathname,
-          description: [
-            "False conflict report — user says versions are identical.",
-            `Note: "${noteTitle}"`,
-            `Analysis: ${analysis.summary}`,
-            `Local length: ${localContent.length}`,
-            `Remote length: ${remoteContent.length}`,
-            `Chars changed: ${analysis.charsChanged}`,
-            `Lines changed: ${analysis.linesChanged}`,
-          ].join("\n"),
-        }),
-      });
-      setReported(true);
-    } catch {
-      // Silently fail — not critical
+      await onRefresh();
+    } catch (error) {
+      setRefreshError(error instanceof Error ? error.message : "Could not refresh the saved note. Try again.");
     } finally {
-      setReporting(false);
+      setRefreshing(false);
     }
-  }, [noteTitle, analysis, localContent, remoteContent]);
+  }, [onRefresh]);
 
   const tabClass = (tab: Tab) =>
     cn(
@@ -177,6 +173,13 @@ export function NoteConflictWindow({
           {analysis.summary}
         </div>
 
+        {stale && (
+          <div className="px-4 py-2 text-xs border-b border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+            A newer remote change arrived. Refresh this comparison before choosing a version.
+          </div>
+        )}
+        {decisionError && <div role="alert" className="px-4 py-2 text-xs border-b border-destructive/30 bg-destructive/10 text-destructive">{decisionError}</div>}
+
         {/* Tab row */}
         <div className="flex items-center gap-1 px-4 py-2 border-b border-border/50 shrink-0">
           <button className={tabClass("diff")} onClick={() => setActiveTab("diff")}>
@@ -225,34 +228,60 @@ export function NoteConflictWindow({
 
           {activeTab === "local" && (
             <textarea
-              value={editableContent}
-              onChange={(e) => setEditableContent(e.target.value)}
+              value={mergeDraft}
+              onChange={(e) => onMergeDraftChange(e.target.value)}
               className="w-full h-full min-h-[300px] resize-none bg-transparent text-sm font-mono leading-relaxed outline-none"
               style={{ fontSize: "16px" }}
             />
           )}
 
           {activeTab === "remote" && (
-            <pre className="text-xs font-mono leading-relaxed whitespace-pre-wrap text-foreground/80">
-              {remoteContent}
-            </pre>
+            <div className="space-y-4">
+              <pre className="text-xs font-mono leading-relaxed whitespace-pre-wrap text-foreground/80">
+                {remoteContent}
+              </pre>
+              <dl className="grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-1 border-t border-border/50 pt-3 text-xs">
+                <dt className="font-medium text-muted-foreground">Field</dt><dt className="font-medium text-muted-foreground">Yours</dt><dt className="font-medium text-muted-foreground">Saved</dt>
+                {remoteDetails.map((detail) => (
+                  <React.Fragment key={detail.label}>
+                    <dt className="font-medium text-muted-foreground">{detail.label}</dt>
+                    <dd className="break-words text-foreground/80">{detail.yours}</dd>
+                    <dd className="break-words text-foreground/80">{detail.saved}</dd>
+                    {detail.metadata !== undefined && (
+                      <button type="button" className="col-span-3 text-left text-primary underline" onClick={() => setInspectMetadata((open) => !open)}>
+                        Inspect metadata details
+                      </button>
+                    )}
+                  </React.Fragment>
+                ))}
+              </dl>
+              {inspectMetadata && remoteDetails.filter((detail) => detail.metadata !== undefined).map((detail) => (
+                <div key={`${detail.label}-metadata`} className="grid grid-cols-2 gap-2">
+                  <pre className="overflow-auto rounded bg-muted p-2 text-xs"><strong>Your metadata</strong>{"\n"}{JSON.stringify(detail.metadata?.yours, null, 2)}</pre>
+                  <pre className="overflow-auto rounded bg-muted p-2 text-xs"><strong>Saved metadata</strong>{"\n"}{JSON.stringify(detail.metadata?.saved, null, 2)}</pre>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-muted/20 shrink-0">
           <button
-            onClick={() => onKeepMine(editableContent)}
+            onClick={() => onKeepMine(mergeDraft)}
+            disabled={stale}
             className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90"
           >
             Keep Mine
           </button>
           <button
             onClick={onAcceptChanges}
+            disabled={stale}
             className="px-3 py-1.5 text-xs font-medium rounded-md border border-border text-foreground cursor-pointer hover:bg-accent"
           >
             Accept Changes
           </button>
+          {refreshError && <p role="alert" className="text-xs text-destructive">{refreshError}</p>}
           <button
             onClick={onCancel}
             className="px-3 py-1.5 text-xs font-medium rounded-md text-muted-foreground cursor-pointer hover:text-foreground"
@@ -260,24 +289,12 @@ export function NoteConflictWindow({
             Cancel
           </button>
 
-          <div className="flex-1" />
-
           <button
-            onClick={handleReport}
-            disabled={reporting || reported}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md cursor-pointer transition-colors",
-              reported
-                ? "text-green-600 dark:text-green-400"
-                : "text-muted-foreground hover:text-foreground border border-border/50 hover:bg-accent/50",
-            )}
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="ml-auto px-3 py-1.5 text-xs rounded-md border border-border text-foreground cursor-pointer hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Bug className="w-3 h-3" />
-            {reported
-              ? "Reported"
-              : reporting
-                ? "Sending..."
-                : "Report Problem"}
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
       </div>

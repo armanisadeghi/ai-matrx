@@ -248,8 +248,8 @@ export interface CodingPreferences {
 export interface SandboxPreferences {
   /** Template id the orchestrator will spawn (e.g. "bare", "node-22"). */
   template: string;
-  /** "hosted" survives container restart via per-user Docker volume; "ec2"
-   * is ephemeral. */
+  /** "hosted" survives container restart via a per-user Docker volume; "ec2"
+   * keeps a retained home per sandbox lifecycle. */
   tier: "ec2" | "hosted";
   /** Server uses its own default when null. Range [60, 86400]. */
   ttl_seconds: number | null;
@@ -467,8 +467,14 @@ export type ThinkingMode = "none" | "simple" | "deep";
 
 export interface PromptsPreferences {
   showSettingsOnMainPage: boolean;
-  /** Model id, or null = platform default (resolved from the AI catalog at
-   *  consumption time — features/ai-models/redux/platformDefaultModel.ts). */
+  /**
+   * RETIRED 2026-09-12 (Unified Settings Platform): the default model for
+   * basic work is the knob `agents.model_prefs.chat_default_model`
+   * (`features/ai-models/preferredChatModel.ts`), resolved org → user →
+   * device. No screen writes this field and no runtime reads it; it stays in
+   * the persisted shape only until `users.normalize_preferences_jsonb` and
+   * the drift check drop the key in one migration. Keep it null.
+   */
   defaultModel: string | null;
   defaultTemperature: number; // 0-2 in 0.01 increments
   alwaysIncludeInternalWebSearch: boolean;

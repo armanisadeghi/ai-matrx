@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.1878",
+  "version": "0.4.1887",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -27,6 +27,7 @@
     "check:parse:self-test": "node scripts/check-parse.mjs --self-test",
     "check:ship-stage:self-test": "bash scripts/release-stage.sh --self-test",
     "check:install-gate:self-test": "node scripts/check-install-gate.mjs --self-test",
+    "check:preview-session": "node scripts/check-preview-session.mjs --self-test",
     "check:release-outcome:self-test": "bash scripts/release-outcome.sh --self-test",
     "measure:strict": "tsx scripts/measure-strict-flags.ts",
     "start": "next start",
@@ -384,6 +385,7 @@
     "dev:reap:dry": "bash scripts/dev-cleanup.sh reap --dry-run",
     "dev:stop": "bash scripts/dev-cleanup.sh ports",
     "dev:nuke": "bash scripts/dev-cleanup.sh all",
+    "dev-login": "bash scripts/dev-login.sh",
     "preview:start": "bash scripts/agent-dev-server.sh start",
     "preview:stop": "bash scripts/agent-dev-server.sh stop",
     "preview:status": "bash scripts/agent-dev-server.sh status",

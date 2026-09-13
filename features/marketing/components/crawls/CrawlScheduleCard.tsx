@@ -40,8 +40,11 @@ function formatNextRun(value: string | null): string | null {
   if (!value) return null;
   const when = new Date(value);
   if (Number.isNaN(when.getTime())) return null;
-  // "in 5 minutes" / "in 2 days" — the locale-aware voice, because this one
-  // points FORWARD and the short "ago" voice cannot say a future time.
+  // "in 5 minutes" / "in 2 days" — the locale-aware voice, kept on purpose:
+  // this line sits in prose beside a full absolute time, where "in 5 minutes"
+  // reads better than the dense "in 5m". (Since kit 0.13.5 the short voice
+  // CAN say a future time, so the old reason written here — that it could not
+  // — is no longer why.)
   const relative = formatRelativeTime(when, { style: "intl" });
   return `${when.toLocaleString()} · ${relative}`;
 }

@@ -28,6 +28,11 @@ import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { describeMissingIngestParts } from "./IngestSourceDialog";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
+import {
+  DurableRunStopButton,
+  DurableRunStopped,
+} from "@/lib/durable-run/DurableRunStop";
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
 
 /**
@@ -196,9 +201,22 @@ export function BodyOfWorkDialog({
   // A run picked back up after a reload must be VISIBLE (same rule as the
   // source dialog): rejoining behind a closed dialog reads as "nothing is
   // happening", which is the defect durability exists to kill.
+  //
+  // 🚨 The latch is per RUN, not per mount (Bugbot, 2026-09-13). It used to be
+  // set on the first auto-open and never cleared, so the dialog rejoined
+  // exactly once in the life of the page: a second run — started in another
+  // tab, or on a fresh pointer after the last one was reset — stayed hidden
+  // with the Start button armed, and the same work could be paid for twice.
+  // Clearing it the moment the run is no longer running lets the NEXT live run
+  // reopen in its turn, while the `open` guard still keeps it from re-firing on
+  // the run that is already on screen.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (reopenedRef.current || open || !run.running) return;
+    if (!run.running) {
+      reopenedRef.current = false;
+      return;
+    }
+    if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
   }, [open, run.running, onOpenChange]);
@@ -315,6 +333,9 @@ export function BodyOfWorkDialog({
           running={run.running}
         />
 
+        {/* A stop is not a failure: its own quiet notice, saying what survived. */}
+        <DurableRunStopped message={run.stoppedMessage} retry={run.retry} />
+
         {summary ? (
           <div className="space-y-3">
             {missingChunkSummary ? (
@@ -379,6 +400,9 @@ export function BodyOfWorkDialog({
                   {run.waitMessage ?? "Uploading your files…"}
                 </p>
               </div>
+            ) : null}
+            {run.running ? (
+              <DurableRunInterruption interruption={run.interruption} />
             ) : null}
           </div>
         ) : (
@@ -517,16 +541,17 @@ export function BodyOfWorkDialog({
 
         {!summary ? (
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
+            <DurableRunStopButton
+              cancel={run.cancel}
+              cancelling={run.cancelling}
+              running={running}
+              leaveLabel={variant === "page" ? "Back to the Rulebook" : "Cancel"}
+              reason="stopped from the Everything you've published dialog"
+              onLeave={() => {
                 reset();
                 onOpenChange(false);
               }}
-              disabled={running}
-            >
-              {variant === "page" ? "Back to the Rulebook" : "Cancel"}
-            </Button>
+            />
             <Button onClick={() => void launch()} disabled={running}>
               {running
                 ? "Distilling…"

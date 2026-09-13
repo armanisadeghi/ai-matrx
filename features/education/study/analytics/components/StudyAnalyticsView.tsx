@@ -13,6 +13,7 @@
 //
 // React Compiler is on: no manual memo.
 
+import { formatDurationMinutes } from "@ai-matrx/kit/format";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -372,12 +373,16 @@ function LearningGainTeaser({
   );
 }
 
-/** Re-exported so callers can prefetch/format consistently. */
+/**
+ * Re-exported so callers can prefetch/format consistently.
+ *
+ * The local h/m cascade was collapsed onto the kit formatter (2026-09-12).
+ * Kept as an ADAPTER because it is this module's public shape. Coarse voice —
+ * a study total is read at a glance — and MINUTES in, because minutes are the
+ * unit study analytics counts in; nothing here multiplies up to seconds.
+ */
 export function formatMinutes(mins: number): string {
-  if (mins < 60) return `${mins}m`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  return formatDurationMinutes(mins, { style: "coarse" });
 }
 
 function Stat({

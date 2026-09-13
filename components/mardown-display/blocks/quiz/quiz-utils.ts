@@ -3,6 +3,7 @@
  * Handles answer randomization, state management, and export/import functionality
  */
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import type {
   OriginalQuestion,
   RandomizedQuestion,
@@ -411,17 +412,15 @@ export function createRetakeQuizState(state: QuizState): QuizState | null {
 }
 
 /**
- * Format time duration for display
+ * Format time duration for display.
+ *
+ * The local mm/ss cascade was collapsed onto the kit formatter (2026-09-12).
+ * Kept as an ADAPTER because two quiz surfaces call it. Compact voice: a quiz
+ * time is elapsed work, not a clock someone watched tick, and `5m 03s` is the
+ * shape this always rendered.
  */
 export function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  
-  if (mins === 0) {
-    return `${secs}s`;
-  }
-  
-  return `${mins}m ${secs}s`;
+  return formatDurationSeconds(seconds, { style: "compact" });
 }
 
 /**

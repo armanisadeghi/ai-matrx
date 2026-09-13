@@ -471,6 +471,34 @@ export function readSettledDecision(
 }
 
 /**
+ * WHAT THE PERSON SAID, for the record.
+ *
+ * W47 (2026-09-12): the answer was parsed onto every settled decision and then
+ * read by nothing, so a run reloaded after the parent typed seven paragraphs
+ * showed one line — "Decided by admin@admin.com" — and no trace of the answer
+ * the rest of the run was built on. It is durable (the pause node's own
+ * outcome row); only the screen was dropping it.
+ *
+ * Plain strings come back as themselves. A structured answer (a `form`
+ * preset's fields) is rendered as its JSON rather than silently omitted — an
+ * unreadable record beats a missing one. The approval note is already its own
+ * line, so an answer identical to it is not repeated.
+ */
+export function answerText(decision: SettledDecision): string | null {
+  const answer = decision.answer;
+  if (answer === null || answer === undefined) return null;
+  const text =
+    typeof answer === "string"
+      ? answer.trim()
+      : typeof answer === "number" || typeof answer === "boolean"
+        ? String(answer)
+        : JSON.stringify(answer);
+  if (!text || text === "{}" || text === "null") return null;
+  if (decision.note && text === decision.note) return null;
+  return text;
+}
+
+/**
  * THE provenance sentence. Never "Approved" on its own.
  *
  * "Approved by Dana Reyes" · "Auto-approved by Decision Fallback after the

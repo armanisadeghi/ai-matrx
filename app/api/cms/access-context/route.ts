@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
   CMS_SITE_MEMBER_ADD_ACTION,
   cmsAccessGateLabel,
@@ -427,7 +427,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json(anonymousPayload(token));
     }
-    if (!isUuid(id)) return NextResponse.json(missingPayload(token));
+    if (!isUuidShape(id)) return NextResponse.json(missingPayload(token));
 
     const caller = await resolveCmsCaller(mainSupabase, user.id);
     const resolved = await resolveTarget(token, id, caller);

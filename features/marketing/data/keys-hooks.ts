@@ -15,8 +15,8 @@ import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import {
   isPossibleMarketingKey,
-  isUuid,
 } from "@/features/marketing/lib/keys";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface BrandSegmentRow {
   id: string;
@@ -44,10 +44,10 @@ async function fetchBrandBySegment(
       .from("brand")
       .select("id, slug, name, organization_id")
       .is("deleted_at", null);
-  const isKey = !isUuid(segment) && isPossibleMarketingKey(segment);
-  if (!isUuid(segment) && !isKey) return null;
+  const isKey = !isUuidShape(segment) && isPossibleMarketingKey(segment);
+  if (!isUuidShape(segment) && !isKey) return null;
 
-  const response = await (isUuid(segment)
+  const response = await (isUuidShape(segment)
     ? base().eq("id", segment)
     : base().eq("slug", segment)
   )
@@ -83,10 +83,10 @@ async function fetchSiteBySegment(
       .select("id, slug, name, domain, brand_id")
       .eq("brand_id", brandId)
       .is("deleted_at", null);
-  const isKey = !isUuid(segment) && isPossibleMarketingKey(segment);
-  if (!isUuid(segment) && !isKey) return null;
+  const isKey = !isUuidShape(segment) && isPossibleMarketingKey(segment);
+  if (!isUuidShape(segment) && !isKey) return null;
 
-  const response = await (isUuid(segment)
+  const response = await (isUuidShape(segment)
     ? base().eq("id", segment)
     : base().eq("slug", segment)
   )

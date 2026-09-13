@@ -36,8 +36,8 @@ export function HrTasksDoor() {
   if (loading || refusal || !inbox) return null;
 
   const waiting =
-    (inbox.needs_my_decision?.length ?? 0) +
-    (inbox.failures_assigned_to_me?.length ?? 0);
+    inbox.pagination.needs_my_decision.total +
+    inbox.pagination.failures_assigned_to_me.total;
 
   if (waiting === 0) return null;
 

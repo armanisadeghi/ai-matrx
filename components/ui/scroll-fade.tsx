@@ -115,22 +115,17 @@ export interface ScrollFadeProps
 /** A scroll container that fades its content at overflowing edges. */
 export const ScrollFade = React.forwardRef<HTMLDivElement, ScrollFadeProps>(
   ({ orientation = "vertical", fade = 28, className, style, children, ...props }, forwardedRef) => {
-    const { ref, style: maskStyle } = useScrollFade<HTMLDivElement>(
+    const { ref: scrollRef, style: maskStyle } = useScrollFade<HTMLDivElement>(
       orientation,
       fade,
     );
 
     // Merge the internal scroll ref with an optional forwarded ref.
-    const setRefs = React.useCallback(
-      (node: HTMLDivElement | null) => {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        if (typeof forwardedRef === "function") forwardedRef(node);
-        else if (forwardedRef)
-          (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current =
-            node;
-      },
-      [ref, forwardedRef],
-    );
+    const setRefs = (node: HTMLDivElement | null) => {
+      scrollRef.current = node;
+      if (typeof forwardedRef === "function") forwardedRef(node);
+      else if (forwardedRef) forwardedRef.current = node;
+    };
 
     return (
       <div
@@ -139,7 +134,7 @@ export const ScrollFade = React.forwardRef<HTMLDivElement, ScrollFadeProps>(
           orientation === "horizontal"
             ? "overflow-x-auto"
             : "overflow-y-auto",
-          "overscroll-contain",
+          "overscroll-x-contain",
           className,
         )}
         style={{ ...maskStyle, ...style }}

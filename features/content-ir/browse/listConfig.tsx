@@ -1,7 +1,7 @@
 "use client";
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { shapeDetailHref } from "@/features/content-ir/studio/constants";
 import { SHAPE_COLUMNS } from "./columns";
 import {
@@ -112,7 +112,7 @@ export const shapeListConfig: EntityListConfig<ShapeBrowseRow> = {
     rowKind: "content-ir-kind",
     listKind: "content-ir-kind-list",
     humanRow: (row) =>
-      `${row.label} (${row.kind}) — ${row.is_active ? "active" : "inactive"}, updated ${relativeTime(row.updated_at)}`,
+      `${row.label} (${row.kind}) — ${row.is_active ? "active" : "inactive"}, updated ${formatRelativeTime(row.updated_at)}`,
     showRow: false,
     showToolbar: false,
   },

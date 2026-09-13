@@ -56,7 +56,7 @@ export function SettingAnchor({
       data-setting-search-key={id}
       tabIndex={-1}
       className={cn(
-        "scroll-mt-20 outline-none transition-[box-shadow] duration-300",
+        "@container/settings scroll-mt-20 outline-none transition-[box-shadow] duration-300",
         className,
       )}
     >

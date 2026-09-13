@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import type { LiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import type { paths } from "@/types/python-generated/api-types";
+import type { DurableRunStatus } from "@/lib/durable-run/useDurableRun";
 import { useMasterworkRun } from "../durable-run/useMasterworkRun";
 
 /**
@@ -89,7 +90,9 @@ const MILESTONES = [
 ] as const;
 
 export interface BuildRunHandle {
-  status: "idle" | "rejoining" | "running" | "done" | "error";
+  /** Passed straight through from the shared primitive — including
+   *  `stopped`, which a Build reaches when somebody stops it. */
+  status: DurableRunStatus;
   running: boolean;
   rejoining: boolean;
   error: string | null;

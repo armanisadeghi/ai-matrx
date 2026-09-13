@@ -15,7 +15,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import type { AgentBrowseRow } from "../types";
 
 interface Props {
@@ -152,7 +152,7 @@ export function AgentBrowseRows({
             className="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground sm:block"
             title={new Date(row.updated_at).toLocaleString()}
           >
-            {relativeTime(row.updated_at)}
+            {formatRelativeTime(row.updated_at)}
           </span>
 
           <ItemMenu config={menuFor(row)} align="end">

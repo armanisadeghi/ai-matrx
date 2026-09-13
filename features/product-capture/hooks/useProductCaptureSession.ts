@@ -23,6 +23,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import {
   createTrackedObjectUrl,
   revokeTrackedObjectUrl,
@@ -268,13 +269,15 @@ export function useProductCaptureSession(
       const existing = currentItemRef.current;
       if (existing) return existing;
       if (ensureItemPromiseRef.current) return ensureItemPromiseRef.current;
-      if (!organizationId) {
-        throw new Error(
-          "No organization resolved yet — try again in a moment.",
-        );
-      }
+      // W39 class: WAIT for the workspace rather than refusing with "try
+      // again in a moment"; when the wait settles with nothing, the message
+      // names the remedy instead of promising an arrival.
+      const workspace = organizationId
+        ? ({ status: "ready", organizationId } as const)
+        : await awaitEffectiveOrganizationId();
+      if (workspace.status !== "ready") throw new Error(workspace.reason);
       const create = createItem({
-        organizationId,
+        organizationId: workspace.organizationId,
         code: seed?.code ?? null,
         codeSource: seed?.source,
       })

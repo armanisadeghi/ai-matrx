@@ -20,7 +20,7 @@ import {
   TTS_MODEL_ID,
   TTS_PLAYBACK_BUFFER_SEC,
 } from "@/lib/cartesia/config";
-import { getListeningSettings } from "@/features/audio/service/listeningConfig";
+import { resolveListeningSettings } from "@/features/audio/service/listeningConfig";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import type {
   ActivePlayback,
@@ -70,11 +70,13 @@ export const cartesiaAdapter: PlaybackAdapter = {
     cb.onLoading();
 
     // START-time resolution: the item carries only the caller's EXPLICIT
-    // overrides; everything else comes from the tiered listening config
-    // (system → org → user) as it stands NOW — so queued items and history
-    // replays honor settings changed after they were enqueued.
+    // overrides; everything else comes from the settings ladder (voice:
+    // organization → user → device) and the tiered listening config (speed,
+    // language) as they stand NOW — so queued items and history replays
+    // honor settings changed after they were enqueued. Awaited: a cold
+    // cache must never pick the default voice for a paid utterance.
     const overrides = item.cartesia ?? {};
-    const settings = getListeningSettings();
+    const settings = await resolveListeningSettings();
     const voice = {
       voiceId:
         overrides.voiceId ??

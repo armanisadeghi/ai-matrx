@@ -44,6 +44,8 @@ import {
 
 /** One page of history. Deeper history is a later pagination control, never a
  *  cap somebody silently hits — the footer says plainly when more exists. */
+// KNOB MIRROR of platform.feature_knob "emergency_access" "access_log_page_size" — a synchronous render path.
+// Change the row, then re-mirror this literal; the value has no sync read path.
 const PAGE_SIZE = 100;
 
 // 🚨 WHO OPENED IT IS `keyHolderLabel`, NOT THE ACTOR. This file used to read

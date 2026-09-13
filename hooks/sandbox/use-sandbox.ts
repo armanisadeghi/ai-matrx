@@ -12,11 +12,13 @@ import type {
   SandboxAccessResponse,
 } from "@/types/sandbox";
 import { notifyComputeTargetsChanged } from "./use-compute-targets";
+import { knobInt } from "@/lib/knobs/featureKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
 
-const SANDBOX_LIST_PAGE_SIZE = 50;
+/** The sandbox list's page size is the `infrastructure.sandbox list_page_size` knob. */
+const SANDBOX_KNOB_FEATURE = "infrastructure.sandbox";
 
 type SandboxListOptions = {
   status?: string;
@@ -114,12 +116,10 @@ export function useSandboxInstances(projectId?: string) {
         const hasExplicitPage =
           opts?.limit !== undefined || opts?.offset !== undefined;
         let data: SandboxListResponse;
+        const pageSize = await knobInt(SANDBOX_KNOB_FEATURE, "list_page_size");
 
         if (hasExplicitPage) {
-          data = await fetchPage(
-            opts?.limit ?? SANDBOX_LIST_PAGE_SIZE,
-            opts?.offset ?? 0,
-          );
+          data = await fetchPage(opts?.limit ?? pageSize, opts?.offset ?? 0);
         } else {
           const instances: SandboxInstance[] = [];
           let offset = 0;
@@ -127,7 +127,7 @@ export function useSandboxInstances(projectId?: string) {
           let hasMore = true;
 
           while (hasMore) {
-            const page = await fetchPage(SANDBOX_LIST_PAGE_SIZE, offset);
+            const page = await fetchPage(pageSize, offset);
             if (listRequestId.current !== requestId) return null;
 
             instances.push(...page.instances);
@@ -151,7 +151,7 @@ export function useSandboxInstances(projectId?: string) {
             instances,
             pagination: {
               total,
-              limit: SANDBOX_LIST_PAGE_SIZE,
+              limit: pageSize,
               offset: 0,
               hasMore: false,
             },

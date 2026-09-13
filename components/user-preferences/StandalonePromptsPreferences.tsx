@@ -3,7 +3,9 @@
 import React from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SettingsModelPicker } from "@/components/official/settings/primitives/SettingsModelPicker";
+import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
+import { settingDoorHref } from "@/features/settings/doors/settingDoorTarget";
+import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
@@ -32,10 +34,6 @@ const StandalonePromptsPreferences: React.FC<
 > = ({ onSaveSuccess, onCancel, showFooter = true }) => {
   const [showSettingsOnMainPage, setShowSettingsOnMainPage] =
     useSetting<boolean>("userPreferences.prompts.showSettingsOnMainPage");
-  // null = platform default (catalog-resolved via is_primary).
-  const [defaultModel, setDefaultModel] = useSetting<string | null>(
-    "userPreferences.prompts.defaultModel",
-  );
   const [defaultTemperature, setDefaultTemperature] = useSetting<number>(
     "userPreferences.prompts.defaultTemperature",
   );
@@ -68,14 +66,14 @@ const StandalonePromptsPreferences: React.FC<
             checked={showSettingsOnMainPage}
             onCheckedChange={setShowSettingsOnMainPage}
           />
-          <SettingsModelPicker
-            label="Default model"
-            description="Used when a prompt does not specify a model."
-            value={defaultModel}
-            onValueChange={setDefaultModel}
-            scope="active"
-            allowPlatformDefault
-            defaultModality="text"
+          {/* The default model is ONE setting, `agents.model_prefs.chat_default_model`
+              (organization → user → device); `userPreferences.prompts.defaultModel`
+              was a second source of truth nothing read, so this row is a door. */}
+          <SettingsLink
+            label="Default AI model for basic work"
+            description="Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you."
+            href={settingDoorHref({ scope: "user", tabId: "firstScreen", controlId: CHAT_DEFAULT_MODEL_KNOB })}
+            actionLabel="Change"
           />
           <SettingsSlider
             label="Default temperature"

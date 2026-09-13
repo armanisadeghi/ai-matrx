@@ -35,7 +35,7 @@ import { SANDBOX_PROTOCOL_VERSION } from "./protocol";
 import { launch } from "./parity/cdp";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, "../../..");
+const ROOT = resolve(/* turbopackIgnore: true */ __dirname, "../../..");
 const ORIGIN = process.env.PARITY_ORIGIN ?? "http://localhost:3001";
 
 function loadEnv(): Record<string, string> {
@@ -314,7 +314,10 @@ window.__READY__ = true;
 }
 
 async function main() {
-    const keys = (process.argv[2] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    // Usage: tsx diagnose-frame-height.ts <key,key,…> [--keep]   (--keep leaves the
+    // diagnostic file on disk — a CLI flag, never an env var: an env var may not
+    // control behaviour, and check:settings-env-toggles refuses one.)
+    const keys = (process.argv[2] ?? "").split(",").map((s) => s.trim()).filter((s) => Boolean(s) && !s.startsWith("--"));
     if (!keys.length) throw new Error("usage: diagnose-frame-height.ts key1,key2");
     const cases = await buildCases(keys);
     const file = resolve(ROOT, "public/__kind-sandbox-diag.html");
@@ -344,7 +347,7 @@ async function main() {
         console.log("\nSTATE:", typeof state === "string" ? state : JSON.stringify(state));
     } finally {
         await page.close();
-        if (!process.env.KEEP_DIAG) rmSync(file, { force: true });
+        if (!process.argv.includes("--keep")) rmSync(file, { force: true });
     }
 }
 

@@ -46,7 +46,7 @@ import {
   LISTENING_HOME_SURFACE,
   selectListeningLanguage,
   selectListeningSpeed,
-  selectListeningVoice,
+  useListeningVoice,
 } from "@/features/audio/service/listeningConfig";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { toast } from "@/lib/toast";
@@ -217,7 +217,7 @@ export function useCartesiaStreamingSpeaker({
       ensureSurfaceConfig({ surfaceName: LISTENING_HOME_SURFACE }),
     );
   }, [dispatch]);
-  const rawVoice = useAppSelector(selectListeningVoice);
+  const rawVoice = useListeningVoice();
   const voiceId = resolveVoiceId(rawVoice, "assistant");
   const language = useAppSelector(selectListeningLanguage);
   const speed = useAppSelector(selectListeningSpeed);

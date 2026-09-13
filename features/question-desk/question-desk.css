@@ -1,0 +1,30 @@
+/* features/question-desk/question-desk.css
+ *
+ * The ONE piece of hand-written CSS this feature owns: the editorial serif.
+ *
+ * `--font-editorial` is declared by `next/font/google` (Newsreader) on this
+ * feature's own route layout — see
+ * `app/(admin)/administration/question-desk/layout.tsx` and ruling QD-R7. It is
+ * NOT a Tailwind theme font, deliberately: promoting an editorial face into
+ * `@ai-matrx/design-system` is a package wave, and until that happens the face
+ * belongs to this route and nothing else may accidentally inherit it.
+ *
+ * Everything else on this surface is semantic Tailwind tokens.
+ */
+.qd-editorial {
+  font-family: var(--font-editorial), Georgia, "Times New Roman", serif;
+}
+
+/* The disclosure marker. Native `list-style: none` alone leaves a Safari
+ * triangle and no affordance at all elsewhere, so the +/– is drawn here —
+ * exactly as the reference page draws it. */
+.qd-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.qd-disclosure > summary::before {
+  content: "+ ";
+  color: hsl(var(--muted-foreground));
+}
+.qd-disclosure[open] > summary::before {
+  content: "– ";
+}

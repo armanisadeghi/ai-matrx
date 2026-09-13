@@ -7061,6 +7061,40 @@
     "title": "MasterworkRunFailedData",
     "type": "object"
   },
+  "MasterworkRunCancelledData": {
+    "additionalProperties": false,
+    "description": "A PERSON stopped a live run. Distinct from ``masterwork_run_failed`` on\npurpose: nothing broke, so nothing may be reported as broken. The client\nrenders this as \"Stopped\", not as an error, and offers no \"try again\"\nover a decision somebody just made deliberately.",
+    "properties": {
+      "type": {
+        "const": "masterwork_run_cancelled",
+        "default": "masterwork_run_cancelled",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      }
+    },
+    "required": [
+      "run_id"
+    ],
+    "title": "MasterworkRunCancelledData",
+    "type": "object"
+  },
   "MasterworkBuildProgressData": {
     "additionalProperties": false,
     "description": "One step of Building a Rulebook into a Masterwork (agents + workflow).",
@@ -7332,6 +7366,45 @@
   },
   "MasterworkIngestCompleteData": {
     "$defs": {
+      "MasterworkSectionYield": {
+        "description": "What ONE part of a source — a chapter, a lesson, a heading — produced.\n\n🚨 The answer to W42 (2026-09-12): a 31k-word book was cut by a ruler, its\nmost prescriptive chapter contributed 3 rules against its siblings' 15–23,\nand NOTHING anywhere said so. A source is now chunked by its own structure\nand every part reports its own yield, so a thin chapter is a row on a screen\nthe Expert can point at and re-read, not a silent hole.",
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "label": {
+            "default": "",
+            "title": "Label",
+            "type": "string"
+          },
+          "words": {
+            "default": 0,
+            "title": "Words",
+            "type": "integer"
+          },
+          "chunks": {
+            "default": 0,
+            "title": "Chunks",
+            "type": "integer"
+          },
+          "rules": {
+            "default": 0,
+            "title": "Rules",
+            "type": "integer"
+          },
+          "second_pass": {
+            "default": false,
+            "title": "Second Pass",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "index"
+        ],
+        "title": "MasterworkSectionYield",
+        "type": "object"
+      },
       "MasterworkSourceAlreadyDistilled": {
         "description": "This source has ALREADY produced rules in this Rulebook.\n\nThe named field that makes a repeat press honest (2026-09-12: a link was\ndistilled twice into one Rulebook — 115 rules then 123 more — and the\nduplicate check reported 0, because rule-level dedupe cannot answer a\nsource-level question). ``message`` is the sentence to show; ``can_replace``\nsays whether offering \"Distil again and replace\" is meaningful (it is not\nwhen every earlier rule has already been approved by the Expert, since a\nmachine never removes those).",
         "properties": {
@@ -7461,6 +7534,13 @@
         "default": 0,
         "title": "Replaced Rules",
         "type": "integer"
+      },
+      "sections": {
+        "items": {
+          "$ref": "#/$defs/MasterworkSectionYield"
+        },
+        "title": "Sections",
+        "type": "array"
       }
     },
     "required": [
@@ -8233,6 +8313,18 @@
         "default": null,
         "title": "Vanilla Model"
       },
+      "vanilla_note": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Note"
+      },
       "vanilla_error": {
         "anyOf": [
           {
@@ -8514,6 +8606,261 @@
       "verdict"
     ],
     "title": "MasterworkAuditionOutcomeVerdictData",
+    "type": "object"
+  },
+  "MasterworkPairwiseVerdictData": {
+    "$defs": {
+      "MasterworkPairwiseArmFaithfulness": {
+        "description": "One arm's standing against ITS OWN school.",
+        "properties": {
+          "side": {
+            "title": "Side",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rulebook_id": {
+            "title": "Rulebook Id",
+            "type": "string"
+          },
+          "verdict": {
+            "title": "Verdict",
+            "type": "string"
+          },
+          "reasoning": {
+            "default": "",
+            "title": "Reasoning",
+            "type": "string"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confidence"
+          },
+          "departures": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/MasterworkPairwiseRuleNote"
+            },
+            "title": "Departures",
+            "type": "array"
+          },
+          "honored_rule_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Honored Rule Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "side",
+          "label",
+          "rulebook_id",
+          "verdict"
+        ],
+        "title": "MasterworkPairwiseArmFaithfulness",
+        "type": "object"
+      },
+      "MasterworkPairwiseDifference": {
+        "description": "ONE concrete, word-level difference between the two answers, UNSEALED —\nthe judge wrote \"A does X\"; this says \"the Masterwork does X\".",
+        "properties": {
+          "aspect": {
+            "title": "Aspect",
+            "type": "string"
+          },
+          "one_does": {
+            "default": "",
+            "title": "One Does",
+            "type": "string"
+          },
+          "two_does": {
+            "default": "",
+            "title": "Two Does",
+            "type": "string"
+          },
+          "matters": {
+            "default": "",
+            "title": "Matters",
+            "type": "string"
+          }
+        },
+        "required": [
+          "aspect"
+        ],
+        "title": "MasterworkPairwiseDifference",
+        "type": "object"
+      },
+      "MasterworkPairwiseRuleNote": {
+        "description": "One rule's reading in a pairwise Audition. ``winner`` names the arm\n(\"one\" | \"two\" | \"tie\"), already unsealed. In the faithfulness mode this\ncarries a DEPARTURE: the rule the arm left, and the words that left it.",
+        "properties": {
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "winner": {
+            "title": "Winner",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "winner"
+        ],
+        "title": "MasterworkPairwiseRuleNote",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/audition-pairwise — TWO candidates\njudged BLIND against each other, with no reference.\n\nThe judge saw \"A\" and \"B\" and never the arms' real labels. Which arm was A\nwas randomised and SEALED on the run row before the judge was called;\n``blind_key`` is that same sealed mapping, revealed here and only here, with\n``blind_key_sealed_at`` as the timestamp it was written.\n\n``preference`` mode fills ``preferred`` / ``differences`` / ``rule_notes``;\n``faithfulness`` mode fills ``faithfulness``, one entry per arm against its\nown Rulebook. NO SCORE FIELD EXISTS HERE and none may be added: a preference\nis an enumeration, and nuance rides ``judge_confidence``.",
+    "properties": {
+      "type": {
+        "const": "masterwork_pairwise_verdict",
+        "default": "masterwork_pairwise_verdict",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "mode": {
+        "title": "Mode",
+        "type": "string"
+      },
+      "candidate_one_label": {
+        "title": "Candidate One Label",
+        "type": "string"
+      },
+      "candidate_two_label": {
+        "title": "Candidate Two Label",
+        "type": "string"
+      },
+      "preferred": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Preferred"
+      },
+      "preferred_label": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Preferred Label"
+      },
+      "judge_verdict": {
+        "default": "",
+        "title": "Judge Verdict",
+        "type": "string"
+      },
+      "judge_confidence": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Judge Confidence"
+      },
+      "summary": {
+        "default": "",
+        "title": "Summary",
+        "type": "string"
+      },
+      "differences": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/MasterworkPairwiseDifference"
+        },
+        "title": "Differences",
+        "type": "array"
+      },
+      "rule_notes": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/MasterworkPairwiseRuleNote"
+        },
+        "title": "Rule Notes",
+        "type": "array"
+      },
+      "faithfulness": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/MasterworkPairwiseArmFaithfulness"
+        },
+        "title": "Faithfulness",
+        "type": "array"
+      },
+      "blind_key": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "default": {},
+        "title": "Blind Key",
+        "type": "object"
+      },
+      "blind_key_sealed_at": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Blind Key Sealed At"
+      },
+      "verdict_sentence": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Sentence"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "mode",
+      "candidate_one_label",
+      "candidate_two_label"
+    ],
+    "title": "MasterworkPairwiseVerdictData",
     "type": "object"
   },
   "MasterworkCorpusProgressData": {

@@ -41,14 +41,17 @@ function formatEventAsBinding(
 ): KeybindingValue | null {
   if (NON_BINDING_KEYS.has(e.key)) return null;
   const isMac =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad/.test(navigator.platform);
   const parts: string[] = [];
   if (e.ctrlKey) parts.push(isMac ? "⌃" : "Ctrl");
   if (e.altKey) parts.push(isMac ? "⌥" : "Alt");
   if (e.shiftKey) parts.push(isMac ? "⇧" : "Shift");
   if (e.metaKey) parts.push(isMac ? "⌘" : "Meta");
   const keyDisplay =
-    e.key.length === 1 ? e.key.toUpperCase() : e.key.replace(/^(Arrow|Digit)/, "");
+    e.key.length === 1
+      ? e.key.toUpperCase()
+      : e.key.replace(/^(Arrow|Digit)/, "");
   parts.push(keyDisplay);
   return {
     key: e.code,
@@ -73,8 +76,14 @@ export function SettingsKeybinding({
   const [recording, setRecording] = useState(false);
 
   return (
-    <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>
-      <div className="flex items-center gap-1.5">
+    <SettingsRow
+      {...rowProps}
+      id={id}
+      variant="inline"
+      controlLayout="wide"
+      last={last}
+    >
+      <div className="flex max-w-full flex-wrap items-center gap-1.5">
         <button
           id={id}
           type="button"
@@ -95,7 +104,7 @@ export function SettingsKeybinding({
           }}
           disabled={rowProps.disabled}
           className={cn(
-            "min-h-11 min-w-32 rounded-md border px-2.5 text-sm font-mono tabular-nums text-foreground shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary/30 sm:min-h-8",
+            "min-h-11 min-w-0 flex-1 rounded-md border px-2.5 text-sm font-mono tabular-nums text-foreground shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary/30 sm:min-h-8 @[40rem]/settings:min-w-32",
             recording
               ? "border-primary bg-primary/5 animate-pulse"
               : "border-border bg-card hover:bg-accent/50",

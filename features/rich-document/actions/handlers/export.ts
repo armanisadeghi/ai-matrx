@@ -6,7 +6,7 @@
 
 import { Eye, Globe, Mail } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
@@ -34,7 +34,9 @@ registerAction({
       ? createFullScreenEditorCallbackGroup({
           onSave: async (newContent: string) => {
             try {
-              await ctx.sourceAdapter.edit?.({
+              const edit = ctx.sourceAdapter.edit;
+              if (!edit) throw new Error("This content no longer has a save target");
+              await edit({
                 newContent,
                 source: ctx.source,
                 dispatch: ctx.dispatch,
@@ -45,10 +47,8 @@ registerAction({
                 serializeError(err),
               );
               toast.error(getErrorMessage(err, "Failed to save"));
+              throw err;
             }
-            ctx.dispatch(
-              closeOverlay({ overlayId: "htmlPreview", instanceId }),
-            );
           },
         }).callbackGroupId
       : null;

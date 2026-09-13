@@ -78,6 +78,21 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  */
 const RESIDUE_TOKENS: ReadonlySet<string> = new Set(["access_request", "wbx_guidance", "wbx_demo"]);
 
+/**
+ * THE DD-175 RESIDUE, BY NAME AND WITH ITS REASON — never a count, never a tolerance.
+ * `agent_card` is a registered COMPONENT of `agent` that is really a definer VIEW over
+ * `agent.definition` with an access rule of its own (`card_visibility`), so the parent's row
+ * security never runs for it. Measured live 2026-09-12: three non-admin identities each read
+ * exactly 1 card whose agent.definition row their own policy refuses. That is not an RLS lane
+ * `iam.apply_rls` can regenerate — it is either a view that should carry `security_invoker`, or a
+ * catalogue projection that should not be registered as a component at all. It is a product
+ * decision about the public agent catalogue, so it is NAMED here rather than changed in a security
+ * fix, and it belongs with DD-164 (the definer-view class).
+ */
+const COMPONENT_RESIDUE: ReadonlyMap<string, string> = new Map([
+  ["agent_card", "a definer view over agent.definition with its own card_visibility rule — DD-164; 1 row per non-admin identity, measured 2026-09-12"],
+]);
+
 function loadEnv(): { url: string; key: string } | null {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   let key = process.env.SUPABASE_SECRET_KEY ?? "";
@@ -173,6 +188,104 @@ export function unwalledContainmentArms(row: RowVisibilityRow): string[] {
   return bad;
 }
 
+/** A component's door and the parents it must resolve (DD-175). */
+export interface ComponentParentRow { parent_type: string; fk_column: string; parent_schema: string; parent_table: string }
+export interface ComponentPolicyRow { polname: string; qual: string; roles: string[] }
+export interface ComponentRow {
+  token: string;
+  relkind: string;
+  rls_enabled: boolean;
+  security_invoker: boolean;
+  keeps_staff_lane: boolean;
+  parents: ComponentParentRow[];
+  policies: ComponentPolicyRow[];
+}
+
+/**
+ * THE COMPONENT AXIS (DD-175). A component has no class and no owner column of its own: its access
+ * IS its parent's (db-rules §6d-1). So every permissive read door a signed-in client can use must
+ * resolve the parent, in one of the three forms that actually do:
+ *   * `iam.accessible_entity_ids('<parent>'…`  — the arm iam.entity_read_expr emits;
+ *   * `iam.has_access('<parent>'…`             — the kernel, one row at a time
+ *                                                 (runtime.global_execution_control carries this);
+ *   * a read of the parent TABLE itself        — the strictest of the three, because PostgreSQL
+ *     applies row security inside a policy's own subqueries, so the parent's deployed policy does
+ *     the filtering and cannot drift from itself. users.credential_attachments is exactly this.
+ * The one door allowed to skip the parent is the platform-staff arm, and only while the token's
+ * resolved class still HAS a platform-admin lane. `service_role` is not a client door.
+ * Row security switched off is the widest lane a component can have, so it is named first.
+ */
+export function componentDoorsNotThroughParent(row: ComponentRow): string[] {
+  if (row.parents.length === 0) return [];
+  // A registered component can be a VIEW. A `security_invoker` view runs its query as the CALLER, so
+  // the parent table's own row security filters it — the strictest form there is, and nothing to
+  // check. A view WITHOUT security_invoker runs as its owner, so the parent's row security does not
+  // apply to it at all and its own WHERE clause is the whole lane.
+  if (row.relkind === "v" || row.relkind === "m") {
+    return row.security_invoker
+      ? []
+      : ["a definer view over its parent (security_invoker is not set) — the parent's row security never runs, so the view's own WHERE clause is the entire lane"];
+  }
+  if (!row.rls_enabled) {
+    return ["row security is DISABLED — every signed-in client reads every row"];
+  }
+  const doors = row.policies.filter((p) => !(p.roles ?? []).includes("service_role"));
+  if (doors.length === 0) return ["no permissive read policy for a signed-in client exists at all"];
+  const bad: string[] = [];
+  for (const p of doors) {
+    const q = (p.qual ?? "").replace(/\s+/g, " ");
+    const throughParent = row.parents.some(
+      (x) =>
+        q.includes(`accessible_entity_ids('${x.parent_type}'`) ||
+        q.includes(`has_access('${x.parent_type}'`) ||
+        q.includes(`${x.parent_schema}.${x.parent_table}`),
+    );
+    if (throughParent) continue;
+    if (row.keeps_staff_lane && (q.includes("is_platform_admin") || q.includes("is_super_admin"))) continue;
+    bad.push(`${p.polname}: a readable door that never asks the parent`);
+  }
+  return bad;
+}
+
+const COMPONENT_SQL = `
+select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
+  select json_build_object(
+    'token', et.token,
+    'relkind', (select cl.relkind::text from pg_class cl
+                 where cl.oid = to_regclass(format('%I.%I', et.schema_name, et.table_name))),
+    'rls_enabled', coalesce((select cl.relrowsecurity from pg_class cl
+                              where cl.oid = to_regclass(format('%I.%I', et.schema_name, et.table_name))), false),
+    'security_invoker', coalesce((select o.option_value = 'true' from pg_class cl,
+                                    pg_options_to_table(cl.reloptions) o
+                                   where cl.oid = to_regclass(format('%I.%I', et.schema_name, et.table_name))
+                                     and o.option_name = 'security_invoker'), false),
+    'keeps_staff_lane', (iam.class_lanes(et.token)).platform_admin_lane,
+    'parents', coalesce((
+       select json_agg(json_build_object('parent_type', er.parent_type, 'fk_column', er.fk_column,
+                                         'parent_schema', pt.schema_name, 'parent_table', pt.table_name)
+                        order by er.parent_type, er.fk_column)
+         from platform.entity_relationships er
+         join platform.entity_types pt on pt.token = er.parent_type and pt.is_active
+        where er.child_type = et.token and er.kind in ('composition','containment')
+          and exists (select 1 from information_schema.columns c2
+                       where c2.table_schema = et.schema_name and c2.table_name = et.table_name
+                         and c2.column_name = er.fk_column)), '[]'::json),
+    'policies', coalesce((
+       select json_agg(json_build_object(
+                'polname', p.polname,
+                'qual', coalesce(pg_get_expr(p.polqual, p.polrelid), 'true'),
+                'roles', coalesce((select array_agg(ro.rolname::text)
+                                     from unnest(p.polroles) rr join pg_roles ro on ro.oid = rr), '{}'))
+                        order by p.polname)
+         from pg_policy p
+        where p.polrelid = to_regclass(format('%I.%I', et.schema_name, et.table_name))
+          and p.polpermissive and p.polcmd in ('r','*')), '[]'::json)
+  ) as x
+  from platform.entity_types et
+  where et.is_active and et.rls_variant = 'component'
+    and to_regclass(format('%I.%I', et.schema_name, et.table_name)) is not null
+) q`;
+
 const FINDINGS_SQL = `
 select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
   select json_build_object(
@@ -242,6 +355,47 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       { token: "x", variant: "component", parents,
         policies: [{ polname: "std_select", qual: `(${OLD_ARM} AND (parent_folder_id IN ( SELECT x)))` }] }, false],
   );
+
+  // THE DD-175 AXIS, as pure cases. The first is workbench.udt_document_snapshots as it stood while
+  // admin@admin.com read 106 snapshots of documents that table's parent policy refuses them.
+  const cparents = [{ parent_type: "udt_document", fk_column: "document_id",
+                      parent_schema: "workbench", parent_table: "udt_documents" }];
+  const ccases: Array<[string, ComponentRow, boolean]> = [
+    ["a component with a staff ALL policy under a parent whose class closes the staff lane",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: false, parents: cparents,
+        policies: [{ polname: "platform_admin_all", qual: "( SELECT is_platform_admin() AS is_platform_admin)", roles: ["authenticated"] },
+                   { polname: "std_select", qual: "(document_id IN ( SELECT iam.unnest_uuids(iam.accessible_entity_ids('udt_document'::text, 'viewer'::permission_level, 0, true))))", roles: ["authenticated"] }] }, true],
+    ["the same component once the staff policy is gone",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: false, parents: cparents,
+        policies: [{ polname: "std_select", qual: "(document_id IN ( SELECT iam.unnest_uuids(iam.accessible_entity_ids('udt_document'::text, 'viewer'::permission_level, 0, true))))", roles: ["authenticated"] }] }, false],
+    ["a component whose only door reads the PARENT TABLE (users.credential_attachments' shape)",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: false, parents: cparents,
+        policies: [{ polname: "parent_read", qual: "(EXISTS ( SELECT 1 FROM workbench.udt_documents d WHERE (d.id = document_id)))", roles: ["authenticated"] }] }, false],
+    ["a component whose door asks the kernel about the parent (global_execution_control's shape)",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: false, parents: cparents,
+        policies: [{ polname: "std_select", qual: "iam.has_access('udt_document'::text, document_id, 'viewer'::permission_level)", roles: ["authenticated"] }] }, false],
+    ["a component with ROW SECURITY DISABLED (agent.card's shape)",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: false, keeps_staff_lane: false, parents: cparents, policies: [] }, true],
+    ["a component whose only policy is service_role, so no client door exists at all",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: false, parents: cparents,
+        policies: [{ polname: "svc_all", qual: "true", roles: ["service_role"] }] }, true],
+    ["a staff arm on a component whose parent class KEEPS the platform-admin lane",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: true, parents: cparents,
+        policies: [{ polname: "platform_admin_all", qual: "( SELECT is_platform_admin() AS is_platform_admin)", roles: ["authenticated"] },
+                   { polname: "std_select", qual: "(document_id IN ( SELECT iam.unnest_uuids(iam.accessible_entity_ids('udt_document'::text, 'viewer'::permission_level, 0, true))))", roles: ["authenticated"] }] }, false],
+    ["a component that is a security_invoker VIEW — the parent's own row security filters it",
+      { token: "c", relkind: "v", security_invoker: true, rls_enabled: false, keeps_staff_lane: false, parents: cparents, policies: [] }, false],
+    ["a component that is a DEFINER view — the parent's row security never runs (agent.card's shape)",
+      { token: "c", relkind: "v", security_invoker: false, rls_enabled: false, keeps_staff_lane: false, parents: cparents, policies: [] }, true],
+  ];
+  for (const [name, row, expected] of ccases) {
+    const got = componentDoorsNotThroughParent(row).length > 0;
+    if (got !== expected) {
+      console.log(`  ${C.r}✗${C.x} ${expected ? "RED " : "GREEN"} — ${name}: expected ${expected}, got ${got}`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} ${expected ? "RED " : "GREEN"} — ${name}`);
+    }
+  }
 
   for (const [name, row, expected] of cases) {
     const got = unwalledArms(row).length + unwalledContainmentArms(row).length > 0;
@@ -367,6 +521,23 @@ async function main(): Promise<number> {
   const open = rows
     .map((r) => ({ row: r, bad: [...unwalledArms(r), ...unwalledContainmentArms(r)] }))
     .filter((x) => x.bad.length > 0);
+
+  // ── THE DD-175 AXIS — a component lane is never wider than its parent's read ──────────────────
+  let componentOpen: Array<{ token: string; bad: string[] }> = [];
+  let componentCount = 0;
+  try {
+    const cres = await door(env, COMPONENT_SQL);
+    const crows = ((cres[0] as { j?: ComponentRow[] })?.j ?? []);
+    const withParents = crows.filter((r) => (r.parents ?? []).length > 0);
+    componentCount = withParents.length;
+    if (componentCount === 0) throw new Error("not one component token with a registered parent came back");
+    componentOpen = withParents
+      .map((r) => ({ token: r.token, bad: componentDoorsNotThroughParent(r) }))
+      .filter((x) => x.bad.length > 0);
+  } catch (e) {
+    console.log(`  ${C.r}✗${C.x} UNMEASURED — the DD-175 component query failed: ${String(e)}`);
+    return STRICT ? 1 : 0;
+  }
   const unexpected = open.filter((x) => !RESIDUE_TOKENS.has(x.row.token));
   const closed = [...RESIDUE_TOKENS].filter((t) => !open.some((x) => x.row.token === t));
 
@@ -388,8 +559,29 @@ async function main(): Promise<number> {
     console.log(`     ${mark}${x.row.token} (${x.row.variant}): ${x.bad.join("; ")}${C.x}`);
   }
 
+  console.log(`  ${C.d}${componentCount} active component tokens carry a registered parent whose FK column exists (the DD-175 axis)${C.x}`);
+  const componentUnexpected = componentOpen.filter((x) => !COMPONENT_RESIDUE.has(x.token));
+  const componentClosed = [...COMPONENT_RESIDUE.keys()].filter((t) => !componentOpen.some((x) => x.token === t));
+  if (componentUnexpected.length > 0) {
+    findings++;
+    console.error(`  ${C.r}✗${C.x} ${componentUnexpected.length} component token(s) carry a readable door that never asks the parent and are NOT known residue — a component's access IS its parent's (db-rules §6d-1, DD-175)`);
+  } else if (componentOpen.length === 0) {
+    console.log(`  ${C.g}✓${C.x} every component's readable doors resolve its parent`);
+  } else {
+    console.log(`  ${C.g}✓${C.x} the ${componentOpen.length} open component token(s) are EXACTLY the known residue`);
+  }
+  if (componentClosed.length > 0) {
+    findings++;
+    console.error(`  ${C.y}!${C.x} ${componentClosed.length} expected DD-175 residue token(s) now resolve their parent: ${componentClosed.join(", ")}. Good news — remove them from COMPONENT_RESIDUE here in the same commit. A residue list that quietly shrinks is a residue list nobody re-reads.`);
+  }
+  for (const x of componentOpen) {
+    const mark = COMPONENT_RESIDUE.has(x.token) ? `${C.d}` : `${C.r}UNEXPECTED ${C.x}${C.d}`;
+    const why = COMPONENT_RESIDUE.get(x.token);
+    console.log(`     ${mark}${x.token}: ${x.bad.join("; ")}${why ? ` [known residue: ${why}]` : ""}${C.x}`);
+  }
+
   if (findings === 0) {
-    console.log(`${C.g}✓${C.x} ${C.b}a personal row stays personal — no staff arm and no containment arm carries one${C.x}`);
+    console.log(`${C.g}✓${C.x} ${C.b}a personal row stays personal — no staff arm and no containment arm carries one, and no component reads wider than its parent${C.x}`);
     return 0;
   }
   console.log(`${C.r}✗${C.x} ${C.b}${findings} finding(s)${C.x}`);

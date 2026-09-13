@@ -9,6 +9,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -199,8 +200,13 @@ export function AssessmentResults({
             </div>
             {result.duration_seconds != null && (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Completed in {Math.floor(result.duration_seconds / 60)}m{" "}
-                {result.duration_seconds % 60}s
+                {/* ONE kit call replaces the m/s split across two JSX nodes
+                    (2026-09-12). Compact voice: finishing an assessment is
+                    elapsed work, not a clock someone watched tick. */}
+                Completed in{" "}
+                {formatDurationSeconds(result.duration_seconds, {
+                  style: "compact",
+                })}
               </p>
             )}
           </div>

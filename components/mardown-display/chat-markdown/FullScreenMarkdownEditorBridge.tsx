@@ -37,7 +37,10 @@ import {
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
 import { updateOverlayData } from "@/lib/redux/slices/overlayDataSlice";
-import { emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
+import {
+  disposeFullScreenEditorCallbackGroup,
+  emitFullScreenEditorSave,
+} from "@/features/overlays/callbacks/fullScreenEditor";
 import { mergeEditedText } from "@/features/agents/redux/execution-system/message-crud/content-blocks.util";
 import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 
@@ -71,7 +74,7 @@ interface FullScreenMarkdownEditorBridgeProps {
    * directly (not via the overlay controller, which can't serialise a fn).
    * Retained for any direct mount; the overlay path uses `callbackGroupId`.
    */
-  onSave?: (newContent: string) => void;
+  onSave?: (newContent: string) => Promise<void>;
   tabs?: TabId[];
   initialTab?: TabId;
   analysisData?: Record<string, unknown>;
@@ -133,12 +136,11 @@ export function FullScreenMarkdownEditorBridge({
         }),
       );
 
-      try {
-        // 1. Callback group wins. The caller asked to be told about the save
+      // 1. Callback group wins. The caller asked to be told about the save
         //    so it can own the outcome (persist itself, or open the
         //    fork-vs-overwrite dialog for "Edit & resubmit").
-        if (callbackGroupId) {
-          emitFullScreenEditorSave(callbackGroupId, newContent);
+      if (callbackGroupId) {
+          await emitFullScreenEditorSave(callbackGroupId, newContent);
         } else if (conversationId && messageId) {
           // 2. Self-handle: persist directly via editMessage. Works for any
           //    message (user or assistant) — `mode` is no longer the gate.
@@ -161,34 +163,18 @@ export function FullScreenMarkdownEditorBridge({
           toast.success("Message saved");
         } else if (typeof onSave === "function") {
           // 3. In-process callback (direct mount only).
-          onSave(newContent);
+          await onSave(newContent);
         } else {
           // 4. Loud recovery: the editor was opened with no way to save.
           //    A recovery firing here means a callsite wired the editor
           //    without a save target — surface it, never swallow.
-          const { toast } = await import("@/lib/toast");
           console.error(
             "[FullScreenMarkdownEditorBridge] save with no target — " +
               "no callbackGroupId, no conversationId/messageId, no onSave. " +
               `instanceId=${instanceId} mode=${String(mode)}`,
           );
-          toast.error("Couldn't save — this editor has no save target");
+          throw new Error("Couldn't save — this editor has no save target");
         }
-      } catch (err) {
-        const { toast } = await import("@/lib/toast");
-        const msg =
-          err instanceof Error
-            ? err.message
-            : typeof err === "object" &&
-                err &&
-                "message" in err &&
-                typeof (err as { message?: unknown }).message === "string"
-              ? (err as { message: string }).message
-              : "Save failed";
-        console.error("[FullScreenMarkdownEditorBridge] save failed", err);
-        toast.error(msg);
-      }
-
       dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId }));
     },
     [
@@ -208,7 +194,7 @@ export function FullScreenMarkdownEditorBridge({
   // fork) with no follow-up confirmation dialog. Mirrors the overlay-data
   // content into the store first, exactly like `handleSave`, then closes.
   const handlePrimaryAction = useCallback(
-    (actionId: string, newContent: string) => {
+    async (actionId: string, newContent: string) => {
       dispatch(
         updateOverlayData({
           overlayId: "fullScreenEditor",
@@ -220,17 +206,23 @@ export function FullScreenMarkdownEditorBridge({
       // registered the caller wired the editor wrong — surface it loudly
       // rather than silently dropping the click.
       if (callbackGroupId) {
-        emitFullScreenEditorSave(callbackGroupId, newContent, actionId);
+        await emitFullScreenEditorSave(callbackGroupId, newContent, actionId);
       } else {
         console.error(
           "[FullScreenMarkdownEditorBridge] primary action fired with no " +
             `callbackGroupId — action="${actionId}" instanceId=${instanceId}`,
         );
+        throw new Error("Couldn't save — this editor has no save target");
       }
       dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId }));
     },
     [dispatch, instanceId, callbackGroupId],
   );
+
+  const handleCancel = useCallback(() => {
+    disposeFullScreenEditorCallbackGroup(callbackGroupId);
+    onClose();
+  }, [callbackGroupId, onClose]);
 
   return (
     <FullScreenMarkdownEditor
@@ -238,7 +230,7 @@ export function FullScreenMarkdownEditorBridge({
       initialContent={content}
       onSave={handleSave}
       onChange={handleChange}
-      onCancel={onClose}
+      onCancel={handleCancel}
       tabs={tabs}
       initialTab={initialTab}
       analysisData={analysisData}

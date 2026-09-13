@@ -35,7 +35,7 @@ import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButto
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,10 @@ import {
   resumePendingContentAuthAction,
   type ContentActionsOptions,
 } from "./contentActionRegistry";
+import {
+  requireSettledContentSave,
+  type SettledContentSave,
+} from "./saveSettlement";
 
 const AdvancedMenu = lazy(() => import("@/components/official/AdvancedMenu"));
 
@@ -63,7 +67,7 @@ export interface ContentActionBarProps {
    * **edit** mode with a Save button that calls back. When omitted, it
    * opens in **view** mode (no save button).
    */
-  onSave?: (newContent: string) => void | Promise<void>;
+  onSave?: SettledContentSave;
   /**
    * Stable id for scoping overlay instances (full-screen editor, html
    * preview). Same input → same overlay instance, so reopening from the
@@ -141,23 +145,26 @@ export function ContentActionBar({
     // onSave travels via the callback registry, never through Redux data.
     const callbackGroupId = onSave
       ? createFullScreenEditorCallbackGroup({
-          onSave: async (newContent: string) => {
+          onSave: (newContent: string) => {
             try {
-              await onSave(newContent);
+              return requireSettledContentSave(onSave, newContent).catch(
+                (err) => {
+                  // eslint-disable-next-line no-console
+                  console.error("[ContentActionBar] onSave failed", err);
+                  toast.error(
+                    err instanceof Error ? err.message : "Failed to save changes",
+                  );
+                  throw err;
+                },
+              );
             } catch (err) {
               // eslint-disable-next-line no-console
               console.error("[ContentActionBar] onSave failed", err);
               toast.error(
                 err instanceof Error ? err.message : "Failed to save changes",
               );
-              return;
+              return Promise.reject(err);
             }
-            dispatch(
-              closeOverlay({
-                overlayId: "fullScreenEditor",
-                instanceId: editorInstanceId,
-              }),
-            );
           },
         }).callbackGroupId
       : null;

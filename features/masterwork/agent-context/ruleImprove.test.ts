@@ -1,4 +1,5 @@
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
+import { ruleFieldValues } from "../types";
 import type { RulebookRule, RulebookSections } from "../types";
 import {
   applyRuleImprove,
@@ -35,16 +36,12 @@ const REVISED = {
   section: "U",
 };
 
+const SAVED_VALUES = ruleFieldValues(RULE, { defaultSection: "G" });
+
 const DRAFT: RulebookDraftSnapshot = {
   mode: "edit",
   rule_id: "R1",
-  name: RULE.name,
-  statement: RULE.statement,
-  rationale: RULE.rationale ?? "",
-  detection: RULE.detection ?? "",
-  quote: RULE.quote ?? "",
-  severity: RULE.severity,
-  section: RULE.section,
+  ...SAVED_VALUES,
 };
 
 describe("rule improve contract", () => {
@@ -78,6 +75,154 @@ describe("rule improve contract", () => {
         { sections: SECTIONS, fallbackSection: "G" },
       ),
     ).toThrow();
+  });
+});
+
+const DECISION_RULE: RulebookRule = {
+  ...RULE,
+  id: "R2",
+  kind: "policy",
+  precondition: "chest pain and the ECG is not yet done",
+  next_action: "record a 12-lead ECG",
+  action_kind: "test",
+  cost: "low",
+  risk: "low",
+};
+
+describe("rule improve keeps the decision shape (Bugbot on W58: a rewrite is of the judgment, not only the sentence)", () => {
+  it("lands the rewritten decision fields when the AI returns them", () => {
+    const result = coerceRuleImproveResult(
+      {
+        ...REVISED,
+        kind: "policy",
+        precondition: "chest pain, ECG not yet recorded",
+        next_action: "record a 12-lead ECG within ten minutes",
+        action_kind: "test",
+        cost: "low",
+        risk: "medium",
+      },
+      { sections: SECTIONS, fallbackSection: "G" },
+    );
+    const next = applyRuleImprove(DECISION_RULE, result);
+    expect(next.kind).toBe("policy");
+    expect(next.precondition).toBe("chest pain, ECG not yet recorded");
+    expect(next.next_action).toBe("record a 12-lead ECG within ten minutes");
+    expect(next.risk).toBe("medium");
+    expect(next.draft).toBe(true);
+  });
+
+  it("never demotes a decision rule to a statement when the AI returns prose only", () => {
+    const result = coerceRuleImproveResult(REVISED, {
+      sections: SECTIONS,
+      fallbackSection: "G",
+    });
+    expect(result.policy).toBeUndefined();
+    const next = applyRuleImprove(DECISION_RULE, result);
+    expect(next.kind).toBe("policy");
+    expect(next.precondition).toBe(DECISION_RULE.precondition);
+    expect(next.next_action).toBe(DECISION_RULE.next_action);
+    expect(next.action_kind).toBe("test");
+    expect(next.cost).toBe("low");
+    expect(next.risk).toBe("low");
+  });
+
+  it("leaves an ordinary rule ordinary", () => {
+    const next = applyRuleImprove(
+      RULE,
+      coerceRuleImproveResult(REVISED, { sections: SECTIONS, fallbackSection: "G" }),
+    );
+    expect(next.kind).toBeUndefined();
+    expect(next.precondition).toBeUndefined();
+  });
+
+  it("refuses a half-judgment: a decision rule missing a field, or a value outside the closed sets", () => {
+    expect(() =>
+      coerceRuleImproveResult(
+        { ...REVISED, kind: "policy", precondition: "x", next_action: "y" },
+        { sections: SECTIONS, fallbackSection: "G" },
+      ),
+    ).toThrow(/action_kind, cost, risk/);
+    expect(() =>
+      coerceRuleImproveResult(
+        {
+          ...REVISED,
+          precondition: "x",
+          next_action: "y",
+          action_kind: "operate",
+          cost: "low",
+          risk: "low",
+        },
+        { sections: SECTIONS, fallbackSection: "G" },
+      ),
+    ).toThrow(/action_kind/);
+    expect(() =>
+      coerceRuleImproveResult(
+        {
+          ...REVISED,
+          precondition: "x",
+          next_action: "y",
+          action_kind: "test",
+          cost: "enormous",
+          risk: "low",
+        },
+        { sections: SECTIONS, fallbackSection: "G" },
+      ),
+    ).toThrow(/cost or risk/);
+  });
+
+  it("tidy polishes the precondition and next action but freezes kind, cost and risk", () => {
+    const decisionDraft: RulebookDraftSnapshot = {
+      mode: "edit",
+      rule_id: "R2",
+      ...ruleFieldValues(DECISION_RULE, { defaultSection: "G" }),
+    };
+    const result = coerceRuleImproveResult(
+      {
+        ...REVISED,
+        precondition: "Chest pain; ECG not yet recorded.",
+        next_action: "Record a 12-lead ECG.",
+        action_kind: "treat",
+        cost: "high",
+        risk: "high",
+      },
+      { sections: SECTIONS, fallbackSection: "G" },
+    );
+    const next = applyRuleTidy(decisionDraft, result);
+    expect(next.isPolicy).toBe(true);
+    expect(next.precondition).toBe("Chest pain; ECG not yet recorded.");
+    expect(next.nextAction).toBe("Record a 12-lead ECG.");
+    expect(next.actionKind).toBe("test");
+    expect(next.cost).toBe("low");
+    expect(next.risk).toBe("low");
+    // Prose-only reply: the decision prose stays exactly as it was.
+    const prose = applyRuleTidy(
+      decisionDraft,
+      coerceRuleImproveResult(REVISED, { sections: SECTIONS, fallbackSection: "G" }),
+    );
+    expect(prose.precondition).toBe(DECISION_RULE.precondition);
+    expect(prose.isPolicy).toBe(true);
+  });
+});
+
+describe("rule tidy on a decision rule the Expert has only just toggled on (Bugbot, round 6)", () => {
+  it("polishes the prose and leaves the still-empty decision fields empty — never a throw", () => {
+    const freshlyToggled: RulebookDraftSnapshot = {
+      mode: "edit",
+      rule_id: "R1",
+      ...SAVED_VALUES,
+      isPolicy: true,
+      precondition: "",
+      nextAction: "",
+    };
+    const result = coerceRuleImproveResult(REVISED, {
+      sections: SECTIONS,
+      fallbackSection: "G",
+    });
+    const next = applyRuleTidy(freshlyToggled, result);
+    expect(next.statement).toBe(REVISED.statement);
+    expect(next.isPolicy).toBe(true);
+    expect(next.precondition).toBe("");
+    expect(next.nextAction).toBe("");
   });
 });
 
@@ -120,6 +265,7 @@ describe("rule editor persisted draft", () => {
         rulebookVersion: 8,
         mode: "edit",
         ruleId: "R1",
+        fallback: SAVED_VALUES,
       }),
     ).toEqual({ fields: DRAFT, beforeTidy: null, policy: null });
     expect(
@@ -127,6 +273,7 @@ describe("rule editor persisted draft", () => {
         rulebookVersion: 9,
         mode: "edit",
         ruleId: "R1",
+        fallback: SAVED_VALUES,
       }),
     ).toBeNull();
   });
@@ -162,7 +309,7 @@ describe("rule editor persisted policy fields", () => {
   it("restores what was typed into When: and Next:", () => {
     const restored = readRuleEditorDraft(
       { baseVersion: 8, fields: DRAFT, beforeTidy: null, policy: POLICY },
-      { rulebookVersion: 8, mode: "edit", ruleId: "R1" },
+      { rulebookVersion: 8, mode: "edit", ruleId: "R1", fallback: SAVED_VALUES },
     );
     expect(restored?.policy).toEqual(POLICY);
   });
@@ -175,7 +322,7 @@ describe("rule editor persisted policy fields", () => {
         beforeTidy: null,
         policy: { ...POLICY, nextActionKind: "teleport" },
       },
-      { rulebookVersion: 8, mode: "edit", ruleId: "R1" },
+      { rulebookVersion: 8, mode: "edit", ruleId: "R1", fallback: SAVED_VALUES },
     );
     // The prose still restores; the policy falls back to the live rule.
     expect(restored?.fields).toEqual(DRAFT);
@@ -190,7 +337,7 @@ describe("rule editor persisted policy fields", () => {
         beforeTidy: null,
         policy: { preconditionSummary: "Just this much" },
       },
-      { rulebookVersion: 8, mode: "edit", ruleId: "R1" },
+      { rulebookVersion: 8, mode: "edit", ruleId: "R1", fallback: SAVED_VALUES },
     );
     expect(restored?.policy?.preconditionSummary).toBe("Just this much");
     expect(restored?.policy?.nextActionKind).toBe("");

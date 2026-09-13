@@ -34,7 +34,9 @@ export interface SandboxInstancesTableProps {
   isFetching?: boolean;
   error: string | null;
   onRetry: () => void;
+  onCreate: () => void;
   onOpen: (row: SandboxInstance) => void;
+  onRename: (id: string, name: string) => Promise<void>;
   onStop: (row: SandboxInstance) => void;
   onDelete: (row: SandboxInstance) => void;
   stoppingIds: Set<string>;
@@ -205,7 +207,9 @@ export function SandboxInstancesTable({
   isFetching = false,
   error,
   onRetry,
+  onCreate,
   onOpen,
+  onRename,
   onStop,
   onDelete,
   stoppingIds,
@@ -214,11 +218,12 @@ export function SandboxInstancesTable({
 }: SandboxInstancesTableProps) {
   const columns: MatrxColumnDef<SandboxInstance>[] = [
     {
-      id: "identity",
+      accessorKey: "name",
+      editable: "string",
+      editTrigger: "pencil",
       header: "Sandbox",
       label: "Sandbox",
       width: 180,
-      accessorFn: (row) => `${sandboxDisplayName(row)} ${row.sandbox_id}`,
       cell: (row) => (
         <div className="min-w-0 whitespace-normal">
           <div className="font-medium">{sandboxDisplayName(row)}</div>
@@ -373,11 +378,23 @@ export function SandboxInstancesTable({
         </Alert>
       ) : null}
       <MatrxDataTable<SandboxInstance>
+        tableId={showingHistory ? "sandboxes/history" : "sandboxes/active"}
         data={instances}
         columns={columns}
         getRowId={(row) => row.id}
         isLoading={loading}
         isFetching={isFetching}
+        edit={{
+          enabled: true,
+          onSave: async (edits) => {
+            for (const [id, fields] of Object.entries(edits)) {
+              if (typeof fields.name !== "string") {
+                throw new Error("A sandbox name must be text.");
+              }
+              await onRename(id, fields.name.trim());
+            }
+          },
+        }}
         reorderableColumns
         defaultSort={{ id: "created_at", direction: "desc" }}
         pageSize={25}
@@ -405,6 +422,9 @@ export function SandboxInstancesTable({
             .join(" ")
         }
         toolbar={{
+          title: showingHistory ? "Sandbox history" : "Sandboxes",
+          refresh: { onRefresh: onRetry },
+          add: { onAdd: onCreate },
           search: true,
           searchPlaceholder: "Search sandboxes…",
         }}
@@ -443,26 +463,12 @@ export function SandboxInstancesTable({
           const tier = row.tier ?? row.config?.tier ?? "Not recorded";
           return (
             <article className="space-y-2 rounded-md border border-border p-3">
-              <button
-                type="button"
-                onClick={() => onOpen(row)}
-                className="flex min-h-11 w-full items-start justify-between gap-3 text-left"
-              >
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium">
-                    {sandboxDisplayName(row)}
-                  </span>
-                  <span className="mt-0.5 block break-all font-mono text-xs text-muted-foreground">
-                    {row.sandbox_id}
-                  </span>
-                </span>
-                <Badge
-                  variant={STATUS_BADGE_VARIANT[status]}
-                  className="shrink-0"
-                >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">{controls.renderCell("name")}</div>
+                <Badge variant={STATUS_BADGE_VARIANT[status]} className="shrink-0">
                   {STATUS_LABELS[status]}
                 </Badge>
-              </button>
+              </div>
               {row.stop_reason ? (
                 <p className="text-xs text-muted-foreground">
                   {row.stop_reason.replaceAll("_", " ")}

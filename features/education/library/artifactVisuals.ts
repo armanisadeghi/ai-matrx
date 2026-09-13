@@ -17,6 +17,7 @@
 // Add a format → add it to `TARGET_PRESENTATION` and to `SUBTYPE_TO_TARGET`
 // below. Never add a colour here.
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { BookOpen } from "lucide-react";
 import {
   TARGET_PRESENTATION,
@@ -90,8 +91,16 @@ export function artifactCount(
   return `${count} ${count === 1 ? unit.one : unit.many}`;
 }
 
-/** "12 min" from a duration in seconds. Null below a minute or when absent. */
+/**
+ * "12 min" from a duration in seconds. Null below a minute or when absent.
+ *
+ * The local minute arithmetic was collapsed onto the kit formatter
+ * (2026-09-12). Kept as an ADAPTER: four library surfaces call it, and the
+ * sub-minute `null` is a display decision (no badge at all) rather than a
+ * duration, so it cannot move into the package. Coarse voice — a card badge is
+ * glanceable, and coarse already renders the minute suffix this built by hand.
+ */
 export function artifactDuration(seconds: number | null): string | null {
   if (!seconds || seconds < 60) return null;
-  return `${Math.round(seconds / 60)} min`;
+  return formatDurationSeconds(seconds, { style: "coarse" });
 }

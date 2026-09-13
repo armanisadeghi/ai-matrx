@@ -46,7 +46,17 @@ export const MASTERWORK_RUN_WIRE: DurableRunWire = {
   runStartedEvent: "masterwork_run",
   snapshotEvent: "masterwork_run_snapshot",
   failedEvent: "masterwork_run_failed",
+  // A deploy releases the run mid-stream rather than killing it silently —
+  // the recovery sweep re-queues the row, so this is a fact to relay, never a
+  // failure. See `RESUMING_AFTER_RESTART_MESSAGE`.
+  drainingEvent: "masterwork_run_draining",
   rejoinPath: "/masterworks/runs/{run_id}/rejoin" satisfies keyof paths,
+  // Cancel MEANS cancel here (aidream `POST /masterworks/runs/{run_id}/cancel`):
+  // the durable row goes terminal with the person's reason and the worker stops
+  // at its next chunk. Before this endpoint existed the dialogs' Cancel could
+  // only close the dialog while the work — and the spend — carried on.
+  cancelPath: "/masterworks/runs/{run_id}/cancel" satisfies keyof paths,
+  cancelledEvent: "masterwork_run_cancelled",
   relation: "platform.masterwork_run",
   resultOf: (data, source) => (source === "snapshot" ? data.result : data),
   unfinishedMessage:
@@ -66,6 +76,7 @@ export type MasterworkRunSurface =
   | "dump"
   | "corpus"
   | "timeline"
+  | "triage"
   | "audition"
   | "audition_unfolding"
   // The BLIND PAIRWISE Audition (`/masterworks/audition-pairwise`) — two of the
@@ -90,11 +101,16 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // reason, even though its terminal event type matches the ingest lanes'.
   corpus: "masterwork_ingest_complete",
   // The unfolding TIMELINE Approach (`/masterworks/ingest-timeline`) — a
-  // narrative unfolded into a `serial_observation_timeline` and then either
-  // distilled (teaching) or sealed (held-out). Its own surface + pointer so a
-  // timeline never rejoins the single-source ingest dialog or vice versa,
-  // even though its terminal event type matches the other ingest lanes'.
+  // narrative unfolded into a `serial_observation_timeline`, chunked by STEP,
+  // and then either distilled (teaching) or sealed (held-out). Its own surface
+  // + pointer so a timeline never rejoins the single-source ingest dialog or
+  // vice versa, even though its terminal event type matches the other ingest
+  // lanes'.
   timeline: "masterwork_ingest_complete",
+  // Sorting the DRAFT pile by what the Rulebook is FOR
+  // (`/masterworks/triage`, W59 + W61). Its own surface + pointer: a triage is
+  // not an ingest, and a reload must never rejoin one as the other.
+  triage: "masterwork_triage_complete",
   audition: "masterwork_audition_verdict",
   // The UNFOLDING audition (mode `unfolding`) — sealed cases worked under the
   // case oracle. Its own surface and pointer: a desk-vs-vanilla case table is
@@ -145,11 +161,16 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   // is a multiple of the reference Audition's single judge call rather than a
   // sibling of it. Re-measure once this lane has runs of its own on the ledger.
   audition_unfolding: 120_000,
-  // The timeline lane unfolds the narrative and then distils it window by
-  // window — the same shape as `ingest`, plus the unfolding call.
-  timeline: 180_000,
   checkup: 80_000,
   clean_corpus: 60_000,
+  // The timeline lane unfolds the narrative and then distils it window by
+  // window — the same shape as `ingest`, plus the unfolding call. Estimated at
+  // 180 s until it had runs of its own; MEASURED since (Trial 8, 2026-09-12):
+  // 56 timeline ingests (one case each) ran 31–103 s, median ~60 s. The
+  // measurement wins, as the header of this table says it must.
+  timeline: 90_000,
+  // Trial 8, 2026-09-12: the two live triage passes of ~900 drafts took 89 s.
+  triage: 90_000,
 };
 
 /**

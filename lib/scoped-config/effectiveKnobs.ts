@@ -8,8 +8,10 @@
 // `lib/knobs/featureKnobs.ts` reads the PLATFORM value of a register row (the
 // admin limits); this module reads the EFFECTIVE value after the organization
 // and personal rungs. Use this one for anything a person or organization may
-// override (`overridable_by` non-empty) — the first consumer is
-// `media.listening.voice` (Unified Settings Platform done-bar item 2).
+// override (`overridable_by` non-empty). Consumers today:
+//   `media.listening.voice`                            → features/audio/service/listeningConfig.ts
+//   `agents.model_prefs.chat_default_model`            → features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts
+//   `agents.model_prefs.agent_authoring_default_model` → features/agents/agent-creators (the generator's run override)
 //
 // Framework-free, cached per (org, user, key) with a short TTL, invalidated
 // on every write through `setKnobOverride` (same tab) and by the platform
@@ -20,6 +22,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
+import { getWebDeviceId } from "./deviceId";
 
 const TTL_MS = 60_000;
 
@@ -69,6 +72,10 @@ export function ensureEffectiveKnob(
   if (pending) return pending;
   const { feature, key } = splitKey(fullKey);
   const supabase = createClient();
+  // THIS browser's device rung (USD-9) rides as a scope so a device-level
+  // override (nearest rung of all) wins here exactly as it does on the
+  // settings screen (`knob_index` takes it as `p_device_id`).
+  const deviceId = getWebDeviceId();
   const run = (async () => {
     try {
       const { data, error } = await supabase.schema("platform").rpc("knob_resolve", {
@@ -76,6 +83,7 @@ export function ensureEffectiveKnob(
         p_key: key,
         p_organization_id: organizationId,
         p_user_id: userId ?? undefined,
+        p_scopes: deviceId ? [{ kind: "device", id: deviceId }] : undefined,
       } as never);
       if (error) throw new Error(`knob_resolve ${fullKey} failed: ${error.message}`);
       cache.set(id, { value: data as unknown, at: Date.now() });

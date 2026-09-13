@@ -1,0 +1,376 @@
+{
+  "_law": "THE BASELINE ONLY SHRINKS. A NEW orphan is a defect; adding it here is the defect this guard exists to catch.",
+  "_why": "A platform.feature_knob row no code reads is a control that lies. These namespaces were seeded SPEC-FIRST — mostly the HR program's hr.* and esign.* rows, written before their screens — and the unfinished-work alarm forbids deleting them. They are KNOWN DEBT with an owner, reported on every run, tolerated only so the guard can hold the line against NEW orphans. Each entry leaves when its consumer ships (common-docs/projects/unified-settings-platform/REGISTER.md).",
+  "_how": "`pnpm check:settings-orphans --write` removes keys that gained a consumer or left the registry. It CANNOT add one: a new orphan must get a real reader, or be deleted from the registry.",
+  "_baselined": "2026-09-13",
+  "_ratcheted": "2026-09-13",
+  "namespaces": {
+    "commerce.market": {
+      "owner": "marketing/commerce",
+      "program": "commerce campaign (0631 left these unfiled by design)",
+      "keys": [
+        "comparable_cache_ttl_hours"
+      ]
+    },
+    "commerce.publish": {
+      "owner": "marketing/commerce",
+      "program": "commerce campaign (0631 left these unfiled by design)",
+      "keys": [
+        "review_rounds_max"
+      ]
+    },
+    "commerce.quota": {
+      "owner": "marketing/commerce",
+      "program": "commerce campaign (0631 left these unfiled by design)",
+      "keys": [
+        "per_org_fairness_share"
+      ]
+    },
+    "commerce.valuation": {
+      "owner": "marketing/commerce",
+      "program": "commerce campaign (0631 left these unfiled by design)",
+      "keys": [
+        "gem_value_threshold_usd"
+      ]
+    },
+    "data_lifecycle": {
+      "owner": "platform/data-lifecycle",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "warn_days_default"
+      ]
+    },
+    "esign.campaign": {
+      "owner": "platform/esign",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "auto_close_days",
+        "send_rate_per_minute"
+      ]
+    },
+    "esign.decline": {
+      "owner": "platform/esign",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "require_reason"
+      ]
+    },
+    "esign.outsider": {
+      "owner": "platform/esign",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "code.length",
+        "code.lockout_minutes",
+        "code.max_attempts",
+        "code.ttl_seconds",
+        "expiry_anchor.hr_preboarding",
+        "ratelimit.anonymous_report_opens_per_ip_per_day",
+        "ratelimit.apply_submits_per_ip_per_day",
+        "ratelimit.begin_per_ip_per_hour",
+        "ratelimit.verify_failures_per_ip_per_hour",
+        "records_request.max_downloads",
+        "session.ip_pinned",
+        "session.ttl_minutes.hr_records_request",
+        "token.ttl_days.hr_anonymous_report",
+        "token.ttl_days.hr_apply",
+        "token.ttl_days.hr_candidate_portal",
+        "token.ttl_days.hr_investigation_external",
+        "token.ttl_days.hr_preboarding",
+        "token.ttl_days.hr_records_request",
+        "token.ttl_days.hr_referee",
+        "upload.allowed_mime",
+        "upload.max_bytes",
+        "verification.default_factor.hr_anonymous_report",
+        "verification.default_factor.hr_apply",
+        "verification.default_factor.hr_candidate_portal",
+        "verification.default_factor.hr_investigation_external",
+        "verification.default_factor.hr_preboarding",
+        "verification.default_factor.hr_records_request",
+        "verification.default_factor.hr_referee"
+      ]
+    },
+    "esign.provider": {
+      "owner": "platform/esign",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "binding"
+      ]
+    },
+    "esign.void": {
+      "owner": "platform/esign",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "require_reason"
+      ]
+    },
+    "extensibility": {
+      "owner": "platform/custom-data",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "custom_fields.multi_select_max_values",
+        "tier3.enabled"
+      ]
+    },
+    "hr.access": {
+      "owner": "human-resources/(unfiled)",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "manager_visibility_depth_confidential",
+        "review_visibility_skip_level"
+      ]
+    },
+    "hr.approvals": {
+      "owner": "human-resources/hr-workflow-inbox",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "address_change_approver",
+        "escalation_hours",
+        "sole_authority_mode_default"
+      ]
+    },
+    "hr.contracts": {
+      "owner": "human-resources/hr-documents-and-forms",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "autofill_max_shifts_per_run",
+        "calc_prospective_snapshot_retention_days",
+        "export_artifact_signed_url_ttl_seconds",
+        "mock_mode_enabled",
+        "provider_retry_attempts",
+        "provider_retry_backoff",
+        "provider_retry_base_seconds",
+        "rule_resolution_cache_ttl_seconds"
+      ]
+    },
+    "hr.domain_wide": {
+      "owner": "human-resources/(unfiled)",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "ai_evidence_retention_months",
+        "ai_sensitivity_ceiling_default",
+        "alert_fallback_to_owner",
+        "break_glass_enabled",
+        "disposition_dry_run_default",
+        "employees_org_chart_query_posture",
+        "employees_record_anomaly_scan_cadence",
+        "employees_record_anomaly_scan_posture",
+        "employees_verification_letter_draft_posture",
+        "retention_warning_days",
+        "tasks_badge_enabled",
+        "tasks_default_scope_employee",
+        "tasks_default_scope_hr",
+        "tasks_default_scope_manager"
+      ]
+    },
+    "hr.employees": {
+      "owner": "human-resources/hr-employees",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "activation_seeds",
+        "blended_rate_min_cell",
+        "blended_rate_round_to",
+        "directory_default_view",
+        "directory_visible_to_employees",
+        "name_change_requires_document",
+        "notify_employee_on_pay_change",
+        "orgchart_visible_to_employees",
+        "profile_tab_visibility",
+        "rehire_ineligible_override_roles",
+        "ssn_reveal_requires_reauth",
+        "verification_third_party_self_serve_enabled"
+      ]
+    },
+    "hr.hiring": {
+      "owner": "human-resources/hr-hiring",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "careers_portal_enabled",
+        "custom_stages_enabled",
+        "interview_feedback_due_hours",
+        "offer_default_expiry_days",
+        "rejection_reason_required",
+        "scorecard_blind_until_submitted",
+        "widget_enabled"
+      ]
+    },
+    "hr.jurisdiction_rules": {
+      "owner": "human-resources/hr-compliance",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "prospective_snapshot_retention_days",
+        "recompute_posture",
+        "verification_overdue_alert"
+      ]
+    },
+    "hr.leave": {
+      "owner": "human-resources/hr-leave",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "ai_balance_query_posture",
+        "ai_policy_qa_posture",
+        "negative_balance_default",
+        "negative_balance_settlement",
+        "payout_requires_review"
+      ]
+    },
+    "hr.onboarding": {
+      "owner": "human-resources/hr-onboarding",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "exit_survey_due_days",
+        "exit_survey_enabled",
+        "i9_section2_due_business_days",
+        "provisioning_verification_required",
+        "survey_anonymity_threshold"
+      ]
+    },
+    "hr.records": {
+      "owner": "human-resources/hr-documents-and-forms",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "request_max_uses",
+        "request_window_days"
+      ]
+    },
+    "hr.relations": {
+      "owner": "human-resources/(unfiled)",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "incident_intake_channels"
+      ]
+    },
+    "hr.scheduling": {
+      "owner": "human-resources/hr-scheduling",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "ai_draft_posture",
+        "ai_fill_posture",
+        "crew_scheduling_enabled",
+        "default_horizon_days",
+        "expired_credential",
+        "max_consecutive_days",
+        "min_rest_hours_between_shifts",
+        "open_shift_claim_needs_approval",
+        "ot_would_trigger",
+        "publish_advance_notice_days",
+        "shift_reminder_lead_minutes",
+        "swap_needs_approval"
+      ]
+    },
+    "hr.time_and_attendance": {
+      "owner": "human-resources/hr-time-and-attendance",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "approval_due_hours_after_period_end",
+        "export_auto_run_on_approval",
+        "export_blocks_on_open_dispute",
+        "export_format_default",
+        "kiosk_require_geo",
+        "kiosk_require_photo",
+        "manager_approval_required",
+        "ot_alert_channels_employee",
+        "ot_alert_channels_hr",
+        "ot_alert_channels_manager",
+        "ot_alert_default_threshold_hours",
+        "ot_preapproval_decision_sla_hours",
+        "pin_lockout_minutes",
+        "pin_max_failed_attempts",
+        "punch_enabled_worker_class_employee",
+        "punch_enabled_worker_class_intern",
+        "punch_enabled_worker_class_seasonal",
+        "punch_enabled_worker_class_volunteer",
+        "remote_punch_allowed",
+        "remote_worker_validation",
+        "show_raw_alongside_rounded",
+        "timesheet_attestation_required",
+        "timesheet_bulk_approve_enabled",
+        "unapproved_ot_opens_exception",
+        "workweek_start_day"
+      ]
+    },
+    "hr.training": {
+      "owner": "human-resources/hr-training",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "mandate_generation_enabled"
+      ]
+    },
+    "hr.workflow": {
+      "owner": "human-resources/hr-workflow-inbox",
+      "program": "HR program (spec-first seed; consumers unbuilt)",
+      "keys": [
+        "delegation_allow_subdelegation",
+        "delegation_max_days",
+        "failure_apply_retries",
+        "failure_auto_abandon_days",
+        "route_absent_approver_action",
+        "sla_business_hours_only"
+      ]
+    },
+    "mandate_honesty": {
+      "owner": "mandates/mandate-runtime",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "change_claim_correction_turns"
+      ]
+    },
+    "masterwork": {
+      "owner": "masterwork/distillation",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "rulebook_read_page_size"
+      ]
+    },
+    "orm.write_retry": {
+      "owner": "platform/orm-persistence",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "deadlock_backoff_base_ms",
+        "deadlock_backoff_max_ms",
+        "deadlock_max_retries"
+      ]
+    },
+    "records": {
+      "owner": "platform/custom-data",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "confirmation.agent_context",
+        "confirmation.duplicate_hint",
+        "confirmation.list_hides_unconfirmed",
+        "confirmation.outbound_requires_confirmed",
+        "confirmation.rollup_includes_unconfirmed"
+      ]
+    },
+    "unfolding": {
+      "owner": "masterwork/distillation",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "distill_window_steps",
+        "max_disclosure_steps",
+        "opening_steps"
+      ]
+    },
+    "workflow.checkpoint_write": {
+      "owner": "workflows/workflow-runtime",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "max_retries",
+        "retry_backoff_ms",
+        "statement_timeout_ms",
+        "warn_bytes"
+      ]
+    },
+    "workflow.recovery": {
+      "owner": "workflows/workflow-runtime",
+      "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
+      "keys": [
+        "auto_resume_max_attempts",
+        "reconcile_interval_seconds",
+        "reconcile_max_batch",
+        "reconcile_window_seconds",
+        "shutdown_drain_seconds",
+        "stale_heartbeat_seconds"
+      ]
+    }
+  }
+}

@@ -41,8 +41,15 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
+import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
+import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { RulebookRule } from "../../types";
+import {
+  parseVerdict,
+  type AuditionVerdict,
+} from "./auditionVerdict";
+import { RuleFidelityTable } from "./RuleFidelityTable";
 import { ruleAnchorId } from "../detail/RuleRelations";
 import { UnfoldingAuditionPanel } from "./UnfoldingAuditionPanel";
 import {
@@ -53,28 +60,6 @@ import {
 } from "../../audition/auditionRuns";
 
 const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
-
-interface RuleFinding {
-  rule_id: string;
-  winner: string;
-  note: string;
-}
-
-interface AuditionVerdict {
-  verdict: string;
-  summary: string;
-  findings: RuleFinding[];
-  gaps: string[];
-  gaps_captured: number;
-  quality_score: number | null;
-  vanilla_compared: boolean;
-  vanilla_score: number | null;
-  vanilla_text: string | null;
-  vanilla_error: string | null;
-  beat_vanilla_rules: number | null;
-  vanilla_rules_compared: number | null;
-  verdict_sentence: string | null;
-}
 
 const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
   candidate_better: {
@@ -88,29 +73,6 @@ const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
   },
 };
 
-function parseVerdict(raw: unknown): AuditionVerdict | null {
-  if (!raw || typeof raw !== "object") return null;
-  const data = raw as Record<string, unknown>;
-  if (data.type !== "masterwork_audition_verdict") return null;
-  const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
-  return {
-    verdict: String(data.verdict ?? "parity"),
-    summary: String(data.summary ?? ""),
-    findings: Array.isArray(data.findings) ? (data.findings as RuleFinding[]) : [],
-    gaps: Array.isArray(data.gaps) ? (data.gaps as string[]) : [],
-    gaps_captured: Number(data.gaps_captured ?? 0),
-    quality_score: num(data.quality_score),
-    vanilla_compared: data.vanilla_compared === true,
-    vanilla_score: num(data.vanilla_score),
-    vanilla_text: typeof data.vanilla_text === "string" ? data.vanilla_text : null,
-    vanilla_error: typeof data.vanilla_error === "string" ? data.vanilla_error : null,
-    beat_vanilla_rules: num(data.beat_vanilla_rules),
-    vanilla_rules_compared: num(data.vanilla_rules_compared),
-    verdict_sentence:
-      typeof data.verdict_sentence === "string" ? data.verdict_sentence : null,
-  };
-}
-
 function scoreTone(score: number | null): string {
   if (score === null) return "text-muted-foreground";
   if (score >= 50) return "text-primary";
@@ -118,38 +80,67 @@ function scoreTone(score: number | null): string {
   return "text-destructive";
 }
 
-/** Compact past-scores strip: the Expert sees the line move. */
-function HistoryStrip({ runs }: { runs: AuditionRunSummary[] }) {
+/** Compact past-scores strip: the Expert sees the line move — and can REOPEN
+ * any of them. An Audition costs real money and several minutes; re-running one
+ * to read it again is a toll, not a feature (W37c). A row with no stored
+ * verdict says so rather than offering a button that does nothing. */
+function HistoryStrip({
+  runs,
+  openRunId,
+  onOpen,
+}: {
+  runs: AuditionRunSummary[];
+  openRunId: string | null;
+  onOpen: (run: AuditionRunSummary) => void;
+}) {
   if (runs.length === 0) return null;
   return (
     <div className="rounded-md border border-border bg-muted/30 p-2">
       <p className="text-xs font-medium text-foreground">Past auditions</p>
       <ul className="mt-1 space-y-0.5">
-        {runs.slice(0, 8).map((run) => (
-          <li
-            key={run.id}
-            className="flex items-center gap-2 text-xs text-muted-foreground"
-          >
-            <span className="w-20 shrink-0">
-              {new Date(run.startedAt).toLocaleDateString()}
-            </span>
-            <span className={cn("w-14 shrink-0 font-medium", scoreTone(run.qualityScore))}>
-              {run.qualityScore !== null ? `${run.qualityScore}/100` : "—"}
-            </span>
-            {run.beatVanilla !== null ? (
-              <span className={run.beatVanilla ? "text-primary" : "text-destructive"}>
-                {run.beatVanilla ? "beat vanilla AI" : "lost to vanilla AI"}
+        {runs.slice(0, 8).map((run) => {
+          const reopenable = run.result !== null;
+          return (
+            <li key={run.id} className="flex items-center gap-2 text-xs">
+              {reopenable ? (
+                <button
+                  type="button"
+                  onClick={() => onOpen(run)}
+                  className={cn(
+                    "w-20 shrink-0 text-left underline-offset-2 hover:underline",
+                    run.id === openRunId
+                      ? "font-medium text-primary"
+                      : "text-primary",
+                  )}
+                >
+                  {new Date(run.startedAt).toLocaleDateString()}
+                </button>
+              ) : (
+                <span
+                  className="w-20 shrink-0 text-muted-foreground"
+                  title="This run finished before verdicts were stored, so there is nothing to reopen."
+                >
+                  {new Date(run.startedAt).toLocaleDateString()}
+                </span>
+              )}
+              <span className={cn("w-14 shrink-0 font-medium", scoreTone(run.qualityScore))}>
+                {run.qualityScore !== null ? `${run.qualityScore}/100` : "—"}
               </span>
-            ) : null}
-            {run.expertScore !== null ? (
-              <span className="ml-auto shrink-0">
-                your call:{" "}
-                {EXPERT_CALLS.find((c) => c.score === run.expertScore)?.label ??
-                  `${run.expertScore}/100`}
-              </span>
-            ) : null}
-          </li>
-        ))}
+              {run.beatVanilla !== null ? (
+                <span className={run.beatVanilla ? "text-primary" : "text-destructive"}>
+                  {run.beatVanilla ? "beat vanilla AI" : "lost to vanilla AI"}
+                </span>
+              ) : null}
+              {run.expertScore !== null ? (
+                <span className="ml-auto shrink-0 text-muted-foreground">
+                  your call:{" "}
+                  {EXPERT_CALLS.find((c) => c.score === run.expertScore)?.label ??
+                    `${run.expertScore}/100`}
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -216,7 +207,31 @@ export function AuditionDialog({
     path: AUDITION_PATH,
     parseResult: parseVerdict,
   });
-  const verdict = run.result;
+  // A past verdict the Expert reopened from the history strip. The live run
+  // always wins: a new Audition replaces whatever was being read.
+  const [reopened, setReopened] = useState<{
+    runId: string;
+    verdict: AuditionVerdict;
+  } | null>(null);
+  const verdict = run.result ?? reopened?.verdict ?? null;
+  // Only a verdict this tab just produced may be rated — `expert_score` belongs
+  // to the run it judges, and a reopened one already had its chance.
+  const ratableRunId = run.result ? run.runId : null;
+
+  const openPastRun = useCallback((summary: AuditionRunSummary) => {
+    const parsed = parseVerdict(summary.result);
+    if (!parsed) {
+      toast.error(
+        "That run's verdict was not stored, so there is nothing to reopen.",
+      );
+      return;
+    }
+    run.reset();
+    setReopened({ runId: summary.id, verdict: parsed });
+    setExpertSaved(null);
+    setExpertWhy("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const refreshHistory = useCallback(() => {
     listAuditionRuns(rulebookId)
@@ -262,6 +277,7 @@ export function AuditionDialog({
       return;
     }
     run.reset();
+    setReopened(null);
     setShowVanillaText(false);
     void run.launch(
       {
@@ -277,13 +293,13 @@ export function AuditionDialog({
   };
 
   const recordExpertCall = async (score: number) => {
-    if (!run.runId) {
+    if (!ratableRunId) {
       toast.error("This verdict has no saved run to rate — run the Audition again.");
       return;
     }
     setSavingExpert(true);
     try {
-      await saveExpertCall(run.runId, score, expertWhy);
+      await saveExpertCall(ratableRunId, score, expertWhy);
       setExpertSaved(score);
       toast.success("Your call is saved — it is the ground truth the judge learns from.");
       refreshHistory();
@@ -345,7 +361,11 @@ export function AuditionDialog({
           <UnfoldingAuditionPanel rulebookId={rulebookId} />
         ) : (
         <div className="space-y-3">
-          <HistoryStrip runs={history} />
+          <HistoryStrip
+            runs={history}
+            openRunId={reopened?.runId ?? null}
+            onOpen={openPastRun}
+          />
           <div className="space-y-1.5">
             <Label htmlFor="audition-candidate">
               Your Masterwork&apos;s output
@@ -426,12 +446,30 @@ export function AuditionDialog({
           {run.running && run.stages.length > 0 ? (
             <p className="text-xs text-muted-foreground">{run.stage}</p>
           ) : null}
-          {run.error ? (
-            <p className="text-sm text-destructive">{run.error}</p>
+          {run.running ? (
+            <DurableRunInterruption interruption={run.interruption} />
           ) : null}
+          {/* A failed Audition spent the person's time and, on a three-way
+              run, their money. It stays on screen with the server's own reason
+              and a way out — never a line of red text with no remedy (W37a). */}
+          <DurableRunFailure
+            error={run.error}
+            retry={run.retry}
+            running={run.running}
+          />
 
           {verdict && verdictCopy ? (
             <div className="space-y-3 border-t border-border pt-3">
+              {reopened ? (
+                <p className="text-xs text-muted-foreground">
+                  Reopened from{" "}
+                  {new Date(
+                    history.find((h) => h.id === reopened.runId)?.startedAt ??
+                      Date.now(),
+                  ).toLocaleString()}
+                  . Nothing was re-run and nothing was charged.
+                </p>
+              ) : null}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className={verdictCopy.cls}>
                   {verdictCopy.label}
@@ -459,6 +497,11 @@ export function AuditionDialog({
                   {verdict.verdict_sentence}
                 </p>
               ) : null}
+              {verdict.vanilla_note ? (
+                <p className="text-xs text-muted-foreground">
+                  {verdict.vanilla_note}
+                </p>
+              ) : null}
               {verdict.vanilla_error ? (
                 <p className="text-xs text-muted-foreground">
                   The vanilla comparison could not finish this time; the verdict
@@ -484,39 +527,11 @@ export function AuditionDialog({
                   ) : null}
                 </div>
               ) : null}
-              {verdict.findings.length > 0 ? (
-                <ul className="space-y-1">
-                  {verdict.findings.map((f) => {
-                    const rule = rulesById.get(f.rule_id);
-                    return (
-                      <li
-                        key={f.rule_id}
-                        className="text-xs text-muted-foreground"
-                      >
-                        {rule ? (
-                          <Link
-                            href={`/masterwork/${rulebookId}#${ruleAnchorId(rule.id)}`}
-                            className="font-medium text-primary underline-offset-2 hover:underline"
-                          >
-                            {rule.name}
-                          </Link>
-                        ) : (
-                          <span className="font-medium text-amber-600 dark:text-amber-500">
-                            a rule that is no longer in this Rulebook
-                          </span>
-                        )}{" "}
-                        —{" "}
-                        {f.winner === "candidate"
-                          ? "yours wins"
-                          : f.winner === "reference"
-                            ? "the original wins"
-                            : "even"}
-                        {f.note ? `: ${f.note}` : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
+              <RuleFidelityTable
+                verdict={verdict}
+                rulebookId={rulebookId}
+                rulesById={rulesById}
+              />
               {verdict.gaps.length > 0 ? (
                 <div className="rounded-md border border-primary/30 bg-primary/5 p-2">
                   <p className="text-xs font-medium text-foreground">
@@ -536,7 +551,23 @@ export function AuditionDialog({
                 <p className="text-xs font-medium text-foreground">
                   Your call — is the Masterwork&apos;s output there yet?
                 </p>
-                {expertSaved !== null ? (
+                {reopened ? (
+                  // A reopened verdict is a READ. Its rating already happened
+                  // (or did not); offering the buttons again would write the
+                  // Expert's call onto a run they are only re-reading.
+                  <p className="text-sm text-muted-foreground">
+                    {(() => {
+                      const past = history.find((h) => h.id === reopened.runId);
+                      if (past?.expertScore === null || past === undefined) {
+                        return "You did not rate this one at the time — ratings belong to the run that produced them, so run a new Audition to record yours.";
+                      }
+                      return `You called it "${
+                        EXPERT_CALLS.find((c) => c.score === past.expertScore)
+                          ?.label ?? past.expertScore
+                      }" at the time.`;
+                    })()}
+                  </p>
+                ) : expertSaved !== null ? (
                   <p className="text-sm text-primary">
                     Saved:{" "}
                     {EXPERT_CALLS.find((c) => c.score === expertSaved)?.label ??

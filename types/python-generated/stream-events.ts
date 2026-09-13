@@ -871,6 +871,7 @@ export interface MasterworkAuditionVerdictData {
   vanilla_findings?: AuditionRuleFinding[];
   vanilla_text?: string | null;
   vanilla_model?: string | null;
+  vanilla_note?: string | null;
   vanilla_error?: string | null;
   beat_vanilla_rules?: number | null;
   lost_to_vanilla_rules?: number | null;
@@ -1017,6 +1018,15 @@ export interface MasterworkDumpProgressData {
   rules_added_total?: number;
 }
 
+export interface MasterworkSectionYield {
+  index: number;
+  label?: string;
+  words?: number;
+  chunks?: number;
+  rules?: number;
+  second_pass?: boolean;
+}
+
 export interface MasterworkIngestCompleteData {
   type?: "masterwork_ingest_complete";
   rulebook_id: string;
@@ -1030,6 +1040,7 @@ export interface MasterworkIngestCompleteData {
   followup_seed?: string | null;
   already_distilled?: MasterworkSourceAlreadyDistilled[];
   replaced_rules?: number;
+  sections?: MasterworkSectionYield[];
 }
 
 export interface MasterworkIngestProgressData {
@@ -1041,12 +1052,61 @@ export interface MasterworkIngestProgressData {
   rules_found?: number | null;
 }
 
+export interface MasterworkPairwiseArmFaithfulness {
+  side: string;
+  label: string;
+  rulebook_id: string;
+  verdict: string;
+  reasoning?: string;
+  confidence?: number | null;
+  departures?: MasterworkPairwiseRuleNote[];
+  honored_rule_ids?: string[];
+}
+
+export interface MasterworkPairwiseDifference {
+  aspect: string;
+  one_does?: string;
+  two_does?: string;
+  matters?: string;
+}
+
+export interface MasterworkPairwiseRuleNote {
+  rule_id: string;
+  winner: string;
+  note?: string;
+}
+
+export interface MasterworkPairwiseVerdictData {
+  type?: "masterwork_pairwise_verdict";
+  rulebook_id: string;
+  mode: string;
+  candidate_one_label: string;
+  candidate_two_label: string;
+  preferred?: string | null;
+  preferred_label?: string | null;
+  judge_verdict?: string;
+  judge_confidence?: number | null;
+  summary?: string;
+  differences?: MasterworkPairwiseDifference[];
+  rule_notes?: MasterworkPairwiseRuleNote[];
+  faithfulness?: MasterworkPairwiseArmFaithfulness[];
+  blind_key?: Record<string, string>;
+  blind_key_sealed_at?: string | null;
+  verdict_sentence?: string | null;
+}
+
 export interface MasterworkRunData {
   type?: "masterwork_run";
   run_id: string;
   rulebook_id: string;
   operation: string;
   label?: string | null;
+}
+
+export interface MasterworkRunCancelledData {
+  type?: "masterwork_run_cancelled";
+  run_id: string;
+  error?: Record<string, unknown> | null;
 }
 
 export interface MasterworkRunFailedData {
@@ -1898,6 +1958,8 @@ export type TypedDataPayload =
   | MasterworkDumpProgressData
   | MasterworkIngestCompleteData
   | MasterworkIngestProgressData
+  | MasterworkPairwiseVerdictData
+  | MasterworkRunCancelledData
   | MasterworkRunData
   | MasterworkRunFailedData
   | MasterworkRunSnapshotData

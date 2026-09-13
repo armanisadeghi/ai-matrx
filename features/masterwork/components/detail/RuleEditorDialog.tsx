@@ -23,21 +23,25 @@ import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { nextRuleId } from "../../ruleIds";
+import { findIdenticalRule } from "../../duplicateRules";
 import type { RulebookDraftSnapshot } from "../../agent-context/rulebookSurfaceScope";
 import {
   applyRuleTidy,
   readRuleEditorDraft,
 } from "../../agent-context/ruleImprove";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
-import { RuleFields } from "./RuleFields";
+import { improveFieldsFrom, policyRulePatch, RuleFields } from "./RuleFields";
 import {
   EMPTY_RULE_MOVE_FIELDS,
+  mergeRuleFieldValues,
+  ruleFieldForElementId,
+  ruleFieldValues,
   ruleMoveFieldsFromRule,
   ruleMoveFromFields,
+  type RuleFieldValues,
   type RulebookRule,
   type RulebookSections,
   type RuleMoveFieldValues,
-  type RuleSeverity,
 } from "../../types";
 
 /**
@@ -57,6 +61,13 @@ export interface RuleEditorDialogProps {
   sections: RulebookSections;
   /** Ids already in the Rulebook — new rules must not collide. */
   existingIds: Set<string>;
+  /**
+   * The rules already in the Rulebook, so an ADD that is word-for-word one of
+   * them is caught HERE — before the button is pressed — rather than refused
+   * by the write path after the fact (wall W50). Optional: a host that has no
+   * list still gets the write path's refusal.
+   */
+  existingRules?: readonly RulebookRule[];
   /** Editing an existing rule; undefined = adding a new one. */
   initial?: RulebookRule;
   defaultSection?: string;
@@ -97,6 +108,7 @@ function RuleEditorForm({
   onOpenChange,
   sections,
   existingIds,
+  existingRules,
   initial,
   defaultSection,
   onSave,
@@ -119,6 +131,21 @@ function RuleEditorForm({
   });
   const isNew = !initial;
   const sectionCodes = useMemo(() => Object.keys(sections), [sections]);
+  /**
+   * 🚨 THE ONE FORM STATE (W58). The prose, the classifications AND the
+   * decision shape are ONE `RuleFieldValues` object, derived from the saved
+   * rule by the ONE derivation. They were two parallel sets of state: the
+   * decision fields were missing from the draft snapshot, the draft restore and
+   * the open/reset effect, so a cancelled toggle survived a reopen and a later
+   * Save silently converted or stripped a policy rule (Bugbot, c016fe96).
+   */
+  const savedValues = useMemo(
+    () =>
+      ruleFieldValues(initial, {
+        defaultSection: defaultSection ?? sectionCodes[0] ?? "G",
+      }),
+    [defaultSection, initial, sectionCodes],
+  );
   const wizardId = `masterwork-rule-editor:${rulebookId}:${initial?.id ?? "new"}`;
   const persistedEntry = useAppSelector((state) =>
     selectWizardDraft(wizardId)(state),
@@ -129,8 +156,9 @@ function RuleEditorForm({
         rulebookVersion,
         mode: isNew ? "new" : "edit",
         ruleId: initial?.id ?? null,
+        fallback: savedValues,
       }),
-    [initial?.id, isNew, persistedEntry?.data, rulebookVersion],
+    [initial?.id, isNew, persistedEntry?.data, rulebookVersion, savedValues],
   );
   /**
    * WHAT A REMOUNT STARTS FROM. This form is REMOUNTED, not reopened, on every
@@ -143,30 +171,9 @@ function RuleEditorForm({
    * `wasOpen` starts false so a mount that starts open restores like any other
    * opening.
    */
-  const restoredFields = stagedDraft ?? persistedDraft?.fields;
   const wasOpen = useRef(false);
-  const [name, setName] = useState(restoredFields?.name ?? initial?.name ?? "");
-  const [statement, setStatement] = useState(
-    restoredFields?.statement ?? initial?.statement ?? "",
-  );
-  const [rationale, setRationale] = useState(
-    restoredFields?.rationale ?? initial?.rationale ?? "",
-  );
-  const [detection, setDetection] = useState(
-    restoredFields?.detection ?? initial?.detection ?? "",
-  );
-  const [quote, setQuote] = useState(
-    restoredFields?.quote ?? initial?.quote ?? "",
-  );
-  const [severity, setSeverity] = useState<RuleSeverity>(
-    restoredFields?.severity ?? initial?.severity ?? "major",
-  );
-  const [section, setSection] = useState(
-    restoredFields?.section ??
-      initial?.section ??
-      defaultSection ??
-      sectionCodes[0] ??
-      "G",
+  const [values, setValues] = useState<RuleFieldValues>(() =>
+    mergeRuleFieldValues(savedValues, stagedDraft ?? persistedDraft?.fields),
   );
   /**
    * The policy half (contract §2) — held as plain form strings and converted
@@ -196,25 +203,9 @@ function RuleEditorForm({
     (): RulebookDraftSnapshot => ({
       mode: isNew ? "new" : "edit",
       rule_id: initial?.id ?? null,
-      name,
-      statement,
-      rationale,
-      detection,
-      quote,
-      severity,
-      section,
+      ...values,
     }),
-    [
-      detection,
-      initial?.id,
-      isNew,
-      name,
-      quote,
-      rationale,
-      section,
-      severity,
-      statement,
-    ],
+    [initial?.id, isNew, values],
   );
 
   useEffect(() => {
@@ -244,19 +235,11 @@ function RuleEditorForm({
 
   useEffect(() => {
     if (open && !wasOpen.current) {
-      const restored = stagedDraft ?? persistedDraft?.fields;
-      setName(restored?.name ?? initial?.name ?? "");
-      setStatement(restored?.statement ?? initial?.statement ?? "");
-      setRationale(restored?.rationale ?? initial?.rationale ?? "");
-      setDetection(restored?.detection ?? initial?.detection ?? "");
-      setQuote(restored?.quote ?? initial?.quote ?? "");
-      setSeverity(restored?.severity ?? initial?.severity ?? "major");
-      setSection(
-        restored?.section ??
-          initial?.section ??
-          defaultSection ??
-          sectionCodes[0] ??
-          "G",
+      // Reopening resets the WHOLE form to the saved rule, then lays the staged
+      // or persisted draft over it — one merge, every field, so a cancelled
+      // decision toggle never survives into the next open.
+      setValues(
+        mergeRuleFieldValues(savedValues, stagedDraft ?? persistedDraft?.fields),
       );
       setBeforeTidy(persistedDraft?.beforeTidy ?? null);
       // The restored policy wins over the live rule for the same reason the
@@ -269,14 +252,7 @@ function RuleEditorForm({
       );
     }
     wasOpen.current = open;
-  }, [
-    defaultSection,
-    initial,
-    open,
-    persistedDraft,
-    sectionCodes,
-    stagedDraft,
-  ]);
+  }, [open, persistedDraft, savedValues, stagedDraft]);
 
   const getApplicationScope = useCallback(() => {
     const active = document.activeElement;
@@ -296,17 +272,31 @@ function RuleEditorForm({
     });
   }, [getSurfaceScope]);
 
+  // Which field a replacement lands in is derived from the ONE field set, not
+  // from a hand-kept list of ids — that list had never heard of the decision
+  // fields, so a context-menu replacement inside them threw (Bugbot, c016fe96).
   const replaceActiveField = useCallback((text: string) => {
-    const activeId = document.activeElement?.id;
-    if (activeId === "rule-name") setName(text);
-    else if (activeId === "rule-statement") setStatement(text);
-    else if (activeId === "rule-rationale") setRationale(text);
-    else if (activeId === "rule-detection") setDetection(text);
-    else if (activeId === "rule-quote") setQuote(text);
-    else throw new Error("Focus a Rulebook text field before replacing text.");
+    const field = ruleFieldForElementId(document.activeElement?.id);
+    if (!field) {
+      throw new Error("Focus a Rulebook text field before replacing text.");
+    }
+    setValues((current) => ({ ...current, [field]: text }));
   }, []);
 
+  /**
+   * The rule already in this Rulebook that says exactly this, or null. An
+   * agent re-staging the same draft (W50) is the case that matters: the words
+   * come back identical with a fresh id, so the id check catches nothing.
+   */
+  const alreadyInRulebook = findIdenticalRule(
+    existingRules ?? [],
+    { name: values.name, statement: values.statement },
+    initial?.id,
+  );
+
   const save = async () => {
+    const { name, statement, rationale, detection, quote, severity, section } =
+      values;
     if (!name.trim() || !statement.trim()) {
       toast.error("A rule needs at least a short name and the rule itself.");
       return;
@@ -326,10 +316,16 @@ function RuleEditorForm({
           quote: quote.trim() || undefined,
           severity,
           section,
-          // Absent halves are DELETED, never left behind as a stale policy the
-          // Expert thinks they cleared.
-          precondition: undefined,
-          next_action: undefined,
+          // The flat decision fields (`kind`, `precondition`, `next_action`,
+          // `action_kind`, `cost`, `risk`) through the ONE storage mapping,
+          // which clears each of them when the toggle is off — so an absent
+          // half is DELETED, never left behind as a stale policy the Expert
+          // thinks they cleared.
+          ...policyRulePatch(values),
+          // The structured `move` half, which carries every field the form does
+          // not own (`ask`, `rules_in`, `rules_out`, `information_value`,
+          // `frame`, `order`, and `when.counterparty_state`) off the rule being
+          // edited — never a blind overwrite.
           ...ruleMoveFromFields(policy, initial?.move),
         },
       });
@@ -346,13 +342,7 @@ function RuleEditorForm({
 
   const applyCleanedDraft = useCallback(
     (cleaned: RulebookDraftSnapshot, before: RulebookDraftSnapshot) => {
-      setName(cleaned.name);
-      setStatement(cleaned.statement);
-      setRationale(cleaned.rationale);
-      setDetection(cleaned.detection);
-      setQuote(cleaned.quote);
-      setSeverity(cleaned.severity);
-      setSection(cleaned.section);
+      setValues((current) => mergeRuleFieldValues(current, cleaned));
       setBeforeTidy(before);
     },
     [],
@@ -374,7 +364,7 @@ function RuleEditorForm({
     try {
       const cleaned = await cleanupRun.run<RulebookDraftSnapshot>({
         surfaceKey: "masterwork-rule-tidy",
-        fields: before,
+        fields: improveFieldsFrom(before),
         // Empty guidance IS the tidy shape — see useRuleImproveRun.
         expertInput: "",
         context,
@@ -408,14 +398,7 @@ function RuleEditorForm({
 
   const undoCleanup = () => {
     if (!beforeTidy) return;
-    const restored = beforeTidy;
-    setName(restored.name);
-    setStatement(restored.statement);
-    setRationale(restored.rationale);
-    setDetection(restored.detection);
-    setQuote(restored.quote);
-    setSeverity(restored.severity);
-    setSection(restored.section);
+    setValues((current) => mergeRuleFieldValues(current, beforeTidy));
     setBeforeTidy(null);
     cleanupRun.dismiss();
     toast.success("AI cleanup undone.");
@@ -453,38 +436,14 @@ function RuleEditorForm({
             </DialogDescription>
           </DialogHeader>
           <RuleFields
-            values={{
-              name,
-              statement,
-              rationale,
-              detection,
-              quote,
-              severity,
-              section,
-              ...policy,
-            }}
-            onChange={(patch) => {
-              if (patch.name !== undefined) setName(patch.name);
-              if (patch.statement !== undefined) setStatement(patch.statement);
-              if (patch.rationale !== undefined) setRationale(patch.rationale);
-              if (patch.detection !== undefined) setDetection(patch.detection);
-              if (patch.quote !== undefined) setQuote(patch.quote);
-              if (patch.severity !== undefined) setSeverity(patch.severity);
-              if (patch.section !== undefined) setSection(patch.section);
-              const {
-                name: _n,
-                statement: _s,
-                rationale: _r,
-                detection: _d,
-                quote: _q,
-                severity: _sev,
-                section: _sec,
-                ...policyPatch
-              } = patch;
-              if (Object.keys(policyPatch).length > 0) {
-                setPolicy((current) => ({ ...current, ...policyPatch }));
-              }
-            }}
+            values={values}
+            onChange={(patch) =>
+              setValues((current) => mergeRuleFieldValues(current, patch))
+            }
+            move={policy}
+            onMoveChange={(patch) =>
+              setPolicy((current) => ({ ...current, ...patch }))
+            }
             sections={sections}
           />
           {cleanupRun.hasLiveRun ? (
@@ -495,6 +454,18 @@ function RuleEditorForm({
               onDismiss={cleanupRun.dismiss}
               bodyClassName="max-h-40"
             />
+          ) : null}
+          {alreadyInRulebook ? (
+            <p
+              role="status"
+              className="rounded-lg border border-border bg-muted/40 p-2.5 text-sm text-muted-foreground"
+            >
+              <span className="font-medium text-foreground">
+                &ldquo;{alreadyInRulebook.name}&rdquo;
+              </span>{" "}
+              is already in this Rulebook, word for word. Nothing to add — close
+              this, or change the wording to make it a different rule.
+            </p>
           ) : null}
           <DialogFooter className="gap-2 sm:justify-between">
             <div className="flex flex-wrap gap-2 sm:mr-auto">
@@ -536,12 +507,22 @@ function RuleEditorForm({
               >
                 Cancel
               </Button>
-              <Button
-                onClick={() => void save()}
-                disabled={saving || cleanupRun.isRunning}
-              >
-                {saving ? "Saving…" : isNew ? "Add rule" : "Save rule"}
-              </Button>
+              {/* A CONTROL IS ABSENT OR HONEST (law 4). When this Rulebook
+                  already holds this exact rule, "Add rule" would be refused by
+                  the write path, so it is not offered: the door becomes Close,
+                  and the line above says why. */}
+              {alreadyInRulebook ? (
+                <Button variant="outline" onClick={cancel} disabled={saving}>
+                  Close
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => void save()}
+                  disabled={saving || cleanupRun.isRunning}
+                >
+                  {saving ? "Saving…" : isNew ? "Add rule" : "Save rule"}
+                </Button>
+              )}
             </div>
           </DialogFooter>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { refreshMcpCatalog } from "@/features/agents/services/mcp-connections.service";
@@ -184,12 +185,15 @@ export function computeFreshness(server: McpServerRow): SyncFreshness {
   return { state: "fresh", ageSec, ttlSec, lastError };
 }
 
+/**
+ * The local s/m/h/d cascade was collapsed onto the kit formatter (2026-09-12).
+ * Kept as an ADAPTER: five admin call sites use it, and "never" is a STATE —
+ * a server that has never synced has no age to print. This is an AGE, so it
+ * speaks the short relative-time voice rather than a duration style.
+ */
 export function formatRelativeAge(seconds: number | null): string {
   if (seconds === null) return "never";
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
+  return formatRelativeTime(Date.now() - seconds * 1000, { style: "short" });
 }
 
 export async function refreshServer(serverId: string): Promise<void> {

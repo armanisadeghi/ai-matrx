@@ -11,6 +11,8 @@
  * cache. The ranks themselves live in `seo.*` and are read separately.
  */
 
+import { formatRelativeTime } from "@ai-matrx/kit/format";
+
 export interface SeoCollectionReceipt {
   /** Persisted collection-run id. Internal — never rendered to users. */
   run_id: string;
@@ -46,11 +48,16 @@ export function parseSeoCollectionReceipt(
   };
 }
 
-/** "4m ago" / "2h ago" — compact age for a cached run. */
+/**
+ * "4m ago" / "2h ago" — compact age for a cached run.
+ *
+ * The local s/m/h/d cascade was collapsed onto the kit formatter (2026-09-12).
+ * Kept as an ADAPTER because the receipt renderer calls it and the `null` for
+ * an absent or negative age is a display decision (render no chip), not an
+ * age. This is an AGE, not a duration, so it speaks the relative-time voice —
+ * short and suffixed — rather than a duration style.
+ */
 export function formatCacheAge(seconds: number | null | undefined): string | null {
   if (seconds === null || seconds === undefined || seconds < 0) return null;
-  if (seconds < 60) return `${Math.round(seconds)}s ago`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
-  if (seconds < 86_400) return `${Math.round(seconds / 3600)}h ago`;
-  return `${Math.round(seconds / 86_400)}d ago`;
+  return formatRelativeTime(Date.now() - seconds * 1000, { style: "short" });
 }

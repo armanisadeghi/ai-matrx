@@ -32,7 +32,7 @@ export function SettingsBreadcrumb({
     <nav
       aria-label="Breadcrumb"
       aria-busy={navigationPending}
-      className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+      className="flex min-w-0 items-center gap-1 overflow-x-auto text-xs text-muted-foreground"
     >
       <Crumb
         label={rootLabel}
@@ -44,7 +44,7 @@ export function SettingsBreadcrumb({
         const node = findNodeById(nodes, id);
         if (!node) return null;
         return (
-          <span key={id} className="flex items-center gap-1">
+          <span key={id} className="flex min-w-0 items-center gap-1">
             <Slash className="h-3 w-3 opacity-40" />
             <Crumb
               label={node.label}
@@ -56,9 +56,11 @@ export function SettingsBreadcrumb({
         );
       })}
       {active && (
-        <span className="flex items-center gap-1">
+        <span className="flex min-w-0 items-center gap-1">
           <Slash className="h-3 w-3 opacity-40" />
-          <span className="font-medium text-foreground">{active.label}</span>
+          <span className="truncate font-medium text-foreground">
+            {active.label}
+          </span>
         </span>
       )}
       {navigationPending ? (
@@ -88,7 +90,7 @@ function Crumb({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className="inline-flex min-h-11 items-center transition-colors hover:text-foreground disabled:cursor-wait disabled:opacity-60 sm:min-h-0"
+        className="inline-flex min-h-11 min-w-0 items-center truncate transition-colors hover:text-foreground disabled:cursor-wait disabled:opacity-60 sm:min-h-0"
       >
         {label}
       </button>

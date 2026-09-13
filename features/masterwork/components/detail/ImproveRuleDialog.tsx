@@ -37,7 +37,12 @@ import { applyRuleImprove } from "../../agent-context/ruleImprove";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import type { RulebookRule, RulebookSections } from "../../types";
-import { SEVERITY_LABELS } from "../../types";
+import {
+  isPolicyRule,
+  RULE_ACTION_KIND_LABELS,
+  ruleActionKind,
+  SEVERITY_LABELS,
+} from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface ImproveRuleDialogProps {
@@ -67,6 +72,14 @@ export interface ImproveRuleDialogProps {
 interface ImproveReview {
   original: RulebookRule;
   revised: RulebookRule;
+}
+
+/** "Test · cost medium · risk low" — the decision classifications on one line, blank for an ordinary rule. */
+function policyShapeLabel(rule: RulebookRule): string {
+  if (!isPolicyRule(rule)) return "";
+  const kind = ruleActionKind(rule);
+  const kindLabel = kind ? RULE_ACTION_KIND_LABELS[kind] : "";
+  return `${kindLabel} · cost ${rule.cost ?? "?"} · risk ${rule.risk ?? "?"}`;
 }
 
 function FieldDiff({
@@ -319,6 +332,25 @@ export function ImproveRuleDialog({
                 before={`${SEVERITY_LABELS[review.original.severity]} · ${sectionLabel(review.original.section)}`}
                 after={`${SEVERITY_LABELS[review.revised.severity]} · ${sectionLabel(review.revised.section)}`}
               />
+              {isPolicyRule(review.original) || isPolicyRule(review.revised) ? (
+                <>
+                  <FieldDiff
+                    label="When you know"
+                    before={review.original.precondition}
+                    after={review.revised.precondition}
+                  />
+                  <FieldDiff
+                    label="Do next"
+                    before={review.original.next_action}
+                    after={review.revised.next_action}
+                  />
+                  <FieldDiff
+                    label="Kind of move · cost · risk"
+                    before={policyShapeLabel(review.original)}
+                    after={policyShapeLabel(review.revised)}
+                  />
+                </>
+              ) : null}
               {review.original.quote ? (
                 <p className="text-xs text-muted-foreground">
                   The source quote is evidence and was left untouched.

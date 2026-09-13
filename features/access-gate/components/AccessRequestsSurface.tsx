@@ -53,7 +53,7 @@ import {
 } from "@/features/shell/components/header/navItemClasses";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
   decideAccessRequest,
   listAccessRequests,
@@ -480,7 +480,7 @@ export function AccessRequestsSurface() {
                             className="text-xs tabular-nums text-muted-foreground"
                             title={new Date(row.createdAt).toLocaleString()}
                           >
-                            {relativeTime(row.createdAt)}
+                            {formatRelativeTime(row.createdAt)}
                           </span>
                         )}
                       </div>

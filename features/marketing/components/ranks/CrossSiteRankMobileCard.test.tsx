@@ -41,6 +41,7 @@ const controls: MatrxDataTableMobileCardControls = {
   selected: false,
   selectable: false,
   onSelectedChange: jest.fn(),
+  renderCell: () => null,
   actions: <button type="button">Copy and actions</button>,
 };
 

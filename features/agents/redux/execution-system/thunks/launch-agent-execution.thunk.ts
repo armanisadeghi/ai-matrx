@@ -45,6 +45,10 @@ import {
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import {
+  isBasicWorkMandate,
+  resolvePreferredChatModel,
+} from "@/features/ai-models/preferredChatModel";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
@@ -869,6 +873,15 @@ export const launchAgentExecution = createAsyncThunk<
     // seeding them here would send them back as the explicit layer and beat
     // the very binding they came from.
     const llmOverrides = { ...config?.llmOverrides };
+    // THE PERSON'S OWN DEFAULT MODEL FOR BASIC WORK (Unified Settings
+    // Platform, `agents.model_prefs.chat_default_model`): on the basic-chat
+    // door, when the caller named no model, the ladder-resolved preference IS
+    // the explicit layer — it is the person's (or their organization's)
+    // choice, not the binding's. Null = platform default = no override.
+    if (isBasicWorkMandate(mandateKey) && !llmOverrides.model) {
+      const preferred = await resolvePreferredChatModel();
+      if (preferred) llmOverrides.model = preferred;
+    }
     if (Object.keys(llmOverrides).length > 0) {
       const { setOverrides } =
         await import("../instance-model-overrides/instance-model-overrides.slice");

@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
+  ListFilter,
   ListTodo,
   MessageCircleQuestion,
   MessageSquareWarning,
@@ -71,6 +72,7 @@ import {
   applyManualRuleEdit,
   disagreesWith,
   heldByOneSourceOnly,
+  intakeGoal,
   recurrencePieces,
   ruleState,
   SEVERITY_LABELS,
@@ -82,6 +84,8 @@ import {
   type RuleSeverity,
   type RuleSourceRef,
 } from "../../types";
+import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
+import { useTriageDialogSession } from "../../triage/triageSession";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { RuleMove, ruleMoveIsEmpty } from "./RuleMove";
 import { RuleHistory } from "./RuleHistory";
@@ -105,12 +109,17 @@ import {
   toIngestLane,
   type IngestLane,
 } from "@/features/masterwork/browse/approachLane";
+import {
+  DEFAULT_INGEST_LANE,
+  useIngestDialogSession,
+} from "@/features/masterwork/durable-run/liveIngestLane";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { RulebookVersionHistory } from "./RulebookVersionHistory";
 import { WhatsWhatDialog } from "./WhatsWhatDialog";
 import { ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
+import { DuplicateRuleError, findIdenticalRule } from "../../duplicateRules";
 import {
   RuleFeedbackDialog,
   type RuleFeedbackMode,
@@ -607,8 +616,22 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // there, and only for the platform admins who issue grants.
   const [libraryOrgId, setLibraryOrgId] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
-  const [ingestOpen, setIngestOpen] = useState(false);
+  // The ingest dialog's lane is owned by ONE session primitive
+  // (`durable-run/liveIngestLane.ts` § THE INGEST DIALOG SESSION), declared
+  // below once `rulebook` exists: null means closed, and a latched lane is the
+  // identity of what is on screen.
   const [wizardOpen, setWizardOpen] = useState(false);
+  // W59 + W61: sorting the DRAFT pile by what the Rulebook is FOR.
+  //
+  // 🚨 A TRIAGE SESSION BELONGS TO ONE RULEBOOK (Bugbot, 2026-09-13) — the same
+  // rule the ingest session lives by, and for the same reason: this page
+  // instance is REUSED across Rulebooks. A bare `useState(false)` left the sort
+  // dialog on screen after navigating, holding the purpose typed for the
+  // Rulebook she left. Story + why the dialog is also remounted per Rulebook:
+  // `../../triage/triageSession.ts`.
+  const triage = useTriageDialogSession(rulebook?.id ?? null);
+  const triageOpen = triage.open;
+  const setTriageOpen = triage.setOpen;
   const [feedbackTarget, setFeedbackTarget] = useState<{
     rule: RulebookRule;
     mode: RuleFeedbackMode;
@@ -646,6 +669,29 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpParam = searchParams.get("dump") === "1";
+  /**
+   * 🚨 THE INGEST DIALOG SESSION. One lane, resolved at open time and latched
+   * until close — the remount `key`, the dialog's `initialLane` and
+   * `timeline_open` in the agent surface scope all read it, so they cannot
+   * disagree about what is on screen. While the dialog is CLOSED the lane
+   * follows the live-run probe, which is how a case distillation started before
+   * a refresh is picked back up instead of running invisibly; while it is OPEN
+   * the probe is ignored, so a run settling can never remount the dialog out
+   * from under the summary its owner is reading. Full story + the two Bugbot
+   * defects: `features/masterwork/durable-run/liveIngestLane.ts`.
+   */
+  const ingest = useIngestDialogSession(rulebook?.id ?? null);
+  const ingestOpen = ingest.open;
+  const activeIngestLane = ingest.lane;
+  /**
+   * 🚨 EVERY EXPLICIT DOOR NAMES ITS LANE. "From a source", the assist
+   * `open: "ingest"` chip and the Approach picker all come through here. A door
+   * that opened the dialog without a lane inherited whatever the probe was
+   * holding, and could launch a case distillation from a menu item that says
+   * "From a source".
+   */
+  const openIngestLane = ingest.openOn;
+  const setIngestOpen = ingest.setOpen;
   // The Approach picker's deep link (`platform.approach.intake_query`): choosing
   // the source / exemplar / file Approach must land ON that lane. Before this
   // param existed (2026-08-19) those three enabled Approaches dead-ended on a
@@ -656,16 +702,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // exist — the drift that left `timeline` with a live card and no capture UI.
   const ingestLane = toIngestLane(ingestParam);
   useEffect(() => {
-    if (ingestLane) setIngestOpen(true);
-  }, [ingestLane]);
+    if (ingestLane) openIngestLane(ingestLane);
+  }, [ingestLane, openIngestLane]);
   // THE APPROACH PICKER (2026-08-20). Every lane below is opened by a query
   // param read ONCE at mount, so the in-page picker cannot reach them by
   // changing the URL. Each param therefore gets a state twin the picker sets;
   // the param stays the deep-link entry and the twin is the in-page one, and
   // `launchApproach` is the ONE place that maps a registry row to a lane.
   const [approachPickerOpen, setApproachPickerOpen] = useState(false);
-  const [requestedIngestLane, setRequestedIngestLane] =
-    useState<IngestLane | null>(null);
   const [dumpRequested, setDumpRequested] = useState(false);
   const [chatImportTab, setChatImportTab] = useState<"upload" | "matrx">(
     searchParams.get("tab") === "matrx" ? "matrx" : "upload",
@@ -729,8 +773,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           setInterviewOpen(true);
           return;
         case "ingest":
-          setRequestedIngestLane(lane.lane);
-          setIngestOpen(true);
+          openIngestLane(lane.lane);
           return;
         case "body_of_work":
           setCorpusOpen(true);
@@ -753,7 +796,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           return;
       }
     },
-    [router],
+    [router, openIngestLane],
   );
 
   // Composer seed for the Scout panel — set when a recording distillation
@@ -799,7 +842,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     void fetchAssistLaunch(assistKey).then((launch) => {
       if (cancelled || !launch) return;
       if (launch.open === "ingest") {
-        setIngestOpen(true);
+        // The chip says "add rules from a source" — it opens THAT lane, never
+        // whatever lane a still-held rejoin probe happens to be naming.
+        openIngestLane(DEFAULT_INGEST_LANE);
         return;
       }
       if (launch.open === "approaches") {
@@ -853,7 +898,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [assistKey, launchApproach, openCheckup, rulebookId]);
+  }, [assistKey, launchApproach, openCheckup, openIngestLane, rulebookId]);
   const userId = useAppSelector(selectUserId);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const openAddRule = useOpenAddRuleWindow();
@@ -1084,6 +1129,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         editor_open: editorOpen,
         interview_open: interviewOpen,
         ingest_open: ingestOpen,
+        // The timeline lane is a mode of this dialog, so it is live exactly
+        // when the session on screen was opened on that lane.
+        timeline_open: ingest.timelineOpen,
+        triage_open: triageOpen,
         corpus_open: corpusOpen,
         chat_import_open: chatImportOpen,
         build_open: buildOpen,
@@ -1114,6 +1163,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     search,
     visibleRules,
     wizardOpen,
+    ingest.timelineOpen,
+    triageOpen,
   ]);
 
   const getPageApplicationScope = useCallback(
@@ -1201,7 +1252,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   id: "ingest-source",
                   label: "From a source",
                   icon: FileUp,
-                  onSelect: () => setIngestOpen(true),
+                  onSelect: () => openIngestLane(DEFAULT_INGEST_LANE),
                 },
               ] satisfies ContextMenuExtraSection["items"])
             : []),
@@ -1286,6 +1337,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const saveRule = useCallback(
     async ({ rule, isNew }: RuleEditorResult) => {
       if (!rulebook) return;
+      // 🚨 THE SAME REFUSAL AS THE CAS APPEND (wall W50). This page saves the
+      // WHOLE rules list rather than going through `upsertRuleWithRetry`, so
+      // the guard has to stand here too — otherwise a re-staged draft that the
+      // Add-rule window would refuse lands silently from the editor dialog.
+      if (isNew) {
+        const identical = findIdenticalRule(rulebook.rules, rule);
+        if (identical) throw new DuplicateRuleError(identical);
+      }
       const prev = isNew
         ? undefined
         : rulebook.rules.find((r) => r.id === rule.id);
@@ -1858,14 +1917,45 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               Bulk approval now lives below the rules, on an explicit selection
               the Expert can see. Nothing replaces it here. */}
               {draftCount > 0 && canEdit ? (
-                <Button
-                  size="sm"
-                  className="h-8 w-full min-w-0 justify-center px-2 text-xs"
-                  onClick={() => setWizardOpen(true)}
-                >
-                  <ListTodo className="h-3.5 w-3.5" />
-                  Review
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                    onClick={() => setWizardOpen(true)}
+                  >
+                    <ListTodo className="h-3.5 w-3.5" />
+                    Review
+                  </Button>
+                  {/* W59 + W61, 2026-09-12. A distiller reads the page in
+                      front of it, never the Rulebook's purpose, so one workbook
+                      landed 336 drafts about infection control on a Rulebook
+                      about deciding the next test — and the only doors were
+                      Approve-all or 336 clicks. This is the third door. */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                        onClick={() => setTriageOpen(true)}
+                      >
+                        <ListFilter className="h-3.5 w-3.5" />
+                        Sort the drafts
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>
+                        Say what this Rulebook is for, in your own words, and we
+                        read all {draftCount} drafts against it — keeping what
+                        serves it, setting aside what does not, and rewriting
+                        the ones that are right but written too narrowly.
+                      </p>
+                      <p className="mt-1 text-[11px] opacity-70">
+                        Agent: masterwork.draft_triage
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
               ) : null}
             </div>
             {draftCount > 0 && canEdit && approvedCount === 0 ? (
@@ -2307,6 +2397,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             onOpenChange={handleEditorOpenChange}
             sections={rulebook.sections}
             existingIds={existingIds}
+            existingRules={rulebook.rules}
             initial={editing}
             defaultSection={editorSection}
             onSave={saveRule}
@@ -2352,6 +2443,17 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 throw err;
               }
             }}
+          />
+          <TriageDraftsDialog
+            // Her purpose, her preview choice and the run being rejoined all
+            // belong to THIS Rulebook — see `triageSession.ts`.
+            key={rulebook.id}
+            open={triageOpen}
+            onOpenChange={setTriageOpen}
+            rulebookId={rulebook.id}
+            draftCount={draftCount}
+            intakeGoal={intakeGoal(rulebook)}
+            onApplied={() => void refreshWorkspace()}
           />
           <RuleReviewWizard
             open={wizardOpen}
@@ -2417,12 +2519,20 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           {/* Keyed on the lane for the same reason as the chat-import dialog:
               IngestSourceDialog reads `initialLane` into state at MOUNT, so
               the in-page Approach picker must remount it to land the Expert on
-              the exemplar/file lane rather than the instructional default. */}
+              the exemplar/file lane rather than the instructional default.
+
+              🚨 And it does not mount until the live-run probe has ANSWERED
+              (`ingest.ready`). The surface a mount watches is chosen by its
+              lane, so mounting one tick early — against a probe that has not
+              read storage yet — watches the ingest pointer, and a rejoin on it
+              latches `source` over a case that is actually the live run. One
+              tick of nothing on a dialog that is closed anyway is the price. */}
+          {ingest.ready ? (
           <IngestSourceDialog
-            key={`ingest-${requestedIngestLane ?? ingestLane ?? "default"}`}
+            key={`ingest-${activeIngestLane ?? "default"}`}
             open={ingestOpen}
             onOpenChange={setIngestOpen}
-            initialLane={requestedIngestLane ?? ingestLane}
+            initialLane={activeIngestLane}
             rulebook={rulebook}
             onIngested={() => {
               void getRulebook(rulebook.id)
@@ -2436,6 +2546,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewOpen(true);
             }}
           />
+          ) : null}
           <ApproachPickerDialog
             open={approachPickerOpen}
             onOpenChange={setApproachPickerOpen}
