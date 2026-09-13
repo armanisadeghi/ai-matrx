@@ -121,9 +121,14 @@ describe("FullScreenOverlay pending settlement boundary", () => {
     const input = document.querySelector<HTMLTextAreaElement>("[aria-label='Mobile draft']");
     expect(input?.closest("[aria-busy='true']")?.hasAttribute("inert")).toBe(true);
     const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("button"));
+    expect(buttons.find((button) => button.getAttribute("aria-label") === "Back")?.disabled).toBe(true);
     expect(buttons.find((button) => button.getAttribute("aria-label") === "Cancel")?.disabled).toBe(true);
     expect(buttons.find((button) => button.getAttribute("aria-label") === "Save")?.disabled).toBe(true);
-    act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    act(() => {
+      buttons.find((button) => button.getAttribute("aria-label") === "Back")?.click();
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      document.querySelector<HTMLElement>("[data-slot='drawer-overlay']")?.click();
+    });
     expect(onClose).not.toHaveBeenCalled();
     expect(onCancel).not.toHaveBeenCalled();
     expect(onSave).not.toHaveBeenCalled();
