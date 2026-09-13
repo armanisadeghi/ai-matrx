@@ -374,9 +374,9 @@ export const EMPTY_ASK_RESPONSE: AskUserResponse = {
 /**
  * Batched response — emitted when the `user` tool was called with
  * `questions: SingleQuestion[]`. Each entry in `answers` matches the
- * input question by index. On the first cancel/timeout, the batch
- * short-circuits and the remaining entries are empty envelopes with
- * `cancelled` / `timed_out` set.
+ * input question by index. A question the user skipped is an empty envelope
+ * with `cancelled: true` — the others still carry real answers. The
+ * batch-level `cancelled` is true only when EVERY entry was skipped.
  */
 export interface BatchedAskUserResponse {
   answers: AskUserResponse[];

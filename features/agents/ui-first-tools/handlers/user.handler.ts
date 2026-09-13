@@ -5,10 +5,10 @@
  *   - Single-question: top-level `type` + question/options/etc. Resolves
  *     to a single `AskUserResponse` envelope.
  *   - Batched: `questions: [SingleQuestion, ...]` (1–4). Renders one card
- *     per question in sequence, returns `BatchedAskUserResponse`. Cancel
- *     or timeout on any card short-circuits the rest (remaining entries
- *     come back as empty envelopes with `cancelled`/`timed_out` set so
- *     the model sees which one ended the batch).
+ *     as one wizard, returns `BatchedAskUserResponse`. Any question may be
+ *     skipped on its own (`cancelled: true` on that entry alone); the batch
+ *     is `cancelled` only when every entry is. Timeout on any card sets
+ *     `timed_out` on the batch.
  *
  * Flow per question:
  *   1. Normalize options (string → {label}).
@@ -169,7 +169,11 @@ async function runBatched(
     ),
   );
 
-  const cancelled = answers.some((a) => a.cancelled);
+  // A skipped question is `cancelled` on its own envelope; the BATCH is
+  // cancelled only when the user skipped every one (dismissed the batch). One
+  // skip among real answers must never read as "the user cancelled" — the
+  // user is never forced to answer, so partial answers are the normal case.
+  const cancelled = answers.every((a) => a.cancelled);
   const timed_out = answers.some((a) => a.timed_out);
   const wrote_instead = answers.some((a) => a.wrote_instead);
   // The freeform note rides on the final card; fall back to the last non-empty.

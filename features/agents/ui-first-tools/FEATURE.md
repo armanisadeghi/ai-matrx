@@ -96,10 +96,18 @@ This feature exists because:
   question's body is mounted at once (only the active one visible, so selections /
   typed text survive navigation), Back/Next appear whenever a prior/next question
   exists, and progress dots jump + show answered state. Answering records a DRAFT
-  (auto-advances); nothing reaches the agent until all questions are answered and
-  the user hits Submit. Skip cancels the whole batch; "Write message instead"
-  resolves it as a freeform reply. Reuses `AskBody` / `presentation` /
-  `WriteInsteadBody` (exported from `<AskCard>`).
+  (auto-advances). **THE NEVER-FORCED LAW (Arman, 2026-09-12): the user is never
+  forced to answer anything.** Every question's primary button is always live —
+  "Next" with an answer, "Skip" without (that one question goes out as
+  `cancelled: true`) — and on the LAST question the same button reads "Send
+  answers" / "Skip & send" and sends the whole batch: **the last Next IS the
+  submit; there is no extra Submit click.** Questions never reached go out as
+  skipped. The × dismiss skips the whole batch; "Write message instead" resolves
+  it as a freeform reply. Reuses `AskBody` / `presentation` / `WriteInsteadBody`
+  (exported from `<AskCard>`). Every body also publishes its in-progress answer
+  to `redux/ask-draft-registry.ts` and re-seeds from it on mount, so a composer
+  submit carries the card answers and a remount (desktop↔mobile flip, route
+  re-entry) never loses what the user typed or picked.
 - `<ApprovalCard ask={ask} />` (`ui/ApprovalCard.tsx`) — the agent-edit
   approval surface. Renders an `ApprovalChange` (`ui/approval-types.ts`): a
   compact one-line "{Verb} · {headline}" header, optional on-demand Details,
@@ -250,15 +258,19 @@ server-side; the same Realtime subscription updates the panel with no delegation
    `batchIndex`/`batchTotal`) and registers all resolvers, then awaits every
    promise via `Promise.all`. (No sequential short-circuit — all cards coexist.)
 2. `<PendingAsksZone>` groups them by `batchId` → one `<BatchAskCard>` wizard.
-3. The user navigates freely (Back/Next/dots), fills each question (drafts held
-   locally), and reviews before sending. Nothing resolves yet.
-4. On Submit, the wizard resolves every `callId` with its draft (the batch note
-   rides on the final answer); Skip cancels all; Write-instead resolves all with
-   `wrote_instead`. Each per-question timeout still resolves its own card.
+3. The user navigates freely (Back/Next/dots), fills or skips each question
+   (drafts held locally + mirrored to `ask-draft-registry`). Nothing resolves yet.
+4. The last question's primary button ("Send answers" / "Skip & send") resolves
+   every `callId` with its recorded answer, else its live body draft, else
+   `{cancelled: true}` (the batch note rides on the final answer); × skips all;
+   Write-instead resolves all with `wrote_instead`. Each per-question timeout
+   still resolves its own card. A submit from the chat composer resolves the same
+   way through `resolvePendingAsksWithInput` (drafts kept, composer text as the
+   note / as freeform for undrafted questions).
 5. `runBatched` computes the batch flags from the answers and returns
    `{answers, cancelled, timed_out, wrote_instead, additional_instructions}` →
-   dispatcher POSTs → stream resumes. **Agent-facing result is unchanged from the
-   old sequential model** — only the UX (free navigation) changed.
+   dispatcher POSTs → stream resumes. Per-entry `cancelled` marks a skipped
+   question; the batch-level `cancelled` is true only when EVERY entry was skipped.
 
 ### Flow 3 — Agent calls `update_plan({title, steps})`
 
@@ -314,9 +326,13 @@ server-side; the same Realtime subscription updates the panel with no delegation
   or type into the composer. If they hit Send WHILE asks are still pending,
   `smartExecute` does NOT start a colliding new turn (which would dangle the
   outstanding `delegated` tool calls — see `docs/CLIENT_TOOL_SUSPEND_RESUME.md`).
-  Instead `resolvePendingAsksWithInput` delivers the composer text as the answer
-  to every pending ask (write-instead freeform when text is present; cancel — an
-  empty, non-error result — when empty), which resolves the tool calls and lets
+  Instead `resolvePendingAsksWithInput` resolves every pending ask: an ask the
+  user already answered on its card (a draft in `ask-draft-registry`) goes out
+  with THAT answer, the composer text riding as `additional_instructions` on the
+  last drafted ask per group; an undrafted ask goes out as write-instead freeform
+  when text is present, or cancel — an empty, non-error result — when empty.
+  Card answers are never dropped by a composer submit (guard:
+  `redux/__tests__/resolve-asks-with-input.test.ts`). That resolves the tool calls and lets
   the normal `continuation_needed → resumeInstance` flow continue the
   conversation with the user's message embedded. For `approval`-kind asks a
   freeform envelope maps to "instructions", so a stray Send never silently
@@ -364,6 +380,28 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-09-12` — **Nobody is ever forced to answer; the last Next sends; composer
+  submit keeps card answers.** Arman reported three chat-route defects. (1) Card
+  bodies rendered a DISABLED Send until content existed and the batch wizard
+  disabled Submit until every question was answered — every body now shows one
+  always-live primary button (`PrimaryAction`: "Send"/"Next" with content, "Skip"
+  without → `{cancelled: true}` for that question only); Yes/No, Approve/Reject
+  and notify rows carry a Skip; nothing in the family is ever `disabled`. (2) The
+  batch wizard demanded a separate "Submit N answers" click after the last Next —
+  removed; the last question's button reads "Send answers" / "Skip & send" and
+  `recordAnswer` submits the batch on the final index. `runBatched`'s batch-level
+  `cancelled` moved from `some` to `every` so one skipped question no longer
+  reads as a cancelled batch (per-entry `cancelled` still marks the skip). (3) A
+  submit from the chat composer resolved every pending ask as bare freeform,
+  discarding answers already given on the cards — new `redux/ask-draft-registry.ts`
+  (bodies publish via `onDraft`, re-seed on mount, cleared by
+  `resolveAskByCallId`); `resolvePendingAsksWithInput` sends drafts as answers
+  with the composer text as the note. Guard proven failing-then-passing on the
+  old thunk. Verified live on `/chat` with a real batched `user` call: skipped Q1
+  alone, Yes on Q3 sent with no extra click, and a composer submit delivered
+  "blue" + "Cat" + freeform for the untouched question. Sibling: matrx-extend's
+  sequential batch UI still has disabled Sends and `cancelled = any` — noted in
+  the wire contract.
 - `2026-09-12` — **The approval header names WHO is proposing the change.**
   `ApprovalChange` gains an optional `actor` field; `dispatch-surface-write.thunk.ts`
   passes `proposal.actorLabel` through instead of burying it only in the Details
