@@ -116,6 +116,13 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Files
 
+- `sourceSections.ts` — WHAT EACH PART OF A SOURCE PRODUCED, read off the live rules
+  (`source_ref.section_index` / `section_label` / `section_words`, stamped by aidream's
+  `services/distillation/source_structure.py`). Mirrors the server's source identities
+  (`urlSourceKey` / `entitySourceKey`) and its thin verdict — a part far below the SOURCE'S OWN
+  median, never below a number somebody picked. `RulebookSourcesPanel` renders the rows and the
+  per-part "Read again", which posts `only_section` + `redistill: "replace"` to the dump lane so
+  only that part's drafts are replaced. Guard: `__tests__/source-section-yields.test.ts`.
 - `service.ts` — detail reads/writes (getRulebook, saveRules, createDraftRulebook,
   updateRulebookMeta, softDeleteRulebook, listMasterworksForRulebook). Direct supabase-js,
   RLS live, THE VIEW LAW respected.
@@ -184,6 +191,17 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-12` — **A thin chapter of a source is visible, and repairable, on the Sources panel.**
+  A 31,311-word book read into a Rulebook as six equal chunks gave 116 rules — flat, whatever the
+  chunk held — and its most prescriptive chapter contributed 3; pasted alone that chapter gave 89.
+  aidream now chunks a source by its own chapters and stamps every rule with the part it came
+  from, so the panel shows one row per part (words, rules, a "thin" mark) under each source, read
+  from the live rules rather than from the run that happened to be watched. "Read again" on a thin
+  part re-distils THAT part at half the width and replaces only its own unapproved drafts —
+  an expensive click, so it names what it spends and what it replaces first. New:
+  `sourceSections.ts`, `SectionYields` in `components/detail/RulebookSourcesPanel.tsx`, the section
+  fields on `RuleSourceRef`. Guard: `__tests__/source-section-yields.test.ts`.
 
 - `2026-09-12` — **A signed-out Masterwork tab no longer mounts any private reader as `anon`.**
   The Rulebook `[id]` layout protected only one dynamic branch: sibling
