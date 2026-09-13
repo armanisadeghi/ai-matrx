@@ -16,6 +16,9 @@
 // stamp that ties a recording to THIS question (a `RecordingOriginProvider`
 // around the box) and the fact that an answer came from the mic rather than the
 // keyboard (`onTranscriptionComplete`), which becomes `answer_source='voice'`.
+// Starting the mic is the field's own job too: "Answer by voice" (and the V
+// key) call ProTextarea's `startDictation()` handle on the forwarded ref, so
+// the keyed recording and the clicked one are the same recording.
 //
 // EVERY CONTROL WORKS OR IS ABSENT. There is no disabled-looking button here:
 // a control that cannot do its job is not rendered, and the reason is printed
