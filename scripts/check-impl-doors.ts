@@ -37,6 +37,19 @@
  *       is not also declared in `platform.client_callable_door`. A grandfather
  *       row is "the guard stands down here" — it belongs only on a function
  *       somebody has actually declared safe for clients.
+ *   D2b No `platform.definer_client_grant_grandfather` row names a function that
+ *       ALSO has a `platform.client_callable_door` row. D2 counts only rows with
+ *       NO door, so a row beside a declared door was invisible to it — measured,
+ *       not guessed (B-63 inserted one for `public.update_scope` and the gate
+ *       stayed green). ABSOLUTE: DD-169 batch 2 deleted the 33 that existed.
+ *   D2c Every surviving grandfather row outside `pgsodium` names its REASON and
+ *       its OWNER in `scripts/impl-doors/grandfather-allowlist.json`. A count
+ *       baseline caps how many stand-downs exist; it says nothing about WHICH, so
+ *       the population could rotate underneath it. ABSOLUTE.
+ *   D2d Every allowlist entry still matches a live grandfather row. A stale entry
+ *       pre-authorizes a stand-down that has not happened — that is how a deleted
+ *       row comes back unnoticed. ABSOLUTE; the file may only shrink.
+ *
  *   D3  `anon` holds NO table privilege on `workbench.schema_templates`. That
  *       table has RLS OFF, zero policies and no owner column, so a table GRANT
  *       to `anon` IS the access decision: with `workbench` in `pgrst.db_schemas`
@@ -199,6 +212,72 @@ const UNDECLARED_GRANDFATHER_QUERY = `
 interface GrandfatherRow {
   fn: string;
   args: string;
+}
+
+// ─── D2b/D2c/D2d: the grandfather table names its reasons, or it is empty ────
+//
+// DD-169 batch 2 (B-64, 2026-09-13). D2 above counts grandfather rows whose
+// function has NO door row, against a shrink-only baseline. B-63 reported the
+// hole that leaves, and it was measured, not guessed: a grandfather row on a
+// function that ALSO has a door row is invisible to D2, so one can be inserted
+// with the gate staying green (proven by inserting one for public.update_scope).
+// It is redundant rather than dangerous — the door row is the decision either
+// way — but a rule the guard cannot see is not a rule.
+//
+// D2b closes it as an ABSOLUTE: no grandfather row may duplicate a declared
+// door. B-64 deleted the 33 that existed, so the only correct number is zero.
+const DUPE_DOOR_GRANDFATHER_QUERY = `
+  select g.schema_name || '.' || g.function_name as fn,
+         g.identity_args as args
+  from platform.definer_client_grant_grandfather g
+  where exists (
+    select 1 from platform.client_callable_door d
+    where d.schema_name = g.schema_name
+      and d.function_name = g.function_name
+      and d.identity_args = g.identity_args
+  )
+  order by 1, 2
+`;
+
+// D2c/D2d are the other half. A count baseline says "no more than this many
+// stand-downs"; it says nothing about WHICH, so the population could rotate
+// underneath it. Every surviving row outside `pgsodium` must therefore appear in
+// `scripts/impl-doors/grandfather-allowlist.json` WITH a reason and an owner
+// (D2c), and every allowlist entry must still correspond to a live row (D2d) so
+// the file can never pre-authorize a stand-down that has not happened yet.
+// pgsodium is excluded for the same reason it is excluded everywhere else: the
+// extension owns those functions, this role cannot revoke on them, and the
+// schema is absent from `pgrst.db_schemas`.
+const ALL_GRANDFATHER_QUERY = `
+  select g.schema_name || '.' || g.function_name as fn,
+         g.identity_args as args
+  from platform.definer_client_grant_grandfather g
+  where g.schema_name <> 'pgsodium'
+  order by 1, 2
+`;
+
+interface AllowlistEntry {
+  fn: string;
+  args: string;
+  reason: string;
+  owner: string;
+}
+
+interface GrandfatherAllowlist {
+  why: string;
+  generatedAt: string;
+  generatedBy: string;
+  entries: AllowlistEntry[];
+}
+
+function loadGrandfatherAllowlist(): GrandfatherAllowlist | null {
+  const p = resolve(ROOT, "scripts/impl-doors/grandfather-allowlist.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as GrandfatherAllowlist;
+  } catch {
+    return null;
+  }
 }
 
 // ─── D3: anon has nothing on workbench.schema_templates ──────────────────────
@@ -537,6 +616,8 @@ async function main(): Promise<number> {
 
   let openImpls: OpenImplRow[];
   let undeclared: GrandfatherRow[];
+  let dupeDoorGrandfathers: GrandfatherRow[];
+  let allGrandfathers: GrandfatherRow[];
   let anonPrivs: PrivRow[];
   let clientWrites: ClientWriteRow[];
   let anonDefiners: AnonDefinerRow[];
@@ -547,6 +628,14 @@ async function main(): Promise<number> {
     undeclared = await q<GrandfatherRow>(
       UNDECLARED_GRANDFATHER_QUERY,
       "D2 undeclared grandfather rows",
+    );
+    dupeDoorGrandfathers = await q<GrandfatherRow>(
+      DUPE_DOOR_GRANDFATHER_QUERY,
+      "D2b grandfather rows duplicating a declared door",
+    );
+    allGrandfathers = await q<GrandfatherRow>(
+      ALL_GRANDFATHER_QUERY,
+      "D2c grandfather rows outside pgsodium",
     );
     anonPrivs = await q<PrivRow>(
       ANON_TEMPLATE_GRANTS_QUERY,
@@ -648,6 +737,116 @@ async function main(): Promise<number> {
     if (shrank > 0) {
       console.log(
         `${C.dim}       Lower the baseline to ${n} in scripts/impl-doors/grandfather-baseline.json so the win is held.${C.reset}`,
+      );
+    }
+  }
+
+  // ── D2b: no grandfather row duplicates a declared door (ABSOLUTE) ─────────
+  if (dupeDoorGrandfathers.length === 0) {
+    console.log(
+      `${TAG.ok}D2b no grandfather row duplicates a declared client_callable_door`,
+    );
+  } else {
+    findings += dupeDoorGrandfathers.length;
+    console.log(
+      `${TAG.fail}D2b ${dupeDoorGrandfathers.length} grandfather row(s) duplicate a DECLARED door`,
+    );
+    for (const r of dupeDoorGrandfathers.slice(0, 20)) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       The door row IS the decision. A grandfather row beside it is a second, silent${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       one that D2 cannot see (it counts only rows with NO door), so it is the one way${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       a stand-down can be re-inserted past this gate. Fix: delete the grandfather row.${C.reset}`,
+    );
+  }
+
+  // ── D2c / D2d: every surviving grandfather row names a reason and an owner ─
+  const gfAllow = loadGrandfatherAllowlist();
+  if (!gfAllow) {
+    findings += 1;
+    console.log(
+      `${TAG.fail}D2c scripts/impl-doors/grandfather-allowlist.json is missing or unreadable — UNMEASURED`,
+    );
+    console.log(
+      `${C.dim}       Every grandfather row outside pgsodium must name its reason and owner there.${C.reset}`,
+    );
+  } else {
+    const keyOf = (fn: string, args: string) => `${fn}(${args})`;
+    const allowed = new Map(
+      gfAllow.entries.map((e) => [keyOf(e.fn, e.args), e]),
+    );
+    const live = new Set(
+      allGrandfathers.map((r) => keyOf(r.fn, r.args)),
+    );
+
+    const undeclaredRows = allGrandfathers.filter(
+      (r) => !allowed.has(keyOf(r.fn, r.args)),
+    );
+    const unnamed = gfAllow.entries.filter(
+      (e) =>
+        live.has(keyOf(e.fn, e.args)) &&
+        (!e.reason?.trim() || !e.owner?.trim()),
+    );
+    const stale = gfAllow.entries.filter((e) => !live.has(keyOf(e.fn, e.args)));
+
+    if (undeclaredRows.length === 0 && unnamed.length === 0) {
+      console.log(
+        `${TAG.ok}D2c all ${allGrandfathers.length} grandfather row(s) outside pgsodium name a reason and an owner`,
+      );
+    } else {
+      findings += undeclaredRows.length + unnamed.length;
+      if (undeclaredRows.length > 0) {
+        console.log(
+          `${TAG.fail}D2c ${undeclaredRows.length} grandfather row(s) are in NO declared allowlist entry`,
+        );
+        for (const r of undeclaredRows.slice(0, 20)) {
+          console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+        }
+        console.log(
+          `${C.dim}       A grandfather row is "the §6d-4 guard stands down here". Somebody must write${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       down WHY and WHO owns the decision in scripts/impl-doors/grandfather-allowlist.json,${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       or delete the row. Never add an entry just to clear this line.${C.reset}`,
+        );
+      }
+      if (unnamed.length > 0) {
+        console.log(
+          `${TAG.fail}D2c ${unnamed.length} allowlist entr(y/ies) carry an empty reason or owner`,
+        );
+        for (const e of unnamed.slice(0, 20)) {
+          console.log(`  ${C.white}- ${e.fn}(${e.args})${C.reset}`);
+        }
+      }
+    }
+
+    if (stale.length === 0) {
+      console.log(
+        `${TAG.ok}D2d no stale allowlist entries ${C.dim}(${gfAllow.entries.length} entries, all still live — the file may only shrink)${C.reset}`,
+      );
+    } else {
+      findings += stale.length;
+      console.log(
+        `${TAG.fail}D2d ${stale.length} allowlist entr(y/ies) name a grandfather row that no longer exists`,
+      );
+      for (const e of stale.slice(0, 20)) {
+        console.log(`  ${C.white}- ${e.fn}(${e.args})${C.reset}`);
+      }
+      console.log(
+        `${C.dim}       A stale entry pre-authorizes a stand-down that has not happened, which is how${C.reset}`,
+      );
+      console.log(
+        `${C.dim}       a deleted grandfather row comes back unnoticed. Delete the entry — the win is${C.reset}`,
+      );
+      console.log(
+        `${C.dim}       held by removing it, never by leaving room for the row to return.${C.reset}`,
       );
     }
   }
