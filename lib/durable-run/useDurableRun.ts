@@ -143,7 +143,13 @@ export const DEFAULT_EXPECTED_MS = 60_000;
 export function describeExpected(ms: number): string {
   if (ms < 45_000) return "under a minute";
   if (ms < 90_000) return "about a minute";
-  return `about ${formatDurationMs(ms, { style: "coarse" })}`;
+  // THE PROSE VOICE, ROUNDED TO NEAREST (kit 0.13.4). This string lands inside
+  // a sentence a person reads, so "about 3 min" — `coarse`, a clipped unit —
+  // was the wrong register; and `long`'s default floor turns a 157-second
+  // median into "about 2 minutes", the too-small promise this whole function
+  // exists to stop. An estimate rounds to nearest; elapsed time and countdowns
+  // (`formatElapsed` below) keep the floor.
+  return `about ${formatDurationMs(ms, { style: "long", round: "nearest" })}`;
 }
 
 /** "2m 57s" / "48s" — the honest clock a stuck-looking screen owes the reader. */

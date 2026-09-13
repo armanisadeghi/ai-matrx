@@ -30,7 +30,7 @@ function exactInt(value: unknown, min: number, max: number): boolean {
 }
 function uuid(value: unknown): value is string { return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value); }
 function timestamp(value: unknown): boolean { return typeof value === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(value); }
-function depthOk(value: unknown, maxDepth: number): boolean {
+export function jsonDepthOk(value: unknown, maxDepth: number): boolean {
   const stack: Array<[unknown, number]> = [[value, 1]];
   while (stack.length) {
     const [node, depth] = stack.pop()!;
@@ -63,7 +63,7 @@ function itemRecord(item: JsonObject, ordinal: number, maxCellBytes: number, max
   if (item.fields != null && (!Array.isArray(item.fields) || !item.fields.every((field) => { const row = object(field); return !!row && only(row, fieldKeys) && exactInt(row.type, 0, 3) && (row.name === undefined || stringOrNull(row.name)) && (row.value === undefined || stringOrNull(row.value)) && (row.linkedId === undefined || row.linkedId === null || exactInt(row.linkedId, 0, 4294967295)); }))) return invalid(title, ordinal, "The custom fields are invalid.");
   if (item.passwordHistory != null && (!Array.isArray(item.passwordHistory) || !item.passwordHistory.every((entry) => { const row = object(entry); return !!row && Object.keys(row).length === 2 && typeof row.password === "string" && timestamp(row.lastUsedDate); }))) return invalid(title, ordinal, "The password history is invalid.");
   if (item.attachments !== undefined && item.attachments !== null && !Array.isArray(item.attachments)) return invalid(title, ordinal, "The attachment fields are invalid.");
-  if (!depthOk(item, maxJsonDepth) || !allStringsWithin(item, maxCellBytes)) return invalid(title, ordinal, "The item exceeds the import limits.");
+  if (!jsonDepthOk(item, maxJsonDepth) || !allStringsWithin(item, maxCellBytes)) return invalid(title, ordinal, "The item exceeds the import limits.");
   const type = Number((item.type as LosslessNumber).value);
   const matching = type === 1 ? "login" : type === 2 ? "secureNote" : type === 3 ? "card" : type === 4 ? "identity" : "sshKey";
   for (const component of ["login", "secureNote", "card", "identity", "sshKey"] as const) if (component !== matching && item[component] != null) return unsupported(title, ordinal, "The item has an unclassified component.");
@@ -88,7 +88,7 @@ export function parseBitwardenExport(text: string, limits: Pick<CsvImportLimits,
   if (bytes(text) > limits.maxFileBytes) throw new Error("The file exceeds this organization’s import size limit.");
   // Our pinned lossless-json patch rejects every duplicate key, including equal values; keep its details out of UI.
   let root: JsonObject; try { root = object(parse(text)) ?? {}; } catch { throw new Error("The JSON export has duplicate keys or could not be read safely."); }
-  if (!depthOk(root, limits.maxJsonDepth) || !only(root, rootKeys) || root.encrypted !== false || !Array.isArray(root.folders) || !Array.isArray(root.items)) throw new Error(root.encrypted === true ? "Encrypted Bitwarden exports need local decryption support before they can be imported." : "This is not a supported plain Bitwarden JSON export.");
+  if (!jsonDepthOk(root, limits.maxJsonDepth) || !only(root, rootKeys) || root.encrypted !== false || !Array.isArray(root.folders) || !Array.isArray(root.items)) throw new Error(root.encrypted === true ? "Encrypted Bitwarden exports need local decryption support before they can be imported." : "This is not a supported plain Bitwarden JSON export.");
   if (root.items.length > limits.maxRecords) throw new Error("The export has more records than this organization allows.");
   if (!root.folders.every((folder) => { const row = object(folder); return !!row && only(row, folderKeys) && uuid(row.id) && typeof row.name === "string" && allStringsWithin(row, limits.maxCellBytes); })) throw new Error("The export folders are not supported.");
   return root.items.map((item, ordinal) => object(item) ? itemRecord(item, ordinal, limits.maxCellBytes, limits.maxJsonDepth, root.folders as JsonObject[]) : invalid(`Item ${ordinal + 1}`, ordinal, "The item is invalid."));

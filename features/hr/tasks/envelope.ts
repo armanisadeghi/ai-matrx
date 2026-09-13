@@ -28,6 +28,7 @@
  *   naming the door and the key. Silence here is how a UI ends up built on a fiction.
  */
 
+import { HR_INBOX_SECTIONS } from "@/features/hr/tasks/types";
 import type {
     HrBulkOutcome,
     HrEscalateResult,
@@ -307,6 +308,14 @@ export function parseInbox(source: Obj): HrInbox {
     if (!isScope(scope)) {
         throw new HrContractError(rpc, `scope ${scope} is not one of ${SCOPES.join(" | ")}`);
     }
+    const pagination = parseInboxPagination(rpc, source);
+    for (const section of HR_INBOX_SECTIONS) {
+        const returned = objects(rpc, source, section).length;
+        const page = pagination[section];
+        if (returned > page.limit || returned > page.total) {
+            throw new HrContractError(rpc, `pagination.${section} cannot describe ${returned} returned rows`);
+        }
+    }
     return {
         scope,
         needs_my_decision: objects(rpc, source, "needs_my_decision").map((r) => parseRow(rpc, r)),
@@ -366,6 +375,7 @@ export function parseInbox(source: Obj): HrInbox {
             subject_withheld: optBool(r, "subject_withheld"),
             digest: optStr(r, "digest"),
         })),
+        pagination,
         bulk_max: num(rpc, source, "bulk_max"),
         default_sort: str(rpc, source, "default_sort"),
         can_view_queue: bool(rpc, source, "can_view_queue"),
@@ -374,6 +384,24 @@ export function parseInbox(source: Obj): HrInbox {
         ),
         as_of: str(rpc, source, "as_of"),
     };
+}
+
+function parseInboxPagination(rpc: string, source: Obj): HrInbox["pagination"] {
+    const pagination = required(rpc, source, "pagination");
+    if (!isObj(pagination)) throw new HrContractError(rpc, "pagination is not an object");
+    const result = {} as HrInbox["pagination"];
+    for (const section of HR_INBOX_SECTIONS) {
+        const page = required(rpc, pagination, section);
+        if (!isObj(page)) throw new HrContractError(rpc, `pagination.${section} is not an object`);
+        const offset = num(rpc, page, "offset");
+        const limit = num(rpc, page, "limit");
+        const total = num(rpc, page, "total");
+        if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || !Number.isInteger(total) || total < 0 || (total === 0 && offset !== 0) || (total > 0 && (offset >= total || offset % limit !== 0))) {
+            throw new HrContractError(rpc, `pagination.${section} has invalid bounds`);
+        }
+        result[section] = { offset, limit, total };
+    }
+    return result;
 }
 
 /**

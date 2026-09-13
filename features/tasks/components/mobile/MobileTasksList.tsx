@@ -20,6 +20,8 @@ import {
   selectSearchQuery,
   selectShowAllProjects,
   selectActiveProject,
+  selectShowCompleted,
+  selectSmartView,
   setNewTaskTitle,
   setSearchQuery,
 } from "@/features/tasks/redux/taskUiSlice";
@@ -45,6 +47,12 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { TASKS_CONTEXT_MENU_PROPS } from "@/features/tasks/agent-context/buildTasksContextData";
 import { useTasksListSurfaceScope } from "@/features/tasks/components/TasksListSurfaceRuntime";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  buildTaskListPayload,
+  taskListHuman,
+  taskRow,
+} from "@/features/tasks/lib/copy";
 
 interface MobileTasksListProps {
   onTaskSelect: (taskId: string) => void;
@@ -61,9 +69,12 @@ export default function MobileTasksList({
   const searchQuery = useAppSelector(selectSearchQuery);
   const showAllProjects = useAppSelector(selectShowAllProjects);
   const activeProject = useAppSelector(selectActiveProject);
+  const showCompleted = useAppSelector(selectShowCompleted);
+  const smartView = useAppSelector(selectSmartView);
   const orgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const getApplicationScope = useTasksListSurfaceScope();
+  const copySourceId = React.useId();
 
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
@@ -111,6 +122,12 @@ export default function MobileTasksList({
   const currentProjectName = activeProject
     ? projects.find((p) => p.id === activeProject)?.name
     : "All Tasks";
+  const listView = {
+    smartView,
+    projectName: activeProject ? (currentProjectName ?? null) : null,
+    searchQuery,
+    showCompleted,
+  };
 
   return (
     <NonEditableContextMenu
@@ -157,11 +174,31 @@ export default function MobileTasksList({
         {/* Header */}
         <div className="flex-shrink-0 border-b border-border bg-card">
           {/* Title Bar */}
-          <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            <h1 className="text-2xl font-bold text-foreground">
+          <div className="flex min-w-0 items-center justify-between gap-2 px-4 pt-3 pb-2">
+            <h1 className="min-w-0 flex-1 truncate text-2xl font-bold text-foreground">
               {currentProjectName}
             </h1>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
+              {canShowTasks && filteredTasks.length > 0 && (
+                <CopyButtons
+                  sourceId={`task-list:mobile:${copySourceId}`}
+                  size="sm"
+                  unified
+                  label="Task list"
+                  human={() => taskListHuman(filteredTasks, listView)}
+                  json={() => filteredTasks.map(taskRow)}
+                  agent={() =>
+                    buildTaskListPayload({
+                      tasks: filteredTasks,
+                      view: listView,
+                    })
+                  }
+                  export={{
+                    sheetRows: () => filteredTasks.map(taskRow),
+                    items: [],
+                  }}
+                />
+              )}
               <Button
                 variant="ghost"
                 size="icon"

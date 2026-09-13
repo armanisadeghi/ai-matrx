@@ -29,6 +29,7 @@ import {
   extractAgentName,
 } from "../utils/agent-config-extractor";
 import { useAgentBuilder } from "../services/agentBuilderService";
+import { resolvePreferredAuthoringModel } from "@/features/ai-models/preferredAuthoringModel";
 import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { useDebugContext } from "@/hooks/useDebugContext";
@@ -353,11 +354,16 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
       // jsonExtraction still comes from the caller — it's in
       // GENERATOR_SHORTCUT.temporaryConfigs (will move onto the shortcut
       // row in a future migration).
+      // The person's preferred model for building agents
+      // (`agents.model_prefs.agent_authoring_default_model`, org → user →
+      // device) rides as the run's explicit model; null = the builder's own.
+      const authoringModel = await resolvePreferredAuthoringModel();
       await trigger(GENERATOR_SHORTCUT.id, {
         scope: { selection },
         runtime: { userInput: userInput || undefined },
         jsonExtraction: GENERATOR_SHORTCUT.temporaryConfigs?.jsonExtraction,
         sourceFeature: "agent-generator",
+        ...(authoringModel ? { config: { llmOverrides: { model: authoringModel } } } : {}),
         onConversationCreated: (id) => setConversationId(id),
       });
     } catch (err) {

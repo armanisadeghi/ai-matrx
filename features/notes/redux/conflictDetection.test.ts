@@ -71,7 +71,7 @@ describe("notes conflict detection", () => {
     expect(state.notes[NOTE_ID].content).toBe("# Chip");
   });
 
-  it("DOES flag a conflict when a collaborator's content arrives", () => {
+  it("retains a collaborator observation without manufacturing a conflict decision", () => {
     let state = seed("Chip", "2026-08-08T10:00:00.000Z");
     state = notesReducer(
       state,
@@ -94,8 +94,12 @@ describe("notes conflict detection", () => {
       }),
     );
 
-    expect(state.notes[NOTE_ID]._error).toBe("conflict");
+    expect(state.notes[NOTE_ID]._error).toBeNull();
     expect(state.notes[NOTE_ID].content).toBe("# Chip");
+    expect(state.notes[NOTE_ID]._remoteObservation?.note.content).toBe(
+      "Something a colleague typed",
+    );
+    expect(state.notes[NOTE_ID]._conflictDecision).toBeNull();
   });
 });
 

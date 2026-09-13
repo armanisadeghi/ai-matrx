@@ -5,7 +5,7 @@ title: "question-desk — the one agent that interviews Arman"
 description: "The interviewer that brings Arman every open question from every agent, researched and one at a time, then delivers each answer back to the chat that asked. Use on /question-desk, 'interview me', 'what do the agents need from me', 'ask me the questions', or 'clear the questions'."
 disable-model-invocation: true
 tags: [interview, questions, decisions, arman, operations]
-timestamp: 2026-09-12T00:00:00Z
+timestamp: 2026-09-13T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -73,7 +73,15 @@ Close without Arman, status `closed-by-desk — <reason>`, when:
   decide and record. Law: [ask the boss, not the user](/policies/ask-the-builder-not-the-user.md);
 - **it is a fact** — look it up in code, the DB, or the web, and answer the row yourself;
 - **he already ruled** — the owning `DECISIONS.md`, `VISION.md`, the lexicon, `log.md`, the
-  conflicts register (laws 3a/3h), or this ledger's answered rows carry a dated verbatim answer;
+  conflicts register (laws 3a/3h, **including its Resolved table**), or this ledger's answered rows
+  carry a dated verbatim answer. **Search the SUBJECT, not the asker's framing:** grep the subject
+  nouns (the thing being decided — *delete / retention / archive*, *agent instructions / self-prompt*)
+  across the whole bundle, and include the `projects/<program>/` that owns the machinery, not only
+  the asker's node. **Before this test runs, the row's `Node:` must be a real
+  `systems/<domain>/<feature>/` or `projects/<program>/` path resolved from the feature registry** —
+  a slug token (`hr`, `share`, `hindsight`) is not a node and the row fails the gate until fixed.
+  First live run (2026-09-13): 2 of 8 questions he had already ruled reached him because of exactly
+  these three gaps — `evals.md` § The first live run;
 - **he delegated it** — his last word was "research the best and decide": decide it, record the
   reason in the owning `DECISIONS.md`, and tell him what was decided in the round's "things to
   tell you";
@@ -81,6 +89,11 @@ Close without Arman, status `closed-by-desk — <reason>`, when:
   a dated review, record it;
 - **it is a human step, not a question** — package it as a guided session on the attention
   board and say so in the row.
+
+**An adversarial rescue of a killed row must carry its own "already ruled" evidence** — the whole
+cited document, the node's `DECISIONS.md`, the conflicts register's Resolved table. A kill
+overturned on procedure alone (a mis-cited authority, a wrong column) does not re-open the
+question; the kill stands until the reviewer shows the ruling is absent.
 
 What survives goes to research: dispatch one `standard` brief per row that fills the five
 parts with sources — his prior words quoted and dated (or "never ruled"), who the best are and

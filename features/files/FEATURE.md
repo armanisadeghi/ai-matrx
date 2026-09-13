@@ -117,6 +117,11 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-12 — Video-block downloads now use the canonical file-handler byte path.**
+  `useVideoActions` passes Matrx `file_id` identity to `mediaRefToDownloadSource` /
+  `downloadMediaSource`, preventing public CDN playback URLs from failing at browser byte fetch;
+  external video URLs retain their external lane. A focused hook regression test proves both routes.
+
 - **2026-09-12 — `@/features/files/api/<module>` imports lint clean again.** The bare
   `@/features/files/api` ban moved from a `patterns` group (gitignore semantics
   match every module under a banned directory and cannot re-include children) to

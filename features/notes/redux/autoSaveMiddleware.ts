@@ -4,13 +4,13 @@
 // For auto-generated notes, materializes them (first DB insert) on first edit.
 
 import type { Middleware } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AppDispatch } from "@/lib/redux/store";
 import type { NotesSliceState, NoteUndoableField } from "./notes.types";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 
 // Minimal local state type — avoids importing RootState from store.ts (which
 // imports this middleware), breaking the type-level circular dependency.
-type StateWithNotes = { notes: NotesSliceState; userAuth: UserAuthState };
+type StateWithNotes = { notes: NotesSliceState; userAuth: Pick<UserAuthState, "id"> };
 import {
   updateNoteLabel,
 } from "./slice";
@@ -40,7 +40,7 @@ import { saveNote } from "./thunks";
  * Mid-save keystrokes: `markNoteSaved` receives a savedSnapshot and only
  * clears dirty fields that still match what was written.
  */
-export const autoSaveMiddleware: Middleware<{}, RootState, AppDispatch> =
+export const autoSaveMiddleware: Middleware<unknown, StateWithNotes, AppDispatch> =
   (storeApi) => {
     const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
     return (next) => (action) => {
@@ -48,6 +48,7 @@ export const autoSaveMiddleware: Middleware<{}, RootState, AppDispatch> =
 
     // Content/label edits + internal follow-up after a mid-save dirty remain.
     const actionType = (action as { type?: string }).type;
+    const actionMeta = (action as { meta?: { notesAutoLabel?: boolean } }).meta;
     if (
       actionType !== "notes/updateNoteContent" &&
       actionType !== "notes/updateNoteLabel" &&
@@ -64,6 +65,10 @@ export const autoSaveMiddleware: Middleware<{}, RootState, AppDispatch> =
     const payload = (action as { payload?: { id?: string } }).payload;
     const noteId = payload?.id;
     if (!noteId) return result;
+    // A generated label belongs to the timer that already captured this
+    // draft's identity. Starting another timer after its synchronous dispatch
+    // could capture a switched account and write this user's draft there.
+    if (actionMeta?.notesAutoLabel) return result;
 
     // Read current note from state
     const state = storeApi.getState() as StateWithNotes;
@@ -108,7 +113,10 @@ export const autoSaveMiddleware: Middleware<{}, RootState, AppDispatch> =
       ) {
         const generated = generateLabelFromContent(currentRecord.content);
         if (generated) {
-          storeApi.dispatch(updateNoteLabel({ id: noteId, label: generated }));
+          storeApi.dispatch({
+            ...updateNoteLabel({ id: noteId, label: generated }),
+            meta: { notesAutoLabel: true },
+          });
         }
       }
 
@@ -116,7 +124,11 @@ export const autoSaveMiddleware: Middleware<{}, RootState, AppDispatch> =
       const stateAfterLabel = storeApi.getState() as StateWithNotes;
       const recordAfterLabel = stateAfterLabel.notes?.notes?.[noteId] as
         NoteRecord | undefined;
-      if (!recordAfterLabel || !recordAfterLabel._dirty) return;
+      if (
+        stateAfterLabel.userAuth.id !== scheduledUserId ||
+        !recordAfterLabel ||
+        !recordAfterLabel._dirty
+      ) return;
 
       try {
         await storeApi.dispatch(saveNote(noteId)).unwrap();

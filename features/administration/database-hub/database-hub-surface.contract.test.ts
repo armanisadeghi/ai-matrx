@@ -50,6 +50,28 @@ describe("database admin surface contract", () => {
     expect(hub).not.toContain("overflow-auto");
   });
 
+  it("gives the database body one terminal route scroll owner", () => {
+    const adminFrame = source(
+      "app/(admin)/administration/ClientAdminLayout.tsx",
+    );
+    const databaseFrame = source(
+      "app/(admin)/administration/database/DatabaseAdminLayoutClient.tsx",
+    );
+
+    // The database frame owns the scrollable content under its tool rows.
+    // The surrounding admin frame must clip that route instead of adding a
+    // second competing vertical scroll region.
+    expect(databaseFrame).toContain(
+      'className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"',
+    );
+    expect(adminFrame).toContain(
+      'pathname.startsWith("/administration/database")',
+    );
+    expect(adminFrame).toContain(
+      'databaseRoute ? "overflow-hidden" : "overflow-y-auto"',
+    );
+  });
+
   it("keeps every tool promised by the surface intro in the hub catalogue", () => {
     const tools = source(
       "features/administration/database-hub/database-tools.ts",
