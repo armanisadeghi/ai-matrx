@@ -518,7 +518,7 @@ function EndpointApiTable<T extends EndpointApiRow>({
         getRowId={(row) => row.id}
         isLoading={loading && rows.length === 0}
         isFetching={loading && rows.length > 0}
-        pageSize={25}
+        pageSize={50}
         pageSizeOptions={[10, 25, 50, 100]}
         defaultSort={null}
         reorderableColumns
