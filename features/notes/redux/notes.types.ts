@@ -92,9 +92,16 @@ export type NoteConflictPhysicalSnapshot = Pick<Note, NoteConflictPhysicalField>
 
 /** A serializable CAS decision package. It exists only after a real CAS miss. */
 export interface NoteConflictDecision {
+  /** Immutable provenance captured by the queue that received the CAS miss. */
+  decisionId: string;
+  reviewId: string;
+  actorId: string;
+  organizationId: string;
   expectedVersion: number;
   currentVersion: number;
   currentRow: Note;
+  /** Exact full server package that was displayed for this review. */
+  reviewedRemote: Note;
   sentSnapshot: NoteFieldSnapshot;
   /** Exact local physical values shown with this comparison. */
   reviewedLocal: NoteConflictPhysicalSnapshot;
@@ -106,6 +113,10 @@ export interface NoteConflictDecision {
   stale: boolean;
   dismissed: boolean;
 }
+
+export type NoteConflictResolutionReceipt =
+  | { status: "applied"; requestId: string; choice: "mine" | "theirs"; content: string }
+  | { status: "refused"; requestId: string; reason: string };
 
 // ── Find & Replace state ────────────────────────────────────────────────────
 
@@ -310,6 +321,8 @@ export interface NotesSliceState {
   contentLoadStatus: Record<string, "loading" | "loaded" | "error">;
   listStatus: "idle" | "loading" | "loaded" | "error";
   listError: string | null;
+  /** Ephemeral reducer receipts; consumers must match their own request ID. */
+  conflictResolutionReceipts: Record<string, NoteConflictResolutionReceipt>;
 
   // ── Instance management (Layer 6) ──────────────────────────
   instances: Record<string, NotesInstance>;

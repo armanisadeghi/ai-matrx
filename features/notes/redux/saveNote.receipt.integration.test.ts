@@ -135,7 +135,11 @@ describe("saveNote receipt integration", () => {
       currentVersion: 8,
       currentRow: { content: "remote winner", version: 8 },
       sentSnapshot: { content: "local draft" },
+      actorId: "user-1",
+      organizationId: ORG,
     });
+    expect(record._conflictDecision?.decisionId).toEqual(expect.any(String));
+    expect(record._conflictDecision?.reviewId).toEqual(expect.any(String));
     expect(record._saving).toBe(false);
     expect(store.getState().notes._savingNoteIds).not.toContain(NOTE_ID);
   });

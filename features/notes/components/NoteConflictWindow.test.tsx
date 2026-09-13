@@ -49,4 +49,32 @@ describe("NoteConflictWindow stale comparison controls", () => {
     expect(keepMine).not.toHaveBeenCalled();
     expect(accept).not.toHaveBeenCalled();
   });
+
+  it("shows both reviewed metadata values and immutable folder and organization identities", async () => {
+    await act(async () => {
+      root.render(<NoteConflictWindow
+        noteTitle="Conflict" localContent="mine" remoteContent="theirs"
+        analysis={analyzeDiff("mine", "theirs")}
+        remoteDetails={[
+          { label: "Folder", yours: "Draft (folder-local)", saved: "Draft (folder-remote)" },
+          { label: "Organization", yours: "org-local", saved: "org-remote" },
+          { label: "Metadata", yours: "1 fields", saved: "1 fields", metadata: { yours: { local: true }, saved: { remote: true } } },
+        ]}
+        mergeDraft="mine" onMergeDraftChange={jest.fn()} stale={false}
+        onKeepMine={jest.fn()} onAcceptChanges={jest.fn()} onCancel={jest.fn()} onRefresh={jest.fn().mockResolvedValue(undefined)}
+      />);
+    });
+    const remote = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("Remote Version"));
+    await act(async () => { remote?.click(); });
+    expect(host.textContent).toContain("folder-local");
+    expect(host.textContent).toContain("folder-remote");
+    expect(host.textContent).toContain("org-local");
+    expect(host.textContent).toContain("org-remote");
+    const inspect = Array.from(host.querySelectorAll("button")).find((button) => button.textContent?.includes("Inspect metadata"));
+    await act(async () => { inspect?.click(); });
+    expect(host.textContent).toContain("Your metadata");
+    expect(host.textContent).toContain('"local": true');
+    expect(host.textContent).toContain("Saved metadata");
+    expect(host.textContent).toContain('"remote": true');
+  });
 });

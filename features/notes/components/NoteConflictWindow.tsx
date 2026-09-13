@@ -26,7 +26,7 @@ export interface NoteConflictWindowProps {
   remoteContent: string;
   analysis: DiffAnalysis;
   /** Reviewed physical-row details beyond the document body. */
-  remoteDetails: Array<{ label: string; yours: string; saved: string; metadata?: unknown }>;
+  remoteDetails: Array<{ label: string; yours: string; saved: string; metadata?: { yours: unknown; saved: unknown } }>;
   mergeDraft: string;
   onMergeDraftChange: (content: string) => void;
   /** Called with the content from the (possibly edited) "Your Version" tab */
@@ -256,7 +256,10 @@ export function NoteConflictWindow({
                 ))}
               </dl>
               {inspectMetadata && remoteDetails.filter((detail) => detail.metadata !== undefined).map((detail) => (
-                <pre key={`${detail.label}-metadata`} className="overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(detail.metadata, null, 2)}</pre>
+                <div key={`${detail.label}-metadata`} className="grid grid-cols-2 gap-2">
+                  <pre className="overflow-auto rounded bg-muted p-2 text-xs"><strong>Your metadata</strong>{"\n"}{JSON.stringify(detail.metadata?.yours, null, 2)}</pre>
+                  <pre className="overflow-auto rounded bg-muted p-2 text-xs"><strong>Saved metadata</strong>{"\n"}{JSON.stringify(detail.metadata?.saved, null, 2)}</pre>
+                </div>
               ))}
             </div>
           )}

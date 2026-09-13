@@ -12,6 +12,7 @@ import {
   type NoteFieldSnapshot,
   type NoteConflictDecision,
   type NoteConflictPhysicalSnapshot,
+  type NoteConflictResolutionReceipt,
   type NotesSliceState,
   type NoteScopeAssignment,
   type FindReplaceState,
@@ -442,6 +443,7 @@ const initialState: NotesSliceState & {
   contentLoadStatus: {},
   listStatus: "idle",
   listError: null,
+  conflictResolutionReceipts: {},
   instances: {},
   realtimeConnected: false,
   noteEditors: {},
@@ -628,14 +630,23 @@ const notesSlice = createSlice({
         currentVersion: number;
         currentRow: Note;
         sentSnapshot: NoteFieldSnapshot;
+        actorId: string;
+        organizationId: string;
+        decisionId: string;
+        reviewId: string;
       }>,
     ) {
       const record = state.notes[action.payload.id];
       if (!record) return;
       const decision: NoteConflictDecision = {
+        decisionId: action.payload.decisionId,
+        reviewId: action.payload.reviewId,
+        actorId: action.payload.actorId,
+        organizationId: action.payload.organizationId,
         expectedVersion: action.payload.expectedVersion,
         currentVersion: action.payload.currentVersion,
         currentRow: action.payload.currentRow,
+        reviewedRemote: action.payload.currentRow,
         sentSnapshot: action.payload.sentSnapshot,
         reviewedLocal: conflictPhysicalSnapshot(record),
         reviewedLiveContent: null,
@@ -666,16 +677,18 @@ const notesSlice = createSlice({
      * leaves the editor base, dirty fields, and merge draft untouched. */
     refreshNoteConflictComparison(
       state,
-      action: PayloadAction<{ id: string; currentRow: Note }>,
+      action: PayloadAction<{ id: string; decisionId: string; reviewId: string; currentRow: Note; nextReviewId: string }>,
     ) {
       const record = state.notes[action.payload.id];
       const decision = record?._conflictDecision;
-      if (!record || !decision) return;
+      if (!record || !decision || decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId || decision.organizationId !== record.organization_id) return;
       const observedVersion = record._remoteObservation?.version;
       if (observedVersion !== null && observedVersion !== undefined && observedVersion > action.payload.currentRow.version) {
         return;
       }
       decision.currentRow = action.payload.currentRow;
+      decision.reviewedRemote = action.payload.currentRow;
+      decision.reviewId = action.payload.nextReviewId;
       decision.currentVersion = action.payload.currentRow.version;
       decision.comparedVersion = action.payload.currentRow.version;
       decision.stale = false;
@@ -699,26 +712,27 @@ const notesSlice = createSlice({
       state,
       action: PayloadAction<{
         id: string;
+        decisionId: string;
+        reviewId: string;
+        requestId: string;
         choice: "mine" | "theirs";
         proposedContent: string;
-        reviewedLocal: NoteConflictPhysicalSnapshot;
         reviewedLiveContent: string;
-        reviewedVersion: number;
-        reviewedObservedVersion: number | null;
       }>,
     ) {
       const record = state.notes[action.payload.id];
       const decision = record?._conflictDecision;
       const currentObserved = record?._remoteObservation?.version ?? null;
-      if (
-        !record || !decision || decision.stale ||
-        decision.currentVersion !== action.payload.reviewedVersion ||
-        decision.comparedVersion !== action.payload.reviewedVersion ||
-        currentObserved !== action.payload.reviewedObservedVersion ||
-        decision.reviewedLiveContent !== action.payload.reviewedLiveContent ||
-        !sameConflictSnapshot(decision.reviewedLocal, action.payload.reviewedLocal) ||
-        !sameConflictSnapshot(conflictPhysicalSnapshot(record), decision.reviewedLocal)
-      ) return;
+      const refuse = (reason: string) => {
+        state.conflictResolutionReceipts[action.payload.requestId] = { status: "refused", requestId: action.payload.requestId, reason };
+      };
+      if (!record || !decision) { refuse("This conflict is no longer available. Refresh the note."); return; }
+      if (decision.decisionId !== action.payload.decisionId || decision.reviewId !== action.payload.reviewId) { refuse("This comparison changed. Refresh before applying a choice."); return; }
+      if (decision.organizationId !== record.organization_id) { refuse("This note moved organizations. Reopen it before applying a choice."); return; }
+      if (decision.stale || (currentObserved !== null && currentObserved > decision.comparedVersion)) { refuse("A newer remote change arrived. Refresh before applying a choice."); return; }
+      if (decision.reviewedLiveContent !== action.payload.reviewedLiveContent) { refuse("Your editor buffer changed after this comparison. Refresh before applying a choice."); return; }
+      if (!sameConflictSnapshot(conflictPhysicalSnapshot(record), decision.reviewedLocal)) { refuse("Your note fields changed after this comparison. Refresh before applying a choice."); return; }
+      if (decision.reviewedRemote.id !== decision.currentRow.id || decision.reviewedRemote.version !== decision.currentRow.version || JSON.stringify(decision.reviewedRemote) !== JSON.stringify(decision.currentRow)) { refuse("The reviewed server package changed. Refresh before applying a choice."); return; }
       const remote = decision.currentRow;
       if (action.payload.choice === "mine") {
         writeNoteField(record, "content", action.payload.proposedContent);
@@ -728,6 +742,7 @@ const notesSlice = createSlice({
         record.version = remote.version;
         record._error = null;
         record._conflictDecision = null;
+        state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "mine", content: action.payload.proposedContent };
         return;
       }
       // Physical row fields are replaced from the reviewed CAS row. Context
@@ -770,6 +785,7 @@ const notesSlice = createSlice({
       record._dirty = record._dirtyFields.size > 0;
       record._error = null;
       record._conflictDecision = null;
+      state.conflictResolutionReceipts[action.payload.requestId] = { status: "applied", requestId: action.payload.requestId, choice: "theirs", content: remote.content ?? "" };
     },
 
     markNoteSaving(state, action: PayloadAction<string>) {
@@ -874,29 +890,8 @@ const notesSlice = createSlice({
       state._savingNoteIds = state._savingNoteIds.filter((id) => id !== record.id);
     },
 
-    /** Resolve a save conflict without touching dirty state.
-     *  - Keep-mine: pass the server's `updatedAt` so the record adopts it and
-     *    the next autosave's optimistic lock (`WHERE updated_at =`) passes —
-     *    consciously overwriting the remote version. Local edits stay dirty
-     *    and flow through the normal autosave pipeline.
-     *  - Never use markNoteSaved for this: with no snapshot it wipes ALL dirty
-     *    fields, so the queued save bails on `!_dirty` and nothing is written
-     *    (the old "Keep mine is a silent no-op" bug). */
-    resolveNoteConflict(
-      state,
-      action: PayloadAction<{ id: string; updatedAt?: string; version?: number }>,
-    ) {
-      const record = state.notes[action.payload.id];
-      if (!record) return;
-      if (record._conflictDecision?.stale) return;
-      if (record._error === "conflict") record._error = null;
-      if (action.payload.updatedAt) {
-        record.updated_at = action.payload.updatedAt;
-      }
-      if (action.payload.version !== undefined) {
-        record.version = action.payload.version;
-      }
-      record._conflictDecision = null;
+    clearNoteConflictResolutionReceipt(state, action: PayloadAction<string>) {
+      delete state.conflictResolutionReceipts[action.payload];
     },
 
     clearSavingNoteId(state, action: PayloadAction<string>) {
@@ -1486,12 +1481,12 @@ export const {
   clearNoteUndoHistory,
   upsertNoteFromServer,
   upsertNotesFromServer,
-  resolveNoteConflict,
   recordNoteConflict,
   refreshNoteConflictComparison,
   dismissNoteConflict,
   reopenNoteConflict,
   applyNoteConflictResolution,
+  clearNoteConflictResolutionReceipt,
   captureNoteConflictLiveBuffer,
   removeNote,
   recordNoteWriteAttempt,

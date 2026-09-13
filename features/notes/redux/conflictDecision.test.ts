@@ -35,6 +35,7 @@ function conflicted() {
     currentVersion: 5,
     currentRow: row({ content: "theirs", label: "Remote", version: 5, updated_at: "2026-09-12T00:01:00.000Z" }),
     sentSnapshot: { content: "mine" },
+    actorId: "user-1", organizationId: ORG, decisionId: "decision-1", reviewId: "review-1",
   }));
 }
 
@@ -59,6 +60,7 @@ describe("Notes CAS conflict decision contract", () => {
     // A refresh at version 6 replaces only the comparison package.
     state = notesReducer(state, refreshNoteConflictComparison({
       id: ID,
+      decisionId: "decision-1", reviewId: "review-1", nextReviewId: "review-2",
       currentRow: row({ content: "theirs v6", version: 6, updated_at: "2026-09-12T00:02:00.000Z" }),
     }));
     expect(state.notes[ID].content).toBe("mine");
@@ -84,12 +86,10 @@ describe("Notes CAS conflict decision contract", () => {
     if (!decision) throw new Error("Expected conflict decision");
     state = notesReducer(state, applyNoteConflictResolution({
       id: ID,
+      decisionId: decision.decisionId, reviewId: decision.reviewId, requestId: "accept-theirs",
       choice: "theirs",
       proposedContent: "theirs",
-      reviewedLocal: decision.reviewedLocal,
       reviewedLiveContent: "mine",
-      reviewedVersion: decision.currentVersion,
-      reviewedObservedVersion: null,
     }));
     expect(state.notes[ID]).toMatchObject({ content: "theirs", label: "Remote", version: 5, project_id: "33333333-3333-4333-8333-333333333333" });
     expect(state.notes[ID]._dirtyFields).toEqual(new Set(["project_id"]));
@@ -103,11 +103,12 @@ describe("Notes CAS conflict decision contract", () => {
     if (!decision) throw new Error("Expected conflict decision");
     state = notesReducer(state, setNoteField({ id: ID, field: "label", value: "edited after review" }));
     state = notesReducer(state, applyNoteConflictResolution({
-      id: ID, choice: "theirs", proposedContent: "theirs", reviewedLocal: decision.reviewedLocal,
-      reviewedLiveContent: "mine", reviewedVersion: 5, reviewedObservedVersion: null,
+      id: ID, decisionId: decision.decisionId, reviewId: decision.reviewId, requestId: "refuse-physical", choice: "theirs", proposedContent: "theirs",
+      reviewedLiveContent: "mine",
     }));
     expect(state.notes[ID]).toMatchObject({ content: "mine", label: "edited after review", version: 4 });
     expect(state.notes[ID]._conflictDecision).not.toBeNull();
+    expect(state.conflictResolutionReceipts["refuse-physical"]).toMatchObject({ status: "refused" });
 
     let clean = notesReducer(undefined, upsertNoteFromServer({ note: row({ version: 9, content: "v9", updated_at: "2026-09-12T00:09:00.000Z" }), fetchStatus: "full" }));
     clean = notesReducer(clean, upsertNoteFromServer({ note: row({ version: 8, content: "stale", updated_at: "2026-09-12T01:00:00.000Z" }), fetchStatus: "full" }));
