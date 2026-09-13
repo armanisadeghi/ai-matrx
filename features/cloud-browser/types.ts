@@ -333,3 +333,21 @@ export interface ScreenshotFrame {
   /** S1 §2.15 — only `redacted` frames are safe to render at any access level. */
   privacyClass: "redacted" | "sensitive" | "operator_only";
 }
+
+// ── Panel load failure ────────────────────────────────────────────────────────
+
+/**
+ * Why the panel could not load or start its browser — kept STRUCTURED, never a
+ * bare string. A string throws away the two facts the person needs to act: can
+ * this be retried, and what id do we quote when it can't. Reducing the server's
+ * error to `e.message` is how a failed start rendered as one small red line at
+ * the bottom of an otherwise empty panel, with no way to try again.
+ */
+export interface CloudBrowserLoadError {
+  /** The server's user-facing sentence (or our own when there is none). */
+  message: string;
+  /** The server says trying again can succeed (worker restarting, busy, …). */
+  retryable: boolean;
+  /** Quotable in a report; null for client-side failures. */
+  requestId: string | null;
+}
