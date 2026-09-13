@@ -73,13 +73,14 @@ Plain git, per the global commit rules: review `git status` + `git diff` first, 
 
 **Vercel skips every commit whose first line is not release-prefixed** (`vercel.json` → `scripts/vercel-ignore-build.sh`). A plain `git push origin main` reaches GitHub and **no user, ever**: no build starts, the deployment reads `CANCELED`, and production stays on the last release. Polling the live URL will never turn green — there is nothing running to wait for.
 
-The release owner dispatches; the central build monitor observes completion every 30 minutes:
+The release owner dispatches; the central build monitor observes completion on its configured
+schedule:
 
 | Situation | Do |
 |---|---|
 | Latest applicable `origin/main` code is already contained in every affected target's latest `Ready` deployment | No release; record the verified target SHAs. |
-| Any affected target is missing applicable `origin/main` code | After completing and pushing a fix for an already shipped partial feature, request one expedited release from the existing frontend owner. Otherwise use its normal cadence. Run `./scripts/release.sh` yourself only when the user requested an immediate release, per `CLAUDE.md`. Shared runtime changes affect all three targets. |
-| A release for the exact applicable SHA is already queued or building | Do not duplicate or wait through it. The central build monitor reports new failures once to its owner. |
+| Any affected target is missing applicable `origin/main` code | The pushed `origin/main` commit is the durable handoff; the frontend owner picks it up on its normal pass and cadence. Do not send or request an expedited-release message. Run `./scripts/release.sh` yourself only when the user requested an immediate release, per `CLAUDE.md`. Shared runtime changes affect all three targets. |
+| A release for the exact applicable SHA is already queued or building | Do not duplicate or wait through it. The central build monitor records a new failure in durable lane state; the owner reads unresolved state on its normal pass. |
 
 Verify a release actually landed: a `READY` production deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`), then assert on a string that exists **only** in the new build — a marker the old build also contained reports a false success.
 
