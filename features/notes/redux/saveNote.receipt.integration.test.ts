@@ -22,8 +22,11 @@ import notesReducer, {
   setNoteFields,
   updateNoteFolder,
   upsertNoteFromServer,
+  recordNoteConflict,
+  captureNoteConflictLiveBuffer,
+  applyNoteConflictResolution,
 } from "./slice";
-import { saveNote } from "./thunks";
+import { saveNote, resolveNoteConflict, refreshNoteConflictReview } from "./thunks";
 import { autoSaveMiddleware } from "./autoSaveMiddleware";
 
 enableMapSet();
@@ -87,6 +90,34 @@ describe("saveNote receipt integration", () => {
     getSession.mockResolvedValue({ data: { session: { user: { id: "user-1" } } }, error: null });
     listForSources.mockResolvedValue({ ok: true, data: { edges: [] } });
     setTargets.mockResolvedValue({ ok: true, data: null });
+  });
+
+  it("returns refused without mutation when the resolution buffer unmounts or session changes", async () => {
+    const store = storeWithNote({ userAuthReducer: (state = { id: "user-1" }, action) => action.type === "test/switch" ? { id: "user-2" } : state });
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
+    store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "d", reviewId: "r" }));
+    store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
+    const missing = await store.dispatch(resolveNoteConflict({ noteId: NOTE_ID, decisionId: "d", reviewId: "r", choice: "mine", proposedContent: "mine", getLiveBuffer: () => null }));
+    expect(missing).toMatchObject({ status: "refused" });
+    store.dispatch({ type: "test/switch" }); getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
+    const switched = await store.dispatch(resolveNoteConflict({ noteId: NOTE_ID, decisionId: "d", reviewId: "r", choice: "mine", proposedContent: "mine", getLiveBuffer: () => "mine" }));
+    expect(switched).toMatchObject({ status: "refused" });
+    expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", version: 7 });
+  });
+
+  it("returns a refused receipt when middleware interleaves a physical edit after async validation", async () => {
+    let store: ReturnType<typeof storeWithNote>;
+    let interleaved = false;
+    store = storeWithNote({ middleware: () => (next) => (action) => {
+      if (!interleaved && applyNoteConflictResolution.match(action)) { interleaved = true; store.dispatch(setNoteField({ id: NOTE_ID, field: "label", value: "interleaved" })); }
+      return next(action);
+    } });
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
+    store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "d2", reviewId: "r2" }));
+    store.dispatch(captureNoteConflictLiveBuffer({ id: NOTE_ID, content: "mine" }));
+    const outcome = await store.dispatch(resolveNoteConflict({ noteId: NOTE_ID, decisionId: "d2", reviewId: "r2", choice: "mine", proposedContent: "mine", getLiveBuffer: () => "mine" }));
+    expect(outcome).toMatchObject({ status: "refused" });
+    expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", label: "interleaved", version: 7 });
   });
 
   it("accepts a paired folder display name while persisting only its admitted ID", async () => {
