@@ -20,7 +20,6 @@ import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkel
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
@@ -76,8 +75,13 @@ export function QuickChatSheet({
   className,
   initialConversationId,
 }: QuickChatSheetProps) {
+  const handedOffAgentId = useAppSelector((state) =>
+    initialConversationId
+      ? state.conversations.byConversationId[initialConversationId]?.agentId
+      : undefined,
+  );
   const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
-  if (loading) {
+  if (loading || (initialConversationId && !handedOffAgentId)) {
     return (
       <div className={cn("flex h-full flex-col overflow-hidden", className)}>
         <ChatRoomSkeleton />
@@ -106,7 +110,7 @@ export function QuickChatSheet({
   return (
     <QuickChatSheetBody
       className={className}
-      initialAgentId={mandate.agentId}
+      initialAgentId={handedOffAgentId || mandate.agentId}
       initialConversationId={initialConversationId}
     />
   );
@@ -119,14 +123,15 @@ function QuickChatSheetBody({
 }: QuickChatSheetProps & { initialAgentId: string }) {
   const dispatch = useAppDispatch();
 
+  // The wrapper waits for a handed conversation's shell and passes its agent;
+  // the generic Quick Chat mandate is only the default for a genuinely fresh
+  // panel. This state then belongs to explicit picker changes.
   const [agentId, setAgentId] = useState<string>(initialAgentId);
   const [session, setSession] = useState(0);
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
   >(initialConversationId ?? null);
   const [showHistory, setShowHistory] = useState(false);
-
-  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
 
   const loadAbortRef = useRef<AbortController | null>(null);
   const activeSurfaceKeyRef = useRef<string | null>(null);
@@ -293,7 +298,7 @@ function QuickChatSheetBody({
         <div className="flex min-w-0 flex-1 items-center">
           <AgentListDropdown
             onSelect={handleSelectAgent}
-            label={agentName?.trim() || "Select an agent"}
+            activeAgentId={agentId}
             compact
             noBorder
           />
