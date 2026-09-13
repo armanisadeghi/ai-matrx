@@ -13,9 +13,10 @@ import {
   selectMcpServerTools,
   selectAllDiscoveredMcpTools,
   selectMcpDiscoveries,
-  selectMcpAvailability,
-  selectMcpAvailabilityStatus,
+  selectMcpAvailabilityForOrganization,
+  selectMcpAvailabilityStatusForOrganization,
 } from "@/features/agents/redux/mcp/mcp.slice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   deriveMcpConnectionState,
   type McpConnectionTruth,
@@ -37,6 +38,7 @@ export function useMcpCatalog() {
   const dispatch = useAppDispatch();
   const catalog = useAppSelector(selectMcpCatalog);
   const status = useAppSelector(selectMcpCatalogStatus);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
     if (status === "idle") {
@@ -44,16 +46,20 @@ export function useMcpCatalog() {
     }
   }, [dispatch, status]);
 
-  const availability = useAppSelector(selectMcpAvailability);
-  const availabilityStatus = useAppSelector(selectMcpAvailabilityStatus);
+  const availability = useAppSelector((state) =>
+    selectMcpAvailabilityForOrganization(state, organizationId),
+  );
+  const availabilityStatus = useAppSelector((state) =>
+    selectMcpAvailabilityStatusForOrganization(state, organizationId),
+  );
 
   // The catalog row alone cannot tell Connected from Needs re-auth, so the
   // server's answer is fetched alongside it — one request, once per mount.
   useEffect(() => {
-    if (availabilityStatus === "idle") {
-      dispatch(fetchAvailability(undefined));
+    if (organizationId && availabilityStatus === "idle") {
+      dispatch(fetchAvailability({ organizationId }));
     }
-  }, [dispatch, availabilityStatus]);
+  }, [dispatch, organizationId, availabilityStatus]);
 
   /** Every catalog entry with its ONE truthful state. */
   const serverStates = useMemo<McpServerState[]>(
@@ -91,9 +97,11 @@ export function useMcpCatalog() {
 
   const refreshAvailability = useCallback(
     (slugs?: string[]) => {
-      dispatch(fetchAvailability(slugs));
+      if (organizationId) {
+        dispatch(fetchAvailability({ organizationId, slugs }));
+      }
     },
-    [dispatch],
+    [dispatch, organizationId],
   );
 
   return {
@@ -271,7 +279,10 @@ export function useMcpServerTruth(
     | "serverStatus"
   >,
 ): McpConnectionTruth {
-  const availability = useAppSelector(selectMcpAvailability);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const availability = useAppSelector((state) =>
+    selectMcpAvailabilityForOrganization(state, organizationId),
+  );
   return useMemo(
     () =>
       deriveMcpConnectionState(entry, {
@@ -297,6 +308,9 @@ export function useMcpServerTruth(
 /** Tools in a server's catalog right now; null when none are known yet (a
  * zero is never rendered — the lister can still discover live). */
 export function useMcpServerToolCount(slug: string): number | null {
-  const availability = useAppSelector(selectMcpAvailability);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const availability = useAppSelector((state) =>
+    selectMcpAvailabilityForOrganization(state, organizationId),
+  );
   return availability[slug]?.tool_count ?? null;
 }

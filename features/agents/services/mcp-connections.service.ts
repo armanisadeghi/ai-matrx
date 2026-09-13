@@ -26,7 +26,9 @@ function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
 }
 
-async function authHeaders(): Promise<Record<string, string>> {
+async function authHeaders(
+  explicitOrganizationId?: string,
+): Promise<Record<string, string>> {
   const supabase = createClient();
   const {
     data: { session },
@@ -41,7 +43,8 @@ async function authHeaders(): Promise<Record<string, string>> {
   // `features/marketing/seo/dataforseo/client.ts`.
   const store = getStoreSingleton();
   const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
+    explicitOrganizationId ??
+      (store ? selectOrganizationId(store.getState()) : null),
   );
   return applyOrganizationContextHeader(
     {
@@ -52,8 +55,12 @@ async function authHeaders(): Promise<Record<string, string>> {
   );
 }
 
-async function mcpFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = await authHeaders();
+async function mcpFetch<T>(
+  path: string,
+  init?: RequestInit,
+  explicitOrganizationId?: string,
+): Promise<T> {
+  const headers = await authHeaders(explicitOrganizationId);
   let resp: Response;
   try {
     resp = await fetch(`${backendBase()}/api/mcp-connections${path}`, {
@@ -119,13 +126,18 @@ export type ManualAuthMethod =
  * catalog-derived state until this answers, then this wins.
  */
 export function fetchMcpAvailability(
+  organizationId: string,
   slugs?: string[],
 ): Promise<McpAvailability[]> {
   const query =
     slugs && slugs.length > 0
       ? `?slugs=${encodeURIComponent(slugs.join(","))}`
       : "";
-  return mcpFetch<McpAvailability[]>(`/availability${query}`);
+  return mcpFetch<McpAvailability[]>(
+    `/availability${query}`,
+    undefined,
+    organizationId,
+  );
 }
 
 /** Discover tools on a server using the caller's vault-backed connection. */

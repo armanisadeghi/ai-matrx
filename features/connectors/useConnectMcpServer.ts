@@ -83,7 +83,9 @@ export function useConnectMcpServer() {
         // Re-read BOTH the catalog row and the server's health: a fresh
         // connection row means nothing until aidream confirms it can be used.
         dispatch(fetchCatalog());
-        dispatch(fetchAvailability(undefined));
+        if (organizationId) {
+          dispatch(fetchAvailability({ organizationId }));
+        }
       } catch (cause) {
         toast.error(`Could not connect to ${server.name}`, {
           description: cause instanceof Error ? cause.message : String(cause),
