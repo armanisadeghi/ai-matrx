@@ -154,13 +154,7 @@ const TranscriptViewer = ({
         
         const totalSeconds = hours * 3600 + minutes * 60 + seconds;
         
-        // Format timecode string based on presence of hours
-        let timecodeStr = '';
-        if (hours > 0) {
-          timecodeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } else {
-          timecodeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+        const timecodeStr = formatDurationSeconds(totalSeconds, { style: 'clock' });
         
         // Start a new segment
         currentSegment = {

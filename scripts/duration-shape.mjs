@@ -309,6 +309,217 @@ const SECONDS_SCALED_CALL_RE =
 const WINDOW = 6;
 
 /**
+ * THE CLOCK VOICE, FUNCTION-SCOPED (2026-09-12, the ninth adversarial review).
+ *
+ * THE MISS. The clock lane above still asks for TIME-BASE ARITHMETIC on the hit
+ * line and then looks ±3 lines for the pad or the join. That makes the
+ * ARITHMETIC the subject and the clock the corroboration, and four live bodies
+ * on origin/main rendered colon clocks through it without a word:
+ *
+ *   1. `formatYouTubeDuration` (marketing/discovery/youtube/formatters.ts) —
+ *      its components come out of an ISO-8601 `PT#H#M#S` REGEX, so the file
+ *      contains no `/60` anywhere. Four screens render `1:02:09` from it.
+ *   2/3. `transcript-parser.ts` and `TranscriptViewer.tsx` —
+ *      `hours * 3600 + minutes * 60 + seconds` is MULTIPLICATION, and the lane
+ *      admits only `/` and `%`. Parsing a clock back into seconds multiplies;
+ *      only rendering it divides.
+ *   4. `formatTimeRemaining` (utils/auth/extensionAuthHelper.ts) — the `/1000`
+ *      and `/60` are SIXTEEN lines up, inside a DIFFERENT function. A ±3 line
+ *      window cannot reach across a function boundary, and a formatter that
+ *      takes its parts from a helper never will.
+ *
+ * THE SUBJECT IS THE VOICE, NOT THE ARITHMETIC. A colon clock is recognisable
+ * on its own terms, the way a human recognises one: two or more numeric parts
+ * JOINED BY A COLON where at least one part is ZERO-PADDED TO TWO
+ * (`padStart(2, "0")`, or the older `("0" + x).slice(-2)`). Nothing but a clock
+ * pads a part of a colon join to two digits. The arithmetic then becomes one of
+ * two corroborations, either of which is enough:
+ *   - the PARTS NAME THEMSELVES as time (`hours`, `mm`, `secs`, `totalSeconds`,
+ *     `elapsed`, `remaining`, `duration`) — this is what catches the ISO body,
+ *     which has no arithmetic to find; or
+ *   - ANY time-base operation exists in the SAME FUNCTION BODY — `/`, `%` OR
+ *     `*` against 60 / 3600 / 86400 / 1000 / 60000 / 3600000 or a named base.
+ *     Multiplication is admitted HERE and nowhere else: on its own it is a
+ *     budget (`30 * 1000`), but a zero-padded colon join in the same function
+ *     is not a budget.
+ *
+ * THE WINDOW IS THE FUNCTION BODY, computed from braces — not a line count. The
+ * ±3 window was chosen when the arithmetic was the subject and always touched
+ * the pad; the moment the clock is the subject, the parts can come from
+ * anywhere in the function, and in the live auth body they come from sixteen
+ * lines away.
+ *
+ * NEGATIVES this must stay silent on, all of them live shapes:
+ *   - a WALL CLOCK: `${hh}:${mm}` built from `getHours()` / `getMinutes()` /
+ *     `toLocaleTimeString`. It is a TIME OF DAY, not a duration, and THE KIT
+ *     HAS NO WALL-CLOCK VOICE — `formatDurationSeconds(…, { style: "clock" })`
+ *     would be the wrong home for it. So a function body that reads wall-clock
+ *     COMPONENTS off a Date is excluded by construction, and stays excluded
+ *     until the kit grows a time-of-day formatter to collapse onto.
+ *     (`getTime()` is not a component accessor: an epoch delta is a duration.)
+ *   - a DATE STAMP `${yyyy}-${mm}-${dd}` — padded, and joined by hyphens.
+ *   - `${host}:${port}`, `${f.file}:${f.line}` — colon joins with no pad.
+ *   - a type annotation, an object literal, a CSS ratio — none of which can
+ *     produce the `}:${` spelling at all.
+ *
+ * A BODY ALREADY REPORTED BY A LANE ABOVE IS NOT REPORTED AGAIN. The lanes
+ * above report the DIVISION line of a clock; this one reports the JOIN. Both
+ * naming the same body would re-open every censused clock in eight registers
+ * under a second line number, so this lane stays silent inside any function
+ * body another lane already named.
+ */
+const SLICE_PAD_RE = /\(\s*["'`]0["'`]\s*\+[^)]*\)\s*\.\s*slice\(\s*-\s*2\s*\)/;
+const PADDED_PART_RE = new RegExp(`${PAD2_RE.source}|${SLICE_PAD_RE.source}`);
+
+/** `}:${` (template) or `+ ":" +` (concatenation) — two parts, one colon. */
+const CONCAT_COLON_RE = /\+\s*["']\s*:\s*["']\s*\+/;
+
+/**
+ * TIME WORDS a clock's parts name themselves with. Matched against the JOIN's
+ * own interpolations only — not the whole line — so a `${label}:${port}` beside
+ * an unrelated `seconds` variable is not a clock.
+ */
+const TIME_WORD_RE =
+  /\b(?:h|hh|hr|hrs|hour|hours|m|mm|min|mins|minute|minutes|s|ss|sec|secs|second|seconds|total|elapsed|remaining|duration)(?:[A-Z][\w$]*)?\b/;
+
+/** A time base MULTIPLIED, DIVIDED or MODULO'd — the function-body corroboration. */
+const ANY_TIME_BASE_OP_RE = new RegExp(
+  String.raw`(?:[/%*]\s*\(?\s*(?:${TIME_BASE}|${SECONDS_BASE})|(?:${TIME_BASE}|${SECONDS_BASE})\s*\*)`,
+);
+
+/**
+ * A TIME OF DAY, in its two spellings. Tested against the RAW function body,
+ * because the second spelling lives inside a string literal.
+ *   - wall-clock COMPONENT accessors (`getHours()`, `toLocaleTimeString`).
+ *     `getTime()` is deliberately absent: an epoch delta IS a duration.
+ *   - a QUOTED `"AM"` / `"PM"`. The live `formatTimeOfDay` in
+ *     features/workflow-runtime/triggers/recurrence.ts takes plain `hour` and
+ *     `minute` NUMBERS — no Date anywhere — and renders `9:05 AM` for a
+ *     recurrence schedule. Its parts are named `m` and `display`, so the
+ *     time-word arm fires on it; the meridiem is what proves it is a clock on
+ *     the wall rather than a length of time.
+ * Both stay silent BY DESIGN: the kit has `clock` / `compact` / `coarse`
+ * DURATION voices and no time-of-day voice, so there is nothing to collapse
+ * these onto. When one is added, this exclusion is what has to be revisited.
+ */
+const WALL_CLOCK_RE =
+  /\.get(?:UTC)?(?:Hours|Minutes|Seconds)\s*\(|toLocaleTimeString|Intl\.DateTimeFormat|["'`]\s*(?:AM|PM)\s*["'`]/;
+
+/**
+ * A MINIFIED BUNDLE IS NOT AUTHORED SOURCE. `git ls-files *.js` reaches
+ * committed build output — matrx-frontend's `public/blob-sw.js` is one 7 KB
+ * line — and a whole bundle on one line will contain a padded colon join and a
+ * `* 1000` somewhere by sheer volume, with no body anyone could collapse. No
+ * hand-written clock line comes close to this length.
+ */
+const MINIFIED_LINE = 500;
+
+const BLOCK_KEYWORD_RE =
+  /^\s*(?:\}\s*)?(?:else\b|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|try\b|catch\b|finally\b|do\b)/;
+/** A brace opened by a FUNCTION: `function f() {`, `=> {`, `foo(a): T {`, `): T {`. */
+const FUNCTION_START_RE =
+  /\bfunction\b|=>|[\w$]\s*\([^()]*\)\s*(?::[^{;]*)?\{\s*$|^\s*\)\s*(?::[^{;]*)?\{\s*$/;
+
+/** Every brace-delimited block in the file, innermost-last per closing brace. */
+function braceBlocks(lines) {
+  const blocks = [];
+  const stack = [];
+  for (let i = 0; i < lines.length; i++) {
+    const code = codeOnlyLine(lines[i]);
+    for (const ch of code) {
+      if (ch === "{") stack.push(i);
+      else if (ch === "}") {
+        const start = stack.pop();
+        if (start !== undefined) blocks.push({ start, end: i });
+      }
+    }
+  }
+  return blocks;
+}
+
+/**
+ * The FUNCTION body containing `index`: the innermost brace block whose opening
+ * line is a function signature rather than an `if` / `for` / object literal.
+ * Falls back to a ±WINDOW band when the join sits at module top level.
+ */
+function enclosingFunction(lines, blocks, index) {
+  let best = null;
+  for (const b of blocks) {
+    if (b.start > index || b.end < index) continue;
+    const head = lines[b.start];
+    if (BLOCK_KEYWORD_RE.test(head)) continue;
+    if (!FUNCTION_START_RE.test(head)) continue;
+    if (best === null || b.start > best.start) best = b;
+  }
+  return (
+    best ?? {
+      start: Math.max(0, index - WINDOW),
+      end: Math.min(lines.length - 1, index + WINDOW),
+    }
+  );
+}
+
+/** The `${…}` expressions on a line — a join's PARTS. */
+function interpolationsIn(line) {
+  const parts = [];
+  for (let i = 0; i < line.length - 1; i++) {
+    if (line[i] !== "$" || line[i + 1] !== "{") continue;
+    let depth = 1;
+    let j = i + 2;
+    let expr = "";
+    while (j < line.length && depth > 0) {
+      if (line[j] === "{") depth += 1;
+      else if (line[j] === "}") depth -= 1;
+      if (depth > 0) expr += line[j];
+      j += 1;
+    }
+    parts.push(expr);
+    i = j - 1;
+  }
+  return parts;
+}
+
+/** Colon-clock findings: the JOIN lines no arithmetic lane can reach. */
+function clockVoiceIn(lines, reported) {
+  const blocks = braceBlocks(lines);
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.length > MINIFIED_LINE) continue;
+    const templateJoin = COLON_JOIN_RE.test(line);
+    const concatJoin = CONCAT_COLON_RE.test(line);
+    if (!templateJoin && !concatJoin) continue;
+
+    const scope = enclosingFunction(lines, blocks, i);
+    let alreadyNamed = false;
+    for (const r of reported) {
+      if (r >= scope.start && r <= scope.end) alreadyNamed = true;
+    }
+    if (alreadyNamed) continue;
+
+    const rawBody = lines.slice(scope.start, scope.end + 1).join("\n");
+    const body = lines
+      .slice(scope.start, scope.end + 1)
+      .map(codeOnlyLine)
+      .join("\n");
+    if (WALL_CLOCK_RE.test(rawBody)) continue;
+    // THE ZERO PAD may sit on the join or on the line that builds a part:
+    // `const hh = String(x).padStart(2, "0"); … `${hh}:${mm}`` is the same
+    // clock written in two steps. The function body is the window for it too.
+    if (!PADDED_PART_RE.test(rawBody)) continue;
+
+    const parts = templateJoin
+      ? interpolationsIn(line).join(" | ")
+      : codeOnlyLine(line);
+    const namesTime = TIME_WORD_RE.test(parts);
+    const baseInScope = ANY_TIME_BASE_OP_RE.test(body);
+    if (!namesTime && !baseInScope) continue;
+    hits.push(i);
+  }
+  return hits;
+}
+
+/**
  * Duration-formatting findings in one file's source.
  * Returns [{ line, text }] — every place a time count becomes a unit string.
  */
@@ -344,6 +555,7 @@ export function durationShapeIn(source) {
       .join("\n");
     if (CLOCK_VOICE_RE.test(clockWindow)) report(i);
   }
+  for (const index of clockVoiceIn(lines, [...seen])) report(index);
   out.sort((a, b) => a.line - b.line);
   return out;
 }
@@ -555,6 +767,258 @@ export function selfTestDurationShape() {
     return {
       ok: false,
       why: `angle maths was reported as a duration formatter (${degreeHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // ── THE CLOCK VOICE, FUNCTION-SCOPED (2026-09-12, ninth review) ──────────
+  // Four live bodies on origin/main that rendered colon clocks while every
+  // lane above stayed green. Each is planted BYTE-FOR-BYTE, and each proves a
+  // DIFFERENT leg of the voice rule, so a mutation to one leg names itself.
+
+  // LEG 1 — NO ARITHMETIC AT ALL. `formatYouTubeDuration`: the parts come out
+  // of an ISO-8601 `PT#H#M#S` regex, so the only evidence is the padded colon
+  // join and the parts NAMING themselves as time.
+  const isoClock = [
+    "export function formatYouTubeDuration(value) {",
+    '  if (!value) return "—";',
+    "  const match = value.match(ISO_DURATION);",
+    "  if (!match) return value;",
+    "  const days = Number(match[1] ?? 0);",
+    "  const hours = Number(match[2] ?? 0) + days * 24;",
+    "  const minutes = Number(match[3] ?? 0);",
+    "  const seconds = Math.floor(Number(match[4] ?? 0));",
+    "  if (hours > 0) {",
+    '    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;',
+    "  }",
+    '  return `${minutes}:${String(seconds).padStart(2, "0")}`;',
+    "}",
+  ].join("\n");
+  if (durationShapeIn(isoClock).length === 0) {
+    return {
+      ok: false,
+      why: "a colon clock built from an ISO-8601 duration regex was NOT reported — it contains no `/60` anywhere, so the TIME-WORD leg (the parts naming themselves `hours`/`minutes`/`seconds`) is the only evidence there is",
+    };
+  }
+
+  // LEG 2 — MULTIPLICATION. `transcript-parser.ts` / `TranscriptViewer.tsx`
+  // parse a clock BACK into seconds, so the time base is `* 3600` / `* 60`.
+  // The lanes above admit only `/` and `%`, by design; the voice lane admits
+  // `*` because a zero-padded colon join in the same body is not a budget.
+  const parseThenRender = [
+    "function parseTimeToken(raw) {",
+    "  const parts = raw.trim().split(':').map((p) => parseInt(p, 10));",
+    "  let hours = 0;",
+    "  let minutes = 0;",
+    "  let seconds = 0;",
+    "  const totalSeconds = hours * 3600 + minutes * 60 + seconds;",
+    "  const timecode =",
+    "    hours > 0",
+    '      ? `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`',
+    '      : `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;',
+    "  return { timecode, seconds: totalSeconds };",
+    "}",
+  ].join("\n");
+  if (durationShapeIn(parseThenRender).length === 0) {
+    return {
+      ok: false,
+      why: "a transcript timecode body whose only time base is MULTIPLICATION (`hours * 3600 + minutes * 60`) was NOT reported — parsing a clock multiplies, only rendering one divides, so a divide-only rule is blind to every transcript stamp in the fleet",
+    };
+  }
+
+  // LEG 3 — THE FUNCTION BODY, NOT A LINE WINDOW. `formatTimeRemaining`:
+  // the `/1000` and `/60` live SIXTEEN lines up in a different function, and
+  // the join names `minutes` / `seconds`. A ±3 (or ±6) line window reaches
+  // neither.
+  const acrossFunctions = [
+    "export function getTimeRemaining(expiresAt) {",
+    "  const now = new Date();",
+    "  const expires = new Date(expiresAt);",
+    "  const diffMs = expires.getTime() - now.getTime();",
+    "  if (diffMs <= 0) {",
+    "    return { minutes: 0, seconds: 0, expired: true };",
+    "  }",
+    "  const totalSeconds = Math.floor(diffMs / 1000);",
+    "  const minutes = Math.floor(totalSeconds / 60);",
+    "  const seconds = totalSeconds % 60;",
+    "  return { minutes, seconds, expired: false };",
+    "}",
+    "",
+    "export function formatTimeRemaining(expiresAt) {",
+    "  const { minutes, seconds, expired } = getTimeRemaining(expiresAt);",
+    '  if (expired) return "Expired";',
+    '  return `${minutes}:${seconds.toString().padStart(2, "0")}`;',
+    "}",
+  ].join("\n");
+  const acrossHits = durationShapeIn(acrossFunctions);
+  if (!acrossHits.some((h) => h.text.includes("padStart"))) {
+    return {
+      ok: false,
+      why: "a clock whose JOIN sits in one function and whose time arithmetic sits sixteen lines up in ANOTHER was NOT reported at the join — the window must be the function body the join is in, and the join must stand on its own time-word parts",
+    };
+  }
+
+  // LEG 4 — THE OLD PAD SPELLING. `("0" + s).slice(-2)` is the same clock.
+  const slicePad = [
+    "function stamp(minutes, s) {",
+    "  const total = minutes * 60 + s;",
+    '  return `${minutes}:${("0" + s).slice(-2)}`;',
+    "  return total;",
+    "}",
+  ].join("\n");
+  if (durationShapeIn(slicePad).length === 0) {
+    return {
+      ok: false,
+      why: "a clock zero-padded the OLD way (`(\"0\" + s).slice(-2)`) was NOT reported — a pad rule that knows only `padStart` misses every pre-ES2017 body",
+    };
+  }
+
+  // LEG 5 — THE TIME-BASE ARM, ON ITS OWN. Parts that name NOTHING
+  // (`${a}:${b}`), a time base that is only a MULTIPLICATION, and the two
+  // EIGHT LINES APART inside one function. Nothing here is reachable by a
+  // time-word test, by a divide-only base, or by any line window: this fixture
+  // goes green the moment the scope stops being the function body.
+  const scopedBase = [
+    "function render(a, b) {",
+    "  const total = a * 60 + b;",
+    "  log(total);",
+    "  log(1);",
+    "  log(2);",
+    "  log(3);",
+    "  log(4);",
+    "  log(5);",
+    "  log(6);",
+    "  log(7);",
+    '  return `${a}:${String(b).padStart(2, "0")}`;',
+    "}",
+  ].join("\n");
+  if (durationShapeIn(scopedBase).length === 0) {
+    return {
+      ok: false,
+      why: "a padded colon join whose ONLY corroboration is a `* 60` eight lines up in the SAME FUNCTION was NOT reported — the clock voice's window is the function body, and multiplication counts as a time base once a zero-padded colon join is in it",
+    };
+  }
+
+  // NEGATIVE — A WALL CLOCK IS NOT A DURATION. `${hh}:${mm}` off
+  // `getHours()` / `getMinutes()` is a TIME OF DAY, and the kit has no
+  // wall-clock voice to collapse it onto. It must stay silent BY DESIGN.
+  const wallClockStamp = [
+    "function at(d) {",
+    '  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;',
+    "}",
+    "function atTwoSteps(d) {",
+    '  const hh = String(d.getHours()).padStart(2, "0");',
+    '  const mm = String(d.getMinutes()).padStart(2, "0");',
+    "  return `${hh}:${mm}`;",
+    "}",
+  ].join("\n");
+  const wallStampHits = durationShapeIn(wallClockStamp);
+  if (wallStampHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a WALL CLOCK (\`getHours()\`/\`getMinutes()\`) was reported as a duration — it is a time of day, and the kit has no wall-clock voice to collapse it onto (${wallStampHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // NEGATIVE — a host:port and a file:line join. Colons, no pad.
+  const colonsThatAreNotClocks = [
+    "function describe(host, port, f) {",
+    "  const addr = `${host}:${port}`;",
+    "  const where = `${f.file}:${f.line}`;",
+    "  return `${addr} ${where}`;",
+    "}",
+  ].join("\n");
+  const colonHits = durationShapeIn(colonsThatAreNotClocks);
+  if (colonHits.length !== 0) {
+    return {
+      ok: false,
+      why: `an unpadded colon join (\`host:port\`, \`file:line\`) was reported as a clock — the ZERO PAD to two digits is what makes a colon join a clock (${colonHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // NEGATIVE — A TIME OF DAY WITH NO DATE IN SIGHT. Byte-for-byte the live
+  // `formatTimeOfDay` from features/workflow-runtime/triggers/recurrence.ts:
+  // plain `hour` / `minute` numbers, a `%` against 12, and `"9:05 AM"` out.
+  // Its part is literally named `m`, so only the meridiem separates it from a
+  // duration — and the kit has no time-of-day voice to collapse it onto.
+  const timeOfDay = [
+    "export function formatTimeOfDay(hour, minute) {",
+    "  const h = clampInt(hour, 0, 23);",
+    "  const m = clampInt(minute, 0, 59);",
+    '  const suffix = h < 12 ? "AM" : "PM";',
+    "  const display = h % 12 === 0 ? 12 : h % 12;",
+    '  return `${display}:${String(m).padStart(2, "0")} ${suffix}`;',
+    "}",
+  ].join("\n");
+  const timeOfDayHits = durationShapeIn(timeOfDay);
+  if (timeOfDayHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a TIME OF DAY ("9:05 AM", built from plain hour/minute numbers with no Date in sight) was reported as a duration — the meridiem is the only thing that distinguishes it, and the kit has no wall-clock voice to collapse it onto (${timeOfDayHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // NEGATIVE — A MINIFIED BUNDLE IS NOT SOURCE. `git ls-files *.js` reaches
+  // committed build output; one 7 KB line will contain a padded colon join and
+  // a time base somewhere, and there is no body in it to collapse.
+  const minified = [
+    "// matrx blob-cache SW — built 2026-09-13T03:04:51.773Z",
+    '"use strict";(()=>{' +
+      "x".repeat(400) +
+      'let a=`${h}:${String(s).padStart(2,"0")}`,b=t*1000;' +
+      "y".repeat(200) +
+      "})();",
+  ].join("\n");
+  const minifiedHits = durationShapeIn(minified);
+  if (minifiedHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a MINIFIED BUNDLE line was reported as a duration body — a whole bundle on one line contains every shape by volume and holds nothing anybody can collapse (${minifiedHits
+        .map((h) => h.text.slice(0, 60))
+        .join(" | ")})`,
+    };
+  }
+
+  // NEGATIVE — THE PAD IS THE WHOLE DIFFERENCE. The live `fix-prompt.ts`
+  // shape: a `${f.file}:${f.line}` join inside a function that also holds
+  // time-base arithmetic. Time words, a time base, a colon join — and no zero
+  // pad, because it is not a clock. Drop the pad requirement and this fires.
+  const fileLineBesideTime = [
+    "function buildPrompt(findings, budgetSeconds) {",
+    "  const budgetMs = budgetSeconds * 1000;",
+    "  const rows = findings.map((f) => `  - ${f.file}:${f.line} ${f.message}`);",
+    "  return { rows, budgetMs };",
+    "}",
+  ].join("\n");
+  const fileLineHits = durationShapeIn(fileLineBesideTime);
+  if (fileLineHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a \`file:line\` join inside a function that does time arithmetic was reported as a clock — the ZERO PAD TO TWO DIGITS is the only thing separating a clock from every other colon join in the fleet (${fileLineHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // NEGATIVE — a padded colon join whose parts are not time and whose body
+  // does no time arithmetic: a MIDI/track address `${bank}:${String(patch).padStart(2,"0")}`.
+  const paddedNonClock = [
+    "function address(bank, patch) {",
+    '  return `${bank}:${String(patch).padStart(2, "0")}`;',
+    "}",
+  ].join("\n");
+  const paddedHits = durationShapeIn(paddedNonClock);
+  if (paddedHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a padded colon join with no time words and no time arithmetic was reported as a clock (${paddedHits
         .map((h) => h.text)
         .join(" | ")})`,
     };

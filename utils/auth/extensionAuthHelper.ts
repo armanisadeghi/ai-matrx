@@ -108,16 +108,3 @@ export function getTimeRemaining(expiresAt: string): {
 
   return { minutes, seconds, expired: false };
 }
-
-/**
- * Format time remaining as MM:SS
- */
-export function formatTimeRemaining(expiresAt: string): string {
-  const { minutes, seconds, expired } = getTimeRemaining(expiresAt);
-
-  if (expired) {
-    return "Expired";
-  }
-
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}

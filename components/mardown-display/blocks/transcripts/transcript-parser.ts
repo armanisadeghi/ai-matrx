@@ -1,3 +1,4 @@
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { TranscriptSegment } from "./AdvancedTranscriptViewer";
 
 export type ParsedTranscript = {
@@ -38,25 +39,11 @@ function parseTimeToken(raw: string): TimeAnchor {
   }
 
   const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-  const timecode =
-    hours > 0
-      ? `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-      : `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  const timecode = formatDurationSeconds(totalSeconds, { style: "clock" });
 
   return { timecode, seconds: totalSeconds };
 }
 
-/** Legacy bracket lines use unpadded minutes when under one hour (e.g. `0:30`). */
-function formatLegacyBracketTimecode(
-  hours: number,
-  minutes: number,
-  seconds: number,
-): string {
-  if (hours > 0) {
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  }
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
 
 const BOILERPLATE_TITLE_RE = /^(?:audio transcription|full transcription)$/i;
 
@@ -296,7 +283,7 @@ function parseTranscriptSegments(
       }
 
       const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-      const timecodeStr = formatLegacyBracketTimecode(hours, minutes, seconds);
+      const timecodeStr = formatDurationSeconds(totalSeconds, { style: "clock" });
 
       currentSegment = {
         timecode: timecodeStr,
