@@ -72,7 +72,17 @@ function WaitingRowCard({ row }: { row: WaitingRunRow }) {
           ) : (
             <span className="truncate">{row.workflowName ?? "Workflow"}</span>
           )}
-          {row.askedAt && <span>· waiting {formatRelativeTime(row.askedAt).replace(" ago", "")}</span>}
+          {/* TWO STAMPS, TWO DIRECTIONS, ONE FORMATTER. "waiting" already says
+              which way the elapsed stamp points, so it asks for the bare form
+              — which also keeps a year-old park reading "9/12/2024" instead of
+              the full prose date a hand-rolled `.replace(" ago", "")` used to
+              leave here. The deadline points FORWARD and nothing beside it
+              says so, so it keeps the suffixed voice and reads "due in 2d".
+              Both need @ai-matrx/kit >= 0.13.5: before it, every deadline that
+              was not yet overdue printed "due just now". */}
+          {row.askedAt && (
+            <span>· waiting {formatRelativeTime(row.askedAt, { suffix: false })}</span>
+          )}
           {row.deadline && (
             <span className={cn(overdue && "font-medium text-destructive")}>
               · {overdue ? "past due" : `due ${formatRelativeTime(row.deadline)}`}
