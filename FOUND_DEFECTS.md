@@ -15,6 +15,16 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D317 — Three live-registry/live-DB guards are red on `main`, and their names make triage read them as UNMEASURED
+
+All three run in CI **with credentials present** and return real verdicts, but each is named `… (UNMEASURED without the secret)` — the failure mode, not the finding. Triaging by check title (I did) reads a real measurement as a missing secret. Seen red on `claude/trial-7` head `acbfc27f` and, by construction, on `main`: all three read the live database plus files byte-identical to `main`.
+
+- **`pnpm check:kind-types`** — `features/content-ir/kinds/generated/kinds.generated.ts` is STALE vs the live registry (517 active kinds). Fix: `pnpm shape:types`, commit. Needs live-registry access; cannot be run or verified from a container without credentials. Will need re-running after trial 7's new kinds are published.
+- **`pnpm check:soft-delete-unique-index`** (`no new unique index counts removed rows`) — a unique index counts soft-deleted rows, so a removed row keeps holding its name and nobody can reuse it. Fix: `WHERE deleted_at IS NULL` in a migration (pattern: `migrations/soft_delete_partial_unique_indexes_context.sql`). 🚨 The guard is explicit that the baseline must NOT be grown to clear this.
+- 🚨 **`pnpm check:hr-punch-write-path:strict`** — "A client-direct insert path into `hr.punch` may now exist… a punch row can be manufactured without passing a single invariant `hr.punch_record` enforces." `hr.punch` is a component table, so its RLS write policy admits anyone holding editor on the parent — RLS will NOT stop this. **This is a live security finding and belongs to the HR lane's owner now**, not to a PR thread.
+
+**Who decides / what is uncertain.** Nothing here is decidable from the code alone: each needs live-database access to reproduce and to verify a fix. Filed rather than fixed for exactly that reason, not parked. The naming problem is the fourth defect and the cheapest to fix: a guard that CAN measure should not carry its unmeasured-mode caveat as its check title, or every triage pass discounts it.
+
 ### D316 — TWO hooks now enforce the fire-once law for a masterwork run, and the merge had to pick one
 
 Two trials independently fixed the same defect — a run's completion callback firing again on every re-render — with two different primitives, and BOTH survived the 2026-09-13 merge into `claude/trial-7`:
