@@ -28,6 +28,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import type { UseFileUploadResult } from "@/features/files/handler/hooks/useFileUpload";
 
 import { IngestSourceDialog } from "../IngestSourceDialog";
 import { INGEST_LANES } from "../../../browse/approachLane";
@@ -79,7 +80,11 @@ jest.mock("../../../durable-run/useMasterworkRun", () => ({
   },
 }));
 
-const upload = jest.fn(async () => ({ fileId: "file-abc" }));
+const upload = jest.fn(
+  async (..._args: Parameters<UseFileUploadResult["upload"]>) => ({
+    fileId: "file-abc",
+  }),
+);
 jest.mock("@/features/files/handler/hooks/useFileUpload", () => ({
   useFileUpload: () => ({ upload }),
 }));
@@ -213,12 +218,19 @@ describe("the monologue Approach's door", () => {
     // distiller by content type — one pipeline, not a second one.
     expect(usePath.value).toBe("/masterworks/ingest-file");
     expect(upload).toHaveBeenCalledTimes(1);
-    const [payload, options] = upload.mock.calls[0] as [
-      { kind: string; file: File },
-      { folderPath: string; metadata: Record<string, unknown> },
-    ];
-    expect(payload.file.type).toBe("audio/webm");
-    expect(payload.file.name).toContain("Talking it through");
+    const [source, options] = upload.mock.calls[0]!;
+    expect(source.kind).toBe("file");
+    if (source.kind !== "file") {
+      throw new Error("The monologue recording must use the file upload source");
+    }
+    if (!options) {
+      throw new Error("The monologue recording must include upload options");
+    }
+    if (!options.metadata) {
+      throw new Error("The monologue recording must include source metadata");
+    }
+    expect(source.file.type).toBe("audio/webm");
+    expect(source.file.name).toContain("Talking it through");
     // CUSTODY: the recording is filed against the Rulebook it was said about,
     // not into a nameless general folder.
     expect(options.folderPath).toBe("Masterwork/Sources");
