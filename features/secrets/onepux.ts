@@ -1,6 +1,7 @@
 import { LosslessNumber, parse, stringify } from "lossless-json";
 
 import { safeDestination, type CsvImportLimits } from "./csv-import";
+import { jsonDepthOk } from "./bitwarden-json";
 import type { StructuredImportRecord } from "./structured-import";
 
 type ObjectValue = Record<string, unknown>;
@@ -80,14 +81,16 @@ function attributes(value: ObjectValue, account: boolean): boolean {
   return only(value, keys) && keys.every((key) => typeof value[key] === "string") && typeof value[idKey] === "string" && (value[idKey] as string).length > 0 && (!account ? ["P", "E", "U"].includes(value.type as string) : true);
 }
 
-export function parseOnePuxData(exportAttributesText: string, exportDataText: string, limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords" | "maxCellBytes">): StructuredImportRecord[] {
-  const maxCellBytes = limits.maxCellBytes ?? limits.maxFileBytes;
+export function parseOnePuxData(exportAttributesText: string, exportDataText: string, limits: Pick<CsvImportLimits, "maxFileBytes" | "maxRecords" | "maxCellBytes" | "maxJsonDepth"> & { maxJsonDepth: number }): StructuredImportRecord[] {
+  const maxCellBytes = limits.maxCellBytes;
   if (bytes(exportAttributesText) + bytes(exportDataText) > limits.maxFileBytes) throw new Error("The 1Password export exceeds this organization’s import size limit.");
   let exportAttributes: ObjectValue;
   try { exportAttributes = object(parse(exportAttributesText)) ?? {}; } catch { throw new Error("The 1Password export attributes could not be read safely."); }
+  if (!jsonDepthOk(exportAttributes, limits.maxJsonDepth)) throw new Error("The 1Password export attributes exceed the nesting limit.");
   if (!only(exportAttributes, ["version", "description", "createdAt"]) || !numericLexeme(exportAttributes.version)?.isThree || exportAttributes.description !== "1Password Unencrypted Export" || !integer(exportAttributes.createdAt)) throw new Error("This is not a supported unencrypted 1Password v3 export.");
   let root: ObjectValue;
   try { root = object(parse(exportDataText)) ?? {}; } catch { throw new Error("The 1Password export could not be read safely."); }
+  if (!jsonDepthOk(root, limits.maxJsonDepth)) throw new Error("The 1Password export exceeds the nesting limit.");
   if (!stringsWithin(exportAttributes, maxCellBytes)) throw new Error("The 1Password export exceeds this organization’s field limit.");
   if (!only(root, ["accounts"]) || !Array.isArray(root.accounts)) throw new Error("This is not a supported 1Password 1PUX export.");
   const records: StructuredImportRecord[] = [];

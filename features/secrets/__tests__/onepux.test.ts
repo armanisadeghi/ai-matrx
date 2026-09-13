@@ -3,9 +3,13 @@ import { parseOnePuxData } from "../onepux";
 const attrs = '{"version":3,"description":"1Password Unencrypted Export","createdAt":1}';
 const item = (state = "active", id = "item") => `{"uuid":"${id}","favIndex":0,"createdAt":1,"updatedAt":1,"state":"${state}","categoryUuid":"001","overview":{"title":"Example","subtitle":"","url":"https://example.com","urls":[{"label":"other","url":"https://two.example"}]},"details":{"loginFields":[{"id":"u","name":"user","value":"me","fieldType":"T","designation":"username"},{"id":"p","name":"pass","value":"secret","fieldType":"P","designation":"password"}]}}`;
 const data = (items = item()) => `{"accounts":[{"attrs":{"accountName":"a","name":"a","avatar":"","email":"a@b.c","uuid":"account","domain":"x"},"vaults":[{"attrs":{"uuid":"vault","desc":"","avatar":"","name":"P","type":"P"},"items":[${items}]}]}]}`;
-const limits = { maxFileBytes: 100000, maxRecords: 20, maxCellBytes: 10000 };
+const limits = { maxFileBytes: 100000, maxRecords: 20, maxCellBytes: 10000, maxJsonDepth: 64 };
 
 describe("sanitized upstream 1PUX ordinary login shape", () => {
+  test("enforces the configured nesting limit after lossless parsing", () => {
+    const nested = `{"accounts":${"[".repeat(65)}0${"]".repeat(65)}}`;
+    expect(() => parseOnePuxData(attrs, nested, { ...limits, maxJsonDepth: 64 })).toThrow("nesting limit");
+  });
   test("projects destinations, preserves source envelope, and tracks archived lifecycle", () => {
     const [record] = parseOnePuxData(attrs, data(item("archived")), limits);
     expect(record).toMatchObject({ status: "supported", sourceState: "archived", kind: "website_login", urls: ["https://example.com", "https://two.example"], username: "me", password: "secret" });

@@ -6,7 +6,7 @@ import type { StructuredImportRecord } from "./structured-import";
 export type OnePuxWorkerLimits = Pick<
   CsvImportLimits,
   "maxFileBytes" | "maxRecords" | "maxCellBytes"
-> & { maxJsonDepth?: number };
+> & { maxJsonDepth: number };
 export type OnePuxWorkerRequest =
   | {
       type?: "parse";
