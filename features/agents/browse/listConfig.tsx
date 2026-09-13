@@ -13,7 +13,7 @@ import type {
   EntityListController,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { AddToOrchestraDialog } from "./components/AddToOrchestraDialog";
 import { AgentBrowseCards } from "./components/AgentBrowseCards";
 import { AgentBrowseRows } from "./components/AgentBrowseRows";
@@ -238,7 +238,7 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
     rowKind: "agent",
     listKind: "agent-list",
     humanRow: (row) =>
-      `${row.name}${row.category ? ` (${row.category})` : ""} — updated ${relativeTime(row.updated_at)}`,
+      `${row.name}${row.category ? ` (${row.category})` : ""} — updated ${formatRelativeTime(row.updated_at)}`,
     // Row copy lives in the "…" menu; the toolbar strip would be a lone pair
     // of unlabeled icons floating above the header.
     showRow: false,

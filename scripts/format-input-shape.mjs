@@ -71,6 +71,22 @@
  *          word "length" alone never proves bytes; say "bytes" in the name;
  *        - anything else (`value`, `n`, `status.downloaded`) → silent.
  *
+ *   E. A `.length` ANYWHERE IN THE ARGUMENT fires, not only in an operand:
+ *      `items.reduce((a, b) => a + b.text.length, 0)` is a character count
+ *      whether or not the syntax carrying it is a value-position operand.
+ *
+ *   F. BINDINGS ARE FOLLOWED TO A BOUNDED FIXPOINT (8 hops, not 2), through
+ *      `const`/`let`/assignment/object-key AND through a React setter:
+ *      `setSize(text.length)` is a binding of `size`.
+ *
+ *   G. A BYTE-SOUNDING NAME IS NOT A BYTE CONTAINER BY ITSELF. `buffer`, `buf`
+ *      and `blob` count as bytes only when the file's own bindings say so
+ *      (`Buffer.*`, `new Blob`, `new Uint8Array`, `new ArrayBuffer`, a
+ *      TextEncoder encode, a `readFile` with NO encoding, a fetch
+ *      `.arrayBuffer()` / `.blob()`). A string assigned to `buffer` is a
+ *      string. With no in-file binding at all the name is all there is, which
+ *      is the cross-file limit below, declared rather than hidden.
+ *
  * THE BOUNDARY, WRITTEN DOWN, because a lane that fires on a real byte count is
  * a lane someone turns off, and a lane that silently passes a character count
  * is decoration.
@@ -97,6 +113,13 @@
  *     loud, which is the right direction, and renaming the byte one `sizeBytes`
  *     is the fix that also helps the next reader.
  *   - HELPERS: `formatFileSize(total(items))` is judged by the callee's name only.
+ *     A helper's RETURN VALUE is never followed into its body, for the same
+ *     reason cross-file is not: it needs a program, not a regex. The mitigation
+ *     is the same one — a helper that returns bytes says so in its name
+ *     (`base64ByteLength`), and a helper that returns a count says `Count`.
+ *   - A NUMBER REBUILT FROM TEXT: `Number(`${x}`)` and friends unwrap to the
+ *     inner expression only when the wrapper is a plain `Number(...)` /
+ *     `parseInt(...)`; a template literal in between is opaque and passes.
  *   - MULTI-LINE BINDINGS are read while the next line continues the expression
  *     (starts with `.`, `?`, `:` or a binary operator, or the line ends on one);
  *     any other line break ends the RHS. (A multi-line `const bytes = chunks`
@@ -146,18 +169,64 @@ const BYTE_SEGMENTS = new Set([
   "blob",
 ]);
 
-/** A `.length` RECEIVER whose last segment is one of these holds bytes. */
+/**
+ * A `.length` RECEIVER whose last segment is one of these holds bytes, and the
+ * NAME alone is enough: nothing in this fleet calls a string `bytes` or
+ * `encoded`.
+ */
 const BYTE_CONTAINER_SEGMENTS = new Set([
   "bytes",
-  "buffer",
-  "buf",
-  "blob",
   "encoded",
   "uint8",
   "u8",
   "arraybuffer",
   "uint8array",
 ]);
+
+/**
+ * …AND THE AMBIGUOUS ONES (2026-09-12, the sixth review). `buffer`, `buf` and
+ * `blob` were in the set above, so `const buffer = await readFile(p, "utf8");
+ * formatFileSize(buffer.length)` was silent — a STRING assigned to a variable
+ * named `buffer` is a string, and the name was proving the opposite. These
+ * count as bytes only when the file's own bindings say so (`BYTE_SOURCE_RE` /
+ * a `readFile` with no encoding), or when there is no in-file binding at all,
+ * which is the declared cross-file limit: then the name is all there is.
+ */
+const AMBIGUOUS_CONTAINER_SEGMENTS = new Set(["buffer", "buf", "blob"]);
+
+/** RHS shapes that really do produce bytes. */
+const BYTE_SOURCE_RE =
+  /Buffer\s*\.\s*(?:from|alloc|allocUnsafe|concat|byteLength)|new\s+Blob\b|new\s+Uint8Array\b|new\s+ArrayBuffer\b|\.\s*arrayBuffer\s*\(|\.\s*blob\s*\(|__BYTES__/;
+
+/** A binding that says nothing either way (`= null`, `= 0`, a declaration). */
+const EMPTY_BINDING_RE = /^(?:null|undefined|0|\[\]|new\s+Uint8Array\s*\(\s*0\s*\))$/;
+
+/** Is this binding RHS a real byte source? `readFile(p)` is; `readFile(p, "utf8")` is NOT. */
+function isByteSourceRhs(rhs) {
+  const text = neutralizeByteConversions(rhs);
+  if (BYTE_SOURCE_RE.test(text)) return true;
+  const m = /(?<![\w$])readFile\s*\(/.exec(text);
+  if (m) {
+    const end = closeOf(text, m.index + m[0].length - 1);
+    const args = end > 0 ? text.slice(m.index + m[0].length, end - 1) : "";
+    if (!/['"`](?:utf-?8|ascii|latin1|binary|base64|hex|ucs-?2|utf-?16le)['"`]|encoding\s*:/i.test(args)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * An AMBIGUOUS byte name: bytes only if every in-file binding of it is a byte
+ * source. No binding in this file → the name is all there is (declared limit).
+ */
+function ambiguousNameIsBytes(expression, ctx) {
+  const root = rootOf(expression);
+  if (!root || root.call) return true;
+  const binds = bindingsOf(root.name, ctx).filter((b) => !EMPTY_BINDING_RE.test(b.rhs.trim()));
+  if (binds.length === 0) return true;
+  return binds.every((b) => isByteSourceRhs(b.rhs));
+}
 
 /** Names that prove the operand is a COUNT of things, not a measure of bytes. */
 const COUNT_SEGMENTS = new Set([
@@ -183,6 +252,19 @@ const TEXT_SOURCE_RE = /\b(?:textContent|innerText|innerHTML|outerHTML)\b|\bJSON
 
 /** The opaque token a recognised byte conversion is replaced with. */
 const BYTES_TOKEN = "__BYTES__";
+
+/**
+ * HOW FAR A BINDING IS FOLLOWED — a BOUNDED FIXPOINT, not two hops (2026-09-12).
+ *
+ * The budget was 2, and the sixth adversarial review walked straight past it:
+ * `const a = text.length; const b = a; const c = b; formatFileSize(c)` is three
+ * hops, and a real component reaches five without trying (a raw string, a
+ * memo, a state value, a prop object, a render-time local). The bound stays —
+ * a cycle or a very common name must never make this lane loop — but at 8 it
+ * is deeper than any chain a single file has been seen to carry, and the cycle
+ * guard in `followBindings` (not the counter) is what makes termination safe.
+ */
+const FOLLOW_HOPS = 8;
 
 /**
  * The argument expression of the call whose `(` sits at `open`, by paren
@@ -277,6 +359,13 @@ export function neutralizeByteConversions(expression) {
     { re: /Buffer\s*\.\s*byteLength\s*\($/, suffix: null },
     { re: /new\s+Blob\s*\($/, suffix: /^\s*\.\s*size\b/ },
     { re: /new\s+(?:Uint8Array|ArrayBuffer)\s*\($/, suffix: /^\s*\.\s*(?:length|byteLength)\b/ },
+    // node:zlib's sync codecs return a Buffer, always — `gzipSync(x).length` is
+    // the compressed BYTE count, and a build readout that prints it beside a
+    // raw byte count is right on both halves (2026-09-12).
+    {
+      re: /(?<![\w$.])(?:gzip|gunzip|deflate|deflateRaw|inflate|inflateRaw|brotliCompress|brotliDecompress)Sync\s*\($/,
+      suffix: /^\s*\.\s*(?:length|byteLength)\b/,
+    },
   ];
   // The decoded size of base64 text: `b64.length * 3 / 4` (ASCII alphabet, 4 chars → 3 bytes).
   let text = expression.replace(
@@ -373,10 +462,17 @@ function bindingsOf(name, ctx) {
   const cacheKey = `b:${name}`;
   if (ctx.cache.has(cacheKey)) return ctx.cache.get(cacheKey);
   const esc = name.replace(/\$/g, "\\$");
+  // THE REACT STATE BINDING (2026-09-12). `const [size, setSize] = useState(0)`
+  // never assigns to `size` again — every value it will ever hold arrives
+  // through `setSize(...)`, so `setSize(text.length)` IS a binding of `size`
+  // and the sixth review used exactly that to walk a character count past this
+  // lane. The setter's first argument is read as the RHS.
+  const setter = `set${name[0].toUpperCase()}${name.slice(1)}`.replace(/\$/g, "\\$");
   const res = [
     new RegExp(String.raw`(?:const|let|var)\s+${esc}\s*(?::[^=;\n]+)?=(?![=>])`, "g"),
     new RegExp(String.raw`(?<![\w$])${esc}\s*(?:\+|-|\|\||\?\?)?=(?![=>])`, "g"),
     new RegExp(String.raw`(?:^|[{,])\s*${esc}\s*:(?!:)`, "gm"),
+    new RegExp(String.raw`(?<![\w$])${setter}\s*\(`, "g"),
   ];
   const out = [];
   const seen = new Set();
@@ -427,19 +523,72 @@ function isByteReceiver(receiver, ctx, hops) {
   const r = unwrap(receiver);
   if (r === BYTES_TOKEN) return true;
   const segs = segmentsOf(r.match(/([A-Za-z_$][\w$]*)\s*$/)?.[1] ?? "");
-  if (segs.length > 0 && BYTE_CONTAINER_SEGMENTS.has(segs[segs.length - 1])) return true;
+  const last = segs[segs.length - 1];
+  if (segs.length > 0 && BYTE_CONTAINER_SEGMENTS.has(last)) return true;
   if (segs.some((s) => s === "uint8" || s === "arraybuffer")) return true;
+  if (segs.length > 0 && AMBIGUOUS_CONTAINER_SEGMENTS.has(last)) {
+    return isFollowable(r) ? ambiguousNameIsBytes(r, ctx) : true;
+  }
   if (hops > 0 && isFollowable(r)) {
     const root = rootOf(r);
     const binds = root ? bindingsOf(root.name, ctx) : [];
-    if (
-      binds.length > 0 &&
-      binds.every((b) => /Uint8Array|ArrayBuffer|arrayBuffer\s*\(|Buffer\s*\.\s*(?:from|alloc|concat)|__BYTES__/.test(neutralizeByteConversions(b.rhs)))
-    ) {
-      return true;
-    }
+    if (binds.length > 0 && binds.every((b) => isByteSourceRhs(b.rhs))) return true;
   }
   return false;
+}
+
+/**
+ * THE RECEIVER of a `.length` that sits at `at` — walked BACKWARDS through
+ * balanced brackets, so `(a ?? b).length` and `f(x).length` come back whole.
+ */
+function receiverBefore(text, at) {
+  let i = at - 1;
+  while (i >= 0 && /\s/.test(text[i])) i -= 1;
+  const end = i + 1;
+  let depth = 0;
+  for (; i >= 0; i -= 1) {
+    const c = text[i];
+    if (c === ")" || c === "]" || c === "}") { depth += 1; continue; }
+    if (c === "(" || c === "[" || c === "{") {
+      if (depth === 0) break;
+      depth -= 1;
+      continue;
+    }
+    if (depth > 0) continue;
+    if (/[\w$.?!'"`]/.test(c)) continue;
+    break;
+  }
+  const receiver = text.slice(i + 1, end).trim();
+  return receiver === "" ? null : receiver;
+}
+
+/**
+ * EVERY `.length` INSIDE AN EXPRESSION, HOWEVER DEEPLY NESTED (2026-09-12).
+ *
+ * Step B splits an argument into the operands that can BECOME its value, and a
+ * `.length` buried in a callback is not one of them: the sixth adversarial
+ * review passed `items.reduce((a, b) => a + b.text.length, 0)` straight through
+ * — the operand is a `reduce` call, judged by the callee name, and the
+ * character count inside it was never looked at. A `.length` on a non-byte
+ * receiver ANYWHERE in the argument expression is a character count reaching
+ * this formatter, whatever syntax carries it.
+ */
+function nestedLengthFinding(text, ctx) {
+  const re = /\??\.\s*length\b/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const receiver = receiverBefore(text, m.index);
+    if (receiver === null) continue;
+    const r = unwrap(receiver);
+    if (isLiteral(r)) continue;
+    if (isByteReceiver(r, ctx, FOLLOW_HOPS)) continue;
+    return (
+      `a NESTED LENGTH (\`${r}.length\`) inside the argument — a string's is ` +
+      "CHARACTERS and an array's is items, and burying it in a callback, a " +
+      "reduce or a ternary does not change what it measures"
+    );
+  }
+  return null;
 }
 
 /** The value-position operands of an expression, split through every step-B operator. */
@@ -505,6 +654,10 @@ function indexDifference(op) {
  */
 function derivationOf(expression, ctx, hops) {
   const text = neutralizeByteConversions(expression);
+  // A binding whose RHS only CONTAINS a character count is still a character
+  // count: `useMemo(() => value.length, [value])` binds one.
+  const nested = nestedLengthFinding(text, ctx);
+  if (nested) return nested;
   for (const op of operandsOf(text)) {
     if (op.kind === "additive") {
       const span = indexDifference(op);
@@ -513,7 +666,7 @@ function derivationOf(expression, ctx, hops) {
     }
     const e = op.text;
     const lengthOf = /^(.*?)\s*\??\.\s*length$/s.exec(e);
-    if (lengthOf && !isByteReceiver(lengthOf[1], ctx, hops)) {
+    if (lengthOf && !isByteReceiver(lengthOf[1], ctx, FOLLOW_HOPS)) {
       return `the \`.length\` of \`${lengthOf[1].trim()}\` — characters or items, not bytes`;
     }
     if (TEXT_SOURCE_RE.test(e)) return `text (\`${e}\`) — characters, not bytes`;
@@ -557,7 +710,7 @@ function judgeArgument(argument, ctx) {
     // D — `.length`: judged by its receiver, never by a byte word elsewhere.
     const lengthOf = /^(.*?)\s*\??\.\s*length$/s.exec(e);
     if (lengthOf) {
-      if (isByteReceiver(lengthOf[1], ctx, 2)) continue;
+      if (isByteReceiver(lengthOf[1], ctx, FOLLOW_HOPS)) continue;
       return (
         `a LENGTH (\`${e}\`) — a string's is CHARACTERS and an array's is items; ` +
         'convert with new TextEncoder().encode(s).length / Buffer.byteLength(s, "utf8"), ' +
@@ -567,7 +720,7 @@ function judgeArgument(argument, ctx) {
     if (TEXT_SOURCE_RE.test(e)) return `text (\`${e}\`) — characters, not bytes`;
     // C — bindings before names.
     if (isFollowable(e)) {
-      const bound = followBindings(e, ctx, 1);
+      const bound = followBindings(e, ctx, FOLLOW_HOPS);
       if (bound) return `a CHARACTER-derived value: ${bound}`;
     }
     // D — the root name.
@@ -593,7 +746,9 @@ function judgeArgument(argument, ctx) {
       );
     }
   }
-  return null;
+  // LAST, so the operand legs keep their own sentences: a `.length` that is not
+  // an operand at all because it is buried inside a callback or a reduce.
+  return nestedLengthFinding(text, ctx);
 }
 
 /**
@@ -693,6 +848,60 @@ export function selfTestFormatInputShape() {
     if (!fires(lines.join("\n"))) {
       fail(`[binding] a character count reaching the call through a binding was NOT reported: ${lines.join(" ")}`);
     }
+  }
+  // ── [nested] A `.length` BURIED IN THE ARGUMENT, not an operand of it.
+  for (const line of [
+    "formatFileSize(parts.reduce((a, b) => a + b.text.length, 0));",
+    "formatFileSize(messages.map((m) => m.content.length).reduce((a, b) => a + b, 0));",
+    "formatFileSize(rows.reduce((acc, r) => acc + JSON.stringify(r).length, 0));",
+  ]) {
+    if (!fires(line)) fail(`[nested] a \`.length\` nested inside the argument was NOT reported: ${line}`);
+  }
+  // ── [memo-binding] a binding whose RHS only CONTAINS the count.
+  const memoBinding = ["  const size = useMemo(() => value.length, [value]);", "  formatFileSize(size);"].join("\n");
+  if (!fires(memoBinding)) fail("[memo-binding] `const size = useMemo(() => value.length, ...)` reaching the call was NOT reported");
+  // ── [state-binding] React state: the SETTER is the binding.
+  const stateBinding = [
+    "  const [size, setSize] = useState(0);",
+    "  setSize(text.length);",
+    "  return <span>{formatFileSize(size)}</span>;",
+  ].join("\n");
+  if (!fires(stateBinding)) fail("[state-binding] a character count stored through `setSize(text.length)` was NOT reported");
+  // ── [hops] deeper than the old two-hop budget, which is how this got through.
+  const fiveHops = [
+    "const raw = node.textContent;",
+    "const a = raw.length;",
+    "const b = a;",
+    "const c = b;",
+    "const d = c;",
+    "formatFileSize(d);",
+  ].join("\n");
+  if (!fires(fiveHops)) fail("[hops] a five-hop binding chain from `.textContent.length` was NOT reported");
+  // ── [gzip] the compressed BYTE count of a build artifact stays silent.
+  const gz = ["const jsGz = gzipSync(Buffer.from(code)).length;", "formatFileSize(jsGz);"].join("\n");
+  if (fires(gz)) fail(`[gzip] a gzipSync(...).length byte count was reported: ${formatInputShapeIn(gz)[0]?.text}`);
+
+  // ── [ambiguous-container] a STRING assigned to a byte-sounding name.
+  for (const lines of [
+    ['const buffer = await readFile(path, "utf8");', "formatFileSize(buffer.length);"],
+    ["const blob = node.innerHTML;", "formatFileSize(blob.length);"],
+    ["const buf = JSON.stringify(payload);", "formatFileSize(buf.length);"],
+  ]) {
+    if (!fires(lines.join("\n"))) {
+      fail(`[ambiguous-container] a STRING bound to a byte-sounding name silenced the call: ${lines.join(" ")}`);
+    }
+  }
+  // ── [precedence] A COUNT SEGMENT AFTER A BYTE SEGMENT STILL FIRES.
+  // The root judgement asks about the LAST segment, and a mutation that asks
+  // "is a byte word ANYWHERE in the segments" leaves every other leg green
+  // while `sizeInChars` and `payloadSizeChars` go silent — a character count
+  // wearing the word `size`, which is the exact shape this lane exists for.
+  for (const line of [
+    "formatFileSize(sizeInChars);",
+    "formatFileSize(payloadSizeChars);",
+    "formatFileSize(item.size_in_characters);",
+  ]) {
+    if (!fires(line)) fail(`[precedence] a COUNT segment after a BYTE segment was NOT reported: ${line}`);
   }
   // ── [index-difference] a span of script text measured by positions.
   if (!fires(["const size = i - start;", "formatFileSize(size);"].join("\n"))) {
@@ -809,6 +1018,16 @@ export function selfTestFormatInputShape() {
       "    reports.push({ route: label, chunks: chunks.length, bytes });",
       "  `${formatFileSize(r.bytes)}`",
     ].join("\n"),
+    // A byte-sounding name whose in-file binding really IS bytes stays silent.
+    ["const buffer = await readFile(path);", "formatFileSize(buffer.length);"].join("\n"),
+    ['const buffer = Buffer.from(text, "utf8");', "formatFileSize(buffer.length);"].join("\n"),
+    ["const blob = await res.blob();", "formatFileSize(blob.size);"].join("\n"),
+    ["const buf = new Uint8Array(await res.arrayBuffer());", "formatFileSize(buf.length);"].join("\n"),
+    // A reduce with no `.length` in it at all — the nested scan must not guess.
+    "formatFileSize(chunks.reduce((acc, c) => acc + sizeOf(c), 0));",
+    ["const encoder = new TextEncoder();", "formatFileSize(parts.reduce((a, b) => a + encoder.encode(b.text).length, 0));"].join("\n"),
+    // A setter that is NOT this value's setter binds nothing here.
+    ["const [sizeBytes, setSizeBytes] = useState(0);", "setChars(text.length);", "formatFileSize(sizeBytes);"].join("\n"),
     // matrx-frontend lib/field-formats/registry.ts:428 (a field declared bytes).
     ["      const n = toNumber(v);", "      return n === null ? null : formatFileSize(n);"].join("\n"),
   ];

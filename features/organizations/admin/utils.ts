@@ -2,10 +2,7 @@
  * Formatting helpers for org-admin metrics. Pure, no side effects.
  */
 
-import {
-  formatFileSize,
-  formatRelativeTime as kitFormatRelativeTime,
-} from "@ai-matrx/kit/format";
+import { formatRelativeTime as kitFormatRelativeTime } from "@ai-matrx/kit/format";
 
 /**
  * Compact relative-time label, e.g. "3d ago", "Never". The formatting is the
@@ -17,14 +14,12 @@ export function formatRelativeTime(iso: string | null | undefined): string {
   return kitFormatRelativeTime(iso, { fallback: "Never" });
 }
 
-/**
- * Human-readable byte size — a `formatFileSize` twin the 2026-09-07 census
- * missed because it wore a different name. THE package formatter carries the
- * same "a missing size is never a confident 0 B" guard this copy earned; the
- * one display change is where the decimal drops (at 10 in a unit, not 100), so
- * `50.0 KB` now reads `50 KB`.
- */
-export const formatBytes = formatFileSize;
+// THE `formatBytes` ALIAS IS GONE (2026-09-12). It was a `formatFileSize` twin
+// collapsed to a one-line alias, and the alias is its own defect: the guard
+// that judges what ENTERS formatFileSize hunts the export's own name, so six
+// call sites here were outside it by construction. They import
+// `formatFileSize` from "@ai-matrx/kit/format" under its own name now.
+// (The display: a size at or above 10 in its unit reads `50 KB`, not `50.0 KB`.)
 
 /** Milli-cents → USD string. 3996 mcents = $0.04. */
 export function formatMcents(mcents: number | null | undefined): string {

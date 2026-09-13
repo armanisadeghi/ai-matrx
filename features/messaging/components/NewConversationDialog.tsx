@@ -38,7 +38,7 @@ import type { UserSearchCandidate } from "@/features/user-search/types";
 // 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
 // second and printed "AM".
-import { getInitials as formatInitials } from "@ai-matrx/kit/format";
+import { getInitials } from "@ai-matrx/kit/format";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -257,9 +257,10 @@ export function NewConversationDialog({
     ],
   );
 
-  // Get initials from name
-  const getInitials = (user: UserBasicInfo | ConnectionUser): string => {
-    return formatInitials(user.display_name || user.email);
+  // The package's `getInitials` takes a NAME; this adapts a user row to it.
+  // Named for what it does rather than aliasing the import (2026-09-12).
+  const initialsForUser = (user: UserBasicInfo | ConnectionUser): string => {
+    return getInitials(user.display_name || user.email);
   };
 
   // Get source icon for connection
@@ -368,7 +369,7 @@ export function NewConversationDialog({
                         isCreating={creatingUserId === result.user_id}
                         disabled={isCreating}
                         onSelect={handleSelectUser}
-                        getInitials={getInitials}
+                        getInitials={initialsForUser}
                       />
                     ))}
                   </div>
@@ -410,7 +411,7 @@ export function NewConversationDialog({
                         isCreating={creatingUserId === connection.user_id}
                         disabled={isCreating}
                         onSelect={handleSelectUser}
-                        getInitials={getInitials}
+                        getInitials={initialsForUser}
                         sourceIcon={getSourceIcon(connection.source)}
                         sourceDetails={connection.sourceDetails}
                       />

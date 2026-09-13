@@ -205,14 +205,12 @@ export function createMatrxTransport(
   });
 }
 
-/**
- * Map a failure thrown by the package client onto `callApi`'s `ApiCallError`
- * envelope. The classification itself lives in the package
- * (`normalizeMatrxError`) — this is a type-level bridge only.
- */
-export function normalizeMatrxClientError(err: unknown): ApiCallError {
-  return normalizeMatrxError(err);
-}
+// The bridge that stood here is gone (2026-09-12): it delegated to the
+// package's `normalizeMatrxError` and returned it unchanged, so it was an alias
+// with a `function` keyword — a second name for a collapsed export, which is
+// what puts call sites outside the guards that judge that export. Its one
+// caller says `normalizeMatrxError` now; the `ApiCallError` envelope is still
+// the declared shape of the field it lands in.
 
 // ─── Cancel: Abort a running request (moved from call-api.ts) ────────────────
 
@@ -246,7 +244,7 @@ export function cancelAgentRunRequest(
     } catch (err) {
       // Non-2xx / network failures were already fed to `captureApiError` by
       // the transport — normalize for the caller, never capture twice.
-      return { error: normalizeMatrxClientError(err) };
+      return { error: normalizeMatrxError(err) };
     }
   };
 }

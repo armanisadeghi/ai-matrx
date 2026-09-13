@@ -68,7 +68,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 - `types.ts` — domain types mirroring the RPC contracts
 - `service.ts` — the single client chokepoint for the `org_admin_*` RPCs (snake→camel mapping)
 - `hooks.ts` — `useOrgAdminGate` (resolve+role), `useOrgRoster`, `useOrgMemberDetail`
-- `utils.ts` — `formatBytes` / `formatMcents` / `usdToMcents` / `gbToBytes` / `formatRelativeTime` / `activityBucket`
+- `utils.ts` — `formatMcents` / `usdToMcents` / `gbToBytes` / `formatRelativeTime` / `activityBucket` (byte sizes render with `formatFileSize` from `@ai-matrx/kit/format`, imported at each call site — the local `formatBytes` alias was deleted 2026-09-12 because an alias of a collapsed export hides its call sites from the guard that judges what enters it)
 - `components/` — `OrgAdminBoundary`, `OrgAdminDashboard`, `MemberRosterTable`, `MemberDetailView`, `MemberResourcesView`, `MemberControlsForm`, `RemoveMemberDialog`, `OrgAdminAuditTable`
 - `MemberRosterTable` uses `UserSearchField` with only this organization roster's candidates; selecting a result opens the member.
 

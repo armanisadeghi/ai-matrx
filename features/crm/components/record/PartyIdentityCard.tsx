@@ -19,7 +19,7 @@ import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRunt
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
   allowPartyContact,
   blockPartyContact,
@@ -256,7 +256,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
       await onChanged();
     },
     lifecycle_stage_id: async (value: unknown) => {
-      if (value !== null && !isUuid(value)) {
+      if (value !== null && !isUuidShape(value)) {
         throw new Error("lifecycle_stage_id expects a category UUID or null.");
       }
       if (
@@ -271,7 +271,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
       await onChanged();
     },
     rating_id: async (value: unknown) => {
-      if (value !== null && !isUuid(value)) {
+      if (value !== null && !isUuidShape(value)) {
         throw new Error("rating_id expects a category UUID or null.");
       }
       if (
@@ -284,7 +284,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
       await onChanged();
     },
     party_role_ids: async (value: unknown) => {
-      if (!Array.isArray(value) || !value.every(isUuid)) {
+      if (!Array.isArray(value) || !value.every(isUuidShape)) {
         throw new Error("party_role_ids expects an array of category UUIDs.");
       }
       const unknownRole = value.find(

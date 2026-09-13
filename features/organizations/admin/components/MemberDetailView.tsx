@@ -25,7 +25,8 @@ import type { Organization } from "../../types";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useOrgMemberDetail } from "../hooks";
 import { setMemberStatus } from "../service";
-import { formatBytes, formatMcents, formatRelativeTime } from "../utils";
+import { formatMcents, formatRelativeTime } from "../utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberControlsForm } from "./MemberControlsForm";
 import { RemoveMemberDialog } from "./RemoveMemberDialog";
 
@@ -162,11 +163,11 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
         <Metric
           label="Org files"
           value={String(member.orgFilesCount)}
-          hint={formatBytes(member.orgBytesUsed)}
+          hint={formatFileSize(member.orgBytesUsed)}
         />
         <Metric
           label="Account storage"
-          value={formatBytes(member.accountBytesUsed)}
+          value={formatFileSize(member.accountBytesUsed)}
           hint={`${member.accountFilesCount} files (all orgs)`}
         />
         <Metric label="Spend 24h" value={formatMcents(member.cost24hMcents)} hint={`${member.requests24h} requests`} />

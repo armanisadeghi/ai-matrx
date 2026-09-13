@@ -12,10 +12,10 @@ import { supabase } from "@/utils/supabase/client";
 import type { ScopeType } from "./types";
 import {
   isReservedSlug,
-  isUuid,
   isValidSlug,
   toSlug,
 } from "@/features/scopes/utils/slugify";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 function requiredSlug(value: string, kind: string, supplied?: string): string {
   const slug = supplied?.trim() || toSlug(value);
@@ -238,7 +238,7 @@ export const selectScopeTypeBySlugOrId = createSelector(
     (_s: StateWithScopeTypes, _orgId: string, slugOrId: string) => slugOrId,
   ],
   (types, orgId, slugOrId) =>
-    isUuid(slugOrId)
+    isUuidShape(slugOrId)
       ? types.find((t) => t.id === slugOrId)
       : types.find((t) => t.organization_id === orgId && t.slug === slugOrId),
 );

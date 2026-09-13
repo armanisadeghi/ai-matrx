@@ -18,7 +18,7 @@ import Link from "next/link";
 import { AlertTriangle, Inbox, MessageCircleQuestion, PenLine } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 
 import {
@@ -72,10 +72,10 @@ function WaitingRowCard({ row }: { row: WaitingRunRow }) {
           ) : (
             <span className="truncate">{row.workflowName ?? "Workflow"}</span>
           )}
-          {row.askedAt && <span>· waiting {relativeTime(row.askedAt).replace(" ago", "")}</span>}
+          {row.askedAt && <span>· waiting {formatRelativeTime(row.askedAt).replace(" ago", "")}</span>}
           {row.deadline && (
             <span className={cn(overdue && "font-medium text-destructive")}>
-              · {overdue ? "past due" : `due ${relativeTime(row.deadline)}`}
+              · {overdue ? "past due" : `due ${formatRelativeTime(row.deadline)}`}
             </span>
           )}
           {row.parentRunId && <span>· part of a larger run</span>}

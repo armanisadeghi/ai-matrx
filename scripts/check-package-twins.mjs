@@ -199,19 +199,229 @@ const SHAPE_MODULES = new Set(SHAPE_RULES.map((r) => r.module));
 const DEF_RE =
   /^(?:export\s+)?(?:default\s+)?(?:declare\s+)?(?:async\s+)?(?:function\*?|class|const|let|var)\s+([A-Za-z_$][\w$]*)/;
 
+/**
+ * THE ALIAS LANE (2026-09-12, the sixth adversarial review).
+ *
+ * THE CLASS. A collapsed export that is imported under a SECOND name puts
+ * every one of its call sites outside the guards that judge that export. The
+ * input lane (`format-input-shape.mjs`) asks what ENTERS `formatFileSize`, and
+ * it hunts that spelling — so `export { formatFileSize as fmtBytes }` in an
+ * inspector barrel took ~31 call sites out of the guard in one line, and
+ * `export const formatBytes = formatFileSize` took six more. The live miss that
+ * opened the review was the same shape in its third form: an earlier repair
+ * round replaced a local byte-size body with `function formatBytes(n) { return
+ * formatFileSize(n); }` and KEPT THE NAME, converting a body the shape lane
+ * caught into an input nothing looked at — and the very next line handed it a
+ * character count.
+ *
+ * THE FIX IS SIMPLICITY, NOT A SMARTER GUARD: one export, one name. Four
+ * spellings of the same evasion are findings:
+ *   `import { X as Y } from "@ai-matrx/…"`,
+ *   `export { X as Y } from "@ai-matrx/…"`,
+ *   `const Y = X` where X is imported from an `@ai-matrx/*` package here,
+ *   a top-level function whose whole body is `return X(<its own parameter>…)`.
+ *
+ * WHAT IS NOT A FINDING, deliberately: a wrapper that adds real logic (a
+ * fallback word, a bound option applied to a TRANSFORMED input, a type guard)
+ * is a different capability under a different name — it is judged by the
+ * ordinary name lane, not this one. An alias whose module is NOT an
+ * `@ai-matrx/*` specifier is renaming a LOCAL binding (a repo's own styled
+ * `ResizableHandle`), which is not this class. And `allow` / `census` mean
+ * exactly what they mean for a re-grown body: provably something else, or debt
+ * that is read out loud every run and may only shrink.
+ */
+const ALIAS_PACKAGE_RE = /^["'`]@ai-matrx\//;
+
+/**
+ * THE SOURCE WITH STRINGS AND COMMENTS BLANKED, line structure preserved.
+ *
+ * An `import { X as Y } from "@ai-matrx/…"` written INSIDE a template literal
+ * is not an import — `@ai-matrx/diff`'s `verify-tarball.mjs` builds an ESM
+ * canary as a string and would have been reported forever, and a test whose
+ * name reads `it("reads a valueless Progress as INDETERMINATE")` is prose. A
+ * lane that cannot tell code from text is a lane that cries wolf.
+ */
+function codeOnly(source) {
+  let out = "";
+  let i = 0;
+  const keepNewlines = (text) => text.replace(/[^\n]/g, " ");
+  while (i < source.length) {
+    const c = source[i];
+    const next = source[i + 1];
+    if (c === "/" && next === "/") {
+      const end = source.indexOf("\n", i);
+      const stop = end === -1 ? source.length : end;
+      out += keepNewlines(source.slice(i, stop));
+      i = stop;
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+      const stop = end === -1 ? source.length : end + 2;
+      out += keepNewlines(source.slice(i, stop));
+      i = stop;
+      continue;
+    }
+    // TEMPLATE LITERALS ONLY. A module specifier is a quoted string and this
+    // lane reads it, so `"` / `'` runs are left alone; a `\`` block is the one
+    // that carries whole import STATEMENTS as text (the diff package's ESM
+    // canary), and a quoted string can never start a line with `import` and
+    // still be a string.
+    if (c === "`") {
+      let j = i + 1;
+      while (j < source.length) {
+        if (source[j] === "\\") { j += 2; continue; }
+        if (source[j] === "`") break;
+        j += 1;
+      }
+      const stop = Math.min(j + 1, source.length);
+      out += "`" + keepNewlines(source.slice(i + 1, stop));
+      i = stop;
+      continue;
+    }
+    out += c;
+    i += 1;
+  }
+  return out;
+}
+
+/** The `X as Y` specifiers of an import/export statement, when it names a package. */
+function aliasSpecifiers(statement) {
+  const braces = /\{([^}]*)\}/s.exec(statement);
+  if (!braces) return [];
+  const from = /from\s*(["'`][^"'`]+["'`])/.exec(statement);
+  if (!from || !ALIAS_PACKAGE_RE.test(from[1])) return [];
+  const out = [];
+  for (const raw of braces[1].split(",")) {
+    const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)\s*$/.exec(raw);
+    if (m && m[1] !== m[2]) out.push({ name: m[1], alias: m[2] });
+  }
+  return out;
+}
+
+/** Names imported in this file FROM an `@ai-matrx/*` package, under their own spelling. */
+function packageImports(source) {
+  const names = new Set();
+  for (const st of source.matchAll(/^[ \t]*(?:import|export)\s*(?:type\s*)?\{([^}]*)\}\s*from\s*(["'`][^"'`]+["'`])/gms)) {
+    if (!ALIAS_PACKAGE_RE.test(st[2])) continue;
+    for (const raw of st[1].split(",")) {
+      const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*)\s*$/.exec(raw);
+      if (m) names.add(m[1]);
+    }
+  }
+  return names;
+}
+
+/**
+ * Alias findings for one file. Each is {name, alias, line, text, form}; the
+ * caller attaches the register row exactly as it does for a re-grown body.
+ */
+export function aliasesIn(rawSource) {
+  const source = codeOnly(rawSource);
+  const out = [];
+  const lines = source.split("\n");
+  const imported = packageImports(source);
+
+  // ── import/export specifier aliases ──
+  for (const st of source.matchAll(/^[ \t]*(?:import|export)\s*(?:type\s*)?\{[^}]*\}\s*from\s*["'`][^"'`]+["'`]/gms)) {
+    const base = source.slice(0, st.index).split("\n").length - 1;
+    for (const { name, alias } of aliasSpecifiers(st[0])) {
+      const at = st[0].indexOf(`${name} as ${alias}`);
+      const line = base + (at < 0 ? 0 : st[0].slice(0, at).split("\n").length);
+      out.push({ name, alias, line, text: `${name} as ${alias}`, form: "specifier" });
+    }
+
+  }
+
+  // ── `const Y = X;` over a package import ──
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=\n]+)?=\s*([A-Za-z_$][\w$]*)\s*;?\s*$/.exec(lines[i]);
+    if (m && m[1] !== m[2] && imported.has(m[2])) {
+      out.push({ name: m[2], alias: m[1], line: i + 1, text: lines[i].trim(), form: "assignment" });
+    }
+  }
+
+  // ── a top-level pass-through wrapper ──
+  for (const w of passThroughWrappers(source, imported)) out.push(w);
+
+  return out;
+}
+
+/**
+ * A TOP-LEVEL function or arrow whose entire body is `return X(<its own
+ * parameters, verbatim>)` — an alias with a `function` keyword. Nothing is
+ * bound, nothing is transformed, nothing is decided: the value flows through
+ * untouched under a second name, so the call site is outside the input guard
+ * exactly as `import { X as Y }` would be. THE LIVE MISS was this exact shape —
+ * `function formatBytes(n) { return formatFileSize(n); }` — written by an
+ * earlier repair round that replaced a local byte-size body with a
+ * pass-through and KEPT THE NAME.
+ *
+ * A DECLARED LIMIT, written here rather than discovered later: an ADAPTER —
+ * a wrapper that binds an option, a unit, a style or a fallback
+ * (`formatDurationMs(ms, { style: "coarse" })`) — is NOT a finding. The
+ * register's own `formatDurationMs` row says so in its `why` ("a local
+ * `formatDuration` that BINDS unit+style+fallback and delegates is an adapter,
+ * not a twin"), the fleet carries ~15 of them across six repos, and a lane that
+ * fired on all of them would be a lane someone deletes. The value still reaches
+ * the export unexamined through an adapter; what covers THAT is the name (the
+ * unit law) and the ordinary name lane, not this one.
+ */
+function passThroughWrappers(source, imported) {
+  const out = [];
+  const lines = source.split("\n");
+  const patterns = [
+    // function f(a, b) { return X(a); }   — brace body, one return
+    /^(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*(?:<[^>]*>)?\s*\(([^)]*)\)\s*(?::[^{]+)?\{\s*return\s+([A-Za-z_$][\w$]*)\s*\(([^;]*)\)\s*;?\s*\}/,
+    // const f = (a) => X(a);             — expression arrow
+    /^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*(?:async\s*)?\(([^)]*)\)\s*(?::[^=]+)?=>\s*([A-Za-z_$][\w$]*)\s*\(([^;]*)\)\s*;?/,
+    // const f = (a) => { return X(a); }  — brace arrow
+    /^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*(?:async\s*)?\(([^)]*)\)\s*(?::[^=]+)?=>\s*\{\s*return\s+([A-Za-z_$][\w$]*)\s*\(([^;]*)\)\s*;?\s*\}/,
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|const|let|var)\s/.test(lines[i])) continue;
+    // A body may sit on the next lines; join a small window, collapsing newlines.
+    const window = lines.slice(i, i + 6).join("\n").replace(/\s*\n\s*/g, " ");
+    for (const re of patterns) {
+      const m = re.exec(window);
+      if (!m) continue;
+      const [, alias, params, callee, args] = m;
+      if (alias === callee || !imported.has(callee)) continue;
+      const names = params
+        .split(",")
+        .map((prm) => /^\s*(?:\.\.\.)?([A-Za-z_$][\w$]*)/.exec(prm)?.[1])
+        .filter(Boolean);
+      const passed = args.split(",").map((a) => a.trim().replace(/^\.\.\./, "")).filter(Boolean);
+      // PURE pass-through only: the arguments ARE the parameters, verbatim and
+      // in order. One bound option and this is an adapter, not an alias.
+      if (passed.length === 0 || passed.length !== names.length) continue;
+      if (passed.some((a, k) => a !== names[k])) continue;
+      out.push({ name: callee, alias, line: i + 1, text: lines[i].trim(), form: "wrapper" });
+      break;
+    }
+  }
+  return out;
+}
+
 /** Findings for one file's source text. Exported shape: {name, line, text}. */
 function twinsIn(file, source) {
   const out = [];
   const lines = source.split("\n");
+  const push = (name, line, text, alias) => {
+    const row = BY_NAME.get(name);
+    if (!row) return;
+    if (isOwningSource(row, file)) return;
+    if ((row.allow ?? []).some((a) => a.file === file)) return;
+    const censused = (row.census ?? []).some((a) => a.file === file);
+    out.push({ name, line, text, row, censused, alias: alias ?? null });
+  };
   for (let i = 0; i < lines.length; i++) {
     const m = DEF_RE.exec(lines[i]);
     if (!m) continue;
-    const row = BY_NAME.get(m[1]);
-    if (!row) continue;
-    if (isOwningSource(row, file)) continue;
-    if ((row.allow ?? []).some((a) => a.file === file)) continue;
-    const censused = (row.census ?? []).some((a) => a.file === file);
-    out.push({ name: m[1], line: i + 1, text: lines[i].trim(), row, censused });
+    push(m[1], i + 1, lines[i].trim());
+  }
+  for (const a of aliasesIn(source)) {
+    push(a.name, a.line, `${a.text}   ← an ALIAS of ${a.name} (${a.form})`, a.alias);
   }
   return out;
 }
@@ -382,6 +592,147 @@ if (SELF_TEST) {
       process.exit(1);
     }
   }
+  // ── THE ALIAS LANE must be able to fail, on the THREE REAL SHAPES ──
+  // Planted verbatim from the live code the sixth adversarial review named, so
+  // a refactor that silently drops a form goes red with that form's sentence.
+  {
+    const KIT = 'import { formatFileSize } from "@ai-matrx/kit/format";';
+    const DUR = 'import { formatDurationMs } from "@ai-matrx/kit/format";';
+    const reds = [
+      // matrx-frontend features/organizations/admin/utils.ts:27, pre-fix.
+      ["assignment", [KIT, "export const formatBytes = formatFileSize;"].join("\n"), "formatBytes"],
+      // matrx-local src/lib/utils.ts:11 and components/media/types.ts:32, pre-fix.
+      ["re-export", 'export { formatFileSize, formatFileSize as formatBytes } from "@ai-matrx/kit/format";', "formatBytes"],
+      // aidream/apps/dashboard src/components/inspector/utils.ts:41, pre-fix.
+      ["import alias", 'import { formatFileSize as fmtBytes } from "@ai-matrx/kit/format";', "fmtBytes"],
+      // THE LIVE MISS: matrx-frontend build-kind-sandbox.ts:123 at e8838de841 —
+      // a wrapper that kept the old NAME and passed the input straight through.
+      [
+        "wrapper",
+        [KIT, "function formatBytes(n: number): string {", "  return formatFileSize(n);", "}"].join("\n"),
+        "formatBytes",
+      ],
+      // …and the same evasion spelled as an arrow.
+      [
+        "arrow wrapper",
+        ["const fmtBytes = (n: number): string => formatFileSize(n);"].map((l) => [KIT, l].join("\n"))[0],
+        "fmtBytes",
+      ],
+    ];
+    for (const [form, src, alias] of reds) {
+      const hits = aliasesIn(src).filter((a) => a.alias === alias);
+      if (hits.length !== 1) {
+        console.error(
+          `SELF-TEST FAILED: the ALIAS lane did not report a ${form} alias ` +
+            `(\`${alias}\`) of a collapsed export — its call sites are outside ` +
+            `the input guard, which is how the build readout printed a ` +
+            `character count as "KB raw".`,
+        );
+        process.exit(1);
+      }
+    }
+    const greens = [
+      // Not a package export: renaming a LOCAL binding is not this class.
+      ['import { ResizableHandle as StudioColumnHandle } from "@/components/ui/resizable";', "local module"],
+      ["export { ResizableHandle as StudioColumnHandle };", "no module at all"],
+      ['import { useState as useLocalState } from "react";', "a third-party import"],
+      // The same name is not an alias.
+      ['export { formatFileSize } from "@ai-matrx/kit/format";', "a same-name re-export"],
+      // A wrapper that adds REAL logic is a different capability, judged by the
+      // ordinary name lane — never silenced, never claimed by this one.
+      [
+        [
+          'import { formatFileSize } from "@ai-matrx/kit/format";',
+          "export function orDash(n: number | null): string {",
+          '  if (n === null) return "—";',
+          "  return formatFileSize(n);",
+          "}",
+        ].join("\n"),
+        "a wrapper with a fallback branch",
+      ],
+      // AN ADAPTER — binds a style/unit/fallback and delegates. The register's
+      // own `formatDurationMs` row calls this an adapter rather than a twin, so
+      // this lane must leave it alone or it fires on ~15 live bodies at once.
+      [
+        [DUR, 'const fmtMs = (ms: number): string => formatDurationMs(ms, { style: "compact" });'].join("\n"),
+        "an adapter that binds a style",
+      ],
+      [
+        [
+          DUR,
+          "export function humanRemaining(ms: number): string {",
+          '  return formatDurationMs(ms, { style: "coarse", fallback: "—" });',
+          "}",
+        ].join("\n"),
+        "an adapter that binds a style and a fallback",
+      ],
+      // …and one that TRANSFORMS its input: the value reaching the export is not
+      // the value reaching the wrapper, so the guard still sees the real thing.
+      [
+        [
+          'import { formatFileSize } from "@ai-matrx/kit/format";',
+          "const formatKb = (kb: number): string => formatFileSize(kb * 1024);",
+        ].join("\n"),
+        "a wrapper that converts its input",
+      ],
+    ];
+    for (const [src, why] of greens) {
+      const hits = aliasesIn(src);
+      if (hits.length !== 0) {
+        console.error(
+          `SELF-TEST FAILED: the ALIAS lane reported ${why} — a false positive ` +
+            `here is how a guard gets turned off (got: ${hits[0].text}).`,
+        );
+        process.exit(1);
+      }
+    }
+    // TEXT IS NOT CODE: an import statement inside a template literal (the diff
+    // package's ESM canary) and a test name that contains the word "as".
+    const asText = [
+      "const canary = `",
+      '  import { formatFileSize as rootSize } from "@ai-matrx/kit/format";',
+      "`;",
+      'it("reads a valueless Progress as INDETERMINATE, never a confident 0%", () => {});',
+    ].join("\n");
+    if (aliasesIn(asText).length !== 0) {
+      console.error(
+        "SELF-TEST FAILED: the ALIAS lane read TEXT as code — an import inside " +
+          `a template literal was reported (${aliasesIn(asText)[0].text}).`,
+      );
+      process.exit(1);
+    }
+
+    // An alias obeys `allow` and `census` exactly as a re-grown body does.
+    const row = BY_NAME.get("formatRelativeTime");
+    const aliased = 'import { formatRelativeTime as ago } from "@ai-matrx/kit/format";';
+    const bare = twinsIn("planted-alias.ts", aliased);
+    if (bare.length !== 1 || bare[0].alias !== "ago") {
+      console.error(
+        "SELF-TEST FAILED: an alias of a collapsed export was not reported as " +
+          "a finding by the name lane.",
+      );
+      process.exit(1);
+    }
+    const realAllow = row.allow ?? [];
+    row.allow = [{ file: "planted-alias.ts", reason: "self-test only" }];
+    const allowedAlias = twinsIn("planted-alias.ts", aliased);
+    row.allow = realAllow;
+    if (allowedAlias.length !== 0) {
+      console.error("SELF-TEST FAILED: an allowlisted file still reported its alias.");
+      process.exit(1);
+    }
+    const realCensus = row.census ?? [];
+    row.census = [{ file: "planted-alias.ts", reason: "self-test only" }];
+    const censusedAlias = twinsIn("planted-alias.ts", aliased);
+    row.census = realCensus;
+    if (censusedAlias.length !== 1 || censusedAlias[0].censused !== true) {
+      console.error(
+        "SELF-TEST FAILED: a `census` entry silenced an alias instead of " +
+          "reporting it — `census` has become a second `allow`.",
+      );
+      process.exit(1);
+    }
+  }
   // ── every SHAPE lane must also be able to fail ──
   for (const rule of SHAPE_RULES) {
     const shape = rule.selfTest();
@@ -394,7 +745,7 @@ if (SELF_TEST) {
     `check:package-twins self-test PASSED (every lane can fail) — ` +
       `${TWINS.length} collapsed export(s) registered, plus ` +
       `${SHAPE_RULES.length} SHAPE rule(s): ` +
-      `${SHAPE_RULES.map((r) => r.id).join(", ")}.`,
+      `${SHAPE_RULES.map((r) => r.id).join(", ")}, and the ALIAS lane.`,
   );
   process.exit(0);
 }

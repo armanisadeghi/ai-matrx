@@ -1,4 +1,4 @@
-import { isUuid } from "@/features/scopes/service/associationGuards";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import {
   ADDRESS_PURPOSES,
@@ -230,7 +230,7 @@ export function parseEmployment(value: unknown): ParsedEmployment {
     "is_current",
     "is_primary",
   ]);
-  if (!isUuid(input.employer_party_id)) {
+  if (!isUuidShape(input.employer_party_id)) {
     throw new Error("add_employment.employer_party_id expects a UUID.");
   }
   return {

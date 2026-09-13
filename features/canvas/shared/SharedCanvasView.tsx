@@ -29,7 +29,7 @@ import { PublicCanvasRenderer } from "./PublicCanvasRenderer";
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
 // second and printed "AM"; a whitespace-only name now also reads "?"
 // (this copy previously rendered a blank fallback for that case).
-import { getInitials as initials } from "@ai-matrx/kit/format";
+import { getInitials } from "@ai-matrx/kit/format";
 
 interface SharedCanvasViewProps {
   shareToken: string;
@@ -155,7 +155,7 @@ export function SharedCanvasView({
             >
               <Avatar className="h-7 w-7 border border-border">
                 <AvatarFallback className="bg-primary text-[10px] text-primary-foreground">
-                  {initials(canvas.creator_display_name)}
+                  {getInitials(canvas.creator_display_name)}
                 </AvatarFallback>
               </Avatar>
             </button>
@@ -168,7 +168,7 @@ export function SharedCanvasView({
             <div className="flex items-center gap-3 border-b border-border p-4">
               <Avatar className="h-10 w-10 border border-border">
                 <AvatarFallback className="bg-primary text-sm text-primary-foreground">
-                  {initials(canvas.creator_display_name)}
+                  {getInitials(canvas.creator_display_name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">

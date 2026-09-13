@@ -50,7 +50,7 @@ import {
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
-  formatCount as integer,
+  formatCount,
   formatDecimal as decimal,
   formatMoney as money,
   humanKeywordPerformanceList,
@@ -344,7 +344,7 @@ export function SiteKeywordPerformanceWorkspace() {
       filter: "number",
       align: "right",
       cell: (row) => (
-        <span className="tabular-nums">{integer(row.clicks)}</span>
+        <span className="tabular-nums">{formatCount(row.clicks)}</span>
       ),
     },
     {
@@ -354,7 +354,7 @@ export function SiteKeywordPerformanceWorkspace() {
       filter: "number",
       align: "right",
       cell: (row) => (
-        <span className="tabular-nums">{integer(row.impressions)}</span>
+        <span className="tabular-nums">{formatCount(row.impressions)}</span>
       ),
     },
     {
@@ -386,7 +386,7 @@ export function SiteKeywordPerformanceWorkspace() {
       filter: "number",
       align: "right",
       cell: (row) => (
-        <span className="tabular-nums">{integer(row.search_volume)}</span>
+        <span className="tabular-nums">{formatCount(row.search_volume)}</span>
       ),
     },
     {

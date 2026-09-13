@@ -392,11 +392,14 @@ export default function AgentDemoClient() {
 
       let eventCount = 0,
         byteCount = 0;
+      // ONE encoder for the whole stream: a `new TextEncoder()` per event
+      // allocated one object per NDJSON line for no reason (2026-09-12).
+      const encoder = new TextEncoder();
       for await (const evt of events) {
         eventCount++;
         const line = JSON.stringify(evt, null, 2) + "\n\n";
         // UTF-8 bytes — `line.length` is UTF-16 code units.
-        byteCount += new TextEncoder().encode(line).length;
+        byteCount += encoder.encode(line).length;
         setRawEvents((prev) => prev + line);
         setEventsLog((prev) => [...prev, evt]);
         setStats((s) => ({

@@ -28,7 +28,7 @@ import {
   openInNewTab,
 } from "@/utils/navigation/should-open-in-new-tab";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { RunStatusChip } from "../../run-status";
 import {
   workflowDesignHref,
@@ -218,7 +218,7 @@ export function WorkflowBrowseCards({
                 >
                   <RunStatusChip status={row.last_run_status} />
                   <span className="tabular-nums">
-                    {relativeTime(row.last_run_at)}
+                    {formatRelativeTime(row.last_run_at)}
                   </span>
                 </Link>
               ) : null}

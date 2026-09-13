@@ -11,7 +11,7 @@ import { supabase } from "@/utils/supabase/client";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import type { TablesUpdate } from "@/types/database.types";
-import { isUuid } from "@/features/scopes/utils/slugify";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
 import type {
@@ -375,7 +375,7 @@ export const selectItemBySlugOrId = createSelector(
     ) => slugOrId,
   ],
   (items, typeId, slugOrId) =>
-    isUuid(slugOrId)
+    isUuidShape(slugOrId)
       ? items.find((i) => i.id === slugOrId)
       : items.find((i) => i.scope_type_id === typeId && i.slug === slugOrId),
 );

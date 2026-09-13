@@ -11,10 +11,10 @@ import { supabase } from "@/utils/supabase/client";
 import type { Scope } from "./types";
 import {
   isReservedSlug,
-  isUuid,
   isValidSlug,
   toSlug,
 } from "@/features/scopes/utils/slugify";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 function requiredSlug(value: string, kind: string, supplied?: string): string {
   const slug = supplied?.trim() || toSlug(value);
@@ -270,7 +270,7 @@ export const selectScopeBySlugOrId = createSelector(
       slugOrId,
   ],
   (scopes, typeId, slugOrId) =>
-    isUuid(slugOrId)
+    isUuidShape(slugOrId)
       ? scopes.find((s) => s.id === slugOrId)
       : scopes.find((s) => s.scope_type_id === typeId && s.slug === slugOrId),
 );

@@ -23,10 +23,10 @@ import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown
 import {
   DATE_FILTER_OPTIONS,
   Muted,
-  relativeTime,
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { RunStatusChip, runStatusLabel } from "../run-status";
 import type { WorkflowBrowseRow } from "./types";
 
@@ -208,7 +208,7 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
       // relationship we resolved.
       cell: (row) => {
         if (!row.last_run_at) return <Muted>—</Muted>;
-        const when = relativeTime(row.last_run_at);
+        const when = formatRelativeTime(row.last_run_at);
         if (!row.last_run_id) {
           return (
             <span

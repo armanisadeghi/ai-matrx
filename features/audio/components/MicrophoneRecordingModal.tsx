@@ -33,7 +33,7 @@ import { AudioLevelIndicator } from './AudioLevelIndicator';
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
 // ~35 twins variously took ms, seconds and minutes behind one signature.
-import { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export interface MicrophoneRecordingModalProps {
   isOpen: boolean;
@@ -172,7 +172,7 @@ export function MicrophoneRecordingModal({
 
             {/* Duration */}
             <p className="text-2xl font-mono font-light tabular-nums text-foreground tracking-tight">
-              {formatDuration(duration)}
+              {formatDurationSeconds(duration)}
             </p>
 
             {/* Waveform bar */}
@@ -242,7 +242,7 @@ export function MicrophoneRecordingModal({
 
             <div className="flex flex-col items-center gap-0.5">
               <p className="text-2xl font-mono font-light tabular-nums text-foreground tracking-tight">
-                {formatDuration(duration)}
+                {formatDurationSeconds(duration)}
               </p>
               <p className="text-xs text-muted-foreground">Paused</p>
             </div>

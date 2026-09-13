@@ -26,7 +26,7 @@ import { useVoiceCapture } from "@/features/audio/hooks/useVoiceCapture";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
 // ~35 twins variously took ms, seconds and minutes behind one signature.
-import { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export function LiveCaptureButton({ noteId }: { noteId: string }) {
   const dispatch = useAppDispatch();
@@ -95,7 +95,7 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
           <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
         </span>
         <Square className="h-3.5 w-3.5" />
-        <span className="tabular-nums">{formatDuration(durationSec)}</span>
+        <span className="tabular-nums">{formatDurationSeconds(durationSec)}</span>
       </Button>
     );
   }

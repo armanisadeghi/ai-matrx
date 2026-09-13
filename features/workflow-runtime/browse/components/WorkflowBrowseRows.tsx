@@ -14,7 +14,7 @@ import { Archive, MoreVertical, Star } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { cn } from "@/lib/utils";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { RunStatusChip } from "../../run-status";
 import type { WorkflowBrowseRow } from "../types";
 
@@ -145,7 +145,7 @@ export function WorkflowBrowseRows({
               className="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground sm:block"
               title={new Date(row.updated_at).toLocaleString()}
             >
-              {relativeTime(row.updated_at)}
+              {formatRelativeTime(row.updated_at)}
             </span>
 
             <ItemMenu config={menuFor(row)} align="end">

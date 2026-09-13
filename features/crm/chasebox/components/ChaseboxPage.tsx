@@ -27,7 +27,7 @@ import {
   CRM_CHASEBOX_SURFACE_NAME,
   createCrmChaseboxScope,
 } from "@/features/surfaces/manifests/crm-chasebox.manifest";
-import { relativeTime } from "@/lib/entity-list/columns";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { makeScope, type ListScope } from "@/lib/list-scope/types";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { cn } from "@/lib/utils";
@@ -406,7 +406,7 @@ function ChaseboxItem({
                 className="text-xs text-muted-foreground tabular-nums"
                 title={new Date(row.occurred_at).toLocaleString()}
               >
-                {relativeTime(row.occurred_at)}
+                {formatRelativeTime(row.occurred_at)}
               </span>
             )}
           </div>
