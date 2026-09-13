@@ -1409,7 +1409,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
               if (searchQuery && count === 0) return null;
 
               const folderHeaderButton = (
-                <button
+                <div
+                  role="button"
+                  tabIndex={0}
                   className={cn(
                     "group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
                     isFolderMode &&
@@ -1417,6 +1419,12 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       "bg-primary/10 border-l-2 border-primary",
                   )}
                   onClick={() => toggleFolder(groupKey)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      toggleFolder(groupKey);
+                    }
+                  }}
                 >
                   {isExpanded ? (
                     <ChevronDown className="opacity-60" />
@@ -1433,15 +1441,20 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                     {count}
                   </span>
                   {isFolderMode && (
-                    <Plus
-                      className="w-3 h-3 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+                    <button
+                      type="button"
+                      aria-label={`New Note in ${label}`}
+                      disabled={draftControl.pending}
+                      className="flex h-4 w-4 items-center justify-center opacity-0 transition-opacity hover:!opacity-100 group-hover:opacity-60 disabled:pointer-events-none disabled:opacity-30"
                       onClick={(e) => {
                         e.stopPropagation();
                         void handleNewNote(groupKey).catch(() => undefined);
                       }}
-                    />
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
                   )}
-                </button>
+                </div>
               );
 
               return (
