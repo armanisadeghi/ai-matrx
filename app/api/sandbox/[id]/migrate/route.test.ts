@@ -12,10 +12,12 @@ jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
 
 const sandboxRowId = "11111111-1111-4111-8111-111111111111";
 const params = { params: Promise.resolve({ id: sandboxRowId }) };
-const busyResult = (reason: string) => ({
+const operationId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const busyResult = (reason: string, busyOperationId = operationId) => ({
   detail: {
     status: "busy_deferred",
     sandbox_id: "sbx-1",
+    operation_id: busyOperationId,
     reason,
   },
 });
@@ -41,7 +43,7 @@ test.each([
 
   const response = await POST(
     new NextRequest(
-      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate`,
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=${operationId}`,
       {
         method: "POST",
       },
@@ -56,8 +58,68 @@ test.each([
     details: {
       status: "busy_deferred",
       sandbox_id: sandboxRowId,
+      operation_id: operationId,
       reason,
     },
+  });
+});
+
+test("does not turn another operation's busy refusal into an informational deferral", async () => {
+  jest
+    .spyOn(global, "fetch")
+    .mockResolvedValue(
+      new Response(
+        JSON.stringify(
+          busyResult(
+            "attached sessions remain",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          ),
+        ),
+        { status: 409 },
+      ),
+    );
+
+  const response = await POST(
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=${operationId}`,
+      { method: "POST" },
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toMatchObject({
+    status: "outcome_unknown",
+    operation_id: operationId,
+  });
+});
+
+test("does not turn an uncorrelated busy refusal into an informational deferral", async () => {
+  jest.spyOn(global, "fetch").mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        detail: {
+          status: "busy_deferred",
+          sandbox_id: "sbx-1",
+          reason: "attached sessions remain",
+        },
+      }),
+      { status: 409 },
+    ),
+  );
+
+  const response = await POST(
+    new NextRequest(
+      `https://app.example.test/api/sandbox/${sandboxRowId}/migrate?operation_id=${operationId}`,
+      { method: "POST" },
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(502);
+  expect(await response.json()).toMatchObject({
+    status: "outcome_unknown",
+    operation_id: operationId,
   });
 });
 

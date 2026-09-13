@@ -120,13 +120,27 @@ function timeoutStatusResponse(status: MigrationStatus, sandboxRowId: string) {
 type BusyDeferredMigration = {
   status: "busy_deferred";
   sandbox_id: string;
+  operation_id: string;
   reason: string;
 };
+
+function isBusyDeferredPayload(payload: unknown): boolean {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "detail" in payload &&
+    typeof payload.detail === "object" &&
+    payload.detail !== null &&
+    "status" in payload.detail &&
+    payload.detail.status === "busy_deferred"
+  );
+}
 
 function busyDeferredMigration(
   payload: unknown,
   upstreamSandboxId: string,
   browserSandboxId: string,
+  operationId: string,
 ): BusyDeferredMigration | null {
   if (
     typeof payload !== "object" ||
@@ -141,9 +155,12 @@ function busyDeferredMigration(
     detail === null ||
     !("status" in detail) ||
     !("sandbox_id" in detail) ||
+    !("operation_id" in detail) ||
     !("reason" in detail) ||
     detail.status !== "busy_deferred" ||
     detail.sandbox_id !== upstreamSandboxId ||
+    detail.operation_id !== operationId ||
+    !CANONICAL_OPERATION_ID.test(String(detail.operation_id)) ||
     typeof detail.reason !== "string"
   ) {
     return null;
@@ -151,6 +168,7 @@ function busyDeferredMigration(
   return {
     status: "busy_deferred",
     sandbox_id: browserSandboxId,
+    operation_id: operationId,
     reason: detail.reason,
   };
 }
@@ -234,7 +252,7 @@ export async function POST(
   }
   const busyDeferred =
     response.status === 409
-      ? busyDeferredMigration(payload, lookup.sandboxId, id)
+      ? busyDeferredMigration(payload, lookup.sandboxId, id, operationId)
       : null;
   if (busyDeferred) {
     return NextResponse.json(
@@ -244,6 +262,17 @@ export async function POST(
         details: busyDeferred,
       },
       { status: 409 },
+    );
+  }
+  if (response.status === 409 && isBusyDeferredPayload(payload)) {
+    return NextResponse.json(
+      {
+        error:
+          "Sandbox update outcome is unknown because the deferred response did not match this operation.",
+        status: "outcome_unknown",
+        operation_id: operationId,
+      },
+      { status: 502 },
     );
   }
   if (!response.ok) {
