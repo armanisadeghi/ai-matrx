@@ -2472,7 +2472,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           {/* Keyed on the lane for the same reason as the chat-import dialog:
               IngestSourceDialog reads `initialLane` into state at MOUNT, so
               the in-page Approach picker must remount it to land the Expert on
-              the exemplar/file lane rather than the instructional default. */}
+              the exemplar/file lane rather than the instructional default.
+
+              🚨 And it does not mount until the live-run probe has ANSWERED
+              (`ingest.ready`). The surface a mount watches is chosen by its
+              lane, so mounting one tick early — against a probe that has not
+              read storage yet — watches the ingest pointer, and a rejoin on it
+              latches `source` over a case that is actually the live run. One
+              tick of nothing on a dialog that is closed anyway is the price. */}
+          {ingest.ready ? (
           <IngestSourceDialog
             key={`ingest-${activeIngestLane ?? "default"}`}
             open={ingestOpen}
@@ -2491,6 +2499,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewOpen(true);
             }}
           />
+          ) : null}
           <ApproachPickerDialog
             open={approachPickerOpen}
             onOpenChange={setApproachPickerOpen}

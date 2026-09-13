@@ -106,29 +106,45 @@ const PROBE_INTERVAL_MS = 5_000;
  * Read in an effect, never during render: `localStorage` does not exist on the
  * server and reading it while rendering would differ between SSR and hydration.
  */
-export function useLiveIngestLane(
-  rulebookId: string | null,
-): IngestLane | null {
-  const [lane, setLane] = useState<IngestLane | null>(null);
+export interface LiveIngestProbe {
+  /** The lane with a run still in flight, or null. */
+  lane: IngestLane | null;
+  /**
+   * Has the probe actually READ storage yet? On the very first paint it has
+   * not — effects have not run — and `lane` is null for that reason, not
+   * because nothing is running. Anything that DECIDES on the lane must wait for
+   * this, or it decides against a value that means "not asked yet" (Bugbot,
+   * 2026-09-13: the dialog mounted on `ingest` on first paint, rejoined
+   * whatever was on that pointer, and latched `source` over a newer case).
+   */
+  probed: boolean;
+}
+
+export function useLiveIngestLane(rulebookId: string | null): LiveIngestProbe {
+  const [probe, setProbe] = useState<LiveIngestProbe>({
+    lane: null,
+    probed: false,
+  });
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const probe = () => setLane(findLiveIngestLane(rulebookId));
-    probe();
+    const read = () =>
+      setProbe({ lane: findLiveIngestLane(rulebookId), probed: true });
+    read();
     const timer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
-      probe();
+      read();
     }, PROBE_INTERVAL_MS);
     // Another tab launching or finishing a run for this Rulebook writes the
     // same pointer; `storage` is that news arriving for free.
-    window.addEventListener("storage", probe);
-    window.addEventListener("focus", probe);
+    window.addEventListener("storage", read);
+    window.addEventListener("focus", read);
     return () => {
       window.clearInterval(timer);
-      window.removeEventListener("storage", probe);
-      window.removeEventListener("focus", probe);
+      window.removeEventListener("storage", read);
+      window.removeEventListener("focus", read);
     };
   }, [rulebookId]);
-  return lane;
+  return probe;
 }
 
 /**
@@ -164,6 +180,13 @@ export interface IngestDialogSession {
   /** The lane on screen: latched while open, the probe's answer while closed. */
   lane: IngestLane | null;
   open: boolean;
+  /**
+   * Has the live-run probe answered once? The dialog must not MOUNT before it
+   * has: the surface a mount watches is chosen by the lane, so mounting
+   * against "not asked yet" watches the ingest pointer and can rejoin — and
+   * then latch — the wrong run.
+   */
+  ready: boolean;
   /** `workspace_state.timeline_open` — true only for a timeline session. */
   timelineOpen: boolean;
   /** An explicit door: open on THIS lane, whatever the probe is holding. */
@@ -175,18 +198,46 @@ export interface IngestDialogSession {
 export function useIngestDialogSession(
   rulebookId: string | null,
 ): IngestDialogSession {
-  const live = useLiveIngestLane(rulebookId);
+  const probe = useLiveIngestLane(rulebookId);
   const [session, setSession] = useState<IngestLane | null>(null);
-  const lane = session ?? live;
+  const lane = session ?? probe.lane;
   const openOn = useCallback((next: IngestLane) => setSession(next), []);
+  /**
+   * 🚨 THE OPEN PATH RESOLVES FROM THE LIVE POINTERS, AT THIS INSTANT, AND
+   * NEVER OVERWRITES A SESSION (Bugbot HIGH, 2026-09-13).
+   *
+   * This used to latch `lane ?? DEFAULT_INGEST_LANE` off the render closure.
+   * Both halves were wrong. The closure's `lane` is whatever the last render
+   * saw — on the first paint, before any effect has run, that is `null`, which
+   * means "not asked yet" and was read as "nothing is running", so a rejoin
+   * latched `source` while a case was in flight. And a plain `setOpen(true)`
+   * arriving in the same tick as an explicit `openOn("timeline")` (a
+   * `?ingest=timeline` deep link, and the dialog rejoining itself) overwrote
+   * the lane the person actually asked for, because it stamped its own answer
+   * instead of deferring to the session that already existed.
+   *
+   * So: a functional update reads the CURRENT session — already set means
+   * nothing to decide — and otherwise `findLiveIngestLane` reads storage right
+   * now rather than trusting a snapshot.
+   */
   const setOpen = useCallback(
-    (next: boolean) => setSession(next ? (lane ?? DEFAULT_INGEST_LANE) : null),
-    [lane],
+    (next: boolean) => {
+      if (!next) {
+        setSession(null);
+        return;
+      }
+      setSession(
+        (current) =>
+          current ?? findLiveIngestLane(rulebookId) ?? DEFAULT_INGEST_LANE,
+      );
+    },
+    [rulebookId],
   );
   return {
     session,
     lane,
     open: session !== null,
+    ready: probe.probed,
     timelineOpen: session === "timeline",
     openOn,
     setOpen,

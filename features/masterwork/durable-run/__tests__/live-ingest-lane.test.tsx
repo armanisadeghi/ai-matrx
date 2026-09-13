@@ -80,8 +80,8 @@ function writePointer(
 
 /** The surface each mount of the dialog asked the durable run for. */
 const mounted: { surface: string }[] = [];
-/** Which surface the fake durable run reports as still in flight. */
-let runningSurface: string | null = null;
+/** Which surface(s) the fake durable run reports as still in flight. */
+let runningSurface: string | string[] | null = null;
 /** Which surface has a FINISHED run whose summary is on screen. */
 let settledSurface: string | null = null;
 
@@ -91,7 +91,9 @@ jest.mock("../useMasterworkRun", () => {
     ...actual,
     useMasterworkRun: (options: { surface: string }) => {
       mounted.push({ surface: options.surface });
-      const running = options.surface === runningSurface;
+      const running = Array.isArray(runningSurface)
+        ? runningSurface.includes(options.surface)
+        : options.surface === runningSurface;
       const settled = options.surface === settledSurface;
       return {
         running,
@@ -210,6 +212,14 @@ function PageWiring({
       >
         From a source
       </button>
+      {/* The dialog opening ITSELF — what a rejoin does. */}
+      <button
+        type="button"
+        data-testid="rejoin-open"
+        onClick={() => ingest.setOpen(true)}
+      >
+        Rejoin
+      </button>
       <button
         type="button"
         data-testid="close-dialog"
@@ -217,6 +227,10 @@ function PageWiring({
       >
         Close
       </button>
+      {/* The page does not mount the dialog until the probe has answered — a
+          mount watches the pointer its lane picks, so one tick early watches
+          the wrong one. */}
+      {ingest.ready ? (
       <IngestSourceDialog
         key={`ingest-${ingest.lane ?? "default"}`}
         open={ingest.open}
@@ -227,6 +241,7 @@ function PageWiring({
         rulebook={RULEBOOK}
         initialLane={ingest.lane}
       />
+      ) : null}
     </TooltipProvider>
   );
 }
@@ -334,7 +349,7 @@ describe("the Rulebook page after a refresh", () => {
 
     const shown: (IngestLane | null)[] = [];
     function Probe() {
-      const lane = useLiveIngestLane(RULEBOOK_ID);
+      const { lane } = useLiveIngestLane(RULEBOOK_ID);
       shown.push(lane);
       return <span data-testid="lane">{lane ?? "none"}</span>;
     }
@@ -379,6 +394,81 @@ describe("the Rulebook page after a refresh", () => {
     // "From a source" — the explicit door — now opens the INGEST lane.
     click("from-a-source");
     expect(mounted.at(-1)?.surface).toBe("ingest");
+  });
+
+  it("never mounts on the ingest surface first when a case is the live run", async () => {
+    // 🚨 THE DEFECT (Bugbot HIGH, 2026-09-13). The dialog mounted on the very
+    // first paint, before any effect had read storage, so `lane` was null —
+    // "not asked yet", read as "nothing is running" — and it watched the INGEST
+    // pointer. With an ingest run in flight it rejoined that one and latched
+    // `source`, and the case stayed hidden.
+    writePointer("timeline");
+    runningSurface = "timeline";
+
+    await mountPage(null);
+
+    // Not "ended up on timeline": never touched the ingest surface at all.
+    expect(mounted.map((m) => m.surface)).not.toContain("ingest");
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+    expect(lastTimelineOpen).toBe(true);
+  });
+
+  it("lets the newer live run win when both pointers are in flight", async () => {
+    writePointer("ingest", { startedAt: Date.now() - 10 * 60 * 1000 });
+    writePointer("timeline", { startedAt: Date.now() - 30_000 });
+    runningSurface = ["ingest", "timeline"];
+
+    await mountPage(null);
+
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+    expect(lastTimelineOpen).toBe(true);
+  });
+
+  it("never overwrites a lane asked for in the same tick as a rejoin", async () => {
+    // `?ingest=timeline` names the lane while an ingest run is in flight: the
+    // deep link's `openOn` and the dialog's own rejoin land in one tick, and
+    // the rejoin used to stamp its own answer over the session.
+    writePointer("ingest");
+    runningSurface = ["ingest", "timeline"];
+
+    await mountPage("timeline");
+
+    expect(mounted.at(-1)?.surface).toBe("timeline");
+    expect(lastTimelineOpen).toBe(true);
+  });
+
+  it("resolves the lane from storage at the moment it opens, not from the last render", async () => {
+    // 🚨 THE OTHER HALF OF THE HIGH (Bugbot, 2026-09-13): the open path latched
+    // `lane ?? DEFAULT_INGEST_LANE` off the render CLOSURE. A case launched in
+    // another tab a second ago is live in storage and not yet in that closure,
+    // so a rejoin between two probe beats latched `source` and hid it.
+    useFrozenClock();
+    await mountPage(null);
+    expect(lastTimelineOpen).toBe(false);
+
+    // Another tab starts a case. No probe beat has passed.
+    writePointer("timeline");
+    runningSurface = "timeline";
+    click("rejoin-open");
+
+    expect(lastTimelineOpen).toBe(true);
+  });
+
+  it("never restamps a session the person already opened", async () => {
+    // The third face of the same defect: a plain `setOpen(true)` (the dialog
+    // rejoining itself) arriving after an explicit `openOn` used to stamp its
+    // own answer over the lane the person asked for.
+    useFrozenClock();
+    await mountPage("file");
+    expect(mounted.at(-1)?.surface).toBe("ingest");
+
+    writePointer("timeline");
+    runningSurface = "timeline";
+    click("rejoin-open");
+
+    // Still the lane that was asked for.
+    expect(mounted.at(-1)?.surface).toBe("ingest");
+    expect(lastTimelineOpen).toBe(false);
   });
 
   it("keeps the rejoined timeline dialog on screen when the run settles", async () => {
