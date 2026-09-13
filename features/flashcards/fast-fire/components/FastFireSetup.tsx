@@ -78,6 +78,7 @@ export function FastFireSetup() {
 
   const [sets, setSets] = useState<FcSetRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [setsAttempt, setSetsAttempt] = useState(0);
   // Device-check gate (Zoom/Meet style): confirm + test mic/speaker BEFORE the
   // drill. Open by default so the learner sees it; reuses the shared
   // MediaDevicesPanel (the same component the avatar-menu window opens).
@@ -206,26 +207,14 @@ export function FastFireSetup() {
     };
   }, [config.setId, config.spokenFronts]);
 
-  const retrySets = (): void => {
-    setLoadError(null);
-    setSets(null);
-    void loadSets();
-  };
-
-  const loadSets = async (): Promise<void> => {
-    const res = await loadFastFireSets((signal) => fcService.listSets({ signal }));
-    if (res.error) {
-      setLoadError(res.error);
-      setSets([]);
-      return;
-    }
-    setSets(res.data ?? []);
-  };
-
   useEffect(() => {
     let cancelled = false;
+    setLoadError(null);
+    setSets(null);
     void (async () => {
-      const res = await loadFastFireSets((signal) => fcService.listSets({ signal }));
+      const res = await loadFastFireSets((signal) =>
+        fcService.listSets({ signal }),
+      );
       if (cancelled) return;
       if (res.error) {
         setLoadError(res.error);
@@ -237,7 +226,7 @@ export function FastFireSetup() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setsAttempt]);
 
   const selectedSet = sets?.find((s) => s.id === config.setId) ?? null;
 
@@ -257,12 +246,20 @@ export function FastFireSetup() {
               />
             </div>
           ) : loadError ? (
-            <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground">
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground"
+            >
               <span className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 {loadError}
               </span>
-              <Button type="button" variant="outline" size="sm" onClick={retrySets}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSetsAttempt((attempt) => attempt + 1)}
+              >
                 Retry
               </Button>
             </div>
