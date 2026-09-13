@@ -39,7 +39,7 @@ import {
   TTS_DEFAULT_SPEED,
   type VoicePurpose,
 } from "@/lib/cartesia/config";
-import { getSessionKnob, useSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { getSessionKnob, resolveSessionKnob, useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 /**
  * The surface that anchors the platform's listening stack: the
@@ -122,4 +122,23 @@ export function getListeningSettings(): ListeningSettings {
     );
   }
   return { voice, ...selectListeningCadence(state) };
+}
+
+/**
+ * Awaited read for a caller that is about to SPEND (open a TTS socket):
+ * the voice knob resolved through the ladder, never the cold-cache "".
+ * The first utterance after a page load used to speak the purpose default
+ * because the synchronous read had no answer yet (2026-09-12, live on
+ * /chat): the adapter now awaits this before it picks a voice.
+ */
+export async function resolveListeningSettings(): Promise<ListeningSettings> {
+  let voice = "";
+  try {
+    voice = knobVoice(await resolveSessionKnob(LISTENING_VOICE_KNOB));
+  } catch (error) {
+    console.error(`[listening] ${LISTENING_VOICE_KNOB} could not be resolved — the purpose default speaks:`, error);
+  }
+  const store = getStoreSingleton();
+  if (!store) return { voice, speed: TTS_DEFAULT_SPEED, language: "en" };
+  return { voice, ...selectListeningCadence(store.getState() as RootState) };
 }
