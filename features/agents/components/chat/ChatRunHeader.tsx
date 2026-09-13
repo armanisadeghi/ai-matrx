@@ -12,6 +12,7 @@ import { selectUserInputText } from "@/features/agents/redux/execution-system/in
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
+import { ChatSandboxToggleButton } from "./sandbox-insight/ChatSandboxToggleButton";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";
 import { ConversationRoomNotice } from "./ConversationRoomNotice";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
@@ -124,6 +125,10 @@ export function ChatRunHeader({
         {conversationId && (
           <ConversationRecordsChip conversationId={conversationId} />
         )}
+        {/* The bound SANDBOX — terminal, files and this conversation's sandbox
+            work, one click away. Absent entirely when nothing is bound, so the
+            header never carries a control with nothing behind it. */}
+        <ChatSandboxToggleButton conversationId={conversationId} />
         {/* Canvas — the unified live workspace, one click away at the top. */}
         <ChatCanvasButton conversationId={conversationId} />
       </div>

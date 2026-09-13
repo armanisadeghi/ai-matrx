@@ -113,6 +113,7 @@ export const defaultUserPreferences: UserPreferences = {
     lastSandboxTemplate: "bare",
     monacoEnvironmentsEnabled: true,
     activeAgentSandboxBySurface: {},
+    chatSandboxPanelOpen: "auto",
   },
   // Matches the in-slice defaults at
   // lib/redux/preferences/userPreferencesSlice.ts:535 — keep them in sync.

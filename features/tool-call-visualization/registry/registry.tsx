@@ -93,6 +93,7 @@ import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
 import { ContextActionInline } from "../renderers/ctx/ContextActionInline";
 import { SqlInline } from "../renderers/sql/SqlInline";
 import { FsInline } from "../renderers/fs/FsInline";
+import { ShellInline } from "../renderers/shell/ShellInline";
 import { SkillInline } from "../renderers/skill/SkillInline";
 import { AskInline } from "../renderers/ask/AskInline";
 import { CloudBrowserInline } from "../renderers/cloud-browser/CloudBrowserRunCard";
@@ -1474,6 +1475,65 @@ export const toolRendererRegistry: ToolRegistry = {
     getHeaderSubtitle: (entry) => {
       const path = getArg<string>(entry, "path");
       return typeof path === "string" && path ? path : null;
+    },
+  },
+
+  // Process execution (sandbox container / durable VFS / aidream host). All
+  // three tools return aidream's ONE `shell_execution` shape — stdout, stderr,
+  // exit code, and the backend that ran it — so they share ONE renderer.
+  // Before this entry they fell to GenericRenderer: a six-row key/value dump
+  // in which "did my command work?" was the hardest fact to find.
+  shell_execute: {
+    toolName: "shell_execute",
+    chrome: "card",
+    displayName: "Terminal",
+    phaseLabels: {
+      running: "Running command",
+      complete: "Ran command",
+      errorPrefix: "Command failed",
+    },
+    resultsLabel: "Output",
+    InlineComponent: ShellInline,
+    OverlayComponent: ShellInline,
+    getHeaderSubtitle: (entry) => {
+      const command = getArg<string>(entry, "command");
+      return typeof command === "string" && command ? command : null;
+    },
+  },
+
+  shell_python: {
+    toolName: "shell_python",
+    chrome: "card",
+    displayName: "Terminal",
+    phaseLabels: {
+      running: "Running Python",
+      complete: "Ran Python",
+      errorPrefix: "Python failed",
+    },
+    resultsLabel: "Output",
+    InlineComponent: ShellInline,
+    OverlayComponent: ShellInline,
+    getHeaderSubtitle: (entry) => {
+      const code = getArg<string>(entry, "code") ?? getArg<string>(entry, "script");
+      return typeof code === "string" && code ? code.split("\n")[0] : null;
+    },
+  },
+
+  code_execute_python: {
+    toolName: "code_execute_python",
+    chrome: "card",
+    displayName: "Terminal",
+    phaseLabels: {
+      running: "Running Python",
+      complete: "Ran Python",
+      errorPrefix: "Python failed",
+    },
+    resultsLabel: "Output",
+    InlineComponent: ShellInline,
+    OverlayComponent: ShellInline,
+    getHeaderSubtitle: (entry) => {
+      const code = getArg<string>(entry, "code") ?? getArg<string>(entry, "script");
+      return typeof code === "string" && code ? code.split("\n")[0] : null;
     },
   },
 

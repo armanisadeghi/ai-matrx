@@ -227,6 +227,17 @@ export interface CodingPreferences {
    */
   monacoEnvironmentsEnabled: boolean;
   /**
+   * Chat room "Sandbox" side panel — open / closed, remembered per user.
+   *
+   * "auto" (the default) means: open on a desktop viewport when the
+   * conversation has a bound sandbox, closed on a phone. Once the user
+   * clicks the header control the choice becomes explicit and travels with
+   * them across devices and reloads. Tri-state on purpose: a plain boolean
+   * cannot tell "the user has never touched this" apart from "the user
+   * closed it", and the phone/desktop defaults differ.
+   */
+  chatSandboxPanelOpen: "auto" | "open" | "closed";
+  /**
    * Client-side favorite conversations. The `cx_conversation` table has no
    * favorite column yet; we persist ids in preferences so favorites still
    * follow the user across devices (via the user_preferences JSON blob).
@@ -991,6 +1002,7 @@ export const initializeUserPreferencesState = (
       lastSandboxTemplate: "bare",
       monacoEnvironmentsEnabled: true,
       activeAgentSandboxBySurface: {},
+      chatSandboxPanelOpen: "auto",
     },
     sandbox: {
       // "slim" = the full coding env without aidream-built-in. Matches what
