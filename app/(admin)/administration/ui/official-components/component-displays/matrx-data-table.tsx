@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Database, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   MatrxColumnDef,
@@ -126,6 +127,7 @@ export default function MatrxDataTableDisplay({
 }: ComponentDisplayProps) {
   const [facet, setFacet] = useState("all");
   const [rows] = useState(SEED);
+  const [boundedScroll, setBoundedScroll] = useState(true);
 
   const data = facet === "all" ? rows : rows.filter((r) => r.status === facet);
 
@@ -186,6 +188,34 @@ export default function MatrxDataTableDisplay({
           }}
         />
       </div>
+      <section className="space-y-3" aria-label="Table scroll chaining">
+        <h3 className="font-medium">Scrolling inside a page</h3>
+        <p className="text-sm text-muted-foreground">
+          Scroll over the table. At either end, scrolling should continue through
+          the surrounding page. A table that fits should let the page scroll immediately.
+        </p>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={boundedScroll}
+            onChange={(event) => setBoundedScroll(event.target.checked)} />
+          Constrain table height
+        </label>
+        <div data-table-scroll-example className="h-80 overflow-y-auto rounded-md border border-border">
+          <ScrollFade orientation="horizontal" className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+            Page content before the table
+          </ScrollFade>
+          <div className={boundedScroll ? "h-44" : undefined}>
+            <MatrxDataTable
+              data={rows}
+              columns={COLUMNS}
+              getRowId={(row) => row.id}
+              pageSize={10}
+            />
+          </div>
+          <div className="flex h-80 items-center justify-center text-sm text-muted-foreground">
+            Page content after the table
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
