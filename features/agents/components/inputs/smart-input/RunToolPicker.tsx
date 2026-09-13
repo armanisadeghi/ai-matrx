@@ -308,14 +308,35 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
                     sub={t.description ?? "custom"}
                   />
                 ))}
-                {mcpList.map((id) => (
-                  <AgentToolBadge
-                    key={id}
-                    icon={<Server className="h-3 w-3" />}
-                    label={id}
-                    sub="MCP"
-                  />
-                ))}
+                {/* The agent's own MCP servers ride EVERY run, so their real
+                    state belongs here too — a slug alone told the user
+                    nothing about whether the agent can actually reach it. */}
+                {mcpList.map((id) => {
+                  const server = serverStates.find((s) => s.entry.slug === id);
+                  const attachment = runAttachments[id];
+                  const state = attachment?.state ?? server?.truth.state;
+                  return (
+                    <AgentToolBadge
+                      key={id}
+                      icon={<Server className="h-3 w-3" />}
+                      label={server?.entry.name ?? id}
+                      sub={
+                        state === undefined
+                          ? "MCP"
+                          : state === "connected"
+                            ? attachment?.toolCount != null
+                              ? `MCP · ${attachment.toolCount} tools`
+                              : "MCP · connected"
+                            : `MCP · ${MCP_STATE_LABEL[state]}`
+                      }
+                      tone={
+                        state === undefined || state === "connected"
+                          ? "muted"
+                          : "warning"
+                      }
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -461,10 +482,13 @@ function AgentToolBadge({
   icon,
   label,
   sub,
+  tone = "muted",
 }: {
   icon: React.ReactNode;
   label: string;
   sub?: string;
+  /** `warning` marks a row whose backing connection is not usable right now. */
+  tone?: "muted" | "warning";
 }) {
   return (
     <div className="flex items-baseline gap-1.5 rounded bg-muted/40 px-1.5 py-0.5 text-[11px]">
@@ -473,7 +497,14 @@ function AgentToolBadge({
         {label}
       </span>
       {sub && (
-        <span className="shrink-0 truncate text-[11px] text-muted-foreground/60">
+        <span
+          className={cn(
+            "shrink-0 truncate text-[11px]",
+            tone === "warning"
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-muted-foreground/60",
+          )}
+        >
           {sub}
         </span>
       )}
