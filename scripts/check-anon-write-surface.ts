@@ -27,13 +27,18 @@
  * `log_client_error`, the `hr_kiosk_*` family. NEVER through a table privilege. There
  * is no allowlist of anon write grants, because the correct number is zero.
  *
- * FIVE ARMS, because this surface has five doors and closing four is closing none:
- *   1. relation - anon or PUBLIC holds INSERT/UPDATE/DELETE/MAINTAIN on a relation.
+ * SIX ARMS, because this surface has six doors and closing five is closing none:
+ *   1. relation - anon or PUBLIC holds a write on a relation, in EITHER catalog shape:
+ *                 a table grant (`pg_class.relacl`) or a per-column one
+ *                 (`pg_attribute.attacl`), which a table-level REVOKE does not remove.
  *   2. sequence - anon holds UPDATE/USAGE on a sequence (nextval/setval is a write).
  *   3. default  - default privileges grant anon a write on everything created next.
  *   4. policy   - a write-capable policy reaching PUBLIC or anon that no register row
  *                 declares (and a register row describing a policy that is gone).
  *   5. door     - a definer function anon can EXECUTE that writes, with no door row.
+ *   6. birth    - default privileges grant anon/PUBLIC SELECT on everything created
+ *                 next, so a new table is published to the internet before anybody
+ *                 decides anything (DD-196; the read half of arm 3).
  *
  * UNMEASURED IS A FAILURE, NEVER A PASS - with no database credentials it exits 1
  * and says which five variables it wanted and where it looked.
@@ -49,6 +54,7 @@ import {
   ANON_WRITE_RELATION_QUERY,
   ANON_WRITE_SEQUENCE_QUERY,
   ANON_WRITE_DEFAULT_QUERY,
+  ANON_SELECT_DEFAULT_QUERY,
   ANON_WRITE_POLICY_QUERY,
   ANON_WRITE_DOOR_QUERY,
   POSTGREST_EXPOSED_SCHEMAS,
@@ -148,12 +154,14 @@ async function measure(client: any): Promise<LiveAnonWrite> {
   const defaults = await client.query(ANON_WRITE_DEFAULT_QUERY, [VENDOR]);
   const policies = await client.query(ANON_WRITE_POLICY_QUERY, [EXPOSED]);
   const doors = await client.query(ANON_WRITE_DOOR_QUERY, [VENDOR]);
+  const selectDefaults = await client.query(ANON_SELECT_DEFAULT_QUERY, [VENDOR]);
   return {
     relations: relations.rows,
     sequences: sequences.rows,
     defaults: defaults.rows,
     policies: policies.rows,
     doors: doors.rows,
+    selectDefaults: selectDefaults.rows,
   };
 }
 
@@ -163,6 +171,7 @@ const ARM_TITLE: Record<AnonWriteFinding["arm"], string> = {
   default: "a default privilege that re-opens this surface on the next create",
   policy: "an undeclared write policy reaching every role",
   door: "an undeclared anonymous write door",
+  birth: "a default privilege that publishes the next table created here to the internet",
 };
 
 function report(live: LiveAnonWrite): number {
@@ -173,13 +182,15 @@ function report(live: LiveAnonWrite): number {
       `${EXPOSED.length} schemas PostgREST exposes)${C.x}\n` +
       `  ${live.relations.length} relation grant(s), ${live.sequences.length} sequence grant(s), ` +
       `${live.defaults.length} write default(s), ${live.policies.length} PUBLIC/anon write polic(ies) ` +
-      `(${PUBLIC_WRITE_POLICIES_OF_RECORD.length} declared), ${live.doors.length} declared definer door(s).`,
+      `(${PUBLIC_WRITE_POLICIES_OF_RECORD.length} declared), ${live.doors.length} declared definer door(s), ` +
+      `${live.selectDefaults.length} read default(s).`,
   );
 
   if (!findings.length) {
     console.log(
-      `${C.g}OK${C.x}   a signed-out caller holds no write privilege anywhere, and every anonymous write\n` +
-        `     path is a declared door in platform.client_callable_door.`,
+      `${C.g}OK${C.x}   a signed-out caller holds no write privilege anywhere, every anonymous write path\n` +
+        `     is a declared door in platform.client_callable_door, and a relation created next is\n` +
+        `     closed to anon at birth.`,
     );
     return 0;
   }
@@ -220,9 +231,9 @@ async function main() {
     }
 
     // -- THE SELF-TEST: a guard nobody has seen fail is not a guard. ----------
-    // All five arms are forced against the REAL database inside transactions that
+    // All six arms are forced against the REAL database inside transactions that
     // are ALWAYS rolled back, so no live grant, policy or door row is left changed.
-    console.log(`${C.b}--self-test${C.x} ${C.d}forcing all five arms against the live database${C.x}\n`);
+    console.log(`${C.b}--self-test${C.x} ${C.d}forcing all six arms against the live database${C.x}\n`);
 
     const baseline = report(await measure(client));
     if (baseline !== 0) {
@@ -236,8 +247,24 @@ async function main() {
 
     const state = { reds: 0 };
 
-    // ARM 1 - a table grant comes back, on the roster of platform admins.
+    // ARM 1a - a table grant comes back, on the roster of platform admins.
     await red(client, "anon granted INSERT on admin.admins", ["grant insert on admin.admins to anon"], state);
+
+    // ARM 1b - THE SHAPE THIS GUARD WAS BLIND TO. A per-column grant is a real
+    // privilege (`has_column_privilege` says so) that no `relacl` query can see, and
+    // it is how `docproc.processed_documents` stayed writable-by-privilege through
+    // DD-193's first sweep, its self-assertion and this guard's first version. The
+    // scratch table is created and dropped inside the same rolled-back transaction.
+    await red(
+      client,
+      "anon granted INSERT on NAMED COLUMNS of a scratch table (the attacl shape)",
+      [
+        "create table public.b87_attacl_probe (id uuid primary key default gen_random_uuid(), payload text)",
+        "alter table public.b87_attacl_probe enable row level security",
+        "grant insert (id, payload) on public.b87_attacl_probe to anon",
+      ],
+      state,
+    );
 
     // ARM 2 - a sequence anon can advance.
     await red(
@@ -268,6 +295,14 @@ async function main() {
       client,
       "public.record_guest_execution loses its client_callable_door row",
       ["delete from platform.client_callable_door where schema_name = 'public' and function_name = 'record_guest_execution'"],
+      state,
+    );
+
+    // ARM 6 - the default privilege that publishes the next table to the internet (DD-196).
+    await red(
+      client,
+      "default privileges grant anon SELECT on every new communication table",
+      ["alter default privileges for role postgres in schema communication grant select on tables to anon"],
       state,
     );
 

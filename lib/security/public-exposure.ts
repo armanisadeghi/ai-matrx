@@ -1412,17 +1412,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
-    relation: "files.file_rag_jobs",
-    columns: [
-      "id", "file_id", "status", "trigger_source", "scheduled_for", "started_at",
-      "completed_at", "attempt_count", "skipped_reason", "error", "created_at", "updated_at",
-    ],
-    why:
-      "Anon-readable by the policy `cld_file_rag_jobs_owner_select`; every identity, bookkeeping and secret column is "
-      + "revoked at the column (DD-186). No signed-out reader was found for it in the four-repository "
-      + "census — the bound is what keeps a column added tomorrow from publishing itself.",
-  },
-  {
     relation: "files.files",
     columns: [
       "id", "file_path", "file_name", "mime_type", "size_bytes", "checksum",
@@ -2878,7 +2867,7 @@ export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfR
 
 export interface AnonWriteFinding {
   /** Which arm found it - the five questions this surface is made of. */
-  arm: "relation" | "sequence" | "default" | "policy" | "door";
+  arm: "relation" | "sequence" | "default" | "policy" | "door" | "birth";
   /** The object: `schema.relation`, `schema.sequence`, a default-privilege entry, `relation :: policy`, or `schema.function`. */
   object: string;
   /** What is live and wrong, in one sentence. */
@@ -2889,23 +2878,55 @@ export interface AnonWriteFinding {
 
 /**
  * ARM 1 - every relation in a PostgREST-exposed schema on which `anon` or PUBLIC holds
- * INSERT, UPDATE, DELETE or MAINTAIN. MAINTAIN is in the list because PostgreSQL 17
- * folded REFRESH MATERIALIZED VIEW into it, and a historical `grant all ... to anon`
- * hands it out with the rest.
+ * INSERT, UPDATE, DELETE, MAINTAIN or REFERENCES. MAINTAIN is in the list because
+ * PostgreSQL 17 folded REFRESH MATERIALIZED VIEW into it, and a historical
+ * `grant all ... to anon` hands it out with the rest.
+ *
+ * TWO CATALOG SHAPES, because a privilege has two homes and reading one is reading
+ * half. `pg_class.relacl` holds a table-level grant; `pg_attribute.attacl` holds a
+ * per-column one, and **a table-level REVOKE does not remove a column grant**. The
+ * first version of this arm read `relacl` alone and printed "a signed-out caller holds
+ * no write privilege anywhere" while `anon` held INSERT and UPDATE on 32 columns of
+ * `docproc.processed_documents` (found by V-56, 2026-09-13; proven with these shipped
+ * bytes against a planted `grant insert (id, payload) ... to anon`, which returned zero
+ * findings). Over HTTPS that table was the one place on the database where a signed-out
+ * POST got PAST the privilege gate and was stopped only by RLS - the exact pair DD-193
+ * exists to break. A guard that overstates its own scope is how the next column grant
+ * goes unnoticed for a year.
+ *
+ * `shape` is carried through to the finding because the two need DIFFERENT remedies: a
+ * `revoke ... on <table> from anon` is a silent no-op against a column grant.
  */
 export const ANON_WRITE_RELATION_QUERY = `
-  select n.nspname || '.' || c.relname as object,
-         case when a.grantee = 0 then 'PUBLIC' else 'anon' end as grantee,
-         string_agg(distinct a.privilege_type, ', ' order by a.privilege_type) as privileges
-  from pg_class c
-  join pg_namespace n on n.oid = c.relnamespace
-  cross join lateral aclexplode(c.relacl) a
-  where c.relkind in ('r','p','v','m','f')
-    and a.privilege_type in ('INSERT','UPDATE','DELETE','MAINTAIN')
-    and (a.grantee = 0 or pg_get_userbyid(a.grantee) = 'anon')
-    and n.nspname = any($1::text[])
-  group by 1, 2
-  order by 1
+  select object, grantee, shape, string_agg(distinct privilege_type, ', ' order by privilege_type) as privileges
+  from (
+    select n.nspname || '.' || c.relname as object,
+           case when a.grantee = 0 then 'PUBLIC' else 'anon' end as grantee,
+           'table' as shape,
+           a.privilege_type
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    cross join lateral aclexplode(c.relacl) a
+    where c.relkind in ('r','p','v','m','f')
+      and a.privilege_type in ('INSERT','UPDATE','DELETE','MAINTAIN','REFERENCES')
+      and (a.grantee = 0 or pg_get_userbyid(a.grantee) = 'anon')
+      and n.nspname = any($1::text[])
+    union all
+    select n.nspname || '.' || c.relname as object,
+           case when a.grantee = 0 then 'PUBLIC' else 'anon' end as grantee,
+           'column' as shape,
+           a.privilege_type
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_attribute att on att.attrelid = c.oid and att.attnum > 0 and not att.attisdropped
+    cross join lateral aclexplode(att.attacl) a
+    where c.relkind in ('r','p','v','m','f')
+      and a.privilege_type in ('INSERT','UPDATE','REFERENCES')
+      and (a.grantee = 0 or pg_get_userbyid(a.grantee) = 'anon')
+      and n.nspname = any($1::text[])
+  ) t
+  group by object, grantee, shape
+  order by object, shape
 `;
 
 /** ARM 2 - UPDATE or USAGE on a sequence is `nextval`/`setval`: a write. */
@@ -2941,6 +2962,44 @@ export const ANON_WRITE_DEFAULT_QUERY = `
     and a.privilege_type in ('INSERT','UPDATE','DELETE','MAINTAIN','USAGE')
     and not (coalesce(n.nspname, '') = any($1::text[]))
   group by 1
+  order by 1
+`;
+
+/**
+ * ARM 6 - THE READ HALF OF THE SAME DEFAULT PRIVILEGES (DD-196). Arm 3 asks whether
+ * a table created tomorrow can be WRITTEN by a signed-out caller. This asks whether
+ * it can be READ by one, which on 2026-09-13 it could: ten schemas -
+ * `communication`, `crm`, `docproc`, `files`, `pdf`, `podcast`, `public`,
+ * `scheduler`, `users`, `workflow` - granted `anon` SELECT on every table created in
+ * them from then on, five of them on every sequence as well. Proven before DD-196
+ * ran, in a rolled-back transaction: `create table communication.b89_probe (id int)`
+ * -> `has_table_privilege('anon', ..., 'select')` TRUE, in all ten, with `agent` and
+ * `seo` FALSE as the controls. `anon` holds USAGE on those schemas and PostgREST
+ * publishes them, so the table was on the internet from the moment it existed -
+ * before any policy was written, and whether or not anyone wrote one. A brand-new
+ * table has RLS OFF until `iam.apply_rls` runs on it, so for that window the grant
+ * IS the access decision.
+ *
+ * EVERY grantor is measured, not just `postgres`: default privileges are per-role,
+ * so a second role that creates tables carries its own set. PUBLIC is measured
+ * beside `anon` because PUBLIC reaches every role there is, and a role-name census
+ * never sees it - exactly how DD-194's `pg_stat_statements` grant hid.
+ *
+ * Publishing a table to anonymous readers is a decision somebody makes: an explicit
+ * `grant select (<columns>) ... to anon` plus a row in the DD-186 column register.
+ */
+export const ANON_SELECT_DEFAULT_QUERY = `
+  select coalesce(n.nspname, '(all schemas)') || ' (' ||
+         case d.defaclobjtype when 'r' then 'tables' when 'S' then 'sequences' else d.defaclobjtype::text end ||
+         ', granted by ' || pg_get_userbyid(d.defaclrole) || ')' as object,
+         case when a.grantee = 0 then 'PUBLIC' else pg_get_userbyid(a.grantee) end as grantee
+  from pg_default_acl d
+  left join pg_namespace n on n.oid = d.defaclnamespace
+  cross join lateral aclexplode(d.defaclacl) a
+  where d.defaclobjtype in ('r','S')
+    and a.privilege_type = 'SELECT'
+    and (a.grantee = 0 or pg_get_userbyid(a.grantee) = 'anon')
+    and not (coalesce(n.nspname, '') = any($1::text[]))
   order by 1
 `;
 
@@ -2983,9 +3042,10 @@ export const ANON_WRITE_DOOR_QUERY = `
 `;
 
 export interface LiveAnonWrite {
-  relations: Array<{ object: string; privileges: string; grantee: string }>;
+  relations: Array<{ object: string; privileges: string; grantee: string; shape: "table" | "column" }>;
   sequences: Array<{ object: string; privileges: string }>;
   defaults: Array<{ object: string; privileges: string }>;
+  selectDefaults: Array<{ object: string; grantee: string }>;
   policies: Array<{ relation: string; policy: string; cmd: string; roles: string }>;
   doors: Array<{ object: string; door_rows: number }>;
 }
@@ -3001,14 +3061,25 @@ export function classifyAnonWrites(live: LiveAnonWrite): AnonWriteFinding[] {
   const findings: AnonWriteFinding[] = [];
 
   for (const r of live.relations) {
+    const grantee = r.grantee === "PUBLIC" ? "public" : "anon";
+    const doorLine =
+      `If a signed-out caller genuinely must write here, the write goes through a SECURITY DEFINER door ` +
+      `recorded in platform.client_callable_door (the record_guest_execution pattern) - never a table grant.`;
     findings.push({
       arm: "relation",
       object: r.object,
-      detail: `${r.grantee} holds ${r.privileges} on it.`,
+      detail:
+        r.shape === "column"
+          ? `${r.grantee} holds ${r.privileges} on it, granted PER COLUMN (pg_attribute.attacl).`
+          : `${r.grantee} holds ${r.privileges} on it.`,
       remedy:
-        `revoke insert, update, delete, maintain on ${r.object} from ${r.grantee === "PUBLIC" ? "public" : "anon"};  ` +
-        `If a signed-out caller genuinely must write here, the write goes through a SECURITY DEFINER door ` +
-        `recorded in platform.client_callable_door (the record_guest_execution pattern) - never a table grant.`,
+        r.shape === "column"
+          ? `A column grant SURVIVES a table-level REVOKE - \`revoke insert, update on ${r.object} from ${grantee};\` ` +
+            `would do nothing and read as a fix. Revoke each column by name: ` +
+            `\`revoke ${r.privileges.toLowerCase()} (<column>) on ${r.object} from ${grantee};\` for every column in ` +
+            `\`select attname from pg_attribute where attrelid = '${r.object}'::regclass and attacl::text like '%${grantee}=%'\`. ` +
+            doorLine
+          : `revoke insert, update, delete, maintain on ${r.object} from ${grantee};  ` + doorLine,
     });
   }
 
@@ -3029,6 +3100,18 @@ export function classifyAnonWrites(live: LiveAnonWrite): AnonWriteFinding[] {
       remedy:
         `alter default privileges for role postgres in schema <schema> revoke insert, update, delete, maintain on tables from anon;  ` +
         `This is how the anon write surface re-opens with nobody deciding anything (DD-193).`,
+    });
+  }
+
+  for (const d of live.selectDefaults) {
+    findings.push({
+      arm: "birth",
+      object: d.object,
+      detail: `default privileges grant ${d.grantee} SELECT on every object created here from now on, so a table nobody has decided about is published to the internet the moment it exists (DD-196).`,
+      remedy:
+        `alter default privileges for role <grantor> in schema <schema> revoke select on tables from ${d.grantee === "PUBLIC" ? "public" : "anon"};  ` +
+        `Publishing a relation to anonymous readers is a decision somebody makes: an explicit ` +
+        `grant select (<columns>) on <relation> to anon plus a row in ANON_COLUMN_SURFACE saying why (DD-186).`,
     });
   }
 

@@ -129,8 +129,13 @@ export default function SaveHeatmapModal({
       const url = `${baseUrl}/free/zip-code-heatmap/${savedHeatmap.id}`;
       setShareUrl(url);
     } catch (err) {
+      // A screen never prints a database sentence at a person. Whatever went wrong,
+      // the visitor is told what happened to their work (nothing — it is still on the
+      // page) and what to do next; the real error goes to the console for us.
       console.error('Error saving heatmap:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save heatmap');
+      setError(
+        'We could not save this heatmap just now. Nothing was lost — your data and view settings are still on the page, so try Save again in a moment.',
+      );
     } finally {
       setIsSaving(false);
     }
