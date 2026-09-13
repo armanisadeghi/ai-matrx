@@ -15,7 +15,12 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
-import { AlertTriangle, Loader2, RotateCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  MonitorSmartphone,
+  RotateCw,
+} from "lucide-react";
 import type { ControllerState, StreamTicketEnvelope } from "../types";
 import { renewStreamTicket } from "../service";
 
@@ -24,6 +29,7 @@ export function TakeoverCanvas({
   ticket,
   connecting,
   openError,
+  openElsewhere = false,
   onReconnect,
   className,
 }: {
@@ -37,6 +43,12 @@ export function TakeoverCanvas({
    * "No live session" while the server had already refused the connection.
    */
   openError?: string | null;
+  /**
+   * The live view is already open in another tab or window. Recoverable with
+   * one click, so it gets its own state instead of reading as a failure — the
+   * "you're already in this call in another tab — Join here" pattern.
+   */
+  openElsewhere?: boolean;
   onReconnect: () => void;
   className?: string;
 }) {
@@ -79,6 +91,25 @@ export function TakeoverCanvas({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300">
             <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
             <span className="text-sm">Connecting to the live browser…</span>
+          </div>
+        ) : !ticket && openElsewhere ? (
+          <div
+            role="status"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-slate-300"
+          >
+            <MonitorSmartphone className="h-6 w-6 text-slate-300" aria-hidden />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                This browser is open in another tab or window
+              </p>
+              <p className="max-w-sm text-xs text-slate-400">
+                You can only watch it in one place at a time. Showing it here
+                closes the live view there.
+              </p>
+            </div>
+            <Button size="sm" onClick={onReconnect}>
+              Show it here
+            </Button>
           </div>
         ) : !ticket ? (
           // Not connecting and no ticket is a FINISHED attempt, never a pending
