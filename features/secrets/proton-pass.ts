@@ -185,11 +185,14 @@ function canonical(item: Obj): Obj {
           : {
               itemEmail: content.itemEmail,
               password: content.password,
-              urls: content.urls,
+              urls: [...(content.urls as string[])],
               totpUri: content.totpUri,
-              passkeys: content.passkeys,
+              passkeys: (content.passkeys as Obj[]).map(canonicalPasskey),
               itemUsername: content.itemUsername,
-              autofillUrls: content.autofillUrls,
+              autofillUrls: (content.autofillUrls as Obj[]).map((url) => ({
+                url: url.url,
+                mode: url.mode,
+              })),
             },
       ...(data.platformSpecific === undefined
         ? {}
@@ -208,6 +211,32 @@ function canonical(item: Obj): Obj {
   };
   if (item.shareCount !== undefined) out.shareCount = item.shareCount;
   out.files = [...(item.files as string[])];
+  return out;
+}
+function canonicalPasskey(passkey: Obj): Obj {
+  const out: Obj = {
+    keyId: passkey.keyId,
+    content: passkey.content,
+    domain: passkey.domain,
+    rpId: passkey.rpId,
+    rpName: passkey.rpName,
+    userName: passkey.userName,
+    userDisplayName: passkey.userDisplayName,
+    userId: passkey.userId,
+    createTime: passkey.createTime,
+    note: passkey.note,
+    credentialId: passkey.credentialId,
+    userHandle: passkey.userHandle,
+  };
+  if (passkey.creationData !== undefined) {
+    const creation = passkey.creationData as Obj;
+    out.creationData = {
+      osName: creation.osName,
+      osVersion: creation.osVersion,
+      deviceName: creation.deviceName,
+      appVersion: creation.appVersion,
+    };
+  }
   return out;
 }
 function canonicalExtra(field: Obj): Obj {
@@ -272,12 +301,40 @@ type Entry = {
   ordinal: number;
   vaultUnsupported?: boolean;
 };
-function validate(
-  entry: Entry,
-  version: string,
-  userId: string | undefined,
-  max: number,
-): StructuredImportRecord {
+type Classified =
+  | {
+      status: "invalid" | "unsupported";
+      ordinal: number;
+      title: string;
+      reason: string;
+      declaresFiles: boolean;
+    }
+  | {
+      status: "supported";
+      entry: Entry;
+      ordinal: number;
+      title: string;
+      sourceState: "active" | "deleted";
+      hasOtp: boolean;
+      kind: "custom" | "website_login";
+      declaresFiles: true;
+      urls?: string[];
+      username?: string | null;
+      password?: string;
+    };
+const classifyReject = (
+  status: "invalid" | "unsupported",
+  ordinal: number,
+  title: string,
+  reason: string,
+): Classified => ({
+  status,
+  ordinal,
+  title,
+  reason,
+  declaresFiles: status === "unsupported",
+});
+function classify(entry: Entry, max: number): Classified {
   const { item, vault, vaultId, ordinal } = entry,
     title = itemTitle(item, ordinal);
   if (
@@ -306,7 +363,7 @@ function validate(
     !item.files.every((v) => string(v, max, true)) ||
     !allStringsBounded(item, max)
   )
-    return reject(
+    return classifyReject(
       "invalid",
       ordinal,
       title,
@@ -330,14 +387,14 @@ function validate(
       ["shareCount"],
     )
   )
-    return reject(
+    return classifyReject(
       "unsupported",
       ordinal,
       title,
       "This Proton Pass item has unsupported fields.",
     );
   if (n(item.contentFormatVersion) !== 8 || ![1, 2].includes(n(item.state)))
-    return reject(
+    return classifyReject(
       "unsupported",
       ordinal,
       title,
@@ -363,14 +420,21 @@ function validate(
     !validExtra(data.extraFields, max) ||
     !validPlatform(data.platformSpecific, max)
   )
-    return reject(
+    return classifyReject(
       "invalid",
       ordinal,
       title,
       "The Proton Pass item data is invalid.",
     );
+  if (typeof data.type !== "string")
+    return classifyReject(
+      "invalid",
+      ordinal,
+      title,
+      "The Proton Pass item type is invalid.",
+    );
   if (data.type !== "login" && data.type !== "note")
-    return reject(
+    return classifyReject(
       "unsupported",
       ordinal,
       title,
@@ -378,21 +442,21 @@ function validate(
     );
   if (data.type === "note") {
     if (!exact(content, []))
-      return reject(
+      return classifyReject(
         "invalid",
         ordinal,
         title,
         "The Proton Pass note is invalid.",
       );
     if ((item.files as unknown[]).length)
-      return reject(
+      return classifyReject(
         "unsupported",
         ordinal,
         title,
         "Proton Pass attachments are unsupported.",
       );
     if (entry.vaultUnsupported)
-      return reject(
+      return classifyReject(
         "unsupported",
         ordinal,
         title,
@@ -400,12 +464,13 @@ function validate(
       );
     return {
       status: "supported",
+      entry,
       ordinal,
       title: meta.name as string,
       sourceState: n(item.state) === 2 ? "deleted" : "active",
-      sourceRecord: source(version, userId, vaultId, vault, item),
       hasOtp: false,
       kind: "custom",
+      declaresFiles: true,
     };
   }
   const contentRequired = [
@@ -440,13 +505,13 @@ function validate(
       !("autofillUrls" in content) &&
       Object.keys(content).every((key) => contentRequired.includes(key))
     )
-      return reject(
+      return classifyReject(
         "unsupported",
         ordinal,
         title,
         "This Proton Pass legacy login shape is unsupported.",
       );
-    return reject(
+    return classifyReject(
       "invalid",
       ordinal,
       title,
@@ -454,7 +519,7 @@ function validate(
     );
   }
   if (!validPasskeys(content.passkeys, max))
-    return reject(
+    return classifyReject(
       "invalid",
       ordinal,
       title,
@@ -471,14 +536,14 @@ function validate(
       );
     })
   )
-    return reject(
+    return classifyReject(
       "invalid",
       ordinal,
       title,
       "The Proton Pass URL list is invalid.",
     );
   if ((content.autofillUrls as Obj[]).some((raw) => n(raw.mode) > 6))
-    return reject(
+    return classifyReject(
       "unsupported",
       ordinal,
       title,
@@ -492,14 +557,14 @@ function validate(
     defaults.length !== legacyUrls.length ||
     defaults.some((u, i) => u !== legacyUrls[i])
   )
-    return reject(
+    return classifyReject(
       "invalid",
       ordinal,
       title,
       "The Proton Pass URL projection is invalid.",
     );
   if (content.passkeys.length || (item.files as unknown[]).length)
-    return reject(
+    return classifyReject(
       "unsupported",
       ordinal,
       title,
@@ -509,7 +574,7 @@ function validate(
     .map(safeDestination)
     .flatMap((value) => (value.metadata ? [value.metadata] : []));
   if (entry.vaultUnsupported)
-    return reject(
+    return classifyReject(
       "unsupported",
       ordinal,
       title,
@@ -517,10 +582,10 @@ function validate(
     );
   return {
     status: "supported",
+    entry,
     ordinal,
     title: meta.name as string,
     sourceState: n(item.state) === 2 ? "deleted" : "active",
-    sourceRecord: source(version, userId, vaultId, vault, item),
     hasOtp:
       (content.totpUri as string).length > 0 ||
       (data.extraFields as Obj[]).some(
@@ -529,11 +594,48 @@ function validate(
           ((field.data as Obj).totpUri as string).length > 0,
       ),
     kind: "website_login",
+    declaresFiles: true,
     urls,
     username:
       (content.itemUsername as string) || (content.itemEmail as string) || null,
     password: content.password as string,
   };
+}
+function materialize(
+  classified: Classified,
+  version: string,
+  userId: string | undefined,
+): StructuredImportRecord {
+  if (classified.status !== "supported")
+    return reject(
+      classified.status,
+      classified.ordinal,
+      classified.title,
+      classified.reason,
+    );
+  const { entry } = classified;
+  return {
+    status: "supported",
+    ordinal: classified.ordinal,
+    title: classified.title,
+    sourceState: classified.sourceState,
+    sourceRecord: source(
+      version,
+      userId,
+      entry.vaultId,
+      entry.vault,
+      entry.item,
+    ),
+    hasOtp: classified.hasOtp,
+    kind: classified.kind,
+    ...(classified.kind === "website_login"
+      ? {
+          urls: classified.urls!,
+          username: classified.username!,
+          password: classified.password!,
+        }
+      : {}),
+  } as StructuredImportRecord;
 }
 export function parseProtonPassExport(
   text: string,
@@ -579,20 +681,6 @@ export function parseProtonPassExport(
       !Array.isArray(vault.items)
     )
       throw new Error("The Proton Pass vault is invalid.");
-    if (displayStatus(vault.display) === "unsupported") {
-      for (const raw of vault.items) {
-        if (entries.length >= limits.maxRecords)
-          throw new Error("The Proton Pass export has too many records.");
-        entries.push({
-          item: object(raw) ?? {},
-          vault,
-          vaultId,
-          ordinal: entries.length,
-          vaultUnsupported: true,
-        });
-      }
-      continue;
-    }
     for (const raw of vault.items) {
       if (entries.length >= limits.maxRecords)
         throw new Error("The Proton Pass export has too many records.");
@@ -605,21 +693,22 @@ export function parseProtonPassExport(
           );
         identities.add(id);
       }
-      entries.push({ item, vault, vaultId, ordinal: entries.length });
+      entries.push({
+        item,
+        vault,
+        vaultId,
+        ordinal: entries.length,
+        vaultUnsupported: displayStatus(vault.display) === "unsupported",
+      });
     }
   }
-  const records = entries.map((entry) =>
-    validate(
-      entry,
-      root.version as string,
-      root.userId as string | undefined,
-      limits.maxCellBytes,
-    ),
+  const classifications = entries.map((entry) =>
+    classify(entry, limits.maxCellBytes),
   );
   if (binaryNames) {
     entries.forEach((entry, index) => {
       if (
-        records[index]?.status === "invalid" ||
+        !classifications[index]?.declaresFiles ||
         !Array.isArray(entry.item.files)
       )
         return;
@@ -634,5 +723,11 @@ export function parseProtonPassExport(
       if (claims.get(name) !== 1)
         throw new Error("The Proton Pass archive is invalid.");
   }
-  return records;
+  return classifications.map((classified) =>
+    materialize(
+      classified,
+      root.version as string,
+      root.userId as string | undefined,
+    ),
+  );
 }

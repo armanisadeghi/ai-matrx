@@ -212,4 +212,171 @@ describe("Proton Pass export parser", () => {
     expect(icon).toMatchObject({ status: "unsupported" });
     expect(icon).not.toHaveProperty("sourceRecord");
   });
+  test("censuses duplicate identities before future vault display classification", () => {
+    const payload = {
+      version: "1",
+      vaults: {
+        share: {
+          description: "",
+          display: { icon: 32 },
+          name: "Vault",
+          items: [login(), login()],
+        },
+      },
+    };
+    expect(() =>
+      parseProtonPassExport(JSON.stringify(payload), limits),
+    ).toThrow("duplicate item identities");
+  });
+  test("makes malformed type primitives invalid while future type strings are unsupported", () => {
+    const malformed = parseProtonPassExport(
+      source(login({ data: { ...login().data, type: 7 } })),
+      limits,
+    )[0];
+    const future = parseProtonPassExport(
+      source(login({ data: { ...login().data, type: "futureType" } })),
+      limits,
+    )[0];
+    expect(malformed).toMatchObject({ status: "invalid" });
+    expect(future).toMatchObject({ status: "unsupported" });
+    expect(malformed).not.toHaveProperty("sourceRecord");
+    expect(future).not.toHaveProperty("sourceRecord");
+  });
+  test("constructs fresh grammar-ordered nested source values only after classification", () => {
+    const [record] = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: {
+              ...(login().data as any).content,
+              urls: ["https://example.test", "https://second.test"],
+              autofillUrls: [
+                { mode: 0, url: "https://example.test" },
+                { mode: 0, url: "https://second.test" },
+              ],
+            },
+          },
+        }),
+      ),
+      limits,
+    );
+    expect(record).toMatchObject({ status: "supported" });
+    if (record?.status === "supported") {
+      expect(record.sourceRecord).toContain(
+        '"urls":["https://example.test","https://second.test"]',
+      );
+      expect(record.sourceRecord).toContain(
+        '"autofillUrls":[{"url":"https://example.test","mode":0},{"url":"https://second.test","mode":0}]',
+      );
+    }
+  });
+  test("retains every valid non-default URL mode as source provenance without fill URLs", () => {
+    const [record] = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: {
+              ...(login().data as any).content,
+              autofillUrls: [
+                { url: "https://example.test", mode: 0 },
+                ...[1, 2, 3, 4, 5, 6].map((mode) => ({
+                  url: `mode-${mode}`,
+                  mode,
+                })),
+              ],
+            },
+          },
+        }),
+      ),
+      limits,
+    );
+    expect(record).toMatchObject({
+      status: "supported",
+      urls: ["https://example.test"],
+    });
+    if (record?.status === "supported")
+      expect(record.sourceRecord).toContain('"url":"mode-6","mode":6');
+  });
+  test("rejects an archive before materializing a supported source record", () => {
+    expect(() =>
+      parseProtonPassExport(
+        source(login({ files: ["attachment"] })),
+        limits,
+        new Set(),
+      ),
+    ).toThrow("archive is invalid");
+  });
+  test("forces numeric, share, display, and Base64 grammar boundaries", () => {
+    const badState = parseProtonPassExport(
+      source(login({ state: "1" })),
+      limits,
+    )[0];
+    const shareMismatch = parseProtonPassExport(
+      source(login({ shareId: "other" })),
+      limits,
+    )[0];
+    const boundary = parseProtonPassExport(
+      JSON.stringify({
+        version: "1",
+        vaults: {
+          share: {
+            description: "",
+            display: { icon: 31, color: 11 },
+            name: "Vault",
+            items: [login()],
+          },
+        },
+      }),
+      limits,
+    )[0];
+    const futureColor = parseProtonPassExport(
+      JSON.stringify({
+        version: "1",
+        vaults: {
+          share: {
+            description: "",
+            display: { color: 12 },
+            name: "Vault",
+            items: [login()],
+          },
+        },
+      }),
+      limits,
+    )[0];
+    const malformedPasskey = parseProtonPassExport(
+      source({
+        ...login(),
+        data: {
+          ...login().data,
+          content: {
+            ...(login().data as any).content,
+            passkeys: [
+              {
+                keyId: "AB==",
+                content: "",
+                credentialId: "",
+                userHandle: "",
+                domain: "",
+                rpId: "",
+                rpName: "",
+                userName: "",
+                userDisplayName: "",
+                userId: "",
+                note: "",
+                createTime: 0,
+              },
+            ],
+          },
+        },
+      }),
+      limits,
+    )[0];
+    expect(badState).toMatchObject({ status: "invalid" });
+    expect(shareMismatch).toMatchObject({ status: "invalid" });
+    expect(boundary).toMatchObject({ status: "supported" });
+    expect(futureColor).toMatchObject({ status: "unsupported" });
+    expect(malformedPasskey).toMatchObject({ status: "invalid" });
+  });
 });
