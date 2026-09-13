@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/utils/supabase/server";
 import { getShareableResource } from "@/utils/permissions/registry";
-import { PUBLIC_LANE_TYPES } from "@/utils/permissions/publicLane";
+import { PUBLIC_LANE_TYPES, publicLaneSelect } from "@/utils/permissions/publicLane";
 
 /**
  * Server loader for the indexable public viewer (`/p/e/[resourceType]/[id]`).
@@ -100,9 +100,14 @@ export async function loadPublicResource(
       : (supabase as unknown as DynamicReadClient)
   ) as DynamicReadClient;
 
+  // The columns are NAMED, never `*` (DD-186): `anon` may read only the columns
+  // these tables declare to it, and `select=*` from a signed-out visitor is
+  // refused outright (42501) — it also used to hand the browser `created_by`,
+  // `organization_id`, `metadata` and `version` a round trip before the
+  // projection below discarded them. The register is `PUBLIC_LANE_COLUMNS`.
   const { data, error } = await scoped
     .from(entry.tableName)
-    .select("*")
+    .select(publicLaneSelect(entry.resourceType))
     .eq(entry.idColumn, id)
     .maybeSingle<Record<string, unknown>>();
 
