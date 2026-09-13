@@ -179,6 +179,20 @@ function distinctBodies(notices: HrInboxNotice[]): string[] {
     return out;
 }
 
+const COMPACT_CHIP_LIMIT = 3;
+
+function compactChips(notices: HrInboxNotice[]) {
+    const groups = new Map<string, { notice: HrInboxNotice; count: number }>();
+    for (const notice of notices) {
+        const state = stateOf(notice);
+        const key = `${notice.channel}\0${state.tone}\0${state.label}`;
+        const group = groups.get(key);
+        if (group) group.count += 1;
+        else groups.set(key, { notice, count: 1 });
+    }
+    return [...groups.values()];
+}
+
 /**
  * `showBody` is the space budget, and BOTH call sites set it explicitly.
  *
@@ -197,10 +211,13 @@ export function HrDeliveryState({
     if (!notices?.length) {
         return <span className="text-xs text-muted-foreground">No notice sent</span>;
     }
-    const bodies = distinctBodies(notices);
+    const bodies = showBody ? distinctBodies(notices) : [];
+    const groups = compactChips(notices);
+    const visibleNotices = showBody ? notices.map((notice) => ({ notice, count: 1 })) : groups.slice(0, COMPACT_CHIP_LIMIT);
+    const hiddenCompactGroups = showBody ? 0 : Math.max(0, groups.length - visibleNotices.length);
     const chips = (
         <div className="flex flex-wrap items-center gap-2">
-            {notices.map((notice, index) => {
+            {visibleNotices.map(({ notice, count }, index) => {
                 const Icon = CHANNEL_ICON[notice.channel] ?? Bell;
                 const state = stateOf(notice);
                 const Marker = state.tone === "warn" ? AlertTriangle : Icon;
@@ -208,7 +225,7 @@ export function HrDeliveryState({
                     /* No `title`. The channel and the state are both in the visible text above —
                        see the CHANNEL_LABEL comment for why a tooltip is not allowed back. */
                     <span
-                        key={`${notice.channel}-${notice.sent_at ?? index}`}
+                        key={`${notice.channel}-${state.label}-${index}`}
                         className={
                             "inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-xs " +
                             (state.tone === "warn"
@@ -221,9 +238,11 @@ export function HrDeliveryState({
                         <Marker className="h-3 w-3" />
                         <span className="font-medium">{channelLabel(notice.channel)}</span>
                         <span>{state.label}</span>
+                        {count > 1 ? <span>×{count}</span> : null}
                     </span>
                 );
             })}
+            {hiddenCompactGroups > 0 ? <span className="text-xs text-muted-foreground">+{hiddenCompactGroups} more</span> : null}
         </div>
     );
 
