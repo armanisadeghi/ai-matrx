@@ -629,6 +629,99 @@ interface NullUnsafeRoleRow {
   args: string;
 }
 
+// ─── D10: no membership-role reader lets a NULL past a comparison ────────────
+//
+// DD-199 / B-91 (2026-09-13), the generalisation of D8. D8 guards ONE family —
+// callers of `iam._container_authz` and their `actor_role`. V-54 proved the same
+// class open one helper family over: `hr._l1_org_role(user, org)` is a plain
+// `select m.role from iam.memberships …`, NULL for a non-member, and two of its
+// fourteen callers decided privilege from it with a bare `not in` / `in`:
+//
+//   public.hr_module_set_enabled('5dc930e9-… AI Matrx', true) as test@test.com,
+//     a member of neither organization → {"ok": true, "module_enabled": true}.
+//     A stranger switched another organization's HR module ON (rolled back).
+//   POST /rest/v1/rpc/hr_knob_index {"p_organization_id":"5dc930e9-…"} → HTTP 200,
+//     the whole knob index of an organization the caller does not belong to.
+//
+// THE RULE, and it is an ABSOLUTE (population zero). In any function that reads
+// an organization membership role — either by calling `hr._l1_org_role` or with
+// `select … role into <var>` from `iam.memberships` / `iam.organization_member` —
+// every comparison of that role must be NULL-safe: wrapped in `coalesce(...)`, or
+// written as `is null` / `is not null` / `is [not] distinct from`. A bare `in (`,
+// `not in (`, `=` or `<>` on a value a NULL can reach is a finding, because
+// `NULL not in (…)` is NULL and the `if` that refuses never fires.
+//
+// The query has two halves: tainted VARIABLES (assigned from the helper or from
+// a `role into` select) and INLINE call sites compared in place. Both were proven
+// failing-then-passing 2026-09-13 against the live database, with the pre-fix
+// `public.hr_module_set_enabled` body (variable half) and the pre-fix
+// `public.hr_knob_index` body (inline half) restored inside rolled-back
+// transactions: one row each while restored, zero rows after the rollback. No
+// file on disk was weakened to produce either RED.
+const NULL_UNSAFE_ROLE_HELPER_QUERY = `
+  with cand as (
+    select n.nspname || '.' || p.proname as fn,
+           pg_get_function_identity_arguments(p.oid) as args,
+           p.prosrc as raw
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname not in ('pg_catalog','information_schema','pg_toast','extensions',
+                            'graphql','graphql_public','pgbouncer','vault','realtime','storage',
+                            'supabase_functions','net','cron','auth','pgsodium','pgsodium_masks')
+      and p.proname <> '_l1_org_role'
+      and (p.prosrc ~ 'hr[.]_l1_org_role'
+           or p.prosrc ~* '[^a-z_]role[[:space:]]+into[[:space:]]+[a-z_]+'
+           or p.prosrc ~* '[.]role[[:space:]]+into[[:space:]]+[a-z_]+')
+  ),
+  names as (
+    select c.fn, c.args, c.raw, z.nm
+    from cand c
+    cross join lateral (
+      select m[1] as nm from regexp_matches(c.raw, '([a-z_]+)[[:space:]]*:=[[:space:]]*hr[.]_l1_org_role', 'gi') m
+      union
+      select m[1] from regexp_matches(c.raw, '[^a-z_.]role[[:space:]]+into[[:space:]]+([a-z_]+)', 'gi') m
+      union
+      select m[1] from regexp_matches(c.raw, '[.]role[[:space:]]+into[[:space:]]+([a-z_]+)', 'gi') m
+    ) z
+  ),
+  var_unsafe as (
+    select fn, args, nm as site
+    from (
+      select fn, args, nm,
+             regexp_replace(
+               regexp_replace(raw,
+                 'coalesce[[:space:]]*\\([[:space:]]*' || nm || '\\M[^)]*\\)', 'ROLE_SAFE', 'gi'),
+               nm || '\\M[[:space:]]+is[[:space:]]+(not[[:space:]]+)?(null|distinct[[:space:]]+from)',
+               'ROLE_SAFE', 'gi') as s
+      from names
+    ) z
+    where s ~ ('(^|[^a-z_.])' || nm ||
+               '\\M[[:space:]]*(not[[:space:]]+in[[:space:]]*\\(|in[[:space:]]*\\(|=[^=]|<>)')
+  ),
+  call_unsafe as (
+    select fn, args, 'hr._l1_org_role(...)' as site
+    from (
+      select fn, args,
+             regexp_replace(raw,
+               'coalesce[[:space:]]*\\([[:space:]]*hr[.]_l1_org_role[[:space:]]*\\([^()]*\\)[^)]*\\)',
+               'ROLE_SAFE', 'gi') as s
+      from cand
+      where raw ~ 'hr[.]_l1_org_role'
+    ) z
+    where s ~* 'hr[.]_l1_org_role[[:space:]]*\\([^()]*\\)[[:space:]]*(not[[:space:]]+in[[:space:]]*\\(|in[[:space:]]*\\(|=[^=]|<>)'
+  )
+  select fn, args, site from var_unsafe
+  union all
+  select fn, args, site from call_unsafe
+  order by 1, 3
+`;
+
+interface NullUnsafeRoleHelperRow {
+  fn: string;
+  args: string;
+  site: string;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -693,6 +786,7 @@ async function main(): Promise<number> {
   let ungatedDoors: UngatedDoorRow[];
   let definerDdl: DefinerDdlRow[];
   let nullUnsafeRoles: NullUnsafeRoleRow[];
+  let nullUnsafeHelpers: NullUnsafeRoleHelperRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -730,6 +824,10 @@ async function main(): Promise<number> {
     nullUnsafeRoles = await q<NullUnsafeRoleRow>(
       NULL_UNSAFE_ROLE_TEST_QUERY,
       "D8 container-authority callers with a NULL-unsafe role test",
+    );
+    nullUnsafeHelpers = await q<NullUnsafeRoleHelperRow>(
+      NULL_UNSAFE_ROLE_HELPER_QUERY,
+      "D10 membership-role readers with a NULL-unsafe comparison",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -1168,6 +1266,41 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       'none') — and keep the strict form of the helper, which refuses first.${C.reset}`,
+    );
+  }
+
+  // ── D10 ───────────────────────────────────────────────────────────────────
+  if (nullUnsafeHelpers.length === 0) {
+    console.log(
+      `${TAG.ok}D10 no membership-role reader compares a role a NULL can pass ${C.dim}(DD-199)${C.reset}`,
+    );
+  } else {
+    findings += nullUnsafeHelpers.length;
+    console.log(
+      `${TAG.fail}D10 ${nullUnsafeHelpers.length} site(s) compare an organization membership role that can be NULL:`,
+    );
+    for (const r of nullUnsafeHelpers) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${r.site}${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A non-member has NO role, so the value is NULL. \`NULL not in ('owner','admin')\`${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       is NULL, \`not (false or NULL)\` is NULL, and the refusal never fires for exactly${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       the people it exists to stop. DD-199: hr_module_set_enabled let a stranger switch${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       AI Matrx's HR module ON, and hr_knob_index served them its whole settings index.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Fix: coalesce(<role>, 'none') around every comparison, and call the STRICT form${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       of hr._l1_org_role (the default) wherever the role alone decides privilege.${C.reset}`,
     );
   }
 
