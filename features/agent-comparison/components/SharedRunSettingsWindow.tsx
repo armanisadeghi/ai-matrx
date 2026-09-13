@@ -18,6 +18,10 @@ import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/insta
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+// THE package Separator (the local `<div className="my-2 border-t" />` twin
+// was collapsed 2026-09-12 — the design-system Separator carries the Radix
+// separator role a bare div never had).
+import { Separator } from "@/components/ui/separator";
 import { NumberStepper } from "@/components/official-candidate/NumberStepper";
 import { broadcastRunSettings } from "../redux/thunks";
 import { selectBattleColumns } from "../redux/selectors";
@@ -97,7 +101,7 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
             }
           />
 
-          <Separator />
+          <Separator className="my-2" />
 
           <StepperRow
             label="Max iterations"
@@ -124,7 +128,7 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
             }
           />
 
-          <Separator />
+          <Separator className="my-2" />
 
           <SettingToggle
             id="shared-structured"
@@ -148,10 +152,6 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
       </div>
     </WindowPanel>
   );
-}
-
-function Separator() {
-  return <div className="my-2 border-t border-border" />;
 }
 
 function SettingToggle({

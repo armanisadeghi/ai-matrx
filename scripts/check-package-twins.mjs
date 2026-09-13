@@ -344,6 +344,74 @@ export function aliasesIn(rawSource) {
   // ── a top-level pass-through wrapper ──
   for (const w of passThroughWrappers(source, imported)) out.push(w);
 
+  // ── an OBJECT PROPERTY that hands the export on under a second key ──
+  for (const w of objectPropertyAliases(lines, imported)) out.push(w);
+
+  return out;
+}
+
+/**
+ * AN OBJECT PROPERTY THAT RE-NAMES A COLLAPSED EXPORT (2026-09-12, the seventh
+ * review's declared-limit fixtures).
+ *
+ * THE SHAPE: `formatBytes: (v) => formatFileSize(v),` — a property that
+ * WRAPS the export and re-exposes it under the property's key. A registry, a
+ * transform map or a column config is exactly where a second name for a
+ * collapsed export survives longest, because the key becomes the spelling
+ * every call site uses and NOTHING in the file mentions the export again.
+ * matrx-extend's tool-display registry carried this under a string-union key —
+ * the `format-input-shape.mjs` lane, which judges what ENTERS `formatFileSize`,
+ * hunts that spelling and could never have seen a field routed through it.
+ *
+ * These lines are INDENTED, which is why neither the name lane (column-zero
+ * definitions) nor `passThroughWrappers` (top-level only) could reach them.
+ *
+ * 🚨 WHAT THIS LANE MUST NEVER FIRE ON, and did for one round (2026-09-12): a
+ * property or argument whose VALUE IS THE IMPORTED EXPORT ITSELF —
+ * `format: formatFileSize`, `.map(formatFileSize)`,
+ * `onFormat={formatFileSize}`. Handing a function to a column config, a
+ * callback prop or a higher-order function is not a rename and creates no
+ * second name: the value at that call site IS the package's function, and
+ * every guard that judges the export still sees its spelling on the line. This
+ * lane briefly matched that form and went red over
+ * `features/agent-comparison/components/RunsComparisonTable.tsx`, which
+ * imports `formatFileSize` from the package on line 22 and passes it as a
+ * column's `format` — correct, idiomatic usage. THE LINE IS REBINDING vs
+ * PASSING: a finding needs a NEW NAME BOUND to the capability
+ * (`const Y = X`, `import { X as Y }`, `export { X as Y }`, `NAME: (a) => X(a)`,
+ * `function Y(a) { return X(a); }`). Passing the export as a value binds
+ * nothing.
+ *
+ * THE SAME DECLARED LIMIT AS THE WRAPPER LANE: an ADAPTER is not a finding.
+ * `duration: (v) => formatDurationMs(v, { style: "coarse" })` binds a decision
+ * and is the fleet's sanctioned shape, so an argument list that is not the
+ * parameter list verbatim never matches.
+ */
+function objectPropertyAliases(lines, imported) {
+  const out = [];
+  const arrow =
+    /^\s+([A-Za-z_$][\w$]*)\s*:\s*(?:async\s*)?\(([^)]*)\)\s*(?::[^=]+)?=>\s*(?:\{\s*return\s+)?([A-Za-z_$][\w$]*)\s*\(([^;)]*(?:\([^)]*\))?[^;]*?)\)\s*;?\s*\}?\s*,?\s*$/;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const am = arrow.exec(line);
+    if (!am) continue;
+    const [, key, params, callee, args] = am;
+    if (key === callee || !imported.has(callee)) continue;
+    const names = params
+      .split(",")
+      .map((prm) => /^\s*(?:\.\.\.)?([A-Za-z_$][\w$]*)/.exec(prm)?.[1])
+      .filter(Boolean);
+    const passed = args.split(",").map((a) => a.trim().replace(/^\.\.\./, "")).filter(Boolean);
+    if (passed.length === 0 || passed.length !== names.length) continue;
+    if (passed.some((a, k) => a !== names[k])) continue;
+    out.push({
+      name: callee,
+      alias: key,
+      line: i + 1,
+      text: line.trim(),
+      form: "object-property pass-through",
+    });
+  }
   return out;
 }
 
@@ -732,6 +800,85 @@ if (SELF_TEST) {
       );
       process.exit(1);
     }
+
+  // ── THE TWO OBJECT-PROPERTY FORMS (2026-09-12, seventh review) ──
+  // Both were DECLARED LIMITS of the alias lane until this round: a registry,
+  // a column table or a transform map re-names a collapsed export through a
+  // property KEY, and every call site then speaks the key. The lines are
+  // indented, so the name lane (column-zero) and the top-level wrapper lane
+  // could not reach either of them. The live instance was matrx-extend's
+  // tool-display registry: `formatBytes: (v) => formatFileSize(v)`.
+  {
+    const KIT = 'import { formatFileSize } from "@ai-matrx/kit/format";';
+    const passThrough = [
+      KIT,
+      "export const TRANSFORMS = {",
+      "  formatBytes: (v) => formatFileSize(v),",
+      "};",
+    ].join("\n");
+    const found = twinsIn("planted-obj.ts", passThrough);
+    if (!found.some((f) => f.alias === "formatBytes")) {
+      console.error(
+        "SELF-TEST FAILED: an object-property PASS-THROUGH " +
+          "(`formatBytes: (v) => formatFileSize(v)`) was not reported.",
+      );
+      process.exit(1);
+    }
+    // …AND PASSING THE EXPORT AS A VALUE IS NEVER A FINDING. Byte-for-byte the
+    // live shape from matrx-frontend's RunsComparisonTable, which imports
+    // `formatFileSize` from the package and hands it to two column configs.
+    // The lane matched this for one round and turned that repo's `--strict`
+    // red over correct, idiomatic code: passing a function binds no new name,
+    // and every guard that judges the export still reads its spelling here.
+    const handedOn = [
+      KIT,
+      "const SECTION = {",
+      "  rows: [",
+      "    {",
+      '      label: "Accumulated text",',
+      "      pick: (s) => s.clientAccumulatedBytes,",
+      "      format: formatFileSize,",
+      '      direction: "lower",',
+      "    },",
+      "  ],",
+      "};",
+      "const labels = sizes.map(formatFileSize);",
+      "const el = <SizeCell onFormat={formatFileSize} />;",
+      "register(formatFileSize);",
+    ].join("\n");
+    const handedOnHits = twinsIn("planted-obj.ts", handedOn);
+    if (handedOnHits.length !== 0) {
+      console.error(
+        "SELF-TEST FAILED: the export PASSED AS A VALUE was reported as an " +
+          "alias — a column `format:`, a `.map()`, a callback prop and a bare " +
+          "argument bind no new name and are the export itself " +
+          `(${handedOnHits.map((f) => f.text).join(" | ")}).`,
+      );
+      process.exit(1);
+    }
+    // …AND THE DECLARED LIMIT HOLDS. An ADAPTER binds a decision and is the
+    // fleet's sanctioned shape; a lane that fired on ~15 of them across six
+    // repos is a lane somebody deletes.
+    const adapter = [
+      'import { formatDurationMs } from "@ai-matrx/kit/format";',
+      "const cells = {",
+      '  duration: (v) => formatDurationMs(v, { style: "coarse" }),',
+      "  formatFileSize: formatFileSize,",
+      "};",
+    ].join("\n");
+    const adapterHits = twinsIn("planted-obj.ts", adapter).filter(
+      (f) => f.alias === "duration" || f.alias === "formatFileSize",
+    );
+    if (adapterHits.length !== 0) {
+      console.error(
+        "SELF-TEST FAILED: an option-binding ADAPTER (or a property whose key " +
+          "IS the export's own name) was reported as an alias " +
+          `(${adapterHits.map((f) => f.text).join(" | ")}).`,
+      );
+      process.exit(1);
+    }
+  }
+
   }
   // ── every SHAPE lane must also be able to fail ──
   for (const rule of SHAPE_RULES) {
@@ -745,7 +892,7 @@ if (SELF_TEST) {
     `check:package-twins self-test PASSED (every lane can fail) — ` +
       `${TWINS.length} collapsed export(s) registered, plus ` +
       `${SHAPE_RULES.length} SHAPE rule(s): ` +
-      `${SHAPE_RULES.map((r) => r.id).join(", ")}, and the ALIAS lane.`,
+      `${SHAPE_RULES.map((r) => r.id).join(", ")}, and the ALIAS lane in four forms (specifier, assignment, wrapper, object-property pass-through).`,
   );
   process.exit(0);
 }

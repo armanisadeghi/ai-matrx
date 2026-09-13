@@ -7,6 +7,7 @@
 // party row: touch history derives from crm.interaction (party is versioned;
 // a stored column would snapshot the whole row on every dial).
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -358,7 +359,12 @@ export function InteractionTimeline({
                     )}
                     {row.duration_seconds != null && (
                       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                        {Math.round(row.duration_seconds / 60)}m
+                        {/* Collapsed onto the kit formatter (2026-09-12).
+                            Coarse voice: a call length in a dense timeline row
+                            is read at a glance, never to the second. */}
+                        {formatDurationSeconds(row.duration_seconds, {
+                          style: "coarse",
+                        })}
                       </span>
                     )}
                     <span className="ml-auto shrink-0 text-[11px] tabular-nums text-muted-foreground">

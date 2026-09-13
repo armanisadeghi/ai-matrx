@@ -9,6 +9,7 @@
  * counts. `run_id` / `raw_payload_id` are internal ids and stay in Tool Admin.
  */
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Database, MapPin, Monitor, Smartphone, Timer } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -91,7 +92,13 @@ export function RankReceiptBody({
   const cacheAge = formatCacheAge(receipt.cache_age_seconds);
   const freshness =
     receipt.freshness_ttl_seconds && receipt.freshness_ttl_seconds > 0
-      ? `${Math.round(receipt.freshness_ttl_seconds / 60)}m TTL`
+      ? // Collapsed onto the kit formatter (2026-09-12). Coarse voice with
+        // round:"down": a freshness TTL is a COUNTDOWN, so rounding up would
+        // claim freshness the cache has already spent.
+        `${formatDurationSeconds(receipt.freshness_ttl_seconds, {
+          style: "coarse",
+          round: "down",
+        })} TTL`
       : null;
 
   return (

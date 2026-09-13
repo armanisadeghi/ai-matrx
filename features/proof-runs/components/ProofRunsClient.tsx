@@ -78,7 +78,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatDurationSeconds } from "@ai-matrx/kit/format";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -542,7 +542,14 @@ export default function ProofRunsClient() {
                       {scenario.expectations.length} rule(s) ·{" "}
                       {scenario.allowed_routes.length} route(s) in the universe
                       · live every{" "}
-                      {Math.round(scenario.live_every_seconds / 3600)}h · $
+                      {/* Collapsed onto the kit formatter (2026-09-12).
+                          Coarse voice: a live-check cadence is read at a
+                          glance, and coarse keeps a 90-minute cadence from
+                          rounding away to a flat "2h". */}
+                      {formatDurationSeconds(scenario.live_every_seconds, {
+                        style: "coarse",
+                      })}{" "}
+                      · $
                       {scenario.max_cost_usd.toFixed(2)}/run
                     </p>
                   </div>

@@ -34,6 +34,7 @@
 
 "use client";
 
+import { formatDurationMinutes } from "@ai-matrx/kit/format";
 import { useEffect, useState } from "react";
 
 /**
@@ -57,13 +58,20 @@ export function displayOnlyElapsedMinutes(
   return serverElapsedMinutes + Math.floor(sinceResponseMs / 60_000);
 }
 
-/** `2h 34m`, or `34m` under an hour. A duration label, never a time of day, never an amount. */
+/**
+ * `2h 34m`, or `34 min` under an hour. A duration label, never a time of day,
+ * never an amount.
+ *
+ * The local h/m cascade was collapsed onto the kit formatter (2026-09-12).
+ * Kept as an ADAPTER: four punch surfaces call it, and the negative clamp is
+ * this module's rule about a skewed clock, not the package's. Coarse voice
+ * (glanceable, never seconds) with round:"down", because elapsed worked time
+ * must never claim a minute that has not been worked. MINUTES in — the server
+ * sends minutes, so nothing here multiplies up to seconds.
+ */
 export function formatElapsedMinutes(minutes: number): string {
   const safe = Math.max(0, Math.floor(minutes));
-  const hours = Math.floor(safe / 60);
-  const rest = safe % 60;
-  if (hours === 0) return `${rest}m`;
-  return `${hours}h ${rest}m`;
+  return formatDurationMinutes(safe, { style: "coarse", round: "down" });
 }
 
 /**

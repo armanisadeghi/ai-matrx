@@ -10,6 +10,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -246,9 +247,14 @@ export function AssessmentDetail({
   };
 
   const canEdit = access.level === "edit" || access.level === "admin" || access.isOwner;
+  // Collapsed onto the kit formatter (2026-09-12). Coarse voice: a time limit
+  // is a glanceable figure, and coarse already speaks the " min" this printed
+  // by hand — plus it stops a 90-minute limit reading as "90 min".
   const timeLabel =
     assessment.time_limit_seconds && assessment.time_limit_seconds > 0
-      ? `${Math.round(assessment.time_limit_seconds / 60)} min`
+      ? formatDurationSeconds(assessment.time_limit_seconds, {
+          style: "coarse",
+        })
       : null;
   const bestResult = results
     .filter((r) => r.status === "completed" && r.score_value != null)

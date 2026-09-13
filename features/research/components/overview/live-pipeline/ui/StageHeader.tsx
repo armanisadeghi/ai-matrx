@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Loader2, CheckCircle2, AlertCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -16,13 +17,6 @@ interface Props {
   /** Optional rate (per sec). */
   ratePerSec?: number;
   className?: string;
-}
-
-function formatEta(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export function StageHeader({
@@ -83,7 +77,16 @@ export function StageHeader({
           {ratePerSec && ratePerSec > 0.1 ? (
             <span>{ratePerSec.toFixed(1)}/sec</span>
           ) : null}
-          {etaSeconds != null ? <span>ETA {formatEta(etaSeconds)}</span> : null}
+          {/* The hand-rolled mm:ss helper was collapsed onto the kit formatter
+              and inlined (2026-09-12) — one call site, no guard of its own.
+              Clock voice: an ETA is a number a person watches tick down, and
+              the package rolls past an hour correctly where the local one
+              printed "61:40". */}
+          {etaSeconds != null ? (
+            <span>
+              ETA {formatDurationSeconds(etaSeconds, { style: "clock" })}
+            </span>
+          ) : null}
         </div>
       </div>
       {subtitle && (

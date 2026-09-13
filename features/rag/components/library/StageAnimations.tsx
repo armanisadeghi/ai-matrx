@@ -19,6 +19,7 @@
  * Pure CSS + framer-motion — no canvas / SVG complexity.
  */
 
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, FileText, Layers, Stars, Zap } from "lucide-react";
@@ -580,11 +581,14 @@ function Heartbeat({ lastUpdate }: { lastUpdate: number }) {
         />
       </span>
       <span className="tabular-nums">
+        {/* Collapsed onto the kit formatter (2026-09-12). This is an AGE, not
+            a duration, so it speaks the short relative-time voice, and it is
+            handed `lastUpdate` — the timestamp it already has — rather than
+            rebuilding one from Date.now() in render. The "live" branch stays:
+            under two seconds is a STATE, not an age to print. */}
         {sinceUpdate < 2
           ? "live"
-          : sinceUpdate < 60
-            ? `${sinceUpdate}s ago`
-            : `${Math.floor(sinceUpdate / 60)}m ago`}
+          : formatRelativeTime(lastUpdate, { style: "short" })}
       </span>
     </div>
   );

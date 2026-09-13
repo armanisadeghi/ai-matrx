@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Fragment, useEffect, useState, useCallback } from "react";
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
@@ -728,13 +729,19 @@ export default function AdminSandboxManagementPage() {
                                 <span className="text-xs font-medium text-muted-foreground block mb-0.5">
                                   TTL
                                 </span>
+                                {/* The local h/m cascade was collapsed onto
+                                    the kit formatter (2026-09-12). Coarse
+                                    voice: a TTL is read at a glance, never to
+                                    the second. round:"down" because this is a
+                                    COUNTDOWN — rounding up would promise the
+                                    operator time the sandbox does not have. */}
                                 <span className="text-xs">
                                   {instance.ttl_seconds}s (
-                                  {Math.floor(instance.ttl_seconds / 3600)}h{" "}
-                                  {Math.floor(
-                                    (instance.ttl_seconds % 3600) / 60,
-                                  )}
-                                  m)
+                                  {formatDurationSeconds(instance.ttl_seconds, {
+                                    style: "coarse",
+                                    round: "down",
+                                  })}
+                                  )
                                 </span>
                               </div>
                               <div>

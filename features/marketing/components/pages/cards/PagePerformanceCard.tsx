@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -59,11 +60,6 @@ import {
 } from "@/features/marketing/components/pages/cards/PagePerformanceCharts";
 
 const LIGHTHOUSE_THRESHOLDS = { good: 90, warning: 50 } as const;
-
-function elapsedLabel(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-}
 
 function metricBox({
   label,
@@ -257,7 +253,11 @@ function SyncProgress({
           {progress?.message ?? "Preparing the PageSpeed test…"}
         </p>
         <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
-          {elapsedLabel(elapsed)} · {completed}/{expected} tests complete
+          {/* The local m/s helper was collapsed onto the kit formatter and
+              inlined (2026-09-12) — it had one call site and guarded nothing.
+              Compact voice: a running PageSpeed test is elapsed work. */}
+          {formatDurationSeconds(elapsed, { style: "compact" })} ·{" "}
+          {completed}/{expected} tests complete
         </span>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">

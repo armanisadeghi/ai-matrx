@@ -20,6 +20,7 @@
  *   3. Raw provider usage — collapsible JSON of the last raw_usage block.
  */
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -256,10 +257,12 @@ function TrimSummaryView({ trim }: TrimSummaryViewProps) {
   );
 }
 
+// The local m/s cascade was collapsed onto the kit formatter (2026-09-12).
+// Kept as an adapter because "expired" is a STATE, not a duration — zero
+// seconds left is a fact about the cache, not a time to print. Compact voice
+// (elapsed/remaining work, honest below a minute) with round:"down", because a
+// cache countdown that rounds up promises a window the caller does not have.
 function formatSecs(secs: number): string {
   if (secs <= 0) return "expired";
-  if (secs < 60) return `${secs}s`;
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return s ? `${m}m${s}s` : `${m}m`;
+  return formatDurationSeconds(secs, { style: "compact", round: "down" });
 }

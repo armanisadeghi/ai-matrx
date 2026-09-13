@@ -12,7 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatDurationSeconds, formatFileSize } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
 import { RECORDING_LIMITS } from "../constants/recording";
@@ -123,8 +123,12 @@ export function RecordingInterface({
           <div>
             <h3 className="text-lg font-semibold">Record Audio</h3>
             <p className="text-sm text-muted-foreground mt-2">
+              {/* Collapsed onto the kit formatter (2026-09-12). LONG voice
+                  because this sits inside a sentence a person reads — which
+                  also fixes the "1 minutes" the hand-rolled division printed
+                  at a 60-second limit. */}
               Click the button below to start recording. Maximum duration:{" "}
-              {Math.floor(maxDuration / 60)} minutes.
+              {formatDurationSeconds(maxDuration, { style: "long" })}.
             </p>
           </div>
           <Button onClick={startRecording} size="lg" className="min-w-[140px]">
@@ -231,8 +235,10 @@ export function RecordingInterface({
             <Alert className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
               <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               <AlertDescription className="text-orange-800 dark:text-orange-300 text-xs">
+                {/* Long voice for the same reason as the intro copy above,
+                    and the same "1 minutes" fix (2026-09-12). */}
                 Approaching maximum duration. Recording will stop automatically
-                at {Math.floor(maxDuration / 60)} minutes.
+                at {formatDurationSeconds(maxDuration, { style: "long" })}.
               </AlertDescription>
             </Alert>
           )}

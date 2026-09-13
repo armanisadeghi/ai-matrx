@@ -24,6 +24,7 @@
 // Mobile-first per the ios-mobile-first rules: one scroll area, stacked
 // sections (never tabs), 44px touch targets, no vh units.
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -69,13 +70,6 @@ function when(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-/** "12m 30s" — how long the Expert actually spoke. */
-function spokenFor(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
 /**
@@ -170,8 +164,15 @@ function ContributionCard({
                   openInNewTab
                 />
                 <span>· {when(d.when)}</span>
+                {/* The local m/s helper was collapsed onto the kit formatter
+                    and inlined (2026-09-12) — one call site, no guard of its
+                    own. Compact voice: how long the Expert spoke is elapsed
+                    work, not a clock anyone watched tick. */}
                 {d.durationSec ? (
-                  <span>· {spokenFor(d.durationSec)}</span>
+                  <span>
+                    ·{" "}
+                    {formatDurationSeconds(d.durationSec, { style: "compact" })}
+                  </span>
                 ) : null}
               </div>
               {/* Two things this renderer needs and a bare file id can't give
