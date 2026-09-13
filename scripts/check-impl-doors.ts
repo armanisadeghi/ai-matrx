@@ -575,6 +575,60 @@ interface DefinerDdlRow {
   public_x: boolean;
 }
 
+// ─── D8: no container-authority caller compares a role that can be NULL ──────
+//
+// DD-191 / B-85 (2026-09-13). `iam._container_authz` answers with the actor's
+// membership role in a container, and for a NON-MEMBER that role is NULL.
+// Three callers compared it with `not in`:
+//
+//     if v_personal or v_actor_role not in ('owner', 'admin') then raise ...
+//
+// `NULL not in (...)` is NULL, `false or NULL` is NULL, the `if` never fires,
+// and the refusal is dead code for exactly the population it exists to stop.
+// Measured live over HTTPS as `test@test.com`, a member of NEITHER organization:
+// `inv_list` returned AI Matrx's pending invitation WITH its acceptance token,
+// `inv_get_managed` returned the whole row, and `inv_create` minted an ADMIN
+// invitation into that organization (rolled back, 0 rows persisted).
+//
+// The structural fix is in the helper — it now raises 42501 before any caller
+// can compare anything. D8 is the second half, the belt to that brace: no
+// caller may reach a role comparison that a NULL can walk through, so the
+// guard still holds if a future edit opts a caller out of the strict helper.
+//
+// THE RULE. In any function whose body calls `iam._container_authz`, every
+// comparison of an `actor_role` variable must be wrapped in `coalesce(...)`.
+// The query strips the coalesce-wrapped uses first, then looks for any bare
+// `actor_role` still standing next to `in (`, `not in (`, `=`, `<>` or
+// `is distinct from`. Assignments and `select ... into` are not comparisons and
+// do not match. Like D1/D3/D4/D7 this is an ABSOLUTE — the population is zero.
+//
+// Proven failing-then-passing 2026-09-13 against the live database: with the
+// pre-fix `public.inv_list` body restored inside a rolled-back transaction the
+// query returns that one row; against the shipped bodies it returns none.
+const NULL_UNSAFE_ROLE_TEST_QUERY = `
+  with bodies as (
+    select n.nspname || '.' || p.proname as fn,
+           pg_get_function_identity_arguments(p.oid) as args,
+           regexp_replace(
+             p.prosrc,
+             'coalesce\\s*\\(\\s*[a-z_]*\\.?[a-z_]*actor_role\\b[^)]*\\)',
+             'ROLE_SAFE', 'gi') as src
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where p.prosrc like '%_container_authz%'
+      and p.proname <> '_container_authz'
+  )
+  select fn, args
+  from bodies
+  where src ~* '[a-z_]*\\.?[a-z_]*actor_role\\s*(not\\s+in\\s*\\(|in\\s*\\(|=|<>|is\\s+distinct\\s+from)'
+  order by 1
+`;
+
+interface NullUnsafeRoleRow {
+  fn: string;
+  args: string;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -638,6 +692,7 @@ async function main(): Promise<number> {
   let anonDefiners: AnonDefinerRow[];
   let ungatedDoors: UngatedDoorRow[];
   let definerDdl: DefinerDdlRow[];
+  let nullUnsafeRoles: NullUnsafeRoleRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -671,6 +726,10 @@ async function main(): Promise<number> {
     definerDdl = await q<DefinerDdlRow>(
       CLIENT_DEFINER_DDL_QUERY,
       "D7 client-executable SECURITY DEFINER functions that run DDL",
+    );
+    nullUnsafeRoles = await q<NullUnsafeRoleRow>(
+      NULL_UNSAFE_ROLE_TEST_QUERY,
+      "D8 container-authority callers with a NULL-unsafe role test",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -1079,6 +1138,36 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       before the first DDL statement and raise 42501 with a sentence when it fails.${C.reset}`,
+    );
+  }
+
+  // ── D8 ────────────────────────────────────────────────────────────────────
+  if (nullUnsafeRoles.length === 0) {
+    console.log(
+      `${TAG.ok}D8 no iam._container_authz caller compares a role a NULL can pass ${C.dim}(DD-191)${C.reset}`,
+    );
+  } else {
+    findings += nullUnsafeRoles.length;
+    console.log(
+      `${TAG.fail}D8 ${nullUnsafeRoles.length} caller(s) of ${C.white}iam._container_authz${C.reset} compare a role that can be NULL:`,
+    );
+    for (const r of nullUnsafeRoles) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       A non-member's actor_role is NULL. \`NULL not in ('owner','admin')\` is NULL,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       so the guard never fires for exactly the people it exists to stop. DD-191:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       inv_list handed a stranger AI Matrx's invitation token, and inv_create minted${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       them an ADMIN invitation. Fix: wrap every comparison — coalesce(v_actor_role,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       'none') — and keep the strict form of the helper, which refuses first.${C.reset}`,
     );
   }
 
