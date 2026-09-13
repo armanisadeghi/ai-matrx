@@ -37,6 +37,7 @@ import {
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
 import { readAllRows } from "@ai-matrx/data/db";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   RECENT_ROW_REFUSAL_PREFIX,
   RECENT_ROW_WINDOW_HOURS,
@@ -125,8 +126,11 @@ function manifestRowFor(
   surfaceName: string,
   v: SyncSurfaceValue,
   provenance: MirrorSyncProvenance,
+  organizationId: string,
 ): UiSurfaceValueInsert {
   return {
+    organization_id: organizationId,
+    visibility: "public",
     surface_name: surfaceName,
     name: v.name,
     label: v.label,
@@ -206,8 +210,11 @@ function manifestRoleRowFor(
   surfaceName: string,
   r: SurfaceAgentRole,
   provenance: MirrorSyncProvenance,
+  organizationId: string,
 ): UiSurfaceAgentRoleInsert {
   return {
+    organization_id: organizationId,
+    visibility: "public",
     synced_by: provenance.syncedBy,
     synced_from: provenance.syncedFrom,
     surface_name: surfaceName,
@@ -239,8 +246,11 @@ function manifestWriteTargetRowFor(
   surfaceName: string,
   t: SurfaceWriteTarget,
   provenance: MirrorSyncProvenance,
+  organizationId: string,
 ): UiSurfaceWriteTargetInsert {
   return {
+    organization_id: organizationId,
+    visibility: "public",
     surface_name: surfaceName,
     name: t.name,
     label: t.label,
@@ -280,8 +290,11 @@ function manifestClientToolRowFor(
   surfaceName: string,
   t: SurfaceClientTool,
   provenance: MirrorSyncProvenance,
+  organizationId: string,
 ): UiSurfaceClientToolInsert {
   return {
+    organization_id: organizationId,
+    visibility: "public",
     synced_by: provenance.syncedBy,
     synced_from: provenance.syncedFrom,
     surface_name: surfaceName,
@@ -1510,6 +1523,7 @@ export async function applyManifestSync(
     provenance = { syncedBy: null, syncedFrom: apiSyncedFrom() },
   } = opts;
   const skippedRecentRows: ApplyManifestSyncResult["skippedRecentRows"] = [];
+  const systemOrganizationId = await resolveSystemOrgId(sb);
 
   // 1. Make sure surfaces referenced by manifests exist in ui_surface.
   // Existence read: `existingSurfaces.has()` below decides whether a manifest is
@@ -1564,7 +1578,9 @@ export async function applyManifestSync(
   const upsertRows: UiSurfaceValueInsert[] = [];
   for (const manifest of targetManifests) {
     for (const v of manifest.values) {
-      upsertRows.push(manifestRowFor(manifest.surfaceName, v, provenance));
+      upsertRows.push(
+        manifestRowFor(manifest.surfaceName, v, provenance, systemOrganizationId),
+      );
     }
   }
   const upserted: ApplyManifestSyncResult["upserted"] = [];
@@ -1585,7 +1601,12 @@ export async function applyManifestSync(
   for (const manifest of targetManifests) {
     for (const r of manifest.agentRoles ?? []) {
       roleUpsertRows.push(
-        manifestRoleRowFor(manifest.surfaceName, r, provenance),
+        manifestRoleRowFor(
+          manifest.surfaceName,
+          r,
+          provenance,
+          systemOrganizationId,
+        ),
       );
     }
   }
@@ -1608,7 +1629,12 @@ export async function applyManifestSync(
   for (const manifest of targetManifests) {
     for (const t of manifest.writeTargets ?? []) {
       writeTargetRows.push(
-        manifestWriteTargetRowFor(manifest.surfaceName, t, provenance),
+        manifestWriteTargetRowFor(
+          manifest.surfaceName,
+          t,
+          provenance,
+          systemOrganizationId,
+        ),
       );
     }
   }
@@ -1634,7 +1660,12 @@ export async function applyManifestSync(
   for (const manifest of targetManifests) {
     for (const t of manifest.clientTools ?? []) {
       clientToolRows.push(
-        manifestClientToolRowFor(manifest.surfaceName, t, provenance),
+        manifestClientToolRowFor(
+          manifest.surfaceName,
+          t,
+          provenance,
+          systemOrganizationId,
+        ),
       );
     }
   }

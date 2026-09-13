@@ -10,6 +10,7 @@
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   TOOL,
   TOOL_BUNDLE,
@@ -212,9 +213,12 @@ export async function addToolToSurface(args: {
       .eq("surface_name", args.surfaceName);
     if (error) throw error;
   } else {
-    const { error } = await sb()
+    const client = sb();
+    const { error } = await client
       .schema("tool").from("surface_defaults")
       .insert({
+        organization_id: await resolveSystemOrgId(client),
+        visibility: "public",
         surface_name: args.surfaceName,
         always_include_tools: [toolName],
       });
