@@ -27,6 +27,41 @@ function persistedPartShape(value: unknown): string {
   return `type=${discriminator}; keys=[${Object.keys(value).sort().join(",")}]`;
 }
 
+function recoverMediaWithInlineBytes(
+  value: unknown,
+  sourceIndex: number,
+): MessagePart | null {
+  if (
+    !isRecord(value) ||
+    value.type !== "media" ||
+    (!("base64_data" in value) && !("base64" in value)) ||
+    !(
+      (typeof value.file_id === "string" && value.file_id.trim().length > 0) ||
+      (typeof value.url === "string" && value.url.trim().length > 0)
+    )
+  ) {
+    return null;
+  }
+
+  const { base64_data: _base64Data, base64: _base64, ...durablePart } = value;
+  let part: MessagePart | undefined;
+  try {
+    [part] = parseMessageContent([durablePart]);
+  } catch {
+    return null;
+  }
+  if (!part) return null;
+
+  console.error(
+    "[parsePersistedMessageContent] recovered media with inline bytes",
+    {
+      sourceIndex,
+      kind: typeof value.kind === "string" ? value.kind : "missing",
+    },
+  );
+  return part;
+}
+
 /**
  * Runtime-validates the historical interactive-block shape written before
  * cx_message.content became the generated MessagePart union. This is the one
@@ -108,6 +143,11 @@ export function parsePersistedMessageContent(
         block: legacyBlock,
         sourceIndex,
       };
+    }
+
+    const recoveredMedia = recoverMediaWithInlineBytes(value, sourceIndex);
+    if (recoveredMedia) {
+      return { kind: "message_part", part: recoveredMedia, sourceIndex };
     }
 
     try {
