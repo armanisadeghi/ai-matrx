@@ -365,8 +365,6 @@
     "check:staff-door": "tsx scripts/check-staff-door.ts",
     "check:knob-resolve-callers": "tsx scripts/check-knob-resolve-callers.ts",
     "check:knob-resolve-callers:self-test": "tsx scripts/check-knob-resolve-callers.ts --self-test",
-    "check:knob-resolve-callers": "tsx scripts/check-knob-resolve-callers.ts",
-    "check:knob-resolve-callers:self-test": "tsx scripts/check-knob-resolve-callers.ts --self-test",
     "check:stale-rowtype-triggers": "tsx scripts/check-stale-rowtype-triggers.ts",
     "check:stale-rowtype-triggers:self-test": "tsx scripts/check-stale-rowtype-triggers.ts --self-test",
     "check:staff-door:strict": "tsx scripts/check-staff-door.ts --strict",
@@ -436,7 +434,9 @@
     "test:kind-sandbox": "jest features/content-ir/sandbox/__tests__ --no-coverage",
     "check:unregistered-client-readable": "tsx scripts/check-unregistered-client-readable.ts",
     "check:unregistered-client-readable:self-test": "tsx scripts/check-unregistered-client-readable.ts --self-test",
-    "generate:knob-database-consumers": "tsx scripts/generate-knob-database-consumers.ts"
+    "generate:knob-database-consumers": "tsx scripts/generate-knob-database-consumers.ts",
+    "check:knob-database-consumers": "tsx scripts/generate-knob-database-consumers.ts --check",
+    "check:knob-database-consumers:self-test": "tsx scripts/generate-knob-database-consumers.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

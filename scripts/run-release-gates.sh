@@ -168,6 +168,25 @@ if $STRICT; then
         # DD-110 already measured (345 anon-executable definers with no door row
         # — every one standing on a grandfather row, B-52's own census).
         "Impl doors: client-callable SECURITY DEFINER census (D1-D7)|pnpm check:impl-doors:strict"
+        # DOOR ROWS is the gate beside it that measures the ROWS, and it is
+        # BLOCKING because the door census above was GREEN through DD-191: it
+        # proves the GRANT is declared and the body CONTAINS a caller predicate,
+        # which is not the same as the door being bounded. `public.inv_list`
+        # handed a plain member of two unrelated organizations another
+        # organization's pending invitations WITH their acceptance tokens, and
+        # `public.inv_create` let the same stranger mint an ADMIN invitation into
+        # any tenant — both with the predicate present and the gate green.
+        # This one calls every declared signed-in door as two real identities
+        # with arguments naming a THIRD identity's rows, and diffs the answer,
+        # and the transaction's writes, against what RLS lets that caller read
+        # directly. FAIL is a door returning a row its caller cannot SELECT, or
+        # writing into an organization the caller has no standing in. It blocks
+        # on FAIL only; UNMEASURED doors are listed BY NAME and do not block,
+        # because a door whose arguments this harness cannot derive is a gap in
+        # the harness, not a defect in the door — and silently passing it would
+        # be the exact failure this gate exists to end. Proven failing then
+        # passing on DD-191's own shape: `pnpm check:door-rows:self-test`.
+        "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
         # A policy that reads its own relation raises 42P17 and the table is
         # unreadable by everyone — platform.rulebook and seo.starter_pack, live,
         # 2026-09-12, from the moment a routine iam.apply_rls sweep first emitted
@@ -542,6 +561,13 @@ else
         # out); this advisory copy is what release.sh runs, so the report still
         # appears on every release.
         "Impl doors: client-callable SECURITY DEFINER census (D1-D7)|pnpm check:impl-doors:strict"
+        # Door rows — the row-boundedness twin of the census above. Listed with
+        # `:strict` for the same reason every other security gate here is:
+        # release.sh runs THIS list `--advisory || true`, so a bare invocation
+        # would print a silent green [OK]. With `:strict` it exits 1, run_gate
+        # prints a red [FAIL] naming the leaking door, and advisory mode still
+        # exits 0 — scream, never block. The lane that blocks is the strict list.
+        "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
         "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference"
         # HR PUNCH WRITE PATH — BLOCKING in --strict (see the strict list above for
         # why RLS does not prevent a client-direct `insert into hr.punch`). Listed
