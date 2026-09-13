@@ -69,6 +69,8 @@ export type NoteEditableContentSource = {
   sourceId: string;
   snapshotId: string;
   editBase: NoteEditBase;
+  /** Full persisted physical state for the captured CAS base. */
+  acknowledgedPhysicalSnapshot: NoteDisplayedPhysicalSnapshot;
   displayedPhysicalSnapshot: NoteDisplayedPhysicalSnapshot;
   /** A selection is an action target only; it is never the persisted body. */
   actingSelection?: string;

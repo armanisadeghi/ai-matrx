@@ -90,6 +90,12 @@ const MS_DIVISOR_RE = new RegExp(
   String.raw`(?:[/%]\s*\(?\s*${TIME_BASE}|[<>]=?\s*\(?\s*${TIME_BASE})`,
 );
 
+/** The divide/modulo halves alone — what the label-free CLOCK lane requires. */
+const SECONDS_DIVIDE_RE = new RegExp(
+  String.raw`(?<!\d[\d_]*\s*)[/%]\s*\(?\s*${SECONDS_BASE}`,
+);
+const MS_DIVIDE_RE = new RegExp(String.raw`[/%]\s*\(?\s*${TIME_BASE}`);
+
 /**
  * A line reduced to the EXPRESSIONS on it: comments gone, and the TEXT of
  * string literals gone. Two things made this necessary the moment the seconds
@@ -159,6 +165,142 @@ function timeBaseHit(line) {
 }
 
 /**
+ * The same bases, DIVISION AND MODULO ONLY — no threshold comparison.
+ *
+ * The label lanes admit `elapsed < 3_600_000` because a cascade's branch sits
+ * beside the branch that prints, and the label is doing the real work. The
+ * CLOCK lane has no label, so a comparison is all the evidence there is, and
+ * it is not evidence: `findings.length > 60` is a LIST LENGTH, and
+ * `features/admin/lint-debt/fix-prompt.ts` and `features/admin/dead-ends/fix-prompt.ts`
+ * both truncate a finding list at 60 one line below a `${f.file}:${f.line}`
+ * template join — a `}:${` beside a `> 60`, formatting nothing that is a time
+ * at all. Both were reported on this lane's first run. A body that turns a
+ * count into a clock always DIVIDES.
+ */
+function timeBaseDivides(line) {
+  const code = codeOnlyLine(line);
+  return MS_DIVIDE_RE.test(code) || SECONDS_DIVIDE_RE.test(code);
+}
+
+/**
+ * NAMED TIME BASES (2026-09-12, the eighth adversarial review).
+ *
+ * THE MISS. `TIME_BASE` and `SECONDS_BASE` are LITERAL patterns, so a file
+ * that gives the base a name — the thing a careful author does — walked
+ * straight past both lanes even with the unit label on the same line:
+ * `${Math.round(magnitude / HOUR_MS)} hr` in matrx-frontend's hr/tasks
+ * urgency.ts and `${Math.round(remaining / (24 * HOUR_MS))}d left` in
+ * assists/quiet.ts. The urgency one is the sharpest evidence there is: the
+ * SAME function already calls `formatDurationMs(magnitude, { style: "coarse" })`
+ * on the branch above and hand-rolls the two below it, so a guard reading
+ * "adopted" over a half-adopted body is a guard that stopped the collapse
+ * halfway and said nothing.
+ *
+ * This is exactly what `byteBaseNames` does one lane over, and the identifier
+ * qualifies two ways: BOUND to a time-base literal in this file
+ * (`const HOUR_MS = 60 * 60 * 1000`), or NAMED as a time base
+ * (`DAY_MS`, `POLL_SECONDS`, `MS_PER_MINUTE`) — the second arm is what carries
+ * `const DAY_MS = 24 * HOUR_MS`, whose right-hand side has no literal base in
+ * it at all.
+ *
+ * 🚨 DIVISION AND MODULO ONLY — never a comparison, which is where the literal
+ * lanes deliberately differ. A named constant in a `<` or `>=` is a BRANCH, and
+ * branching on one is the normal, correct use of a named duration:
+ * `HtmlPageGridView.tsx` computes `MILLISECONDS_PER_HOUR` / `TWO_DAYS_MS` /
+ * `SEVEN_DAYS_MS` purely to pick which relative-time voice to call and formats
+ * nothing itself. Admitting comparisons here would report every such file as a
+ * formatter. A body that TURNS the count into a string always divides.
+ */
+const TIME_BASE_NAME_RE =
+  /(?:_MS|_MSEC|_MILLIS|_SEC|_SECS|_SECONDS|_MIN|_MINS|_MINUTES|_HOUR|_HOURS|_DAY|_DAYS)$|^(?:MS|MSEC|SEC|SECS|SECONDS|MIN|MINS|MINUTES|HOURS?|DAYS?)_PER_/;
+
+function timeBaseNames(source) {
+  const boundRe = new RegExp(
+    String.raw`(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::\s*number\s*)?=\s*([^;\n]+)`,
+    "gm",
+  );
+  // The binding must BE a time base, not merely contain one: `const perSecond
+  // = bytes / (elapsedMs / 1000)` mentions 1000 and is a rate, and admitting
+  // it would make `/ perSecond` a duration divisor everywhere below it.
+  const literalBase = new RegExp(
+    String.raw`^\(?\s*(?:[\d_]+\s*\*\s*)*(?:${TIME_BASE}|${SECONDS_BASE})\s*\)?$`,
+  );
+  const names = new Set();
+  let m;
+  while ((m = boundRe.exec(source)) !== null) {
+    const [, name, rawRhs] = m;
+    const rhs = codeOnlyLine(rawRhs).trim();
+    if (TIME_BASE_NAME_RE.test(name) || literalBase.test(rhs)) names.add(name);
+  }
+  return names;
+}
+
+/** A DIVISION or MODULO by one of this file's named time bases. */
+function identifierTimeDivisorRe(names) {
+  if (names.size === 0) return null;
+  const alternation = [...names]
+    .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  return new RegExp(
+    String.raw`[/%]\s*\(?\s*(?:\d+[\d_]*\s*\*\s*)?(?:${alternation})\b`,
+  );
+}
+
+/**
+ * THE CLOCK BLIND SPOT (2026-09-12, the eighth adversarial review).
+ *
+ * THE MISS, and it was invisible BY CONSTRUCTION rather than by oversight.
+ * Everything above requires a unit LABEL — `}ms`, `"min"`, `}h` — because the
+ * label is what separates a display formatter from arithmetic. A COLON CLOCK
+ * has no label: the colon IS the unit. So
+ * `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` could never
+ * match, and it is the single most duplicated duration body in the fleet —
+ * every recorder, timer, transcript stamp, media player and HUD writes its
+ * own, and twenty-plus of them read GREEN through seven adversarial reviews.
+ *
+ * THE SIGNAL THAT REPLACES THE LABEL. Time-base arithmetic (the same `/60`,
+ * `%60`, `/3600`, ms and named bases above) next to one of the two things a
+ * colon clock cannot be written without:
+ *   - `padStart(2` — the zero-pad that makes `9:4` into `9:04`. Every clock
+ *     body in this fleet has one; nothing else about a duration does.
+ *   - a TEMPLATE COLON JOIN, `}:${` — an interpolation, a literal colon, and
+ *     another interpolation. This spelling cannot occur in an object literal,
+ *     a type annotation, a ternary or a CSS/Tailwind string, which is why it
+ *     is the join form admitted and `}:{` (JSX) is not: `function Row({ n }: {
+ *     n: number })` is exactly that shape and formats nothing.
+ *
+ * THE WINDOW IS ONE LINE, not six. A clock is three or four lines of tightly
+ * coupled arithmetic and the pad always touches the modulo; widening it would
+ * pull in an unrelated `padStart(2` further down the file for no reach at all
+ * — all twenty-plus live bodies are caught at ±1.
+ *
+ * NEGATIVES this must stay silent on: a `padStart(2, "0")` building a DATE
+ * (`yyyy-mm-dd`) or an ID, which does no time-base arithmetic; a `HH:MM` from
+ * `toLocaleTimeString`, whose colons live inside the Intl runtime and whose
+ * `hour: "2-digit"` colons are object-literal ones; and `/60` in a type or
+ * object literal, which is not division at all.
+ */
+const PAD2_RE = /\.padStart\(\s*2\b/;
+const COLON_JOIN_RE = /\}\s*:\s*\$\{/;
+const CLOCK_VOICE_RE = new RegExp(
+  `${PAD2_RE.source}|${COLON_JOIN_RE.source}`,
+);
+const CLOCK_WINDOW = 3;
+
+/**
+ * THE INPUT LEG: seconds multiplied up at a `formatDurationMs` call site.
+ *
+ * `formatDurationMs(durationSec * 1000)` renders correctly and is still the
+ * exact pattern THE UNIT LAW exists to delete — the unit belongs in the NAME,
+ * so a seconds value goes to `formatDurationSeconds`. Scaling at the call site
+ * puts the conversion back where every twin had it, one call site at a time,
+ * and the next one writes `* 1000` on a value that was already milliseconds.
+ * Narrow on purpose: the multiplied operand must NAME itself as seconds.
+ */
+const SECONDS_SCALED_CALL_RE =
+  /formatDurationMs\s*\(\s*[^),]*\b[A-Za-z_$][\w$.]*(?:Sec|Secs|Seconds|_s|_sec|_seconds)\b[^),]*\*\s*1_?000\b/;
+
+/**
  * How many lines on either side of a hit may supply the unit label — the same
  * bidirectional window as the byte-size lane, and for the same reason: the
  * cascade style writes the label after the division, while a loop or a
@@ -172,16 +314,37 @@ const WINDOW = 6;
  */
 export function durationShapeIn(source) {
   const lines = source.split("\n");
+  const named = identifierTimeDivisorRe(timeBaseNames(source));
   const out = [];
+  const seen = new Set();
+  const report = (index) => {
+    if (seen.has(index)) return;
+    seen.add(index);
+    out.push({ line: index + 1, text: lines[index].trim() });
+  };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!timeBaseHit(line)) continue;
+    const code = codeOnlyLine(line);
+    if (SECONDS_SCALED_CALL_RE.test(code)) report(i);
+    const divides = timeBaseDivides(line) || (named !== null && named.test(code));
+    const base = divides || timeBaseHit(line);
+    if (!base) continue;
     const window = lines
       .slice(Math.max(0, i - WINDOW), i + WINDOW + 1)
       .join("\n");
-    if (!DURATION_UNIT_RE.test(window)) continue;
-    out.push({ line: i + 1, text: line.trim() });
+    if (DURATION_UNIT_RE.test(window)) {
+      report(i);
+      continue;
+    }
+    // THE CLOCK VOICE: no unit label anywhere, because the colon is the unit.
+    // A comparison is not admitted here — see `timeBaseDivides`.
+    if (!divides) continue;
+    const clockWindow = lines
+      .slice(Math.max(0, i - CLOCK_WINDOW), i + CLOCK_WINDOW + 1)
+      .join("\n");
+    if (CLOCK_VOICE_RE.test(clockWindow)) report(i);
   }
+  out.sort((a, b) => a.line - b.line);
   return out;
 }
 
@@ -216,6 +379,141 @@ export function selfTestDurationShape() {
       ok: false,
       why: "a planted SECONDS duration cascade was NOT reported (the lane is millisecond-only again)",
     };
+  }
+
+  // ── THE COLON CLOCK (2026-09-12) ──────────────────────────────────────────
+  // Byte-for-byte the live body from matrx-frontend's RecordingIndicator, the
+  // one this lane returned ZERO findings on while it required a unit label.
+  const plantedClock = [
+    "  // Format duration",
+    "  const minutes = Math.floor(duration / 60);",
+    "  const seconds = duration % 60;",
+    "  const formattedDuration = `${minutes}:${String(seconds).padStart(2, '0')}`;",
+  ].join("\n");
+  if (durationShapeIn(plantedClock).length === 0) {
+    return {
+      ok: false,
+      why: "a planted COLON CLOCK was NOT reported — the clock voice has no unit label, so the label requirement makes every recorder, timer and transcript stamp in the fleet invisible again",
+    };
+  }
+  // The one-liner form, where the whole clock is a single interpolation and
+  // the only evidence is the `}:${` join plus the pad.
+  const plantedInlineClock = [
+    "const label = `${Math.floor(total / 60)}:${String(total % 60).padStart(2, \"0\")}`;",
+  ].join("\n");
+  if (durationShapeIn(plantedInlineClock).length === 0) {
+    return { ok: false, why: "a planted single-line colon clock was NOT reported" };
+  }
+  // …and the two shapes that LOOK like clocks and are not.
+  const dateStamp = [
+    "const d = new Date(value);",
+    'const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;',
+  ].join("\n");
+  const dateHits = durationShapeIn(dateStamp);
+  if (dateHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a yyyy-mm-dd date stamp was reported as a duration clock (${dateHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+  const wallClock = [
+    "function Row({ seconds }: { seconds: number }) {",
+    "  const share = seconds / 3600;",
+    '  const at = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });',
+    "  return share;",
+    "}",
+  ].join("\n");
+  const wallHits = durationShapeIn(wallClock);
+  if (wallHits.length !== 0) {
+    return {
+      ok: false,
+      why: `an object-literal / type-annotation colon beside plain time arithmetic was reported as a clock (${wallHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // A TRUNCATED LIST is not a clock. Byte-for-byte the live shape from
+  // features/admin/lint-debt/fix-prompt.ts — a `${f.file}:${f.line}` template
+  // join one line above a `> 60` list cap. Both admin fix-prompt builders were
+  // reported on this lane's first run, which is why the clock voice requires a
+  // DIVISION and refuses a threshold comparison.
+  const truncatedList = [
+    "const lines = findings",
+    "  .slice(0, 60)",
+    "  .map((f) => `  - ${f.file}:${f.line} [${f.rule}] ${f.message}`);",
+    "const truncated = findings.length > 60 ? `… and ${findings.length - 60} more` : null;",
+  ].join("\n");
+  const listHits = durationShapeIn(truncatedList);
+  if (listHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a truncated finding list ( \`> 60\` beside a \`file:line\` join) was reported as a duration clock (${listHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // ── NAMED TIME BASES (2026-09-12) ─────────────────────────────────────────
+  // The live half-adopted body from matrx-frontend features/hr/tasks/urgency.ts.
+  const plantedNamedBase = [
+    "const HOUR_MS = 60 * 60 * 1000;",
+    "const DAY_MS = 24 * HOUR_MS;",
+    "const text =",
+    "  magnitude < HOUR_MS",
+    '    ? formatDurationMs(magnitude, { style: "coarse" })',
+    "    : magnitude < 48 * HOUR_MS",
+    "      ? `${Math.round(magnitude / HOUR_MS)} hr`",
+    "      : `${Math.round(magnitude / DAY_MS)} days`;",
+  ].join("\n");
+  const namedHits = durationShapeIn(plantedNamedBase);
+  if (namedHits.length < 2) {
+    return {
+      ok: false,
+      why: `a time base behind a NAME (\`/ HOUR_MS\`, \`/ DAY_MS\`) was not treated as a time base — ${namedHits.length} of 2 hand-rolled branches reported`,
+    };
+  }
+  // A named base used ONLY to pick a branch formats nothing and must stay
+  // silent — the live shape in features/html-pages/HtmlPageGridView.tsx.
+  const thresholdOnly = [
+    "const MILLISECONDS_PER_HOUR = 3_600_000;",
+    "const TWO_DAYS_MS = 48 * MILLISECONDS_PER_HOUR;",
+    "const SEVEN_DAYS_MS = 7 * 24 * MILLISECONDS_PER_HOUR;",
+    "function when(d: Date, elapsedMs: number): string {",
+    '  if (elapsedMs < MILLISECONDS_PER_HOUR) return formatRelativeTime(d, { style: "short" });',
+    '  if (elapsedMs < TWO_DAYS_MS) return formatRelativeTime(d, { style: "short" });',
+    '  if (elapsedMs < SEVEN_DAYS_MS) return formatRelativeTime(d, { style: "long" });',
+    "  return d.toLocaleDateString();",
+    "}",
+  ].join("\n");
+  const thresholdHits = durationShapeIn(thresholdOnly);
+  if (thresholdHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a named duration used ONLY as a branch threshold was reported as a formatter (${thresholdHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+
+  // ── THE INPUT LEG: seconds scaled up at the call site (2026-09-12) ────────
+  const scaledCall = [
+    "const label = formatDurationMs(durationSec * 1000);",
+  ].join("\n");
+  if (durationShapeIn(scaledCall).length === 0) {
+    return {
+      ok: false,
+      why: "`formatDurationMs(durationSec * 1000)` was NOT reported — THE UNIT LAW says a seconds value goes to formatDurationSeconds, never multiplied up at the call site",
+    };
+  }
+  const honestMsCall = [
+    "const label = formatDurationMs(row.duration_ms);",
+    "const budget = RETRY_BACKOFF * 1000;",
+  ].join("\n");
+  if (durationShapeIn(honestMsCall).length !== 0) {
+    return { ok: false, why: "an honest millisecond call site was reported by the input leg" };
   }
 
   // A seconds AGE becoming "2m ago" — same arithmetic, relative-time voice.

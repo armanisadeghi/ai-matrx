@@ -13,6 +13,7 @@
     "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs).",
     "A SHAPE rule (`shapeWhy` + `shapeAllow` + `shapeCensus` on a row) catches the same capability under an UNREGISTERED name, or with no name at all. `shapeAllow` = provably NOT this capability, silent. `shapeCensus` = pre-existing bodies that ARE it and are not collapsed yet: loud every run, shrink-only, and a stale entry fails the guard."
   ],
+  "$catalogFloor": 179,
   "twins": [
     {
       "name": "isUuidShape",

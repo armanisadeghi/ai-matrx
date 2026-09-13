@@ -34,7 +34,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AudioLevelIndicator } from "@/features/audio/components/AudioLevelIndicator";
 import { cn } from "@/lib/utils";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatFileSize } from "@ai-matrx/kit/format";
 
 /** Past this fraction of a cap the gauge turns red and the alert appears. */
 const WARN_FRACTION = 0.8;
@@ -56,14 +56,9 @@ export interface RecordingHudProps {
   className?: string;
 }
 
+/** @deprecated import `formatDurationMs` from "@ai-matrx/kit/format" directly. */
 export function formatClock(ms: number): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const mm = `${m}`.padStart(2, "0");
-  const ss = `${s}`.padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  return formatDurationMs(ms, { style: "clock" });
 }
 
 export function RecordingHud({

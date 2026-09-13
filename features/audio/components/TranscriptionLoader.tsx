@@ -9,6 +9,7 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDurationSeconds } from '@ai-matrx/kit/format';
 
 export interface TranscriptionLoaderProps {
   message?: string;
@@ -44,7 +45,7 @@ export function TranscriptionLoader({
 
   // Format duration if provided
   const formattedDuration = duration !== undefined
-    ? `${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')}`
+    ? formatDurationSeconds(duration, { style: 'clock' })
     : null;
 
   return (

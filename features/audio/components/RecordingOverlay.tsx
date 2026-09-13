@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Mic, Pause, Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -35,12 +36,6 @@ export function RecordingOverlay({
     onCancel
 }: RecordingOverlayProps) {
     const [showCancelDialog, setShowCancelDialog] = useState(false);
-    // Format duration as MM:SS
-    const formatDuration = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
 
     const handleCancelClick = () => {
         if (onPause) onPause();
@@ -105,7 +100,7 @@ export function RecordingOverlay({
                     {/* Duration */}
                     <div className="text-center">
                         <div className="text-3xl font-bold text-foreground tabular-nums">
-                            {formatDuration(duration)}
+                            {formatDurationSeconds(duration, { style: 'clock' })}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
                             {isPaused ? "Paused" : "Recording..."}

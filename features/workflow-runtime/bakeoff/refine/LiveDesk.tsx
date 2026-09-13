@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
   Activity,
   CheckCircle2,
@@ -81,11 +82,7 @@ function timeOf(ts: string, startedAt: string | null): string {
   const start = startedAt ? Date.parse(startedAt) : NaN;
   if (!Number.isNaN(start)) {
     const total = Math.max(0, Math.floor((at - start) / 1000));
-    const minutes = Math.floor(total / 60);
-    const seconds = String(total % 60).padStart(2, "0");
-    return minutes >= 60
-      ? `+${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}:${seconds}`
-      : `+${minutes}:${seconds}`;
+    return `+${formatDurationSeconds(total, { style: "clock" })}`;
   }
   return new Date(at).toLocaleTimeString(undefined, {
     hour: "2-digit",

@@ -116,11 +116,19 @@ export async function saveAnswer(args: SaveAnswerArgs): Promise<SaveOutcome> {
 /**
  * THE UNDO. Re-open a row that was just answered: `verdict` and `answered_at`
  * are cleared TOGETHER (the pair CHECK forbids clearing one alone) and the row
- * returns to `asked`. The prior words stay in `history.row_versions`, which is
- * why an undo is safe: nothing is lost, the row is simply open again.
+ * returns to THE STATUS IT ACTUALLY HELD before the answer. The prior words
+ * stay in `history.row_versions`, which is why an undo is safe: nothing is
+ * lost, the row is simply open again.
+ *
+ * 🚨 `previousStatus` is not optional taste. The first version guessed
+ * `asked_at ? "asked" : "researched"`, and undoing a row that had been sitting
+ * at `filed` put it into `researched` — a transition nobody performed, on a
+ * ladder other agents read (verifier finding 5, 2026-09-12). The caller holds
+ * the row it saved from, so it knows the real answer and passes it.
  */
 export async function reopenAnswer(
   question: DecisionQuestionRow,
+  previousStatus: string,
 ): Promise<SaveOutcome> {
   const patch: DecisionQuestionUpdate = {
     verdict: null,
@@ -129,7 +137,7 @@ export async function reopenAnswer(
     answer_source: null,
     answer_text: null,
     answer_audio_file_id: null,
-    status: question.asked_at ? "asked" : "researched",
+    status: previousStatus,
   };
   return applyGuarded(question, patch, "That answer could not be re-opened");
 }

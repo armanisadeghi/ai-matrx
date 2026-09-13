@@ -5,6 +5,7 @@
 // A live mm:ss elapsed clock. Ticks once a second off a fixed start.
 
 import { useEffect, useState } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export function Elapsed({
   startedAt,
@@ -22,12 +23,10 @@ export function Elapsed({
   }, [stopped]);
 
   if (!startedAt) return <span className="tabular-nums">0:00</span>;
-  const total = Math.max(0, Math.floor((now - startedAt) / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
+  const total = (now - startedAt) / 1000;
   return (
     <span className="tabular-nums">
-      {m}:{s.toString().padStart(2, "0")}
+      {formatDurationSeconds(total, { style: "clock" })}
     </span>
   );
 }

@@ -42,8 +42,9 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
 7. 🚨 **No cell prints a type name** (§12 LAW 3a). `entry_kind` is used to filter and never
    rendered; the visible cell is the server's `sentence`. Request-backed usage and reversal
    entries derive one sentence from the request state and dates; their machine note never gets
-   appended as a second, contradictory description. On narrow screens, every filter, as-of
-   control, and rule door is at least 44px tall; compact desktop sizing starts at `md`.
+   appended as a second, contradictory description. On narrow screens, every ledger filter,
+   as-of, request-form, request-row, and rule control is at least 44px tall; compact desktop
+   sizing starts at `md`.
 8. 🚨 **Refusals are data and they say what was actually checked.** A rejected-at-intake
    submit renders every `conflict_check.hard[].message` verbatim, with its numbers, in place —
    never a generic failure toast. `code` never reaches page text.
@@ -275,5 +276,6 @@ divergence banner.
   moves the shared projection onto `hr._leave_ledger_sentence`: request state and dates produce
   one human sentence, redundant request-backed usage/reversal notes are ignored without
   rewriting immutable evidence, and non-request notes remain visible. `LeaveLedgerView` keeps
-  its compact desktop controls while giving mobile filters, as-of controls, and rule doors 44px
-  targets; the already-contained horizontal table remains unchanged.
+  its compact desktop controls while giving mobile ledger filters, as-of controls, request
+  controls, disclosure rows, and rule doors 44px targets; the already-contained horizontal
+  table remains unchanged.

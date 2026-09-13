@@ -13,6 +13,7 @@
 // has not started has no honest elapsed value, and "0:00" would be a lie.
 
 import { useEffect, useState } from "react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface ElapsedTimeProps {
   /** Epoch ms, an ISO timestamp, or null (renders nothing). */
@@ -33,13 +34,7 @@ function toEpoch(value: number | string | null | undefined): number | null {
 
 /** m:ss under an hour, h:mm:ss past it — never a bare millisecond count. */
 export function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const seconds = total % 60;
-  const minutes = Math.floor(total / 60) % 60;
-  const hours = Math.floor(total / 3600);
-  const mm = hours > 0 ? String(minutes).padStart(2, "0") : String(minutes);
-  const ss = String(seconds).padStart(2, "0");
-  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
+  return formatDurationMs(ms, { style: "clock" });
 }
 
 export function ElapsedTime({

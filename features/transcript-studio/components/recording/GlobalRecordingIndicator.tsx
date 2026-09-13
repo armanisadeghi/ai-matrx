@@ -4,15 +4,9 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Mic, Pause, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useGlobalRecordingOptional } from "@/providers/GlobalRecordingProvider";
-
-function formatClock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 /**
  * Floating, route-persistent recording control for the Scribe section.
@@ -69,7 +63,7 @@ export function GlobalRecordingIndicator() {
           </span>
           <Mic className="h-4 w-4 text-muted-foreground" />
           <span className="font-mono tabular-nums">
-            {formatClock(durationSec)}
+            {formatDurationSeconds(durationSec, { style: "clock" })}
           </span>
           <span className="text-xs text-muted-foreground">
             {isPaused ? "Paused" : "Recording"}

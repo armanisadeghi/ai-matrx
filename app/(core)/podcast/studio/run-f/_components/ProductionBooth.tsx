@@ -22,12 +22,7 @@ import { ActRail } from "./ActRail";
 import { BoothStage } from "./BoothStage";
 import { AssetGallery } from "./AssetGallery";
 import { FinishedEpisode } from "./FinishedEpisode";
-
-function fmt(s: number) {
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
-}
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export function ProductionBooth() {
   const { state, elapsed, restart } = useBoothReplay();
@@ -49,7 +44,7 @@ export function ProductionBooth() {
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-glass px-2.5 py-1 text-xs font-medium text-muted-foreground backdrop-blur-glass">
               <Clock className="h-3.5 w-3.5" />
-              {fmt(elapsed)}
+              {formatDurationSeconds(elapsed, { style: "clock" })}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
               <Radio className="h-3.5 w-3.5 animate-pulse" />

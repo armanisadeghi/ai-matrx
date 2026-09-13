@@ -26,18 +26,12 @@ import {
   Gauge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Slider } from "@/components/ui/slider";
 import {
   useScribeSessionAudio,
   PLAYBACK_RATES,
 } from "../../hooks/useScribeSessionAudio";
-
-function formatClock(totalSec: number): string {
-  const sec = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 interface SessionAudioPlayerProps {
   sessionId: string;
@@ -104,7 +98,7 @@ export function SessionAudioPlayer({ sessionId }: SessionAudioPlayerProps) {
 
         {/* Scrubber + times */}
         <span className="ml-1 shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-          {formatClock(audio.currentTime)}
+          {formatDurationSeconds(audio.currentTime, { style: "clock" })}
         </span>
         <Slider
           value={[Math.min(audio.currentTime, audio.duration)]}
@@ -117,7 +111,7 @@ export function SessionAudioPlayer({ sessionId }: SessionAudioPlayerProps) {
           className="min-w-0 flex-1"
         />
         <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-          {formatClock(audio.duration)}
+          {formatDurationSeconds(audio.duration, { style: "clock" })}
         </span>
 
         {/* Playback speed */}

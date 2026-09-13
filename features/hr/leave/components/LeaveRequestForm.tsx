@@ -347,7 +347,7 @@ export function LeaveRequestForm({
               idempotencyKey.current = mintKey();
             }}
           >
-            <SelectTrigger id="leave-policy">
+            <SelectTrigger id="leave-policy" className="h-11 md:h-9">
               <SelectValue placeholder="Choose a leave type" />
             </SelectTrigger>
             <SelectContent>
@@ -374,6 +374,7 @@ export function LeaveRequestForm({
               setDayHours({});
               idempotencyKey.current = mintKey();
             }}
+            className="h-11 md:h-10"
           />
         </div>
 
@@ -389,6 +390,7 @@ export function LeaveRequestForm({
               setDayHours({});
               idempotencyKey.current = mintKey();
             }}
+            className="h-11 md:h-10"
           />
         </div>
 
@@ -399,7 +401,10 @@ export function LeaveRequestForm({
               checked={partialDay}
               onCheckedChange={enablePartialDay}
             />
-            <Label htmlFor="leave-partial-day" className="cursor-pointer">
+            <Label
+              htmlFor="leave-partial-day"
+              className="flex min-h-11 flex-1 cursor-pointer items-center md:min-h-0"
+            >
               Part of a day
             </Label>
           </div>
@@ -438,6 +443,7 @@ export function LeaveRequestForm({
                         [d.date as string]: e.target.value,
                       }))
                     }
+                    className="h-11 md:h-10"
                   />
                 </div>
               ))}
@@ -454,7 +460,7 @@ export function LeaveRequestForm({
             Reason{reasonRequired ? "" : " (optional)"}
           </Label>
           <Select value={reasonCategoryId} onValueChange={setReasonCategoryId}>
-            <SelectTrigger id="leave-reason">
+            <SelectTrigger id="leave-reason" className="h-11 md:h-9">
               <SelectValue placeholder="Choose a reason" />
             </SelectTrigger>
             <SelectContent>
@@ -686,7 +692,7 @@ export function LeaveRequestForm({
       ) : null}
 
       <div className="flex justify-end">
-        <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="gap-2">
+        <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="h-11 gap-2 md:h-9">
           {submitting ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           ) : (

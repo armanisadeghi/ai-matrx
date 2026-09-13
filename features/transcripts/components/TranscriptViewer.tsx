@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useTranscripts } from "../hooks/useTranscripts";
 import AdvancedTranscriptViewer, {
   TranscriptSegment,
@@ -323,12 +324,6 @@ export function TranscriptViewer() {
         setIsPlaying(true);
       }
     }
-  };
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const plainTranscriptText = React.useMemo(() => {
@@ -971,8 +966,8 @@ export function TranscriptViewer() {
                     className="cursor-pointer"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                    <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime(duration)}</span>
+                    <span>{formatDurationSeconds(currentTime, { style: "clock" })}</span>
+                    <span>{formatDurationSeconds(duration, { style: "clock" })}</span>
                   </div>
                 </div>
 
