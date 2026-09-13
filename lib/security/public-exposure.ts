@@ -420,19 +420,6 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       + "census — the bound is what keeps a column added tomorrow from publishing itself.",
   },
   {
-    relation: "agent.mandate_exemplar",
-    columns: [
-      "id", "mandate_id", "label", "variables", "user_input", "reference_output",
-      "reference_artifact", "source", "captured_agent_id", "captured_model_id", "position", "is_active",
-      "created_at", "updated_at", "deleted_at", "visibility", "agent_id", "status",
-      "agent_version", "input_contract_hash", "output_contract_hash", "source_conversation_id",
-    ],
-    why:
-      "A view anon can address with no RLS policy of its own; zero rows reach a signed-out "
-      + "visitor today and no signed-out reader was found in the four-repository census. Bounded at "
-      + "the column (DD-186) so a column added tomorrow is closed by default.",
-  },
-  {
     relation: "agent.message_template",
     columns: [
       "id", "label", "content", "role", "created_at", "updated_at",

@@ -1006,6 +1006,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/masterwork/{id}",
     rlsUsesHasPermission: true,
   },
+  interview_decision_interview: {
+    resourceType: "interview_decision_interview",
+    tableName: "decision_interview",
+    schemaName: "interview",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Decision Interview",
+    urlPathTemplate: "/administration/question-desk/{id}",
+    rlsUsesHasPermission: true,
+  },
   interview_session: {
     resourceType: "interview_session",
     tableName: "session",

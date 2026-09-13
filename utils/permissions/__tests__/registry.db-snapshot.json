@@ -726,6 +726,17 @@
     "is_active": true
   },
   {
+    "resource_type": "interview_decision_interview",
+    "table_name": "decision_interview",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Decision Interview",
+    "url_path_template": "/administration/question-desk/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "interview_session",
     "table_name": "session",
     "id_column": "id",
