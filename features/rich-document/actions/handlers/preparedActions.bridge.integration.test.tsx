@@ -11,7 +11,7 @@ let htmlPreviewProps: {
 } | null = null;
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: { schema: mockSchema, auth: { getSession: mockGetSession } } }));
-jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));
+jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }));
 jest.mock("@/features/scopes/service/associationsService", () => ({ associationsService: { listForSources: mockListForSources, setTargets: mockSetTargets } }));
 jest.mock("@/features/scopes/host/associationsStore", () => ({ getAssociationsStore: () => ({ invalidate: mockInvalidate, services: { comments: new Proxy({}, { get: () => () => { throw new Error("unexpected comments transport"); } }), categories: new Proxy({}, { get: () => () => { throw new Error("unexpected categories transport"); } }) } }) }));
 jest.mock("next/dynamic", () => () => (props: typeof editorProps) => { editorProps = props; return <div />; });
@@ -52,7 +52,7 @@ enableMapSet();
 const ORG = "11111111-1111-4111-8111-111111111111";
 const ID = "22222222-2222-4222-8222-222222222222";
 function note(overrides: Partial<Note> = {}): Note {
-  return { id: ID, organization_id: ORG, version: 0, content: "authoritative full body", label: "Note", folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "2026-09-12T00:00:00Z", created_by: "user-1", updated_at: "2026-09-12T00:00:00Z", updated_by: "user-1", deleted_at: null, content_hash: null, file_path: null, last_device_id: null, sync_version: 0, ...overrides };
+  return { id: ID, organization_id: ORG, version: 0, content: "authoritative full body", label: "Note", folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "2026-09-12T00:00:00Z", created_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", updated_at: "2026-09-12T00:00:00Z", updated_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", deleted_at: null, content_hash: null, file_path: null, last_device_id: null, sync_version: 0, ...overrides };
 }
 function query(result: unknown) {
   const chain = { select: jest.fn(), eq: jest.fn(), is: jest.fn(), maybeSingle: jest.fn(), update: jest.fn() };
@@ -87,7 +87,7 @@ function makeStore() {
   const baseReducer = createSlimRootReducer();
   const reducer = (state: RootState | undefined, action: UnknownAction): RootState => {
     const next = baseReducer(state, action);
-    return action.type === "test/seed" ? { ...next, userAuth: { ...next.userAuth, id: "user-1", authReady: true } } : next;
+    return action.type === "test/seed" ? { ...next, userAuth: { ...next.userAuth, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", authReady: true } } : next;
   };
   const store = configureStore({ reducer, middleware: (gdm) => gdm({ serializableCheck: false }) });
   store.dispatch({ type: "test/seed", payload: null });
@@ -109,7 +109,7 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
   let container: HTMLDivElement; let root: Root;
   beforeEach(() => {
     jest.clearAllMocks(); editorProps = null; htmlPreviewProps = null; container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
-    mockGetSession.mockResolvedValue({ data: { session: { user: { id: "user-1" } } }, error: null }); mockListForSources.mockResolvedValue({ ok: true, data: { edges: [] } }); mockSetTargets.mockResolvedValue({ ok: true, data: null });
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } } }, error: null }); mockListForSources.mockResolvedValue({ ok: true, data: { edges: [] } }); mockSetTargets.mockResolvedValue({ ok: true, data: null });
   });
   afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
 
@@ -136,7 +136,7 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     const existing = query({ data: note({ content: "acknowledged", version: 4 }), error: null });
     const write = query({ data: note({ content: "second dirty body", version: 5 }), error: null });
     mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(write) });
-    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "acknowledged", version: 4 }), displayedNote: note({ content: "first dirty body", version: 4 }), actorId: "user-1", sourceId: "dirty", snapshotId: "dirty-1" });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "acknowledged", version: 4 }), displayedNote: note({ content: "first dirty body", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "dirty", snapshotId: "dirty-1" });
     const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
     await action.run(context(store, source));
     const overlay = store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"];
@@ -182,8 +182,8 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     const read = query({ data: note(), error: null });
     mockSchema.mockReturnValue({ from: jest.fn().mockReturnValue(read) });
     mockGetSession
-      .mockResolvedValueOnce({ data: { session: { user: { id: "user-1" } } }, error: null })
-      .mockResolvedValueOnce({ data: { session: { user: { id: "user-2" } } }, error: null });
+      .mockResolvedValueOnce({ data: { session: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } } }, error: null })
+      .mockResolvedValueOnce({ data: { session: { user: { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" } } }, error: null });
     const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
     await expect(action.run(context(store))).rejects.toThrow(/sign-in changed/i);
     expect(store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"]).toBeUndefined();
@@ -193,7 +193,7 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     const movedOrganization = "99999999-9999-4999-8999-999999999999";
     const movedRead = query({ data: note({ organization_id: movedOrganization, version: 5 }), error: null });
     mockSchema.mockReturnValue({ from: jest.fn().mockReturnValue(movedRead) });
-    const source = captureNoteEditSource({ acknowledgedNote: note({ version: 4 }), displayedNote: note({ content: "dirty retained", version: 4 }), actorId: "user-1", sourceId: "moved", snapshotId: "moved:4" });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ version: 4 }), displayedNote: note({ content: "dirty retained", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "moved", snapshotId: "moved:4" });
     const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
     await action.run(context(store, source));
     const overlay = store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"];
@@ -212,7 +212,7 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     const source = captureNoteEditSource({
       acknowledgedNote: note({ content: "acknowledged at four", version: 4 }),
       displayedNote: note({ content: "dirty retained", version: 4 }),
-      actorId: "user-1", sourceId: "stale-base", snapshotId: "stale-base:4",
+      actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "stale-base", snapshotId: "stale-base:4",
     });
     const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
     await action.run(context(store, source));
@@ -238,7 +238,7 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     const secondExisting = query({ data: note({ content: "later body", version: 4 }), error: null });
     const secondRead = query({ data: note({ content: "later body", version: 4 }), error: null });
     mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(firstExisting).mockReturnValueOnce(firstRead).mockReturnValueOnce(secondExisting).mockReturnValueOnce(secondRead) });
-    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty retained", version: 4 }), actorId: "user-1", sourceId: "protocol", snapshotId: "protocol:4" });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty retained", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "protocol", snapshotId: "protocol:4" });
     const adapterSpy = jest.spyOn(noteAdapter, "edit").mockImplementation(async (args) => {
       expect(args.source).toMatchObject({ mode: "editable", editBase: { version: 4 } });
       return persistNoteUpdate(ID, { project_id: "project-1" });
@@ -270,13 +270,13 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     let partial: NoteContextPartialSaveError | null = null;
     try {
       await persistNoteUpdate(ID, { content: "partial body", project_id: "project-1" }, {
-        expectedVersion: 4, expectedOrganizationId: ORG, expectedActorId: "user-1", expectedSourceId: "partial", expectedSnapshotId: "partial:4",
+        expectedVersion: 4, expectedOrganizationId: ORG, expectedActorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", expectedSourceId: "partial", expectedSnapshotId: "partial:4",
       });
     } catch (error) { partial = error as NoteContextPartialSaveError; }
     expect(partial).toBeInstanceOf(NoteContextPartialSaveError);
     expect(partial?.receipt).toMatchObject({ databaseWrite: "saved", note: { version: 5, content: "partial body" } });
 
-    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty", version: 4 }), actorId: "user-1", sourceId: "partial", snapshotId: "partial:4" });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "partial", snapshotId: "partial:4" });
     const originalEdit = noteAdapter.edit!;
     const adapterSpy = jest.spyOn(noteAdapter, "edit").mockImplementation(async (args) => {
       if (adapterSpy.mock.calls.length === 1) return partial!.receipt;
@@ -305,11 +305,11 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     const write = query({ data: note({ content: "saved before actor change", version: 5 }), error: null });
     mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(write) });
     mockGetSession
-      .mockResolvedValueOnce({ data: { session: { user: { id: "user-1" } } }, error: null })
-      .mockResolvedValueOnce({ data: { session: { user: { id: "user-1" } } }, error: null })
-      .mockResolvedValueOnce({ data: { session: { user: { id: "user-2" } } }, error: null })
-      .mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
-    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty", version: 4 }), actorId: "user-1", sourceId: "actor-change", snapshotId: "actor-change:4" });
+      .mockResolvedValueOnce({ data: { session: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } } }, error: null })
+      .mockResolvedValueOnce({ data: { session: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } } }, error: null })
+      .mockResolvedValueOnce({ data: { session: { user: { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" } } }, error: null })
+      .mockResolvedValue({ data: { session: { user: { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" } } }, error: null });
+    const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "actor-change", snapshotId: "actor-change:4" });
     const originalEdit = noteAdapter.edit!;
     const adapterSpy = jest.spyOn(noteAdapter, "edit").mockImplementation((args) => originalEdit(args));
     try {

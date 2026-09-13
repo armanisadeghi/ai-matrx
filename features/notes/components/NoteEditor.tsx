@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
-import { captureNoteEditSourceFromRecord } from "../richDocumentSource";
+import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import type { EditorMode as SurfaceEditorMode } from "./NoteEditorCore";
 import {
   buildNotesEditorContextData,
@@ -262,22 +262,11 @@ export function NoteEditor({
   // rich-document Export / Convert actions (HTML preview save-back, Convert→
   // Task linking) resolve the note adapter instead of the save-less `raw`
   // default (D33). Phantom (unsaved) notes stay raw — there is no row to save.
-  const menuContentSource: ContentSource | undefined =
+  const menuContentSource = usePreparedNoteContentSource(
     note?.id && note.id !== "__phantom__" && acknowledgedRecord?._acknowledgedPhysicalSnapshot && editingActorId
-      ? captureNoteEditSourceFromRecord({
-          record: acknowledgedRecord,
-          displayedNote: {
-            ...note,
-            content: localContent,
-            label: localLabel,
-            folder_name: localFolder,
-            tags: localTags,
-          },
-          actorId: editingActorId,
-          sourceId: `legacy-editor:${note.id}`,
-          snapshotId: `legacy-editor:${note.id}:${acknowledgedRecord._acknowledgedPhysicalSnapshot.version}:${localContent.length}`,
-        })
-      : undefined;
+      ? { record: acknowledgedRecord, displayedNote: { ...note, content: localContent, label: localLabel, folder_name: localFolder, tags: localTags }, actorId: editingActorId }
+      : null,
+  );
 
   // Same phantom-note guard as `menuContentSource` — an unsaved note has no
   // row for Attach To / Share to point at.

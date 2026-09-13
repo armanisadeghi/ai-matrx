@@ -8,8 +8,18 @@ import type { Note } from "./types";
 import type { NoteSaveReceipt } from "./service/noteSaveErrors";
 import type { NoteRecord } from "./redux/notes.types";
 
-function validVersion(value: number): boolean {
-  return Number.isSafeInteger(value) && value >= 0;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function validVersion(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function validUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID_PATTERN.test(value);
+}
+
+function validOpaqueId(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function isSerializableJson(value: unknown, seen = new Set<object>()): boolean {
@@ -86,6 +96,7 @@ export function captureNoteEditSourceFromRecord(args: {
 
 /** Identity-only triggers must be prepared through an authorized full-row read. */
 export function noteIdentityContentSource(noteId: string, sourceId = `note:${noteId}`): NoteIdentityContentSource {
+  if (!validUuid(noteId) || !validOpaqueId(sourceId)) throw new Error("A Notes identity source requires a UUID note and nonempty source ID.");
   return { type: "note", mode: "identity", noteId, sourceId };
 }
 
@@ -102,11 +113,15 @@ export function captureNoteEditSource(args: {
 }): NoteEditableContentSource {
   const { acknowledgedNote, displayedNote, actorId, sourceId, snapshotId, actingSelection } = args;
   if (
-    !acknowledgedNote.id ||
-    !acknowledgedNote.organization_id ||
+    !validUuid(acknowledgedNote.id) ||
+    !validUuid(acknowledgedNote.organization_id) ||
+    !validUuid(displayedNote.id) ||
+    !validUuid(displayedNote.organization_id) ||
     acknowledgedNote.id !== displayedNote.id ||
     acknowledgedNote.organization_id !== displayedNote.organization_id ||
-    !actorId || !sourceId || !snapshotId || !validVersion(acknowledgedNote.version)
+    !validUuid(actorId) || !validOpaqueId(sourceId) || !validOpaqueId(snapshotId) ||
+    !validVersion(acknowledgedNote.version) || !validVersion(displayedNote.version) ||
+    acknowledgedNote.version !== displayedNote.version
   ) {
     throw new Error("A Notes editable source requires an acknowledged note, actor, source, and revision.");
   }
@@ -155,6 +170,10 @@ export function isPreparedEditableNoteSource(source: ContentSource): source is N
     !acknowledgedPhysicalSnapshot || typeof acknowledgedPhysicalSnapshot !== "object"
   ) return false;
   return (
+    validUuid(source.noteId) && validOpaqueId(source.sourceId) && validOpaqueId(source.snapshotId) &&
+    validUuid(editBase.noteId) && validUuid(editBase.organizationId) && validUuid(editBase.actorId) &&
+    validUuid(displayedPhysicalSnapshot.id) && validUuid(displayedPhysicalSnapshot.organization_id) &&
+    validUuid(acknowledgedPhysicalSnapshot.id) && validUuid(acknowledgedPhysicalSnapshot.organization_id) &&
     editBase.noteId === source.noteId &&
     editBase.noteId === displayedPhysicalSnapshot.id &&
     editBase.organizationId === displayedPhysicalSnapshot.organization_id &&
@@ -162,7 +181,6 @@ export function isPreparedEditableNoteSource(source: ContentSource): source is N
     editBase.organizationId === acknowledgedPhysicalSnapshot.organization_id &&
     editBase.version === acknowledgedPhysicalSnapshot.version &&
     editBase.version === displayedPhysicalSnapshot.version &&
-    Boolean(editBase.actorId) && Boolean(source.sourceId) && Boolean(source.snapshotId) &&
     isSerializableJson(acknowledgedPhysicalSnapshot.tags) &&
     isSerializableJson(acknowledgedPhysicalSnapshot.metadata) &&
     isSerializableJson(source.displayedPhysicalSnapshot.tags) &&

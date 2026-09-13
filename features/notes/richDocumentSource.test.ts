@@ -20,7 +20,7 @@ function note(overrides: Partial<Note> = {}): Note {
     content: "acknowledged body",
     content_hash: null,
     created_at: "2026-09-12T00:00:00.000Z",
-    created_by: "user-1",
+    created_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     deleted_at: null,
     file_path: null,
     folder_id: null,
@@ -35,7 +35,7 @@ function note(overrides: Partial<Note> = {}): Note {
     tags: [],
     task_id: null,
     updated_at: "2026-09-12T00:00:00.000Z",
-    updated_by: "user-1",
+    updated_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     version: 0,
     visibility: "personal",
     ...overrides,
@@ -47,7 +47,7 @@ describe("prepared Notes rich-document sources", () => {
     const source = captureNoteEditSource({
       acknowledgedNote: note(),
       displayedNote: note({ content: "dirty displayed body" }),
-      actorId: "user-1",
+      actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       sourceId: "editor-a",
       snapshotId: "editor-a:dirty",
       actingSelection: "displayed",
@@ -57,7 +57,7 @@ describe("prepared Notes rich-document sources", () => {
       noteId: NOTE_ID,
       organizationId: ORG_ID,
       version: 0,
-      actorId: "user-1",
+      actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     });
     expect(source.acknowledgedPhysicalSnapshot.content).toBe("acknowledged body");
     expect(source.displayedPhysicalSnapshot.content).toBe("dirty displayed body");
@@ -68,7 +68,7 @@ describe("prepared Notes rich-document sources", () => {
     const source = captureNoteEditSource({
       acknowledgedNote: note(),
       displayedNote: note({ content: "dirty displayed body" }),
-      actorId: "user-1",
+      actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       sourceId: "editor-a",
       snapshotId: "editor-a:dirty",
     });
@@ -103,5 +103,12 @@ describe("prepared Notes rich-document sources", () => {
     expect(dirty.notes[NOTE_ID]._fieldHistory.content).toBe("acknowledged body");
     expect(dirty.notes[NOTE_ID]._acknowledgedPhysicalSnapshot?.content).toBe("acknowledged body");
     expect(dirty.notes[NOTE_ID]._acknowledgedPhysicalSnapshot).not.toBe(dirty.notes[NOTE_ID]);
+  });
+});
+
+describe("prepared Notes source runtime admission", () => {
+  it("refuses non-UUID identities and base/display pairing drift immediately", () => {
+    expect(() => captureNoteEditSource({ acknowledgedNote: note(), displayedNote: note(), actorId: "actor", sourceId: "source", snapshotId: "snapshot" })).toThrow(/requires/i);
+    expect(() => captureNoteEditSource({ acknowledgedNote: note(), displayedNote: note({ version: 1 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "source", snapshotId: "snapshot" })).toThrow(/requires/i);
   });
 });

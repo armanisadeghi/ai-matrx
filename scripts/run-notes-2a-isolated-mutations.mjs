@@ -11,6 +11,7 @@ const tests = [
   "features/rich-document/actions/handlers/preparedActions.bridge.integration.test.tsx",
   "features/rich-document/actions/handlers/preparedEdit.test.ts",
   "features/notes/richDocumentSource.test.ts",
+  "features/notes/usePreparedNoteContentSource.test.tsx",
   "features/notes/service/notesService.convergence.test.ts",
   "features/overlays/callbacks/fullScreenEditor.test.ts",
 ];
@@ -34,6 +35,10 @@ for (const file of tracked) {
     copyFileSync(source, destination);
     sourceHash.update(file).update(readFileSync(source));
   }
+}
+for (const extra of ["features/notes/usePreparedNoteContentSource.ts", "features/notes/usePreparedNoteContentSource.test.tsx"]) {
+  const source = join(sourceRoot, extra); const destination = join(runRoot, extra);
+  mkdirSync(dirname(destination), { recursive: true }); copyFileSync(source, destination);
 }
 symlinkSync(join(sourceRoot, "node_modules"), join(runRoot, "node_modules"));
 const sharedRequire = createRequire(join(sourceRoot, "package.json"));
@@ -79,6 +84,8 @@ const mutations = [
   { name: "typed-receipt-loss", file: "features/rich-document/actions/handlers/preparedEdit.ts", from: "return advanceAcknowledgedErrorSource(source, error, submittedContent);", to: "return source;", testName: "keeps a returned saved physical partial receipt", testPattern: "keeps a returned saved physical partial receipt|retains an acknowledged base after an actor changes", assertion: "version", requiredFailures: [{ testName: "keeps a returned saved physical partial receipt", assertion: "version" }, { testName: "retains an acknowledged base after an actor changes", assertion: "version" }] },
   { name: "save-time-refetch", file: "features/rich-document/actions/sources/note.ts", from: "const { persistNoteUpdate } = await import(\"@/features/notes/service/notesService\");\n    return persistNoteUpdate(source.noteId, { content: newContent }, {\n      expectedVersion: source.editBase.version,\n      expectedOrganizationId: source.editBase.organizationId,", to: "const { fetchNoteById, persistNoteUpdate } = await import(\"@/features/notes/service/notesService\");\n    const fetched = await fetchNoteById(source.noteId);\n    return persistNoteUpdate(source.noteId, { content: newContent }, {\n      expectedVersion: fetched?.version ?? source.editBase.version,\n      expectedOrganizationId: fetched?.organization_id ?? source.editBase.organizationId,", testName: "keeps a stale dirty base", assertion: "Received promise resolved instead of rejected" },
   { name: "zero-revision", file: "features/notes/service/notesService.ts", from: "options.expectedVersion < 0", to: "options.expectedVersion < 1", testName: "accepts an authoritative stored revision zero", assertion: "note revision must be a nonnegative safe integer" },
+  { name: "returned-partial", file: "features/rich-document/actions/handlers/preparedEdit.ts", from: "if (receipt.failedFields.length > 0)", to: "if (false && receipt.failedFields.length > 0)", testName: "keeps a returned saved physical partial receipt", assertion: "rejects" },
+  { name: "snapshot-sequence", file: "features/notes/usePreparedNoteContentSource.ts", from: "sequence += 1", to: "sequence += 0", testName: "keeps an identical render stable", assertion: "not.toBe" },
 ];
 if (isCleanGreen(manifest.baseline)) {
   for (const mutation of mutations) {

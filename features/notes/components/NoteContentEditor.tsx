@@ -110,7 +110,8 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import type { ContentSource } from "@/features/rich-document/types";
 import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
 import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
-import { captureNoteEditSourceFromRecord, noteIdentityContentSource } from "../richDocumentSource";
+import { noteIdentityContentSource } from "../richDocumentSource";
+import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -202,16 +203,11 @@ export function NoteContentEditor({
   const noteIdRef = useRef(noteId);
   const localContentRef = useRef(localContent);
 
-  const editableContentSource: ContentSource | undefined =
+  const editableContentSource = usePreparedNoteContentSource(
     noteExists?._acknowledgedPhysicalSnapshot && conflictActorId && !readOnly
-      ? captureNoteEditSourceFromRecord({
-          record: noteExists,
-          displayedNote: { ...noteExists, content: localContent },
-          actorId: conflictActorId,
-          sourceId: `content-editor:${instanceId}:${noteId}`,
-          snapshotId: `content-editor:${instanceId}:${noteId}:${noteExists._acknowledgedPhysicalSnapshot.version}:${localContent.length}`,
-        })
-      : undefined;
+      ? { record: noteExists, displayedNote: { ...noteExists, content: localContent }, actorId: conflictActorId }
+      : null,
+  );
 
 
   useEffect(() => {

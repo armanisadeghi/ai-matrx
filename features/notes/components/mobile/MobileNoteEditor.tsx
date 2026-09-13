@@ -14,7 +14,8 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
-import { captureNoteEditSourceFromRecord, noteIdentityContentSource } from "../../richDocumentSource";
+import { noteIdentityContentSource } from "../../richDocumentSource";
+import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
@@ -81,21 +82,11 @@ export default function MobileNoteEditor({
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const editableContentSource: ContentSource | undefined = editingActorId && acknowledgedRecord?._acknowledgedPhysicalSnapshot
-    ? captureNoteEditSourceFromRecord({
-        record: acknowledgedRecord,
-        displayedNote: {
-          ...note,
-          label: localLabel,
-          content: localContent,
-          folder_name: localFolder,
-          tags: localTags,
-        },
-        actorId: editingActorId,
-        sourceId: `mobile-editor:${note.id}`,
-        snapshotId: `mobile-editor:${note.id}:${acknowledgedRecord._acknowledgedPhysicalSnapshot.version}:${localContent.length}`,
-      })
-    : undefined;
+  const editableContentSource = usePreparedNoteContentSource(
+    editingActorId && acknowledgedRecord?._acknowledgedPhysicalSnapshot
+      ? { record: acknowledgedRecord, displayedNote: { ...note, label: localLabel, content: localContent, folder_name: localFolder, tags: localTags }, actorId: editingActorId }
+      : null,
+  );
 
   // The delete confirmation belongs to the platform, not to this screen —
   // `requestDelete` opens the canonical `confirm()` (see useNoteDelete). The

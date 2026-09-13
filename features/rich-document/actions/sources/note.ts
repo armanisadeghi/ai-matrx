@@ -4,13 +4,18 @@
 // are async network calls that surface their errors back to the caller.
 
 import type { ContentSource, ContentSourceAdapter } from "../../types";
+import type { NoteSaveReceipt } from "@/features/notes/service/noteSaveErrors";
+
+export interface NotesContentSourceAdapter extends ContentSourceAdapter {
+  edit: (args: { newContent: string; source: ContentSource; dispatch: Parameters<NonNullable<ContentSourceAdapter["edit"]>>[0]["dispatch"] }) => Promise<NoteSaveReceipt>;
+}
 import { requireUserId } from "@/utils/auth/getUserId";
 import {
   isPreparedEditableNoteSource,
   noteEditableContentSource,
 } from "@/features/notes/richDocumentSource";
 
-export const noteAdapter: ContentSourceAdapter = {
+export const noteAdapter: NotesContentSourceAdapter = {
   instanceKeyPrefix: (source: ContentSource) => {
     if (source.type !== "note") {
       throw new Error(
