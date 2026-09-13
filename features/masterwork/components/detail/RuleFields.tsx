@@ -24,11 +24,15 @@ import {
   RULE_ACTION_KIND_HINTS,
   RULE_ACTION_KIND_LABELS,
   RULE_ACTION_KINDS,
+  RULE_ACTION_URGENCIES,
+  RULE_ACTION_URGENCY_LABELS,
   RULE_POLICY_LEVEL_LABELS,
   RULE_POLICY_LEVELS,
   type RuleActionKind,
+  type RuleActionUrgency,
   type RulePolicyLevel,
   type RuleFieldValues,
+  type RuleMoveFieldValues,
   type RulebookSections,
   type RuleSeverity,
 } from "../../types";
@@ -75,9 +79,25 @@ export function improveFieldsFrom(values: RuleFieldValues) {
   return { ...values, ...policyRulePatch(values) };
 }
 
+/**
+ * The sentinel a surface passes in `omitFields` to leave the whole policy
+ * block out (contract §2) — the Final Checkup edits a SUGGESTION whose shape
+ * has nowhere to put a precondition or a next action, so rendering the inputs
+ * there would silently discard whatever was typed.
+ */
+export type RuleFieldOmission = keyof RuleFieldValues | "policy";
+
+/** Radix Select forbids an empty-string item value, so "unset" is a token. */
+const NO_ACTION_KIND = "__none__";
+const NO_SCALE = "__unset__";
+const NO_URGENCY = "__unset__";
+const SCALE = ["1", "2", "3", "4", "5"] as const;
+
 export function RuleFields({
   values,
   onChange,
+  move,
+  onMoveChange,
   sections,
   autoFocusName = true,
   idPrefix = "rule",
@@ -85,6 +105,16 @@ export function RuleFields({
 }: {
   values: RuleFieldValues;
   onChange: (patch: Partial<RuleFieldValues>) => void;
+  /**
+   * The MOVE half (contract §2) — the structured "when does it apply / what do
+   * you do next" group, held by the host as its own `RuleMoveFieldValues` set
+   * because it converts to and from the rule's `move` object rather than to the
+   * flat decision columns above. A host that has nowhere to put it (the Final
+   * Checkup's SUGGESTION shape) passes neither prop and the block is not
+   * rendered — never a fork of this form.
+   */
+  move?: RuleMoveFieldValues;
+  onMoveChange?: (patch: Partial<RuleMoveFieldValues>) => void;
   sections: RulebookSections;
   autoFocusName?: boolean;
   /** Field ids are `${idPrefix}-name` etc. — the editor's context-menu text
@@ -97,9 +127,9 @@ export function RuleFields({
    * worse than not rendering it. Omitting a field here is the sanctioned way to
    * say so; forking this form is not.
    */
-  omitFields?: ReadonlyArray<keyof RuleFieldValues>;
+  omitFields?: ReadonlyArray<RuleFieldOmission>;
 }) {
-  const omitted = new Set(omitFields ?? []);
+  const omitted = new Set<string>(omitFields ?? []);
   const sectionCodes = Object.keys(sections);
   return (
     <div className="space-y-3">
@@ -300,6 +330,183 @@ export function RuleFields({
         ) : null}
       </div>
       </>
+      )}
+      {!move || !onMoveChange || omitted.has("policy") ? null : (
+        <details className="rounded-md border border-border bg-muted/20 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-foreground">
+            When does it apply, and what do you do next? (optional)
+          </summary>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Only for rules about a decision you make as a case unfolds. Leave it
+            empty and the rule works exactly as it always has — the rule itself,
+            above, is still the whole rule.
+          </p>
+          <div className="mt-3 space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-precondition-summary`}>
+                When does this apply?
+              </Label>
+              <Input
+                id={`${idPrefix}-precondition-summary`}
+                value={move.preconditionSummary ?? ""}
+                onChange={(e) =>
+                  onMoveChange({ preconditionSummary: e.target.value })
+                }
+                placeholder="e.g. adult with fever, headache and a stiff neck"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor={`${idPrefix}-precondition-known`}>
+                  What you already know (one per line)
+                </Label>
+                <ProTextarea
+                  id={`${idPrefix}-precondition-known`}
+                  value={move.preconditionKnown ?? ""}
+                  onChange={(e) =>
+                    onMoveChange({ preconditionKnown: e.target.value })
+                  }
+                  placeholder={"fever\nheadache\nneck stiffness"}
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`${idPrefix}-precondition-unknown`}>
+                  What you still don&apos;t know (one per line)
+                </Label>
+                <ProTextarea
+                  id={`${idPrefix}-precondition-unknown`}
+                  value={move.preconditionUnknown ?? ""}
+                  onChange={(e) =>
+                    onMoveChange({ preconditionUnknown: e.target.value })
+                  }
+                  placeholder={"whether the spinal fluid is infected"}
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
+              <div className="space-y-1.5">
+                <Label>What kind of step is next?</Label>
+                <Select
+                  value={move.nextActionKind || NO_ACTION_KIND}
+                  onValueChange={(v) =>
+                    onMoveChange({
+                      nextActionKind:
+                        v === NO_ACTION_KIND ? "" : (v as RuleActionKind),
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_ACTION_KIND}>
+                      No next step
+                    </SelectItem>
+                    {RULE_ACTION_KINDS.map((kind) => (
+                      <SelectItem key={kind} value={kind}>
+                        {RULE_ACTION_KIND_LABELS[kind]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`${idPrefix}-next-target`}>
+                  What exactly do you do?
+                </Label>
+                <Input
+                  id={`${idPrefix}-next-target`}
+                  value={move.nextActionTarget ?? ""}
+                  onChange={(e) =>
+                    onMoveChange({ nextActionTarget: e.target.value })
+                  }
+                  placeholder="e.g. lumbar puncture (scan first if there are focal signs)"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-next-buys`}>
+                What does that step buy you?
+              </Label>
+              <Input
+                id={`${idPrefix}-next-buys`}
+                value={move.nextActionBuys ?? ""}
+                onChange={(e) => onMoveChange({ nextActionBuys: e.target.value })}
+                placeholder="e.g. rules out the worst thing first"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>How costly is it? (1–5)</Label>
+                <Select
+                  value={move.nextActionCost || NO_SCALE}
+                  onValueChange={(v) =>
+                    onMoveChange({ nextActionCost: v === NO_SCALE ? "" : v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_SCALE}>Not saying</SelectItem>
+                    {SCALE.map((n) => (
+                      <SelectItem key={n} value={n}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>How risky is it? (1–5)</Label>
+                <Select
+                  value={move.nextActionRisk || NO_SCALE}
+                  onValueChange={(v) =>
+                    onMoveChange({ nextActionRisk: v === NO_SCALE ? "" : v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_SCALE}>Not saying</SelectItem>
+                    {SCALE.map((n) => (
+                      <SelectItem key={n} value={n}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>How soon?</Label>
+                <Select
+                  value={move.nextActionUrgency || NO_URGENCY}
+                  onValueChange={(v) =>
+                    onMoveChange({
+                      nextActionUrgency:
+                        v === NO_URGENCY ? "" : (v as RuleActionUrgency),
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_URGENCY}>Not saying</SelectItem>
+                    {RULE_ACTION_URGENCIES.map((urgency) => (
+                      <SelectItem key={urgency} value={urgency}>
+                        {RULE_ACTION_URGENCY_LABELS[urgency]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </details>
       )}
       {omitted.has("quote") ? null : (
         <div className="space-y-1.5">

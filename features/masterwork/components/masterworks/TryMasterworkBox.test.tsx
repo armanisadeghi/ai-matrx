@@ -55,6 +55,11 @@ import { TryMasterworkBox } from "./TryMasterworkBox";
 let adoptedRunId: string | null = null;
 const getMasterworkRunVerdict = jest.fn();
 const getMasterworkDefinition = jest.fn();
+/** The sealed-case lane's two DB reads. The NODE DETECTION stays real — it is
+ *  the thing under test, and a stubbed detector would prove nothing. */
+const toastError = jest.fn();
+const rulebookIdForMasterwork = jest.fn();
+const listSealedCases = jest.fn();
 
 // TRANSPORT ONLY. The real adapter opens SSE/pollers against the server; its
 // first step is `attachRun`, and that is the part this test needs so the real
@@ -87,6 +92,58 @@ jest.mock("@/components/official/ProTextarea", () => ({
 
 jest.mock("@/features/rich-document/RichDocument", () => ({
   RichDocument: () => <div>Rendered verdict</div>,
+}));
+
+/**
+ * A HARNESS AROUND THE REAL PICKER, never a replacement for it: the real
+ * `SealedCasePicker` still renders (the tests below assert its own copy), and
+ * the harness only adds a way for a test to make the choice a person makes
+ * with a mouse, plus a readout of what the box is currently holding. Stubbing
+ * the picker itself would mean asserting against the stub.
+ */
+jest.mock("../../unfolding/SealedCasePicker", () => {
+  const actual = jest.requireActual("../../unfolding/SealedCasePicker");
+  return {
+    ...actual,
+    SealedCasePicker: (props: {
+      state: { status: string; cases?: { id: string }[] };
+      value: string | null;
+      onChange: (id: string) => void;
+    }) => (
+      <>
+        <actual.SealedCasePicker {...props} />
+        {props.state.status === "ready"
+          ? (props.state.cases ?? []).map((item) => (
+              <button
+                key={item.id}
+                data-harness={`choose-${item.id}`}
+                onClick={() => props.onChange(item.id)}
+              >
+                choose {item.id}
+              </button>
+            ))
+          : null}
+        <span data-harness="chosen-case">{props.value ?? ""}</span>
+      </>
+    ),
+  };
+});
+
+jest.mock("@/lib/toast", () => ({
+  toast: {
+    error: (...args: unknown[]) => toastError(...args),
+    success: jest.fn(),
+    info: jest.fn(),
+    warning: jest.fn(),
+    message: jest.fn(),
+  },
+}));
+
+jest.mock("../../unfolding/sealedCases", () => ({
+  ...jest.requireActual("../../unfolding/sealedCases"),
+  rulebookIdForMasterwork: (...args: unknown[]) =>
+    rulebookIdForMasterwork(...args),
+  listSealedCases: (...args: unknown[]) => listSealedCases(...args),
 }));
 
 jest.mock("../../service", () => ({
@@ -125,6 +182,9 @@ beforeEach(() => {
   getMasterworkRunVerdict.mockReset();
   getMasterworkDefinition.mockReset();
   getMasterworkDefinition.mockResolvedValue(null);
+  toastError.mockReset();
+  rulebookIdForMasterwork.mockReset();
+  listSealedCases.mockReset();
   sessionStorage.clear();
 });
 
@@ -157,12 +217,13 @@ const RUN_ID = "22222222-2222-4222-8222-222222222222";
 function renderBox(
   onRunFinished: jest.Mock,
   onCompare?: (candidate: string) => void,
+  masterworkId: string = MASTERWORK_ID,
 ) {
   return act(async () => {
     root.render(
       <Provider store={store}>
         <TryMasterworkBox
-          masterworkId={MASTERWORK_ID}
+          masterworkId={masterworkId}
           masterworkKind="edit"
           onRunFinished={onRunFinished}
           onCompare={onCompare}
@@ -448,4 +509,132 @@ it("says WHY there is nothing to judge when neither the presented payload nor th
   );
   // The honest line names what it DID return, so the builder can fix it.
   expect(container.textContent).toContain("notes, sources");
+});
+
+/**
+ * ── THE SEALED CASE (unfolding-case contract §5, 2026-09-12) ───────────────
+ * A Masterwork whose workflow carries a `masterwork.case.disclose` node is a
+ * DESK: it works a case it has never seen, so the box must offer the
+ * Rulebook's sealed cases and send the chosen one as `case_item_id`.
+ *
+ * ONE-LINE BUG EACH TEST CATCHES:
+ *  · first  — the picker failing to appear on a definition that HAS the
+ *    oracle node (a desk with no way to point it at a case);
+ *  · second — the picker leaking onto every ordinary Masterwork, asking for a
+ *    sealed case that has nothing to do with the run.
+ */
+
+/** A desk: user input → the case oracle → the ruling handover. */
+const ORACLE_DEFINITION = {
+  nodes: [
+    { id: "ask", type: "io.user_input", data: { label: "The opening" } },
+    {
+      id: "oracle",
+      type: "masterwork.case.disclose",
+      data: { label: "Ask the case" },
+    },
+    { id: "present", type: "output.to_frontend", data: { label: "The ruling" } },
+  ],
+  edges: [
+    { source: "ask", target: "oracle" },
+    { source: "oracle", target: "present" },
+  ],
+};
+
+it("offers the sealed cases when the definition carries the case-oracle node", async () => {
+  getMasterworkDefinition.mockResolvedValue(ORACLE_DEFINITION);
+  rulebookIdForMasterwork.mockResolvedValue("rb-1");
+  listSealedCases.mockResolvedValue([
+    { id: "case-1", label: "The 61-year-old with a headache", published: "2019" },
+  ]);
+
+  await renderBox(jest.fn());
+  await settle();
+  await settle();
+
+  expect(rulebookIdForMasterwork).toHaveBeenCalledWith(MASTERWORK_ID);
+  expect(
+    container.querySelector('[data-masterwork-sealed-case="picker"]'),
+  ).not.toBeNull();
+  expect(container.textContent).toContain(
+    "Which sealed case should it work?",
+  );
+  expect(listSealedCases).toHaveBeenCalledWith("rb-1");
+  // A desk WITH cases never shows the empty-state remedy — that sentence is
+  // true only when the Rulebook holds none.
+  expect(container.textContent).not.toContain("holds no sealed cases yet");
+  // The options themselves live in the Select's portal (closed here), and the
+  // READER is only ever told the label + date: this box never fetches, holds
+  // or renders the sealed timeline (THE WITHHOLDING LAW) — `listSealedCases`
+  // selects no `raw_value`/`metadata` column at all.
+});
+
+it("never asks for a sealed case on a Masterwork with no case-oracle node", async () => {
+  getMasterworkDefinition.mockResolvedValue(DESK_DEFINITION);
+  rulebookIdForMasterwork.mockResolvedValue("rb-1");
+  listSealedCases.mockResolvedValue([]);
+
+  await renderBox(jest.fn());
+  await settle();
+  await settle();
+
+  expect(rulebookIdForMasterwork).not.toHaveBeenCalled();
+  expect(listSealedCases).not.toHaveBeenCalled();
+  expect(
+    container.querySelector('[data-masterwork-sealed-case="picker"]'),
+  ).toBeNull();
+  expect(container.textContent).not.toContain("sealed case");
+});
+
+/**
+ * ── THE CHOSEN CASE BELONGS TO THIS DESK (Bugbot, PR #222, 2026-09-12) ─────
+ * `caseItemId` was never cleared when the box was pointed at a different
+ * Masterwork or a different disclose node, so a reused box could start the
+ * NEXT desk against the PREVIOUS Masterwork's sealed case — a run against a
+ * case from another Rulebook entirely, with nothing on screen to say so.
+ *
+ * ONE-LINE BUG THIS TEST CATCHES: dropping the render-time reset, so the
+ * previous desk's case id survives the change of Masterwork. The other half of
+ * the fix — the start guard requiring the id to be ON the list this desk is
+ * offering — is `chosenSealedCaseIsCurrent`, forced in
+ * `unfolding/sealedCases.test.ts` (the Run button here is disabled until the
+ * served input surface resolves, which is a network read this suite stubs
+ * nothing for).
+ */
+const OTHER_MASTERWORK_ID = "33333333-3333-4333-8333-333333333333";
+
+it("forgets the chosen sealed case when the box is pointed at another Masterwork", async () => {
+  getMasterworkDefinition.mockResolvedValue(ORACLE_DEFINITION);
+  rulebookIdForMasterwork.mockResolvedValue("rb-1");
+  listSealedCases.mockResolvedValue([
+    { id: "case-a", label: "The first desk's case", published: "2019" },
+  ]);
+
+  await renderBox(jest.fn());
+  await settle();
+  await settle();
+
+  const choose = container.querySelector<HTMLButtonElement>(
+    '[data-harness="choose-case-a"]',
+  );
+  await act(async () => {
+    choose?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  expect(
+    container.querySelector('[data-harness="chosen-case"]')?.textContent,
+  ).toBe("case-a");
+
+  // The SAME box, now showing a different Masterwork with its own cases.
+  rulebookIdForMasterwork.mockResolvedValue("rb-2");
+  listSealedCases.mockResolvedValue([
+    { id: "case-b", label: "The second desk's case", published: "2021" },
+  ]);
+  await renderBox(jest.fn(), undefined, OTHER_MASTERWORK_ID);
+  await settle();
+  await settle();
+
+  expect(
+    container.querySelector('[data-harness="chosen-case"]')?.textContent,
+  ).toBe("");
+  expect(listSealedCases).toHaveBeenLastCalledWith("rb-2");
 });

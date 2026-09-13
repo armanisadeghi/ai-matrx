@@ -78,7 +78,32 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     `RulebookSections`, `RulebookSource`. Never rewrite an existing rule's `id` — audits cite it.
 16. **The Understudy is never releasable to Encore** and is filtered out of the built-Masterworks
     list; release is gated on a real Build. Never describe the Understudy as the finished system.
-17. **`TryMasterworkBox` asks `runIsOver` (`features/workflow-runtime/types.ts`), never a narrower
+17. 🚨 **THE STAND-IN NEVER LIES ABOUT WHAT IT KNOWS.** `pokeUnderstudy` rebuilds the Understudy
+    after every rules write, fire-and-forget — so its failure has to be visible somewhere a
+    person looks. It records every outcome in the staleness ledger in `understudy/refresh.ts`
+    (`subscribeToUnderstudyRefresh` / `getUnderstudyRefreshState`, fed by
+    `refreshUnderstudyTracked`), and `UnderstudyCard` subscribes: a failed rebuild, or a row
+    whose baked `rulebook_version` is behind the Rulebook's, raises a named warning saying which
+    version the stand-in is performing from versus where the Rulebook now is, plus "Bring it up
+    to date". The card also shows that version, the baked approved/in-review counts and the
+    rebuild time UNCONDITIONALLY, because the ledger is per-tab and a reload would otherwise
+    erase the only evidence. Never go back to a `console.error` alone: on 2026-09-12 every
+    refresh returned HTTP 500 for two hours (the server write named no actor system), an Expert
+    reviewed 94 rules, and she then tested a stand-in built from zero of them under a page
+    reading "88 approved". The Masterwork read projects the two stamps
+    (`understudy_refreshed_at`, `understudy_rules`) through the ONE `parseMasterworkRow`.
+    **And it never lies in the other direction either.** The card reads its whole account of the
+    stand-in through `readUnderstudyStandIn(refreshState, row, rulebookVersion)` in
+    `understudy/refresh.ts`, which believes whichever of the two accounts is NEWER — the workflow
+    row the page loaded, or the payload the last successful rebuild returned (`rulebook_version`,
+    `approved_rules`, `unconfirmed_rules`). A rebuild that lands therefore takes the amber banner
+    down by itself, with no host reload; a banner still amber after a rebuild that worked is the
+    same defect as a silent failure. And because the review wizard saves once per rule, several
+    pokes for one Rulebook are in flight at once as a matter of course — so every ledger write
+    carries a GENERATION TOKEN and only the newest attempt may write: an older poke settling late
+    never buries a newer outcome in either direction. Guard:
+    `__tests__/understudy-refresh.test.ts`, proven failing then passing on all four cases.
+18. **`TryMasterworkBox` asks `runIsOver` (`features/workflow-runtime/types.ts`), never a narrower
     set** — a run the engine records as `errored` is over for anything WATCHING it, but the
     generated `TERMINAL_RUN_STATUSES` answers the engine's resume question and excludes it. Asking
     that set directly is how a run that errored left the box "Working…" forever, with nothing told
@@ -89,7 +114,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     runs, not in the box that is waiting for one. A freshly started run always replaces the
     remembered id (a re-attach check still in flight stands down against a start generation), and
     the box SAYS which run it is showing. Wall W15, 2026-09-10.
-18. **Every Rulebook door adopts the Rulebook's own organization** — `RulebookLaneRoute` and
+19. **Every Rulebook door adopts the Rulebook's own organization** — `RulebookLaneRoute` and
     `RulebookDetailPage` both call `useAdoptRecordOrganization`
     (`features/organizations/useAdoptRecordOrganization.ts`) and hold their body until it answers.
     The row carries `organization_id`, so a reload must never leave the Expert's every action
@@ -98,7 +123,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     to the old fail-closed behaviour, and the adoption ANNOUNCES itself with a toast naming the
     workspace. Guarded by `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
 
-19. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
+20. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
     the body-of-work lane turned 20 published pieces into 416 per-piece drafts plus 4 synthesized
     cross-piece rules, this page counted all 420 as "Waiting on you", and the Expert pressed
     Approve-all — the failure the review lane exists to prevent. `ruleState()` returns
@@ -173,6 +198,20 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   translation: `build/useBuildRun.ts`; page callbacks: `build/callbacks.ts`.
 - `components/detail/IngestSourceDialog.tsx` — "From a source" (paste →
   `POST /masterworks/ingest`; upload → `POST /masterworks/ingest-file`).
+- `components/detail/IngestTimelineDialog.tsx` — "From a case that unfolded", the TIMELINE
+  Approach (`?intake=timeline` → `POST /masterworks/ingest-timeline`; surface `timeline` on the
+  ONE durable run). Unfolds a pasted narrative into a `serial_observation_timeline` and either
+  distils it (role `teaching`) or SEALS it (role `heldout`). `buildTimelineRequest` is the one
+  place the wire body is built — the dialog and its guard both go through it.
+- `components/detail/HeldOutCasesSection.tsx` — the sealed cases on the Sources view
+  (`masterwork_corpus_item` rows, `kind = "timeline"`, `metadata.role = "heldout"`), read with
+  `readAllRows`. Label · date · licence and NOTHING else: the query selects no narrative, no
+  step and no resolution, so there is nothing in the component's props to leak. THE DOOR LAW's
+  one deliberate exception here — a door onto a sealed case is a door onto the answer.
+- `components/detail/RuleMove.tsx` — the ONE renderer of a rule’s `move` half (`move.when` /
+  `move.next` — "When: …" / "Next: …" with the known/unknown chips and the 1–5 cost/risk
+  numbers), used by the rule card and the review wizard. Rendered directly UNDER
+  `RuleDecision`, never instead of it and never instead of `statement`.
 - `sourceTypes.ts` — 🚨 THE ONE LIST. Every Masterwork upload picker takes its
   `accept` from `MASTERWORK_UPLOAD_ACCEPT` and nowhere else, and that string is
   the server's own readable-type list (`aidream/aidream/services/distillation/
@@ -196,10 +235,159 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - `components/masterworks/AuditionDialog.tsx` — "Compare to the original" (the Audition). Opens
   prefilled with a finished run's own output when launched from the verdict, empty from the card.
   Streams `POST /masterworks/audition`; verdict event `masterwork_audition_verdict`.
+- `components/masterworks/AuditionDialog.tsx` also hosts the second exam as a tab:
+  `components/masterworks/UnfoldingAuditionPanel.tsx` — "A case it has never seen". Up to two
+  Masterworks of this Rulebook sit sealed cases under the case oracle (`mode: "unfolding"` on the
+  same audition endpoint; terminal event `masterwork_audition_unfolding_verdict`, own durable-run
+  surface `audition_unfolding` so a tab never rejoins the other tab's run), and the per-case table
+  shows each arm's diagnosis / dangerous branch / steps / cost / risk beside the headline.
+  Parsing + the past-score read: `audition/unfoldingRuns.ts`.
+- `unfolding/` — the sealed-case lane's client half (contract:
+  `../../../common-docs/systems/masterwork/unfolding-case-contract.md` §3/§5).
+  `sealedCases.ts` detects the `masterwork.case.disclose` node in a definition (reading BOTH
+  `type` and `data.spec_type`), resolves the Rulebook from `metadata.built_from_rulebook`, and
+  lists the held-out timeline corpus rows through `readAllRows` selecting **label + source_meta
+  only** — THE WITHHOLDING LAW means the sealed timeline never enters the browser.
+  `SealedCasePicker.tsx` is the picker + its honest empty/error states; `caseDisclosures.ts` is
+  the pure reader that finds the oracle's `case_disclosure` values in a run (emissions AND stored
+  outputs) and hands the surface the latest cumulative ledger.
+- The two unfolding kinds live in the kind registry, not here:
+  `features/content-ir/kinds/masterwork-unfolding.ts` (`case_disclosure`, `unfolding_ruling`) with
+  ONE component each under `components/mardown-display/blocks/masterwork-unfolding/`. Every
+  surface that shows a ledger or a ruling renders through them.
 - `components/masterworks/MasterworkDriftDialog.tsx` — the rule-level drift answer over
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
 ## Change Log
+
+- `2026-09-13` — **The frontend half of the convergence landed: BOTH decision halves render, from
+  ONE form.** Merging `main` (trial 8) into this branch, the ruling already applied on the server
+  was applied here: the FLAT policy shape keeps the contested key names (`kind`, `precondition`,
+  `next_action`, `action_kind`, `cost`, `risk` — prose strings and level enums on the rule, 592
+  live rows carrying `precondition` as a string), so `RuleFieldValues` (in `types.ts`, re-exported
+  from `RuleFields`), `policyRulePatch`, `improveFieldsFrom`, `RULE_POLICY_LEVELS` and the
+  "This is a decision rule" toggle survive unchanged; the STRUCTURED half keeps its own
+  uncontested `move` group (`RuleMoveFieldValues`, `ruleMoveFieldsFromRule`, `ruleMoveFromFields`).
+  `RuleFields` renders both blocks and is still THE ONE form: the flat decision block reads
+  `values` / `onChange`, and the move block reads the new OPTIONAL `move` / `onMoveChange` props —
+  a host with nowhere to put that half (the Final Checkup's SUGGESTION) passes neither and the
+  block is not rendered, which is why the checkup now omits `["quote", "isPolicy", "policy"]`.
+  `RuleEditorDialog` holds ONE `values` object (W58) beside the `policy` move state, `wasOpen`
+  starts false so a mount that starts open still restores the persisted draft, and its save spreads
+  `policyRulePatch(values)` (which clears the flat fields when the toggle is off) and then
+  `ruleMoveFromFields(policy, initial?.move)` (which carries every `move` field the form does not
+  own). The two lane-completion primitives both survived the merge — `useRunOutcome` (used by
+  triage, and the only one with a `when` filter) and `useRunResultOnce` (used by all four ingest
+  dialogs) — and `IngestSourceDialog` calls `useRunResultOnce` once, not both. **Unfinished:** two
+  hooks for one law is a duplicate nobody has collapsed yet, and `AddRulePanel` shows only the flat
+  half because it holds no `move` state.
+
+- `2026-09-13` — **Two trials built the rule's decision shape on the same two field names; the
+  592 live rows decided which one keeps them.** Trial 8 shipped a FLAT policy shape to `main`
+  (`kind` / `precondition` / `next_action` / `action_kind` / `cost` / `risk`, all strings,
+  rendered by `RuleDecision`) while trial 7 was building a STRUCTURED one on `precondition` and
+  `next_action` as objects. A census of `platform.rulebook` found **592 rules across 3 Rulebooks
+  carrying `precondition` as a JSON STRING and zero carrying it as an object**, so the branch as
+  written would have made every one of those rules read wrong through the typed reader. Reality
+  arbitrates fact against fact: the flat shape keeps the key names.
+  - Trial 7's structured halves moved into **`rule.move`**, its own uncontested group:
+    `RulePrecondition{summary, known, unknown}` folded into **`RuleMoveWhen`** at `move.when`
+    (it also carries `counterparty_state`, so one shape is a strict superset of both, nothing
+    lost), and `RuleNextAction` became **`RuleMoveNext`** at `move.next`. Mirrors
+    `aidream/services/distillation/distill.py` exactly.
+  - **One renderer per concept.** `RulePolicy.tsx` became
+    [`components/detail/RuleMove.tsx`](./components/detail/RuleMove.tsx) and reads `rule.move`;
+    `RuleDecision` (the incumbent) still owns the flat strings. They render as ONE block, decision
+    first and the move under it — two depths of one judgment, never two components competing for
+    the same fields. `RuleDecision` was not touched.
+  - `RULE_ACTION_KINDS` was declared TWICE in `types.ts` (six values for the flat half, nine for
+    the structured one); it is now declared once with the nine, which are a strict superset, and
+    the `distill.py` parity guard in `__tests__/policy-rule-surface.test.tsx` still holds.
+  - The form values renamed with their target (`RuleMoveFieldValues`, `ruleMoveFromFields`, …)
+    and now emit `{ move }`. `agent-context/rulebookDocument.ts` prints the flat decision lines
+    first and the move detail (including `move.ask`, verbatim) under them.
+  - `IngestTimelineDialog` now posts to `/masterworks/ingest-unfolding`: trial 8's timeline lane
+    is merged and keeps `/masterworks/ingest-timeline` and the `timeline` lane of
+    `IngestSourceDialog`, and this dialog is the only door that can SEAL a held-out exam case.
+    It reaches the registry through a real `{kind: "unfolding"}` lane in
+    `browse/approachLane.ts` rather than a hand-written query branch. **Unfinished:** two ingest
+    doors for one `timeline` Approach is a duplicate nobody has collapsed yet, and the generated
+    `api-types.ts` still lacks the new path until `pnpm sync-types` runs on a machine with
+    database access.
+
+- `2026-09-13` — **"Rebuilt <time>" dated the surviving build by the wrong clock (Bugbot, PR #222,
+  low severity, real).** The staleness ledger keeps two different moments and they were conflated:
+  `at` is when the last ATTEMPT finished — cleared when a new poke starts, rewritten when one
+  FAILS — while `result` deliberately survives a later failure, because the stand-in really is
+  still performing from the build that landed. `readUnderstudyStandIn` dated `result` by `at`, so
+  after a failed follow-up the card kept the right version and counts and stamped them with the
+  failure's clock, and during a pending poke it fell back to the workflow row's older timestamp.
+  The state now carries `resultAt` beside `result` (set on success, preserved through pending and
+  through failure) and `rebuiltAt` reads that. Guard
+  `features/masterwork/__tests__/understudy-refresh.test.ts` — two cases, both proven RED against
+  the old expression with `Date.now` driven by hand, because a real clock can hand two settles the
+  same millisecond and let the defect pass by luck.
+
+- `2026-09-12` — **Six review findings on the unfolding-case lane (Bugbot, PR #222), each fixed
+  at its class with a guard proven failing-then-passing.** **(1) A held-out timeline could show
+  the answer.** `parseTimelineSummary` kept the server's timeline byte for byte and handed it to
+  `KindInstanceRender`; the kind bridge withholds `resolution` only on `sealed: true`, so a
+  held-out payload carrying the outcome drew "how it turned out" under copy promising nobody
+  ever sees it. The ONE parser now seals and strips a held-out case on the way in
+  (`__tests__/timeline-intake.test.ts`). **(2) A finished ingest reloaded the Rulebook forever.**
+  All four ingest dialogs fired `onIngested` from an effect keyed on the callback, and every host
+  passes a new inline arrow every render — so the reload the callback started re-rendered the
+  dialog, which reloaded again. ONE primitive now owns it: `durable-run/useRunResultOnce.ts`
+  fires once per (run, result) pair, adopted by the timeline, source, chat-import and
+  body-of-work dialogs. **(3) A rejoined unfolding audition read as a failure.**
+  `parseUnfoldingVerdict` required the live event's `type`, but the durable row stores the table
+  without it, so every snapshot-settled run was refused as "an incomplete result"; the untyped
+  stored table is now accepted when it carries the case table plus a headline field, and a
+  payload carrying a DIFFERENT type is still refused. **(4) The policy fields vanished on
+  restore.** `precondition` / `next_action` were persisted nowhere, so a reload or a tidy restore
+  brought back the prose and reset "When:" / "Next:" from the live rule; the wizard draft now
+  carries them beside `fields` (`readPolicyFields`, validated — an unreadable half is absent, never
+  half-applied). **(5) A reused run box kept the previous Masterwork's sealed case.** `caseItemId`
+  is reset when the Masterwork or the disclose node changes, and the start guard asks the new
+  `chosenSealedCaseIsCurrent` — an id must be ON the list this desk is offering. **(6) The live
+  ledger could go backwards.** `readCaseDisclosures` concatenates emissions then stored outputs,
+  so a fresh emission for turn 5 followed by a stored output for turn 2 made the box draw the
+  older ledger; `latestCaseDisclosure` now ranks by the ledger's own monotonic `steps`.
+
+
+- `2026-09-12` — **The unfolding-case lane's frontend half (contract §1, §2, §5).** Three
+  additions, all additive; nothing any other lane does changes. **(1) Policy rule fields.**
+  `precondition` (summary + known/unknown) and `next_action` (kind, target, buys, cost, risk,
+  urgency) are two OPTIONAL fields on `RulebookRule`, rendered by ONE component
+  (`components/detail/RuleMove.tsx`) on the rule card and in the review wizard, carried to
+  every Rulebook-reading agent by `agent-context/rulebookDocument.ts`, and typed into the ONE
+  shared rule form (`RuleFields`; the Final Checkup passes `omitFields={["quote","policy"]}` —
+  a checkup suggestion has nowhere to put them, so rendering the inputs there would discard
+  what was typed). `statement` stays the whole rule in prose — THE ANTI-MISLEADING LAW; a
+  half-filled next action emits nothing rather than "Next: —". Guard:
+  `__tests__/policy-rule-fields.test.tsx`. **(2) The timeline intake.** `?intake=timeline` opens
+  `IngestTimelineDialog`; the run rides the ONE durable-run wire under its own surface
+  (`timeline`) and pointer, so a timeline never rejoins the single-source ingest dialog. On
+  completion the unfolded case renders through its kind component and the Expert is handed the
+  drafts (teaching) or the sealed list (held-out). Guard: `__tests__/timeline-intake.test.ts`
+  (the wire body, the refusals and their remedies, and the held-out summary that never mentions
+  an outcome). **(3) Sealed cases** on the Sources view, label/date/licence only. The
+  `serial_observation_timeline` kind itself lives in `features/content-ir/kinds/` with ONE
+  component (`components/mardown-display/blocks/masterwork-timeline/`); its registry rows ride
+  `migrations/content_ir_serial_observation_timeline_kind.sql` and until that is applied the
+  kind renders the generic viewer, which is correct, not broken. Cross-repo SoR:
+  `../../../common-docs/systems/masterwork/unfolding-case-contract.md`.
+
+- `2026-09-12` — **The unfolding case reached the UI (trial 7, lane WS-D2).** A Masterwork whose
+  workflow carries a `masterwork.case.disclose` node is a DESK: `TryMasterworkBox` now offers that
+  Rulebook's sealed (held-out) cases — label and published date only, never the timeline or the
+  resolution — sends the chosen one as the `case_item_id` run input stamped `human`, and draws the
+  oracle's cumulative ledger live through the new `case_disclosure` kind component (the Expert's
+  own answers still arrive through the ONE existing interrupt path; no spinner-only state). The
+  desk's terminal `unfolding_ruling` has its own component. The Audition gained the "A case it has
+  never seen" tab: desks × sealed cases × an optional vanilla arm told everything at once, scored
+  into a per-case table plus the desk-beats-vanilla headline. Guards: `TryMasterworkBox.test.tsx`
+  (the picker appears with the node and never without it; the W15 and W33 tests stay green).
 
 - `2026-09-13` — 🚨 **A triage session belongs to ONE Rulebook (Bugbot MEDIUM).** `RulebookDetailPage` is a single component instance reused as the route param changes — which is exactly why the ingest session drops on an id change — but the sort door kept a bare `useState(false)`, and `TriageDraftsDialog` kept `keep` / `set aside` / the preview switch in its own state at a stable position in the tree. So opening "Sort the drafts" on one Rulebook and moving to another left the dialog on screen holding the purpose she had typed for the Rulebook she left, and starting it there would have sorted THESE drafts against THAT purpose. Two halves. (1) The open flag now lives in `triage/triageSession.ts` (`useTriageDialogSession`), the same shape as `useIngestDialogSession`: stored WITH the id it was opened for and dropped during render the instant they differ — not merely filtered, or coming back would match again and reopen an empty dialog by itself. (2) The dialog is mounted `key={rulebook.id}`. A remount rather than an in-dialog reset, because the form fields are not the only state that carries: `useTriageRun` → `useDurableRun` reads its pointer ONCE per mount (`rejoinedRef`) and never re-reads it when the key changes, so without the remount a sort running on the Rulebook she left kept showing on the one she arrived at while that Rulebook's own run stayed invisible. The pointer key itself was already correct (`triage:<rulebookId>`). Tests in `triage/__tests__/triage-session-per-rulebook.test.tsx`: a purpose typed on Rulebook A is gone (replaced by B's own intake goal) when the sort is reopened on B, the dialog does not reopen itself on returning to A, a live sort shows only on the Rulebook it runs for, plus source-level guards that the page holds no bare boolean and does key the dialog. All five proven RED against the pre-fix shape.
 
@@ -255,6 +443,10 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   exceptions.
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
+
+- `2026-09-13` — 🚨 **The stand-in's banner stopped lying after a rebuild that worked, and overlapping rebuilds stopped clobbering each other.** Two defects in the staleness ledger shipped the day before: a successful `pokeUnderstudy` never reloaded the workflow row, so `behind` kept comparing the CACHED `rulebook_version` with the bumped Rulebook version and the amber "this stand-in is behind your rules" banner stayed up after a rebuild that actually landed (only the manual retry cleared it, because that path calls `onCreated`); and the ledger wrote pending/success/failure with no generation token, so two in-flight pokes — the normal case, the review wizard saves once per rule — could settle out of order and let an older failure bury a newer success, or an older success hide a newer failure. Now `readUnderstudyStandIn` derives the version, counts and rebuild time from whichever account is newer (the row, or the last successful refresh payload — which already returns `rulebook_version`, `approved_rules` and `unconfirmed_rules`, so no round trip is needed), and every ledger write is gated on a per-Rulebook generation token. Guard: `__tests__/understudy-refresh.test.ts` (4 cases, proven failing then passing). Found by Cursor Bugbot on PR #222.
+
+- `2026-09-12` — 🚨 **The Understudy could not be rebuilt, and the UI said nothing** (trial 12). Every `POST /masterworks/understudy/refresh` returned HTTP 500: the server's write to `workflow.definition` declared actor tier `code` and named no actor system, which Postgres refuses. So an existing Understudy never rebuilt and a brand-new Rulebook got none at all — "the system that runs from minute one" ran for nobody — while `pokeUnderstudy` caught the 500 into a `console.error`. The server half is fixed in aidream (`masterworks/understudy.py`, `build.py` now declare `masterwork_understudy` / `masterwork_build`). Here: the refresh outcome is recorded in a subscribable staleness ledger, `UnderstudyCard` shows a plain-English warning naming the version the stand-in performs from versus the Rulebook's current version plus a "Bring it up to date" retry, and the card now always shows that version, the baked approved/in-review counts and the last rebuild time (`understudy_refreshed_at` / `understudy_rules`, projected through `parseMasterworkRow`).
 
 - `2026-09-12` — 🚨 **The Conductor was promised a door that did not exist.** On `/masterwork/[id]/conduct` it reasoned its way to staging a rule through `apply_surface_write` / `rule_draft` and found no handler: the Rulebook surface declares the target, but only `RulebookDetailPage` registered it — every lane route mounted the surface with no write handlers at all. `RulebookLaneRoute` now registers `rule_draft`, validating through the ONE shared validator (`agent-context/ruleDraftInput.ts`, extracted from the detail page so both mounts hold one contract), staging into the SAME `RuleEditorDialog`, and landing the Expert's Save through the SAME canonical CAS upsert (`ruleSave.ts` → `upsertRuleWithRetry`, the Improve verb's existing landing) — saving still is not approving. The lane also publishes the `active_rule_draft` read twin and an honest `editor_open`. The class half lives in aidream: the server now advertises only the write targets the mounted page can actually apply. Guard: `features/masterwork/__tests__/rule-draft-write.test.ts` (agent value → validator → fake Rulebook, including draft-stays-draft and validate-then-apply refusals).
 

@@ -22,10 +22,10 @@ import type { paths } from "@/types/python-generated/api-types";
 import type { IngestLane } from "../../browse/approachLane";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
-import { useRunOutcome } from "../../durable-run/useRunOutcome";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -318,10 +318,12 @@ export function IngestSourceDialog({
 
   // Drafts that landed while the user was away still have to reach the page
   // behind this dialog.
-  // Once per finished run, never once per render — the page hands a fresh
-  // arrow down every render and its refresh re-renders the page (see
-  // `useRunOutcome`).
-  useRunOutcome(run, onIngested);
+  // ONCE PER COMPLETED RUN, never once per render: the page hands a fresh
+  // inline arrow down every render and the reload it starts re-renders this
+  // dialog, so firing on the callback's identity looped forever (Bugbot,
+  // PR #222). One primitive owns it — `useRunResultOnce`, the same one the
+  // three sibling ingest dialogs use.
+  useRunResultOnce(run, onIngested);
 
   useEffect(() => {
     if (run.error) toast.error(run.error);

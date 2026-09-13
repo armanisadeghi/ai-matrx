@@ -94,6 +94,29 @@ function ruleBlock(rule: RulebookRule): string[] {
   if (rule.rationale) lines.push(`Why: ${rule.rationale}`);
   if (rule.detection) lines.push(`Detection: ${rule.detection}`);
   if (rule.quote) lines.push(`Source words: ${rule.quote}`);
+  // THE MOVE (contract §2 + W70), under the flat decision lines above: the
+  // same judgment broken into the parts a machine can rank. `rule.move`, never
+  // `rule.precondition` — that key is the flat string printed above.
+  const when = rule.move?.when;
+  if (when) {
+    const parts = [`When (detail): ${when.summary}`];
+    if (when.known?.length) parts.push(`known: ${when.known.join(", ")}`);
+    if (when.unknown?.length)
+      parts.push(`still unknown: ${when.unknown.join(", ")}`);
+    if (when.counterparty_state?.length)
+      parts.push(`they are: ${when.counterparty_state.join(", ")}`);
+    lines.push(parts.join(" · "));
+  }
+  const next = rule.move?.next;
+  if (next) {
+    const parts = [`Next (detail): ${next.kind} ${next.target}`];
+    if (next.buys) parts.push(`buys: ${next.buys}`);
+    if (next.cost !== undefined) parts.push(`cost: ${next.cost} of 5`);
+    if (next.risk !== undefined) parts.push(`risk: ${next.risk} of 5`);
+    if (next.urgency) parts.push(`urgency: ${next.urgency}`);
+    lines.push(parts.join(" · "));
+  }
+  if (rule.move?.ask) lines.push(`Ask, verbatim: ${rule.move.ask}`);
   if (rule.relates_to?.length) {
     for (const rel of rule.relates_to) {
       lines.push(

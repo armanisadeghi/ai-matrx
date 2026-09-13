@@ -15,6 +15,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D316 — TWO hooks now enforce the fire-once law for a masterwork run, and the merge had to pick one
+
+Two trials independently fixed the same defect — a run's completion callback firing again on every re-render — with two different primitives, and BOTH survived the 2026-09-13 merge into `claude/trial-7`:
+
+- `features/masterwork/durable-run/useRunResultOnce.ts` (trial 7), consumed by the timeline, source, chat-import and body-of-work ingest dialogs — four callers.
+- `features/masterwork/durable-run/useRunOutcome.ts` (trial 8), consumed by the triage dialog — one caller, and the only user of its `when` filter.
+
+`IngestSourceDialog.tsx` was the one file where both sides' calls landed together; calling both would have fired `onIngested` TWICE, which is the very defect they each exist to stop. The merge kept `useRunResultOnce` there **by consumer count, not by a ruling** — worth stating plainly, because `main`'s own change log entry says it "KEPT `useRunOutcome`", so the two halves of the repo currently disagree about which primitive is canonical.
+
+**This is the W77 class again** (two trials, one concept, two implementations) and it is NOT resolved by the merge — the merge only stopped the double-fire in one file. Collapsing it means choosing one primitive, porting `when` onto it if that is the survivor, and repointing all five consumers. Left standing deliberately rather than decided under time pressure by whoever merged last; the unfinished-work alarm applies — neither hook is dead, and neither may be deleted on an agent's own authority.
+
+Two smaller things the same merge surfaced, both fixed in it: `RULE_ACTION_KINDS` converged to nine values while `RULE_ACTION_KIND_HINTS` still held six, so three kinds would have rendered a blank hint in the picker; and `EXPECTED_MS` carried a duplicate `timeline` key (an estimate and a measurement), where the measurement won. Still open and NOT fixed: the `rule_draft` write-target description in `agent-context/ruleDraftInput.ts` still tells agents the six old action kinds while nine are accepted.
+
 ### D314 — Tier-blind `seo.keyword_topic` readers remain beside the fixed Offering read (census 2026-09-12)
 
 `seo.gsc_keyword_topics_for` was fixed on 2026-09-12 to take its candidates from
