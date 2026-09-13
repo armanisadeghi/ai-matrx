@@ -24,9 +24,13 @@ export function createProtonPassWorkerMessageHandler(
     };
     active = operation;
     try {
+      if (request.file.size > request.limits.maxFileBytes)
+        throw new Error("limit");
+      const fileName = (request.file as Blob & { name?: string }).name;
       const isZip =
         request.file.type === "application/zip" ||
-        request.file.name?.endsWith(".zip");
+        request.file.type === "application/x-zip-compressed" ||
+        fileName?.toLowerCase().endsWith(".zip") === true;
       const archive = isZip
         ? await readProtonPassArchive(
             request.file,

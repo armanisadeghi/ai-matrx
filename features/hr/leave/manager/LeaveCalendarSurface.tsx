@@ -88,21 +88,54 @@ function isIsoDay(value: string | null): value is string {
  * reads as a whole one. A door is a `Link`; a peer's "Out" (no `href`) is a plain span, and the
  * two are visually different so nobody clicks at something that cannot open.
  */
-function EntryBand({ entry }: { entry: LeaveCalendarEntry }) {
+function EntryBand({
+  entry,
+  phone = false,
+}: {
+  entry: LeaveCalendarEntry;
+  phone?: boolean;
+}) {
   const partial = entry.partialDay === true;
   const body = (
     <>
-      <span className="truncate">{entry.employeeName ?? "Somebody"}</span>
-      <span className="truncate text-[10px] opacity-80">{entry.label ?? "Out"}</span>
+      <span className={phone ? "font-medium" : "truncate"}>
+        {entry.employeeName ?? "Somebody"}
+      </span>
+      <span
+        className={
+          phone ? "text-xs opacity-80" : "truncate text-[10px] opacity-80"
+        }
+      >
+        {entry.label ?? "Out"}
+      </span>
       {entry.hours !== null ? (
-        <span className="shrink-0 tabular-nums text-[10px] opacity-80">{entry.hours} h</span>
+        <span
+          className={
+            phone
+              ? "tabular-nums text-xs opacity-80"
+              : "shrink-0 tabular-nums text-[10px] opacity-80"
+          }
+        >
+          {entry.hours} h
+        </span>
+      ) : null}
+      {phone && partial ? (
+        <span className="text-xs opacity-80">Part of a day</span>
       ) : null}
     </>
   );
 
   const className = cn(
-    "flex w-full items-center gap-1 overflow-hidden rounded-sm px-1 text-[11px] leading-none",
-    partial ? "h-3.5 bg-primary/15 text-foreground" : "h-6 bg-primary/25 text-foreground",
+    phone
+      ? "flex min-h-11 w-full flex-wrap content-center gap-x-2 gap-y-0.5 rounded-md px-3 py-1.5 text-sm leading-tight"
+      : "flex w-full items-center gap-1 overflow-hidden rounded-sm px-1 text-[11px] leading-none",
+    phone
+      ? partial
+        ? "bg-primary/15 text-foreground"
+        : "bg-primary/25 text-foreground"
+      : partial
+        ? "h-3.5 bg-primary/15 text-foreground"
+        : "h-6 bg-primary/25 text-foreground",
   );
 
   if (!entry.href) {
@@ -120,6 +153,104 @@ function EntryBand({ entry }: { entry: LeaveCalendarEntry }) {
     >
       {body}
     </Link>
+  );
+}
+
+function completeDayLabel(day: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parseIsoDay(day));
+}
+
+export function LeaveCalendarPhoneDays({
+  days,
+  entriesByDay,
+  onClearSearch,
+}: {
+  days: string[];
+  entriesByDay: ReadonlyMap<string, LeaveCalendarEntry[]>;
+  onClearSearch: () => void;
+}) {
+  const occupiedDays = days.filter(
+    (day) => (entriesByDay.get(day) ?? []).length > 0,
+  );
+
+  if (occupiedDays.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 sm:hidden">
+        <p className="text-sm text-muted-foreground">
+          No absences match your search.
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-2 h-11"
+          onClick={onClearSearch}
+        >
+          Clear search
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex flex-col gap-3 sm:hidden"
+      data-testid="leave-calendar-phone-days"
+    >
+      {occupiedDays.map((day) => {
+        const entries = entriesByDay.get(day) ?? [];
+        return (
+          <section
+            key={day}
+            className="rounded-lg border border-border bg-card p-3"
+            aria-label={completeDayLabel(day)}
+          >
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">
+                {completeDayLabel(day)}
+              </h2>
+              {entries.length > 0 ? (
+                <span className="text-xs text-muted-foreground">
+                  {entries.length} out
+                </span>
+              ) : null}
+            </div>
+            <div className="flex flex-col gap-2">
+              {entries.map((entry, index) => (
+                <EntryBand
+                  key={`${entry.employmentId ?? "unknown"}-${index}`}
+                  entry={entry}
+                  phone
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+export function LeaveCalendarRangeEmptyState({
+  statement,
+  rangeLabel,
+}: {
+  statement: string;
+  rangeLabel: string;
+}) {
+  return (
+    <div className="flex flex-1 items-center justify-center rounded-lg border border-border bg-card p-8">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <CalendarDays className="h-6 w-6 text-muted-foreground" />
+        <p className="text-sm text-foreground">{statement}</p>
+        <p className="text-xs text-muted-foreground">{rangeLabel}</p>
+      </div>
+    </div>
   );
 }
 
@@ -165,7 +296,10 @@ function DayCell({
       </div>
       <div className="flex min-w-0 flex-col gap-0.5">
         {entries.map((entry, index) => (
-          <EntryBand key={`${entry.employmentId ?? "unknown"}-${index}`} entry={entry} />
+          <EntryBand
+            key={`${entry.employmentId ?? "unknown"}-${index}`}
+            entry={entry}
+          />
         ))}
       </div>
     </div>
@@ -224,7 +358,9 @@ export function LeaveCalendarSurface() {
     const all = calendar?.entries ?? [];
     const needle = search.trim().toLowerCase();
     if (needle === "") return all;
-    return all.filter((entry) => (entry.employeeName ?? "").toLowerCase().includes(needle));
+    return all.filter((entry) =>
+      (entry.employeeName ?? "").toLowerCase().includes(needle),
+    );
   }, [calendar, search]);
 
   const byDay = useMemo(() => {
@@ -241,7 +377,9 @@ export function LeaveCalendarSurface() {
   }, [entries, grid.days]);
 
   function goTo(nextAnchor: string, nextView: CalendarView = view) {
-    router.replace(leaveCalendarHref(orgRef, { on: nextAnchor, view: nextView }));
+    router.replace(
+      leaveCalendarHref(orgRef, { on: nextAnchor, view: nextView }),
+    );
   }
 
   const step = view === "month" ? 1 : 7;
@@ -260,30 +398,40 @@ export function LeaveCalendarSurface() {
       >
         <div className="flex h-full min-h-0 flex-col gap-3 p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-8 w-8 p-0"
-                aria-label={view === "month" ? "Previous month" : "Previous week"}
+                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
+                aria-label={
+                  view === "month" ? "Previous month" : "Previous week"
+                }
                 onClick={() =>
-                  goTo(view === "month" ? addMonths(anchor, -1) : addDays(anchor, -step))
+                  goTo(
+                    view === "month"
+                      ? addMonths(anchor, -1)
+                      : addDays(anchor, -step),
+                  )
                 }
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="min-w-44 text-center text-sm font-semibold text-foreground">
+              <span className="min-w-36 flex-1 text-center text-sm font-semibold text-foreground sm:min-w-44 sm:flex-none">
                 {view === "month" ? monthLabel(anchor) : weekLabel(anchor)}
               </span>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-8 w-8 p-0"
+                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
                 aria-label={view === "month" ? "Next month" : "Next week"}
                 onClick={() =>
-                  goTo(view === "month" ? addMonths(anchor, 1) : addDays(anchor, step))
+                  goTo(
+                    view === "month"
+                      ? addMonths(anchor, 1)
+                      : addDays(anchor, step),
+                  )
                 }
               >
                 <ChevronRight className="h-4 w-4" />
@@ -292,7 +440,7 @@ export function LeaveCalendarSurface() {
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="ml-1 h-8"
+                className="ml-1 h-11 sm:h-8"
                 onClick={() => goTo(todayIso())}
               >
                 Today
@@ -306,7 +454,7 @@ export function LeaveCalendarSurface() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Find a person on this screen"
-                  className="h-8 w-56 pl-7"
+                  className="h-11 w-full min-w-56 pl-7 sm:h-8 sm:w-56"
                   aria-label="Find a person among the absences shown"
                 />
               </div>
@@ -315,7 +463,7 @@ export function LeaveCalendarSurface() {
                   type="button"
                   size="sm"
                   variant={view === "month" ? "secondary" : "ghost"}
-                  className="h-8"
+                  className="h-11 sm:h-8"
                   onClick={() => goTo(anchor, "month")}
                 >
                   Month
@@ -324,7 +472,7 @@ export function LeaveCalendarSurface() {
                   type="button"
                   size="sm"
                   variant={view === "week" ? "secondary" : "ghost"}
-                  className="h-8"
+                  className="h-11 sm:h-8"
                   onClick={() => goTo(startOfWeek(anchor), "week")}
                 >
                   Week
@@ -339,18 +487,20 @@ export function LeaveCalendarSurface() {
             search happens to match nothing.
           */}
           {calendar?.emptyStatement && (calendar.entries.length ?? 0) === 0 ? (
-            <div className="flex flex-1 items-center justify-center rounded-lg border border-border bg-card p-8">
-              <div className="flex flex-col items-center gap-2 text-center">
-                <CalendarDays className="h-6 w-6 text-muted-foreground" />
-                <p className="text-sm text-foreground">{calendar.emptyStatement}</p>
-                <p className="text-xs text-muted-foreground">
-                  {view === "month" ? monthLabel(anchor) : weekLabel(anchor)}
-                </p>
-              </div>
-            </div>
+            <LeaveCalendarRangeEmptyState
+              statement={calendar.emptyStatement}
+              rangeLabel={
+                view === "month" ? monthLabel(anchor) : weekLabel(anchor)
+              }
+            />
           ) : (
             <div className="min-h-0 flex-1 overflow-auto">
-              <div className="grid grid-cols-7 gap-px">
+              <LeaveCalendarPhoneDays
+                days={grid.days}
+                entriesByDay={byDay}
+                onClearSearch={() => setSearch("")}
+              />
+              <div className="hidden grid-cols-7 gap-px sm:grid">
                 {WEEKDAY_LABELS.map((label) => (
                   <div
                     key={label}
@@ -378,7 +528,8 @@ export function LeaveCalendarSurface() {
 
           {search.trim() !== "" ? (
             <p className="text-xs text-muted-foreground">
-              Searching the absences already on this screen. It does not fetch anyone new.
+              Searching the absences already on this screen. It does not fetch
+              anyone new.
             </p>
           ) : null}
 
@@ -389,7 +540,8 @@ export function LeaveCalendarSurface() {
           {entries.some((entry) => entry.existenceStatement) ? (
             <p className="text-xs text-muted-foreground">
               {
-                entries.find((entry) => entry.existenceStatement)?.existenceStatement
+                entries.find((entry) => entry.existenceStatement)
+                  ?.existenceStatement
               }
             </p>
           ) : null}

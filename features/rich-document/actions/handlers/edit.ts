@@ -52,7 +52,7 @@ registerAction({
           });
           toast.success("Changes saved");
         } catch (err) {
-          preparedSource = acknowledgedPreparedSource(preparedSource, err) ?? preparedSource;
+          preparedSource = acknowledgedPreparedSource(preparedSource, err, newContent) ?? preparedSource;
           console.error(
             "[edit] save failed",
             JSON.stringify(serializeError(err), null, 2),

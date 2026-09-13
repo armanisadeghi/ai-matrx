@@ -6,6 +6,7 @@ import type {
 } from "@/features/rich-document/types";
 import type { Note } from "./types";
 import type { NoteSaveReceipt } from "./service/noteSaveErrors";
+import type { NoteRecord } from "./redux/notes.types";
 
 function validVersion(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
@@ -20,13 +21,38 @@ function displayedPhysicalSnapshot(note: Note): NoteDisplayedPhysicalSnapshot {
     label: note.label,
     folder_name: note.folder_name,
     folder_id: note.folder_id,
-    tags: note.tags,
-    metadata: note.metadata,
+    tags: structuredClone(note.tags),
+    metadata: structuredClone(note.metadata),
     visibility: note.visibility,
     position: note.position,
     project_id: note.project_id,
     task_id: note.task_id,
   };
+}
+
+/**
+ * The Redux editor must obtain its base from a separately retained full
+ * acknowledgement. `_fieldHistory` and the displayed record are never bases.
+ */
+export function captureNoteEditSourceFromRecord(args: {
+  record: NoteRecord;
+  displayedNote: Note;
+  actorId: string;
+  sourceId: string;
+  snapshotId: string;
+  actingSelection?: string;
+}): NoteEditableContentSource {
+  if (!args.record._acknowledgedPhysicalSnapshot) {
+    throw new Error("This note has no acknowledged full snapshot. Reload it before editing.");
+  }
+  return captureNoteEditSource({
+    acknowledgedNote: args.record._acknowledgedPhysicalSnapshot,
+    displayedNote: args.displayedNote,
+    actorId: args.actorId,
+    sourceId: args.sourceId,
+    snapshotId: args.snapshotId,
+    ...(args.actingSelection === undefined ? {} : { actingSelection: args.actingSelection }),
+  });
 }
 
 /** Identity-only triggers must be prepared through an authorized full-row read. */
@@ -111,12 +137,14 @@ export function isPreparedEditableNoteSource(source: ContentSource): source is N
 export function advancePreparedNoteSource(
   source: NoteEditableContentSource,
   receipt: NoteSaveReceipt,
+  submittedContent?: string,
 ): NoteEditableContentSource {
   const note = receipt.note;
   if (
     note.id !== source.noteId ||
     note.organization_id !== source.editBase.organizationId ||
     !validVersion(note.version)
+    || (submittedContent !== undefined && note.content !== submittedContent)
   ) {
     throw new Error("The acknowledged note receipt does not match this editor source.");
   }

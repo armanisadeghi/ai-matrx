@@ -110,8 +110,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import type { ContentSource } from "@/features/rich-document/types";
 import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
 import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
-import { captureNoteEditSource, noteIdentityContentSource } from "../richDocumentSource";
-import type { Note } from "../types";
+import { captureNoteEditSourceFromRecord, noteIdentityContentSource } from "../richDocumentSource";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -197,27 +196,20 @@ export function NoteContentEditor({
 
   // ── Local content state — initialized from Redux, synced back on debounce
   const [localContent, setLocalContent] = useState(reduxContent);
-  const [acknowledgedSourceNote, setAcknowledgedSourceNote] = useState<Note | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReduxRef = useRef(reduxContent);
   const noteIdRef = useRef(noteId);
   const localContentRef = useRef(localContent);
 
-  useEffect(() => {
-    if (noteExists && !noteExists._dirty) {
-      setAcknowledgedSourceNote({ ...noteExists });
-    }
-  }, [noteId, noteExists, noteExists?._dirty]);
-
   const editableContentSource: ContentSource | undefined =
-    acknowledgedSourceNote && conflictActorId && !readOnly && noteExists
-      ? captureNoteEditSource({
-          acknowledgedNote: acknowledgedSourceNote,
+    noteExists?._acknowledgedPhysicalSnapshot && conflictActorId && !readOnly
+      ? captureNoteEditSourceFromRecord({
+          record: noteExists,
           displayedNote: { ...noteExists, content: localContent },
           actorId: conflictActorId,
           sourceId: `content-editor:${instanceId}:${noteId}`,
-          snapshotId: `content-editor:${instanceId}:${noteId}:${acknowledgedSourceNote.version}:${localContent.length}`,
+          snapshotId: `content-editor:${instanceId}:${noteId}:${noteExists._acknowledgedPhysicalSnapshot.version}:${localContent.length}`,
         })
       : undefined;
 

@@ -611,6 +611,7 @@ const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUs
           version: settledBase.version,
           savedSnapshot,
           acknowledgedValues,
+          acknowledgedPhysicalSnapshot: receipt.note,
         }),
       );
     } catch (error) {
@@ -632,6 +633,7 @@ const saveNotePayload = createAsyncThunk<void, { noteId: string; expectedQueueUs
           version: settledBase.version,
           savedSnapshot: acknowledgedSnapshot,
           acknowledgedValues,
+          acknowledgedPhysicalSnapshot: error.receipt.note,
         }));
         if (error.receipt.postSaveRecoveryError) {
           console.error("Partial note context save needs a cache recovery", error.receipt.postSaveRecoveryError);

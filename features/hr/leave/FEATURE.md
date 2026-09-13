@@ -239,6 +239,8 @@ divergence banner.
 
 ## Change Log
 
+- **2026-09-12** — At phone widths, the leave queue keeps Balance on the start date and Managed by HR visible inside its existing horizontally contained table. The who's-out calendar renders the same `grid.days` / `byDay` data as stacked complete-date day sections: full names, server labels, disclosed hours, explicit partial-day wording, and 44px linked doors; peer entries stay plain text. The seven-column calendar and compact controls remain at `sm+`.
+
 - **2026-08-27** — Created. Employee self-service leave surface built against the five live
   `hr_leave_*` / `hr_my_time_off` RPCs (HRB-017). Replaced the `MePillarSurface` placeholder on
   `/hr/me/time-off` and removed the now-kept `hr.me.time-off` promise from

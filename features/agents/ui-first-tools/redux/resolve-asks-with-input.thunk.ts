@@ -8,16 +8,22 @@
  * agent side of that tool call never receives a result (a "failed tool call
  * with no result"). See `features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md`.
  *
- * So the submit is never allowed to leave an ask on deck. Instead we deliver the
- * composer text as the ANSWER to every pending ask:
+ * So the submit is never allowed to leave an ask on deck. Instead we deliver
+ * what the user already answered PLUS the composer text, per pending ask:
  *
- *   - text present → resolve each ask as a write-instead freeform reply
+ *   - the user answered it on the card (a draft in `ask-draft-registry`: a
+ *     picked option, typed text, a batch step they pressed Next on) → resolve
+ *     with THAT answer. Composer text, if any, rides along as
+ *     `additional_instructions` on the last drafted ask of each group — the
+ *     answers are the answers; the typed text is the note beside them. Answers
+ *     the user gave on the cards are never thrown away by a composer submit.
+ *   - not answered + text present → resolve as a write-instead freeform reply
  *     (`{wrote_instead, freeform}`) — identical to the card's "Write message
  *     instead" escape. For `approval`-kind asks this maps to "instructions"
  *     (the war-room dispatcher treats a freeform envelope as instructions), so a
  *     stray Send NEVER silently approves a destructive write.
- *   - text empty → cancel each ask (an empty, non-error tool result) so nothing
- *     dangles.
+ *   - not answered + text empty → cancel it (an empty, non-error tool result) so
+ *     nothing dangles.
  *
  * Resolving fires each ask's awaiting handler → `submitToolResult` →
  * `continuation_needed` → `resumeInstance`, so the conversation continues with
@@ -37,7 +43,8 @@ import {
   sweepPendingAsks,
 } from "./pending-asks.slice";
 import { resolveAskByCallId, cancelAskByCallId } from "./ask-resolver-registry";
-import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
+import { getAskDraft } from "./ask-draft-registry";
+import { EMPTY_ASK_RESPONSE, type AskUserResponse } from "../tools/schemas";
 
 /**
  * @returns `true` when it consumed the submit (asks were pending and at least
@@ -57,14 +64,40 @@ export function resolvePendingAsksWithInput(
     const trimmed = text.trim();
     let handledAny = false;
 
+    // The composer note rides on ONE answer per group (a batch = one group, a
+    // singleton = its own group): the last drafted ask, matching where the card
+    // itself would put it. `runBatched` bubbles the last non-empty note up.
+    const noteCarrier = new Map<string, string>();
     for (const ask of asks) {
-      const ok = trimmed
-        ? resolveAskByCallId(ask.callId, {
-            ...EMPTY_ASK_RESPONSE,
-            wrote_instead: true,
-            freeform: trimmed,
-          })
-        : cancelAskByCallId(ask.callId);
+      if (getAskDraft(ask.callId)) {
+        noteCarrier.set(ask.batchId ?? ask.callId, ask.callId);
+      }
+    }
+
+    for (const ask of asks) {
+      const draft = getAskDraft(ask.callId);
+      let ok: boolean;
+      let resolved: boolean;
+      if (draft) {
+        const carriesNote =
+          trimmed.length > 0 &&
+          noteCarrier.get(ask.batchId ?? ask.callId) === ask.callId;
+        const response: AskUserResponse = carriesNote
+          ? { ...draft, additional_instructions: trimmed }
+          : draft;
+        ok = resolveAskByCallId(ask.callId, response);
+        resolved = true;
+      } else if (trimmed) {
+        ok = resolveAskByCallId(ask.callId, {
+          ...EMPTY_ASK_RESPONSE,
+          wrote_instead: true,
+          freeform: trimmed,
+        });
+        resolved = true;
+      } else {
+        ok = cancelAskByCallId(ask.callId);
+        resolved = false;
+      }
 
       // No live resolver (should not happen for an active ask) → leave the card
       // visible rather than hiding a still-dangling tool call. Loud, not silent.
@@ -78,7 +111,7 @@ export function resolvePendingAsksWithInput(
 
       handledAny = true;
       dispatch(
-        trimmed
+        resolved
           ? resolvePendingAsk({ callId: ask.callId, conversationId })
           : cancelPendingAsk({ callId: ask.callId, conversationId }),
       );

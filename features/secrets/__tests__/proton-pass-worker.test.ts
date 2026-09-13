@@ -29,7 +29,7 @@ const json = JSON.stringify({
           createTime: 1,
           modifyTime: 1,
           pinned: false,
-          files: [],
+          files: ["x"],
         },
       ],
     },
@@ -55,7 +55,7 @@ describe("Proton Pass worker", () => {
         ok: true,
         requestId: "p",
         binaryMemberCount: 1,
-        records: [expect.objectContaining({ kind: "custom" })],
+        records: [expect.objectContaining({ status: "unsupported" })],
       }),
     ]);
   });
@@ -78,5 +78,23 @@ describe("Proton Pass worker", () => {
         error: "The Proton Pass export could not be read.",
       },
     ]);
+  });
+  test("enforces the file-size limit before reading a plain JSON Blob", async () => {
+    const responses: StructuredImportWorkerResponse[] = [];
+    const file = new Blob(["{}"]);
+    Object.defineProperty(file, "size", { value: 100_001 });
+    Object.defineProperty(file, "arrayBuffer", { value: jest.fn() });
+    const { createProtonPassWorkerMessageHandler } =
+      await import("../proton-pass.worker");
+    await createProtonPassWorkerMessageHandler((response) =>
+      responses.push(response),
+    )({
+      type: "parse",
+      requestId: "oversized",
+      file,
+      limits,
+    });
+    expect(file.arrayBuffer).not.toHaveBeenCalled();
+    expect(responses[0]).toMatchObject({ ok: false, requestId: "oversized" });
   });
 });

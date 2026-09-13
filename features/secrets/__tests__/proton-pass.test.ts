@@ -61,7 +61,25 @@ describe("Proton Pass export parser", () => {
         login({
           data: {
             ...login().data,
-            content: { ...(login().data as any).content, passkeys: [{}] },
+            content: {
+              ...(login().data as any).content,
+              passkeys: [
+                {
+                  keyId: "",
+                  content: "",
+                  credentialId: "",
+                  userHandle: "",
+                  domain: "",
+                  rpId: "",
+                  rpName: "",
+                  userName: "",
+                  userDisplayName: "",
+                  userId: "",
+                  note: "",
+                  createTime: 0,
+                },
+              ],
+            },
           },
         }),
       ),
@@ -69,5 +87,129 @@ describe("Proton Pass export parser", () => {
     );
     expect(record).toMatchObject({ status: "unsupported" });
     expect(record).not.toHaveProperty("sourceRecord");
+  });
+  test("keeps mode-zero projection ordered and duplicate-preserving", () => {
+    const [record] = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: {
+              ...(login().data as any).content,
+              urls: ["https://example.test", "https://example.test"],
+              autofillUrls: [
+                { url: "https://example.test", mode: 0 },
+                { url: "https://example.test", mode: 0 },
+                { url: "https://ignored.test", mode: 1 },
+              ],
+            },
+          },
+        }),
+      ),
+      limits,
+    );
+    expect(record).toMatchObject({
+      status: "supported",
+      urls: ["https://example.test", "https://example.test"],
+    });
+  });
+  test("rejects malformed protected passkey bytes without a source record", () => {
+    const [record] = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: {
+              ...(login().data as any).content,
+              passkeys: [
+                {
+                  keyId: "AA=A",
+                  content: "",
+                  credentialId: "",
+                  userHandle: "",
+                  domain: "",
+                  rpId: "",
+                  rpName: "",
+                  userName: "",
+                  userDisplayName: "",
+                  userId: "",
+                  note: "",
+                  createTime: 0,
+                },
+              ],
+            },
+          },
+        }),
+      ),
+      limits,
+    );
+    expect(record).toMatchObject({ status: "invalid" });
+    expect(record).not.toHaveProperty("sourceRecord");
+  });
+  test("rejects unknown closed root keys as a file-level error", () => {
+    expect(() =>
+      parseProtonPassExport(
+        JSON.stringify({ ...JSON.parse(source(login())), future: true }),
+        limits,
+      ),
+    ).toThrow("invalid");
+  });
+  test("classifies future login enums and legacy omission as source-free unsupported", () => {
+    const futureState = parseProtonPassExport(
+      source(login({ state: 3 })),
+      limits,
+    )[0];
+    const legacy = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: Object.fromEntries(
+              Object.entries((login().data as any).content).filter(
+                ([key]) => key !== "autofillUrls",
+              ),
+            ),
+          },
+        }),
+      ),
+      limits,
+    )[0];
+    expect(futureState).toMatchObject({ status: "unsupported" });
+    expect(legacy).toMatchObject({ status: "unsupported" });
+    expect(futureState).not.toHaveProperty("sourceRecord");
+    expect(legacy).not.toHaveProperty("sourceRecord");
+  });
+  test("classifies future URL and vault display enums as unsupported", () => {
+    const mode = parseProtonPassExport(
+      source(
+        login({
+          data: {
+            ...login().data,
+            content: {
+              ...(login().data as any).content,
+              autofillUrls: [{ url: "https://example.test", mode: 7 }],
+            },
+          },
+        }),
+      ),
+      limits,
+    )[0];
+    const icon = parseProtonPassExport(
+      JSON.stringify({
+        version: "1",
+        vaults: {
+          share: {
+            description: "",
+            display: { icon: 32 },
+            name: "Vault",
+            items: [login()],
+          },
+        },
+      }),
+      limits,
+    )[0];
+    expect(mode).toMatchObject({ status: "unsupported" });
+    expect(icon).toMatchObject({ status: "unsupported" });
+    expect(icon).not.toHaveProperty("sourceRecord");
   });
 });

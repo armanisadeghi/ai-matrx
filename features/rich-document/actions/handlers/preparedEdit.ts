@@ -46,7 +46,7 @@ export async function savePreparedContentEdit(args: {
     if (source.type === "note") {
       if (!isPreparedEditableNoteSource(source)) throw new Error("The note save source was not prepared.");
       if (!isReceipt(result)) throw new Error("The note save did not return an acknowledgement receipt.");
-      source = advancePreparedNoteSource(source, result);
+      source = advancePreparedNoteSource(source, result, newContent);
     }
     return source;
   } catch (error) {
@@ -56,7 +56,7 @@ export async function savePreparedContentEdit(args: {
     ) {
       // The physical row was acknowledged. Advance only this callback owner's
       // base, retain the rejected editor, and never adopt it into Redux.
-      advancePreparedNoteSource(source, error.receipt);
+      advancePreparedNoteSource(source, error.receipt, newContent);
     }
     throw error;
   }
@@ -66,12 +66,13 @@ export async function savePreparedContentEdit(args: {
 export function acknowledgedPreparedSource(
   source: ContentSource,
   error: unknown,
+  submittedContent?: string,
 ): ContentSource | null {
   if (
     source.type === "note" && isPreparedEditableNoteSource(source) &&
     (error instanceof NoteContextPartialSaveError || error instanceof NotePostAcknowledgementError)
   ) {
-    return advancePreparedNoteSource(source, error.receipt);
+    return advancePreparedNoteSource(source, error.receipt, submittedContent);
   }
   return null;
 }

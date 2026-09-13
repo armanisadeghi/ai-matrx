@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -27,16 +27,25 @@ export function RetiredApiSelectionNotice() {
   const adminOverrideShouldNotify = useAppSelector(
     selectRetiredEc2ServerOverrideNotice,
   );
+  const notifiedCurrentEpisode = useRef(false);
 
   useEffect(() => {
     if (staleAdminOverride) dispatch(migrateRetiredEc2ServerOverride());
   }, [dispatch, staleAdminOverride]);
 
   useEffect(() => {
-    if (!apiConfigShouldNotify && !adminOverrideShouldNotify) return;
-    toast.warning("The retired EC2 AI API selection was replaced with Production.", {
-      description: "AI requests now use server.app.matrxserver.com.",
-    });
+    const hasPendingNotice =
+      apiConfigShouldNotify || adminOverrideShouldNotify;
+    if (!hasPendingNotice) {
+      notifiedCurrentEpisode.current = false;
+      return;
+    }
+    if (!notifiedCurrentEpisode.current) {
+      notifiedCurrentEpisode.current = true;
+      toast.warning("The retired EC2 AI API selection was replaced with Production.", {
+        description: "AI requests now use server.app.matrxserver.com.",
+      });
+    }
     if (apiConfigShouldNotify) {
       dispatch(acknowledgeRetiredEc2ApiSelectionNotice());
     }

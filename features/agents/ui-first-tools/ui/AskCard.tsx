@@ -7,9 +7,15 @@
  *   1. The chat input is NEVER disabled by this card. The card sits ABOVE it
  *      in the same flex column.
  *   2. Each card has its own Answer action that resolves THAT ask alone.
- *   3. Each card also has Skip (cancels with `{cancelled: true}`).
- *   4. The user can type into the chat input freely; submitting the chat
- *      input does not affect the card.
+ *   3. THE USER IS NEVER FORCED TO ANSWER. Every body always offers exactly one
+ *      enabled primary action: "Send"/"Next" when there is content, "Skip"
+ *      when there is none (resolves `{cancelled: true}`). No button in this
+ *      family is ever rendered disabled — the label changes, the button stays
+ *      live. Yes/No, Approve/Reject and notify actions carry a Skip beside them.
+ *   4. The user can type into the chat input freely. Submitting the chat input
+ *      delivers whatever the user already answered on the cards (bodies publish
+ *      their in-progress answer through `onDraft` → `ask-draft-registry`) plus
+ *      the typed text — see `resolvePendingAsksWithInput`.
  *   5. Timeout: a thin bar at the bottom counts down. On expiry the card
  *      resolves with `{timed_out: true}`.
  *
@@ -44,7 +50,7 @@
  *   When `batchTotal > 1`, the card shows an "N of M" pill.
  */
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Info,
   AlertTriangle,
@@ -79,8 +85,17 @@ import {
 } from "../redux/ask-resolver-registry";
 import type { AskUserResponse, UserAskOption } from "../tools/schemas";
 import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
+import { getAskDraft, setAskDraft } from "../redux/ask-draft-registry";
 import { AskCardCountdown } from "./AskCardCountdown";
 import { AgentCardShell, type AccentTone } from "./AgentCardShell";
+
+/** Labels for the one primary action a body shows: `send` when it has content, `skip` when not. */
+export interface AskActionLabels {
+  send: string;
+  skip: string;
+}
+
+const SINGLE_LABELS: AskActionLabels = { send: "Send", skip: "Skip" };
 
 const OTHER_SENTINEL = "__matrx_other__";
 
@@ -273,6 +288,7 @@ export function AskCard({ ask }: AskCardProps) {
           value={writeText}
           onChange={setWriteText}
           onSend={sendWriteInstead}
+          onSkip={skip}
           onBack={() => {
             setWriteMode(false);
             setWriteText("");
@@ -280,7 +296,13 @@ export function AskCard({ ask }: AskCardProps) {
         />
       ) : (
         <div className="flex flex-col gap-2">
-          <AskBody ask={ask} onAnswer={answer} isLast={isLast} />
+          <AskBody
+            ask={ask}
+            onAnswer={answer}
+            onSkip={skip}
+            onDraft={(r) => setAskDraft(ask.callId, r)}
+            labels={SINGLE_LABELS}
+          />
           {showNote && (
             <div className="mt-1 flex flex-col gap-1.5 border-t border-border/60 pt-2.5">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -316,13 +338,17 @@ export function WriteInsteadBody({
   value,
   onChange,
   onSend,
+  onSkip,
   onBack,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
+  /** Empty box → the primary action becomes Skip (never a disabled Send). */
+  onSkip: () => void;
   onBack: () => void;
 }) {
+  const hasText = value.trim().length > 0;
   return (
     <div className="flex flex-col gap-2">
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -342,12 +368,12 @@ export function WriteInsteadBody({
       <div className="flex items-center gap-2">
         <Button
           size="sm"
-          onClick={onSend}
-          disabled={!value.trim()}
+          variant={hasText ? "default" : "outline"}
+          onClick={hasText ? onSend : onSkip}
           className="gap-1.5"
         >
-          <Send className="size-3.5" />
-          Send
+          {hasText && <Send className="size-3.5" />}
+          {hasText ? "Send" : "Skip"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onBack}>
           Back to questions
@@ -360,58 +386,81 @@ export function WriteInsteadBody({
 interface AskBodyProps {
   ask: PendingAsk;
   onAnswer: (r: AskUserResponse) => void;
-  /** True when this is the only / last card — drives the "Send" vs "Next" button label. */
-  isLast?: boolean;
+  /** Skip THIS question. Always reachable — the primary button becomes Skip when the body is empty. */
+  onSkip: () => void;
+  /**
+   * Publishes the body's latest submittable answer (or null once it is empty
+   * again) so a submit from the chat composer can carry it. Fired on every
+   * change; the parent forwards it to `ask-draft-registry`.
+   */
+  onDraft?: (r: AskUserResponse | null) => void;
+  labels: AskActionLabels;
 }
 
-export function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
+/**
+ * Publish the body's current answer to the draft registry whenever it changes.
+ * Bodies seed their initial state FROM the registry (`getAskDraft`), so a
+ * remount — the zone flipping between its desktop and mobile presentations, a
+ * route re-entry — restores what the user typed or picked instead of wiping it.
+ */
+function useDraft(
+  onDraft: AskBodyProps["onDraft"],
+  draft: AskUserResponse | null,
+) {
+  // Serialize so the effect keys on content, not on a fresh object identity.
+  const key = JSON.stringify(draft);
+  useEffect(() => {
+    onDraft?.(draft);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` is the content identity of `draft`
+  }, [key]);
+}
+
+/** The one primary button: Send/Next when the body has content, Skip otherwise. Never disabled. */
+function PrimaryAction({
+  hasContent,
+  labels,
+  onSend,
+  onSkip,
+  className,
+}: {
+  hasContent: boolean;
+  labels: AskActionLabels;
+  onSend: () => void;
+  onSkip: () => void;
+  className?: string;
+}) {
+  return (
+    <Button
+      size="sm"
+      variant={hasContent ? "default" : "outline"}
+      onClick={hasContent ? onSend : onSkip}
+      className={cn("gap-1.5", className)}
+    >
+      {hasContent && <Send className="size-3.5" />}
+      {hasContent ? labels.send : labels.skip}
+    </Button>
+  );
+}
+
+export function AskBody(props: AskBodyProps) {
+  const { ask } = props;
   switch (ask.kind) {
     case "confirm":
-      return <ConfirmBody ask={ask} onAnswer={onAnswer} isLast={isLast} />;
+      return <ConfirmBody {...props} />;
     case "choice":
-      return (
-        <ChoiceBody
-          ask={ask}
-          multi={false}
-          onAnswer={onAnswer}
-          isLast={isLast}
-        />
-      );
+      return <ChoiceBody {...props} multi={false} />;
     case "choice_many":
-      return (
-        <ChoiceBody
-          ask={ask}
-          multi={true}
-          onAnswer={onAnswer}
-          isLast={isLast}
-        />
-      );
+      return <ChoiceBody {...props} multi={true} />;
     case "text":
-      return (
-        <TextBody
-          ask={ask}
-          secret={false}
-          onAnswer={onAnswer}
-          isLast={isLast}
-        />
-      );
+      return <TextBody {...props} secret={false} />;
     case "secret":
-      return (
-        <TextBody ask={ask} secret={true} onAnswer={onAnswer} isLast={isLast} />
-      );
+      return <TextBody {...props} secret={true} />;
     case "notify":
-      return <NotifyBody ask={ask} onAnswer={onAnswer} />;
+      return <NotifyBody {...props} />;
     case "plan_approval":
-      return <PlanApprovalBody ask={ask} onAnswer={onAnswer} />;
+      return <PlanApprovalBody {...props} />;
     case "takeover":
-      return (
-        <TextBody
-          ask={ask}
-          secret={false}
-          onAnswer={onAnswer}
-          isLast={isLast}
-        />
-      );
+      return <TextBody {...props} secret={false} />;
     case "approval":
     case "sms_action_authorization":
     case "email_review":
@@ -419,12 +468,26 @@ export function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
   }
 }
 
-function ConfirmBody({ ask, onAnswer, isLast }: AskBodyProps) {
-  const [otherMode, setOtherMode] = useState(false);
-  const [otherText, setOtherText] = useState("");
+function ConfirmBody({
+  ask,
+  onAnswer,
+  onSkip,
+  onDraft,
+  labels,
+}: AskBodyProps) {
+  const seed = getAskDraft(ask.callId)?.freeform ?? "";
+  const [otherMode, setOtherMode] = useState(seed.length > 0);
+  const [otherText, setOtherText] = useState(seed);
+  const text = otherText.trim();
+
+  useDraft(
+    onDraft,
+    otherMode && text
+      ? { ...EMPTY_ASK_RESPONSE, confirmed: null, freeform: text }
+      : null,
+  );
 
   function sendOther() {
-    const text = otherText.trim();
     if (!text) return;
     onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: null, freeform: text });
   }
@@ -444,9 +507,12 @@ function ConfirmBody({ ask, onAnswer, isLast }: AskBodyProps) {
           }}
         />
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={sendOther} disabled={!otherText.trim()}>
-            {isLast === false ? "Next" : "Send"}
-          </Button>
+          <PrimaryAction
+            hasContent={text.length > 0}
+            labels={labels}
+            onSend={sendOther}
+            onSkip={onSkip}
+          />
           <Button
             size="sm"
             variant="ghost"
@@ -463,7 +529,7 @@ function ConfirmBody({ ask, onAnswer, isLast }: AskBodyProps) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Button
         size="sm"
         onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: true })}
@@ -481,9 +547,17 @@ function ConfirmBody({ ask, onAnswer, isLast }: AskBodyProps) {
         size="sm"
         variant="ghost"
         onClick={() => setOtherMode(true)}
-        className="ml-auto text-muted-foreground hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground"
       >
         Other…
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={onSkip}
+        className="ml-auto text-muted-foreground hover:text-foreground"
+      >
+        {labels.skip}
       </Button>
     </div>
   );
@@ -493,10 +567,18 @@ function ChoiceBody({
   ask,
   multi,
   onAnswer,
-  isLast,
+  onSkip,
+  onDraft,
+  labels,
 }: AskBodyProps & { multi: boolean }) {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [otherText, setOtherText] = useState("");
+  const [selected, setSelected] = useState<string[]>(() => {
+    const seed = getAskDraft(ask.callId);
+    if (!seed?.selected) return [];
+    return seed.selected.map((l) => (l === "Other" ? OTHER_SENTINEL : l));
+  });
+  const [otherText, setOtherText] = useState(
+    () => getAskDraft(ask.callId)?.freeform ?? "",
+  );
   const [focusedIdx, setFocusedIdx] = useState(0);
   const options: UserAskOption[] = useMemo(
     () => ask.options ?? [],
@@ -517,25 +599,27 @@ function ChoiceBody({
     }
   }
 
-  function submit() {
-    if (selected.length === 0) return;
-    const hasOther = selected.includes(OTHER_SENTINEL);
-    const labels = selected.filter((s) => s !== OTHER_SENTINEL);
-    if (hasOther) {
-      if (!otherText.trim()) return;
-      labels.push("Other");
-      onAnswer({
+  // The answer as it stands right now, or null when nothing is answerable yet.
+  // "Other" ticked with an empty box counts as nothing (the user may still be
+  // typing); the picked labels alone still count.
+  const draft = useMemo<AskUserResponse | null>(() => {
+    const picked = selected.filter((s) => s !== OTHER_SENTINEL);
+    const other = otherSelected ? otherText.trim() : "";
+    if (other) {
+      return {
         ...EMPTY_ASK_RESPONSE,
-        selected: labels,
-        freeform: otherText,
-      });
-      return;
+        selected: [...picked, "Other"],
+        freeform: other,
+      };
     }
-    onAnswer({ ...EMPTY_ASK_RESPONSE, selected: labels });
-  }
+    if (picked.length === 0) return null;
+    return { ...EMPTY_ASK_RESPONSE, selected: picked };
+  }, [selected, otherSelected, otherText]);
+  useDraft(onDraft, draft);
 
-  const canSubmit =
-    selected.length > 0 && (!otherSelected || otherText.trim().length > 0);
+  function submit() {
+    if (draft) onAnswer(draft);
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -605,9 +689,12 @@ function ChoiceBody({
         )}
       </div>
       <div>
-        <Button size="sm" onClick={submit} disabled={!canSubmit}>
-          {isLast === false ? "Next" : "Send"}
-        </Button>
+        <PrimaryAction
+          hasContent={draft !== null}
+          labels={labels}
+          onSend={submit}
+          onSkip={onSkip}
+        />
       </div>
     </div>
   );
@@ -617,13 +704,20 @@ function TextBody({
   ask,
   secret,
   onAnswer,
-  isLast,
+  onSkip,
+  onDraft,
+  labels,
 }: AskBodyProps & { secret: boolean }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(
+    () => getAskDraft(ask.callId)?.answer ?? "",
+  );
   const [show, setShow] = useState(false);
+  const hasText = value.trim().length > 0;
+
+  useDraft(onDraft, hasText ? { ...EMPTY_ASK_RESPONSE, answer: value } : null);
 
   function submit() {
-    if (!value.trim()) return;
+    if (!hasText) return;
     // Keep the value after submit: in a batch wizard the body stays mounted and
     // the user may navigate back to review/edit their answer. In the single-ask
     // flow the card resolves + unmounts immediately, so this is a no-op there.
@@ -666,15 +760,12 @@ function TextBody({
         />
       )}
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={submit}
-          disabled={!value.trim()}
-          className="gap-1.5"
-        >
-          <Send className="size-3.5" />
-          {isLast === false ? "Next" : "Send"}
-        </Button>
+        <PrimaryAction
+          hasContent={hasText}
+          labels={labels}
+          onSend={submit}
+          onSkip={onSkip}
+        />
         <span className="text-[11px] text-muted-foreground">
           {secret ? "Stored only for this call." : "Cmd/Ctrl+Enter to submit"}
         </span>
@@ -683,13 +774,26 @@ function TextBody({
   );
 }
 
-function NotifyBody({ ask, onAnswer }: AskBodyProps) {
-  const [freeform, setFreeform] = useState("");
-  const [showOther, setShowOther] = useState(false);
+function NotifyBody({ ask, onAnswer, onDraft }: AskBodyProps) {
+  const seed = getAskDraft(ask.callId)?.freeform ?? "";
+  const [freeform, setFreeform] = useState(seed);
+  const [showOther, setShowOther] = useState(seed.length > 0);
+  const hasText = freeform.trim().length > 0;
+
+  useDraft(
+    onDraft,
+    showOther && hasText
+      ? { ...EMPTY_ASK_RESPONSE, action: "Other", freeform }
+      : null,
+  );
 
   function sendOther() {
-    if (!freeform.trim()) return;
+    if (!hasText) return;
     onAnswer({ ...EMPTY_ASK_RESPONSE, action: "Other", freeform });
+  }
+
+  function dismiss() {
+    onAnswer({ ...EMPTY_ASK_RESPONSE, action: "dismiss", freeform: null });
   }
 
   return (
@@ -723,13 +827,7 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() =>
-              onAnswer({
-                ...EMPTY_ASK_RESPONSE,
-                action: "dismiss",
-                freeform: null,
-              })
-            }
+            onClick={dismiss}
             className="ml-auto text-muted-foreground hover:text-foreground"
           >
             Dismiss
@@ -750,9 +848,12 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
             }}
           />
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={sendOther} disabled={!freeform.trim()}>
-              Send
-            </Button>
+            <PrimaryAction
+              hasContent={hasText}
+              labels={{ send: "Send", skip: "Dismiss" }}
+              onSend={sendOther}
+              onSkip={dismiss}
+            />
             <Button
               size="sm"
               variant="ghost"
@@ -770,7 +871,7 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
   );
 }
 
-function PlanApprovalBody({ ask, onAnswer }: AskBodyProps) {
+function PlanApprovalBody({ ask, onAnswer, onSkip, labels }: AskBodyProps) {
   const plan = ask.plan;
   return (
     <div className="flex flex-col gap-2">
@@ -822,6 +923,14 @@ function PlanApprovalBody({ ask, onAnswer }: AskBodyProps) {
         >
           <Circle className="size-3.5" />
           Reject
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onSkip}
+          className="ml-auto text-muted-foreground hover:text-foreground"
+        >
+          {labels.skip}
         </Button>
       </div>
     </div>

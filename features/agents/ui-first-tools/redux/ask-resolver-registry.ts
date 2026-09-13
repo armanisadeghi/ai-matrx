@@ -15,6 +15,7 @@
 
 import type { AskUserResponse } from "../tools/schemas";
 import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
+import { clearAskDraft } from "./ask-draft-registry";
 
 type Resolver = (response: AskUserResponse) => void;
 
@@ -31,6 +32,8 @@ export function resolveAskByCallId(
   const r = resolvers.get(callId);
   if (!r) return false;
   resolvers.delete(callId);
+  // Every resolution path ends the draft's life with the ask.
+  clearAskDraft(callId);
   try {
     r(response);
   } catch (err) {
