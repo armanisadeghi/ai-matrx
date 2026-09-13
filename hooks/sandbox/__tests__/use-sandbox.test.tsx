@@ -1,5 +1,6 @@
 import { renderHook } from "@/test-utils/renderHook";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
+import { useState } from "react";
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "organization-1",
@@ -51,6 +52,34 @@ describe("useSandboxInstances list pagination", () => {
     });
 
     expect(hook.current.loading).toBe(false);
+    await hook.unmount();
+  });
+
+  it("hides rows from the previous project before the next project fetch settles", async () => {
+    const fetchMock = jest.fn(async (_input: RequestInfo | URL) =>
+      listResponse(["project-one"], 1, false),
+    );
+    installFetch(fetchMock);
+
+    const hook = await renderHook(() => {
+      const [projectId, setProjectId] = useState("project-one");
+      return { ...useSandboxInstances(projectId), setProjectId };
+    });
+    await hook.act(async () => {
+      await hook.current.fetchInstances();
+    });
+    expect(hook.current.instances.map((instance) => instance.id)).toEqual([
+      "project-one",
+    ]);
+
+    await hook.act(() => {
+      hook.current.setProjectId("project-two");
+    });
+
+    expect(hook.current.instances).toEqual([]);
+    expect(hook.current.total).toBe(0);
+    expect(hook.current.error).toBeNull();
+    expect(hook.current.loading).toBe(true);
     await hook.unmount();
   });
 

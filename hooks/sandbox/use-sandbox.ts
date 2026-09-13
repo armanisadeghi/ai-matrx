@@ -63,16 +63,12 @@ export function useSandboxInstances(projectId?: string) {
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const hasFetchedOnce = useRef(false);
+  const [listProjectId, setListProjectId] = useState(projectId);
+  const listProjectIdRef = useRef(projectId);
   const listRequestId = useRef(0);
   const listAbortController = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    hasFetchedOnce.current = false;
-    setInstances([]);
-    setTotal(0);
-    setError(null);
-    setLoading(true);
-
     return () => {
       listRequestId.current += 1;
       listAbortController.current?.abort();
@@ -189,6 +185,8 @@ export function useSandboxInstances(projectId?: string) {
         setInstances(uniqueInstances);
         setTotal(data.pagination.total);
         hasFetchedOnce.current = true;
+        listProjectIdRef.current = projectId;
+        setListProjectId(projectId);
         return { ...data, instances: uniqueInstances };
       } catch (err) {
         if (listRequestId.current !== requestId) return null;
@@ -196,6 +194,12 @@ export function useSandboxInstances(projectId?: string) {
           return null;
         }
         const msg = err instanceof Error ? err.message : "Unknown error";
+        if (listProjectIdRef.current !== projectId) {
+          setInstances([]);
+          setTotal(0);
+          listProjectIdRef.current = projectId;
+          setListProjectId(projectId);
+        }
         setError(msg);
         return null;
       } finally {
@@ -210,6 +214,8 @@ export function useSandboxInstances(projectId?: string) {
     },
     [projectId],
   );
+
+  const showingCurrentProject = listProjectId === projectId;
 
   const createInstance = useCallback(
     async (
@@ -488,11 +494,11 @@ export function useSandboxInstances(projectId?: string) {
   );
 
   return {
-    instances,
-    loading,
-    refreshing,
-    error,
-    total,
+    instances: showingCurrentProject ? instances : [],
+    loading: showingCurrentProject ? loading : true,
+    refreshing: showingCurrentProject ? refreshing : false,
+    error: showingCurrentProject ? error : null,
+    total: showingCurrentProject ? total : 0,
     fetchInstances,
     createInstance,
     renameInstance,
