@@ -159,6 +159,96 @@
         }
       }
     },
+    "/auth/session/exchange": {
+      "post": {
+        "tags": [
+          "Auth",
+          "Auth"
+        ],
+        "summary": "Exchange Session Handoff",
+        "description": "Trade the one-time handoff code from ``/auth/callback`` for the token.\n\nTHE reason this endpoint exists: the access token must never ride a query\nstring (feedback 08b3fdc0). ``/auth/callback`` redirects the SPA with an\nunguessable, single-use, 120-second code; the token itself comes back here,\nin a response body. Unauthenticated by design — the code IS the credential,\nand it is burned on first use.",
+        "operationId": "exchange_session_handoff_auth_session_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionExchangeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/session/oauth-incident": {
+      "post": {
+        "tags": [
+          "Auth",
+          "Auth"
+        ],
+        "summary": "Report Oauth Incident",
+        "description": "A client refused a URL carrying a token; file the ``oauth_token_in_query``.\n\nNothing we ship emits that shape any more, so a report here means a stale\nbuild or a forged link is live somewhere and someone must delete it. The\nclient has already refused the token — this is the scream, not the defence.",
+        "operationId": "report_oauth_incident_auth_session_oauth_incident_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Report Oauth Incident Auth Session Oauth Incident Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/whoami": {
       "get": {
         "tags": [
@@ -44828,10 +44918,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK).",
+              "description": "Optional event filter (OK|FAIL|DELEGATED|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK|VARIANT_RECOVERED|ALIAS_RECOVERED|INFERRED|COERCED).",
               "title": "Event"
             },
-            "description": "Optional event filter (OK|FAIL|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK)."
+            "description": "Optional event filter (OK|FAIL|DELEGATED|SURFACE_REJECT|NO_EXECUTOR|LOOP_BLOCK|VARIANT_RECOVERED|ALIAS_RECOVERED|INFERRED|COERCED)."
           },
           {
             "name": "tool_name",
@@ -182451,6 +182541,27 @@
         ],
         "title": "NutshellCRMServiceStatus"
       },
+      "OAuthIncidentRequest": {
+        "properties": {
+          "params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Params"
+          },
+          "where": {
+            "type": "string",
+            "title": "Where"
+          }
+        },
+        "type": "object",
+        "required": [
+          "params",
+          "where"
+        ],
+        "title": "OAuthIncidentRequest"
+      },
       "OAuthTokenPersistRequest": {
         "properties": {
           "tokens": {
@@ -221293,6 +221404,37 @@
         "title": "ServiceLine",
         "description": "One service with its OWN footprint and customer.\n\nThe whole reason this type exists: All Green is national for IT asset\ndisposition and Southern-California-only for small-business e-waste pickup,\nso a national ITAD rival is not a competitor for local pickup. Market\noverlap is a property of (service line x geography) — never of a company."
       },
+      "SessionExchangeRequest": {
+        "properties": {
+          "handoff": {
+            "type": "string",
+            "title": "Handoff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "handoff"
+        ],
+        "title": "SessionExchangeRequest"
+      },
+      "SessionExchangeResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type"
+        ],
+        "title": "SessionExchangeResponse"
+      },
       "SessionPayload": {
         "properties": {
           "id": {
@@ -240019,13 +240161,6 @@
           },
           "event": {
             "type": "string",
-            "enum": [
-              "FAIL",
-              "LOOP_BLOCK",
-              "NO_EXECUTOR",
-              "OK",
-              "SURFACE_REJECT"
-            ],
             "title": "Event"
           },
           "tool_name": {
@@ -254002,6 +254137,7 @@
               "access_revoked",
               "already_bootstrapped",
               "audience_mismatch",
+              "bootstrap_in_progress",
               "browser_controlled_by_human",
               "browser_crashed",
               "capture_target_missing",
@@ -258313,6 +258449,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sandbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SandboxBindingRequest"
               },
               {
                 "type": "null"
