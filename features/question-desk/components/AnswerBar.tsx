@@ -30,7 +30,10 @@
 
 import type { RefObject } from "react";
 import { Mic, Volume2, VolumeX } from "lucide-react";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  ProTextarea,
+  type ProTextareaElement,
+} from "@/components/official/ProTextarea";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { cn } from "@/lib/utils";
 import type { DictationAudio } from "../hooks/useDictationAudio";
@@ -54,10 +57,17 @@ export interface AnswerBarProps {
   draftStorageError: string | null;
   /** True once the mic put words in the box — the save records that. */
   draftFromVoice: boolean;
-  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  /**
+   * The write box's node, typed as `ProTextareaElement` so the interview can
+   * drive its microphone (`startDictation` / `stopDictation` / `isDictating`)
+   * without this surface owning a recorder of its own.
+   */
+  textareaRef: RefObject<ProTextareaElement | null>;
   onTranscriptionComplete: (text: string) => void;
   audio: DictationAudio;
   onOpenWrite: () => void;
+  /** Open the box and start its microphone — the V key's other door. */
+  onAnswerByVoice: () => void;
   onTakeRecommendation: () => void;
   onSkip: () => void;
   onHandBack: () => void;
@@ -97,6 +107,7 @@ export function AnswerBar(props: AnswerBarProps) {
     onTranscriptionComplete,
     audio,
     onOpenWrite,
+    onAnswerByVoice,
     onTakeRecommendation,
     onSkip,
     onHandBack,
@@ -152,7 +163,7 @@ export function AnswerBar(props: AnswerBarProps) {
         </div>
 
         <div className="mb-2.5 flex flex-wrap gap-2">
-          <Act keyCap="V" onClick={onOpenWrite} busy={busy}>
+          <Act keyCap="V" onClick={onAnswerByVoice} busy={busy}>
             <Mic className="size-3.5" aria-hidden />
             Answer by voice
           </Act>
@@ -186,7 +197,7 @@ export function AnswerBar(props: AnswerBarProps) {
               )}
             >
               <ProTextarea
-                ref={textareaRef}
+                ref={textareaRef as RefObject<HTMLTextAreaElement>}
                 value={draftText}
                 onChange={(event) => onDraftChange(event.target.value)}
                 onTranscriptionComplete={onTranscriptionComplete}
@@ -217,7 +228,8 @@ export function AnswerBar(props: AnswerBarProps) {
                 </button>
               ) : null}
               <span className="font-mono text-[10.5px] text-muted-foreground">
-                To speak it, tap the microphone at the top-right of the box.
+                To speak it, press V or tap the microphone at the top-right of
+                the box. Esc stops the microphone.
               </span>
             </div>
             {draftFromVoice ? (

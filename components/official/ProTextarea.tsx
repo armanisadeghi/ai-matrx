@@ -14,6 +14,22 @@
  *   `enableVoice={false}` to hide the mic + all recording/transcribing
  *   indicators when the host owns recording itself (e.g. a pad whose own
  *   toolbar mic streams into this same controlled value).
+ *   **Programmatic control** — the forwarded ref is a real
+ *   `HTMLTextAreaElement` carrying `startDictation()` / `stopDictation()` /
+ *   `isDictating()` (type it as `ProTextareaElement`), so a keyboard-first
+ *   surface can start the mic on a key press without a second recorder:
+ *   ```tsx
+ *   const box = useRef<ProTextareaElement | null>(null);
+ *   const result = await box.current?.startDictation();
+ *   if (result && !result.started) setError(result.message); // reason + sentence
+ *   ```
+ *   It is the same `useMicField` → `useVoiceCapture` →
+ *   `GlobalRecordingProvider` path the mic button uses (one recording
+ *   app-wide, start-always-wins, same append base, same protection modal), and
+ *   it NEVER fails silently: with `enableVoice={false}`, a `disabled` field, no
+ *   microphone, no recorder on the route, or a transcript still finalizing it
+ *   returns `{ started: false, reason, message }` and raises the sentence as a
+ *   toast + `onTranscriptionError`.
  * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and
  *   agent actions (Clean up, Help with this…, Custom Agent). Fine pointers float
  *   it over the text with no reserved gutter. Touch devices keep the controls
@@ -180,10 +196,65 @@ function wantsFillHeight(
   );
 }
 
-/** Real HTMLTextAreaElement with optional expando methods set by ProTextarea. */
+/**
+ * Why `startDictation()` refused. Every value is a real, nameable condition —
+ * there is no generic "no".
+ */
+export type DictationRefusalReason =
+  /** `enableVoice={false}` — this box's host owns recording itself. */
+  | "voice-disabled"
+  /** The field is `disabled`. */
+  | "field-disabled"
+  /** The browser exposes no microphone (or blocks device enumeration). */
+  | "no-microphone"
+  /** No `GlobalRecordingProvider` on this route — recording cannot happen. */
+  | "recorder-unavailable"
+  /** The previous recording is still being transcribed. */
+  | "finalizing";
+
+/**
+ * The outcome of a programmatic `startDictation()`. A refusal ALWAYS carries a
+ * sentence a person can read; ProTextarea also raises it as a toast and through
+ * `onTranscriptionError`, so a caller that ignores the return value still never
+ * produces a silent no-op.
+ */
+export type DictationStartResult =
+  | { started: true }
+  | { started: false; reason: DictationRefusalReason; message: string };
+
+/**
+ * Real HTMLTextAreaElement with optional expando methods set by ProTextarea.
+ *
+ * 🚨 THE DICTATION HANDLE (2026-09-12). A keyboard-first surface must be able
+ * to say "press V and start talking into this box" without reaching into
+ * ProTextarea's DOM or forking its own recorder. `startDictation()` /
+ * `stopDictation()` / `isDictating()` are that door, and they run the SAME
+ * `useMicField` → `useVoiceCapture` → `GlobalRecordingProvider` path the mic
+ * button runs: one recording app-wide, start-always-wins, the append base
+ * snapshotted the same way, the recording-protection modal still guarding the
+ * close. They are expandos on the real DOM node (the same shape `requestClose`
+ * and `isTranscribing` have used since the field shipped) rather than a
+ * `useImperativeHandle` object, because ~390 consumers forward this ref
+ * expecting a genuine `HTMLTextAreaElement` — `focus()`, `select()`,
+ * `selectionStart` and form association all keep working, and no existing
+ * consumer changes by a byte. Optional (`?:`) for the same reason: the methods
+ * appear on the node one commit after mount, so a caller always uses `?.()`.
+ */
 export interface ProTextareaElement extends HTMLTextAreaElement {
   requestClose?: () => void;
   isTranscribing?: () => boolean;
+  /**
+   * Start dictating into this box, exactly as clicking its mic button does.
+   * Never silently no-ops: when voice is off, the field is disabled, there is
+   * no microphone, no recorder on this route, or a previous transcript is
+   * still finalizing, it returns `{ started: false, reason, message }` AND
+   * says so on screen (toast + `onTranscriptionError`).
+   */
+  startDictation?: () => Promise<DictationStartResult>;
+  /** Stop this box's recording. No-op when it does not own the recorder. */
+  stopDictation?: () => void;
+  /** True while this box is the active recorder. */
+  isDictating?: () => boolean;
 }
 
 export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -529,6 +600,9 @@ export const ProTextarea = React.forwardRef<
       audioLevel,
       liveTranscript,
       handleVoiceClick,
+      startDictation: micStartDictation,
+      stopDictation: micStopDictation,
+      available: isRecorderAvailable,
       requestClose: handleCloseRequest,
       showTroubleshooting,
       setShowTroubleshooting,
@@ -549,15 +623,91 @@ export const ProTextarea = React.forwardRef<
       onTranscriptionError,
     });
 
+    // A programmatic dictation refusal is LOUD: it returns a named reason with
+    // a sentence, raises the same toast a mic failure raises, and reports
+    // through `onTranscriptionError` — so a caller that discards the return
+    // value still cannot produce a dead key.
+    const refuseDictation = useCallback(
+      (
+        reason: DictationRefusalReason,
+        message: string,
+      ): DictationStartResult => {
+        toast.error(message);
+        onTranscriptionError?.(message);
+        return { started: false, reason, message };
+      },
+      [onTranscriptionError],
+    );
+
+    /**
+     * The imperative half of the mic button. It performs the SAME checks the
+     * button's `disabled` state encodes (`isVoiceDisabled` below) and then
+     * calls the SAME `useMicField.startDictation` the button's click handler
+     * calls — so a keyed dictation and a clicked one are one code path.
+     */
+    const startDictation = useCallback(async (): Promise<DictationStartResult> => {
+      if (!enableVoice) {
+        return refuseDictation(
+          "voice-disabled",
+          "Voice input is turned off for this field, so it cannot start dictating.",
+        );
+      }
+      if (disabled) {
+        return refuseDictation(
+          "field-disabled",
+          "This field is disabled, so it cannot start dictating.",
+        );
+      }
+      if (!isAudioAvailable) {
+        return refuseDictation(
+          "no-microphone",
+          "No microphone is available in this browser, so dictation cannot start.",
+        );
+      }
+      if (!isRecorderAvailable) {
+        return refuseDictation(
+          "recorder-unavailable",
+          "Voice recording is unavailable on this screen, so dictation cannot start.",
+        );
+      }
+      if (isTranscribing && !isRecording) {
+        return refuseDictation(
+          "finalizing",
+          "The last recording is still being transcribed. Wait for it to finish, then start again.",
+        );
+      }
+      await micStartDictation();
+      return { started: true };
+    }, [
+      enableVoice,
+      disabled,
+      isAudioAvailable,
+      isRecorderAvailable,
+      isTranscribing,
+      isRecording,
+      micStartDictation,
+      refuseDictation,
+    ]);
+
     // Attach custom methods as expando properties on the real DOM element so
     // consumers get a genuine HTMLTextAreaElement (focus/blur/select all work)
-    // while still being able to call requestClose() and isTranscribing().
+    // while still being able to call requestClose(), isTranscribing() and the
+    // dictation handle (see ProTextareaElement's header).
     useEffect(() => {
-      const el = textareaRef.current;
+      const el = textareaRef.current as ProTextareaElement | null;
       if (!el) return;
-      (el as ProTextareaElement).requestClose = handleCloseRequest;
-      (el as ProTextareaElement).isTranscribing = () => isTranscribing;
-    }, [handleCloseRequest, isTranscribing]);
+      el.requestClose = handleCloseRequest;
+      el.isTranscribing = () => isTranscribing;
+      el.startDictation = startDictation;
+      el.stopDictation = micStopDictation;
+      el.isDictating = () => isRecording;
+    }, [
+      handleCloseRequest,
+      isTranscribing,
+      startDictation,
+      micStopDictation,
+      isRecording,
+    ]);
 
     const handleCopy = async () => {
       const textareaValue = textareaRef?.current?.value || String(value || "");

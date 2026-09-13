@@ -18,9 +18,9 @@
 // THE KEYBOARD CONTRACT
 //   1 / 2 / 3   take the recommendation / skip / not mine
 //   W           write an answer      ⌘↵ (Ctrl+↵) saves it
-//   V           open the box and dictate — the mic is ProTextarea's own
+//   V           open the box AND START DICTATING — the mic is ProTextarea's own
 //   J / K       next / previous      R read aloud     T table view
-//   Esc         stop audio, close the write box (words are kept)
+//   Esc         stop audio, stop dictating, close the write box (words kept)
 //   ⌘Z / Ctrl+Z undo the answer just saved (30 seconds)
 // While a textarea or input has focus, ONLY Esc and ⌘/Ctrl+Enter are ours —
 // every other key belongs to what he is typing.
@@ -28,17 +28,20 @@
 // 🚨 THE BOX IS `ProTextarea` (Arman, 2026-09-12), so recording, live
 // transcription, the device menu, the don't-close-while-recording protection
 // and the cleanup actions all come with it and this feature wires none of them.
-// ProTextarea exposes no PROGRAMMATIC way to start its mic — its `useMicField`
-// handle is internal, the forwarded ref is the raw textarea, and there is no
-// `instanceId` prop to address the shared recorder from outside — so **V** does
-// what the platform allows today: it opens the box and puts the cursor in it,
-// beside the mic. Reported as a finding, not worked around by reaching into
-// ProTextarea's DOM.
+// **V** now starts the microphone too, through the platform field's own
+// `startDictation()` handle on the forwarded ref (`ProTextareaElement`) — the
+// same `useMicField` → `useVoiceCapture` → shared-recorder path the mic button
+// takes, so a keyed dictation and a clicked one are ONE recording, app-wide.
+// Nothing here reaches into ProTextarea's DOM, and nothing here owns a
+// recorder. If the field refuses (voice off, no microphone, a transcript still
+// finalizing) it hands back a sentence, and that sentence goes on the screen —
+// V is never a dead key.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import type { ProTextareaElement } from "@/components/official/ProTextarea";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
@@ -102,7 +105,15 @@ export function InterviewClient({
     previousStatus: string;
   } | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const textareaRef = useRef<ProTextareaElement | null>(null);
+  /**
+   * Why the microphone did not start, in the field's own words. It renders
+   * in the action bar beside a read-aloud refusal, because a V that does
+   * nothing and says nothing is exactly the dead key this surface bans.
+   */
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  /** V asked for dictation; the mount effect starts it once the box exists. */
+  const pendingDictationRef = useRef(false);
 
   // ---- the interview row -------------------------------------------------
   useEffect(() => {
@@ -293,7 +304,11 @@ export function InterviewClient({
   }, [undoTarget, knobs]);
 
   // ---- the write box -----------------------------------------------------
-  const openWrite = useCallback(() => {
+  const openWrite = useCallback((options?: { dictate?: boolean }) => {
+    if (options?.dictate) {
+      pendingDictationRef.current = true;
+      setVoiceError(null);
+    }
     setWriting(true);
   }, []);
 
@@ -303,8 +318,21 @@ export function InterviewClient({
   // command — "three leading spaces" toggled the table view instead of being
   // typed. Found in the browser, on the real surface (2026-09-12).
   useEffect(() => {
-    if (!writing) return;
-    textareaRef.current?.focus();
+    if (!writing) {
+      pendingDictationRef.current = false;
+      setVoiceError(null);
+      return;
+    }
+    const box = textareaRef.current;
+    box?.focus();
+    if (!pendingDictationRef.current) return;
+    pendingDictationRef.current = false;
+    // The platform field owns the recorder; this only asks it to start, and
+    // prints its refusal verbatim when it will not.
+    void (async () => {
+      const outcome = await box?.startDictation?.();
+      if (outcome && !outcome.started) setVoiceError(outcome.message);
+    })();
   }, [writing]);
 
   const saveOwnWords = useCallback(() => {
@@ -357,6 +385,14 @@ export function InterviewClient({
         }
         if (writing) {
           event.preventDefault();
+          // Esc STOPS THE MICROPHONE FIRST. While words are still being
+          // dictated, Esc means "stop talking", not "close the box" — the
+          // transcript is still on its way and the box must be there to
+          // receive it. A second Esc then closes.
+          if (textareaRef.current?.isDictating?.()) {
+            textareaRef.current.stopDictation?.();
+            return;
+          }
           // Esc CLOSES the box; it never destroys words. The draft is
           // persisted per question and restored on return, so there is nothing
           // to confirm — Discard is the destructive control, and that one asks.
@@ -410,11 +446,10 @@ export function InterviewClient({
           openWrite();
           return;
         case "v":
-          // ProTextarea owns the mic and exposes no programmatic start, so V
-          // does the honest half: open the box and land the cursor beside the
-          // microphone. See the header note.
+          // Open the box AND start its microphone, through ProTextarea's own
+          // handle — the same recorder the mic button drives. See the header.
           event.preventDefault();
-          openWrite();
+          openWrite({ dictate: true });
           return;
         case "r":
           if (current && !readAloud.nothingToRead(current)) {
@@ -651,7 +686,8 @@ export function InterviewClient({
               textareaRef={textareaRef}
               onTranscriptionComplete={() => setDraftFromVoice(true)}
               audio={audio}
-              onOpenWrite={openWrite}
+              onOpenWrite={() => openWrite()}
+              onAnswerByVoice={() => openWrite({ dictate: true })}
               onTakeRecommendation={() =>
                 void record(current, "recommendation", null, "keystroke")
               }
@@ -666,7 +702,7 @@ export function InterviewClient({
               onReadAloud={() => readAloud.read(current)}
               onStopReading={readAloud.stop}
               onToggleView={() => setView("table")}
-              actionError={readAloud.error}
+              actionError={voiceError ?? readAloud.error}
               saveLine={saveLine}
               undoAvailable={undoTarget !== null}
               onUndo={() => void undo()}
