@@ -172,10 +172,10 @@ export function CloudBrowserBody({
 
   /** The claim itself — control plane + control stream. WHEN it runs is the
    *  takeover controller's business, not this component's. */
-  const claimControl = useCallback(async () => {
+  const claimControl = useCallback(async (opts?: { immediate?: boolean }) => {
     setBusy(true);
     try {
-      await cb.takeControl();
+      await cb.takeControl(opts);
       // The live view opens from the effect below — the ONE place that opens
       // it — so a fresh take, a reload and a second tab all behave the same.
       toast.info("You are now driving this browser.");
@@ -321,6 +321,7 @@ export function CloudBrowserBody({
           waitingForAgent={takeover.waiting}
           onTakeImmediately={takeover.takeOverImmediately}
           busy={busy || takeover.phase === "claiming"}
+          claiming={takeover.phase === "claiming"}
         />
       ) : null}
 

@@ -179,6 +179,8 @@ describe("useCloudBrowserTakeover", () => {
     await h.act(() => setInbox([]));
     await settle(h, () => claim.mock.calls.length > 0, "the claim");
     expect(claim).toHaveBeenCalledTimes(1);
+    // The non-disruptive default never asks the server to cut the agent short.
+    expect(claim).not.toHaveBeenCalledWith({ immediate: true });
     await h.unmount();
   });
 
@@ -221,6 +223,9 @@ describe("useCloudBrowserTakeover", () => {
     expect(note.kind).toBe("system_message");
     expect(note.text).toMatch(/took\s+immediate control/i);
     expect(claim).toHaveBeenCalledTimes(1);
+    // Immediate on the SERVER too — measured 9.3 s behind one wait_for when the
+    // claim did not say so (2026-09-13).
+    expect(claim).toHaveBeenCalledWith({ immediate: true });
     await h.unmount();
   });
 });
