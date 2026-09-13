@@ -120,6 +120,18 @@ describe("saveNote receipt integration", () => {
     expect(store.getState().notes.notes[NOTE_ID]).toMatchObject({ content: "mine", label: "interleaved", version: 7 });
   });
 
+  it("returns refresh refusals for an unmounted editor and changed session", async () => {
+    const store = storeWithNote();
+    store.dispatch(setNoteField({ id: NOTE_ID, field: "content", value: "mine" }));
+    store.dispatch(recordNoteConflict({ id: NOTE_ID, expectedVersion: 7, currentVersion: 8, currentRow: note({ content: "remote", version: 8 }), sentSnapshot: { content: "mine" }, actorId: "user-1", organizationId: ORG, decisionId: "dr", reviewId: "rr" }));
+    const unmounted = await store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: "dr", reviewId: "rr", getLiveBuffer: () => null }));
+    expect(unmounted).toMatchObject({ status: "refused" });
+    getSession.mockResolvedValue({ data: { session: { user: { id: "user-2" } } }, error: null });
+    const switched = await store.dispatch(refreshNoteConflictReview({ noteId: NOTE_ID, decisionId: "dr", reviewId: "rr", getLiveBuffer: () => "mine" }));
+    expect(switched).toMatchObject({ status: "refused" });
+    expect(schema).not.toHaveBeenCalled();
+  });
+
   it("accepts a paired folder display name while persisting only its admitted ID", async () => {
     const existing = query({ data: note(), error: null });
     const folder = query({ data: { id: FOLDER_ID, name: "Archive" }, error: null });
