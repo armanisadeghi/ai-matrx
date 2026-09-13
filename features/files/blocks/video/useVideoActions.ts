@@ -7,9 +7,8 @@
  *
  * Mirrors `image/useImageActions.ts`, restricted to the actions that make
  * sense for video:
- *   - download  — native share/save on mobile (navigator.share), else a
- *                 plain file download. Reuses the image save util, which is
- *                 MIME-agnostic (it fetches bytes → File → share/anchor).
+ *   - download  — canonical file-handler byte download for Matrx media, or
+ *                 the external URL lane for third-party video.
  *   - copyLink  — internal viewer URL when we own the file, external URL
  *                 otherwise. Same logic as the image hook.
  *   - openNewTab
@@ -28,7 +27,10 @@
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
 import { shareableMediaUrl } from "@/lib/media/durability";
-import { saveImageFile } from "../image/utils/save-image-file";
+import {
+  downloadMediaSource,
+  mediaRefToDownloadSource,
+} from "../../media-client/download";
 import type { VideoBlock } from "../types";
 
 export interface VideoActionsApi {
@@ -53,6 +55,7 @@ export interface UseVideoActionsArgs {
 export function useVideoActions({
   block,
   currentSrc,
+  fileId,
 }: UseVideoActionsArgs): VideoActionsApi {
   const isMatrx = block.origin === "matrx";
 
@@ -102,25 +105,26 @@ export function useVideoActions({
     }
   }, [block, currentSrc]);
 
-  // downloadUrl only exists on matrx-origin blocks. External blocks fall
-  // through to the currently-rendered src.
-  const matrxDownloadUrl = block.origin === "matrx" ? block.downloadUrl : null;
+  // A CDN render URL can play without CORS permission to fetch its bytes.
+  // Keep the owned file identity so the canonical handler makes the
+  // authenticated byte request; external blocks retain their playback URL.
+  const matrxFileId = isMatrx ? fileId ?? block.fileId : null;
 
   const download = useCallback(async () => {
     if (isDownloading) return;
-    const url = matrxDownloadUrl ?? currentSrc;
-    if (!url) {
+    const ref = matrxFileId ? { file_id: matrxFileId } : currentSrc;
+    if (!ref) {
+      toast.error("No download URL available");
+      return;
+    }
+    const source = mediaRefToDownloadSource(ref);
+    if (!source) {
       toast.error("No download URL available");
       return;
     }
     setIsDownloading(true);
     try {
-      await saveImageFile({
-        url,
-        filename: downloadName,
-        mimeType: block.mimeType ?? null,
-        title: block.fileName ?? downloadName,
-      });
+      await downloadMediaSource(source, downloadName);
     } catch {
       toast.error("Could not save video");
     } finally {
@@ -128,11 +132,9 @@ export function useVideoActions({
     }
   }, [
     isDownloading,
-    matrxDownloadUrl,
+    matrxFileId,
     currentSrc,
     downloadName,
-    block.mimeType,
-    block.fileName,
   ]);
 
   const viewOriginal = useCallback(() => {
