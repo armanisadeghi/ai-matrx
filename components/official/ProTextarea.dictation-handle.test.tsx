@@ -30,7 +30,7 @@ globalThis.ResizeObserver = class {
 } as unknown as typeof ResizeObserver;
 
 // ── the mocked recorder ────────────────────────────────────────────────────
-const recorderStart = jest.fn(async () => {});
+const recorderStart = jest.fn(async (_args: { context: unknown }) => {});
 const recorderStop = jest.fn();
 
 jest.mock("@/providers/GlobalRecordingProvider", () => ({
@@ -188,7 +188,7 @@ describe("ProTextarea imperative dictation handle", () => {
       micButton!.click();
     });
     expect(recorderStart).toHaveBeenCalledTimes(1);
-    const fromClick = recorderStart.mock.calls[0][0] as { context: unknown };
+    const fromClick = recorderStart.mock.calls[0][0];
     await clicked.unmount();
 
     recorderStart.mockClear();
@@ -203,7 +203,7 @@ describe("ProTextarea imperative dictation handle", () => {
     });
     expect(result).toEqual({ started: true });
     expect(recorderStart).toHaveBeenCalledTimes(1);
-    const fromHandle = recorderStart.mock.calls[0][0] as { context: unknown };
+    const fromHandle = recorderStart.mock.calls[0][0];
 
     expect(fromHandle.context).toEqual(fromClick.context);
     expect(fromHandle.context).toMatchObject({

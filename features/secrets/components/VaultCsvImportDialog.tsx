@@ -307,94 +307,19 @@ export function VaultCsvImportDialog({
       if (generation !== parseGeneration.current || cancelled.current) return;
       previewActor.current = actor;
       limitsRef.current = limits;
-      if (source === "bitwarden_json") {
+      const descriptor = structuredImportSource(source);
+      if (descriptor) {
         if (file.size > limits.maxFileBytes)
           throw new Error(
-            "The file exceeds this organization’s import size limit.",
+            "The selected export exceeds this organization’s import size limit.",
           );
-        const { cancelBitwardenJsonWorker, createBitwardenJsonWorker } =
-          await import("../bitwarden-json-worker-client");
         if (generation !== parseGeneration.current || cancelled.current) return;
-        const parser = createBitwardenJsonWorker();
+        const workerClient = await descriptor.loadWorker();
+        const parser = workerClient.create();
         const requestId = crypto.randomUUID();
         jsonWorker.current = parser;
         cancelJsonParse.current = () =>
-          cancelBitwardenJsonWorker(parser, requestId);
-        let settled = false;
-        const settle = (message?: string) => {
-          if (settled) return false;
-          settled = true;
-          if (jsonWorkerTimeout.current !== null)
-            window.clearTimeout(jsonWorkerTimeout.current);
-          jsonWorkerTimeout.current = null;
-          cancelJsonParse.current = null;
-          parser.terminate();
-          if (jsonWorker.current === parser) jsonWorker.current = null;
-          if (generation !== parseGeneration.current || cancelled.current)
-            return false;
-          if (message) setUnavailable(message);
-          return !message;
-        };
-        jsonWorkerTimeout.current = window.setTimeout(
-          () =>
-            settle(
-              "The JSON export took too long to parse. Choose a smaller export and try again.",
-            ),
-          limits.jsonWorkerTimeoutMs ?? 5_000,
-        );
-        parser.onerror = () => settle("The JSON export could not be read.");
-        parser.onmessageerror = () =>
-          settle("The JSON export could not be read.");
-        parser.onmessage = (
-          event: MessageEvent<StructuredImportWorkerResponse>,
-        ) => {
-          if (event.data.requestId !== requestId) return;
-          if (!event.data.ok) {
-            settle(jsonImportErrorMessage(event.data.error));
-            return;
-          }
-          if (!settle()) return;
-          setJsonRecords(event.data.records);
-          setBinaryMembers(event.data.binaryMemberCount);
-          setJsonLoaded(true);
-        };
-        parser.postMessage({
-          type: "parse",
-          requestId,
-          file,
-          limits: {
-            maxFileBytes: limits.maxFileBytes,
-            maxRecords: limits.maxRecords,
-            maxCellBytes: limits.maxCellBytes,
-            maxJsonDepth: limits.maxJsonDepth ?? 64,
-          },
-        });
-        return;
-      }
-      if (source === "1password_1pux" || source === "proton_pass") {
-        if (file.size > limits.maxFileBytes)
-          throw new Error(
-            source === "proton_pass"
-              ? "The Proton Pass export exceeds this organization’s import size limit."
-              : "The 1Password export exceeds this organization’s import size limit.",
-          );
-        if (generation !== parseGeneration.current || cancelled.current) return;
-        const descriptor = structuredImportSource(source)!;
-        const workerClient =
-          source === "1password_1pux"
-            ? await import("../onepux-worker-client").then((client) => ({
-                create: client.createOnePuxWorker,
-                cancel: client.cancelOnePuxWorker,
-              }))
-            : await descriptor.loadWorker();
-        const parser = workerClient.create();
-        const requestId = crypto.randomUUID();
-        const cancelParser = () =>
-          source === "1password_1pux"
-            ? parser.postMessage({ type: "cancel", requestId })
-            : workerClient.cancel(parser, requestId);
-        jsonWorker.current = parser;
-        cancelJsonParse.current = cancelParser;
+          parser.postMessage({ type: "cancel", requestId });
         let settled = false;
         const settle = (message?: string) => {
           if (settled) return false;
@@ -1162,20 +1087,6 @@ export function VaultCsvImportDialog({
       </CredenzaContent>
     </Credenza>
   );
-}
-
-function jsonImportErrorMessage(message: unknown): string {
-  const approved = new Set([
-    "The JSON export has duplicate keys or could not be read safely.",
-    "Encrypted Bitwarden exports need local decryption support before they can be imported.",
-    "This is not a supported plain Bitwarden JSON export.",
-    "The export has more records than this organization allows.",
-    "The export folders are not supported.",
-    "The file exceeds this organization’s import size limit.",
-  ]);
-  return typeof message === "string" && approved.has(message)
-    ? message
-    : "The JSON export could not be read.";
 }
 
 function maskedRowSummary(
