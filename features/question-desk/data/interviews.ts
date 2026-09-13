@@ -7,6 +7,7 @@
 // list holds nothing the reader is not already entitled to.
 
 import type { ArchiveFilterValue } from "@ai-matrx/design-system";
+import { supabase } from "@/utils/supabase/client";
 import type { DecisionInterviewRow, InterviewListRow } from "../types";
 import { LIST_CAP, db } from "./db";
 
@@ -85,6 +86,10 @@ export async function listInterviews(
     else bucket.open += 1;
   }
 
+  const respondents = await respondentEmails(
+    interviews.map((row) => row.respondent_user_id),
+  );
+
   return {
     countsTruncated,
     rows: interviews.map((row) => {
@@ -100,6 +105,7 @@ export async function listInterviews(
         answeredCount: bucket.answered,
         deliveredCount: bucket.delivered,
         totalCount: bucket.total,
+        respondentEmail: respondents.get(row.respondent_user_id) ?? null,
       };
     }),
   };
@@ -154,4 +160,35 @@ export async function markInterviewOpened(
   if (error) {
     console.error("[question-desk] opened_at could not be stamped:", error.message);
   }
+}
+
+/**
+ * WHO IS BEING ASKED. PLAN §5 names respondent as a column, and without it two
+ * interviews put to two different people are visually identical (verifier
+ * finding 4, 2026-09-12). `auth.users` is not client-readable, so the address
+ * comes from the platform's one accessor RPC.
+ *
+ * A failed lookup is NOT an error for the list — the interviews are still
+ * correct — so it degrades to the raw id, which the column labels honestly.
+ */
+async function respondentEmails(
+  userIds: string[],
+): Promise<Map<string, string>> {
+  const unique = [...new Set(userIds)];
+  if (unique.length === 0) return new Map();
+  const { data, error } = await supabase.rpc("get_user_emails_by_ids", {
+    user_ids: unique,
+  });
+  if (error) {
+    console.warn(
+      "[question-desk] respondent emails could not be resolved:",
+      error.message,
+    );
+    return new Map();
+  }
+  const map = new Map<string, string>();
+  for (const row of data ?? []) {
+    if (row?.id && row?.email) map.set(row.id, row.email);
+  }
+  return map;
 }

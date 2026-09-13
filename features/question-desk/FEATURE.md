@@ -32,7 +32,7 @@ The `(admin)` group admits any admin level. That is deliberate and it is not a h
 - `useQuestionDeskKnobs()` — the four `question_desk` knobs, ladder-resolved, with an honest `failed` state.
 - `useInterviewQuestions(interviewId)` — the rows plus realtime.
 - `useAnswerDraft(questionId)` — the own-words draft in `localStorage`.
-- `useVoiceAnswer({...})` — mic → transcript → the `cld_files` id of the recording.
+- `useDictationAudio(questionId)` — the `cld_files` id of the recording behind a spoken answer, plus `questionRecordingOrigin()`, the stamp that ties a recording to its question.
 - `useReadAloud(parts)` — R / Esc through the platform voice.
 
 **Services (direct Supabase, under RLS)**
@@ -66,7 +66,7 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 
 **2. Answering in his own words.** `W` opens the box (an effect focuses it after the commit — see gotchas), every keystroke persists the draft under `qd.draft.<questionId>`, `⌘/Ctrl+Enter` saves. The text goes to the row **exactly as typed**. An empty save is refused on screen with *"Write something first, or use one of the buttons."* and never reaches the database.
 
-**3. Answering out loud.** `V` starts the shared recorder; the level meter runs; stopping transcribes; the transcript is shown read-only for one glance with an Edit affordance; `Enter` saves it verbatim with `answer_source='voice'`; `Esc` asks *"Discard this recording?"* through `<ConfirmDialog />`. When the recorder's upload lands, `dictationAudioRegistry` announces the `cld_files` id and the save writes it to `answer_audio_file_id`; when the upload FAILS the screen says so and offers the retry, and the answer still saves without the audio.
+**3. Answering out loud.** The mic is `ProTextarea`'s, so the level glow, the live streaming transcript, the device menu, the troubleshooting modal and the "you are still recording" protection all come with the field. `V` opens the box and puts the cursor in it beside the microphone; the person taps the mic. When the transcript lands, `onTranscriptionComplete` marks the draft as spoken, so the save writes `answer_source='voice'` instead of `'typed'`. When the recorder's upload lands, `dictationAudioRegistry` announces the `cld_files` id (matched by the `RecordingOriginProvider` stamp around the box) and the save writes it to `answer_audio_file_id`; when the upload FAILS the screen says so and offers the retry, and the answer still saves without the audio.
 
 **4. Confirming or overturning a decision made in his name.** `mode='review'` rows render as the dense table, grouped by `review_kind`. Confirm writes `verdict='confirm'`. Overturn opens an inline box that REQUIRES words and writes `verdict='overturn'` with them — which is what turns the row back into a real question.
 
@@ -76,11 +76,18 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 
 ## Invariants & gotchas
 
+- 🚨 **EVERY TEXT BOX ON THIS SURFACE IS `ProTextarea`** — the write box, the inline own-words box in the ask table, and the overturn box in the review table. Arman, 2026-09-12: *"you need to be using our protext area so that you automatically get all of the recording features and the other things that come along with it."* A raw `<textarea>` here is a defect, not a shortcut. **ProTextarea does not trim or normalise the value it emits** (checked 2026-09-12: its only `.trim()` calls gate the submit button and the agent-action guards, and trim an AI *result* the user explicitly applies) — the bytes a person types or dictates reach `onChange` unchanged.
+- **`ProTextarea` exposes no programmatic way to start its microphone.** Its `useMicField` handle is internal, the forwarded ref is the raw textarea, and there is no `instanceId` prop to address the shared recorder from outside. So `V` opens and focuses the box beside the mic rather than starting a recording, and this feature does NOT reach into ProTextarea's DOM to fake it. A small `micControlRef` (or an `instanceId` prop) on ProTextarea would close it for every surface at once — the platform-shaped fix, filed rather than worked around.
+- **This surface does NOT wire `ProTextarea`'s `onSubmit`.** Its submit gate is `value.trim().length > 0`, which would refuse a whitespace-only answer with no sentence at all; the save stays this feature's, so the refusal a person meets is always *"Write something first, or use one of the buttons."*
 - **`answer_text` is never trimmed.** Not here, not in the data layer, not on the way out. Leading spaces and trailing newlines are part of the answer. Proven live 2026-09-12: 67 chars in, 67 chars stored, hex begins `202020` and ends `0a`.
 - **`verdict` and `answered_at` move TOGETHER, in both directions.** `decision_question_answer_pair_ck` is `(verdict IS NULL) = (answered_at IS NULL)`, so the undo must clear both in one statement — clearing one alone is refused by the database.
 - **A knob never has a code fallback.** `useQuestionDeskKnobs` has three states and the screen honours all three; it does not guess `"one"` or `true` while the read is unresolved or failed, because the skip button's SENTENCE depends on the value and a wrong sentence there ships a ruling nobody made.
 - **The write box is focused from an effect, not from the key handler.** `requestAnimationFrame` inside the keydown fires before React has committed the textarea, so the focus call hit nothing and every following keystroke was read as a command. While a box is open the global handler also declines every printable key, focus or no focus.
 - **Which view shows is DERIVED, never latched.** An effect that chose the view when the knobs resolved ran before the questions had loaded, so a review-only interview latched the one-per-screen view and printed "Nothing to ask here yet." over 117 real decisions.
+- **A refusal renders INSIDE the sticky action bar, above the buttons.** Printed under it, a refusal lands below the fold on a 900px viewport and the person sees nothing happen at all (verifier finding 1, 2026-09-12). Read-aloud failures also raise a toast.
+- **The progress meter counts exactly the rows the rail lists.** It used to count every question in the interview while the rail listed only the ask-mode ones — "1 of 8 answered" over six rows (verifier finding 3). Review rows now get their own line.
+- **The undo restores the status the row actually held**, passed in by the caller, never guessed from `asked_at` (verifier finding 5).
+- **The rail's legend keeps its own bottom clearance** because the app shell parks fixed chrome in the bottom-left corner, on top of it (verifier finding 6).
 - **The rail lists ask-mode questions only.** A review-only interview shows a count and points at the table instead of a queue whose rows would open a screen with nothing on it.
 - **Realtime echo suppression is version-monotonic**, never a saving flag: the echo arrives after the REST response has already landed the fresh row.
 - **Read-aloud passes no voice, no speed, no language.** Those are the `listening` tier's, resolved inside the adapter at start time.
@@ -91,7 +98,7 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 
 ## Related features
 
-- Depends on: `features/audio` (`speak`/`useSpeech`, `primeAudioOutput`, `useVoiceCapture`, `dictationAudioRegistry`), `lib/scoped-config` (knobs), `@ai-matrx/data` (`guardedUpdate`, `useRealtimeChannel`), `@ai-matrx/design-system` (`MatrxDataTable`, `ArchiveFilter`, `ConfirmDialog`), `lib/toast`.
+- Depends on: `components/official/ProTextarea` (every text box), `features/audio` (`speak`/`useSpeech`, `primeAudioOutput`, `RecordingOriginProvider`, `dictationAudioRegistry`), `lib/scoped-config` (knobs), `@ai-matrx/data` (`guardedUpdate`, `useRealtimeChannel`), `@ai-matrx/design-system` (`MatrxDataTable`, `ArchiveFilter`, `ConfirmDialog`), `lib/toast`.
 - Depended on by: the `question_desk` MCP tool and the `question_desk.answer_recorded` notification in `aidream` (they write and link to these rows).
 - Cross-links: `features/vision-interview/FEATURE.md` (the OTHER tenant of the `interview` schema — a different primitive, deliberately), `lib/entity-list/FEATURE.md`.
 
@@ -101,10 +108,10 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 
 **Primitives reused**
 - Types: `Database["interview"]["Tables"]` from the generated `types/database.types.ts`; `ArchiveFilterValue`; `MatrxColumnDef`; `RecordingOrigin`; `PlaybackItemStatus`.
-- Components: `MatrxDataTable`, `ArchiveFilter`, `ConfirmDialog` (`@/components/ui/confirm-dialog`), Lucide icons.
+- Components: `ProTextarea` (`components/official/`), `RecordingOriginProvider`, `MatrxDataTable`, `ArchiveFilter`, `ConfirmDialog` (`@/components/ui/confirm-dialog`), Lucide icons.
 - Redux slices / selectors: `selectUserId`, `appContext.organization_id`, the audio playback and recording slices (through their own hooks).
-- Hooks: `useVoiceCapture`, `useSpeech`, `useAudioPlayback`, `useEffectiveKnob` / `ensureEffectiveKnob`, `useRealtimeChannel`.
-- Services: `guardedUpdate`, `toast`, `primeAudioOutput`, `subscribeDictationAudio`.
+- Hooks: `useSpeech`, `useAudioPlayback`, `useEffectiveKnob` / `ensureEffectiveKnob`, `useRealtimeChannel`.
+- Services: `guardedUpdate`, `toast`, `primeAudioOutput`, `subscribeDictationAudio`, `get_user_emails_by_ids` (the respondent column).
 
 **Primitives introduced**
 - `useAnswerDraft` (`hooks/useAnswerDraft.ts`) — Why a new hook: nothing in the repo persists an unsaved textarea per RECORD id and restores it. Considered extending: the notes autosave loop. Rejected because: notes autosave writes to the database, and a half-written ruling must NOT reach the row until he saves it.
@@ -125,11 +132,13 @@ Voice, speed and language are NOT here — they come from the existing tiered `l
 
 ## Current work / migration state
 
-Built 2026-09-12 as lane L2 of the Question Desk campaign. Verified in the browser as `admin@admin.com` against the live seed data. **Not verified in this environment, and stated rather than assumed:** a real voice answer end-to-end — the agent browser pane blocks microphone access, so `V` was exercised only as far as its honest refusal, and `answer_audio_file_id` has never been populated by a real recording. Read-aloud reaches the playback queue and reports the queue's own failure; the queue could not fetch its broker token from the per-session dev hostname (CORS), so the audio itself was not heard.
+Built 2026-09-12 as lane L2 of the Question Desk campaign, then re-worked the same day: every text box became `ProTextarea` on Arman's ruling, and the six client defects from the zero-authorship walk were closed. **Not verified by any agent, and stated rather than assumed:** a real voice answer end-to-end — the agent browser blocks microphone access, so `answer_audio_file_id` has still never been written by a recording; and read-aloud has never been HEARD (the button flips, the broker token returns 200, the state holds for about the length of the parts, then returns — nothing observed says it played and nothing says it failed). **A person with a microphone and speakers still has to press R once and dictate one answer.**
 
 ---
 
 ## Change log
 
+- `2026-09-12` — L2 (Claude Opus 5): closed the zero-authorship walk's six client findings — refusals render inside the action bar with a toast; `default_in_force`, `blocks`, `door_note` and the filing provenance now reach the screen; the meter counts the rows the rail lists; the list names the respondent; the undo restores the real prior status; the key legend clears the shell's bottom-left chrome.
+- `2026-09-12` — L2 (Claude Opus 5): every text box is `ProTextarea` (Arman's ruling), so the mic, live transcription, the device menu, recording protection and the cleanup actions come from the platform field instead of this feature's own `useVoiceCapture` wiring, which was deleted.
 - `2026-09-12` — L2 (Claude Opus 5): the Undo window became the `question_desk.undo_window_ms` knob (a peer lane registered the row and mirrored the literal here; reading the row is the honest version of that mirror).
 - `2026-09-12` — L2 (Claude Opus 5): built the feature — interview list with the archive axis, the one-question-per-screen interview with the full keyboard contract, the dense review and ask tables, read-aloud, voice answers, per-question drafts, the undo, realtime, and the three knobs.

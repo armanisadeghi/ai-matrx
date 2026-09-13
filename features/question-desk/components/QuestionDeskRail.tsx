@@ -18,8 +18,18 @@ export interface QuestionDeskRailProps {
   queue: DecisionQuestionRow[];
   currentId: string | null;
   onGoTo: (questionId: string) => void;
+  /**
+   * 🚨 THE COUNT AND THE LIST ARE THE SAME SET. The meter used to count every
+   * question in the interview while the rail listed only the ask-mode ones, so
+   * it read "1 of 8 answered" over six rows and nobody could reach eight
+   * (verifier finding 3, 2026-09-12). These two now come from `queue` itself,
+   * and the review rows get their own line.
+   */
   answeredCount: number;
   totalCount: number;
+  /** Review-mode rows, which live in the table rather than this queue. */
+  reviewTotal: number;
+  reviewReviewed: number;
   /** Rendered under the legend — the live/failed state of this surface. */
   footer?: React.ReactNode;
 }
@@ -31,6 +41,8 @@ export function QuestionDeskRail({
   onGoTo,
   answeredCount,
   totalCount,
+  reviewTotal,
+  reviewReviewed,
   footer,
 }: QuestionDeskRailProps) {
   const percent = totalCount === 0 ? 0 : (answeredCount / totalCount) * 100;
@@ -58,6 +70,11 @@ export function QuestionDeskRail({
         <b className="font-mono text-[11px] font-medium tracking-wide text-muted-foreground">
           {answeredCount} of {totalCount} answered
         </b>
+        {reviewTotal > 0 ? (
+          <b className="font-mono text-[11px] font-medium tracking-wide text-muted-foreground">
+            {reviewReviewed} of {reviewTotal} decisions reviewed
+          </b>
+        ) : null}
       </div>
 
       <ul className="flex max-h-[38vh] list-none flex-col gap-0.5 overflow-y-auto p-0 lg:max-h-none lg:overflow-visible">
@@ -93,7 +110,11 @@ export function QuestionDeskRail({
         })}
       </ul>
 
-      <div className="mt-auto space-y-2 border-t border-border pt-3.5">
+      {/* The app shell parks fixed chrome (the error chip, the schedules pill)
+          in the bottom-left corner, which sat directly on top of the "J / K"
+          line in both themes (verifier finding 6, 2026-09-12). The legend keeps
+          its own clearance rather than hoping the chip moves. */}
+      <div className="mt-auto space-y-2 border-t border-border pt-3.5 lg:pb-14">
         {/* A phone has no keyboard, so a key legend there is an affordance
             that cannot be used. It is not dimmed or disabled — it is absent. */}
         <dl className="hidden grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-[10.5px] leading-relaxed text-muted-foreground lg:grid">

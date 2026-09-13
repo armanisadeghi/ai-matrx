@@ -68,6 +68,13 @@ export interface AnswerBarProps {
   onReadAloud: () => void;
   onStopReading: () => void;
   onToggleView: () => void;
+  /**
+   * A refusal from an action in THIS bar (read-aloud that could not speak,
+   * etc.). It renders ABOVE the buttons, inside the sticky bar, because a
+   * refusal printed under a sticky bar lands below the fold and the person
+   * sees nothing happen at all (verifier finding 1, 2026-09-12).
+   */
+  actionError: string | null;
   saveLine: SaveLine | null;
   undoAvailable: boolean;
   onUndo: () => void;
@@ -100,6 +107,7 @@ export function AnswerBar(props: AnswerBarProps) {
     onReadAloud,
     onStopReading,
     onToggleView,
+    actionError,
     saveLine,
     undoAvailable,
     onUndo,
@@ -108,6 +116,14 @@ export function AnswerBar(props: AnswerBarProps) {
 
   return (
     <div className="sticky bottom-0 mt-8 max-w-[820px] bg-gradient-to-b from-transparent to-background to-26% pt-6">
+      {actionError ? (
+        <p
+          role="alert"
+          className="mb-2.5 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+        >
+          {actionError}
+        </p>
+      ) : null}
       <div className="mb-2.5 flex flex-wrap gap-2">
         {hasRecommendation ? (
           <Act primary keyCap="1" onClick={onTakeRecommendation} busy={busy}>
@@ -180,9 +196,15 @@ export function AnswerBar(props: AnswerBarProps) {
               Save this answer
             </Act>
             {draftText.length > 0 ? (
-              <Act keyCap="Esc" onClick={onDiscardDraft} busy={false}>
+              // No key cap: Esc CLOSES the box and keeps every word, so
+              // printing "Esc" on the destructive control would be a lie.
+              <button
+                type="button"
+                onClick={onDiscardDraft}
+                className="rounded-md border border-border bg-card px-3.5 py-2.5 text-[13.5px] font-medium text-foreground transition-colors hover:border-destructive hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
                 Discard
-              </Act>
+              </button>
             ) : null}
             <span className="font-mono text-[10.5px] text-muted-foreground">
               To speak it, tap the microphone at the top-right of the box.
