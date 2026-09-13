@@ -1,0 +1,122 @@
+{
+  "run_id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+  "events": [
+    {
+      "seq": 18,
+      "event_type": "node_started",
+      "node_id": "consult_pause",
+      "checkpoint_id": null,
+      "step": 5,
+      "spec_type": "control.human_input",
+      "payload": {
+        "ts": "2026-09-12T19:10:40.319971Z",
+        "step": 5,
+        "event": "node_started",
+        "inputs": {
+          "context": {},
+          "questions": "Before I ask anything — one thing must be said plainly. My work and my books concern the child from three to seven. Your son is two and a half, below the period I have written about, so whatever I say afterwards will be said knowing that.\n\nNow, what I need to know. Answer only from what you have seen this week.\n\n**1. When nobody is speaking to him and nobody needs anything from him — an afternoon, a Saturday morning — what does he do? Tell me what he actually did, once.**\nBecause — I am listening for whether he chooses anything at all when the choice is his, or whether he only moves from one thing to the next.\n\n**2. In the last week, was there anything he did over and over — the same act, many times, past the point where it was useful?**\nBecause — repetition is the thing I look for first. If it is there, however small, everything else stands on it.\n\n**3. When he has finished something entirely by himself — not the shoes, anything, a lid, a zip, climbing something — how is he in the minutes after? Calm and quiet, or wound tighter?**\nBecause — I want to know what the work does to him when it is allowed to finish.\n\n**4. The ten minutes of shoes: tell me where the scream falls. Does it come when the shoe defeats him, or only when your hand comes near, or when you say the word \"late\"?**\nBecause — a child who screams at his own failure and a child who screams at being interrupted are two different children with two different mornings.\n\n**5. Where are his shoes kept, and could he go and get them without you? Is there somewhere at his own height to sit down while he puts them on, or is he doing this standing, or on a floor with your legs above him?**\nBecause — ten minutes may be the shoe, or it may be the posture, and I cannot tell which from here.\n\n**6. In the kitchen, what is he actually reaching for — name one thing he grabbed at this week. And is there anything in that kitchen that is his own, real, within his reach, that he may use without asking?**\nBecause — I want to know whether he is reaching at random or reaching at the work you are doing.\n\n**7. At the moment it happens — the shoes in his hands, the clock going — what do you do with your hands and your mouth? Do you wait, hover, narrate, reach in and straighten, or take over? And of the last seven mornings, how many ended with you finishing it while he screamed?**\nBecause — this is the part of the picture only you can see, and it tells me how much of his work is being done for him."
+        },
+        "run_id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+        "attempt": 1,
+        "node_id": "consult_pause",
+        "spec_type": "control.human_input",
+        "item_index": 0,
+        "dispatch_id": "",
+        "output_kind": "human_answer",
+        "invocation_count": 1
+      }
+    },
+    {
+      "seq": 20,
+      "event_type": "run_interrupted",
+      "node_id": "consult_pause",
+      "checkpoint_id": "8af3a3b6-356f-489b-9969-405b4c8a7557",
+      "step": null,
+      "spec_type": null,
+      "payload": {
+        "ts": "2026-09-12T19:10:40.444740Z",
+        "event": "run_interrupted",
+        "run_id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+        "node_id": "consult_pause",
+        "payload": {
+          "title": "Montessori has questions before she will advise",
+          "preset": "free_text",
+          "prompt": "Before I ask anything — one thing must be said plainly. My work and my books concern the child from three to seven. Your son is two and a half, below the period I have written about, so whatever I say afterwards will be said knowing that.\n\nNow, what I need to know. Answer only from what you have seen this week.\n\n**1. When nobody is speaking to him and nobody needs anything from him — an afternoon, a Saturday morning — what does he do? Tell me what he actually did, once.**\nBecause — I am listening for whether he chooses anything at all when the choice is his, or whether he only moves from one thing to the next.\n\n**2. In the last week, was there anything he did over and over — the same act, many times, past the point where it was useful?**\nBecause — repetition is the thing I look for first. If it is there, however small, everything else stands on it.\n\n**3. When he has finished something entirely by himself — not the shoes, anything, a lid, a zip, climbing something — how is he in the minutes after? Calm and quiet, or wound tighter?**\nBecause — I want to know what the work does to him when it is allowed to finish.\n\n**4. The ten minutes of shoes: tell me where the scream falls. Does it come when the shoe defeats him, or only when your hand comes near, or when you say the word \"late\"?**\nBecause — a child who screams at his own failure and a child who screams at being interrupted are two different children with two different mornings.\n\n**5. Where are his shoes kept, and could he go and get them without you? Is there somewhere at his own height to sit down while he puts them on, or is he doing this standing, or on a floor with your legs above him?**\nBecause — ten minutes may be the shoe, or it may be the posture, and I cannot tell which from here.\n\n**6. In the kitchen, what is he actually reaching for — name one thing he grabbed at this week. And is there anything in that kitchen that is his own, real, within his reach, that he may use without asking?**\nBecause — I want to know whether he is reaching at random or reaching at the work you are doing.\n\n**7. At the moment it happens — the shoes in his hands, the clock going — what do you do with your hands and your mouth? Do you wait, hover, narrate, reach in and straighten, or take over? And of the last seven mornings, how many ended with you finishing it while he screamed?**\nBecause — this is the part of the picture only you can see, and it tells me how much of his work is being done for him.\n\n———\nAnswer in your own words, in one block — as much or as little as you know. If you have not noticed something, say so; 'I don't know' is a real answer and she will work with it.",
+          "context": {},
+          "surface": "matrx-user/workflow",
+          "schema_hint": null,
+          "presentation": "showcase",
+          "component_ref": null,
+          "default_answer": ""
+        },
+        "checkpoint_id": "8af3a3b6-356f-489b-9969-405b4c8a7557"
+      }
+    },
+    {
+      "seq": 21,
+      "event_type": "run_resumed",
+      "node_id": null,
+      "checkpoint_id": null,
+      "step": null,
+      "spec_type": null,
+      "payload": {
+        "ts": "2026-09-12T19:12:39.496435Z",
+        "mode": "interrupt",
+        "event": "run_resumed",
+        "run_id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+        "from_checkpoint_id": "8af3a3b6-356f-489b-9969-405b4c8a7557"
+      }
+    },
+    {
+      "seq": 22,
+      "event_type": "node_skipped",
+      "node_id": "consult_pause",
+      "checkpoint_id": null,
+      "step": 5,
+      "spec_type": "control.human_input",
+      "payload": {
+        "ts": "2026-09-12T19:12:39.570482Z",
+        "step": 5,
+        "event": "node_skipped",
+        "output": {
+          "answer": "1. On Saturday morning he emptied the Tupperware cupboard onto the floor and sat putting lids on and off the boxes for a good while, then wandered off to the TV remote. 2. Yes, the lids, on and off, maybe twenty times, and going up and down the two back-door steps again and again. 3. After the lids he sat and hummed, quite calm. After the steps he came to show me, pleased. 4. The scream comes when my hand comes near, almost never at the shoe itself. Saying late makes it worse. 5. Shoes are in a basket by the front door and he can reach them himself. He does it standing up or sitting on the hall floor with me standing over him. There is no little chair. 6. He reaches for whatever I am using, the wooden spoon, the mixing bowl, the peeler. Nothing in the kitchen is his. 7. I hover and narrate, other foot, that one, no, and then I reach in and swap them over. Of the last seven mornings five ended with me finishing it while he screamed.",
+          "extras": {},
+          "matrx_decision": {
+            "reason": "Answered by the person who was asked.",
+            "actor_id": "87a6e699-3622-4869-8843-d0867456c0dd",
+            "authority": "human",
+            "escalated": false,
+            "decided_at": "2026-09-12T19:12:39.236959Z",
+            "actor_label": "admin@admin.com",
+            "deadline_at": null
+          }
+        },
+        "run_id": "10af94fd-bf7f-41c1-88ff-1098afff8351",
+        "attempt": 1,
+        "node_id": "consult_pause",
+        "spec_type": "control.human_input",
+        "item_index": 0,
+        "dispatch_id": "",
+        "invocation_count": 1
+      }
+    }
+  ],
+  "settled_outcome": {
+    "node_id": "consult_pause",
+    "step": 5,
+    "attempt": 1,
+    "output": {
+      "answer": "1. On Saturday morning he emptied the Tupperware cupboard onto the floor and sat putting lids on and off the boxes for a good while, then wandered off to the TV remote. 2. Yes, the lids, on and off, maybe twenty times, and going up and down the two back-door steps again and again. 3. After the lids he sat and hummed, quite calm. After the steps he came to show me, pleased. 4. The scream comes when my hand comes near, almost never at the shoe itself. Saying late makes it worse. 5. Shoes are in a basket by the front door and he can reach them himself. He does it standing up or sitting on the hall floor with me standing over him. There is no little chair. 6. He reaches for whatever I am using, the wooden spoon, the mixing bowl, the peeler. Nothing in the kitchen is his. 7. I hover and narrate, other foot, that one, no, and then I reach in and swap them over. Of the last seven mornings five ended with me finishing it while he screamed.",
+      "extras": {},
+      "matrx_decision": {
+        "reason": "Answered by the person who was asked.",
+        "actor_id": "87a6e699-3622-4869-8843-d0867456c0dd",
+        "authority": "human",
+        "escalated": false,
+        "decided_at": "2026-09-12T19:12:39.236959Z",
+        "actor_label": "admin@admin.com",
+        "deadline_at": null
+      }
+    }
+  }
+}
