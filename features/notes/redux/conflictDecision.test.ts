@@ -129,4 +129,25 @@ describe("Notes CAS conflict decision contract", () => {
     expect(state.notes[ID]._conflictDecision).toMatchObject({ reviewId: before.reviewId, currentVersion: 5, reviewedLiveContent: "mine" });
     expect(state.notes[ID].content).toBe("mine");
   });
+
+  it("refuses only a replaced review identity", () => {
+    let state = conflicted(); state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    const d = state.notes[ID]._conflictDecision!;
+    state = notesReducer(state, applyNoteConflictResolution({ id: ID, decisionId: d.decisionId, reviewId: "wrong-review", requestId: "identity", choice: "mine", proposedContent: "mine", reviewedLiveContent: "mine" }));
+    expect(state.conflictResolutionReceipts.identity?.status).toBe("refused"); expect(state.notes[ID]._conflictDecision).not.toBeNull();
+  });
+
+  it("refuses only a changed reviewed remote package", () => {
+    let state = conflicted(); state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    state = structuredClone(state); state.notes[ID]._conflictDecision!.reviewedRemote = row({ content: "changed", version: 5 }); const d = state.notes[ID]._conflictDecision!;
+    state = notesReducer(state, applyNoteConflictResolution({ id: ID, decisionId: d.decisionId, reviewId: d.reviewId, requestId: "remote", choice: "mine", proposedContent: "mine", reviewedLiveContent: "mine" }));
+    expect(state.conflictResolutionReceipts.remote?.status).toBe("refused"); expect(state.notes[ID]._conflictDecision).not.toBeNull();
+  });
+
+  it("refuses only a stale decision", () => {
+    let state = conflicted(); state = notesReducer(state, captureNoteConflictLiveBuffer({ id: ID, content: "mine" }));
+    state = notesReducer(state, upsertNoteFromServer({ note: { id: ID, organization_id: ORG, version: 6, updated_at: "2026-09-12T00:02:00.000Z" }, fetchStatus: "list" })); const d = state.notes[ID]._conflictDecision!;
+    state = notesReducer(state, applyNoteConflictResolution({ id: ID, decisionId: d.decisionId, reviewId: d.reviewId, requestId: "stale", choice: "mine", proposedContent: "mine", reviewedLiveContent: "mine" }));
+    expect(state.conflictResolutionReceipts.stale?.status).toBe("refused"); expect(state.notes[ID]._conflictDecision).not.toBeNull();
+  });
 });
