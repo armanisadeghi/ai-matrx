@@ -724,9 +724,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           id, userId, organizationId, instanceId,
           destination: reference
             ? { kind: "existing", folder: reference }
-            : target?.folder_name == null
+            : target?.folder_name === null
               ? { kind: "unfiled", organizationId }
-              : { kind: "create", name: "Draft", organizationId },
+              : { kind: "create", name: folder, organizationId },
         })).unwrap();
       } catch (error) {
         setDraftInitializationError(error instanceof Error ? error.message : "Could not start a new note.");
