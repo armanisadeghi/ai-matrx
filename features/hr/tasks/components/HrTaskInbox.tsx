@@ -29,6 +29,8 @@ import { failureWords } from "@/features/hr/time/periods/workflowHealth";
 import type {
     HrBulkOutcome,
     HrInboxRow,
+    HrInboxPage,
+    HrInboxSection,
     HrInboxScope,
     HrRefusal,
 } from "@/features/hr/tasks/types";
@@ -71,6 +73,16 @@ function Section({
     );
 }
 
+function SectionPaginator({ page, section, onPage }: { page: HrInboxPage; section: HrInboxSection; onPage: (section: HrInboxSection, offset: number) => void }) {
+    const first = page.total === 0 ? 0 : page.offset + 1;
+    const last = Math.min(page.offset + page.limit, page.total);
+    return <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <span>Showing {first}–{last} of {page.total}</span>
+        <Button size="sm" variant="outline" disabled={page.offset === 0} onClick={() => onPage(section, Math.max(0, page.offset - page.limit))}>Previous</Button>
+        <Button size="sm" variant="outline" disabled={page.offset + page.limit >= page.total} onClick={() => onPage(section, page.offset + page.limit)}>Next</Button>
+    </div>;
+}
+
 /**
  * THE ONE HR TASK INBOX (`/hr/tasks`).
  *
@@ -105,7 +117,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     // ordinary case; a hook, so it is called unconditionally.
     const rescueRefusal = useHrRescueRefusal();
 
-    const { inbox, refusal, error, loading, reload } = useHrInbox(scope, flowKey);
+    const { inbox, refusal, error, loading, reload, setPage, resetPages } = useHrInbox(scope, flowKey);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [rejectOpen, setRejectOpen] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -116,6 +128,11 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     const [bulkRefusal, setBulkRefusal] = useState<HrRefusal | null>(null);
     const [failure, setFailure] = useState<{ id: string; failureClass: string } | null>(null);
     const [pending, startTransition] = useTransition();
+
+    function changePage(section: HrInboxSection, offset: number) {
+        setSelectedIds([]);
+        setPage(section, offset);
+    }
 
     function setScope(next: HrInboxScope) {
         const query = new URLSearchParams(params.toString());
@@ -172,7 +189,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
             toast.success(
                 `${envelope.data.succeeded} decided${envelope.data.skipped ? `, ${envelope.data.skipped} skipped` : ""}`,
             );
-            await reload(true);
+            resetPages();
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "The bulk decision could not be sent");
         } finally {
@@ -232,7 +249,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                 })}
                 {flowKey ? (
                     <Button size="sm" variant="ghost" asChild>
-                        <Link href={hrTasksHref(orgRef, { scope })}>
+                        <Link href={hrTasksHref(orgRef, { scope })} onClick={() => setSelectedIds([])}>
                             Clear “{flowKey}” filter
                         </Link>
                     </Button>
@@ -328,7 +345,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                         key={bucket}
                         icon={CheckCheck}
                         title={`Needs my decision — ${URGENCY_LABEL[bucket]}`}
-                        subtitle={`${rows.length} item${rows.length === 1 ? "" : "s"}`}
+                        subtitle={`${rows.length} item${rows.length === 1 ? "" : "s"} on this page`}
                     >
                         <HrTaskTable
                             rows={rows}
@@ -337,7 +354,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                             onSelectedIdsChange={setSelectedIds}
                             // A decision taken in the row window must leave this queue, exactly
                             // as one taken on the request's own page does.
-                            onRowDecided={() => void reload(true)}
+                            onRowDecided={resetPages}
                             emptyTitle="Nothing here"
                             bulkActions={(selected) => (
                                 <div className="flex items-center gap-2">
@@ -361,6 +378,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                         />
                     </Section>
                 ))}
+                {inbox ? <SectionPaginator page={inbox.pagination.needs_my_decision} section="needs_my_decision" onPage={changePage} /> : null}
 
                 {!loading && mine.length === 0 && !refusal ? (
                     <Section icon={CheckCheck} title="Needs my decision">
@@ -374,7 +392,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                 ) : null}
 
                 {/* --- 2. Auto-applying soon, with a visible countdown (policy rule 4) --- */}
-                {inbox && inbox.auto_applying_soon.length > 0 ? (
+                {inbox && (inbox.auto_applying_soon.length > 0 || inbox.pagination.auto_applying_soon.total > 0) ? (
                     <Section
                         icon={TimerReset}
                         title="Auto-applying soon"
@@ -401,11 +419,12 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                 </li>
                             ))}
                         </ul>
+                        <SectionPaginator page={inbox.pagination.auto_applying_soon} section="auto_applying_soon" onPage={changePage} />
                     </Section>
                 ) : null}
 
                 {/* --- 3. Failures assigned to me --- */}
-                {inbox && inbox.failures_assigned_to_me.length > 0 ? (
+                {inbox && (inbox.failures_assigned_to_me.length > 0 || inbox.pagination.failures_assigned_to_me.total > 0) ? (
                     <Section
                         icon={AlertTriangle}
                         title="Failures assigned to me"
@@ -454,6 +473,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                 </li>
                             ))}
                         </ul>
+                        <SectionPaginator page={inbox.pagination.failures_assigned_to_me} section="failures_assigned_to_me" onPage={changePage} />
                     </Section>
                 ) : null}
 
@@ -470,11 +490,12 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                             showDelivery={false}
                             emptyTitle="Nothing open in this scope"
                         />
+                        <SectionPaginator page={inbox.pagination.scope_rows} section="scope_rows" onPage={changePage} />
                     </Section>
                 ) : null}
 
                 {/* --- 5. Waiting on others (mine) + recently decided --- */}
-                {inbox && inbox.waiting_on_others.length > 0 ? (
+                {inbox && (inbox.waiting_on_others.length > 0 || inbox.pagination.waiting_on_others.total > 0) ? (
                     <Section
                         icon={Hourglass}
                         title="Waiting on others"
@@ -502,10 +523,11 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                 </li>
                             ))}
                         </ul>
+                        <SectionPaginator page={inbox.pagination.waiting_on_others} section="waiting_on_others" onPage={changePage} />
                     </Section>
                 ) : null}
 
-                {inbox && inbox.recently_decided.length > 0 ? (
+                {inbox && (inbox.recently_decided.length > 0 || inbox.pagination.recently_decided.total > 0) ? (
                     <Section
                         icon={History}
                         title="Recently decided"
@@ -558,6 +580,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                 </li>
                             ))}
                         </ul>
+                        <SectionPaginator page={inbox.pagination.recently_decided} section="recently_decided" onPage={changePage} />
                     </Section>
                 ) : null}
             </div>
@@ -569,7 +592,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                 onOpenChange={(open) => !open && setFailure(null)}
                 // The resolved failure must leave BOTH lists — this section and the request's own
                 // panel — so the reload is the whole point, not a nicety.
-                onResolved={() => reload(true)}
+                onResolved={resetPages}
             />
 
             {/* §5.2: bulk REJECT always requires one reason applied to the whole batch. */}
