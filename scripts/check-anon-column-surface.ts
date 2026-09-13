@@ -51,6 +51,7 @@ import { createRequire } from "node:module";
 import {
   ANON_COLUMN_SURFACE,
   ANON_COLUMN_SURFACE_QUERY,
+  POSTGREST_EXPOSED_SCHEMAS,
   classifyAnonColumns,
   type LiveAnonColumn,
 } from "../lib/security/public-exposure";
@@ -134,35 +135,45 @@ async function connect() {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function measure(client: any): Promise<LiveAnonColumn[]> {
-  const relations = ANON_COLUMN_SURFACE.map((d) => d.relation);
-  const { rows } = await client.query(ANON_COLUMN_SURFACE_QUERY, [relations]);
+  // The WHOLE surface, not just the declared relations — an undeclared relation
+  // is itself a finding (DD-186).
+  const { rows } = await client.query(ANON_COLUMN_SURFACE_QUERY, [[...POSTGREST_EXPOSED_SCHEMAS]]);
   return rows as LiveAnonColumn[];
 }
 
 function report(live: LiveAnonColumn[]): number {
   const drift = classifyAnonColumns(live);
-  const byRelation = new Map<string, string[]>();
-  for (const l of live) byRelation.set(l.relation, [...(byRelation.get(l.relation) ?? []), l.column]);
+  const relations = new Set(live.map((l) => l.relation));
 
   console.log(
-    `${C.b}Anon column surface${C.x} ${C.d}(which columns a signed-out visitor can read on a deliberately public relation)${C.x}`,
+    `${C.b}Anon column surface${C.x} ${C.d}(every column a signed-out visitor can read, across the ` +
+      `${POSTGREST_EXPOSED_SCHEMAS.length} schemas PostgREST exposes)${C.x}\n` +
+      `  ${relations.size} relation(s) live, ${ANON_COLUMN_SURFACE.length} declared, ` +
+      `${live.length} readable column(s).`,
   );
-  for (const d of ANON_COLUMN_SURFACE) {
-    const actual = byRelation.get(d.relation) ?? [];
-    console.log(`  ${d.relation} ${C.d}— ${actual.length} live column(s), ${d.columns.length} declared${C.x}`);
-  }
 
   if (!drift.length) {
-    console.log(`${C.g}OK${C.x}   every declared relation publishes exactly the columns it declares.`);
+    console.log(`${C.g}OK${C.x}   every anon-readable relation publishes exactly the columns it declares.`);
     return 0;
   }
 
   for (const d of drift) {
+    if (d.undeclared) {
+      console.log(
+        `${C.r}FAIL${C.x} ${d.relation} is readable by ${C.b}anon${C.x} and NOTHING DECLARES IT.\n` +
+          `     ${d.extra.length} column(s): ${d.extra.join(", ")}\n` +
+          `     A signed-out visitor with the publishable key can read them today. Either revoke the\n` +
+          `     grant (revoke select on ${d.relation} from anon;) or add a row to ANON_COLUMN_SURFACE\n` +
+          `     in lib/security/public-exposure.ts naming the columns AND the reader that needs them.`,
+      );
+      continue;
+    }
     if (d.extra.length) {
       console.log(
         `${C.r}FAIL${C.x} ${d.relation} publishes ${d.extra.length} column(s) nobody declared: ${C.b}${d.extra.join(", ")}${C.x}\n` +
           `     A signed-out visitor with the publishable key can read them today.\n` +
-          `     Either revoke them (revoke select on <relation> from anon; grant select (<the declared list>) ... to anon)\n` +
+          `     Either revoke them (revoke select on ${d.relation} from anon;\n` +
+          `                          grant select (<the declared list>) on ${d.relation} to anon;)\n` +
           `     or add them to ANON_COLUMN_SURFACE in lib/security/public-exposure.ts WITH a reason.`,
       );
     }
@@ -242,6 +253,33 @@ async function main() {
       }
       reds++;
       console.log(`${C.g}RED 2 proven${C.x} ${C.d}(anon lost ${target.relation}.${gone} → ${n} finding(s))${C.x}\n`);
+    } finally {
+      await client.query("rollback");
+    }
+
+    // RED 3 — a relation nobody declared becomes anon-readable.
+    await client.query("begin");
+    try {
+      const declared = ANON_COLUMN_SURFACE.map((d) => d.relation);
+      const victim = (
+        await client.query(
+          `select n.nspname || '.' || c.relname as rel
+             from pg_class c join pg_namespace n on n.oid = c.relnamespace
+            where c.relkind in ('r','p') and n.nspname = any($1::text[])
+              and not (n.nspname || '.' || c.relname = any($2::text[]))
+            order by 1 limit 1`,
+          [[...POSTGREST_EXPOSED_SCHEMAS], declared],
+        )
+      ).rows[0]?.rel as string | undefined;
+      if (!victim) throw new Error("no undeclared relation to grant — cannot force RED 3.");
+      await client.query(`grant select on ${victim} to anon`);
+      const n = report(await measure(client));
+      if (n === 0) {
+        console.error(`\n${C.r}FAIL${C.x} granting anon SELECT on the undeclared ${victim} did NOT fail the guard. It cannot see a new door.`);
+        process.exit(1);
+      }
+      reds++;
+      console.log(`${C.g}RED 3 proven${C.x} ${C.d}(anon granted the undeclared ${victim} → ${n} finding(s))${C.x}\n`);
     } finally {
       await client.query("rollback");
     }
