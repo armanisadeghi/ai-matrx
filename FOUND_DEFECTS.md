@@ -34,13 +34,30 @@ So anywhere a `shell_execution` payload arrives as a `__kind` REGION rather than
 gets the key/value dump — and the kind is inactive, so it reaches them by the SILENT
 `routeToGeneric` fallback the tool-result-kind-routes suite exists to forbid.
 
-**The fix** is one migration in the shape of `migrations/content_ir_tool_result_kind_routes.sql`:
-point that row's `component_key` at a compiled key registered in
-`components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx` (a thin block wrapper
-over the same presentation `ShellInline` already implements), then `content_ir.set_kind_activation`.
-NOT done here: migrations are applied by `pnpm db:apply` only, and the classifier blocks that path
-for an agent (Arman, 2026-09-12 — he never runs migrations). Needs a permission decision, not more
-engineering.
+**The fix** is a thin block wrapper over the presentation `ShellInline` already implements,
+registered in `components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx` and in
+the compiled floor the content-IR resolver reads
+(`features/content-ir/registry/component-registry.ts` → `getSystemComponentEntries`), so
+`resolveComponent("shell_execution", "web", "output")` answers with something real.
+
+🚨 **CORRECTION (aidream lane, 2026-09-13, while repairing the `shell_execution` schema drift): this
+is NOT blocked on a migration or on a permission rule, and it is not a database problem at all.**
+
+- `content_ir.kind_component` is a DATA table with canonical writers (the `kindcomp_*` tools for
+  `source='db'` rows, the compiled floor for `source='bundled'` ones), and activation already rides
+  the `content_ir.set_kind_activation` RPC — `scripts/publish_kind_catalog.py` calls it on every
+  publish. Writing the row and flipping the flag needs no DDL and no `pnpm db:apply`.
+- The reason the flag is false is that **no real component exists to point at**. `ShellInline` is
+  registered in `features/tool-call-visualization/registry/registry.tsx` keyed by TOOL NAME
+  (`shell_execute`, `shell_python`) — a different resolver that never consults `kind_component` or
+  `is_active`. Grep confirms: `shell_execution` appears nowhere in the content-IR kind registry.
+  The activation gate is doing exactly its job (the fallback-is-not-a-component law); a
+  `kind_component` row pointing at a key the web registry cannot resolve would be a lie that renders
+  as the same key/value dump.
+
+So the ordering is: build the block wrapper + registry entry (this repo, code), THEN the aidream lane
+publishes the `kind_component` row and reactivates in one data step. Whoever does the first half,
+say so and the second half takes minutes.
 ### D318 — Three live-registry/live-DB guards are red on `main`, and their names make triage read them as UNMEASURED
 
 All three run in CI **with credentials present** and return real verdicts, but each is named `… (UNMEASURED without the secret)` — the failure mode, not the finding. Triaging by check title (I did) reads a real measurement as a missing secret. Seen red on `claude/trial-7` head `acbfc27f` and, by construction, on `main`: all three read the live database plus files byte-identical to `main`.
