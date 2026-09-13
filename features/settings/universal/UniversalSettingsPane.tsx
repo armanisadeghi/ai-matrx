@@ -88,7 +88,13 @@ export function UniversalSettingsRows({
     <>
       {[...groups.entries()].map(([group, rows]) => (
         <SettingsSection key={group} title={group}>
-          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId, ladder }) => (
+          {[...rows].sort(compareKnobOrder).map(({ knob, scopeKind, scopeId, ladder }) => {
+            // ONE disposition per knob, computed once and given to BOTH the
+            // row and its exceptions. It used to be computed here for the row
+            // and ignored by the panel below it, so a key that said "not
+            // available yet" still offered a live per-table picker (V-57 F1).
+            const stateOnly = dispositionFor(knob.full_key, settings.editingContext);
+            return (
             <div key={knob.full_key}>
               <KnobOverrideRow
                 knob={knob}
@@ -104,7 +110,7 @@ export function UniversalSettingsRows({
                   canWrite: settings.canManageSystem,
                   registeredDefault: knob.shipped_default,
                 } : undefined}
-                stateOnly={dispositionFor(knob.full_key, settings.editingContext)}
+                stateOnly={stateOnly}
                 hideKey={hideKey}
                 onChanged={onChanged ?? settings.refresh}
               />
@@ -117,10 +123,11 @@ export function UniversalSettingsRows({
                 and has no rows to pick.
               */}
               {settings.editingContext === "organization" && (
-                <KnobRungOverrides knob={knob} />
+                <KnobRungOverrides knob={knob} stateOnly={stateOnly} />
               )}
             </div>
-          ))}
+            );
+          })}
         </SettingsSection>
       ))}
     </>

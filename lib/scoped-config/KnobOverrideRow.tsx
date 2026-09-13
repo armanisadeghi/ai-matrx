@@ -236,7 +236,9 @@ export function KnobOverrideRow(props: {
       }
       toast.success(
         value === null
-          ? `${knob.label} now inherits from ${inheritedFrom}`
+          ? scopeLabel
+            ? `${scopeLabel} no longer has its own ${knob.label}; it follows ${inheritedFrom}.`
+            : `${knob.label} now inherits from ${inheritedFrom}`
           : `${knob.label} saved. ${blastRadius}`,
       );
       onChanged();
@@ -270,10 +272,19 @@ export function KnobOverrideRow(props: {
       if (confirmed) await write(null);
       return;
     }
+    // 🚨 F2 (V-57). A destructive click names its TARGET, not only its
+    // consequence. With twenty exceptions listed, every confirm used to read
+    // character-for-character the same — "Inherit <knob label> from …?" — so
+    // the one sentence a person reads before destroying a row could not tell
+    // them which row. At a picked scope the row IS the subject, so it leads.
     const confirmed = await confirm({
-      title: `Inherit ${knob.label} from ${inheritedFrom}?`,
-      description: `The override is removed and this setting falls back to ${displayValue(inheritedValue)}.`,
-      confirmLabel: "Inherit it",
+      title: scopeLabel
+        ? `Remove ${scopeLabel}’s own value for ${knob.label}?`
+        : `Inherit ${knob.label} from ${inheritedFrom}?`,
+      description: scopeLabel
+        ? `${scopeLabel} stops having its own value and follows ${inheritedFrom}, which is ${displayValue(inheritedValue)} today.`
+        : `The override is removed and this setting falls back to ${displayValue(inheritedValue)}.`,
+      confirmLabel: scopeLabel ? `Remove ${scopeLabel}’s value` : "Inherit it",
     });
     if (confirmed) await write(null);
   };

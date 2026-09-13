@@ -29,12 +29,30 @@
  *               `KnobScopeKindName` union in lib/scoped-config/types.ts (the
  *               type `resolveKnobLadder` accepts) and `RUNG_NAMES` in
  *               lib/scoped-config/ladder.ts (the words a person reads).
- *   ADDRESSED   the universal UI (features/settings/universal/) actually passes
- *               that rung to `knob_index`: organization + user through
- *               `organizationId`/`userId`, sub-org rungs through
- *               `scopes: [{kind: "…"}]`, the device rung through `deviceId`.
- *               A rung the UI never addresses shows in the ladder with
- *               `scope_id: null` and can never be written from that screen.
+ *   ADDRESSED   a person can actually reach that rung for THAT KEY on a
+ *               rendered screen.
+ *
+ *               🚨 THIS USED TO BE A DECLARATION, NOT A MEASUREMENT (V-57,
+ *               2026-09-13). The rule was: read the source text of
+ *               `features/settings/universal/`, and if the rung's name appears
+ *               in a `kind: "…"` literal anywhere in it, call it addressed. So
+ *               `SUB_ORG_SCOPE_SOURCES` — a constant listing the rungs a picker
+ *               COULD be built for — made every sub-org rung "addressed" the
+ *               day it was typed. The gate printed green over 582 key-rung
+ *               pairs (194 `hr.*` keys × employer_profile/pay_group/location)
+ *               that no screen in the product offers, because the only surface
+ *               that mounts the per-rung picker is the organization
+ *               configuration page and that page filters `hr.*` OUT by its own
+ *               first line. Declared-vs-observed state, printed as coverage.
+ *
+ *               Now: `organization`, `user` and `device` are addressed by being
+ *               the destinations themselves. A ROW-KEYED rung (table, agent,
+ *               employer_profile, brand, pay_group, site, location) is
+ *               addressed for a key only when BOTH hold, both read from disk:
+ *                 · the universal pane actually mounts `<KnobRungOverrides`, and
+ *                 · the organization destination does not exclude that key's
+ *                   feature (its `settings.knobs.filter(...)` is parsed, and an
+ *                   unparseable filter is UNMEASURED, never a pass).
  *
  * DELIBERATELY UNFILED — the ten `commerce.*` namespaces have no domain in the
  * registry because naming one is Arman's call (migration 0631's header). They
@@ -50,8 +68,8 @@
  *
  * Exit: 0 clean · 1 unreachable key(s) · 2 UNMEASURED.
  */
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
 import process from "node:process";
 import {
   C,
@@ -68,6 +86,15 @@ const UNIVERSAL_DIR = join(ROOT, "features", "settings", "universal");
 const TYPES_FILE = join(ROOT, "lib", "scoped-config", "types.ts");
 const LADDER_FILE = join(ROOT, "lib", "scoped-config", "ladder.ts");
 const ALLOWLIST_FILE = join(ROOT, "scripts", "settings-ladder-ui-allowlist.json");
+const UNADDRESSED_BASELINE_FILE = join(ROOT, "scripts", "settings-ladder-ui-unaddressed-baseline.json");
+/** The ONE surface that mounts the per-rung override picker today. */
+const ORG_DESTINATION_FILE = join(
+  ROOT, "app", "(core)", "organizations", "[orgId]", "settings", "configuration", "page.tsx",
+);
+/** Rungs keyed by a ROW — the ones a person reaches only through a picker. */
+const ROW_KEYED_RUNGS = new Set([
+  "employer_profile", "brand", "pay_group", "site", "location", "table", "agent",
+]);
 const MAPPING_REMEDY =
   "add the feature to the m(feature, dom, feat) mapping table in aidream/db/migrations/0631_feature_knob_taxonomy_mapping.sql and apply it live";
 
@@ -81,6 +108,11 @@ interface Finding {
 interface AllowEntry {
   feature: string;
   reason: string;
+}
+
+interface UnaddressedBaseline {
+  _baselined?: string;
+  rungs: Record<string, { owner: string; reason: string; keys: string[] }>;
 }
 
 function readDirText(dir: string): { files: number; text: string } {
@@ -116,6 +148,7 @@ function rungNameKeys(text: string): Set<string> {
 async function main(): Promise<void> {
   const json = process.argv.includes("--json");
   const selfTest = process.argv.includes("--self-test");
+  const write = process.argv.includes("--write");
 
   const rows = await loadRegistry(GUARD);
 
@@ -152,11 +185,38 @@ async function main(): Promise<void> {
   if (named.size === 0) {
     unmeasured(GUARD, "Could not parse KnobScopeKindName / RUNG_NAMES — the UI vocabulary is unreadable.", "keep the union and RUNG_NAMES literal");
   }
+  // The destinations. These three are reached by BEING the screen.
   const addressed = new Set<string>();
   if (/organizationId/.test(ui.text)) addressed.add("organization");
   if (/userId/.test(ui.text)) addressed.add("user");
   if (/deviceId/.test(ui.text)) addressed.add("device");
-  for (const m of ui.text.matchAll(/kind\s*:\s*["']([a-z_]+)["']/g)) addressed.add(m[1]);
+
+  // Row-keyed rungs: measured, never declared. First — is the picker mounted?
+  const pickerMounted = /<\s*KnobRungOverrides\b/.test(ui.text);
+  // Second — which features does the destination that mounts it refuse to show?
+  // `const knobs = settings.knobs.filter((knob) => !knob.feature.startsWith("hr."));`
+  let excludedPrefixes: string[] = [];
+  if (pickerMounted) {
+    if (!existsSync(ORG_DESTINATION_FILE)) {
+      unmeasured(
+        GUARD,
+        `The organization destination (${relative(ROOT, ORG_DESTINATION_FILE)}) is not on disk, so what it renders — and therefore which rungs a person can reach — cannot be read.`,
+        "restore the organization configuration page, or point ORG_DESTINATION_FILE at its replacement",
+      );
+    }
+    const destination = readFileSync(ORG_DESTINATION_FILE, "utf8");
+    const filter = /settings\.knobs\.filter\(\s*\((\w+)\)\s*=>([^;]*?)\);/.exec(destination);
+    if (!filter) {
+      unmeasured(
+        GUARD,
+        `Could not read which keys ${relative(ROOT, ORG_DESTINATION_FILE)} renders (no \`settings.knobs.filter(...)\` found). Guessing would be exactly the declared-vs-observed failure this check exists to end.`,
+        "keep the destination's key filter as a single `settings.knobs.filter((knob) => …)` expression, or teach this guard the new shape",
+      );
+    }
+    excludedPrefixes = [...filter[2].matchAll(/!\s*\w+\.feature\.startsWith\(\s*["']([^"']+)["']\s*\)/g)].map((m) => m[1]);
+  }
+  const reachesRowKeyedRung = (feature: string): boolean =>
+    pickerMounted && !excludedPrefixes.some((prefix) => feature.startsWith(prefix));
 
   const allow: AllowEntry[] = existsSync(ALLOWLIST_FILE)
     ? (JSON.parse(readFileSync(ALLOWLIST_FILE, "utf8")).entries as AllowEntry[])
@@ -174,9 +234,22 @@ async function main(): Promise<void> {
       label: "SELF-TEST — not a real registry row",
       taxonomy_node_id: null,
     });
+    // The ROW-KEYED arm (V-57): a key whose feature the destination excludes
+    // must come back UNADDRESSED at its row-keyed rung. Under the old
+    // text-scan rule this row passed, because `location` appears in
+    // `SUB_ORG_SCOPE_SOURCES` — which is precisely the hole being closed.
+    graded.push({
+      feature: "hr.self_test",
+      key: "a_rung_no_screen_offers",
+      value_type: "boolean",
+      overridable_by: ["organization", "location"],
+      ui: null,
+      label: "SELF-TEST — not a real registry row",
+      taxonomy_node_id: "self-test",
+    });
   }
 
-  const findings: Finding[] = [];
+  let findings: Finding[] = [];
   const tolerated: KnobRow[] = [];
   for (const r of graded) {
     const ob = r.overridable_by ?? [];
@@ -189,11 +262,77 @@ async function main(): Promise<void> {
         findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNREGISTERED_RUNG", rung });
       } else if (!named.has(rung)) {
         findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNNAMED_RUNG", rung });
+      } else if (ROW_KEYED_RUNGS.has(rung)) {
+        if (!reachesRowKeyedRung(r.feature)) {
+          findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNADDRESSED_RUNG", rung });
+        }
       } else if (!addressed.has(rung)) {
         findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNADDRESSED_RUNG", rung });
       }
     }
   }
+  // ── THE UNADDRESSED RATCHET (V-57) ──────────────────────────────────────
+  // Making ADDRESSED a measurement instead of a declaration surfaced 582 real
+  // key-rung pairs that were always unreachable and always green. They are not
+  // this check's to fix and they are not a reason to go back to lying, so they
+  // are recorded as KNOWN DEBT with an owner, printed on every run, and the
+  // gate fails LOUD on anything NEW — the same shrinking baseline the orphan,
+  // hardcoded and env-toggle guards carry. `--write` only ever REMOVES entries.
+  const unaddressedKey = (f: Finding) => `${f.rung}|${addr(f.feature, f.key)}`;
+  const unaddressedBaseline: UnaddressedBaseline | null = existsSync(UNADDRESSED_BASELINE_FILE)
+    ? (JSON.parse(readFileSync(UNADDRESSED_BASELINE_FILE, "utf8")) as UnaddressedBaseline)
+    : null;
+  const knownUnaddressed = new Set<string>();
+  for (const [rung, entry] of Object.entries(unaddressedBaseline?.rungs ?? {})) {
+    for (const pair of entry.keys) knownUnaddressed.add(`${rung}|${pair}`);
+  }
+  const tolerableUnaddressed = findings.filter(
+    (f) => f.problem === "UNADDRESSED_RUNG" && knownUnaddressed.has(unaddressedKey(f)),
+  );
+  const tolerated_pairs = new Set(tolerableUnaddressed.map(unaddressedKey));
+  const staleUnaddressed = [...knownUnaddressed].filter((pair) => !tolerated_pairs.has(pair));
+  if (write) {
+    const rungs: Record<string, { owner: string; reason: string; keys: string[] }> = {};
+    const keep = unaddressedBaseline === null
+      ? findings.filter((f) => f.problem === "UNADDRESSED_RUNG")
+      : tolerableUnaddressed;
+    for (const f of keep) {
+      const prior = unaddressedBaseline?.rungs[f.rung!];
+      const entry = (rungs[f.rung!] ??= {
+        owner: prior?.owner ?? "(unassigned)",
+        reason: prior?.reason ?? "No rendered surface offers a picker for this rung.",
+        keys: [],
+      });
+      entry.keys.push(addr(f.feature, f.key));
+    }
+    for (const entry of Object.values(rungs)) entry.keys.sort();
+    writeFileSync(
+      UNADDRESSED_BASELINE_FILE,
+      `${JSON.stringify(
+        {
+          _law: "THE BASELINE ONLY SHRINKS. A NEW unreachable rung is a defect; adding it here is the defect this guard exists to catch.",
+          _why:
+            "A rung a registry row names and no screen offers is a promise the product cannot keep. These pairs were " +
+            "unreachable while this guard still called them 'addressed', because ADDRESSED was measured by reading a " +
+            "constant in features/settings/universal/ rather than by what any surface renders (V-57, 2026-09-13). They " +
+            "are printed on every run as KNOWN DEBT, tolerated only so the guard can hold the line against NEW ones.",
+          _how: "`pnpm check:settings-ladder-ui --write` removes pairs that became reachable. It CANNOT add one.",
+          _baselined: unaddressedBaseline?._baselined ?? new Date().toISOString().slice(0, 10),
+          _ratcheted: new Date().toISOString().slice(0, 10),
+          rungs,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    const total = Object.values(rungs).reduce((n, entry) => n + entry.keys.length, 0);
+    console.log(
+      `${unaddressedBaseline === null ? "Seeded" : "Ratcheted"} ${relative(ROOT, UNADDRESSED_BASELINE_FILE)}: ${total} known unreachable key-rung pair(s) across ${Object.keys(rungs).length} rung(s).`,
+    );
+    process.exit(0);
+  }
+  findings = findings.filter((f) => !(f.problem === "UNADDRESSED_RUNG" && knownUnaddressed.has(unaddressedKey(f))));
+
   const unreachableKeys = new Set(findings.map((f) => addr(f.feature, f.key)));
   const staleAllow = allow.filter((a) => !graded.some((r) => r.feature === a.feature && r.taxonomy_node_id === null));
 
@@ -246,7 +385,7 @@ async function main(): Promise<void> {
           ? "not a platform.knob_scope_kind row — knob_index drops it from scope_chain silently"
           : problem === "UNNAMED_RUNG"
             ? "not in KnobScopeKindName / RUNG_NAMES — the UI has no word for it"
-            : "the universal UI never passes this rung to knob_index — nobody can edit at it";
+            : "no rendered screen offers this rung for this key — nobody can set a value at it";
       console.log(`\n  ${C.bold}${problem}${C.reset} ${C.dim}(${group.length}) — ${why}${C.reset}`);
       for (const [rung, list] of byRung) {
         const byFeature = new Map<string, number>();
@@ -262,11 +401,27 @@ async function main(): Promise<void> {
           ? "register the rung in platform.knob_scope_kind with a precedence — or take it out of overridable_by"
           : problem === "UNNAMED_RUNG"
             ? "add the rung to KnobScopeKindName (lib/scoped-config/types.ts) and RUNG_NAMES (ladder.ts)"
-            : "let the universal UI address the rung: pass it in `scopes` (or `deviceId`) to fetchKnobIndexResponse and offer the rung picker";
+            : "a ROW-KEYED rung needs a screen that mounts <KnobRungOverrides /> AND renders this key (the organization configuration page excludes some features by prefix); the destinations organization/user/device need the rung passed to knob_index";
       console.log(`    ${C.yellow}Fix:${C.reset} ${fix}`);
     }
   }
 
+  if (tolerableUnaddressed.length > 0) {
+    const byRung = new Map<string, number>();
+    for (const f of tolerableUnaddressed) byRung.set(f.rung!, (byRung.get(f.rung!) ?? 0) + 1);
+    console.log(
+      `\n${C.yellow}${C.bold}[KNOWN DEBT] ${tolerableUnaddressed.length} key-rung pair(s) NO rendered screen offers${C.reset} ${C.dim}— scripts/settings-ladder-ui-unaddressed-baseline.json; the list only shrinks${C.reset}`,
+    );
+    for (const [rung, n] of [...byRung].sort((a, b) => b[1] - a[1])) {
+      const entry = unaddressedBaseline?.rungs[rung];
+      console.log(`  ${C.cyan}${rung}${C.reset} ${C.dim}(${n}) — owner: ${entry?.owner ?? "(unassigned)"} — ${entry?.reason ?? ""}${C.reset}`);
+    }
+  }
+  if (staleUnaddressed.length > 0) {
+    console.log(
+      `\n${C.green}${staleUnaddressed.length} baselined pair(s) are now reachable${C.reset} ${C.dim}— ratchet with: pnpm check:settings-ladder-ui --write${C.reset}`,
+    );
+  }
   if (tolerated.length > 0) {
     console.log(
       `\n${C.yellow}${C.bold}[BASELINED] ${tolerated.length} unfiled key(s) tolerated by scripts/settings-ladder-ui-allowlist.json${C.reset} ${C.dim}— they render under "not filed under a domain yet"; the list only shrinks${C.reset}`,

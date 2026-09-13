@@ -131,7 +131,21 @@ export function scopeBlastRadius(
   return `Applies to the ${nounWord(kind)} “${label}” in ${org}, and to nothing else — every other ${nounWord(kind)} keeps ${rungName("organization")}’s value.`;
 }
 
-/** One rung's searchable list of rows, minus the ones already overridden. */
+/**
+ * One rung's searchable list of rows, minus the ones already overridden.
+ *
+ * THE SEARCH IS OURS, THE ENGINE IS `cmdk`'s. `shouldFilter={false}` with a
+ * controlled query, because two things were dishonest when cmdk filtered:
+ *   • the group heading said "803 tables" while two were on screen — it was
+ *     counting the list it was handed, not the list a person could see;
+ *   • `value={row.label}` is cmdk's identity for an item, and
+ *     `platform.entity_types` has a genuine duplicate active label
+ *     (`iam_access_audit` and `hr_access_audit` both read "Access audit"), so
+ *     the two rows shared ONE value and highlighted together — a person could
+ *     not tell which table they were about to except, and DOM order decided.
+ * cmdk keeps what it is for (keyboard, roving focus, accessible names); the
+ * match and the count are computed here, over the same array that renders.
+ */
 function ScopeRowPicker({
   kind,
   organizationId,
@@ -149,6 +163,7 @@ function ScopeRowPicker({
   const [rows, setRows] = useState<ScopeRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState("");
 
   const load = () => {
     if (rows !== null || busy) return;
@@ -161,6 +176,11 @@ function ScopeRowPicker({
   };
 
   const available = (rows ?? []).filter((row) => !taken.has(row.id));
+  const needle = query.trim().toLowerCase();
+  const matching = needle === ""
+    ? available
+    : available.filter((row) => row.label.toLowerCase().includes(needle));
+  const ambiguous = ambiguousLabels(available);
 
   return (
     <Popover
@@ -168,6 +188,7 @@ function ScopeRowPicker({
       onOpenChange={(next) => {
         setOpen(next);
         if (next) load();
+        if (!next) setQuery("");
       }}
     >
       <PopoverTrigger asChild>
@@ -211,24 +232,39 @@ function ScopeRowPicker({
             {`Every ${nounWord(kind)} already has its own value for this setting.`}
           </p>
         ) : (
-          <Command>
-            <CommandInput placeholder={`Search ${plural(kind)}…`} className="h-8 text-xs" />
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder={`Search ${plural(kind)}…`}
+              className="h-8 text-xs"
+              value={query}
+              onValueChange={setQuery}
+            />
             <CommandList className="max-h-72">
               <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
                 {`No matching ${nounWord(kind)}.`}
               </CommandEmpty>
-              <CommandGroup heading={`${available.length} ${plural(kind)}`}>
-                {available.map((row) => (
+              <CommandGroup heading={`${matching.length} ${plural(kind)}`}>
+                {matching.map((row) => (
                   <CommandItem
                     key={row.id}
-                    value={row.label}
+                    value={row.id}
                     onSelect={() => {
                       setOpen(false);
+                      setQuery("");
                       onPick(row);
                     }}
-                    className="text-xs"
+                    className="flex items-center gap-2 text-xs"
                   >
                     <span className="truncate">{row.label}</span>
+                    {ambiguous.has(row.label.toLowerCase()) && (
+                      // Two registered rows really are called this. The
+                      // shortest thing that tells them apart is their own id;
+                      // showing it here beats letting DOM order decide which
+                      // one a person just excepted.
+                      <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground">
+                        {row.id.slice(0, 8)}
+                      </span>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -240,10 +276,52 @@ function ScopeRowPicker({
   );
 }
 
+/** Lower-cased labels that more than one row in this list carries. */
+export function ambiguousLabels(rows: readonly ScopeRow[]): Set<string> {
+  const seen = new Map<string, number>();
+  for (const row of rows) {
+    const key = row.label.toLowerCase();
+    seen.set(key, (seen.get(key) ?? 0) + 1);
+  }
+  return new Set([...seen.entries()].filter(([, n]) => n > 1).map(([label]) => label));
+}
+
 /** A row a person picked but has not valued yet. It is not an override until saved. */
 type Draft = { kind: SubOrgScopeKind; row: ScopeRow };
 
-export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
+/**
+ * Where a DRAFT row's displayed value comes from — the nearest rung above it
+ * that holds a live value, named by the resolver, never guessed.
+ */
+export function draftInheritedFrom(
+  knob: ScopedKnob,
+  kind: SubOrgScopeKind,
+  isOrgAdmin: boolean,
+): string {
+  return resolveKnobLadder(knob, kind, { isOrgAdmin }).inheritedFrom;
+}
+
+export function KnobRungOverrides({
+  knob,
+  stateOnly,
+}: {
+  knob: ScopedKnob;
+  /**
+   * 🚨 F1 (V-57). The SAME disposition the knob's own row was given. A key with
+   * no runtime consumer renders "This preference is not available yet" at the
+   * organization rung — and used to render, one line below, a working
+   * "Add override for a table…" button over all 803 registered tables. One
+   * knob, one viewport, two contradictory statements: the org rung disabled
+   * because nothing reads the key, and the table rung cheerfully writing a row
+   * that the same nothing reads. That is the exact class this build's own
+   * commit message describes, reintroduced one rung down.
+   *
+   * When it is set: no picker, no drafts, and the standing exceptions render
+   * read-only so a person can still SEE (and, when a consumer arrives, manage)
+   * what is already stored — with the reason said out loud.
+   */
+  stateOnly?: { reason: string; consumerEvidence: string } | null;
+}) {
   const {
     organizationId,
     organizationName,
@@ -255,34 +333,47 @@ export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
   } = useUniversalSettings();
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [labels, setLabels] = useState<Record<string, ScopeRow[]>>({});
+  const [labelErrors, setLabelErrors] = useState<Record<string, string>>({});
+
+  // Labels for the rows that ALREADY hold a value: a person must never be shown
+  // a uuid. Read once per rung, when the panel mounts.
+  const ensureLabels = (kind: SubOrgScopeKind) => {
+    if (labels[kind] || !organizationId) return;
+    void fetchScopeRows(kind, organizationId)
+      .then((result) => setLabels((prior) => ({ ...prior, [kind]: result })))
+      .catch((err: unknown) => {
+        // A failed label read leaves the row identified by its id below WITH
+        // the reason beside it. The previous version swallowed the error into
+        // an empty list while its own comment claimed the reason was stated.
+        setLabelErrors((prior) => ({ ...prior, [kind]: extractErrorMessage(err) }));
+        setLabels((prior) => ({ ...prior, [kind]: [] }));
+      });
+  };
 
   const kinds = pickableRungsFor(knob.overridable_by);
+
+  // 🚨 F5 (V-57). The list is read when this panel MOUNTS, not when it is
+  // opened. The header's whole job while collapsed is to say whether anything
+  // differs; reading only on open made "2 exceptions" invisible until you
+  // opened the thing that was supposed to tell you. Only knobs that actually
+  // HAVE a row-keyed rung mount a panel (11 keys today), so this is a handful
+  // of small reads per page, not the per-knob catalogue read the cache exists
+  // to prevent. The context itself is idempotent per key.
+  useEffect(() => {
+    if (kinds.length === 0 || !organizationId) return;
+    loadRungOverrides(knob);
+    for (const kind of kinds) ensureLabels(kind);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [knob.full_key, organizationId]);
+
   if (kinds.length === 0 || !organizationId) return null;
 
   const state = rungOverrides[knob.full_key];
   const rows = state?.status === "ready" ? state.rows : [];
   const heading = kinds.map((kind) => plural(kind)).join(", ");
 
-  // Labels for the rows that ALREADY hold a value: a person must never be shown
-  // a uuid. Loaded per rung the first time this panel opens.
-  const ensureLabels = (kind: SubOrgScopeKind) => {
-    if (labels[kind]) return;
-    void fetchScopeRows(kind, organizationId)
-      .then((result) => setLabels((prior) => ({ ...prior, [kind]: result })))
-      .catch(() => {
-        // A label read that fails leaves the row identified by its rung and id
-        // below, with the reason stated there — never a blank name.
-        setLabels((prior) => ({ ...prior, [kind]: [] }));
-      });
-  };
-
   const labelFor = (kind: SubOrgScopeKind, scopeId: string): string | null =>
     labels[kind]?.find((row) => row.id === scopeId)?.label ?? null;
-
-  const open = () => {
-    loadRungOverrides(knob);
-    for (const kind of kinds) ensureLabels(kind);
-  };
 
   const afterWrite = () => {
     reloadRungOverrides(knob);
@@ -306,6 +397,7 @@ export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
         isOrgAdmin: canManageOrganization,
       })}
       blastRadius={scopeBlastRadius(kind, label, organizationName)}
+      stateOnly={stateOnly ?? undefined}
       hideKey
       onChanged={() => {
         setDrafts((prior) =>
@@ -316,21 +408,30 @@ export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
     />
   );
 
+  // 🚨 F1: a key nothing reads gets no NEW exceptions, at any rung.
+  const canAdd = canManageOrganization && !stateOnly;
+  const count = state?.status === "ready" ? rows.length : null;
+
   return (
     <SettingsSection
-      title={`Exceptions by ${heading}`}
+      // The count lives in the TITLE because a SettingsSection only renders its
+      // description while OPEN — and "something here differs" is precisely what
+      // the collapsed header exists to say.
+      title={`Exceptions by ${heading}${count ? ` · ${count}` : ""}`}
       description={
-        state?.status === "ready"
-          ? rows.length === 0
-            ? `No ${heading} set their own value for this setting yet.`
-            : `${rows.length} ${rows.length === 1 ? "exception" : "exceptions"} to the value above.`
-          : undefined
+        stateOnly
+          ? `${stateOnly.reason} Until it has one, no ${heading} can be given their own value either.`
+          : state?.status === "ready"
+            ? rows.length === 0
+              ? `No ${heading} set their own value for this setting yet.`
+              : `${rows.length} ${rows.length === 1 ? "exception" : "exceptions"} to the value above.`
+            : undefined
       }
       emphasis="subtle"
       collapsible
       defaultOpen={false}
       action={
-        canManageOrganization ? (
+        canAdd ? (
           <div className="flex flex-wrap gap-2">
             {kinds.map((kind) => (
               <ScopeRowPicker
@@ -360,11 +461,11 @@ export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
       }
     >
       <ExceptionsBody
-        onMount={open}
         status={state?.status ?? "idle"}
         message={state?.status === "error" ? state.message : null}
         onRetry={() => reloadRungOverrides(knob)}
-        canManageOrganization={canManageOrganization}
+        canAdd={canAdd}
+        stateOnlyReason={stateOnly?.reason ?? null}
         heading={heading}
         empty={rows.length === 0 && drafts.length === 0}
       >
@@ -374,7 +475,8 @@ export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
           return overrideRow(
             kind,
             row.scope_id,
-            label ?? `This ${nounWord(kind)} could not be named (${row.scope_id})`,
+            label ??
+              `This ${nounWord(kind)} could not be named — ${labelErrors[kind] ?? "its name was not read"} (${row.scope_id})`,
             row,
           );
         })}
@@ -383,7 +485,14 @@ export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
             {overrideRow(draft.kind, draft.row.id, draft.row.label, null)}
             <div className="flex items-center justify-between gap-2 px-4 pb-2 text-xs text-muted-foreground">
               <span>
-                {`Not saved yet — choose a value above and it becomes this ${nounWord(draft.kind)}’s own.`}
+                {/*
+                  🚨 F3 (V-57). The control above shows the value this row
+                  INHERITS, because a draft has no value of its own yet — and a
+                  switch has no third position to say so with. So the caption
+                  says exactly what is on screen and where it came from, rather
+                  than only that nothing is saved.
+                */}
+                {`Showing ${draftInheritedFrom(knob, draft.kind, canManageOrganization)}’s value — nothing is saved for this ${nounWord(draft.kind)} yet. Change it and it becomes this ${nounWord(draft.kind)}’s own.`}
               </span>
               <Button
                 type="button"
@@ -408,42 +517,26 @@ export function KnobRungOverrides({ knob }: { knob: ScopedKnob }) {
   );
 }
 
-/**
- * The disclosure's body. It exists as its own component so that OPENING the
- * section is what triggers the read: the section owns the open state, so the
- * body simply does not exist until it is open, and a mount is the signal.
- */
+/** The disclosure's body: the honest state, or the rows. */
 function ExceptionsBody({
-  onMount,
   status,
   message,
   onRetry,
-  canManageOrganization,
+  canAdd,
+  stateOnlyReason,
   heading,
   empty,
   children,
 }: {
-  onMount: () => void;
   status: "idle" | "loading" | "ready" | "error";
   message: string | null;
   onRetry: () => void;
-  canManageOrganization: boolean;
+  canAdd: boolean;
+  stateOnlyReason: string | null;
   heading: string;
   empty: boolean;
   children: React.ReactNode;
 }) {
-  // The read happens ON MOUNT, in an effect: the section only renders this body
-  // when it is open, so a mount IS the "someone opened the exceptions" signal —
-  // and a read started during render would be a state update in the settings
-  // provider while this component is still rendering.
-  useEffect(() => {
-    onMount();
-    // Intentionally once per open: `onMount` is recreated every render (it
-    // closes over the knob), and re-running it on every render is the request
-    // loop this cache exists to prevent. The context itself is idempotent.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   if (status === "error") {
     return (
       <SettingsCallout tone="error" title="The exceptions could not be read">
@@ -467,9 +560,11 @@ function ExceptionsBody({
   if (empty) {
     return (
       <p className="px-4 py-2 text-xs text-muted-foreground">
-        {canManageOrganization
-          ? `Nothing overrides the value above. Add one for a specific ${heading.replace(/s$/, "")} when it needs to differ.`
-          : `Nothing overrides the value above. An owner or admin sets exceptions by ${heading}.`}
+        {stateOnlyReason
+          ? `${stateOnlyReason} Nothing reads this setting yet, so there is nothing for a ${heading.replace(/s$/, "")} to differ from.`
+          : canAdd
+            ? `Nothing overrides the value above. Add one for a specific ${heading.replace(/s$/, "")} when it needs to differ.`
+            : `Nothing overrides the value above. An owner or admin sets exceptions by ${heading}.`}
       </p>
     );
   }

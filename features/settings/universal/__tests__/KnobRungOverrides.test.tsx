@@ -23,6 +23,7 @@ import { KnobRungOverrides } from "../KnobRungOverrides";
 import { fetchScopeRows } from "../scopeRows";
 import { useUniversalSettings, type RungOverridesState } from "../UniversalSettingsContext";
 import { setKnobOverride } from "@/lib/scoped-config/service";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { KnobRungOverrideRow } from "@/lib/scoped-config/service";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 
@@ -47,6 +48,7 @@ jest.mock("../UniversalSettingsContext", () => ({
 const scopeRows = jest.mocked(fetchScopeRows);
 const writeOverride = jest.mocked(setKnobOverride);
 const settings = jest.mocked(useUniversalSettings);
+const askToConfirm = jest.mocked(confirm);
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const WINE = "22222222-2222-4222-8222-222222222222";
@@ -104,6 +106,7 @@ const knob = {
 let root: Root;
 let host: HTMLDivElement;
 let rungOverrides: Record<string, RungOverridesState>;
+let stateOnly: { reason: string; consumerEvidence: string } | null = null;
 const loadRungOverrides = jest.fn();
 const reloadRungOverrides = jest.fn();
 
@@ -138,7 +141,7 @@ function mountPanel() {
         refresh: jest.fn(),
       }) as unknown as ReturnType<typeof useUniversalSettings>,
   );
-  act(() => root.render(<KnobRungOverrides knob={knob} />));
+  act(() => root.render(<KnobRungOverrides knob={knob} stateOnly={stateOnly} />));
 }
 
 /** The disclosure is closed by default; a person opens it to see the exceptions. */
@@ -161,6 +164,9 @@ beforeEach(() => {
   writeOverride.mockReset();
   loadRungOverrides.mockReset();
   reloadRungOverrides.mockReset();
+  askToConfirm.mockReset();
+  askToConfirm.mockResolvedValue(true);
+  stateOnly = null;
   rungOverrides = {};
   host = document.createElement("div");
   document.body.append(host);
@@ -232,8 +238,10 @@ it("saves a picked row's value through knob_override_set at that rung", async ()
     (option as HTMLElement).click();
   });
 
-  // A picked row is not an override until it is valued, and it says so.
-  expect(textOf()).toContain("Not saved yet");
+  // A picked row is not an override until it is valued, and the caption says
+  // BOTH that nothing is saved and what the control on screen is showing (F3).
+  expect(textOf()).toContain("nothing is saved for this table yet");
+  expect(textOf()).toContain("Showing your organization’s value");
 
   const input = host.querySelector<HTMLInputElement>(`input[aria-label="Confirmation policy for wine_tasting"]`);
   expect(input).not.toBeNull();
@@ -340,4 +348,167 @@ it("renders the door's own refusal sentence when the rows cannot be read", async
   await act(async () => {});
 
   expect(textOf()).toContain("You are not a member of that organization.");
+});
+
+// ── V-57 residue ────────────────────────────────────────────────────────────
+
+it("offers no exception control at all for a key nothing reads, and says why (F1)", async () => {
+  rungOverrides = { [knob.full_key]: { status: "ready", rows: [] } };
+  scopeRows.mockResolvedValue([{ id: WINE, label: "wine_tasting" }]);
+  stateOnly = {
+    reason: "No active runtime consumer was verified for this setting.",
+    consumerEvidence: "Census over source AND pg_proc found no reader.",
+  };
+
+  mountPanel();
+  await openExceptions();
+  await act(async () => {});
+
+  // The contradiction V-57 photographed: "This preference is not available
+  // yet" above a working picker over 803 tables.
+  const add = [...host.querySelectorAll("button"), ...document.body.querySelectorAll("button")].find(
+    (button) => /Add override for a/.test(button.textContent ?? ""),
+  );
+  expect(add).toBeUndefined();
+  expect(textOf()).toContain("No active runtime consumer was verified for this setting.");
+  // The rung rows are still READ — a standing exception must be nameable — but
+  // there is no control that could create a new one.
+  expect(textOf()).not.toContain("Add override for a");
+});
+
+it("lists a standing exception read-only when the key has no consumer (F1)", async () => {
+  rungOverrides = {
+    [knob.full_key]: {
+      status: "ready",
+      rows: [
+        { scope_kind: "table", scope_id: WINE, value: "never", updated_at: null, updated_by: null, set_note: null },
+      ] as KnobRungOverrideRow[],
+    },
+  };
+  scopeRows.mockResolvedValue([{ id: WINE, label: "wine_tasting" }]);
+  stateOnly = { reason: "No active runtime consumer was verified for this setting.", consumerEvidence: "x" };
+
+  mountPanel();
+  await openExceptions();
+  await act(async () => {});
+
+  // The row is still named — a stored value is never hidden — but it carries
+  // the same sentence its knob does instead of an editable control.
+  expect(textOf()).toContain("wine_tasting");
+  expect(textOf()).toContain("This preference is not available yet.");
+  expect(host.querySelector(`input[aria-label="Confirmation policy for wine_tasting"]`)).toBeNull();
+});
+
+it("names the row in the removal confirm, not just the setting (F2)", async () => {
+  rungOverrides = {
+    [knob.full_key]: {
+      status: "ready",
+      rows: [
+        { scope_kind: "table", scope_id: WINE, value: "never", updated_at: null, updated_by: null, set_note: null },
+      ] as KnobRungOverrideRow[],
+    },
+  };
+  scopeRows.mockResolvedValue([{ id: WINE, label: "wine_tasting" }]);
+  writeOverride.mockResolvedValue({
+    ok: true, feature: knob.feature, key: knob.key, scope_kind: "table",
+    scope_id: WINE, effective_value: "ask", origin: "organization", key_removed: true,
+  });
+
+  mountPanel();
+  await openExceptions();
+  await act(async () => {});
+  const options = [...host.querySelectorAll("button")].find(
+    (button) => button.getAttribute("aria-label") === "Options for wine_tasting",
+  );
+  await act(async () => { options!.click(); });
+  await act(async () => {});
+  const inherit = [...document.body.querySelectorAll("button")].find((button) =>
+    /Inherit this value/.test(button.textContent ?? ""),
+  );
+  await act(async () => { inherit!.click(); });
+  await act(async () => {});
+
+  const asked = askToConfirm.mock.calls[0]?.[0];
+  expect(asked).toBeDefined();
+  // Twenty exceptions must not share one confirm sentence.
+  expect(asked!.title).toContain("wine_tasting");
+  expect(asked!.description).toContain("wine_tasting");
+  // And it names the rung it actually falls back to, with the value.
+  expect(asked!.description).toContain("your organization");
+});
+
+it("gives two identically-named rows distinct identities in the picker (F4)", async () => {
+  rungOverrides = { [knob.full_key]: { status: "ready", rows: [] } };
+  const IAM = "44444444-4444-4444-8444-444444444444";
+  const HR = "55555555-5555-4555-8555-555555555555";
+  scopeRows.mockResolvedValue([
+    { id: IAM, label: "Access audit" },
+    { id: HR, label: "Access audit" },
+    { id: WINE, label: "wine_tasting" },
+  ]);
+
+  mountPanel();
+  await openExceptions();
+  const add = [...host.querySelectorAll("button")].find((button) =>
+    /Add override for a table/.test(button.textContent ?? ""),
+  );
+  await act(async () => { add!.click(); });
+  await act(async () => {});
+
+  const items = [...document.body.querySelectorAll('[cmdk-item=""]')];
+  const values = items.map((item) => item.getAttribute("data-value"));
+  // cmdk keys an item by its value; two rows sharing one value highlight
+  // together and DOM order decides which one a click excepts.
+  expect(new Set(values).size).toBe(values.length);
+  const duplicates = items.filter((item) => /Access audit/.test(item.textContent ?? ""));
+  expect(duplicates).toHaveLength(2);
+  for (const item of duplicates) {
+    expect(item.textContent).toContain("Access audit");
+    // The only thing that tells them apart is shown.
+    expect(/[0-9a-f]{8}/.test(item.textContent ?? "")).toBe(true);
+  }
+  // An unambiguous row is NOT decorated with an id fragment.
+  const unique = items.find((item) => /wine_tasting/.test(item.textContent ?? ""));
+  expect(unique!.textContent).toBe("wine_tasting");
+});
+
+it("counts the exceptions in the collapsed header and in the narrowed picker (F5)", async () => {
+  rungOverrides = {
+    [knob.full_key]: {
+      status: "ready",
+      rows: [
+        { scope_kind: "table", scope_id: WINE, value: "never", updated_at: null, updated_by: null, set_note: null },
+      ] as KnobRungOverrideRow[],
+    },
+  };
+  scopeRows.mockResolvedValue([
+    { id: NOTES, label: "tasting_notes" },
+    { id: "66666666-6666-4666-8666-666666666666", label: "orders" },
+  ]);
+
+  mountPanel();
+  await act(async () => {});
+  // NOT opened: the collapsed header is where "something here differs" is said.
+  const header = [...host.querySelectorAll("button")].find((button) =>
+    /Exceptions by/.test(button.textContent ?? ""),
+  );
+  expect(header!.textContent).toContain("· 1");
+
+  await openExceptions();
+  const add = [...host.querySelectorAll("button")].find((button) =>
+    /Add override for a table/.test(button.textContent ?? ""),
+  );
+  await act(async () => { add!.click(); });
+  await act(async () => {});
+  expect(textOf()).toContain("2 tables");
+
+  const input = document.body.querySelector<HTMLInputElement>('[cmdk-input=""]');
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    setter.call(input, "orders");
+    input!.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  // The heading counted what it was handed, not what a person could see.
+  expect(textOf()).toContain("1 tables");
+  expect(textOf()).not.toContain("2 tables");
 });
