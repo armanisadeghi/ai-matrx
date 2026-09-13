@@ -117,6 +117,14 @@ export interface ConversationMenuContext {
    * this menu, otherwise the registry's fallback rename command is a no-op.
    */
   showRename?: boolean;
+  /**
+   * A rename door for a host that is NOT an `ItemRow`. `intent: "rename"` is
+   * intercepted by ItemRow's inline editor; anywhere else it falls back to an
+   * honest refusal. A host that CAN rename (the conversation page's own menu
+   * opens a text dialog) passes this and the entry becomes real — still the one
+   * `renameConversation` thunk, still one verb, never a second menu door.
+   */
+  onRename?: () => void;
   /** Hide Pin/Unpin when the host could not resolve canonical user state. */
   showFavorite?: boolean;
   /**
@@ -177,14 +185,14 @@ export function buildConversationMenu(
             id: "rename",
             label: "Rename",
             icon: Pencil,
-            intent: "rename",
+            intent: ctx.onRename ? undefined : "rename",
             shortcutKey: "r",
             hidden: ctx.showRename === false,
             // ItemRow intercepts `intent: "rename"` and drives inline edit.
             // This fallback runs ONLY on a host that has no inline rename, and
             // it says so rather than looking like a working control — a silent
             // `() => {}` here was a dead menu row (2026-09-11).
-            onSelect: renameIntentFallback("conversation"),
+            onSelect: ctx.onRename ?? renameIntentFallback("conversation"),
           },
           {
             id: "favorite",
@@ -371,10 +379,10 @@ export function buildConversationMenu(
                 title: "Delete conversation",
                 description: (
                   <>
-                    Permanently delete <b>{displayTitle(ctx.title)}</b>? This
-                    soft-deletes the conversation and every message inside it —
-                    the rows are kept in the database for recovery, but the
-                    conversation will disappear from every sidebar.
+                    This moves <b>{displayTitle(ctx.title)}</b> and every message
+                    inside it to the trash. Nothing is destroyed — it leaves every
+                    list, and you can bring it back from Trash at the bottom of
+                    the conversation list.
                   </>
                 ),
                 confirmLabel: "Delete",
@@ -389,7 +397,9 @@ export function buildConversationMenu(
                 toast.error(result.payload?.message ?? "Delete failed");
               } else {
                 ctx.onMutationSuccess?.();
-                toast.success("Conversation deleted");
+                toast.success("Conversation moved to the trash", {
+                  description: "Restore it from Trash at the bottom of the conversation list.",
+                });
               }
             },
           },

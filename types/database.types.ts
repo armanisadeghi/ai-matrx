@@ -69298,6 +69298,10 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: string
       }
+      cx_restore_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       cx_soft_delete_conversation: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -79545,6 +79549,10 @@ export type Database = {
           total_cost: number
           total_tokens: number
         }[]
+      }
+      spine_restore_conversation_requests: {
+        Args: { p_conversation_id: string; p_stamp: string }
+        Returns: undefined
       }
       spine_soft_delete_conversation_requests: {
         Args: { p_conversation_id: string }

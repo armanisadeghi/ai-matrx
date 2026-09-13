@@ -15,6 +15,7 @@ import { ChatCanvasButton } from "./ChatCanvasButton";
 import { ChatSandboxToggleButton } from "./sandbox-insight/ChatSandboxToggleButton";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";
 import { ConversationRoomNotice } from "./ConversationRoomNotice";
+import { ConversationPageMenu } from "./ConversationPageMenu";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 
@@ -147,6 +148,15 @@ export function ChatRunHeader({
         <ChatSandboxToggleButton conversationId={sandboxConversationId} />
         {/* Canvas — the unified live workspace, one click away at the top. */}
         <ChatCanvasButton conversationId={conversationId} />
+        {/* DD-179 — the conversation's own menu: rename, archive, delete (soft
+            and restorable), share, duplicate. Absent on `/chat/new`, where
+            there is no conversation yet to act on. */}
+        {conversationId && (
+          <ConversationPageMenu
+            conversationId={conversationId}
+            href={`/chat/${conversationId}`}
+          />
+        )}
       </div>
     </div>
   );

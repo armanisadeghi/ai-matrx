@@ -30,6 +30,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ContextGaugeWidget } from "./ContextGaugeWidget";
+import { ConversationPageMenu } from "@/features/agents/components/chat/ConversationPageMenu";
 
 const ShareModal = dynamic(
   () =>
@@ -111,6 +112,16 @@ export default function ChatHeaderControls() {
               icon={<Share2 />}
               onClick={() => setIsShareOpen(true)}
               label="Share conversation"
+            />
+          )}
+
+          {/* DD-179 — the SAME conversation menu the production `/chat` route
+              carries (one component, one registry, one thunk per verb): rename,
+              archive, delete (soft and restorable). */}
+          {isAuthenticated && conversationId && (
+            <ConversationPageMenu
+              conversationId={conversationId}
+              href={`/demos/chat/c/${conversationId}`}
             />
           )}
         </div>
